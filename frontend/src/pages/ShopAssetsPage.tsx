@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -63,7 +62,7 @@ type CollapseState = {
   posted: boolean;
 };
 
-const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v1";
+const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -162,11 +161,10 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }
@@ -341,10 +339,10 @@ function writeLocalJSON(key: string, value: unknown) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    guidance: false,
+    guidance: true,
     signboard: false,
     products: false,
-    posted: false,
+    posted: true,
   };
 }
 
@@ -922,9 +920,9 @@ export default function ShopAssetsPage() {
     return (
       <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 18 }}>
         <PageTopNav
-          sectionLabel="Shop Assets"
-          title="Shop Assets"
-          subtitle="Loading shop assets..."
+          sectionLabel="Shop Control"
+          title="Pictures & Products"
+          subtitle="Loading shop picture and product lanes..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/shop-control"
@@ -948,21 +946,13 @@ export default function ShopAssetsPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Shop Assets"
-        title="Shop Assets"
-        subtitle="Keep the signboard lane and the product picture lane separate. Restore preview-before-post, edit, delete, and shop gallery access."
+        sectionLabel="Shop Control"
+        title="Pictures & Products"
+        subtitle="Prepare the public shop face, then add public products or private Vault offers."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/shop-control"
         backLabel="Shop Control"
-      />
-
-      <ExplainToggle
-        label="What this screen does"
-        what="This page manages the visual assets for your shop: the main signboard and the separate product picture blocks."
-        why="It keeps the public shop identity and the product gallery clear so the shop does not become visually confusing."
-        next="Start with the signboard first, then move into the product blocks after the main identity frame looks right."
-        tone="blue"
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
@@ -981,7 +971,7 @@ export default function ShopAssetsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Asset overview</div>
+            <div style={{ ...sectionLabel(), color: "#D8B95B" }}>Owner workbench</div>
 
             <div
               style={{
@@ -992,7 +982,7 @@ export default function ShopAssetsPage() {
                 lineHeight: 1.12,
               }}
             >
-              {firstTruthy(shop?.name, "My Shop Assets")}
+              {firstTruthy(shop?.name, "Your shop face")}
             </div>
 
             <div
@@ -1003,8 +993,7 @@ export default function ShopAssetsPage() {
                 color: "#D7E3F1",
               }}
             >
-              The visual assets are handled properly again here: the signboard / identity picture
-              is separate from the product picture blocks.
+              Keep the public picture, public products, and private Vault offers in their own lanes.
             </div>
 
             <div
@@ -1015,23 +1004,10 @@ export default function ShopAssetsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>
-                GMFN ID: {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Awaiting issue")}
-              </span>
-              <span style={badge(true)}>
-                Community slots used: {publicProducts.length} / 12
-              </span>
-              <span style={badge(false)}>
-                Vault slots used: {vaultProducts.length} / 6
-              </span>
-              <span style={badge(false)}>
-                Hidden blocks: {hiddenProducts.length}
-              </span>
-              <span style={badge(false)}>
-                Community: {firstTruthy(shop?.marketplace_name, shop?.community_name, "Selected community")}
-              </span>
-              <span style={badge(false)}>Current page: Shop assets</span>
-              <span style={badge(false)}>Current step: Prepare signboard and product blocks</span>
+              <span style={badge(true)}>🖼️ Shop picture: {safeStr(shopPreviewUrl) ? "Ready" : "Needed"}</span>
+              <span style={badge(publicProducts.length > 0)}>🛍️ Public products: {publicProducts.length} / 12</span>
+              <span style={badge(vaultProducts.length > 0)}>🔐 Vault offers: {vaultProducts.length} / 6</span>
+              <span style={badge(false)}>🧾 Hidden: {hiddenProducts.length}</span>
             </div>
 
             <div
@@ -1057,17 +1033,17 @@ export default function ShopAssetsPage() {
                 style={actionBtn("primary", !shopLink)}
                 disabled={!shopLink}
               >
-                Open Shop Gallery
+                Open public shop
               </button>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => copyText(shopLink, "Shop gallery link copied.")}
-                  style={actionBtn("secondary", !shopLink)}
-                  disabled={!shopLink}
-                >
-                Copy Shop Link
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={() => copyText(shopLink, "Shop gallery link copied.")}
+                style={actionBtn("secondary", !shopLink)}
+                disabled={!shopLink}
+              >
+                Copy public link
               </button>
             </div>
           </div>
@@ -1079,7 +1055,7 @@ export default function ShopAssetsPage() {
               boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
             }}
           >
-            <div style={sectionLabel()}>Quick counts</div>
+            <div style={sectionLabel()}>Shop readiness</div>
 
             <div
               style={{
@@ -1090,7 +1066,7 @@ export default function ShopAssetsPage() {
               }}
             >
               <div style={statTile()}>
-                <div style={sectionLabel()}>Community</div>
+                <div style={sectionLabel()}>🛍️ Public</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1101,10 +1077,13 @@ export default function ShopAssetsPage() {
                 >
                   {publicProducts.length}
                 </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
+                  Open gallery items
+                </div>
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Vault</div>
+                <div style={sectionLabel()}>🔐 Vault</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1116,12 +1095,12 @@ export default function ShopAssetsPage() {
                   {vaultProducts.length}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Private offers by permission
+                  Private offers
                 </div>
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Hidden</div>
+                <div style={sectionLabel()}>🧾 Hidden</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1133,7 +1112,7 @@ export default function ShopAssetsPage() {
                   {hiddenProducts.length}
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 12 }}>
-                  Restorable owner-only blocks
+                  Restorable hidden items
                 </div>
               </div>
             </div>
@@ -1152,11 +1131,9 @@ export default function ShopAssetsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Guided release order</div>
+            <div style={sectionLabel()}>Simple order</div>
             <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Keep one real publishing decision visible at a time: prepare the signboard first,
-              release community-visible product blocks second, and keep Vault products distinct so
-              private access never leaks into the public gallery.
+              Follow one clean order: public picture first, public products second, private Vault offers last.
             </div>
           </div>
 
@@ -1180,26 +1157,23 @@ export default function ShopAssetsPage() {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>1. Signboard first</div>
+              <div style={sectionLabel()}>🖼️ 1. Public picture</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Finish the executive identity frame first so the shop looks credible before product
-                blocks start competing for attention.
+                Make the shop face clear before people see the product shelf.
               </div>
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>2. Public blocks next</div>
+              <div style={sectionLabel()}>🛍️ 2. Public products</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Community-visible products belong in the ordinary gallery. They should remain polished,
-                intentional, and ready to share by direct public link.
+                Add only the items people can browse and share openly.
               </div>
             </div>
 
             <div style={innerCard("#FFFBEF")}>
-              <div style={sectionLabel()}>3. Vault stays separate</div>
+              <div style={sectionLabel()}>🔐 3. Vault offers</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                Use the Vault visibility mode only when the offer is meant for private access by
-                permission. Private inventory should not appear inside the public gallery lane.
+                Use Vault only for private offers shared by controlled access.
               </div>
             </div>
           </div>
@@ -1217,9 +1191,9 @@ export default function ShopAssetsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>1. Shop signboard / identity picture</div>
+            <div style={sectionLabel()}>🖼️ Public shop picture</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This public identity frame represents the shop.
+              This is the first picture people see before opening the shop.
             </div>
           </div>
 
@@ -1232,15 +1206,6 @@ export default function ShopAssetsPage() {
             {collapsed.signboard ? "Open" : "Collapse"}
           </button>
         </div>
-
-        <ExplainToggle
-          label="What this signboard is for"
-          what="This section controls the main public identity image for the shop."
-          why="It is the first visual anchor people see before they decide whether to trust or open the rest of the gallery."
-          next="Make the signboard credible and clear first, then move to the product lanes once the shop identity is stable."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
 
         {!collapsed.signboard ? (
         <div
@@ -1330,10 +1295,10 @@ export default function ShopAssetsPage() {
                 boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
               }}
             >
-              <div style={sectionLabel()}>Signboard controls</div>
+              <div style={sectionLabel()}>Picture control</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Preview the signboard first, then save it.
+                Preview the image first, then save it.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -1352,7 +1317,7 @@ export default function ShopAssetsPage() {
                       setShopPreviewUrl(e.target.value);
                     }
                   }}
-                  placeholder="Or paste signboard image URL"
+                  placeholder="Or paste public shop image URL"
                   style={inputStyle()}
                 />
 
@@ -1394,11 +1359,11 @@ export default function ShopAssetsPage() {
                   </div>
 
                   <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                    <div style={sectionLabel()}>Shop description</div>
+                    <div style={sectionLabel()}>Short shop note</div>
                     <textarea
                       value={shopDescription}
                       onChange={(e) => setShopDescription(e.target.value)}
-                      placeholder="Describe the shop..."
+                      placeholder="Say what this shop offers in one short note."
                       style={{ ...textAreaStyle(), marginTop: 8 }}
                     />
                   </div>
@@ -1412,7 +1377,7 @@ export default function ShopAssetsPage() {
                     disabled={savingShop || uploadingShopImage}
                     style={actionBtn("primary", savingShop || uploadingShopImage)}
                   >
-                    {savingShop ? "Saving..." : uploadingShopImage ? "Uploading..." : "Save Signboard"}
+                    {savingShop ? "Saving..." : uploadingShopImage ? "Uploading..." : "Save picture"}
                   </button>
 
                   <button
@@ -1428,7 +1393,7 @@ export default function ShopAssetsPage() {
                     }}
                     style={actionBtn("secondary")}
                   >
-                    Reset Preview
+                    Reset preview
                   </button>
 
                   <button
@@ -1446,7 +1411,7 @@ export default function ShopAssetsPage() {
                       savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)
                     )}
                   >
-                    Remove Signboard
+                    Remove picture
                   </button>
                 </div>
               </div>
@@ -1467,10 +1432,9 @@ export default function ShopAssetsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>2. Product picture blocks</div>
+            <div style={sectionLabel()}>🛍️ Products and Vault offers</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Use this lane for public gallery products and Vault-bound products without flattening
-              them into the same meaning.
+              Add one item at a time. Choose public gallery or private Vault before saving.
             </div>
           </div>
 
@@ -1496,11 +1460,11 @@ export default function ShopAssetsPage() {
         >
           <div style={innerCard("#FCFEFF")}>
             <div style={sectionLabel()}>
-              {editingProductId ? `Edit Product Block #${editingProductId}` : "Create Product Block"}
+              {editingProductId ? `Edit item #${editingProductId}` : "Add item"}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-                Upload the product image, preview it first, then post or update the block.
+              Add a picture, name, price, and choose where the item belongs.
             </div>
 
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -1519,7 +1483,7 @@ export default function ShopAssetsPage() {
                     setProductPreviewUrl(e.target.value);
                   }
                 }}
-                placeholder="Or paste product image URL"
+                placeholder="Or paste item image URL"
                 style={inputStyle()}
               />
 
@@ -1531,21 +1495,21 @@ export default function ShopAssetsPage() {
                 }}
               >
                 <div>
-                  <div style={sectionLabel()}>Product title</div>
+                  <div style={sectionLabel()}>Item name</div>
                   <input
                     value={productName}
                     onChange={(e) => setProductName(e.target.value)}
-                    placeholder="Product title"
+                    placeholder="Item name"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
 
                 <div>
-                  <div style={sectionLabel()}>Product tag / label</div>
+                  <div style={sectionLabel()}>Short tag</div>
                   <input
                     value={productLabel}
                     onChange={(e) => setProductLabel(e.target.value)}
-                    placeholder="Optional display tag"
+                    placeholder="Optional tag"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
@@ -1555,39 +1519,39 @@ export default function ShopAssetsPage() {
                   <input
                     value={productPrice}
                     onChange={(e) => setProductPrice(e.target.value)}
-                    placeholder="Product price"
+                    placeholder="Price"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
 
                 <div>
-                  <div style={sectionLabel()}>Currency</div>
+                  <div style={sectionLabel()}>Currency code</div>
                   <input
                     value={productCurrency}
                     onChange={(e) => setProductCurrency(e.target.value)}
-                    placeholder="NGN / GBP"
+                    placeholder="USD / GBP / NGN"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
 
                 <div>
-                  <div style={sectionLabel()}>Visibility</div>
+                  <div style={sectionLabel()}>Where should it appear?</div>
                   <select
                     value={productVisibility}
                     onChange={(e) => setProductVisibility(e.target.value)}
                     style={{ ...inputStyle(), marginTop: 8 }}
                   >
-                    <option value="community_visible">Community Visible</option>
-                    <option value="vault_private">Vault Private</option>
+                    <option value="community_visible">🛍️ Public gallery</option>
+                    <option value="vault_private">🔐 Private Vault</option>
                   </select>
                 </div>
 
                 <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
-                  <div style={sectionLabel()}>Description</div>
+                  <div style={sectionLabel()}>Short description</div>
                   <textarea
                     value={productDescription}
                     onChange={(e) => setProductDescription(e.target.value)}
-                    placeholder="Product description"
+                    placeholder="Describe the item in simple words."
                     style={{ ...textAreaStyle(), marginTop: 8 }}
                   />
                 </div>
@@ -1606,8 +1570,8 @@ export default function ShopAssetsPage() {
                       ? "Updating..."
                       : "Posting..."
                     : editingProductId
-                    ? "Update Product"
-                    : "Post Product"}
+                    ? "Update item"
+                    : "Post item"}
                 </button>
 
                 <button
@@ -1616,7 +1580,7 @@ export default function ShopAssetsPage() {
                   onClick={resetProductForm}
                   style={actionBtn("secondary")}
                 >
-                  Clear Form
+                  Clear form
                 </button>
 
                   <button
@@ -1626,7 +1590,7 @@ export default function ShopAssetsPage() {
                     style={actionBtn("soft", !shopLink)}
                     disabled={!shopLink}
                   >
-                  Copy Shop Link
+                  Copy shop link
                 </button>
               </div>
             </div>
@@ -1639,7 +1603,7 @@ export default function ShopAssetsPage() {
               boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
             }}
           >
-            <div style={sectionLabel()}>Preview before post</div>
+            <div style={sectionLabel()}>Preview before saving</div>
 
             <div
               style={{
@@ -1681,7 +1645,7 @@ export default function ShopAssetsPage() {
                   />
                 ) : (
                   <div style={{ color: "#D7E3F1", fontWeight: 800 }}>
-                    Product preview
+                    🖼️ Item preview
                   </div>
                 )}
               </div>
@@ -1696,7 +1660,7 @@ export default function ShopAssetsPage() {
                   }}
                 >
                   <span style={badge(true)}>
-                    {editingProductId ? `Block #${editingProductId}` : "Block assigned after post"}
+                    {editingProductId ? `Item #${editingProductId}` : "Item number after post"}
                   </span>
 
                   {safeStr(productLabel) ? (
@@ -1704,7 +1668,9 @@ export default function ShopAssetsPage() {
                   ) : null}
 
                   <span style={badge(false)}>
-                    {firstTruthy(productVisibility, "community_visible")}
+                    {firstTruthy(productVisibility, "community_visible") === "vault_private"
+                      ? "🔐 Private Vault"
+                      : "🛍️ Public gallery"}
                   </span>
                 </div>
 
@@ -1716,7 +1682,7 @@ export default function ShopAssetsPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  {firstTruthy(productName, "Product title")}
+                  {firstTruthy(productName, "Item name")}
                 </div>
 
                 <div
@@ -1727,7 +1693,7 @@ export default function ShopAssetsPage() {
                     color: "#D7E3F1",
                   }}
                 >
-                  {firstTruthy(productDescription, "Product description preview")}
+                  {firstTruthy(productDescription, "Short description preview")}
                 </div>
 
                 <div
@@ -1758,10 +1724,9 @@ export default function ShopAssetsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Posted product blocks</div>
+            <div style={sectionLabel()}>Posted items</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Review everything the shop already has, including hidden blocks that can be restored
-              without rebuilding the shop from scratch.
+              Open this only when you need to edit, hide, restore, or copy an item link.
             </div>
           </div>
 
@@ -1786,7 +1751,7 @@ export default function ShopAssetsPage() {
         >
           {products.length === 0 ? (
             <div style={{ ...helperText(), gridColumn: "1 / -1" }}>
-              No product has been posted yet.
+              No item has been posted yet.
             </div>
           ) : (
             products.map((item) => {
@@ -1853,7 +1818,7 @@ export default function ShopAssetsPage() {
                   </div>
 
                   <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>Block #{item.id}</span>
+                    <span style={badge(true)}>Item #{item.id}</span>
                     <span
                       style={{
                         ...badge(false),
@@ -1873,7 +1838,9 @@ export default function ShopAssetsPage() {
                         color: "#F6D77A",
                       }}
                     >
-                      {firstTruthy(item?.visibility_mode, "community_visible")}
+                      {firstTruthy(item?.visibility_mode, "community_visible") === "vault_private"
+                        ? "🔐 Private Vault"
+                        : "🛍️ Public gallery"}
                     </span>
                   </div>
 
@@ -1946,13 +1913,11 @@ export default function ShopAssetsPage() {
                       <button
                         type="button"
                         {...buttonGuardProps()}
-                        onClick={() =>
-                          copyText(productLink, "Product gallery link copied.")
-                        }
+                        onClick={() => copyText(productLink, "Item link copied.")}
                         style={actionBtn("soft", !productLink || isHidden)}
                       disabled={!productLink || isHidden}
                     >
-                      Copy Link
+                      Copy link
                     </button>
                   </div>
                 </div>

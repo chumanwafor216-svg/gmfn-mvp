@@ -19852,3 +19852,27 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/shop-control#shop-control-picture-gallery`
   - no backend/auth/schema/payment logic changes
+
+### Shop Assets inner-page audit and simplification (2026-05-03)
+
+- Owner request continued: audit the inner pages opened from Shop Control after public shop face, with special attention to product/gallery management and jumpy mobile buttons.
+- Code mapping confirmed:
+  - `/app/shop-assets` is implemented in `frontend/src/pages/ShopAssetsPage.tsx`.
+  - It manages the shop public picture/signboard and product records through existing marketplace shop/product endpoints.
+  - It is linked from Shop Control public shop face and product-management actions.
+- Updated `frontend/src/pages/ShopAssetsPage.tsx`:
+  - renamed the visible screen to `Pictures & Products` under `Shop Control`.
+  - removed route-local `ExplainToggle` blocks that were making the page read like a manual.
+  - reset persisted collapse state with `gmfn.shopAssets.sections.v2`.
+  - collapsed the order guide and posted-item list by default, while keeping the picture and item-entry lanes available.
+  - simplified the hero into a shop workbench with four status chips: shop picture, public products, Vault offers, and hidden items.
+  - simplified the product form language from technical "blocks" to plain `item`, `public gallery`, and `private Vault`.
+  - removed the route-local `onTouchStart` button guard so this page follows the newer stable tap behavior used across the audited dashboard/community/shop path.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopAssetsPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/shop-assets`
+  - no backend/auth/schema/product-save/delete/restore logic changes
