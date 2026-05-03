@@ -19714,3 +19714,16 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/community`
   - no backend/auth/schema changes
+
+### Community Home communities row simplification (2026-05-03)
+
+- Owner feedback: the exposed `Your Communities` card still showed too much by displaying the selected Aberdeen community card on the first Community Home surface.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - replaced the exposed selected-community card with one compact `Your Communities` row.
+  - the row now shows only the title and community count until opened.
+  - opening the row reveals the community list, and each community item shows only the community name, a simple marketplace note, and `Open Marketplace`.
+  - removed exposed selected/paid spotlight/private vault badges from the first Community Home community section.
+- Updated `docs/SCREEN_SPECS.md` to define `Your Communities` as a compact row with an opened community list, not an exposed selected-community preview.
+- Scope:
+  - `/app/community`
+  - no backend/auth/schema changes

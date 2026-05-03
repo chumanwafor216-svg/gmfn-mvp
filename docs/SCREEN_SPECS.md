@@ -183,13 +183,11 @@ Must show:
 - Create community
 - Join community
 - Grow circle
-- Your Communities preview
-  - selected community name
-  - community number
-  - Selected badge
-  - Paid spotlight count
-  - Private vault count
-  - Open Marketplace button
+- Your Communities compact row
+  - row title
+  - community count
+  - opens to a simple community list
+  - each opened community item shows community name and Open Marketplace
 - compact rows:
   - Owner Actions
   - Owner Shop Control

@@ -186,39 +186,6 @@ function getClanName(clan: ClanItem | null | undefined): string {
   );
 }
 
-function getClanGlobalId(clan: ClanItem | null | undefined): string {
-  return firstTruthy(
-    clan?.community_global_id,
-    clan?.global_id,
-    clan?.gmfn_id,
-    clan?.community_code,
-    clan?.clan_code,
-    clan?.code,
-    getClanId(clan) ? `COMM-${getClanId(clan)}` : "",
-    "Awaiting issue"
-  );
-}
-
-function getClanSpotlightSubscriberCount(clan: ClanItem | null | undefined): number {
-  const count = Number(
-    (clan as any)?.spotlight_subscription_count ??
-      (clan as any)?.spotlight_subscribers_count ??
-      (clan as any)?.community_standing?.spotlight_subscription_count ??
-      0
-  );
-  return Number.isFinite(count) && count >= 0 ? count : 0;
-}
-
-function getClanVaultSubscriberCount(clan: ClanItem | null | undefined): number {
-  const count = Number(
-    (clan as any)?.vault_subscription_count ??
-      (clan as any)?.vault_subscribers_count ??
-      (clan as any)?.community_standing?.vault_subscription_count ??
-      0
-  );
-  return Number.isFinite(count) && count >= 0 ? count : 0;
-}
-
 function resolveMemberName(me: any): string {
   const direct =
     safeStr(me?.display_name) ||
@@ -500,29 +467,6 @@ function heroStatCard(): React.CSSProperties {
   };
 }
 
-function compactSignal(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 24,
-    borderRadius: 999,
-    padding: "4px 8px",
-    background: primary ? "#EAF3FF" : "#FFFFFF",
-    color: primary ? "#0B2D4A" : "#48657D",
-    border: primary
-      ? "1px solid rgba(13,95,168,0.18)"
-      : "1px solid rgba(16,37,59,0.10)",
-    fontSize: 11.5,
-    fontWeight: 900,
-    lineHeight: 1.15,
-    whiteSpace: "nowrap",
-    textAlign: "center",
-    boxShadow:
-      "0 6px 14px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
-  };
-}
-
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
@@ -720,21 +664,6 @@ function collapseButtonRow(): React.CSSProperties {
     width: "100%",
     gap: 8,
     flexWrap: "wrap",
-  };
-}
-
-function communitiesCollapseHeaderButton(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    ...actionBtn("secondary"),
-    zIndex: 25,
-    width: isCompact ? "100%" : undefined,
-    minHeight: 44,
-    padding: "10px 14px",
-    borderRadius: 999,
-    overflow: "hidden",
-    isolation: "isolate",
   };
 }
 
@@ -3535,149 +3464,49 @@ function communityButtonGuardProps(): Pick<
           zIndex: 30,
         }}
       >
-        <div style={collapseHeaderLayout(isCompact)}>
-          <div style={{ minWidth: 0, width: "100%", textAlign: "center" }}>
-            <div
+        <button
+          type="button"
+          aria-expanded={!collapsed.communities}
+          aria-controls="community-home-communities-panel"
+          {...communityButtonGuardProps()}
+          onClick={toggleCommunitiesSectionFromHeader}
+          onKeyDown={handleCommunitiesHeaderKeyDown}
+          style={{
+            ...communityToolRowStyle(),
+            borderRadius: 18,
+            boxShadow: "none",
+          }}
+        >
+          <span style={communityActionIcon(false)}>🏘️</span>
+          <span style={{ minWidth: 0 }}>
+            <span
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 10,
-                flexWrap: "wrap",
-                textAlign: "left",
+                display: "block",
+                color: "#07172C",
+                fontSize: isCompact ? 15 : 16,
+                fontWeight: 940,
+                lineHeight: 1.18,
               }}
             >
-              <div
-                style={{
-                  color: "#07172C",
-                  fontSize: isCompact ? 20 : 24,
-                  fontWeight: 950,
-                  lineHeight: 1.12,
-                }}
-              >
-                Your Communities
-              </div>
-              <span style={compactSignal(false)}>
-                {sortedClans.length} {sortedClans.length === 1 ? "community" : "communities"}
-              </span>
-            </div>
-
-            <div
+              Your Communities
+            </span>
+            <span
               style={{
-                marginTop: 8,
-                display: "flex",
-                gap: 6,
-                flexWrap: "wrap",
-                justifyContent: "center",
+                display: "block",
+                marginTop: 4,
+                color: "#617085",
+                fontSize: isCompact ? 12.2 : 13,
+                fontWeight: 720,
+                lineHeight: 1.35,
               }}
             >
-              {!isCompact ? <span style={badge(false)}>One GSN ID</span> : null}
-            </div>
-
-            {selectedClan ? (
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "auto minmax(0, 1fr) auto",
-                  gap: 12,
-                  alignItems: "center",
-                  textAlign: "left",
-                  borderRadius: 18,
-                  border: "1px solid rgba(16,37,59,0.10)",
-                  background:
-                    "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
-                  padding: isCompact ? 12 : 14,
-                  boxShadow:
-                    "0 10px 22px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
-                }}
-              >
-                <span style={communityActionIcon(false)}>🏠</span>
-                <span style={{ minWidth: 0 }}>
-                  <span
-                    style={{
-                      display: "block",
-                      color: "#07172C",
-                      fontSize: isCompact ? 16 : 18,
-                      fontWeight: 950,
-                      lineHeight: 1.18,
-                    }}
-                  >
-                    {getClanName(selectedClan)}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      marginTop: 5,
-                      color: "#617085",
-                      fontSize: isCompact ? 12.5 : 13.5,
-                      fontWeight: 760,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    Community no: {getClanGlobalId(selectedClan)}
-                  </span>
-                  <span
-                    style={{
-                      display: "flex",
-                      marginTop: 8,
-                      gap: 6,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <span style={compactSignal(true)}>Selected</span>
-                    <span style={compactSignal(false)}>
-                      Paid spotlight: {getClanSpotlightSubscriberCount(selectedClan)}
-                    </span>
-                    <span style={compactSignal(false)}>
-                      Private vault: {getClanVaultSubscriberCount(selectedClan)}
-                    </span>
-                  </span>
-                </span>
-                <button
-                  type="button"
-                  {...communityButtonGuardProps()}
-                  onClick={(event) => void openSelectedMarketplace(event)}
-                  disabled={!selectedClanId || changingClanId === selectedClanId}
-                  style={{
-                    ...actionBtn(
-                      "primary",
-                      !selectedClanId || changingClanId === selectedClanId
-                    ),
-                    width: isCompact ? "100%" : undefined,
-                  }}
-                >
-                  {changingClanId === selectedClanId
-                    ? "Opening..."
-                    : "Open Marketplace"}
-                </button>
-              </div>
-            ) : null}
-            <div style={collapseButtonRow()}>
-              <button
-                type="button"
-                aria-expanded={!collapsed.communities}
-                aria-controls="community-home-communities-panel"
-                {...communityButtonGuardProps()}
-                onClick={toggleCommunitiesSectionFromHeader}
-                onKeyDown={handleCommunitiesHeaderKeyDown}
-                style={communitiesCollapseHeaderButton(isCompact)}
-              >
-                {collapsed.communities ? "View all communities" : "Hide full list"}
-              </button>
-              <button
-                type="button"
-                {...communityButtonGuardProps()}
-                onClick={(event) => openCommunityRoute(event, "/app/trust")}
-                style={communitiesCollapseHeaderButton(isCompact)}
-              >
-                View community readings
-              </button>
-            </div>
-          </div>
-        </div>
+              {sortedClans.length} {sortedClans.length === 1 ? "community" : "communities"}
+            </span>
+          </span>
+          <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
+            {collapsed.communities ? "›" : "⌄"}
+          </span>
+        </button>
 
         {!collapsed.communities ? (
           <div
@@ -3688,8 +3517,6 @@ function communityButtonGuardProps(): Pick<
               const clanId = getClanId(clan);
               const active = clanId > 0 && clanId === getClanId(selectedClan);
               const working = clanId > 0 && clanId === changingClanId;
-              const spotlightSubscribers = getClanSpotlightSubscriberCount(clan);
-              const vaultSubscribers = getClanVaultSubscriberCount(clan);
 
               return (
                 <div
@@ -3762,59 +3589,19 @@ function communityButtonGuardProps(): Pick<
                           lineHeight: isCompact ? 1.45 : 1.75,
                         }}
                       >
-                        Community no: {getClanGlobalId(clan)}
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          display: "flex",
-                          gap: 5,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        {active ? <span style={compactSignal(true)}>Selected</span> : null}
-                        <span style={compactSignal(false)}>
-                          Paid spotlight: {spotlightSubscribers}
-                        </span>
-                        <span style={compactSignal(false)}>
-                          Private vault: {vaultSubscribers}
-                        </span>
+                        Marketplace for this community
                       </div>
                     </div>
 
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: isCompact
-                          ? active
-                            ? "1fr"
-                            : "0.72fr 1.28fr"
-                          : "auto",
+                        gridTemplateColumns: "1fr",
                         justifyContent: isCompact ? "stretch" : "flex-end",
-                        gap: isCompact ? 6 : 8,
                         gridColumn: isCompact ? "1 / -1" : "auto",
                         marginTop: isCompact ? 2 : 0,
                       }}
                     >
-                      {!active ? (
-                        <button
-                          type="button"
-                          {...communityButtonGuardProps()}
-                          onClick={(event) => {
-                            consumeCommunityButtonEvent(event);
-                            void handleSelectCommunity(clan, false);
-                          }}
-                          disabled={working}
-                          style={{
-                            ...actionBtn("secondary", working),
-                            width: isCompact ? "100%" : undefined,
-                          }}
-                        >
-                          {working ? "Selecting..." : "Select"}
-                        </button>
-                      ) : null}
-
                       <button
                         type="button"
                         {...communityButtonGuardProps()}
