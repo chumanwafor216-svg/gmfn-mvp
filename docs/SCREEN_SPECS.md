@@ -190,7 +190,47 @@ Must show:
   - Grow Trusted Circle
   - Owner Spotlight Status
 
-Must not expose all owner tools on this page.
+Rules:
+- Community Home is an overview page, not a full content dump.
+- Do not expose all owner tools on this page.
+- Create community must appear here as one compact action only.
+- The full create-community process belongs in the StartCommunityPage 3-step wizard.
+- Owner Shop Control must stay a separate page, not an expanded panel inside Community Home.
+- Spotlight should show a compact live preview only when live. If no active spotlight exists, show a compact status/shortcut.
+- Secondary sections must be collapsed, grouped, or represented as compact rows.
+
+Role states to support:
+- Holder / Owner
+- Member
+- Visitor
+- Pending identity user
+- Verified identity user
+- Community admin
+- Shop owner
+- Marketplace participant
+
+Owner-only rows:
+- Owner Actions
+- Owner Shop Control
+- Grow Trusted Circle
+- Owner Spotlight Status
+
+Empty states to support:
+- no community yet
+- one community selected
+- multiple communities
+- GSN ID pending
+- GSN ID verified
+- shop not created
+- shop active
+- spotlight inactive
+- spotlight live
+- paid spotlight expired
+- no trusted circle yet
+
+Deferred deeper surfaces:
+- Owner Command Centre / Community Regiment page for deeper owner-side structure.
+- Trust Calendar / Event Timeline placement under Trust Events, What Matters Now, Notifications, or Focus Commitments.
 
 ## OwnerShopControlPage
 

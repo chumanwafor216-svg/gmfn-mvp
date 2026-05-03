@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import CommunityShopControlPanel from "../components/CommunityShopControlPanel";
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import NextActionGuide, {
@@ -99,7 +98,7 @@ type ActiveCommunitySpotlight = {
   createdAt: string;
 };
 
-const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v3";
+const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v4";
 const COMMUNITY_BRAND = {
   ink: "#F8FBFF",
   navy: "#081E32",
@@ -802,14 +801,105 @@ function communitiesCollapseHeaderButton(
   isCompact: boolean
 ): React.CSSProperties {
   return {
-    ...collapseHeaderButton(isCompact),
+    ...actionBtn("secondary"),
     zIndex: 25,
-    width: "100%",
-    minHeight: isCompact ? 64 : 52,
-    padding: isCompact ? "16px 18px" : "13px 18px",
-    borderRadius: isCompact ? 18 : 16,
+    width: isCompact ? "100%" : undefined,
+    minHeight: 44,
+    padding: "10px 14px",
+    borderRadius: 999,
     overflow: "hidden",
     isolation: "isolate",
+  };
+}
+
+function communitySearchInput(isCompact: boolean): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: isCompact ? 46 : 50,
+    boxSizing: "border-box",
+    borderRadius: 18,
+    border: "1px solid rgba(16,37,59,0.12)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.96) 100%)",
+    padding: "0 16px",
+    color: "#07172C",
+    fontSize: isCompact ? 14 : 15,
+    fontWeight: 760,
+    outline: "none",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 18px rgba(10,24,49,0.06)",
+  };
+}
+
+function communityQuickActionButton(primary = false): React.CSSProperties {
+  return {
+    ...actionBtn(primary ? "primary" : "secondary"),
+    minHeight: 84,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    gap: 12,
+    padding: "12px",
+    textAlign: "left",
+    background: primary
+      ? "linear-gradient(180deg, #133D63 0%, #226092 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
+    color: primary ? "#F8FBFF" : "#07172C",
+    border: primary
+      ? "1px solid rgba(255,255,255,0.18)"
+      : "1px solid rgba(16,37,59,0.10)",
+  };
+}
+
+function communityActionIcon(primary = false): React.CSSProperties {
+  return {
+    flex: "0 0 auto",
+    width: 44,
+    height: 44,
+    borderRadius: 18,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: primary
+      ? "rgba(255,255,255,0.12)"
+      : "linear-gradient(180deg, #EAF3FF 0%, #F5FAFF 100%)",
+    border: primary
+      ? "1px solid rgba(255,255,255,0.14)"
+      : "1px solid rgba(13,95,168,0.10)",
+    color: primary ? "#F2C766" : "#135A94",
+    fontSize: 22,
+    lineHeight: 1,
+    boxShadow: primary
+      ? "inset 0 1px 0 rgba(255,255,255,0.08)"
+      : "0 8px 16px rgba(13,95,168,0.08)",
+  };
+}
+
+function communityToolRowStyle(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 20,
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    gap: 12,
+    alignItems: "center",
+    minHeight: 72,
+    boxSizing: "border-box",
+    borderRadius: 18,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+    padding: "12px 14px",
+    color: "#07172C",
+    cursor: "pointer",
+    textAlign: "left",
+    boxShadow:
+      "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
+    appearance: "none",
+    WebkitAppearance: "none",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+    userSelect: "none",
   };
 }
 
@@ -924,7 +1014,7 @@ export default function CommunityHomePage() {
       readLocalJSON(COMMUNITY_HOME_COLLAPSE_KEY, defaultCollapseState())
     )
   );
-  const [shopControlOpenSignal, setShopControlOpenSignal] = useState(0);
+  const [actionSearch, setActionSearch] = useState("");
   const [guidedActionFamilyFocus, setGuidedActionFamilyFocus] = useState<
     string | null
   >(null);
@@ -1268,6 +1358,25 @@ export default function CommunityHomePage() {
     ],
     [selectedClanId, selectedClanName]
   );
+
+  const actionSearchMatch = useMemo(() => {
+    const query = actionSearch.trim().toLowerCase();
+    if (!query) return null;
+
+    return (
+      communityNextActionItems.find((item) => {
+        const haystack = [
+          item.label,
+          item.detail,
+          item.technical,
+          ...(item.keywords || []),
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      }) || null
+    );
+  }, [actionSearch, communityNextActionItems]);
 
   const firstCircleProgress = useMemo(
     () => getFirstCircleProgress(firstCircleDraft),
@@ -1857,11 +1966,14 @@ export default function CommunityHomePage() {
 
   function openCommunityShopControl(
     event: React.SyntheticEvent<HTMLElement> | undefined,
-    targetId = "community-home-shop-control"
+    targetId = ""
   ) {
     consumeCommunityButtonEvent(event);
-    setShopControlOpenSignal((prev) => prev + 1);
-    revealCommunityTarget([targetId, "community-home-shop-control"]);
+    const hash =
+      targetId === "community-shop-control-owner-shortcuts"
+        ? "#community-shop-control-owner-shortcuts"
+        : "";
+    navigateWithOrigin(navigate, `/app/shop-control${hash}`, location);
   }
 
   function openCommunitySpotlightWorkspace(
@@ -1869,8 +1981,7 @@ export default function CommunityHomePage() {
   ) {
     consumeCommunityButtonEvent(event);
     setGuidedActionFamilyFocus(null);
-    setCollapsed((prev) => ({ ...prev, spotlight: false }));
-    openCommunityShopControl(undefined, "community-shop-control-owner-shortcuts");
+    navigateWithOrigin(navigate, "/app/shop-control#shop-control-spotlight", location);
   }
 
   async function handleSelectCommunity(clan: ClanItem, openAfter = false) {
@@ -2071,6 +2182,32 @@ function communityButtonGuardProps(): Pick<
         consumeCommunityButtonEvent(event);
         break;
     }
+  }
+
+  function openCommunityNextAction(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    actionId: string
+  ) {
+    const item = communityNextActionItems.find((candidate) => candidate.id === actionId);
+    if (!item) {
+      consumeCommunityButtonEvent(event);
+      return;
+    }
+
+    handleCommunityNextAction(item, event);
+  }
+
+  function openSpotlightHandle(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    actionId: string
+  ) {
+    const item = spotlightHandleItems.find((candidate) => candidate.id === actionId);
+    if (!item) {
+      consumeCommunityButtonEvent(event);
+      return;
+    }
+
+    void handleSpotlightHandle(item, event);
   }
 
   async function openSelectedMarketplace(
@@ -2469,14 +2606,170 @@ function communityButtonGuardProps(): Pick<
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       {!spotlightGuidanceSuspendedView ? (
-        <NextActionGuide
-          storageKey="gmfn.communityHome.nextActionGuide.v1"
-          compact={isCompact}
-          items={communityNextActionItems}
-          resolveSelection={resolveCommunityNextAction}
-          onSelect={handleCommunityNextAction}
-          intro={communityNextActionIntro}
-        />
+        <section style={{ ...communityBlockCard("raised"), order: 10 }}>
+          <div
+            style={{
+              display: "grid",
+              gap: isCompact ? 10 : 12,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  color: "#07172C",
+                  fontSize: isCompact ? 22 : 26,
+                  fontWeight: 950,
+                  lineHeight: 1.12,
+                }}
+              >
+                What do you want to do next?
+              </div>
+            </div>
+
+            <input
+              value={actionSearch}
+              onChange={(event) => setActionSearch(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" || !actionSearchMatch) return;
+                openCommunityNextAction(event, actionSearchMatch.id);
+              }}
+              placeholder="Search actions..."
+              aria-label="Search community actions"
+              style={communitySearchInput(isCompact)}
+            />
+
+            {actionSearchMatch ? (
+              <button
+                type="button"
+                {...communityButtonGuardProps()}
+                onClick={(event) => openCommunityNextAction(event, actionSearchMatch.id)}
+                style={{
+                  ...communityToolRowStyle(),
+                  minHeight: 58,
+                  background:
+                    "linear-gradient(180deg, #F8FBFF 0%, #EAF3FF 100%)",
+                }}
+              >
+                <span style={communityActionIcon(false)}>⌕</span>
+                <span style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: "block",
+                      color: "#07172C",
+                      fontSize: 15,
+                      fontWeight: 920,
+                      lineHeight: 1.22,
+                    }}
+                  >
+                    Open {actionSearchMatch.label}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 3,
+                      color: "#617085",
+                      fontSize: 12.5,
+                      fontWeight: 720,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {actionSearchMatch.detail}
+                  </span>
+                </span>
+                <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 22 }}>
+                  ›
+                </span>
+              </button>
+            ) : null}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {[
+                {
+                  id: "choose-community",
+                  icon: "👥",
+                  title: "Choose community",
+                  detail: "Pick the community you want to work in now.",
+                  primary: true,
+                },
+                {
+                  id: "marketplace",
+                  icon: "🏪",
+                  title: "Enter marketplace",
+                  detail: selectedClanName
+                    ? `Open ${selectedClanName} marketplace.`
+                    : "Choose a community first.",
+                },
+                {
+                  id: "join-community",
+                  icon: "↪",
+                  title: "Join community",
+                  detail: "Use an invite or existing community path.",
+                },
+                {
+                  id: "circle",
+                  icon: "🤝",
+                  title: "Grow circle",
+                  detail: "Prepare trusted people before community work begins.",
+                },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  {...communityButtonGuardProps()}
+                  onClick={(event) => openCommunityNextAction(event, item.id)}
+                  style={communityQuickActionButton(Boolean(item.primary))}
+                >
+                  <span style={communityActionIcon(Boolean(item.primary))}>
+                    {item.icon}
+                  </span>
+                  <span style={{ minWidth: 0 }}>
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: 16,
+                        fontWeight: 940,
+                        lineHeight: 1.18,
+                      }}
+                    >
+                      {item.title}
+                    </span>
+                    <span
+                      style={{
+                        display: "block",
+                        marginTop: 5,
+                        color: item.primary ? "rgba(248,251,255,0.82)" : "#617085",
+                        fontSize: 12.5,
+                        fontWeight: 720,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {item.detail}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      marginLeft: "auto",
+                      color: item.primary ? "#F2C766" : "#1E5D91",
+                      fontSize: 22,
+                      fontWeight: 900,
+                    }}
+                  >
+                    ›
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </section>
       ) : null}
 
       {spotlightGuidanceSuspendedView ? (
@@ -2640,7 +2933,141 @@ function communityButtonGuardProps(): Pick<
 
       {!spotlightGuidanceSuspendedView ? (
       <>
-      <section style={{ ...communityBlockCard("blue"), order: 55 }}>
+      <section style={{ ...communityBlockCard("raised"), order: 30 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={sectionLabel()}>Compact sections</div>
+            <div
+              style={{
+                marginTop: 6,
+                color: "#07172C",
+                fontSize: isCompact ? 20 : 24,
+                fontWeight: 950,
+                lineHeight: 1.15,
+              }}
+            >
+              Owner work stays one tap away.
+            </div>
+          </div>
+          <span style={compactSignal(false)}>Overview only</span>
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          {[
+            {
+              icon: "🧭",
+              title: "Owner Actions",
+              detail:
+                "Start a community or move into deeper owner-side work.",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityRoute(event, "/app/clans"),
+            },
+            {
+              icon: "🏪",
+              title: "Owner Shop Control",
+              detail:
+                "Manage your one GSN shop, public face, products, and links.",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityShopControl(event),
+            },
+            {
+              icon: "🖼️",
+              title: "Shop Gallery",
+              detail:
+                "Add pictures and products before using spotlight or Vault.",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityRoute(event, "/app/shop-control?section=picture-gallery"),
+            },
+            {
+              icon: "⭐",
+              title: "Free Spotlight",
+              detail:
+                "Prepare the normal community spotlight for your selected shop.",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openSpotlightHandle(event, "spotlight-free"),
+            },
+            {
+              icon: "🏅",
+              title: "Subscription Spotlight",
+              detail:
+                "Open the paid visibility lane when priority display is needed.",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openSpotlightHandle(event, "spotlight-paid"),
+            },
+            {
+              icon: "🤝",
+              title: "Grow Your Trusted Circle",
+              detail:
+                "Invite trusted real-life people before deeper community work.",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityRoute(event, "/app/build-first-circle"),
+            },
+            {
+              icon: "📡",
+              title: "Owner Spotlight Status",
+              detail: activeCommunitySpotlight
+                ? "A live spotlight is visible for the selected community."
+                : "No spotlight is live right now. Open Shop Control to prepare one.",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunitySpotlightWorkspace(event),
+            },
+          ].map((item) => (
+            <button
+              key={item.title}
+              type="button"
+              {...communityButtonGuardProps()}
+              onClick={item.onClick}
+              style={communityToolRowStyle()}
+            >
+              <span style={communityActionIcon(false)}>{item.icon}</span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    color: "#07172C",
+                    fontSize: isCompact ? 15 : 16,
+                    fontWeight: 940,
+                    lineHeight: 1.18,
+                  }}
+                >
+                  {item.title}
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#617085",
+                    fontSize: isCompact ? 12.2 : 13,
+                    fontWeight: 720,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  {item.detail}
+                </span>
+              </span>
+              <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
+                ›
+              </span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section style={{ ...communityBlockCard("blue"), order: 55, display: "none" }}>
         <div>
           <div style={collapseHeaderText("center")}>
             <div style={sectionLabel("center")}>Owner actions from Community Home</div>
@@ -2758,13 +3185,11 @@ function communityButtonGuardProps(): Pick<
         ) : null}
       </section>
 
-      <div id="community-home-shop-control" style={{ order: 60 }}>
-        <CommunityShopControlPanel forceOpenSignal={shopControlOpenSignal} />
-      </div>
+      {null}
 
       <section
         id="community-home-grow-your-circle"
-        style={{ ...communityBlockCard("gold"), order: 70 }}
+        style={{ ...communityBlockCard("gold"), order: 70, display: "none" }}
       >
         <div
           style={collapseHeaderLayout(isCompact)}
@@ -2966,7 +3391,7 @@ function communityButtonGuardProps(): Pick<
 
       <section
         id="community-home-spotlight-gears"
-        style={{ ...communityBlockCard("summary"), order: 80 }}
+        style={{ ...communityBlockCard("summary"), order: 80, display: "none" }}
       >
         <div>
           <div style={collapseHeaderText("center")}>
@@ -3276,7 +3701,8 @@ function communityButtonGuardProps(): Pick<
                 textAlign: "center",
               }}
             >
-              Choose one community here, then hand off into its Marketplace.
+              Your selected community stays here. Open its Marketplace, or view
+              the full community list only when you need to change it.
             </div>
 
             <div
@@ -3291,6 +3717,85 @@ function communityButtonGuardProps(): Pick<
               <span style={badge(false)}>{sortedClans.length} communities</span>
               {!isCompact ? <span style={badge(false)}>One GSN ID</span> : null}
             </div>
+
+            {selectedClan ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "auto minmax(0, 1fr) auto",
+                  gap: 12,
+                  alignItems: "center",
+                  textAlign: "left",
+                  borderRadius: 18,
+                  border: "1px solid rgba(16,37,59,0.10)",
+                  background:
+                    "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
+                  padding: isCompact ? 12 : 14,
+                  boxShadow:
+                    "0 10px 22px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
+                }}
+              >
+                <span style={communityActionIcon(false)}>🏠</span>
+                <span style={{ minWidth: 0 }}>
+                  <span
+                    style={{
+                      display: "block",
+                      color: "#07172C",
+                      fontSize: isCompact ? 16 : 18,
+                      fontWeight: 950,
+                      lineHeight: 1.18,
+                    }}
+                  >
+                    {getClanName(selectedClan)}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 5,
+                      color: "#617085",
+                      fontSize: isCompact ? 12.5 : 13.5,
+                      fontWeight: 760,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    Community no: {getClanGlobalId(selectedClan)}
+                  </span>
+                  <span
+                    style={{
+                      display: "flex",
+                      marginTop: 8,
+                      gap: 6,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={compactSignal(true)}>Selected</span>
+                    <span style={compactSignal(false)}>
+                      Paid spotlight: {getClanSpotlightSubscriberCount(selectedClan)}
+                    </span>
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  {...communityButtonGuardProps()}
+                  onClick={(event) => void openSelectedMarketplace(event)}
+                  disabled={!selectedClanId || changingClanId === selectedClanId}
+                  style={{
+                    ...actionBtn(
+                      "primary",
+                      !selectedClanId || changingClanId === selectedClanId
+                    ),
+                    width: isCompact ? "100%" : undefined,
+                  }}
+                >
+                  {changingClanId === selectedClanId
+                    ? "Opening..."
+                    : "Open Marketplace"}
+                </button>
+              </div>
+            ) : null}
             <div style={collapseButtonRow()}>
               <button
                 type="button"
@@ -3301,7 +3806,7 @@ function communityButtonGuardProps(): Pick<
                 onKeyDown={handleCommunitiesHeaderKeyDown}
                 style={communitiesCollapseHeaderButton(isCompact)}
               >
-                {collapsed.communities ? "Open communities" : "Collapse communities"}
+                {collapsed.communities ? "View all communities" : "Hide full list"}
               </button>
             </div>
           </div>
@@ -3381,7 +3886,7 @@ function communityButtonGuardProps(): Pick<
                     <div style={{ gridColumn: isCompact ? "1 / -1" : "auto" }}>
                       <div
                         style={{
-                          color: "#F8FBFF",
+                          color: "#07172C",
                           fontSize: isCompact ? 15 : 17,
                           fontWeight: 900,
                           lineHeight: 1.35,

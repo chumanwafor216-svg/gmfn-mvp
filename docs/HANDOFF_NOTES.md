@@ -19632,3 +19632,29 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/dashboard`
   - no backend/auth/schema changes
+
+### Community Home v1 compact overview lock (2026-05-03)
+
+- Owner supplied a locked Community Home / Owner Shop Control direction:
+  - Community Home must be an overview, not a content dump.
+  - Owner Shop Control must stay as its own deeper page.
+  - Create Community must appear on Community Home as one compact action, while the full process belongs in a 3-step Start Community wizard.
+  - Role states, empty states, and the later Owner Command Centre / Community Regiment remain to be designed.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - replaced the normal visible `NextActionGuide` surface with a compact action finder.
+  - kept four primary quick actions visible: Choose community, Enter marketplace, Join community, Grow circle.
+  - added a selected-community preview inside `Your communities` with `Open Marketplace`.
+  - changed the full community list behind a smaller `View all communities` / `Hide full list` control.
+  - moved owner-side work into compact rows: Owner Actions, Owner Shop Control, Shop Gallery, Free Spotlight, Subscription Spotlight, Grow Your Trusted Circle, Owner Spotlight Status.
+  - Owner Shop Control and spotlight rows now route to `/app/shop-control` / shop-control anchors instead of exposing the full shop-control panel inside Community Home.
+  - reset the Community Home collapse storage key to `gmfn.communityHome.sections.v4` so old phone-expanded local states do not keep reopening the busy version.
+- Updated `docs/SCREEN_SPECS.md`:
+  - recorded Community Home overview rules, owner-only rows, missing role states, missing empty states, and deferred Owner Command Centre / Trust Calendar surfaces.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/community`
+  - no backend/auth/schema changes
