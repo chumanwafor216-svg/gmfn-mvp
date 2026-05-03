@@ -19508,3 +19508,24 @@ GSN-branded invite composer and invite-entry continuity.
   - `/app/dashboard`
   - shared GSN SVG mark components
   - no backend/auth/schema/database changes
+
+### Dashboard accordion-row follow-up (2026-05-03)
+
+- Owner feedback: the dashboard action and attention blocks should match the supplied phone reference more closely, with compact one-line rows that expand only when tapped.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - changed `What do you want to do next?` from an always-open button grid into a compact accordion row.
+  - the row now shows an icon, short user-facing description, and a chevron; tapping opens the action buttons.
+  - moved the primary and secondary dashboard action buttons behind that expanded state so the collapsed dashboard is calmer on phone.
+  - changed `What needs your attention` into the same accordion-row pattern, with a bell icon, alert summary, status chip, and rotating chevron.
+  - the detailed alert card now appears only when the attention row is expanded.
+  - added a section signal for `What do you want to do next?`.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Important caveat:
+  - `DashboardPage.tsx` still has older local dirty UI-state edits in the worktree; when committing, stage only the accordion-related state reset/hunks needed for this change.
+- Scope:
+  - `/app/dashboard`
+  - no backend/auth/schema changes

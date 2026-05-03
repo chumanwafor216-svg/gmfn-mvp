@@ -265,7 +265,7 @@ type FocusCommitmentSummary = {
   disciplineLine: string;
 };
 
-const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v4";
+const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v5";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v2";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
@@ -675,6 +675,8 @@ function dashboardActionSignal(label: string): string {
 
 function dashboardSectionSignal(label: string): string {
   switch (label) {
+    case "What do you want to do next?":
+      return "\uD83E\uDDED";
     case "Your Identity Passport":
       return "\uD83D\uDEE1\uFE0F";
     case "Your Spotlight":
@@ -6951,56 +6953,103 @@ export default function DashboardPage() {
             "0 14px 28px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
         }}
       >
-        <div
+        <button
+          type="button"
+          aria-expanded={uiState.appsExpanded}
+          onClick={(event) =>
+            runDashboardUiMutation(event, () =>
+              updateUiState({ appsExpanded: !uiState.appsExpanded })
+            )
+          }
+          onPointerDown={consumeDashboardPointerEvent}
           style={{
-            display: "flex",
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0, 1fr) auto",
             alignItems: "center",
-            justifyContent: "space-between",
-            gap: 10,
-            marginBottom: isPhone ? 12 : 14,
+            gap: isPhone ? 10 : 12,
+            minHeight: isPhone ? 58 : 62,
+            padding: isPhone ? "10px 12px" : "12px 14px",
+            borderRadius: isPhone ? 17 : 18,
+            border: "1px solid rgba(15,59,116,0.12)",
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+            color: DASHBOARD_BRAND.ink,
+            boxShadow:
+              "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
+            cursor: "pointer",
+            touchAction: "manipulation",
+            textAlign: "left",
           }}
         >
-          <div
+          <span
+            aria-hidden="true"
             style={{
-              color: DASHBOARD_BRAND.ink,
-              fontSize: isPhone ? 18 : 22,
-              fontWeight: 1000,
-              lineHeight: 1.15,
-            }}
-          >
-            What do you want to do next?
-          </div>
-
-          <button
-            type="button"
-            onClick={(event) =>
-              runDashboardUiMutation(event, () =>
-                updateUiState({ appsExpanded: !uiState.appsExpanded })
-              )
-            }
-            onPointerDown={consumeDashboardPointerEvent}
-            style={{
-              minHeight: isPhone ? 38 : 40,
-              padding: isPhone ? "8px 12px" : "8px 14px",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: isPhone ? 38 : 42,
+              height: isPhone ? 38 : 42,
               borderRadius: 999,
-              border: "1px solid rgba(15,59,116,0.14)",
               background:
-                "linear-gradient(180deg, #FFFFFF 0%, #F2F8FF 100%)",
-              color: DASHBOARD_BRAND.accentDeep,
+                "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+              border: "1px solid rgba(11,99,209,0.16)",
               boxShadow:
-                "0 8px 16px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
-              fontSize: isPhone ? 12 : 13,
-              fontWeight: 950,
-              cursor: "pointer",
-              whiteSpace: "nowrap",
+                "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+              fontSize: isPhone ? 18 : 20,
+              lineHeight: 1,
             }}
           >
-            {uiState.appsExpanded ? "Close" : "+ More"}
-          </button>
-        </div>
+            {dashboardSectionSignal("What do you want to do next?")}
+          </span>
+          <span style={{ minWidth: 0 }}>
+            <span
+              style={{
+                display: "block",
+                fontSize: isPhone ? 17 : 21,
+                fontWeight: 1000,
+                lineHeight: 1.1,
+              }}
+            >
+              What do you want to do next?
+            </span>
+            <span
+              style={{
+                display: "block",
+                marginTop: 4,
+                color: DASHBOARD_BRAND.helper,
+                fontSize: isPhone ? 12 : 13,
+                fontWeight: 750,
+                lineHeight: 1.25,
+              }}
+            >
+              Marketplace, demand, spotlight, trust, and more.
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: isPhone ? 30 : 34,
+              height: isPhone ? 30 : 34,
+              borderRadius: 999,
+              border: "1px solid rgba(15,59,116,0.12)",
+              color: DASHBOARD_BRAND.accentDeep,
+              fontSize: isPhone ? 18 : 20,
+              fontWeight: 1000,
+              transform: uiState.appsExpanded ? "rotate(90deg)" : "rotate(0deg)",
+              transition: "transform 160ms ease",
+            }}
+          >
+            &gt;
+          </span>
+        </button>
 
+        {uiState.appsExpanded ? (
         <div
           style={{
+            marginTop: isPhone ? 10 : 12,
             display: "grid",
             gridTemplateColumns: isPhone
               ? "repeat(2, minmax(0, 1fr))"
@@ -7085,6 +7134,7 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
+        ) : null}
 
         {uiState.appsExpanded ? (
           <div
@@ -8941,94 +8991,128 @@ export default function DashboardPage() {
             opacity: 0.88,
           }}
         />
-        <div
+        <button
+          type="button"
+          aria-expanded={uiState.inboxExpanded}
+          onClick={(event) =>
+            runDashboardUiMutation(event, () =>
+              updateUiState({ inboxExpanded: !uiState.inboxExpanded })
+            )
+          }
+          onPointerDown={consumeDashboardPointerEvent}
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0, 1fr) auto auto",
             gap: isPhone ? 8 : 12,
             alignItems: "center",
-            flexWrap: "wrap",
+            minHeight: isPhone ? 58 : 62,
+            padding: isPhone ? "9px 10px" : "10px 12px",
+            borderRadius: isPhone ? 17 : 18,
+            border: notificationSurfaceChrome.chipBorder,
+            background: notificationSurfaceChrome.chipBg,
+            color: DASHBOARD_BRAND.ink,
+            boxShadow:
+              "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
+            cursor: "pointer",
+            touchAction: "manipulation",
+            textAlign: "left",
           }}
         >
-          <div>
-              <DashboardSectionLabel label="What needs your attention" />
-            <div
-              style={{
-                marginTop: 2,
-                ...helperText(),
-                ...dashboardPhoneHelper,
-                maxWidth: 420,
-              }}
-            >
-              See what needs your attention now.
-            </div>
-          </div>
-
-          <div
+          <span
+            aria-hidden="true"
             style={{
-              display: "flex",
-              gap: isPhone ? 6 : 10,
-              flexWrap: "wrap",
+              display: "inline-flex",
               alignItems: "center",
-              justifyContent: isPhone ? "stretch" : "flex-end",
-              flex: isPhone ? "1 1 100%" : undefined,
+              justifyContent: "center",
+              width: isPhone ? 38 : 42,
+              height: isPhone ? 38 : 42,
+              borderRadius: 999,
+              background: notificationSurfaceChrome.statusBg,
+              border: notificationSurfaceChrome.chipSelectedBorder,
+              color: notificationSurfaceChrome.statusText,
+              boxShadow:
+                "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+              fontSize: isPhone ? 18 : 20,
+              lineHeight: 1,
             }}
           >
-            <span
-              style={{
-                ...badge(false),
-                minHeight: isPhone ? 42 : 40,
-                minWidth: isPhone ? 0 : 126,
-                justifyContent: "center",
-                padding: isPhone ? "8px 12px" : "8px 14px",
-                background: notificationSurfaceChrome.chipBg,
-                border: notificationSurfaceChrome.chipBorder,
-                color: "#123055",
-                flex: isPhone ? "1 1 0" : "0 0 auto",
-              }}
-            >
-              <span aria-hidden="true" style={{ marginRight: 5 }}>
-                {dashboardSectionSignal("What needs your attention")}
-              </span>
-              Your alerts
-            </span>
-            <span
-              style={{
-                ...badge(false),
-                minHeight: isPhone ? 42 : 40,
-                minWidth: isPhone ? 52 : 56,
-                justifyContent: "center",
-                padding: isPhone ? "8px 12px" : "8px 14px",
-                background: notificationSurfaceChrome.statusBg,
-                border: notificationSurfaceChrome.chipSelectedBorder,
-                color: notificationSurfaceChrome.statusText,
-              }}
-            >
-              {dashboardNoticeTotalCount}
-            </span>
-            <span
-              style={{
-                ...badge(false),
-                minHeight: isPhone ? 42 : 40,
-                minWidth: isPhone ? 90 : 104,
-                justifyContent: "center",
-                padding: isPhone ? "8px 12px" : "8px 14px",
-                background: notificationSurfaceChrome.statusBg,
-                border: notificationSurfaceChrome.chipSelectedBorder,
-                color: notificationSurfaceChrome.statusText,
-              }}
-            >
-              {dashboardNoticeSummary.counts.actNow > 0
-                ? `\u26A0\uFE0F Act now ${dashboardNoticeSummary.counts.actNow}`
-                : dashboardNoticeSummary.counts.unread > 0
-                ? `\uD83D\uDC41\uFE0F Unread ${dashboardNoticeSummary.counts.unread}`
-                : dashboardNoticeTotalCount > 0
-                ? "\u23F3 Waiting"
-                : "\u2705 Clear"}
-            </span>
-          </div>
-        </div>
+            {dashboardSectionSignal("What needs your attention")}
+          </span>
 
+          <span style={{ minWidth: 0 }}>
+            <span
+              style={{
+                display: "block",
+                color: DASHBOARD_BRAND.ink,
+                fontSize: isPhone ? 17 : 21,
+                fontWeight: 1000,
+                lineHeight: 1.1,
+              }}
+            >
+              What needs your attention
+            </span>
+            <span
+              style={{
+                display: "block",
+                marginTop: 4,
+                color: DASHBOARD_BRAND.helper,
+                fontSize: isPhone ? 12 : 13,
+                fontWeight: 750,
+                lineHeight: 1.25,
+              }}
+            >
+              {dashboardNoticeTotalCount > 0
+                ? `${dashboardNoticeTotalCount} alert${
+                    dashboardNoticeTotalCount === 1 ? "" : "s"
+                  } ready for you.`
+                : "No new alert is waiting for you."}
+            </span>
+          </span>
+
+          <span
+            style={{
+              ...badge(false),
+              minHeight: isPhone ? 34 : 36,
+              minWidth: isPhone ? 82 : 104,
+              justifyContent: "center",
+              padding: isPhone ? "7px 9px" : "8px 12px",
+              background: notificationSurfaceChrome.statusBg,
+              border: notificationSurfaceChrome.chipSelectedBorder,
+              color: notificationSurfaceChrome.statusText,
+            }}
+          >
+            {dashboardNoticeSummary.counts.actNow > 0
+              ? `\u26A0\uFE0F Act now ${dashboardNoticeSummary.counts.actNow}`
+              : dashboardNoticeSummary.counts.unread > 0
+              ? `\uD83D\uDC41\uFE0F Unread ${dashboardNoticeSummary.counts.unread}`
+              : dashboardNoticeTotalCount > 0
+              ? "\u23F3 Waiting"
+              : "\u2705 Clear"}
+          </span>
+
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: isPhone ? 30 : 34,
+              height: isPhone ? 30 : 34,
+              borderRadius: 999,
+              border: "1px solid rgba(15,59,116,0.12)",
+              color: DASHBOARD_BRAND.accentDeep,
+              fontSize: isPhone ? 18 : 20,
+              fontWeight: 1000,
+              transform: uiState.inboxExpanded ? "rotate(90deg)" : "rotate(0deg)",
+              transition: "transform 160ms ease",
+            }}
+          >
+            &gt;
+          </span>
+        </button>
+
+        {uiState.inboxExpanded ? (
         <div
           style={{
             marginTop: isPhone ? 10 : 16,
@@ -9273,6 +9357,7 @@ export default function DashboardPage() {
           ) : null}
 
         </div>
+        ) : null}
       </section>
 
       <section
