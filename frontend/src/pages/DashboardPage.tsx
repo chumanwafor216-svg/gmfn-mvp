@@ -57,6 +57,11 @@ import {
   SPOTLIGHT_PILOT_ROTATION_MS,
   SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
 } from "../lib/spotlightPilot";
+import {
+  actionTapGuardProps,
+  brandStableTapTarget,
+  stopActionTap,
+} from "../styles/gmfnBrand";
 
 type SpotlightItem = {
   id?: number;
@@ -503,6 +508,7 @@ function statTile(
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -528,14 +534,12 @@ function primaryBtn(disabled = false): React.CSSProperties {
     boxShadow: disabled
       ? "none"
       : "0 16px 30px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
   };
 }
 
 function secondaryBtn(disabled = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -560,14 +564,12 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     boxShadow: disabled
       ? "none"
       : "0 10px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
   };
 }
 
 function subtleBtn(disabled = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -591,9 +593,6 @@ function subtleBtn(disabled = false): React.CSSProperties {
     boxShadow: disabled
       ? "none"
       : "0 8px 18px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
   };
 }
 
@@ -4781,20 +4780,14 @@ export default function DashboardPage() {
   function consumeDashboardButtonEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
-    if (!event) return;
-
-    event.stopPropagation();
+    stopActionTap(event);
   }
 
   function dashboardButtonGuardProps(): Pick<
     React.HTMLAttributes<HTMLElement>,
-    "onPointerDown" | "onTouchStart" | "onMouseDown"
+    "onPointerDown" | "onMouseDown"
   > {
-    return {
-      onPointerDown: consumeDashboardButtonEvent,
-      onTouchStart: consumeDashboardButtonEvent,
-      onMouseDown: consumeDashboardButtonEvent,
-    };
+    return actionTapGuardProps();
   }
 
   function openDashboardRoute(
@@ -5465,9 +5458,8 @@ export default function DashboardPage() {
     border: string,
     background: string
   ): React.CSSProperties => ({
+    ...brandStableTapTarget(),
     width: "100%",
-    appearance: "none",
-    WebkitAppearance: "none",
     display: "grid",
     gridTemplateColumns: isPhone
       ? "auto minmax(0, 1fr) auto"
@@ -5483,11 +5475,9 @@ export default function DashboardPage() {
     boxShadow:
       "0 14px 26px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.94)",
     cursor: "pointer",
-    touchAction: "manipulation",
     textAlign: "left",
-    userSelect: "none",
-    WebkitTapHighlightColor: "transparent",
     fontFamily: "inherit",
+    overflow: "hidden",
     transition:
       "box-shadow 140ms ease, border-color 140ms ease, background 140ms ease",
   });
@@ -5561,8 +5551,7 @@ export default function DashboardPage() {
     whiteSpace: "nowrap",
   });
   const dashboardLauncherButtonStyle: React.CSSProperties = {
-    appearance: "none",
-    WebkitAppearance: "none",
+    ...brandStableTapTarget(),
     minHeight: isPhone ? 70 : 68,
     height: isPhone ? 70 : undefined,
     display: "grid",
@@ -5581,11 +5570,8 @@ export default function DashboardPage() {
     fontSize: isPhone ? 12.6 : 14.2,
     fontWeight: 900,
     cursor: "pointer",
-    touchAction: "manipulation",
     textAlign: "left",
     overflow: "hidden",
-    userSelect: "none",
-    WebkitTapHighlightColor: "transparent",
     fontFamily: "inherit",
   };
   const attentionConnectionText = isPhone
@@ -5654,7 +5640,6 @@ export default function DashboardPage() {
             <div
               onPointerDown={consumeDashboardPointerEvent}
               onMouseDown={consumeDashboardPointerEvent}
-              onTouchStart={consumeDashboardPointerEvent}
               onClick={consumeDashboardPointerEvent}
               style={{
                 position: "fixed",
@@ -6121,7 +6106,6 @@ export default function DashboardPage() {
               }
               onPointerDown={consumeDashboardPointerEvent}
               onMouseDown={consumeDashboardPointerEvent}
-              onTouchStart={consumeDashboardPointerEvent}
               style={{
                 position: "fixed",
                 top: isCompact ? 12 : 18,

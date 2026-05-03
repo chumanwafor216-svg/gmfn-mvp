@@ -34,6 +34,11 @@ import {
   SPOTLIGHT_PILOT_ROTATION_MS,
   SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
 } from "../lib/spotlightPilot";
+import {
+  actionTapGuardProps,
+  brandStableTapTarget,
+  stopActionTap,
+} from "../styles/gmfnBrand";
 
 type ClanItem = {
   id?: number;
@@ -472,16 +477,9 @@ function actionBtn(
   disabled = false
 ): React.CSSProperties {
   const stableActionLayer: React.CSSProperties = {
+    ...brandStableTapTarget(),
     position: "relative",
     zIndex: 20,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    pointerEvents: "auto",
-    outlineOffset: 4,
-    appearance: "none",
-    WebkitAppearance: "none",
-    WebkitTapHighlightColor: "transparent",
-    touchAction: "manipulation",
   };
 
   if (kind === "primary") {
@@ -515,9 +513,7 @@ function actionBtn(
       boxShadow: disabled
         ? "none"
         : "0 5px 0 rgba(7,24,39,0.22), 0 14px 26px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
-      touchAction: "manipulation",
       lineHeight: 1.18,
-      userSelect: "none",
     };
   }
 
@@ -548,9 +544,7 @@ function actionBtn(
       opacity: disabled ? 0.86 : 1,
       boxShadow:
         "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
-      touchAction: "manipulation",
       lineHeight: 1.18,
-      userSelect: "none",
     };
   }
 
@@ -581,17 +575,15 @@ function actionBtn(
     boxShadow: disabled
       ? "none"
       : "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
-    touchAction: "manipulation",
     lineHeight: 1.18,
-    userSelect: "none",
   };
 }
 
 function collapseToggle(): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     position: "relative",
     zIndex: 30,
-    isolation: "isolate",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -614,16 +606,8 @@ function collapseToggle(): React.CSSProperties {
     overflowWrap: "anywhere",
     boxShadow:
       "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
-    touchAction: "manipulation",
     lineHeight: 1.18,
     outline: "none",
-    outlineOffset: 4,
-    appearance: "none",
-    WebkitAppearance: "none",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    transform: "translateZ(0)",
   };
 }
 
@@ -713,6 +697,7 @@ function communityActionIcon(primary = false): React.CSSProperties {
 
 function communityToolRowStyle(): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     position: "relative",
     zIndex: 20,
     width: "100%",
@@ -732,11 +717,6 @@ function communityToolRowStyle(): React.CSSProperties {
     textAlign: "left",
     boxShadow:
       "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
-    appearance: "none",
-    WebkitAppearance: "none",
-    WebkitTapHighlightColor: "transparent",
-    touchAction: "manipulation",
-    userSelect: "none",
   };
 }
 
@@ -1835,20 +1815,14 @@ export default function CommunityHomePage() {
   function consumeCommunityButtonEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
-    if (!event) return;
-
-    event.stopPropagation();
+    stopActionTap(event);
   }
 
 function communityButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
-  return {
-    onPointerDown: consumeCommunityButtonEvent,
-    onTouchStart: consumeCommunityButtonEvent,
-    onMouseDown: consumeCommunityButtonEvent,
-  };
+  return actionTapGuardProps();
 }
 
   function openCommunityRoute(

@@ -19727,3 +19727,21 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/community`
   - no backend/auth/schema changes
+
+### System button stability audit for dashboard/community path (2026-05-03)
+
+- Owner feedback: buttons from Dashboard through Community Home and the Community inner pages felt jumpy and sometimes required repeated taps on phone.
+- Audit finding:
+  - Button styles were duplicated across shared components, Dashboard, Community Home, Shop Control, and the legacy Community Shop Control panel.
+  - Several audited controls used both pointer and touch-start guards. The action still ran on click, but the duplicate mobile event layer made nested cards/links feel less settled.
+- Updated shared frontend button stability:
+  - added `brandStableTapTarget`, `stopActionTap`, and `actionTapGuardProps` to `frontend/src/styles/gmfnBrand.ts`.
+  - applied the shared stable tap target to `OriginLink`, `PageTopNav`, `uiKit` buttons, and the mobile bottom rail.
+  - applied the same stable tap target to Dashboard, Community Home, Shop Control, and `CommunityShopControlPanel` route-local button helpers.
+  - removed redundant `onTouchStart` guards from the audited Dashboard/Community/Shop path while keeping pointer/mouse propagation guards.
+- Scope:
+  - `/app/dashboard`
+  - `/app/community`
+  - `/app/shop-control`
+  - shared frontend link/button/top-nav/bottom-nav chrome
+  - no backend/auth/schema changes

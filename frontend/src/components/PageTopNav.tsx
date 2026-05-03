@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import OriginLink from "./OriginLink";
+import { brandStableTapTarget } from "../styles/gmfnBrand";
 
 type NavItem = {
   label: string;
@@ -61,6 +62,7 @@ function actionBtn(
 ): React.CSSProperties {
   const compactAction: React.CSSProperties = compact
     ? {
+        ...brandStableTapTarget(),
         flex: "0 0 auto",
         minHeight: kind === "soft" ? 42 : 44,
         minWidth: kind === "soft" ? 84 : 96,
@@ -68,14 +70,14 @@ function actionBtn(
         borderRadius: 999,
         fontSize: kind === "soft" ? 12 : 12.5,
         whiteSpace: "nowrap",
-        touchAction: "manipulation",
       }
     : {
-        touchAction: "manipulation",
+        ...brandStableTapTarget(),
       };
 
   if (kind === "primary") {
     return {
+      ...brandStableTapTarget(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -92,13 +94,6 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
-      pointerEvents: "auto",
-      position: "relative",
-      zIndex: 2,
-      isolation: "isolate",
-      transform: "translateZ(0)",
       outlineOffset: 4,
       boxShadow: disabled
         ? "none"
@@ -109,6 +104,7 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
+      ...brandStableTapTarget(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -125,13 +121,6 @@ function actionBtn(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
-      pointerEvents: "auto",
-      position: "relative",
-      zIndex: 2,
-      isolation: "isolate",
-      transform: "translateZ(0)",
       outlineOffset: 4,
       boxShadow:
         "0 10px 22px rgba(4,19,38,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
@@ -140,6 +129,7 @@ function actionBtn(
   }
 
   return {
+    ...brandStableTapTarget(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -156,13 +146,6 @@ function actionBtn(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
     outlineOffset: 4,
     boxShadow:
       "0 12px 24px rgba(4,19,38,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",

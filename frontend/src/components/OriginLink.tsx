@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, type LinkProps, useLocation } from "react-router-dom";
+import { brandStableTapTarget, stopActionTap } from "../styles/gmfnBrand";
 
 type OriginLinkProps = Omit<LinkProps, "to"> & {
   to: string;
@@ -52,7 +53,7 @@ function guardLinkTap(
   event: React.SyntheticEvent,
   handler?: (event: any) => void
 ) {
-  event.stopPropagation();
+  stopActionTap(event);
   if (typeof handler === "function") {
     handler(event);
   }
@@ -71,14 +72,7 @@ export default function OriginLink(props: OriginLinkProps) {
   const location = useLocation();
   const rawTo = String(to || "").trim();
   const baseStableStyle: React.CSSProperties = {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    WebkitTapHighlightColor: "transparent",
-    touchAction: "manipulation",
-    userSelect: "none",
-    transform: "translateZ(0)",
-    outlineOffset: 4,
+    ...brandStableTapTarget(),
   };
   const stableStyle =
     rest.style && typeof rest.style === "object"
@@ -95,7 +89,6 @@ export default function OriginLink(props: OriginLinkProps) {
         {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
         style={stableStyle}
         onPointerDown={(event) => guardLinkTap(event, rest.onPointerDown)}
-        onTouchStart={(event) => guardLinkTap(event, rest.onTouchStart)}
         onMouseDown={(event) => guardLinkTap(event, rest.onMouseDown)}
         onClick={(event) => guardLinkTap(event, rest.onClick)}
       >
@@ -130,7 +123,6 @@ export default function OriginLink(props: OriginLinkProps) {
       state={nextState}
       style={stableStyle}
       onPointerDown={(event) => guardLinkTap(event, rest.onPointerDown)}
-      onTouchStart={(event) => guardLinkTap(event, rest.onTouchStart)}
       onMouseDown={(event) => guardLinkTap(event, rest.onMouseDown)}
       onClick={(event) => guardLinkTap(event, rest.onClick)}
     >

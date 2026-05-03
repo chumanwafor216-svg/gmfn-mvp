@@ -27,6 +27,10 @@ import {
 } from "../lib/spotlightPilot";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
+import {
+  actionTapGuardProps,
+  brandStableTapTarget,
+} from "../styles/gmfnBrand";
 
 type ShopRecord = {
   id: number;
@@ -373,33 +377,15 @@ function badge(primary = false): React.CSSProperties {
 }
 
 const stableTapTarget: React.CSSProperties = {
-  position: "relative",
+  ...brandStableTapTarget(),
   zIndex: 10,
-  isolation: "isolate",
-  pointerEvents: "auto",
-  WebkitTapHighlightColor: "transparent",
-  touchAction: "manipulation",
-  userSelect: "none",
-  appearance: "none",
-  WebkitAppearance: "none",
-  boxSizing: "border-box",
-  outlineOffset: 4,
-  transform: "translateZ(0)",
 };
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
-  return {
-    onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
+  return actionTapGuardProps();
 }
 
 function actionBtn(

@@ -133,12 +133,48 @@ export function brandBadge(primary = false): React.CSSProperties {
   };
 }
 
+export function brandStableTapTarget(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
+    pointerEvents: "auto",
+    appearance: "none",
+    WebkitAppearance: "none",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+    userSelect: "none",
+    transform: "translateZ(0)",
+    backfaceVisibility: "hidden",
+    outlineOffset: 4,
+    contain: "layout paint",
+  };
+}
+
+export function stopActionTap(event?: React.SyntheticEvent) {
+  event?.stopPropagation();
+}
+
+export function actionTapGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onMouseDown"
+> {
+  return {
+    onPointerDown: stopActionTap,
+    onMouseDown: stopActionTap,
+  };
+}
+
 export function brandActionButton(
   kind: BrandActionKind = "secondary",
   disabled = false
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
+      ...brandStableTapTarget(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -157,17 +193,6 @@ export function brandActionButton(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      touchAction: "manipulation",
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
-      pointerEvents: "auto",
-      position: "relative",
-      zIndex: 1,
-      isolation: "isolate",
-      transform: "translateZ(0)",
-      appearance: "none",
-      WebkitAppearance: "none",
-      outlineOffset: 4,
       boxShadow:
         disabled
           ? "none"
@@ -177,6 +202,7 @@ export function brandActionButton(
 
   if (kind === "soft") {
     return {
+      ...brandStableTapTarget(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -194,23 +220,13 @@ export function brandActionButton(
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      touchAction: "manipulation",
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
-      pointerEvents: "auto",
-      position: "relative",
-      zIndex: 1,
-      isolation: "isolate",
-      transform: "translateZ(0)",
-      appearance: "none",
-      WebkitAppearance: "none",
-      outlineOffset: 4,
       boxShadow:
         "0 12px 24px rgba(7,20,36,0.055), inset 0 1px 0 rgba(255,255,255,0.84)",
     };
   }
 
   return {
+    ...brandStableTapTarget(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -228,17 +244,6 @@ export function brandActionButton(
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    position: "relative",
-    zIndex: 1,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    appearance: "none",
-    WebkitAppearance: "none",
-    outlineOffset: 4,
     boxShadow:
       "0 14px 28px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
   };

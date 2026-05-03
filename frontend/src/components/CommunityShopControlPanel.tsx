@@ -3,6 +3,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import {
+  actionTapGuardProps,
+  brandStableTapTarget,
+} from "../styles/gmfnBrand";
 
 type NoticeTone = "success" | "error";
 
@@ -295,17 +299,9 @@ function actionBtn(
   disabled = false
 ): React.CSSProperties {
   const stableTapLayer: React.CSSProperties = {
+    ...brandStableTapTarget(),
     position: "relative",
     zIndex: 20,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    pointerEvents: "auto",
-    appearance: "none",
-    WebkitAppearance: "none",
-    WebkitTapHighlightColor: "transparent",
-    touchAction: "manipulation",
-    userSelect: "none",
-    outlineOffset: 4,
   };
 
   if (kind === "primary") {
@@ -400,18 +396,10 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     flex: "0 0 auto",
-    touchAction: "manipulation",
     lineHeight: 1.18,
     boxShadow:
       "0 5px 0 rgba(79,97,120,0.16), 0 13px 26px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -9px 16px rgba(15,59,116,0.08)",
     outline: "none",
-    outlineOffset: 4,
-    appearance: "none",
-    WebkitAppearance: "none",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    transform: "translateZ(0)",
   };
 }
 
@@ -458,19 +446,11 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function stopPanelTap(event: React.SyntheticEvent) {
-  event.stopPropagation();
-}
-
 function panelButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
-  return {
-    onPointerDown: stopPanelTap,
-    onTouchStart: stopPanelTap,
-    onMouseDown: stopPanelTap,
-  };
+  return actionTapGuardProps();
 }
 
 export default function CommunityShopControlPanel({

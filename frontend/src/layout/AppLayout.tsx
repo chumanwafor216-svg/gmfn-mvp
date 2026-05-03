@@ -8,7 +8,12 @@ import {
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
 import OriginLink from "../components/OriginLink";
-import { gmfnBrand } from "../styles/gmfnBrand";
+import {
+  actionTapGuardProps,
+  brandStableTapTarget,
+  gmfnBrand,
+  stopActionTap,
+} from "../styles/gmfnBrand";
 
 type NavLinkItem = {
   label: string;
@@ -1165,6 +1170,7 @@ function bottomNav(): React.CSSProperties {
 
 function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     flex: "0 0 auto",
     minWidth: 62,
     display: "flex",
@@ -1187,14 +1193,6 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     whiteSpace: "nowrap",
     scrollSnapAlign: "center",
     pointerEvents: disabled ? "none" : "auto",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    outlineOffset: 4,
     boxShadow: active
       ? "0 10px 24px rgba(29,95,212,0.16)"
       : "0 8px 18px rgba(15,23,42,0.08)",
@@ -1202,19 +1200,11 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   };
 }
 
-function guardLayoutTap(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
 function layoutTapGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
-  return {
-    onPointerDown: guardLayoutTap,
-    onTouchStart: guardLayoutTap,
-    onMouseDown: guardLayoutTap,
-  };
+  return actionTapGuardProps();
 }
 
 export default function AppLayout() {
@@ -1817,9 +1807,8 @@ export default function AppLayout() {
                       to={item.to}
                       aria-disabled={item.disabled || undefined}
                       tabIndex={item.disabled ? -1 : undefined}
-                      onPointerDown={guardLayoutTap}
-                      onTouchStart={guardLayoutTap}
-                      onMouseDown={guardLayoutTap}
+                      onPointerDown={stopActionTap}
+                      onMouseDown={stopActionTap}
                       onClick={closeDrawer}
                       style={drawerLink(
                         isItemActive(item, location.pathname, location.search),
@@ -1915,9 +1904,8 @@ export default function AppLayout() {
                   to={item.to}
                   aria-disabled={item.disabled || undefined}
                   tabIndex={item.disabled ? -1 : undefined}
-                  onPointerDown={guardLayoutTap}
-                  onTouchStart={guardLayoutTap}
-                  onMouseDown={guardLayoutTap}
+                  onPointerDown={stopActionTap}
+                  onMouseDown={stopActionTap}
                   onClick={closeActions}
                   style={actionsLink(
                     isItemActive(item, location.pathname, location.search),

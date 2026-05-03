@@ -1,5 +1,6 @@
 // src/components/uiKit.tsx
 import React from "react";
+import { brandStableTapTarget } from "../styles/gmfnBrand";
 
 export function Card(props: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
@@ -37,15 +38,7 @@ export function Button(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
       {...props}
       className="gmfn-btn"
       style={{
-        touchAction: "manipulation",
-        WebkitTapHighlightColor: "transparent",
-        userSelect: "none",
-        position: "relative",
-        zIndex: 1,
-        isolation: "isolate",
-        transform: "translateZ(0)",
-        appearance: "none",
-        WebkitAppearance: "none",
+        ...brandStableTapTarget(),
         ...(props.style || {}),
       }}
     />
@@ -58,15 +51,7 @@ export function ButtonPrimary(props: React.ButtonHTMLAttributes<HTMLButtonElemen
       {...props}
       className="gmfn-btn gmfn-btn-primary"
       style={{
-        touchAction: "manipulation",
-        WebkitTapHighlightColor: "transparent",
-        userSelect: "none",
-        position: "relative",
-        zIndex: 1,
-        isolation: "isolate",
-        transform: "translateZ(0)",
-        appearance: "none",
-        WebkitAppearance: "none",
+        ...brandStableTapTarget(),
         ...(props.style || {}),
       }}
     />
