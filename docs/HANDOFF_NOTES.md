@@ -19595,3 +19595,24 @@ GSN-branded invite composer and invite-entry continuity.
 - Important caveat:
   - reference screenshots still need to be saved as actual files under `docs/reference-mockups/`; current chat images are not automatically present as repo files.
   - older local dirty dashboard state edits still exist in `frontend/src/pages/DashboardPage.tsx`; keep them unstaged unless the owner explicitly asks to commit them.
+
+### Dashboard institutional polish pass (2026-05-03)
+
+- Owner feedback: dashboard still felt unpolished on phone; emoji signals looked fake, accordion rows/buttons felt shaky, and typography/color separation did not feel sharp enough.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - replaced dashboard emoji text signals with small inline SVG signal marks for Marketplace, Demand, Spotlight, Trust, Community, Shop, Alerts, Identity, Demand Box, Focus, and related section labels.
+  - removed emoji/status glyphs from the accordion status pills so the labels read cleaner: `Respond`, `Open`, `Steady`, `Act now`, `Unread`, `Waiting`, `Clear`, `Behind`, `Watch`.
+  - replaced the rotating text chevrons with a proper SVG chevron.
+  - strengthened mobile accordion row geometry with fixed touch dimensions, stronger borders, clearer shadows, sharper title/body sizing, and anti-aliased text rendering.
+  - changed accordion toggles to functional state updates so rapid taps do not depend on stale expanded values.
+  - gave the main action accordion a warmer gold-tinted surface so it separates more clearly from Demand, Attention, Spotlight, and Focus blocks.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Important caveat:
+  - this is a visual/interaction polish pass only; Spotlight data/media behavior has not been debugged yet.
+- Scope:
+  - `/app/dashboard`
+  - no backend/auth/schema changes

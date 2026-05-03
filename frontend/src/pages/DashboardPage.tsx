@@ -636,81 +636,299 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function dashboardActionSignal(label: string): string {
+type DashboardSignalName =
+  | "marketplace"
+  | "demand"
+  | "spotlight"
+  | "trust"
+  | "community"
+  | "shop"
+  | "alerts"
+  | "identity"
+  | "compass"
+  | "package"
+  | "target"
+  | "calendar"
+  | "user"
+  | "check"
+  | "add"
+  | "time"
+  | "dot";
+
+function dashboardActionSignal(label: string): DashboardSignalName {
   switch (label) {
     case "Your Marketplace":
     case "Marketplace":
-      return "\uD83D\uDED2";
+      return "marketplace";
     case "Create Demand":
     case "Create Your Demand":
-      return "\u2795";
+      return "demand";
     case "Your Spotlight":
     case "Spotlight":
-      return "\u2B50";
+      return "spotlight";
     case "Your Trust Events":
     case "Trust Events":
-      return "\uD83D\uDEE1\uFE0F";
+      return "trust";
     case "Your Community":
     case "Community":
-      return "\uD83D\uDC65";
+      return "community";
     case "Your Shop":
     case "Shop":
-      return "\uD83C\uDFEA";
+      return "shop";
     case "Your Alerts":
     case "What Matters Now":
-      return "\uD83D\uDD14";
+      return "alerts";
     case "Your Identity":
     case "My Identity":
-      return "\uD83D\uDC64";
+      return "identity";
     case "Trust":
-      return "\uD83D\uDEE1\uFE0F";
+      return "trust";
     case "CCI":
-      return "\uD83D\uDD17";
+      return "community";
     case "TrustSlip":
-      return "\uD83D\uDCC4";
+      return "identity";
     default:
-      return "\u2022";
+      return "dot";
   }
 }
 
-function dashboardSectionSignal(label: string): string {
+function dashboardSectionSignal(label: string): DashboardSignalName {
   switch (label) {
     case "What do you want to do next?":
-      return "\uD83E\uDDED";
+      return "compass";
     case "Your Identity Passport":
-      return "\uD83D\uDEE1\uFE0F";
+      return "trust";
     case "Your Spotlight":
-      return "\u2B50";
+      return "spotlight";
     case "Your Demand Box":
-      return "\uD83D\uDCE6";
+      return "package";
     case "What needs your attention":
     case "What Matters Now":
-      return "\uD83D\uDD14";
+      return "alerts";
     case "Your Market Wisdom":
-      return "\uD83E\uDDED";
+      return "compass";
     case "Your Focus Commitments":
-      return "\uD83C\uDFAF";
+      return "target";
     case "Your community":
-      return "\uD83D\uDC65";
+      return "community";
     case "Posted":
-      return "\uD83D\uDCC5";
+      return "calendar";
     case "Seller GSN ID":
-      return "\uD83D\uDC64";
+      return "user";
     case "Actions":
-      return "\u2705";
+      return "check";
     case "Your new commitment":
-      return "\u2795";
+      return "add";
     case "Your next review":
-      return "\uD83D\uDCC5";
+      return "calendar";
     case "Days left":
-      return "\u23F3";
+      return "time";
     case "Your execution signal":
-      return "\u2705";
+      return "check";
     case "Your Commitment Builder":
-      return "\uD83C\uDFAF";
+      return "target";
     default:
-      return "\u2022";
+      return "dot";
   }
+}
+
+function DashboardSignalIcon({
+  name,
+  size = 22,
+  strokeWidth = 2.1,
+}: {
+  name: DashboardSignalName;
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    vectorEffect: "non-scaling-stroke" as const,
+  };
+
+  let paths: React.ReactNode;
+  switch (name) {
+    case "marketplace":
+      paths = (
+        <>
+          <path {...common} d="M6.5 9.2h11l-1 9.3h-9z" />
+          <path {...common} d="M9 9.2a3 3 0 0 1 6 0" />
+        </>
+      );
+      break;
+    case "demand":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="12" r="7.5" />
+          <path {...common} d="M12 8.5v7M8.5 12h7" />
+        </>
+      );
+      break;
+    case "spotlight":
+      paths = (
+        <>
+          <path
+            {...common}
+            d="m12 4 2.1 4.6 5 .6-3.7 3.3 1 4.9L12 15l-4.4 2.4 1-4.9-3.7-3.3 5-.6z"
+          />
+        </>
+      );
+      break;
+    case "trust":
+      paths = (
+        <>
+          <path {...common} d="M12 4.2 18 6.5v5.1c0 3.8-2.3 6.4-6 8.2-3.7-1.8-6-4.4-6-8.2V6.5z" />
+          <path {...common} d="m9.2 12.1 1.8 1.8 3.9-4.1" />
+        </>
+      );
+      break;
+    case "community":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="8" r="3" />
+          <path {...common} d="M6.4 18.5c.7-3 2.6-4.7 5.6-4.7s4.9 1.7 5.6 4.7" />
+          <path {...common} d="M5.3 10.5a2.4 2.4 0 0 0 2.1 3.6M18.7 10.5a2.4 2.4 0 0 1-2.1 3.6" />
+        </>
+      );
+      break;
+    case "shop":
+      paths = (
+        <>
+          <path {...common} d="M5.5 10h13l-1.1-4.2H6.6z" />
+          <path {...common} d="M7 10v8.2h10V10" />
+          <path {...common} d="M9.5 18.2v-4h5v4" />
+        </>
+      );
+      break;
+    case "alerts":
+      paths = (
+        <>
+          <path {...common} d="M17 10.4c0-3-1.9-5.1-5-5.1s-5 2.1-5 5.1c0 4-1.4 4.9-2.1 5.8h14.2c-.7-.9-2.1-1.8-2.1-5.8z" />
+          <path {...common} d="M10 19a2.2 2.2 0 0 0 4 0" />
+        </>
+      );
+      break;
+    case "identity":
+      paths = (
+        <>
+          <rect {...common} x="4.5" y="6.5" width="15" height="11" rx="2" />
+          <circle {...common} cx="9" cy="11" r="1.8" />
+          <path {...common} d="M7.1 15.1c.4-1.2 1-1.8 1.9-1.8s1.5.6 1.9 1.8M13.5 10h3.2M13.5 13.5h2.4" />
+        </>
+      );
+      break;
+    case "compass":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="12" r="7.5" />
+          <path {...common} d="m14.7 8.7-1.6 4.4-4.4 1.6 1.6-4.4z" />
+        </>
+      );
+      break;
+    case "package":
+      paths = (
+        <>
+          <path {...common} d="m12 4.8 6.3 3.3v7.8L12 19.2l-6.3-3.3V8.1z" />
+          <path {...common} d="M5.8 8.2 12 11.6l6.2-3.4M12 11.6v7.5" />
+        </>
+      );
+      break;
+    case "target":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="12" r="7.3" />
+          <circle {...common} cx="12" cy="12" r="3.6" />
+          <path {...common} d="M12 4.7V3M19.3 12H21M12 19.3V21M4.7 12H3" />
+        </>
+      );
+      break;
+    case "calendar":
+      paths = (
+        <>
+          <rect {...common} x="5" y="6.5" width="14" height="12" rx="2" />
+          <path {...common} d="M8.5 4.5v4M15.5 4.5v4M5 10h14" />
+        </>
+      );
+      break;
+    case "user":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="8.2" r="3.1" />
+          <path {...common} d="M6.5 18.8c.8-3.1 2.7-4.7 5.5-4.7s4.7 1.6 5.5 4.7" />
+        </>
+      );
+      break;
+    case "check":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="12" r="7.5" />
+          <path {...common} d="m8.8 12.2 2.1 2.1 4.6-4.8" />
+        </>
+      );
+      break;
+    case "add":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="12" r="7.5" />
+          <path {...common} d="M12 8.2v7.6M8.2 12h7.6" />
+        </>
+      );
+      break;
+    case "time":
+      paths = (
+        <>
+          <circle {...common} cx="12" cy="12" r="7.5" />
+          <path {...common} d="M12 7.8v4.4l3.1 1.9" />
+        </>
+      );
+      break;
+    default:
+      paths = <circle {...common} cx="12" cy="12" r="2.4" />;
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      {paths}
+    </svg>
+  );
+}
+
+function DashboardChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      style={{
+        display: "block",
+        transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+        transition: "transform 140ms ease",
+      }}
+    >
+      <path
+        d="m9 6 6 6-6 6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
 }
 
 function DashboardSectionLabel({
@@ -719,7 +937,7 @@ function DashboardSectionLabel({
   style,
 }: {
   label: string;
-  signal?: string;
+  signal?: DashboardSignalName;
   style?: React.CSSProperties;
 }) {
   return (
@@ -750,9 +968,10 @@ function DashboardSectionLabel({
           letterSpacing: 0,
           textTransform: "none",
           flexShrink: 0,
+          color: DASHBOARD_BRAND.accentDeep,
         }}
       >
-        {signal || dashboardSectionSignal(label)}
+        <DashboardSignalIcon name={signal || dashboardSectionSignal(label)} size={15} />
       </span>
       <span>{label}</span>
     </div>
@@ -1835,11 +2054,9 @@ function spotlightMarketplaceTo(item: SpotlightItem | null): string {
 
 function defaultDashboardUIState(): DashboardUIState {
   return {
-    spotlightMinimized: false,
-    routesExpanded:
-      typeof window !== "undefined" ? window.innerWidth > 1100 : true,
-    appsExpanded:
-      typeof window !== "undefined" ? window.innerWidth > 1100 : true,
+    spotlightMinimized: true,
+    routesExpanded: false,
+    appsExpanded: false,
     inboxExpanded: false,
     trustExpanded: false,
   };
@@ -4534,7 +4751,7 @@ export default function DashboardPage() {
 
   const attentionQuietActive =
     attentionQuietUntilMs > 0 && attentionQuietUntilMs > attentionClockMs;
-  const attentionAutoOpenAllowed = !isPhone;
+  const attentionAutoOpenAllowed = false;
 
   const attentionSurfaceVisible =
     attentionDisplaySignal.active &&
@@ -4622,6 +4839,13 @@ export default function DashboardPage() {
     setUiState((prev) => ({
       ...prev,
       ...patch,
+    }));
+  }
+
+  function toggleUiStateFlag(key: keyof DashboardUIState) {
+    setUiState((prev) => ({
+      ...prev,
+      [key]: !prev[key],
     }));
   }
 
@@ -5325,23 +5549,30 @@ export default function DashboardPage() {
     background: string
   ): React.CSSProperties => ({
     width: "100%",
+    appearance: "none",
+    WebkitAppearance: "none",
     display: "grid",
     gridTemplateColumns: isPhone
       ? "auto minmax(0, 1fr) auto"
       : "auto minmax(0, 1fr) auto auto",
-    gap: isPhone ? 9 : 12,
+    gap: isPhone ? 10 : 13,
     alignItems: "center",
-    minHeight: isPhone ? 62 : 64,
-    padding: isPhone ? "10px 11px" : "11px 13px",
-    borderRadius: isPhone ? 17 : 18,
+    minHeight: isPhone ? 68 : 70,
+    padding: isPhone ? "11px 12px" : "12px 15px",
+    borderRadius: isPhone ? 20 : 22,
     border,
     background,
     color: DASHBOARD_BRAND.ink,
     boxShadow:
-      "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
+      "0 14px 26px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.94)",
     cursor: "pointer",
     touchAction: "manipulation",
     textAlign: "left",
+    userSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    fontFamily: "inherit",
+    transition:
+      "box-shadow 140ms ease, border-color 140ms ease, background 140ms ease",
   });
   const dashboardAccordionIconStyle = (
     background = "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
@@ -5351,32 +5582,34 @@ export default function DashboardPage() {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    width: isPhone ? 40 : 42,
-    height: isPhone ? 40 : 42,
+    width: isPhone ? 42 : 44,
+    height: isPhone ? 42 : 44,
     borderRadius: 999,
     background,
     border,
-    color,
+    color: color || DASHBOARD_BRAND.accentDeep,
     boxShadow:
-      "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-    fontSize: isPhone ? 18 : 20,
+      "0 10px 18px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.92)",
     lineHeight: 1,
     flexShrink: 0,
   });
   const dashboardAccordionTitleStyle: React.CSSProperties = {
     display: "block",
     color: DASHBOARD_BRAND.ink,
-    fontSize: isPhone ? 16.5 : 21,
-    fontWeight: 1000,
-    lineHeight: 1.1,
+    fontSize: isPhone ? 16 : 21,
+    fontWeight: 900,
+    lineHeight: 1.12,
+    letterSpacing: 0,
+    textRendering: "geometricPrecision",
   };
   const dashboardAccordionSummaryStyle: React.CSSProperties = {
     display: "block",
-    marginTop: 4,
+    marginTop: 5,
     color: DASHBOARD_BRAND.helper,
-    fontSize: isPhone ? 11.8 : 13,
-    fontWeight: 750,
-    lineHeight: 1.25,
+    fontSize: isPhone ? 12.2 : 13.4,
+    fontWeight: 700,
+    lineHeight: 1.32,
+    letterSpacing: 0,
   };
   const dashboardAccordionChevronStyle = (
     expanded: boolean
@@ -5388,11 +5621,9 @@ export default function DashboardPage() {
     height: isPhone ? 32 : 34,
     borderRadius: 999,
     border: "1px solid rgba(15,59,116,0.12)",
-    color: DASHBOARD_BRAND.accentDeep,
-    fontSize: isPhone ? 18 : 20,
-    fontWeight: 1000,
-    transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-    transition: "transform 160ms ease",
+    color: expanded ? DASHBOARD_BRAND.goldText : DASHBOARD_BRAND.accentDeep,
+    background: "rgba(255,255,255,0.72)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.86)",
     flexShrink: 0,
   });
   const dashboardAccordionStatusStyle = (
@@ -5413,26 +5644,32 @@ export default function DashboardPage() {
     whiteSpace: "nowrap",
   });
   const dashboardLauncherButtonStyle: React.CSSProperties = {
-    minHeight: isPhone ? 64 : 64,
-    height: isPhone ? 64 : undefined,
+    appearance: "none",
+    WebkitAppearance: "none",
+    minHeight: isPhone ? 70 : 68,
+    height: isPhone ? 70 : undefined,
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr)",
     alignItems: "center",
     justifyContent: "stretch",
-    gap: isPhone ? 8 : 10,
-    padding: isPhone ? "9px 9px" : "12px 14px",
-    borderRadius: isPhone ? 15 : 17,
-    border: "1px solid rgba(15,59,116,0.12)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+    gap: isPhone ? 9 : 11,
+    padding: isPhone ? "10px 10px" : "12px 14px",
+    borderRadius: isPhone ? 17 : 18,
+    border: "1px solid rgba(15,59,116,0.16)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 48%, #EEF6FF 100%)",
     color: DASHBOARD_BRAND.ink,
     boxShadow:
-      "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
-    fontSize: isPhone ? 12.2 : 14,
-    fontWeight: 950,
+      "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.94)",
+    fontSize: isPhone ? 12.6 : 14.2,
+    fontWeight: 900,
     cursor: "pointer",
     touchAction: "manipulation",
     textAlign: "left",
     overflow: "hidden",
+    userSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    fontFamily: "inherit",
   };
   const attentionConnectionText = isPhone
     ? "Focus shows follow-through. Trust is how your community reads it. CCI is how outsiders may read it. TrustSlip keeps later proof. The waiting request is the issue now."
@@ -5464,6 +5701,10 @@ export default function DashboardPage() {
         margin: "0 -16px",
         padding: "18px 16px 40px",
         background: DASHBOARD_BRAND.pageWash,
+        WebkitFontSmoothing: "antialiased",
+        MozOsxFontSmoothing: "grayscale",
+        textRendering: "geometricPrecision",
+        letterSpacing: 0,
       }}
     >
       {attentionSurfaceVisible ? (
@@ -6223,7 +6464,11 @@ export default function DashboardPage() {
                     gap: 5,
                   }}
                 >
-                  <span aria-hidden="true">{dashboardActionSignal(item.label)}</span>
+                  <DashboardSignalIcon
+                    name={dashboardActionSignal(item.label)}
+                    size={isPhone ? 14 : 16}
+                    strokeWidth={2.4}
+                  />
                   <span>{item.label}</span>
                 </span>
                 <span
@@ -7058,34 +7303,42 @@ export default function DashboardPage() {
 
       <section
         style={{
-          ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+          ...pageCard(
+            "linear-gradient(180deg, #FFFDF6 0%, #F8FBFF 48%, #EEF6FF 100%)"
+          ),
           order: 20,
-          border: "1px solid rgba(16,37,59,0.08)",
+          border: "1px solid rgba(214,170,69,0.24)",
           borderRadius: isPhone ? 20 : 24,
           padding: isPhone ? 14 : 18,
           boxShadow:
-            "0 14px 28px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
+            "0 16px 34px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
         }}
       >
         <button
           type="button"
           aria-expanded={uiState.appsExpanded}
           onClick={(event) =>
-            runDashboardUiMutation(event, () =>
-              updateUiState({ appsExpanded: !uiState.appsExpanded })
-            )
+            runDashboardUiMutation(event, () => toggleUiStateFlag("appsExpanded"))
           }
           onPointerDown={consumeDashboardPointerEvent}
           style={dashboardAccordionButtonStyle(
-            "1px solid rgba(15,59,116,0.12)",
-            "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+            "1px solid rgba(214,170,69,0.26)",
+            "linear-gradient(180deg, #FFFFFF 0%, #FFF8E6 46%, #F4F9FF 100%)"
           )}
         >
           <span
             aria-hidden="true"
-            style={dashboardAccordionIconStyle()}
+            style={dashboardAccordionIconStyle(
+              "linear-gradient(180deg, rgba(242,199,102,0.30) 0%, rgba(255,248,230,0.92) 100%)",
+              "1px solid rgba(214,170,69,0.34)",
+              DASHBOARD_BRAND.goldText
+            )}
           >
-            {dashboardSectionSignal("What do you want to do next?")}
+            <DashboardSignalIcon
+              name={dashboardSectionSignal("What do you want to do next?")}
+              size={isPhone ? 19 : 21}
+              strokeWidth={2.3}
+            />
           </span>
           <span style={{ minWidth: 0 }}>
             <span style={dashboardAccordionTitleStyle}>
@@ -7099,7 +7352,7 @@ export default function DashboardPage() {
             aria-hidden="true"
             style={dashboardAccordionChevronStyle(uiState.appsExpanded)}
           >
-            &gt;
+            <DashboardChevronIcon expanded={uiState.appsExpanded} />
           </span>
         </button>
 
@@ -7117,26 +7370,18 @@ export default function DashboardPage() {
           {[
             {
               label: "Your Marketplace",
-              icon: "marketplace" as const,
-              emoji: "🛒",
               to: DASHBOARD_TARGETS.MARKETPLACE,
             },
             {
               label: "Create Demand",
-              icon: "demand" as const,
-              emoji: "➕",
               to: DASHBOARD_TARGETS.DEMAND_BOX,
             },
             {
               label: "Your Spotlight",
-              icon: "spotlight" as const,
-              emoji: "⭐",
               to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT,
             },
             {
               label: "Your Trust Events",
-              icon: "trust" as const,
-              emoji: "🛡️",
               to: DASHBOARD_TARGETS.TRUST,
             },
           ].map((item) => (
@@ -7154,7 +7399,11 @@ export default function DashboardPage() {
                   "1px solid rgba(11,99,209,0.16)"
                 )}
               >
-                {dashboardActionSignal(item.label)}
+                <DashboardSignalIcon
+                  name={dashboardActionSignal(item.label)}
+                  size={isPhone ? 18 : 20}
+                  strokeWidth={2.25}
+                />
               </span>
               <span
                 style={{
@@ -7185,26 +7434,18 @@ export default function DashboardPage() {
             {[
               {
                 label: "Your Community",
-                icon: "community" as const,
-                emoji: "👥",
                 to: DASHBOARD_TARGETS.COMMUNITY,
               },
               {
                 label: "Your Shop",
-                icon: "shop" as const,
-                emoji: "🏪",
                 to: DASHBOARD_TARGETS.SHOP_ME,
               },
               {
                 label: "Your Alerts",
-                icon: "notifications" as const,
-                emoji: "🔔",
                 to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
               },
             {
               label: "Your Identity",
-              icon: "identity" as const,
-                emoji: "🪪",
               to: DASHBOARD_TARGETS.CCI,
             },
           ].map((item) => (
@@ -7222,7 +7463,11 @@ export default function DashboardPage() {
                   "1px solid rgba(11,99,209,0.16)"
                 )}
               >
-                {dashboardActionSignal(item.label)}
+                <DashboardSignalIcon
+                  name={dashboardActionSignal(item.label)}
+                  size={isPhone ? 18 : 20}
+                  strokeWidth={2.25}
+                />
               </span>
               <span
                 style={{
@@ -8622,7 +8867,11 @@ export default function DashboardPage() {
               demandSurfaceChrome.statusText
             )}
           >
-            {dashboardSectionSignal("Your Demand Box")}
+            <DashboardSignalIcon
+              name={dashboardSectionSignal("Your Demand Box")}
+              size={isPhone ? 19 : 21}
+              strokeWidth={2.3}
+            />
           </span>
 
           <span style={{ minWidth: 0 }}>
@@ -8649,17 +8898,17 @@ export default function DashboardPage() {
             }}
           >
             {urgentDemandItems.length > 0
-              ? "\u26A0\uFE0F Respond"
+              ? "Respond"
               : demandItems.length > 0
-              ? "\uD83D\uDCE6 Open"
-              : "\u2705 Steady"}
+              ? "Open"
+              : "Steady"}
           </span>
 
           <span
             aria-hidden="true"
             style={dashboardAccordionChevronStyle(demandGuideOpen)}
           >
-            &gt;
+            <DashboardChevronIcon expanded={demandGuideOpen} />
           </span>
         </button>
 
@@ -8989,7 +9238,7 @@ export default function DashboardPage() {
           aria-expanded={uiState.inboxExpanded}
           onClick={(event) =>
             runDashboardUiMutation(event, () =>
-              updateUiState({ inboxExpanded: !uiState.inboxExpanded })
+              toggleUiStateFlag("inboxExpanded")
             )
           }
           onPointerDown={consumeDashboardPointerEvent}
@@ -9006,7 +9255,11 @@ export default function DashboardPage() {
               notificationSurfaceChrome.statusText
             )}
           >
-            {dashboardSectionSignal("What needs your attention")}
+            <DashboardSignalIcon
+              name={dashboardSectionSignal("What needs your attention")}
+              size={isPhone ? 19 : 21}
+              strokeWidth={2.3}
+            />
           </span>
 
           <span style={{ minWidth: 0 }}>
@@ -9033,19 +9286,19 @@ export default function DashboardPage() {
             }}
           >
             {dashboardNoticeSummary.counts.actNow > 0
-              ? `\u26A0\uFE0F Act now ${dashboardNoticeSummary.counts.actNow}`
+              ? `Act now ${dashboardNoticeSummary.counts.actNow}`
               : dashboardNoticeSummary.counts.unread > 0
-              ? `\uD83D\uDC41\uFE0F Unread ${dashboardNoticeSummary.counts.unread}`
+              ? `Unread ${dashboardNoticeSummary.counts.unread}`
               : dashboardNoticeTotalCount > 0
-              ? "\u23F3 Waiting"
-              : "\u2705 Clear"}
+              ? "Waiting"
+              : "Clear"}
           </span>
 
           <span
             aria-hidden="true"
             style={dashboardAccordionChevronStyle(uiState.inboxExpanded)}
           >
-            &gt;
+            <DashboardChevronIcon expanded={uiState.inboxExpanded} />
           </span>
         </button>
 
@@ -9676,7 +9929,7 @@ export default function DashboardPage() {
               aria-expanded={uiState.trustExpanded}
               onClick={(event) =>
                 runDashboardUiMutation(event, () =>
-                  updateUiState({ trustExpanded: !uiState.trustExpanded })
+                  toggleUiStateFlag("trustExpanded")
                 )
               }
               onPointerDown={consumeDashboardPointerEvent}
@@ -9689,7 +9942,11 @@ export default function DashboardPage() {
                 aria-hidden="true"
                 style={dashboardAccordionIconStyle()}
               >
-                {dashboardSectionSignal("Your Focus Commitments")}
+                <DashboardSignalIcon
+                  name={dashboardSectionSignal("Your Focus Commitments")}
+                  size={isPhone ? 19 : 21}
+                  strokeWidth={2.3}
+                />
               </span>
 
               <span style={{ minWidth: 0 }}>
@@ -9728,17 +9985,17 @@ export default function DashboardPage() {
                 }}
               >
                 {focusSummary.behindCount > 0
-                  ? `\u26A0\uFE0F Behind ${focusSummary.behindCount}`
+                  ? `Behind ${focusSummary.behindCount}`
                   : focusSummary.watchCount > 0
-                  ? `\u23F3 Watch ${focusSummary.watchCount}`
-                  : "\u2705 Steady"}
+                  ? `Watch ${focusSummary.watchCount}`
+                  : "Steady"}
               </span>
 
               <span
                 aria-hidden="true"
                 style={dashboardAccordionChevronStyle(uiState.trustExpanded)}
               >
-                &gt;
+                <DashboardChevronIcon expanded={uiState.trustExpanded} />
               </span>
             </button>
 
