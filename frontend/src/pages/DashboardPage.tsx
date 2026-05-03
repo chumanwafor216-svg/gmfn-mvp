@@ -636,83 +636,27 @@ function helperText(): React.CSSProperties {
   };
 }
 
-type DashboardQuickActionIconKind =
-  | "marketplace"
-  | "demand"
-  | "trust"
-  | "identity";
-
-function DashboardQuickActionIcon({
-  kind,
-  isPhone,
-}: {
-  kind: DashboardQuickActionIconKind;
-  isPhone: boolean;
-}) {
-  const size = isPhone ? 19 : 21;
-
-  const paths: Record<DashboardQuickActionIconKind, React.ReactNode> = {
-    marketplace: (
-      <>
-        <path d="M7 9h10l-1.2 8.2A2 2 0 0 1 13.9 19H10.1a2 2 0 0 1-1.9-1.8L7 9Z" />
-        <path d="M9 9V7a3 3 0 0 1 6 0v2" />
-      </>
-    ),
-    demand: (
-      <>
-        <circle cx="12" cy="12" r="7.2" />
-        <path d="M12 8.6v6.8" />
-        <path d="M8.6 12h6.8" />
-      </>
-    ),
-    trust: (
-      <>
-        <path d="M12 4.6 18 7v4.8c0 3.4-2.2 6.1-6 7.6-3.8-1.5-6-4.2-6-7.6V7l6-2.4Z" />
-        <path d="m9.4 12 1.7 1.7 3.6-3.8" />
-      </>
-    ),
-    identity: (
-      <>
-        <circle cx="12" cy="8.6" r="3.1" />
-        <path d="M6.7 18.6c.7-3 2.5-4.6 5.3-4.6s4.6 1.6 5.3 4.6" />
-      </>
-    ),
-  };
-
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        width: isPhone ? 34 : 38,
-        height: isPhone ? 34 : 38,
-        borderRadius: 999,
-        background:
-          "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-        border: "1px solid rgba(11,99,209,0.16)",
-        color: DASHBOARD_BRAND.accentDeep,
-        boxShadow:
-          "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-        flexShrink: 0,
-      }}
-    >
-      <svg
-        width={size}
-        height={size}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2.2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        focusable="false"
-      >
-        {paths[kind]}
-      </svg>
-    </span>
-  );
+function dashboardActionSignal(label: string): string {
+  switch (label) {
+    case "Marketplace":
+      return "\uD83D\uDED2";
+    case "Create Demand":
+      return "\u2795";
+    case "Spotlight":
+      return "\u2B50";
+    case "Trust Events":
+      return "\uD83D\uDEE1\uFE0F";
+    case "Community":
+      return "\uD83D\uDC65";
+    case "Shop":
+      return "\uD83C\uDFEA";
+    case "What Matters Now":
+      return "\uD83D\uDD14";
+    case "My Identity":
+      return "\uD83D\uDC64";
+    default:
+      return "\u2022";
+  }
 }
 
 function fieldInputStyle(): React.CSSProperties {
@@ -5970,7 +5914,9 @@ export default function DashboardPage() {
               alignItems: "center",
               gap: isPhone ? 7 : 10,
               minHeight: isPhone ? 42 : 52,
-              padding: isPhone ? "8px 10px" : "10px 18px",
+              justifyContent: "center",
+              minWidth: isPhone ? 92 : undefined,
+              padding: isPhone ? "8px 12px" : "10px 18px",
               borderRadius: isPhone ? 14 : 18,
               border: "1px solid rgba(220,38,38,0.14)",
               background:
@@ -6003,10 +5949,16 @@ export default function DashboardPage() {
                 whiteSpace: "nowrap",
               }}
             >
-              <span style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Attention Guide
-              </span>
-              <span>{attentionStageLabel}</span>
+              {isPhone ? (
+                <span style={{ fontSize: 14, fontWeight: 1000 }}>Tools</span>
+              ) : (
+                <>
+                  <span style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Attention Guide
+                  </span>
+                  <span>{attentionStageLabel}</span>
+                </>
+              )}
             </span>
           </button>
         </div>
@@ -7045,14 +6997,50 @@ export default function DashboardPage() {
       >
         <div
           style={{
-            color: DASHBOARD_BRAND.ink,
-            fontSize: isPhone ? 18 : 22,
-            fontWeight: 1000,
-            lineHeight: 1.15,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
             marginBottom: isPhone ? 12 : 14,
           }}
         >
-          What do you want to do next?
+          <div
+            style={{
+              color: DASHBOARD_BRAND.ink,
+              fontSize: isPhone ? 18 : 22,
+              fontWeight: 1000,
+              lineHeight: 1.15,
+            }}
+          >
+            What do you want to do next?
+          </div>
+
+          <button
+            type="button"
+            onClick={(event) =>
+              runDashboardUiMutation(event, () =>
+                updateUiState({ appsExpanded: !uiState.appsExpanded })
+              )
+            }
+            onPointerDown={consumeDashboardPointerEvent}
+            style={{
+              minHeight: isPhone ? 38 : 40,
+              padding: isPhone ? "8px 12px" : "8px 14px",
+              borderRadius: 999,
+              border: "1px solid rgba(15,59,116,0.14)",
+              background:
+                "linear-gradient(180deg, #FFFFFF 0%, #F2F8FF 100%)",
+              color: DASHBOARD_BRAND.accentDeep,
+              boxShadow:
+                "0 8px 16px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.88)",
+              fontSize: isPhone ? 12 : 13,
+              fontWeight: 950,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {uiState.appsExpanded ? "Close" : "+ More"}
+          </button>
         </div>
 
         <div
@@ -7068,21 +7056,114 @@ export default function DashboardPage() {
             {
               label: "Marketplace",
               icon: "marketplace" as const,
+              emoji: "🛒",
               to: DASHBOARD_TARGETS.MARKETPLACE,
             },
             {
               label: "Create Demand",
               icon: "demand" as const,
+              emoji: "➕",
               to: DASHBOARD_TARGETS.DEMAND_BOX,
+            },
+            {
+              label: "Spotlight",
+              icon: "spotlight" as const,
+              emoji: "⭐",
+              to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT,
             },
             {
               label: "Trust Events",
               icon: "trust" as const,
+              emoji: "🛡️",
               to: DASHBOARD_TARGETS.TRUST,
             },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={(event) => openDashboardRoute(event, item.to)}
+              onPointerDown={consumeDashboardPointerEvent}
+              style={{
+                minHeight: isPhone ? 58 : 64,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: isPhone ? 8 : 10,
+                padding: isPhone ? "10px 8px" : "12px 14px",
+                borderRadius: isPhone ? 15 : 17,
+                border: "1px solid rgba(15,59,116,0.12)",
+                background:
+                  "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+                color: DASHBOARD_BRAND.ink,
+                boxShadow:
+                  "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
+                fontSize: isPhone ? 12.5 : 14,
+                fontWeight: 950,
+                cursor: "pointer",
+                touchAction: "manipulation",
+                textAlign: "center",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: isPhone ? 34 : 38,
+                  height: isPhone ? 34 : 38,
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+                  border: "1px solid rgba(11,99,209,0.16)",
+                  boxShadow:
+                    "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+                  fontSize: isPhone ? 17 : 19,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                {dashboardActionSignal(item.label)}
+              </span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {uiState.appsExpanded ? (
+          <div
+            style={{
+              marginTop: isPhone ? 10 : 12,
+              display: "grid",
+              gridTemplateColumns: isPhone
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(4, minmax(0, 1fr))",
+              gap: isPhone ? 9 : 12,
+            }}
+          >
+            {[
+              {
+                label: "Community",
+                icon: "community" as const,
+                emoji: "👥",
+                to: DASHBOARD_TARGETS.COMMUNITY,
+              },
+              {
+                label: "Shop",
+                icon: "shop" as const,
+                emoji: "🏪",
+                to: DASHBOARD_TARGETS.SHOP_ME,
+              },
+              {
+                label: "What Matters Now",
+                icon: "notifications" as const,
+                emoji: "🔔",
+                to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
+              },
             {
               label: "My Identity",
               icon: "identity" as const,
+                emoji: "🪪",
               to: DASHBOARD_TARGETS.CCI,
             },
           ].map((item) => (
@@ -7112,11 +7193,32 @@ export default function DashboardPage() {
                 textAlign: "center",
               }}
             >
-              <DashboardQuickActionIcon kind={item.icon} isPhone={isPhone} />
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: isPhone ? 34 : 38,
+                  height: isPhone ? 34 : 38,
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+                  border: "1px solid rgba(11,99,209,0.16)",
+                  boxShadow:
+                    "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+                  fontSize: isPhone ? 17 : 19,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                {dashboardActionSignal(item.label)}
+              </span>
               <span>{item.label}</span>
             </button>
           ))}
-        </div>
+          </div>
+        ) : null}
       </section>
 
       <section
@@ -9468,6 +9570,7 @@ export default function DashboardPage() {
         style={{
           ...pageCard(DASHBOARD_BRAND.raisedPanel),
           order: 70,
+          display: "none",
         }}
       >
         <div

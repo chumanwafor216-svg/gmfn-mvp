@@ -19448,12 +19448,16 @@ GSN-branded invite composer and invite-entry continuity.
 - Added a clean top arrangement:
   - `Main Movement / Dashboard` header with Menu and Attention Guide controls
   - `Identity Passport` card with `Trust is the first currency`, profile image, GSN ID, trust/CCI/TrustSlip status, and `View Identity`
-  - simple `What do you want to do next?` action row: Marketplace, Create Demand, Trust Events, My Identity
-  - symbolic shortcut icons for the four actions so low-literacy users can scan the options faster without depending only on text
+  - simple `What do you want to do next?` action row, now acting as the main launcher instead of duplicating the old Regular Apps block
+  - four visible actions: Marketplace, Create Demand, Spotlight, Trust Events
+  - a `+ More` / `Close` expansion for Community, Shop, What Matters Now, and My Identity
+  - symbolic emoji/sign badges for the launcher actions so low-literacy users can scan the options faster without depending only on text
 - Reordered dashboard grid presentation to match the preferred flow:
   - Spotlight before What Matters Now
   - What Matters Now before Demand Box
-  - Regular Apps before Market Wisdom and Focus Commitments
+  - Market Wisdom and Focus Commitments below the primary launcher/spotlight/action surfaces
+- Hid the separate Regular Apps block because the main launcher now serves that purpose.
+- On phone, compacted the right-side top control to `Tools` so it stops crowding the `Dashboard` heading.
 - Market Wisdom internals were not changed; only its dashboard grid placement was pushed lower in the visual order.
 - Important caveat:
   - `DashboardPage.tsx` still has pre-existing local dirty changes unrelated to this removal, including UI storage key/default collapse behavior and disabled attention auto-open. Do not revert them without owner approval.
