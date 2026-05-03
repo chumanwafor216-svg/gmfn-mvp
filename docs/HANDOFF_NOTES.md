@@ -19438,3 +19438,26 @@ GSN-branded invite composer and invite-entry continuity.
   - `/cover`
   - `/guide`
   - no backend/auth/schema changes
+
+### Dashboard expandable primer placement (2026-05-03)
+
+- Owner shared a proposed dark `What you will find` primer and dashboard pattern for low-literacy, underbanked/unbanked users.
+- Product judgment applied:
+  - Do not insert the primer between `/cover` and `/welcome`; that would slow the entry gate.
+  - Put the expandable primer on `/app/dashboard`, near the top after the existing dashboard help disclosure, where it explains the system after entry.
+  - Leave `/app/dashboard` Market Wisdom untouched because its presentation/interaction model is currently frozen unless explicitly changed.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - added `DASHBOARD_FIND_ITEMS` for six icon-led dashboard concepts: Identity First, Community Home, Marketplace Access, Shop Control, Trust Events, and Insights.
+  - added an expandable institutional dark/navy-gold primer block titled `What you will find`.
+  - made the primer collapsed on phone by default and open on wider screens.
+  - added a GSN trust strip: `You are in good hands.`
+- Important caveat:
+  - `DashboardPage.tsx` already had pre-existing local dirty changes before this primer edit, including UI storage key/default collapse behavior and disabled attention auto-open. Those were preserved and not audited as part of this change.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/dashboard`
+  - no backend/auth/schema changes

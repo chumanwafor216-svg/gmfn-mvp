@@ -297,6 +297,45 @@ const DASHBOARD_HELP_BULLETS = [
 const DASHBOARD_HELP_NOTE =
   "Innovation wedge: GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.";
 
+const DASHBOARD_FIND_ITEMS = [
+  {
+    id: "identity",
+    icon: "ID",
+    title: "Identity First",
+    detail: "Secure your identity and build your trust profile.",
+  },
+  {
+    id: "community",
+    icon: "HOME",
+    title: "Community Home",
+    detail: "Manage your communities, members, and resources.",
+  },
+  {
+    id: "marketplace",
+    icon: "BUY",
+    title: "Marketplace Access",
+    detail: "Buy, sell, request, and respond inside trusted communities.",
+  },
+  {
+    id: "shop",
+    icon: "SHOP",
+    title: "Shop Control",
+    detail: "Run your shop, manage products, spotlight items, and reach people.",
+  },
+  {
+    id: "trust-events",
+    icon: "TIME",
+    title: "Trust Events",
+    detail: "Track deadlines, commitments, checks, and time-bound actions.",
+  },
+  {
+    id: "insights",
+    icon: "READ",
+    title: "Insights",
+    detail: "See activity, growth, trust progress, and what needs attention.",
+  },
+] as const;
+
 const PUBLIC_ROUTE_PREFIXES = [
   "cover",
   "welcome",
@@ -654,6 +693,28 @@ function helperText(): React.CSSProperties {
     color: DASHBOARD_BRAND.helper,
     fontSize: 14,
     lineHeight: 1.75,
+  };
+}
+
+function dashboardPrimerIcon(): React.CSSProperties {
+  return {
+    width: 46,
+    height: 46,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+    border: "1px solid rgba(201,154,39,0.28)",
+    background:
+      "radial-gradient(circle at 35% 28%, rgba(243,208,106,0.20) 0%, rgba(243,208,106,0) 38%), linear-gradient(180deg, rgba(15,59,116,0.96) 0%, rgba(8,28,48,0.96) 100%)",
+    color: "#F3D06A",
+    fontSize: 10,
+    fontWeight: 1000,
+    letterSpacing: 0.5,
+    lineHeight: 1,
+    boxShadow:
+      "0 12px 24px rgba(7,16,28,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
   };
 }
 
@@ -6122,6 +6183,211 @@ export default function DashboardPage() {
               that make GSN work, open Community Home: invite people, manage
               your shop, prepare spotlight, choose a community, and enter the
               marketplace from the right place.
+            </span>
+          </div>
+        </details>
+
+        <details
+          open={!isPhone}
+          style={{
+            borderRadius: isPhone ? 20 : 28,
+            padding: isPhone ? 10 : 16,
+            background:
+              "radial-gradient(circle at 18% 0%, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 32%), linear-gradient(180deg, #071526 0%, #0A2035 52%, #0F355A 100%)",
+            border: "1px solid rgba(201,154,39,0.24)",
+            boxShadow:
+              "0 24px 48px rgba(7,16,28,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+            color: "#F8FBFF",
+            overflow: "hidden",
+          }}
+        >
+          <summary
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1fr) auto",
+              alignItems: "center",
+              gap: 12,
+              listStyle: "none",
+              cursor: "pointer",
+              touchAction: "manipulation",
+            }}
+          >
+            <span style={{ display: "grid", gap: 4, minWidth: 0 }}>
+              <span
+                style={{
+                  color: "#F3D06A",
+                  fontSize: 11,
+                  fontWeight: 1000,
+                  letterSpacing: 2.4,
+                  textTransform: "uppercase",
+                }}
+              >
+                GSN
+              </span>
+              <span
+                style={{
+                  color: "#F8FBFF",
+                  fontSize: isPhone ? 22 : 30,
+                  fontWeight: 1000,
+                  lineHeight: 1.08,
+                  textWrap: "balance",
+                }}
+              >
+                What you will find
+              </span>
+              <span
+                style={{
+                  color: "rgba(226,232,240,0.72)",
+                  fontSize: isPhone ? 12.5 : 14,
+                  fontWeight: 750,
+                  lineHeight: 1.45,
+                }}
+              >
+                Simple steps. Strong foundation.
+              </span>
+            </span>
+
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minHeight: isPhone ? 34 : 40,
+                padding: isPhone ? "7px 11px" : "9px 14px",
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)",
+                color: "#F3D06A",
+                fontSize: isPhone ? 11.5 : 12.5,
+                fontWeight: 1000,
+                whiteSpace: "nowrap",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)",
+              }}
+            >
+              Read text
+            </span>
+          </summary>
+
+          <div
+            style={{
+              marginTop: isPhone ? 12 : 16,
+              height: 1,
+              background:
+                "linear-gradient(90deg, rgba(201,154,39,0) 0%, rgba(201,154,39,0.72) 50%, rgba(201,154,39,0) 100%)",
+            }}
+          />
+
+          <div
+            style={{
+              marginTop: isPhone ? 12 : 16,
+              display: "grid",
+              gridTemplateColumns: isPhone
+                ? "1fr"
+                : "repeat(2, minmax(0, 1fr))",
+              gap: isPhone ? 10 : 12,
+            }}
+          >
+            {DASHBOARD_FIND_ITEMS.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "56px minmax(0, 1fr)",
+                  alignItems: "center",
+                  gap: 12,
+                  minHeight: isPhone ? 86 : 96,
+                  borderRadius: 18,
+                  border: "1px solid rgba(220,231,243,0.16)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.035) 100%)",
+                  boxShadow:
+                    "0 16px 30px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
+                  padding: isPhone ? 12 : 14,
+                }}
+              >
+                <span style={dashboardPrimerIcon()} aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span style={{ display: "grid", gap: 5, minWidth: 0 }}>
+                  <span
+                    style={{
+                      color: "#F8FBFF",
+                      fontSize: isPhone ? 15.5 : 17,
+                      fontWeight: 1000,
+                      lineHeight: 1.16,
+                    }}
+                  >
+                    {item.title}
+                  </span>
+                  <span
+                    style={{
+                      color: "rgba(226,232,240,0.72)",
+                      fontSize: isPhone ? 12.3 : 13,
+                      fontWeight: 760,
+                      lineHeight: 1.42,
+                    }}
+                  >
+                    {item.detail}
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: isPhone ? 12 : 16,
+              display: "grid",
+              gridTemplateColumns: isPhone ? "64px minmax(0, 1fr)" : "74px minmax(0, 1fr)",
+              gap: 14,
+              alignItems: "center",
+              borderRadius: 18,
+              border: "1px solid rgba(201,154,39,0.42)",
+              background:
+                "radial-gradient(circle at 88% 50%, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 42%), linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
+              boxShadow:
+                "0 18px 34px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+              padding: isPhone ? 12 : 14,
+            }}
+          >
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: isPhone ? 58 : 66,
+                height: isPhone ? 58 : 66,
+                borderRadius: 18,
+                background:
+                  "linear-gradient(180deg, rgba(243,208,106,0.18) 0%, rgba(255,255,255,0.06) 100%)",
+                border: "1px solid rgba(243,208,106,0.28)",
+              }}
+              aria-hidden="true"
+            >
+              <GSNBrandMark width={isPhone ? 28 : 34} height={isPhone ? 36 : 42} />
+            </span>
+            <span style={{ display: "grid", gap: 5 }}>
+              <span
+                style={{
+                  color: "#F3D06A",
+                  fontSize: isPhone ? 15.5 : 17,
+                  fontWeight: 1000,
+                  lineHeight: 1.18,
+                }}
+              >
+                You are in good hands.
+              </span>
+              <span
+                style={{
+                  color: "rgba(226,232,240,0.72)",
+                  fontSize: isPhone ? 12.3 : 13.5,
+                  fontWeight: 760,
+                  lineHeight: 1.45,
+                }}
+              >
+                GSN is built on transparency, security, and community trust.
+              </span>
             </span>
           </div>
         </details>
