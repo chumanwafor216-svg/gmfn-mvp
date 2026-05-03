@@ -19876,3 +19876,25 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/shop-assets`
   - no backend/auth/schema/product-save/delete/restore logic changes
+
+### Public Shop Gallery audit and simplification (2026-05-03)
+
+- Owner request continued: audit the public-facing shop/gallery route after Shop Assets, keeping the surface simpler for ordinary users and avoiding over-explaining every concept.
+- Architecture reference confirmed:
+  - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md` defines Shop Gallery as the member's public-facing storefront/commerce surface under Marketplace exposure rules.
+  - Shop ownership remains tied to one global member ID; exposure remains community/marketplace governed.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - removed the large `What to do next` instructional section that repeated public shelf / Vault / GSN entry explanations.
+  - shortened the top public-view guidance and hero confidence copy.
+  - shortened Vault language to a direct private-link explanation.
+  - simplified visible labels from technical product-frame language to item/shop/Vault language.
+  - changed public shelf labels to `Public items` and shorter item-count badges.
+  - removed the route-local `onTouchStart` button guard so mobile taps align with the newer stable-button pattern.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/shop/:gmfnId`
+  - no backend/auth/schema/public-shop/product-loading/share/Vault-request logic changes

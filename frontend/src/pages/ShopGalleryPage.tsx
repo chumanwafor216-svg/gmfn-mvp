@@ -553,11 +553,10 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }
@@ -1132,12 +1131,12 @@ export default function ShopGalleryPage() {
       ? "1 public item live"
       : `${visibleProducts.length} public items live`;
   const buyerConfidenceText = shopCommunityText
-    ? `This shop is visible through ${shopCommunityText}. Public shelf products are open to browse and share; private Vault offers stay hidden until the shop sends a trust link.`
-    : "Public shelf products are open to browse and share. Private Vault offers stay hidden until the shop sends a trust link.";
+    ? `Visible through ${shopCommunityText}. Public items are open; Vault offers need an owner trust link.`
+    : "Public items are open; Vault offers need an owner trust link.";
   const confidenceSignals = [
-    { label: "Public shelf", value: publicShelfText, primary: true },
-    { label: "Private Vault", value: "Hidden until trust link", primary: false },
-    { label: "Seller contact", value: sellerContactText, primary: false },
+    { label: "🛍️ Public", value: publicShelfText, primary: true },
+    { label: "🔐 Vault", value: "By trust link", primary: false },
+    { label: "☎️ Contact", value: sellerContactText, primary: false },
   ] satisfies Array<{
     label: string;
     value: string;
@@ -1159,30 +1158,6 @@ export default function ShopGalleryPage() {
   const isShopOwner =
     Boolean(viewerGmfnText && shopGmfnText) &&
     viewerGmfnText === shopGmfnText.toUpperCase();
-  const nextStepCards = [
-    {
-      label: "Stay on the public shelf when",
-      title: "You want open products you can browse or share now",
-      body:
-        "The public shop face is for visible shelf items only. It is the right place for quick browsing, safe sharing, and first contact.",
-    },
-    {
-      label: "Ask for Private Vault when",
-      title: "You need selected items the owner has not opened publicly",
-      body:
-        "Private Vault access stays separate on purpose. Ask the owner privately when you need the hidden offer path rather than the open shelf.",
-    },
-    {
-      label: isSignedInViewer ? "Return into GSN when" : "Open GSN when",
-      title: isSignedInViewer
-        ? "You need protected member tools instead of the public shop face"
-        : "You want protected member tools beyond the public shelf",
-      body: isSignedInViewer
-        ? "Go back into your signed-in GSN routes for community work, marketplace actions, or dashboard-only tools."
-        : "Sign in before using protected community, marketplace, or dashboard routes. The public shop face stays open even without that access.",
-    },
-  ];
-
   const protectedNavItems = [
     { label: "Dashboard", to: "/app/dashboard", primary: true },
     { label: "Community Home", to: "/app/community", primary: false },
@@ -1367,8 +1342,8 @@ export default function ShopGalleryPage() {
               }}
             >
               {isSignedInViewer
-                ? `Signed in as ${viewerNameText}. This page remains the public shop face; these protected return paths take you back into GSN.`
-                : "Visitors can view, share, or ask the seller from here. Protected GSN tools still require signing in with your own account."}
+                ? `Signed in as ${viewerNameText}. This is still the public shop face.`
+                : "View public items, share the shop, or ask the owner for private Vault access."}
             </div>
           </div>
 
@@ -1744,7 +1719,7 @@ export default function ShopGalleryPage() {
                         textShadow: "0 2px 14px rgba(0,0,0,0.25)",
                       }}
                     >
-                      Public shelf. Private Vault. One trusted contact.
+                      Public shop. Trusted contact.
                     </div>
 
                     <div
@@ -1768,7 +1743,7 @@ export default function ShopGalleryPage() {
                         gap: 7,
                       }}
                     >
-                      {["Browse openly", "Ask privately", "Share safely"].map((label) => (
+                      {["🛍️ Browse openly", "🔐 Ask privately", "🔗 Share safely"].map((label) => (
                         <span
                           key={label}
                           style={{
@@ -1881,7 +1856,7 @@ export default function ShopGalleryPage() {
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
-                  Ask seller privately
+                  Ask for Vault access
                 </button>
 
                 <button
@@ -1894,7 +1869,7 @@ export default function ShopGalleryPage() {
                     flex: isCompact ? "1 1 132px" : "0 1 auto",
                   }}
                 >
-                  Share public shop
+                  Share shop
                 </button>
 
                   <button
@@ -1912,59 +1887,6 @@ export default function ShopGalleryPage() {
               </div>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section
-        style={{
-          ...pageCard(),
-          padding: isCompact ? 14 : 18,
-          border: "1px solid rgba(13,95,168,0.16)",
-          background:
-            "radial-gradient(circle at 6% 0%, rgba(11,99,209,0.13) 0%, transparent 30%), radial-gradient(circle at 94% 12%, rgba(212,175,55,0.09) 0%, transparent 24%), linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(238,247,253,0.96) 100%)",
-        }}
-      >
-        <div style={sectionLabel()}>What to do next</div>
-        <div
-          style={{
-            marginTop: 10,
-            color: "#0B1F33",
-            fontSize: isCompact ? 24 : 30,
-            fontWeight: 900,
-            lineHeight: 1.14,
-          }}
-        >
-          Use the public shelf, the Private Vault path, and GSN entry for different jobs
-        </div>
-        <div style={{ marginTop: 8, ...helperText(), maxWidth: 860 }}>
-          This page is the public shop face. It should stay clear about what is openly browseable, what still needs a private owner link, and when the next step belongs back inside GSN.
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          {nextStepCards.map((item) => (
-            <div key={item.title} style={innerCard()}>
-              <div style={sectionLabel()}>{item.label}</div>
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#0B1F33",
-                  fontSize: 18,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {item.title}
-              </div>
-              <div style={{ marginTop: 10, ...helperText() }}>{item.body}</div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -2076,8 +1998,7 @@ export default function ShopGalleryPage() {
                 lineHeight: 1.56,
               }}
             >
-              The public shop shows what everyone can see. Vault is where selected
-              offers can be viewed privately after the owner approves the trust link.
+              Some offers are not public. Ask the owner for a private Vault link when you need them.
             </div>
             <div
               style={{
@@ -2088,8 +2009,7 @@ export default function ShopGalleryPage() {
                 lineHeight: 1.56,
               }}
             >
-              Ask for a Vault view when you want to see private stock, special
-              offers, or items the shop does not put in the open gallery.
+              Public items stay below. Private offers stay separate.
             </div>
             <div
               style={{
@@ -2160,7 +2080,7 @@ export default function ShopGalleryPage() {
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
               >
-                Ask for Private Vault view
+                Ask for Vault link
               </button>
                 <button
                   type="button"
@@ -2173,7 +2093,7 @@ export default function ShopGalleryPage() {
                   flex: isCompact ? "1 1 132px" : undefined,
                 }}
               >
-                Copy public shop link
+                Copy shop link
               </button>
             </div>
           </div>
@@ -2578,32 +2498,31 @@ export default function ShopGalleryPage() {
                   "0 10px 22px rgba(8,38,67,0.15), inset 0 1px 0 rgba(255,255,255,0.17)",
               }}
             >
-              Public product shelf
+              🛍️ Public items
             </div>
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
-              Public products appear here. Vault offers stay separate, so selected items
-              are not mixed into the public shop face.
+              These are the items anyone can browse or share. Vault offers stay private.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>
               {showAllProducts && overflowProductCount > 0
-                ? `All ${usableProductCount} photo-ready products showing`
+                ? `All ${usableProductCount} items showing`
                 : hiddenProductCount > 0
-                ? `${visibleProducts.length} of ${usableProductCount} photo-ready products showing`
-                : `${visibleProducts.length} public products live`}
+                ? `${visibleProducts.length} of ${usableProductCount} items showing`
+                : `${visibleProducts.length} public items live`}
             </span>
             <span style={badge(false)}>
               {showAllProducts && overflowProductCount > 0
-                ? "Full loaded shelf open"
+                ? "Full shelf open"
                 : hiddenProductCount > 0
-                ? `${hiddenProductCount} loaded beyond the public shelf`
+                ? `${hiddenProductCount} more loaded`
                 : `Up to ${GALLERY_SLOTS_TOTAL} public slots`}
             </span>
             {brokenProductMediaCount > 0 ? (
               <span style={badge(false)}>
-                {brokenProductMediaCount} old photo link moved aside
+                {brokenProductMediaCount} old picture link hidden
               </span>
             ) : null}
             {overflowProductCount > 0 ? (
@@ -2619,7 +2538,7 @@ export default function ShopGalleryPage() {
                   fontSize: 12,
                 }}
               >
-                {showAllProducts ? "Return to 12-slot shelf" : "Show all loaded items"}
+                {showAllProducts ? "Show fewer" : "Show all items"}
               </button>
             ) : null}
           </div>
@@ -2642,11 +2561,10 @@ export default function ShopGalleryPage() {
             }}
           >
             <div style={{ color: "#0B1F33", fontSize: 18, fontWeight: 900, lineHeight: 1.3 }}>
-              No public products are showing yet.
+              No public items are showing yet.
             </div>
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
-              Check back later for public offers. If you want to see selected items, use the
-              Private Vault card above to ask the owner for an access link.
+              Check back later for public offers. For private offers, ask the owner for a Vault link.
             </div>
           </div>
         ) : (
@@ -2813,7 +2731,7 @@ export default function ShopGalleryPage() {
                         backdropFilter: "blur(8px)",
                       }}
                     >
-                      {hasVideoStory ? "Product story" : "Product frame"}
+                    {hasVideoStory ? "Item video" : "Item picture"}
                     </div>
                     {hasVideoStory ? (
                       <video
@@ -2894,11 +2812,10 @@ export default function ShopGalleryPage() {
                               fontWeight: 900,
                             }}
                           >
-                            Product image coming soon
+                            Picture coming soon
                           </div>
                           <div style={{ marginTop: 8, fontSize: 13, lineHeight: 1.7 }}>
-                            This public slot is live, but the executive product picture has not
-                            been released yet.
+                            This item is live, but the public picture is not ready yet.
                           </div>
                         </div>
                       </div>
