@@ -19780,3 +19780,27 @@ GSN-branded invite composer and invite-entry continuity.
 - Verification:
   - `npm exec -- eslint src/pages/CommunityHomePage.tsx`
     -> passed
+
+### Shop Control spotlight inner-page audit and simplification (2026-05-03)
+
+- Owner request: audit inner pages one by one, starting with spotlight/free spotlight, because some owner-side pages still felt busy, unintelligent, and hard for ordinary users.
+- Code mapping confirmed:
+  - Free Spotlight and Spotlight Subscription are currently lanes inside `frontend/src/pages/ShopControlPage.tsx`, not separate route files.
+  - Community Home links into `/app/shop-control#shop-control-spotlight` and `/app/shop-control#shop-control-paid-spotlight`.
+  - Backend/payment logic already exists; this pass did not change backend, schemas, payment rules, or marketplace broadcast rules.
+- Updated `frontend/src/pages/ShopControlPage.tsx`:
+  - simplified the dedicated Spotlight Portal header into clear `Free Spotlight` / `Spotlight Subscription` modes.
+  - separated the free lane and paid subscription lane visually inside the portal.
+  - reduced the flow to three user-facing steps: shop record, media, publish.
+  - simplified media choices to Picture, Video, or Both with native global symbols.
+  - replaced technical file-name/status clutter with simple ready pills.
+  - simplified the paid spotlight subscription block into status chips, payment reference, next action, and two buttons: pay / open paid publisher.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/shop-control#shop-control-spotlight`
+  - `/app/shop-control#shop-control-paid-spotlight`
+  - no backend/auth/schema/payment logic changes

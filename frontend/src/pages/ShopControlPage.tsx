@@ -1207,14 +1207,6 @@ export default function ShopControlPage() {
         ? "Awaiting confirmation"
         : "No payment request";
 
-  const spotlightStateLabel = activePaidSpotlights.length > 0
-    ? "Usable now"
-    : safeStr(latestSpotlightPayment?.confirmed_at)
-      ? "Confirmed"
-      : latestSpotlightPayment
-        ? "Awaiting confirmation"
-        : "No payment request";
-
   const canStartPaidSpotlight = Boolean(
     safeStr(latestSpotlightPayment?.confirmed_at) && activePaidSpotlights.length === 0
   );
@@ -1999,36 +1991,78 @@ export default function ShopControlPage() {
     }
   }
 
+  const spotlightModeIsPaid = spotlightPriorityMode === "paid";
+  const spotlightPortalTitle = spotlightModeIsPaid
+    ? "Spotlight Subscription"
+    : "Free Spotlight";
+  const spotlightPortalSubtitle = spotlightModeIsPaid
+    ? "Use the paid lane only after the subscription payment is confirmed."
+    : "Show one clear shop update to people inside your community.";
+  const spotlightLaneEmoji = spotlightModeIsPaid ? "💳" : "📣";
+  const spotlightStepBadges = [
+    { key: "setup", label: "1. Shop record" },
+    { key: "upload", label: "2. Media" },
+    { key: "preview", label: "3. Publish" },
+  ];
+  const spotlightPreviewHasPicture = Boolean(spotlightImageFile || safeStr(spotlightImageUrl));
+  const spotlightPreviewHasVideo = Boolean(spotlightVideoFile || safeStr(spotlightVideoUrl));
+
   const spotlightWorkflowSection = spotlightOpen ? (
     <section
       id="shop-control-spotlight"
-      style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
+      style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 54%, #EAF3FF 100%)")}
     >
-      <div style={sectionLabel()}>
-        {spotlightPriorityMode === "paid" ? "Paid spotlight portal" : "Free spotlight portal"}
-      </div>
-
       <div
         style={{
-          marginTop: 10,
-          color: "#0B1F33",
-          fontSize: isCompact ? 20 : 24,
-          fontWeight: 900,
-          lineHeight: 1.25,
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
+          gap: 14,
+          alignItems: "center",
         }}
       >
-        Stay here until this spotlight is ready.
+        <div
+          aria-hidden="true"
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 22,
+            display: "grid",
+            placeItems: "center",
+            background: "linear-gradient(180deg, #102D4C 0%, #061827 100%)",
+            color: "#F8D876",
+            fontSize: 30,
+            boxShadow:
+              "0 18px 34px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+          }}
+        >
+          {spotlightLaneEmoji}
+        </div>
+
+        <div>
+          <div style={sectionLabel()}>Spotlight publisher</div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#07172C",
+              fontSize: isCompact ? 23 : 28,
+              fontWeight: 950,
+              lineHeight: 1.08,
+            }}
+          >
+            {spotlightPortalTitle}
+          </div>
+          <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+            {spotlightPortalSubtitle}
+          </div>
+        </div>
       </div>
 
-      <div style={{ marginTop: 10, ...helperText(), maxWidth: 860 }}>
-        GSN now leads this process one step at a time. Choose the spotlight type,
-        add the media, check the preview, then publish from this same portal.
-      </div>
-
-      <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <span style={badge(spotlightFlowStep === "setup")}>1. Prepare shop</span>
-        <span style={badge(spotlightFlowStep === "upload")}>2. Add media</span>
-        <span style={badge(spotlightFlowStep === "preview")}>3. Preview and publish</span>
+      <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
+        {spotlightStepBadges.map((item) => (
+          <span key={item.key} style={badge(spotlightFlowStep === item.key)}>
+            {item.label}
+          </span>
+        ))}
         <span style={badge(false)}>Community: {communityName}</span>
       </div>
 
@@ -2040,12 +2074,12 @@ export default function ShopControlPage() {
             border: "1px solid rgba(11,31,51,0.08)",
           }}
         >
-          <div style={sectionLabel()}>Current live spotlight</div>
+          <div style={sectionLabel()}>📣 Live now</div>
           <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
             {firstTruthy(currentActiveSpotlight?.message, "Live spotlight is active.")}
           </div>
           <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-            If you publish now, this new spotlight replaces the current live one for this shop.
+            Publishing a new one will replace the current live spotlight for this shop.
           </div>
         </div>
       ) : null}
@@ -2066,10 +2100,12 @@ export default function ShopControlPage() {
         {spotlightFlowStep === "setup" ? (
           <>
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-              <div style={sectionLabel()}>Prepare the shop record first</div>
+              <div style={sectionLabel()}>🛍️ Prepare shop</div>
+              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
+                Add the basic shop record first.
+              </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Spotlight belongs to your shop. Before the first spotlight can go live,
-                GSN needs one clean shop record attached to this community.
+                Spotlight must belong to a real shop, so people know who they are seeing.
               </div>
 
               <div
@@ -2131,7 +2167,7 @@ export default function ShopControlPage() {
                   disabled={creatingSpotlightShop}
                   style={fullButton(actionBtn("primary", creatingSpotlightShop))}
                 >
-                  {creatingSpotlightShop ? "Preparing shop..." : "Continue to shop spotlight"}
+                  {creatingSpotlightShop ? "Preparing shop..." : "Continue"}
                 </button>
                 <button
                   type="button"
@@ -2146,20 +2182,85 @@ export default function ShopControlPage() {
           </>
         ) : spotlightFlowStep === "upload" ? (
           <>
-            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-              <div style={sectionLabel()}>Choose spotlight type</div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Start with the exact spotlight you want to prepare.
-              </div>
-              <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  ...innerCard(
+                    spotlightPriorityMode === "free"
+                      ? "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)"
+                      : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+                  ),
+                  border:
+                    spotlightPriorityMode === "free"
+                      ? "1px solid rgba(242,199,102,0.36)"
+                      : "1px solid rgba(13,95,168,0.12)",
+                }}
+              >
+                <div style={{ fontSize: 26, lineHeight: 1 }}>📣</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: spotlightPriorityMode === "free" ? "#FFFFFF" : "#07172C",
+                    fontSize: 17,
+                    fontWeight: 950,
+                  }}
+                >
+                  Free Spotlight
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: spotlightPriorityMode === "free" ? "#D7E3F1" : "#466078",
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    fontWeight: 700,
+                  }}
+                >
+                  Normal community visibility.
+                </div>
                 <button
                   type="button"
                   {...buttonGuardProps()}
                   onClick={() => setSpotlightPriorityMode("free")}
-                  style={fullButton(actionBtn("primary", spotlightPriorityMode === "free"))}
+                  style={{ ...fullButton(actionBtn("secondary")), marginTop: 12 }}
                 >
-                  Free spotlight
+                  Use free lane
                 </button>
+              </div>
+
+              <div
+                style={{
+                  ...innerCard(
+                    spotlightPriorityMode === "paid"
+                      ? "linear-gradient(180deg, #FFF8DE 0%, #F8E6A6 100%)"
+                      : "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+                  ),
+                  border:
+                    spotlightPriorityMode === "paid"
+                      ? "1px solid rgba(183,128,24,0.28)"
+                      : "1px solid rgba(13,95,168,0.12)",
+                }}
+              >
+                <div style={{ fontSize: 26, lineHeight: 1 }}>💳</div>
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#07172C",
+                    fontSize: 17,
+                    fontWeight: 950,
+                  }}
+                >
+                  Spotlight Subscription
+                </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
+                  Paid priority after confirmation.
+                </div>
                 <button
                   type="button"
                   {...buttonGuardProps()}
@@ -2169,47 +2270,47 @@ export default function ShopControlPage() {
                     }
                   }}
                   disabled={!canStartPaidSpotlight}
-                  style={fullButton(actionBtn("secondary", !canStartPaidSpotlight))}
+                  style={{ ...fullButton(actionBtn("secondary", !canStartPaidSpotlight)), marginTop: 12 }}
                 >
-                  Paid spotlight
+                  Use paid lane
                 </button>
-              </div>
-              {!canStartPaidSpotlight ? (
-                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                  Paid spotlight stays locked until the spotlight subscription payment is confirmed.
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                  {canStartPaidSpotlight
+                    ? "Subscription is ready."
+                    : "Start or confirm payment first."}
                 </div>
-              ) : null}
+              </div>
             </div>
 
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-              <div style={sectionLabel()}>Choose what to add</div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Pick the media you want to prepare in this run.
+              <div style={sectionLabel()}>🧭 Choose what people will see</div>
+              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 17, fontWeight: 900 }}>
+                Pick one clear format.
               </div>
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
                 <button
                   type="button"
                   {...buttonGuardProps()}
                   onClick={() => setSpotlightMediaChoice("image")}
-                  style={fullButton(actionBtn("secondary", spotlightMediaChoice === "image"))}
+                  style={fullButton(actionBtn(spotlightMediaChoice === "image" ? "primary" : "secondary"))}
                 >
-                  Picture only
+                  🖼️ Picture
                 </button>
                 <button
                   type="button"
                   {...buttonGuardProps()}
                   onClick={() => setSpotlightMediaChoice("video")}
-                  style={fullButton(actionBtn("secondary", spotlightMediaChoice === "video"))}
+                  style={fullButton(actionBtn(spotlightMediaChoice === "video" ? "primary" : "secondary"))}
                 >
-                  Video only
+                  🎬 Video
                 </button>
                 <button
                   type="button"
                   {...buttonGuardProps()}
                   onClick={() => setSpotlightMediaChoice("both")}
-                  style={fullButton(actionBtn("secondary", spotlightMediaChoice === "both"))}
+                  style={fullButton(actionBtn(spotlightMediaChoice === "both" ? "primary" : "secondary"))}
                 >
-                  Picture and video
+                  🖼️ + 🎬 Both
                 </button>
               </div>
             </div>
@@ -2223,9 +2324,9 @@ export default function ShopControlPage() {
             >
               {spotlightMediaChoice !== "video" ? (
                 <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-                  <div style={sectionLabel()}>Upload picture</div>
+                  <div style={sectionLabel()}>🖼️ Picture</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Pick the picture people should notice first.
+                    Choose the picture people should notice first.
                   </div>
                   <input
                     key={spotlightImageInputKey}
@@ -2239,9 +2340,10 @@ export default function ShopControlPage() {
                     style={{ ...inputStyle(), marginTop: 10 }}
                   />
                   {spotlightImageFile ? (
-                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                      Ready: {safeStr(spotlightImageFile.name) || "image"} |{" "}
-                      {formatFileSize(spotlightImageFile.size)}
+                    <div style={{ marginTop: 10 }}>
+                      <span style={badge(true)}>
+                        ✅ Picture ready • {formatFileSize(spotlightImageFile.size)}
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -2249,9 +2351,9 @@ export default function ShopControlPage() {
 
               {spotlightMediaChoice !== "image" ? (
                 <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-                  <div style={sectionLabel()}>Upload short video</div>
+                  <div style={sectionLabel()}>🎬 Short video</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Add a short video when you want movement in the spotlight.
+                    Use a short clip when movement explains the shop better.
                   </div>
                   <input
                     key={spotlightVideoInputKey}
@@ -2265,12 +2367,13 @@ export default function ShopControlPage() {
                     style={{ ...inputStyle(), marginTop: 10 }}
                   />
                   {spotlightVideoFile ? (
-                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                      Ready: {safeStr(spotlightVideoFile.name) || "video"} |{" "}
-                      {formatFileSize(spotlightVideoFile.size)}
-                      {spotlightVideoDurationSeconds != null
-                        ? ` | ${spotlightVideoDurationSeconds.toFixed(1)}s`
-                        : ""}
+                    <div style={{ marginTop: 10 }}>
+                      <span style={badge(true)}>
+                        ✅ Video ready • {formatFileSize(spotlightVideoFile.size)}
+                        {spotlightVideoDurationSeconds != null
+                          ? ` • ${spotlightVideoDurationSeconds.toFixed(1)}s`
+                          : ""}
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -2278,7 +2381,10 @@ export default function ShopControlPage() {
             </div>
 
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-              <div style={sectionLabel()}>Message</div>
+              <div style={sectionLabel()}>✍️ Message</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Keep it short. Say what people should do next.
+              </div>
               <textarea
                 value={spotlightMessage}
                 onChange={(e) => setSpotlightMessage(e.target.value)}
@@ -2310,7 +2416,7 @@ export default function ShopControlPage() {
               >
                 {preparingSpotlightImage || preparingSpotlightVideo
                   ? "Preparing media..."
-                  : "Continue to preview"}
+                  : "Preview spotlight"}
               </button>
               <button
                 type="button"
@@ -2325,7 +2431,7 @@ export default function ShopControlPage() {
         ) : (
           <>
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-              <div style={sectionLabel()}>Preview before publish</div>
+              <div style={sectionLabel()}>👀 Preview</div>
               <div style={{ marginTop: 10 }}>
                 {spotlightImagePreviewUrl || spotlightVideoPreviewUrl ? (
                   <SpotlightMediaFrame
@@ -2374,10 +2480,12 @@ export default function ShopControlPage() {
               <div style={{ marginTop: 12, color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
                 {spotlightMessage || "Media-only spotlight"}
               </div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                {spotlightPriorityMode === "paid"
-                  ? "This publish uses the confirmed paid spotlight lane."
-                  : "This publish uses the free community spotlight lane."}
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(true)}>
+                  {spotlightPriorityMode === "paid" ? "💳 Paid lane" : "📣 Free lane"}
+                </span>
+                {spotlightPreviewHasPicture ? <span style={badge(false)}>🖼️ Picture</span> : null}
+                {spotlightPreviewHasVideo ? <span style={badge(false)}>🎬 Video</span> : null}
               </div>
             </div>
 
@@ -2418,7 +2526,7 @@ export default function ShopControlPage() {
                   ? "Review Identity First"
                   : creatingSpotlight
                   ? "Publishing..."
-                  : "Publish spotlight"}
+                  : "🚀 Publish spotlight"}
               </button>
               <button
                 type="button"
@@ -2459,8 +2567,8 @@ export default function ShopControlPage() {
       <div style={institutionalBlueRailShell(isCompact)}>
         <PageTopNav
           sectionLabel="Spotlight Portal"
-          title={spotlightPriorityMode === "paid" ? "Paid Spotlight Portal" : "Free Spotlight Portal"}
-          subtitle="GSN is leading this spotlight process step by step. Finish it here or cancel and return to normal shop tools."
+          title={spotlightPortalTitle}
+          subtitle={spotlightPortalSubtitle}
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/shop-control"
@@ -2913,44 +3021,54 @@ export default function ShopControlPage() {
 
           <div
             id="shop-control-paid-spotlight"
-            style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}
+            style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #FFF8DE 56%, #F7FAFF 100%)")}
           >
-            <div style={sectionLabel()}>Paid spotlight</div>
-            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 900 }}>
-              Paid spotlight
+            <div style={sectionLabel()}>💳 Spotlight Subscription</div>
+            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
+              Paid priority, kept separate.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Use this only when you want this shop to take priority after payment confirmation.
+              Start payment here. After confirmation, open the paid publisher.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Active paid spotlights: {activePaidSpotlights.length}</span>
-              <span style={badge(false)}>State: {spotlightStateLabel}</span>
+              <span style={badge(activePaidSpotlights.length > 0)}>
+                📣 Active: {activePaidSpotlights.length}
+              </span>
+              <span style={badge(canStartPaidSpotlight)}>
+                ✅ Subscription: {canStartPaidSpotlight ? "Ready" : "Not ready"}
+              </span>
               <span style={badge(false)}>
-                Payment: {firstTruthy(latestSpotlightPayment?.status, "Not started")}
+                💳 Payment: {firstTruthy(latestSpotlightPayment?.status, "Not started")}
               </span>
             </div>
             {latestSpotlightPayment ? (
-              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
-                <div style={helperText()}>
-                  Reference: {firstTruthy(latestSpotlightPayment.reference_display, "Awaiting reference")}
+              <div
+                style={{
+                  marginTop: 12,
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  border: "1px solid rgba(13,95,168,0.10)",
+                }}
+              >
+                <div style={sectionLabel()}>Payment reference</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 17, fontWeight: 950 }}>
+                  {firstTruthy(latestSpotlightPayment.reference_display, "Awaiting reference")}
                 </div>
-                <div style={helperText()}>
-                  Confirmation:
-                  {" "}
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                   {safeStr(latestSpotlightPayment.confirmed_at)
                     ? `Confirmed ${safeDateTime(latestSpotlightPayment.confirmed_at)}`
                     : firstTruthy(latestSpotlightPayment.status, "Expected")}
                 </div>
-                <div style={helperText()}>
-                  Amount: {firstTruthy(latestSpotlightPayment.amount, "0.00")}{" "}
-                  {firstTruthy(latestSpotlightPayment.currency, "GBP")}
-                </div>
-                <div style={helperText()}>
-                  Bank check: {latestSpotlightPayment.matched_bank_event_id ? "Matched" : "Waiting"}
+                <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={badge(false)}>
+                    🌐 {firstTruthy(latestSpotlightPayment.amount, "0.00")}{" "}
+                    {firstTruthy(latestSpotlightPayment.currency, "GBP")}
+                  </span>
+                  <span style={badge(Boolean(latestSpotlightPayment.matched_bank_event_id))}>
+                    🏦 Bank check: {latestSpotlightPayment.matched_bank_event_id ? "Matched" : "Waiting"}
+                  </span>
                 </div>
               </div>
             ) : null}
-            <div style={{ marginTop: 10, ...helperText() }}>{spotlightProofText}</div>
             <div
               style={{
                 marginTop: 12,
@@ -2974,7 +3092,6 @@ export default function ShopControlPage() {
                 {spotlightNextAction.detail}
               </div>
             </div>
-            <div style={{ marginTop: 12, ...helperText() }}>Start or renew paid spotlight</div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
@@ -2990,9 +3107,6 @@ export default function ShopControlPage() {
                   busyText: "Preparing...",
                 })}
               </button>
-            </div>
-            <div style={{ marginTop: 10, ...helperText() }}>Continue with paid spotlight work</div>
-            <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
                 {...buttonGuardProps()}
@@ -3001,6 +3115,9 @@ export default function ShopControlPage() {
               >
                 Open paid publisher
               </button>
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
+              {spotlightProofText}
             </div>
           </div>
         </div>
