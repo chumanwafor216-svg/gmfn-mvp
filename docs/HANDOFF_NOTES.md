@@ -19616,3 +19616,19 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/dashboard`
   - no backend/auth/schema changes
+
+### Dashboard symbol correction after phone review (2026-05-03)
+
+- Owner feedback: the newly drawn SVG icons looked worse and too much like bad hand drawings; the dashboard must feel institutional, not homemade.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - removed the custom-drawn SVG pictogram paths from dashboard signal badges.
+  - kept the stable badge placement and sizing, but now renders native platform symbols using the phone/browser emoji font stack.
+  - retained the proper SVG chevron for open/close because that is a control affordance, not a semantic pictogram.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/dashboard`
+  - no backend/auth/schema changes

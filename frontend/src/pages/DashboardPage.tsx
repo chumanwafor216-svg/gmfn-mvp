@@ -735,172 +735,89 @@ function dashboardSectionSignal(label: string): DashboardSignalName {
 function DashboardSignalIcon({
   name,
   size = 22,
-  strokeWidth = 2.1,
+  strokeWidth: _strokeWidth = 2.1,
 }: {
   name: DashboardSignalName;
   size?: number;
   strokeWidth?: number;
 }) {
-  const common = {
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    vectorEffect: "non-scaling-stroke" as const,
-  };
+  void _strokeWidth;
 
-  let paths: React.ReactNode;
+  let glyph = "\u25CF";
   switch (name) {
     case "marketplace":
-      paths = (
-        <>
-          <path {...common} d="M6.5 9.2h11l-1 9.3h-9z" />
-          <path {...common} d="M9 9.2a3 3 0 0 1 6 0" />
-        </>
-      );
+      glyph = "\uD83D\uDED2";
       break;
     case "demand":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="12" r="7.5" />
-          <path {...common} d="M12 8.5v7M8.5 12h7" />
-        </>
-      );
+      glyph = "\u2795";
       break;
     case "spotlight":
-      paths = (
-        <>
-          <path
-            {...common}
-            d="m12 4 2.1 4.6 5 .6-3.7 3.3 1 4.9L12 15l-4.4 2.4 1-4.9-3.7-3.3 5-.6z"
-          />
-        </>
-      );
+      glyph = "\u2B50";
       break;
     case "trust":
-      paths = (
-        <>
-          <path {...common} d="M12 4.2 18 6.5v5.1c0 3.8-2.3 6.4-6 8.2-3.7-1.8-6-4.4-6-8.2V6.5z" />
-          <path {...common} d="m9.2 12.1 1.8 1.8 3.9-4.1" />
-        </>
-      );
+      glyph = "\uD83D\uDEE1\uFE0F";
       break;
     case "community":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="8" r="3" />
-          <path {...common} d="M6.4 18.5c.7-3 2.6-4.7 5.6-4.7s4.9 1.7 5.6 4.7" />
-          <path {...common} d="M5.3 10.5a2.4 2.4 0 0 0 2.1 3.6M18.7 10.5a2.4 2.4 0 0 1-2.1 3.6" />
-        </>
-      );
+      glyph = "\uD83D\uDC65";
       break;
     case "shop":
-      paths = (
-        <>
-          <path {...common} d="M5.5 10h13l-1.1-4.2H6.6z" />
-          <path {...common} d="M7 10v8.2h10V10" />
-          <path {...common} d="M9.5 18.2v-4h5v4" />
-        </>
-      );
+      glyph = "\uD83C\uDFEA";
       break;
     case "alerts":
-      paths = (
-        <>
-          <path {...common} d="M17 10.4c0-3-1.9-5.1-5-5.1s-5 2.1-5 5.1c0 4-1.4 4.9-2.1 5.8h14.2c-.7-.9-2.1-1.8-2.1-5.8z" />
-          <path {...common} d="M10 19a2.2 2.2 0 0 0 4 0" />
-        </>
-      );
+      glyph = "\uD83D\uDD14";
       break;
     case "identity":
-      paths = (
-        <>
-          <rect {...common} x="4.5" y="6.5" width="15" height="11" rx="2" />
-          <circle {...common} cx="9" cy="11" r="1.8" />
-          <path {...common} d="M7.1 15.1c.4-1.2 1-1.8 1.9-1.8s1.5.6 1.9 1.8M13.5 10h3.2M13.5 13.5h2.4" />
-        </>
-      );
+      glyph = "\uD83E\uDEAA";
       break;
     case "compass":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="12" r="7.5" />
-          <path {...common} d="m14.7 8.7-1.6 4.4-4.4 1.6 1.6-4.4z" />
-        </>
-      );
+      glyph = "\uD83E\uDDED";
       break;
     case "package":
-      paths = (
-        <>
-          <path {...common} d="m12 4.8 6.3 3.3v7.8L12 19.2l-6.3-3.3V8.1z" />
-          <path {...common} d="M5.8 8.2 12 11.6l6.2-3.4M12 11.6v7.5" />
-        </>
-      );
+      glyph = "\uD83D\uDCE6";
       break;
     case "target":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="12" r="7.3" />
-          <circle {...common} cx="12" cy="12" r="3.6" />
-          <path {...common} d="M12 4.7V3M19.3 12H21M12 19.3V21M4.7 12H3" />
-        </>
-      );
+      glyph = "\uD83C\uDFAF";
       break;
     case "calendar":
-      paths = (
-        <>
-          <rect {...common} x="5" y="6.5" width="14" height="12" rx="2" />
-          <path {...common} d="M8.5 4.5v4M15.5 4.5v4M5 10h14" />
-        </>
-      );
+      glyph = "\uD83D\uDCC5";
       break;
     case "user":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="8.2" r="3.1" />
-          <path {...common} d="M6.5 18.8c.8-3.1 2.7-4.7 5.5-4.7s4.7 1.6 5.5 4.7" />
-        </>
-      );
+      glyph = "\uD83D\uDC64";
       break;
     case "check":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="12" r="7.5" />
-          <path {...common} d="m8.8 12.2 2.1 2.1 4.6-4.8" />
-        </>
-      );
+      glyph = "\u2705";
       break;
     case "add":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="12" r="7.5" />
-          <path {...common} d="M12 8.2v7.6M8.2 12h7.6" />
-        </>
-      );
+      glyph = "\u2795";
       break;
     case "time":
-      paths = (
-        <>
-          <circle {...common} cx="12" cy="12" r="7.5" />
-          <path {...common} d="M12 7.8v4.4l3.1 1.9" />
-        </>
-      );
+      glyph = "\u23F3";
       break;
     default:
-      paths = <circle {...common} cx="12" cy="12" r="2.4" />;
+      glyph = "\u2022";
   }
 
   return (
-    <svg
+    <span
       aria-hidden="true"
-      focusable="false"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      style={{ display: "block", flexShrink: 0 }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: size,
+        height: size,
+        flexShrink: 0,
+        fontSize: Math.round(size * 1.05),
+        lineHeight: 1,
+        fontFamily:
+          '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif',
+        letterSpacing: 0,
+        textTransform: "none",
+        filter: "saturate(0.96) contrast(1.02)",
+      }}
     >
-      {paths}
-    </svg>
+      {glyph}
+    </span>
   );
 }
 
