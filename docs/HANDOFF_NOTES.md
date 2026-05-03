@@ -19658,3 +19658,25 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/community`
   - no backend/auth/schema changes
+
+### Community Home color-production audit and correction (2026-05-03)
+
+- Owner feedback after phone review: the Community Home arrangement is closer to the approved mockup, but the color production looked faint/washed out and the outside surface looked weak.
+- Audit finding:
+  - `CommunityHomePage.tsx` still mixed old dark-card defaults with new white-card layout.
+  - `pageCard`, `innerCard`, badges, and labels were mapping nominal white surfaces into dark/translucent surfaces, while other cards expected white institutional surfaces.
+  - The hero was still using a pale blue/white card style instead of the approved deep navy Community Home hero.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - replaced the route-local shell with a clean white/off-white surface and removed faint radial color haze/watermark opacity.
+  - changed the Community Home hero to deep navy with controlled gold/navy border and stronger contrast.
+  - made default cards, inner cards, badges, compact signals, and secondary buttons use crisp white/light-blue surfaces instead of translucent dark mappings.
+  - adjusted quick-action cards to match the screenshot direction: light cards, blue symbol wells, dark readable text, and controlled navy primary actions.
+  - corrected hero labels and descriptive copy to stay readable on the navy hero.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/community`
+  - no backend/auth/schema changes

@@ -291,12 +291,12 @@ function communityShellStyle(isCompact: boolean): React.CSSProperties {
     display: "grid",
     gap: isCompact ? 14 : 18,
     borderRadius: isCompact ? 24 : 34,
-    border: "1px solid rgba(16,37,59,0.10)",
+    border: "1px solid rgba(121,145,171,0.22)",
     isolation: "isolate",
     background:
-      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.09) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 92% 14%, rgba(243,208,106,0.09) 0%, rgba(243,208,106,0.00) 28%), linear-gradient(180deg, #F5FAFF 0%, #EEF5FD 42%, #F8FBFF 100%)",
+      "linear-gradient(180deg, #FFFFFF 0%, #F7FAFE 46%, #EEF5FC 100%)",
     boxShadow:
-      "0 22px 52px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
+      "0 18px 42px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
     overflow: "hidden",
   };
 }
@@ -308,9 +308,8 @@ function communityAuraStyle(isCompact: boolean): React.CSSProperties {
     height: isCompact ? "76%" : "68%",
     zIndex: 0,
     pointerEvents: "none",
-    opacity: isCompact ? 0.78 : 0.7,
-    background:
-      "radial-gradient(circle at 16% 20%, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 76% 24%, rgba(244,114,182,0.085) 0%, rgba(244,114,182,0.00) 28%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.08) 0%, rgba(243,208,106,0.00) 24%)",
+    opacity: 0,
+    background: "transparent",
     transform: "translate3d(0,0,0)",
     animation: "communityHomeAuraShift 20s ease-in-out infinite alternate",
     willChange: "transform, opacity",
@@ -323,7 +322,7 @@ function communityWatermarkStyle(isCompact: boolean): React.CSSProperties {
     right: isCompact ? -28 : 20,
     top: isCompact ? 70 : 88,
     zIndex: 0,
-    opacity: isCompact ? 0.045 : 0.065,
+    opacity: 0,
     pointerEvents: "none",
     filter: "drop-shadow(0 18px 30px rgba(16,36,58,0.14))",
   };
@@ -384,12 +383,12 @@ function CommunityShellLayers({ isCompact }: { isCompact: boolean }) {
 function communityHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
     borderRadius: isCompact ? 22 : 30,
-    border: "1px solid rgba(16,37,59,0.14)",
+    border: "1px solid rgba(214,170,69,0.18)",
     background:
-      "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 38%), linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+      "radial-gradient(circle at 14% 0%, rgba(52,117,170,0.28) 0%, rgba(52,117,170,0.00) 38%), linear-gradient(180deg, #08233A 0%, #071C30 54%, #061827 100%)",
     padding: isCompact ? 12 : 20,
     boxShadow:
-      "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.72)",
+      "0 22px 44px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.08)",
     overflow: "hidden",
   };
 }
@@ -398,15 +397,15 @@ type CommunitySurfaceTone = "summary" | "blue" | "gold" | "raised" | "quiet";
 
 function communityBlockBackground(tone: CommunitySurfaceTone): string {
   if (tone === "summary") {
-    return "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0.00) 38%), linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)";
+    return "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)";
   }
 
   if (tone === "blue") {
-    return "radial-gradient(circle at top left, rgba(59,130,246,0.12) 0%, rgba(59,130,246,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #F1F7FF 52%, #E7F0FB 100%)";
+    return "linear-gradient(180deg, #FFFFFF 0%, #F2F8FF 100%)";
   }
 
   if (tone === "gold") {
-    return "radial-gradient(circle at top left, rgba(245,158,11,0.12) 0%, rgba(245,158,11,0.00) 28%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 54%, #DCEBFA 100%)";
+    return "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)";
   }
 
   if (tone === "raised") {
@@ -422,27 +421,22 @@ function communityBlockCard(tone: CommunitySurfaceTone): React.CSSProperties {
   return {
     ...pageCard(communityBlockBackground(tone)),
     border: stronger
-      ? "1px solid rgba(11,99,209,0.14)"
+      ? "1px solid rgba(214,170,69,0.20)"
       : "1px solid rgba(16,37,59,0.12)",
     boxShadow: stronger
-      ? "0 20px 44px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.78)"
-      : "0 16px 34px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
+      ? "0 16px 32px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)"
+      : "0 12px 26px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  const resolvedBg =
-    bg === "#FFFFFF"
-      ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
-      : bg;
-
   return {
     borderRadius: "clamp(18px, 4vw, 24px)",
-    border: "1px solid rgba(123,161,204,0.20)",
-    background: resolvedBg,
+    border: "1px solid rgba(16,37,59,0.12)",
+    background: bg,
     padding: "clamp(12px, 3.6vw, 20px)",
     boxShadow:
-      "0 22px 48px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 12px 28px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
     overflow: "hidden",
   };
 }
@@ -450,39 +444,39 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   const resolvedBg =
     bg === "#F8FBFF" || bg === "#FFFFFF"
-      ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
+      ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"
       : bg;
 
   return {
     borderRadius: 18,
-    border: `1px solid ${COMMUNITY_BRAND.border}`,
+    border: "1px solid rgba(16,37,59,0.12)",
     background: resolvedBg,
     padding: "clamp(12px, 3vw, 16px)",
     boxShadow:
-      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 10px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   const resolvedBg =
     bg === "#FFFFFF" || bg === "#FCFEFF"
-      ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
+      ? "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)"
       : bg;
 
   return {
     borderRadius: 16,
-    border: "1px solid rgba(123,161,204,0.14)",
+    border: "1px solid rgba(16,37,59,0.10)",
     background: resolvedBg,
     padding: "clamp(9px, 2.6vw, 12px)",
     boxShadow:
-      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 10px 22px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
 function sectionLabel(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#9CB4CF",
+    color: "#48657D",
     fontWeight: 900,
     letterSpacing: 1.8,
     textTransform: "uppercase",
@@ -500,11 +494,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 26,
     borderRadius: 999,
     padding: "5px 8px",
-    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
-    color: primary ? "#CFE3FF" : "#E6EEF8",
+    background: primary ? "#EAF3FF" : "#FFFFFF",
+    color: primary ? "#0B2D4A" : "#48657D",
     border: primary
-      ? "1px solid rgba(123,161,204,0.26)"
-      : "1px solid rgba(123,161,204,0.16)",
+      ? "1px solid rgba(13,95,168,0.18)"
+      : "1px solid rgba(16,37,59,0.10)",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -514,7 +508,9 @@ function badge(primary = false): React.CSSProperties {
 
 function heroStatCard(): React.CSSProperties {
   return {
-    ...innerCard("rgba(255,255,255,0.74)"),
+    ...innerCard("rgba(255,255,255,0.08)"),
+    border: "1px solid rgba(255,255,255,0.14)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
     display: "grid",
     alignContent: "center",
     justifyItems: "center",
@@ -530,24 +526,24 @@ function compactSignal(primary = false): React.CSSProperties {
     minHeight: 24,
     borderRadius: 999,
     padding: "4px 8px",
-    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
-    color: primary ? "#CFE3FF" : "#E6EEF8",
+    background: primary ? "#EAF3FF" : "#FFFFFF",
+    color: primary ? "#0B2D4A" : "#48657D",
     border: primary
-      ? "1px solid rgba(123,161,204,0.26)"
-      : "1px solid rgba(123,161,204,0.14)",
+      ? "1px solid rgba(13,95,168,0.18)"
+      : "1px solid rgba(16,37,59,0.10)",
     fontSize: 11.5,
     fontWeight: 900,
     lineHeight: 1.15,
     whiteSpace: "nowrap",
     textAlign: "center",
     boxShadow:
-      "0 10px 20px rgba(2,6,23,0.14), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 6px 14px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
 function metricLabel(): React.CSSProperties {
   return {
-    color: "#9CB4CF",
+    color: "#5D768F",
     fontSize: 9.4,
     fontWeight: 950,
     letterSpacing: 0.72,
@@ -560,7 +556,7 @@ function metricLabel(): React.CSSProperties {
 function metricValue(): React.CSSProperties {
   return {
     marginTop: 4,
-    color: COMMUNITY_BRAND.ink,
+    color: "#07172C",
     fontSize: 13.5,
     fontWeight: 950,
     lineHeight: 1.2,
@@ -628,10 +624,10 @@ function actionBtn(
       borderRadius: 14,
       border: disabled
         ? "1px solid rgba(148,163,184,0.26)"
-        : "1px solid rgba(255,255,255,0.18)",
+        : "1px solid rgba(255,255,255,0.16)",
       background: disabled
         ? "#CBD5E1"
-        : "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)",
+        : "linear-gradient(180deg, #0B2D4A 0%, #08233A 100%)",
       color: "#F8FBFF",
       fontWeight: 900,
       fontSize: 14,
@@ -644,7 +640,7 @@ function actionBtn(
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
-        : "0 5px 0 rgba(7,24,39,0.28), 0 16px 30px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -10px 18px rgba(7,24,39,0.10)",
+        : "0 5px 0 rgba(7,24,39,0.22), 0 14px 26px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
       touchAction: "manipulation",
       lineHeight: 1.18,
       userSelect: "none",
@@ -665,8 +661,8 @@ function actionBtn(
       borderRadius: 12,
       border: "1px solid rgba(123,161,204,0.16)",
       background:
-        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-      color: disabled ? "#94A3B8" : "#E6EEF8",
+        "linear-gradient(180deg, #F8FBFF 0%, #EEF5FD 100%)",
+      color: disabled ? "#94A3B8" : "#0B2D4A",
       fontWeight: 800,
       fontSize: 13,
       textAlign: "center",
@@ -677,7 +673,7 @@ function actionBtn(
       overflowWrap: "anywhere",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+        "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
       touchAction: "manipulation",
       lineHeight: 1.18,
       userSelect: "none",
@@ -697,8 +693,8 @@ function actionBtn(
     borderRadius: 14,
     border: "1px solid rgba(123,161,204,0.16)",
     background:
-      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    color: disabled ? "#94A3B8" : "#E6EEF8",
+      "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
+    color: disabled ? "#94A3B8" : "#0B2D4A",
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
@@ -710,7 +706,7 @@ function actionBtn(
     opacity: disabled ? 0.86 : 1,
     boxShadow: disabled
       ? "none"
-      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      : "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
     touchAction: "manipulation",
     lineHeight: 1.18,
     userSelect: "none",
@@ -833,7 +829,7 @@ function communitySearchInput(isCompact: boolean): React.CSSProperties {
 
 function communityQuickActionButton(primary = false): React.CSSProperties {
   return {
-    ...actionBtn(primary ? "primary" : "secondary"),
+    ...actionBtn("secondary"),
     minHeight: 84,
     justifyContent: "flex-start",
     alignItems: "center",
@@ -841,11 +837,11 @@ function communityQuickActionButton(primary = false): React.CSSProperties {
     padding: "12px",
     textAlign: "left",
     background: primary
-      ? "linear-gradient(180deg, #133D63 0%, #226092 100%)"
+      ? "linear-gradient(180deg, #F1F7FF 0%, #E6F1FF 100%)"
       : "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
-    color: primary ? "#F8FBFF" : "#07172C",
+    color: "#07172C",
     border: primary
-      ? "1px solid rgba(255,255,255,0.18)"
+      ? "1px solid rgba(13,95,168,0.16)"
       : "1px solid rgba(16,37,59,0.10)",
   };
 }
@@ -860,12 +856,12 @@ function communityActionIcon(primary = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     background: primary
-      ? "rgba(255,255,255,0.12)"
+      ? "linear-gradient(180deg, #DDEEFF 0%, #EEF6FF 100%)"
       : "linear-gradient(180deg, #EAF3FF 0%, #F5FAFF 100%)",
     border: primary
-      ? "1px solid rgba(255,255,255,0.14)"
+      ? "1px solid rgba(13,95,168,0.14)"
       : "1px solid rgba(13,95,168,0.10)",
-    color: primary ? "#F2C766" : "#135A94",
+    color: "#135A94",
     fontSize: 22,
     lineHeight: 1,
     boxShadow: primary
@@ -2480,7 +2476,9 @@ function communityButtonGuardProps(): Pick<
             </div>
             {isCompact ? (
               <div style={{ minWidth: 0 }}>
-                <div style={sectionLabel()}>GSN Community Home</div>
+                <div style={{ ...sectionLabel(), color: "#BFD0E2" }}>
+                  GSN Community Home
+                </div>
                 <div
                   style={{
                     marginTop: 3,
@@ -2499,7 +2497,9 @@ function communityButtonGuardProps(): Pick<
           <div>
             {!isCompact ? (
               <>
-                <div style={sectionLabel()}>GSN Community Home</div>
+                <div style={{ ...sectionLabel(), color: "#BFD0E2" }}>
+                  GSN Community Home
+                </div>
                 <div
                   style={{
                     marginTop: 6,
@@ -2518,7 +2518,7 @@ function communityButtonGuardProps(): Pick<
             <div
               style={{
                 marginTop: isCompact ? 6 : 12,
-                color: "#3A526A",
+                color: "#D4E1EE",
                 fontSize: isCompact ? 11.5 : 14,
                 lineHeight: isCompact ? 1.45 : 1.75,
                 maxWidth: 880,
@@ -2540,7 +2540,7 @@ function communityButtonGuardProps(): Pick<
               }}
             >
               <div style={heroStatCard()}>
-                <div style={sectionLabel("center")}>Holder</div>
+                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>Holder</div>
                 <div
                   style={{
                     marginTop: 4,
@@ -2555,7 +2555,7 @@ function communityButtonGuardProps(): Pick<
                 </div>
               </div>
               <div style={heroStatCard()}>
-                <div style={sectionLabel("center")}>GSN ID</div>
+                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>GSN ID</div>
                 <div
                   style={{
                     marginTop: 4,
@@ -2570,7 +2570,7 @@ function communityButtonGuardProps(): Pick<
                 </div>
               </div>
               <div style={heroStatCard()}>
-                <div style={sectionLabel("center")}>Communities</div>
+                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>Communities</div>
                 <div
                   style={{
                     marginTop: 2,
@@ -2583,7 +2583,9 @@ function communityButtonGuardProps(): Pick<
                 </div>
               </div>
               <div style={heroStatCard()}>
-                <div style={sectionLabel("center")}>Money across communities</div>
+                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>
+                  Money across communities
+                </div>
                 <div
                   style={{
                     marginTop: 4,
@@ -2745,7 +2747,7 @@ function communityButtonGuardProps(): Pick<
                       style={{
                         display: "block",
                         marginTop: 5,
-                        color: item.primary ? "rgba(248,251,255,0.82)" : "#617085",
+                        color: "#617085",
                         fontSize: 12.5,
                         fontWeight: 720,
                         lineHeight: 1.35,
@@ -2758,7 +2760,7 @@ function communityButtonGuardProps(): Pick<
                     aria-hidden="true"
                     style={{
                       marginLeft: "auto",
-                      color: item.primary ? "#F2C766" : "#1E5D91",
+                      color: "#1E5D91",
                       fontSize: 22,
                       fontWeight: 900,
                     }}
