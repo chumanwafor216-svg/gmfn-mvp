@@ -19680,3 +19680,23 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/community`
   - no backend/auth/schema changes
+
+### Community Home compact command-centre correction (2026-05-03)
+
+- Owner feedback: Community Home still behaved like "show everything, then collapse it"; the approved phone mockup requires a summary-first command centre with stronger contrast and no heavy manuals on the first surface.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - kept the route-local header as `Menu / MAIN MOVEMENT Community Home / Tools`.
+  - kept the deep navy hero and changed the hero title to the holder/role name rather than "Community Home of ...".
+  - kept the five compact quick actions visible: Choose community, Enter marketplace, Create community, Join community, Grow circle.
+  - added `Private vault` to the selected-community preview and the compact community list.
+  - removed the visible heavy community-list readings from Community Home: numerical strength, interaction density, community finance standing, and trust-in-community metric blocks no longer render there.
+  - reduced the owner rows to the approved compact preview rows: Owner Actions, Owner Shop Control, Grow Your Trusted Circle, Owner Spotlight Status.
+  - shortened Grow Trusted Circle row copy to one line.
+- Updated `docs/SCREEN_SPECS.md`:
+  - recorded Create community, Private vault count, compact selected-community preview, and the rule that heavy readings/manuals stay off Community Home.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx`
+    -> passed
+- Scope:
+  - `/app/community`
+  - no backend/auth/schema changes

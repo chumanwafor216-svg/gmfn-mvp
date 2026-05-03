@@ -199,48 +199,6 @@ function getClanGlobalId(clan: ClanItem | null | undefined): string {
   );
 }
 
-function getClanFinanceHealth(clan: ClanItem | null | undefined): string {
-  return firstTruthy(
-    (clan as any)?.community_finance_health,
-    (clan as any)?.finance_health,
-    (clan as any)?.finance_band,
-    (clan as any)?.liquidity_band,
-    (clan as any)?.exposure_band,
-    clan?.community?.finance_health,
-    clan?.community?.liquidity_band,
-    clan?.marketplace?.finance_health,
-    clan?.marketplace?.liquidity_band,
-    "Preparing"
-  );
-}
-
-function getClanMemberCount(clan: ClanItem | null | undefined): number {
-  const count = Number(
-    clan?.member_count ??
-      clan?.members_count ??
-      (clan as any)?.community_standing?.member_count ??
-      0
-  );
-  return Number.isFinite(count) && count >= 0 ? count : 0;
-}
-
-function getClanStrength(clan: ClanItem | null | undefined): string {
-  const count = getClanMemberCount(clan);
-  return firstTruthy(
-    (clan as any)?.community_strength,
-    (clan as any)?.community_standing?.community_strength,
-    count ? `${count} members` : "Preparing"
-  );
-}
-
-function getClanInteractionDensity(clan: ClanItem | null | undefined): string {
-  return firstTruthy(
-    (clan as any)?.interaction_density,
-    (clan as any)?.community_standing?.interaction_density,
-    "Preparing"
-  );
-}
-
 function getClanSpotlightSubscriberCount(clan: ClanItem | null | undefined): number {
   const count = Number(
     (clan as any)?.spotlight_subscription_count ??
@@ -259,11 +217,6 @@ function getClanVaultSubscriberCount(clan: ClanItem | null | undefined): number 
       0
   );
   return Number.isFinite(count) && count >= 0 ? count : 0;
-}
-
-function displayPendingSignal(value: string): string {
-  const text = safeStr(value);
-  return text.toLowerCase() === "preparing" ? "Pending" : text || "Pending";
 }
 
 function resolveMemberName(me: any): string {
@@ -334,6 +287,30 @@ function communityContentStyle(isCompact: boolean): React.CSSProperties {
     zIndex: 1,
     display: "grid",
     gap: isCompact ? 10 : 18,
+  };
+}
+
+function communityTopHeaderStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    alignItems: "center",
+    gap: isCompact ? 10 : 16,
+    padding: isCompact ? "8px 0 4px" : "10px 2px 6px",
+  };
+}
+
+function communityHeaderButtonStyle(): React.CSSProperties {
+  return {
+    ...actionBtn("secondary"),
+    minHeight: 46,
+    padding: "10px 14px",
+    borderRadius: 16,
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FBFE 100%)",
+    border: "1px solid rgba(16,37,59,0.12)",
+    color: "#07172C",
+    boxShadow:
+      "0 8px 18px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.94)",
   };
 }
 
@@ -508,13 +485,18 @@ function badge(primary = false): React.CSSProperties {
 
 function heroStatCard(): React.CSSProperties {
   return {
-    ...innerCard("rgba(255,255,255,0.08)"),
-    border: "1px solid rgba(255,255,255,0.14)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+    ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+    minHeight: 78,
+    gridTemplateColumns: "auto minmax(0, 1fr)",
+    gap: 10,
+    border: "1px solid rgba(255,255,255,0.84)",
+    boxShadow:
+      "0 12px 24px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.94)",
     display: "grid",
     alignContent: "center",
-    justifyItems: "center",
-    textAlign: "center",
+    justifyItems: "start",
+    alignItems: "center",
+    textAlign: "left",
   };
 }
 
@@ -538,58 +520,6 @@ function compactSignal(primary = false): React.CSSProperties {
     textAlign: "center",
     boxShadow:
       "0 6px 14px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
-  };
-}
-
-function metricLabel(): React.CSSProperties {
-  return {
-    color: "#5D768F",
-    fontSize: 9.4,
-    fontWeight: 950,
-    letterSpacing: 0.72,
-    lineHeight: 1.08,
-    textTransform: "uppercase",
-    textAlign: "center",
-  };
-}
-
-function metricValue(): React.CSSProperties {
-  return {
-    marginTop: 4,
-    color: "#07172C",
-    fontSize: 13.5,
-    fontWeight: 950,
-    lineHeight: 1.2,
-    textAlign: "center",
-    wordBreak: "break-word",
-  };
-}
-
-function metricCard(bg: "blue" | "gold" | "white" = "white"): React.CSSProperties {
-  const backgrounds = {
-    blue:
-      "linear-gradient(180deg, rgba(15,33,54,0.96) 0%, rgba(21,45,71,0.94) 100%)",
-    gold:
-      "linear-gradient(180deg, rgba(30,27,18,0.96) 0%, rgba(47,38,22,0.94) 100%)",
-    white:
-      "linear-gradient(180deg, rgba(15,33,54,0.96) 0%, rgba(21,45,71,0.94) 100%)",
-  };
-
-  return {
-    minHeight: 64,
-    borderRadius: 15,
-    border:
-      bg === "gold"
-        ? "1px solid rgba(212,175,55,0.22)"
-        : "1px solid rgba(123,161,204,0.16)",
-    background: backgrounds[bg],
-    padding: 8,
-    display: "grid",
-    alignContent: "center",
-    justifyItems: "center",
-    textAlign: "center",
-    boxShadow:
-      "0 12px 24px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -808,34 +738,16 @@ function communitiesCollapseHeaderButton(
   };
 }
 
-function communitySearchInput(isCompact: boolean): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: isCompact ? 46 : 50,
-    boxSizing: "border-box",
-    borderRadius: 18,
-    border: "1px solid rgba(16,37,59,0.12)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.96) 100%)",
-    padding: "0 16px",
-    color: "#07172C",
-    fontSize: isCompact ? 14 : 15,
-    fontWeight: 760,
-    outline: "none",
-    boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.9), 0 8px 18px rgba(10,24,49,0.06)",
-  };
-}
-
 function communityQuickActionButton(primary = false): React.CSSProperties {
   return {
     ...actionBtn("secondary"),
-    minHeight: 84,
-    justifyContent: "flex-start",
+    minHeight: 108,
+    justifyContent: "center",
     alignItems: "center",
-    gap: 12,
-    padding: "12px",
-    textAlign: "left",
+    gap: 8,
+    padding: "12px 8px",
+    textAlign: "center",
+    flexDirection: "column",
     background: primary
       ? "linear-gradient(180deg, #F1F7FF 0%, #E6F1FF 100%)"
       : "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 100%)",
@@ -1010,7 +922,6 @@ export default function CommunityHomePage() {
       readLocalJSON(COMMUNITY_HOME_COLLAPSE_KEY, defaultCollapseState())
     )
   );
-  const [actionSearch, setActionSearch] = useState("");
   const [guidedActionFamilyFocus, setGuidedActionFamilyFocus] = useState<
     string | null
   >(null);
@@ -1354,25 +1265,6 @@ export default function CommunityHomePage() {
     ],
     [selectedClanId, selectedClanName]
   );
-
-  const actionSearchMatch = useMemo(() => {
-    const query = actionSearch.trim().toLowerCase();
-    if (!query) return null;
-
-    return (
-      communityNextActionItems.find((item) => {
-        const haystack = [
-          item.label,
-          item.detail,
-          item.technical,
-          ...(item.keywords || []),
-        ]
-          .join(" ")
-          .toLowerCase();
-        return haystack.includes(query);
-      }) || null
-    );
-  }, [actionSearch, communityNextActionItems]);
 
   const firstCircleProgress = useMemo(
     () => getFirstCircleProgress(firstCircleDraft),
@@ -2193,19 +2085,6 @@ function communityButtonGuardProps(): Pick<
     handleCommunityNextAction(item, event);
   }
 
-  function openSpotlightHandle(
-    event: React.SyntheticEvent<HTMLElement> | undefined,
-    actionId: string
-  ) {
-    const item = spotlightHandleItems.find((candidate) => candidate.id === actionId);
-    if (!item) {
-      consumeCommunityButtonEvent(event);
-      return;
-    }
-
-    void handleSpotlightHandle(item, event);
-  }
-
   async function openSelectedMarketplace(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -2439,6 +2318,51 @@ function communityButtonGuardProps(): Pick<
       <CommunityShellLayers isCompact={isCompact} />
       <div style={communityContentStyle(isCompact)}>
       {!spotlightGuidanceSuspendedView ? (
+        <header style={communityTopHeaderStyle(isCompact)}>
+          <button
+            type="button"
+            {...communityButtonGuardProps()}
+            onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
+            style={communityHeaderButtonStyle()}
+          >
+            ☰ Menu
+          </button>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                color: "#617085",
+                fontSize: isCompact ? 11.5 : 13,
+                fontWeight: 900,
+                letterSpacing: 2,
+                lineHeight: 1.1,
+                textTransform: "uppercase",
+              }}
+            >
+              Main Movement
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                color: "#07172C",
+                fontSize: isCompact ? 24 : 32,
+                fontWeight: 950,
+                lineHeight: 1.05,
+              }}
+            >
+              Community Home
+            </div>
+          </div>
+          <button
+            type="button"
+            {...communityButtonGuardProps()}
+            onClick={(event) => openCommunityRoute(event, "/app/shop-control")}
+            style={communityHeaderButtonStyle()}
+          >
+            🛠 Tools
+          </button>
+        </header>
+      ) : null}
+      {!spotlightGuidanceSuspendedView ? (
       <section style={communityHeroStyle(isCompact)}>
         <div
           style={{
@@ -2510,7 +2434,7 @@ function communityButtonGuardProps(): Pick<
                     letterSpacing: -0.4,
                   }}
                 >
-                  Community Home of {communityHomeOwnerName}
+                  {communityHomeOwnerName}
                 </div>
               </>
             ) : null}
@@ -2524,9 +2448,8 @@ function communityButtonGuardProps(): Pick<
                 maxWidth: 880,
               }}
             >
-              Choose the community you want to open. Community Home keeps your
-              communities, owner identity, and cross-community readings together
-              before you hand off into one marketplace.
+              Choose your active community and move into its marketplace, tools,
+              and trust records.
             </div>
 
             <div
@@ -2540,64 +2463,81 @@ function communityButtonGuardProps(): Pick<
               }}
             >
               <div style={heroStatCard()}>
-                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>Holder</div>
-                <div
-                  style={{
-                    marginTop: 4,
-                    color: COMMUNITY_BRAND.ink,
-                    fontSize: isCompact ? 12.5 : 15,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {communityHomeOwnerName}
-                </div>
+                <span style={communityActionIcon(false)}>👤</span>
+                <span>
+                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>Holder</span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 4,
+                      color: "#07172C",
+                      fontSize: isCompact ? 16 : 19,
+                      fontWeight: 950,
+                      lineHeight: 1.15,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {communityHomeOwnerName}
+                  </span>
+                </span>
               </div>
               <div style={heroStatCard()}>
-                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>GSN ID</div>
-                <div
-                  style={{
-                    marginTop: 4,
-                    color: COMMUNITY_BRAND.ink,
-                    fontSize: isCompact ? 12.5 : 15,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {memberGlobalId}
-                </div>
+                <span style={communityActionIcon(false)}>🪪</span>
+                <span>
+                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>GSN ID</span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 4,
+                      color: "#07172C",
+                      fontSize: isCompact ? 16 : 19,
+                      fontWeight: 950,
+                      lineHeight: 1.15,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {memberGlobalId}
+                  </span>
+                </span>
               </div>
               <div style={heroStatCard()}>
-                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>Communities</div>
-                <div
-                  style={{
-                    marginTop: 2,
-                    color: COMMUNITY_BRAND.ink,
-                    fontSize: isCompact ? 22 : 24,
-                    fontWeight: 900,
-                  }}
-                >
-                  {communityCountFromSummary}
-                </div>
+                <span style={communityActionIcon(false)}>👥</span>
+                <span>
+                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>Communities</span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 4,
+                      color: "#07172C",
+                      fontSize: isCompact ? 18 : 21,
+                      fontWeight: 950,
+                    }}
+                  >
+                    {communityCountFromSummary}
+                  </span>
+                </span>
               </div>
               <div style={heroStatCard()}>
-                <div style={{ ...sectionLabel("center"), color: "#BFD0E2" }}>
-                  Money across communities
-                </div>
-                <div
-                  style={{
-                    marginTop: 4,
-                    color: COMMUNITY_BRAND.ink,
-                    fontSize: isCompact ? 16 : 18,
-                    fontWeight: 900,
-                    lineHeight: 1.25,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {standingLabel(cumulativeStandingAmount)}
-                </div>
+                <span style={communityActionIcon(false)}>💱</span>
+                <span>
+                  <span style={{ ...sectionLabel(), color: "#5D768F" }}>
+                    Money across communities
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 4,
+                      color:
+                        cumulativeStandingAmount < 0 ? "#B42318" : "#2E7D4F",
+                      fontSize: isCompact ? 16 : 19,
+                      fontWeight: 950,
+                      lineHeight: 1.15,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {standingLabel(cumulativeStandingAmount)}
+                  </span>
+                </span>
               </div>
             </div>
           </div>
@@ -2628,98 +2568,41 @@ function communityButtonGuardProps(): Pick<
               </div>
             </div>
 
-            <input
-              value={actionSearch}
-              onChange={(event) => setActionSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key !== "Enter" || !actionSearchMatch) return;
-                openCommunityNextAction(event, actionSearchMatch.id);
-              }}
-              placeholder="Search actions..."
-              aria-label="Search community actions"
-              style={communitySearchInput(isCompact)}
-            />
-
-            {actionSearchMatch ? (
-              <button
-                type="button"
-                {...communityButtonGuardProps()}
-                onClick={(event) => openCommunityNextAction(event, actionSearchMatch.id)}
-                style={{
-                  ...communityToolRowStyle(),
-                  minHeight: 58,
-                  background:
-                    "linear-gradient(180deg, #F8FBFF 0%, #EAF3FF 100%)",
-                }}
-              >
-                <span style={communityActionIcon(false)}>⌕</span>
-                <span style={{ minWidth: 0 }}>
-                  <span
-                    style={{
-                      display: "block",
-                      color: "#07172C",
-                      fontSize: 15,
-                      fontWeight: 920,
-                      lineHeight: 1.22,
-                    }}
-                  >
-                    Open {actionSearchMatch.label}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      marginTop: 3,
-                      color: "#617085",
-                      fontSize: 12.5,
-                      fontWeight: 720,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {actionSearchMatch.detail}
-                  </span>
-                </span>
-                <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 22 }}>
-                  ›
-                </span>
-              </button>
-            ) : null}
-
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(2, minmax(0, 1fr))",
-                gap: 10,
+                  ? "repeat(5, minmax(0, 1fr))"
+                  : "repeat(5, minmax(0, 1fr))",
+                gap: isCompact ? 8 : 12,
               }}
             >
               {[
                 {
                   id: "choose-community",
                   icon: "👥",
-                  title: "Choose community",
-                  detail: "Pick the community you want to work in now.",
+                  title: "Choose\ncommunity",
                   primary: true,
                 },
                 {
                   id: "marketplace",
-                  icon: "🏪",
-                  title: "Enter marketplace",
-                  detail: selectedClanName
-                    ? `Open ${selectedClanName} marketplace.`
-                    : "Choose a community first.",
+                  icon: "🛍️",
+                  title: "Enter\nmarketplace",
+                },
+                {
+                  id: "create-community",
+                  icon: "➕",
+                  title: "Create\ncommunity",
                 },
                 {
                   id: "join-community",
-                  icon: "↪",
-                  title: "Join community",
-                  detail: "Use an invite or existing community path.",
+                  icon: "🤝",
+                  title: "Join\ncommunity",
                 },
                 {
                   id: "circle",
-                  icon: "🤝",
-                  title: "Grow circle",
-                  detail: "Prepare trusted people before community work begins.",
+                  icon: "🌟",
+                  title: "Grow\ncircle",
                 },
               ].map((item) => (
                 <button
@@ -2736,36 +2619,14 @@ function communityButtonGuardProps(): Pick<
                     <span
                       style={{
                         display: "block",
-                        fontSize: 16,
+                        fontSize: isCompact ? 11.5 : 14,
                         fontWeight: 940,
-                        lineHeight: 1.18,
+                        lineHeight: 1.15,
+                        whiteSpace: "pre-line",
                       }}
                     >
                       {item.title}
                     </span>
-                    <span
-                      style={{
-                        display: "block",
-                        marginTop: 5,
-                        color: "#617085",
-                        fontSize: 12.5,
-                        fontWeight: 720,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {item.detail}
-                    </span>
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      marginLeft: "auto",
-                      color: "#1E5D91",
-                      fontSize: 22,
-                      fontWeight: 900,
-                    }}
-                  >
-                    ›
                   </span>
                 </button>
               ))}
@@ -2938,43 +2799,19 @@ function communityButtonGuardProps(): Pick<
       <section style={{ ...communityBlockCard("raised"), order: 30 }}>
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <div style={sectionLabel()}>Compact sections</div>
-            <div
-              style={{
-                marginTop: 6,
-                color: "#07172C",
-                fontSize: isCompact ? 20 : 24,
-                fontWeight: 950,
-                lineHeight: 1.15,
-              }}
-            >
-              Owner work stays one tap away.
-            </div>
-          </div>
-          <span style={compactSignal(false)}>Overview only</span>
-        </div>
-
-        <div
-          style={{
-            marginTop: 12,
             display: "grid",
-            gap: 10,
+            gap: 0,
+            borderRadius: 18,
+            overflow: "hidden",
+            border: "1px solid rgba(16,37,59,0.08)",
           }}
         >
           {[
             {
-              icon: "🧭",
+              icon: "🛡️",
               title: "Owner Actions",
               detail:
-                "Start a community or move into deeper owner-side work.",
+                "Open owner-side tools and permissions",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityRoute(event, "/app/clans"),
             },
@@ -2982,58 +2819,38 @@ function communityButtonGuardProps(): Pick<
               icon: "🏪",
               title: "Owner Shop Control",
               detail:
-                "Manage your one GSN shop, public face, products, and links.",
+                "Manage shop face, products, links, and vault",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityShopControl(event),
-            },
-            {
-              icon: "🖼️",
-              title: "Shop Gallery",
-              detail:
-                "Add pictures and products before using spotlight or Vault.",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, "/app/shop-control?section=picture-gallery"),
-            },
-            {
-              icon: "⭐",
-              title: "Free Spotlight",
-              detail:
-                "Prepare the normal community spotlight for your selected shop.",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSpotlightHandle(event, "spotlight-free"),
-            },
-            {
-              icon: "🏅",
-              title: "Subscription Spotlight",
-              detail:
-                "Open the paid visibility lane when priority display is needed.",
-              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openSpotlightHandle(event, "spotlight-paid"),
             },
             {
               icon: "🤝",
               title: "Grow Your Trusted Circle",
               detail:
-                "Invite trusted real-life people before deeper community work.",
+                "Invite trusted real-life people",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityRoute(event, "/app/build-first-circle"),
             },
             {
               icon: "📡",
               title: "Owner Spotlight Status",
-              detail: activeCommunitySpotlight
-                ? "A live spotlight is visible for the selected community."
-                : "No spotlight is live right now. Open Shop Control to prepare one.",
+              detail: `${activeCommunitySpotlightTotal || activeCommunitySpotlights.length} live / 0 queued`,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunitySpotlightWorkspace(event),
             },
-          ].map((item) => (
+          ].map((item, index) => (
             <button
               key={item.title}
               type="button"
               {...communityButtonGuardProps()}
               onClick={item.onClick}
-              style={communityToolRowStyle()}
+              style={{
+                ...communityToolRowStyle(),
+                borderRadius: 0,
+                border: "0",
+                borderTop: index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
+                boxShadow: "none",
+              }}
             >
               <span style={communityActionIcon(false)}>{item.icon}</span>
               <span style={{ minWidth: 0 }}>
@@ -3693,18 +3510,29 @@ function communityButtonGuardProps(): Pick<
       >
         <div style={collapseHeaderLayout(isCompact)}>
           <div style={{ minWidth: 0, width: "100%", textAlign: "center" }}>
-            <div style={sectionLabel("center")}>Your communities</div>
             <div
               style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: isCompact ? 12.5 : 14,
-                lineHeight: isCompact ? 1.5 : 1.75,
-                textAlign: "center",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 10,
+                flexWrap: "wrap",
+                textAlign: "left",
               }}
             >
-              Your selected community stays here. Open its Marketplace, or view
-              the full community list only when you need to change it.
+              <div
+                style={{
+                  color: "#07172C",
+                  fontSize: isCompact ? 20 : 24,
+                  fontWeight: 950,
+                  lineHeight: 1.12,
+                }}
+              >
+                Your Communities
+              </div>
+              <span style={compactSignal(false)}>
+                {sortedClans.length} {sortedClans.length === 1 ? "community" : "communities"}
+              </span>
             </div>
 
             <div
@@ -3716,7 +3544,6 @@ function communityButtonGuardProps(): Pick<
                 justifyContent: "center",
               }}
             >
-              <span style={badge(false)}>{sortedClans.length} communities</span>
               {!isCompact ? <span style={badge(false)}>One GSN ID</span> : null}
             </div>
 
@@ -3777,6 +3604,9 @@ function communityButtonGuardProps(): Pick<
                     <span style={compactSignal(false)}>
                       Paid spotlight: {getClanSpotlightSubscriberCount(selectedClan)}
                     </span>
+                    <span style={compactSignal(false)}>
+                      Private vault: {getClanVaultSubscriberCount(selectedClan)}
+                    </span>
                   </span>
                 </span>
                 <button
@@ -3810,6 +3640,14 @@ function communityButtonGuardProps(): Pick<
               >
                 {collapsed.communities ? "View all communities" : "Hide full list"}
               </button>
+              <button
+                type="button"
+                {...communityButtonGuardProps()}
+                onClick={(event) => openCommunityRoute(event, "/app/trust")}
+                style={communitiesCollapseHeaderButton(isCompact)}
+              >
+                View community readings
+              </button>
             </div>
           </div>
         </div>
@@ -3823,15 +3661,6 @@ function communityButtonGuardProps(): Pick<
               const clanId = getClanId(clan);
               const active = clanId > 0 && clanId === getClanId(selectedClan);
               const working = clanId > 0 && clanId === changingClanId;
-              const financeHealth = getClanFinanceHealth(clan);
-              const memberCount = getClanMemberCount(clan);
-              const strengthLabel = getClanStrength(clan);
-              const numericalStrength = memberCount
-                ? `${memberCount}`
-                : displayPendingSignal(strengthLabel);
-              const interactionDensity = displayPendingSignal(
-                getClanInteractionDensity(clan)
-              );
               const spotlightSubscribers = getClanSpotlightSubscriberCount(clan);
               const vaultSubscribers = getClanVaultSubscriberCount(clan);
 
@@ -3857,7 +3686,7 @@ function communityButtonGuardProps(): Pick<
                       display: "grid",
                       gridTemplateColumns: isCompact
                         ? "1fr"
-                        : "42px minmax(0, 1.45fr) minmax(170px, 0.65fr) minmax(190px, 0.75fr) auto",
+                        : "42px minmax(0, 1fr) auto",
                       gap: isCompact ? 8 : 12,
                       alignItems: "center",
                     }}
@@ -3909,94 +3738,23 @@ function communityButtonGuardProps(): Pick<
                         Community no: {getClanGlobalId(clan)}
                       </div>
 
-                      {isCompact ? (
-                        <div style={{ marginTop: 8, display: "flex", gap: 5, flexWrap: "wrap" }}>
-                          {active ? <span style={compactSignal(true)}>Selected</span> : null}
-                          <span style={compactSignal(false)}>
-                            Paid spotlight: {spotlightSubscribers}
-                          </span>
-                          <span style={compactSignal(false)}>Private Vault: {vaultSubscribers}</span>
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            marginTop: 8,
-                            display: "flex",
-                            gap: 5,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          {active ? <span style={compactSignal(true)}>Selected</span> : null}
-                          <span style={compactSignal(false)}>
-                            Numerical strength: {numericalStrength}
-                          </span>
-                          <span style={compactSignal(false)}>
-                            Interaction density: {interactionDensity}
-                          </span>
-                          <span style={compactSignal(false)}>
-                            Paid spotlight: {spotlightSubscribers}
-                          </span>
-                          <span style={compactSignal(false)}>Private Vault: {vaultSubscribers}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {isCompact ? (
                       <div
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: "1fr 1fr",
-                          gap: 6,
+                          marginTop: 8,
+                          display: "flex",
+                          gap: 5,
+                          flexWrap: "wrap",
                         }}
                       >
-                        <div style={metricCard("blue")}>
-                          <div style={metricLabel()}>Numerical strength</div>
-                          <div style={metricValue()}>{numericalStrength}</div>
-                        </div>
-                        <div style={metricCard("white")}>
-                          <div style={metricLabel()}>Interaction density</div>
-                          <div style={metricValue()}>{interactionDensity}</div>
-                        </div>
-                        <div style={metricCard("gold")}>
-                          <div style={metricLabel()}>Community finance standing</div>
-                          <div style={metricValue()}>{financeHealth}</div>
-                        </div>
-                        <div style={metricCard("blue")}>
-                          <div style={metricLabel()}>Trust in this community</div>
-                        </div>
+                        {active ? <span style={compactSignal(true)}>Selected</span> : null}
+                        <span style={compactSignal(false)}>
+                          Paid spotlight: {spotlightSubscribers}
+                        </span>
+                        <span style={compactSignal(false)}>
+                          Private vault: {vaultSubscribers}
+                        </span>
                       </div>
-                    ) : (
-                      <>
-                        <div
-                          style={{
-                            ...innerCard(),
-                            padding: 12,
-                          }}
-                        >
-                          <div style={sectionLabel()}>Community finance standing</div>
-                          <div
-                            style={{
-                              marginTop: 8,
-                              color: "#F8FBFF",
-                              fontSize: 19,
-                              fontWeight: 950,
-                              lineHeight: 1.2,
-                            }}
-                          >
-                            {financeHealth}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            ...innerCard(),
-                            padding: 12,
-                          }}
-                        >
-                          <div style={sectionLabel()}>Trust in this community</div>
-                        </div>
-                      </>
-                    )}
+                    </div>
 
                     <div
                       style={{

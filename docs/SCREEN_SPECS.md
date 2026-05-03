@@ -178,12 +178,18 @@ Must show:
 - Communities count
 - Money across communities
 - What do you want to do next?
-- Search actions
 - Choose community
 - Enter marketplace
+- Create community
 - Join community
 - Grow circle
 - Your Communities preview
+  - selected community name
+  - community number
+  - Selected badge
+  - Paid spotlight count
+  - Private vault count
+  - Open Marketplace button
 - compact rows:
   - Owner Actions
   - Owner Shop Control
@@ -198,6 +204,8 @@ Rules:
 - Owner Shop Control must stay a separate page, not an expanded panel inside Community Home.
 - Spotlight should show a compact live preview only when live. If no active spotlight exists, show a compact status/shortcut.
 - Secondary sections must be collapsed, grouped, or represented as compact rows.
+- Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. Move those readings to a deeper community readings surface.
+- Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.
 
 Role states to support:
 - Holder / Owner
