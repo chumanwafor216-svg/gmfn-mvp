@@ -8591,88 +8591,123 @@ export default function DashboardPage() {
             opacity: 0.88,
           }}
         />
-        <div
+        <button
+          type="button"
+          aria-expanded={demandGuideOpen}
+          onClick={toggleDemandGuide}
+          onPointerDown={consumeDashboardPointerEvent}
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0, 1fr) auto auto",
             gap: isPhone ? 8 : 12,
             alignItems: "center",
-            flexWrap: "wrap",
+            minHeight: isPhone ? 58 : 62,
+            padding: isPhone ? "9px 10px" : "10px 12px",
+            borderRadius: isPhone ? 17 : 18,
+            border: demandSurfaceChrome.chipBorder,
+            background: demandSurfaceChrome.chipBg,
+            color: DASHBOARD_BRAND.ink,
+            boxShadow:
+              "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
+            cursor: "pointer",
+            touchAction: "manipulation",
+            textAlign: "left",
           }}
         >
-          <div>
-            <DashboardSectionLabel label="Your Demand Box" />
-            <div
-              style={{
-                marginTop: 3,
-                ...helperText(),
-                ...dashboardPhoneHelper,
-                maxWidth: 420,
-              }}
-            >
-              Your live requests and community demand.
-            </div>
-          </div>
-          <div
+          <span
+            aria-hidden="true"
             style={{
-              display: "flex",
-              gap: isPhone ? 6 : 8,
-              flexWrap: "wrap",
-              justifyContent: "flex-end",
+              display: "inline-flex",
               alignItems: "center",
-              flex: isPhone ? "1 1 100%" : undefined,
+              justifyContent: "center",
+              width: isPhone ? 38 : 42,
+              height: isPhone ? 38 : 42,
+              borderRadius: 999,
+              background: demandSurfaceChrome.statusBg,
+              border: demandSurfaceChrome.chipSelectedBorder,
+              color: demandSurfaceChrome.statusText,
+              boxShadow:
+                "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+              fontSize: isPhone ? 18 : 20,
+              lineHeight: 1,
             }}
           >
-            <button
-              type="button"
-              onClick={toggleDemandGuide}
-              onPointerDown={consumeDashboardPointerEvent}
-              style={spotlightWhiteButton({
-                width: "auto",
-                minWidth: isPhone ? 0 : 150,
-                minHeight: isPhone ? 42 : 40,
-                padding: isPhone ? "8px 10px" : "8px 14px",
-                flex: isPhone ? "1 1 0" : "0 0 auto",
-              })}
-            >
-              {demandGuideOpen ? "Close guide" : "About your Demand Box"}
-            </button>
+            {dashboardSectionSignal("Your Demand Box")}
+          </span>
+
+          <span style={{ minWidth: 0 }}>
             <span
               style={{
-                ...badge(false),
-                minHeight: isPhone ? 42 : 40,
-                minWidth: isPhone ? 52 : 56,
-                justifyContent: "center",
-                padding: isPhone ? "8px 12px" : "8px 14px",
-                background: demandSurfaceChrome.chipBg,
-                border: demandSurfaceChrome.chipBorder,
-                color: "#123055",
+                display: "block",
+                color: DASHBOARD_BRAND.ink,
+                fontSize: isPhone ? 17 : 21,
+                fontWeight: 1000,
+                lineHeight: 1.1,
               }}
             >
-              {demandItems.length}
+              Your Demand Box
             </span>
             <span
               style={{
-                ...badge(false),
-                minHeight: isPhone ? 42 : 40,
-                minWidth: isPhone ? 90 : 104,
-                justifyContent: "center",
-                padding: isPhone ? "8px 12px" : "8px 14px",
-                background: demandSurfaceChrome.statusBg,
-                color: demandSurfaceChrome.statusText,
-                border: demandSurfaceChrome.chipSelectedBorder,
+                display: "block",
+                marginTop: 4,
+                color: DASHBOARD_BRAND.helper,
+                fontSize: isPhone ? 12 : 13,
+                fontWeight: 750,
+                lineHeight: 1.25,
               }}
             >
-              {urgentDemandItems.length > 0
-                ? "Needs response"
-                : demandItems.length > 0
-                ? "Open queue"
-                : "Steady"}
+              {demandItems.length > 0
+                ? `${demandItems.length} demand request${
+                    demandItems.length === 1 ? "" : "s"
+                  } visible.`
+                : "No open demand is waiting right now."}
             </span>
-          </div>
-        </div>
+          </span>
+
+          <span
+            style={{
+              ...badge(false),
+              minHeight: isPhone ? 34 : 36,
+              minWidth: isPhone ? 82 : 104,
+              justifyContent: "center",
+              padding: isPhone ? "7px 9px" : "8px 12px",
+              background: demandSurfaceChrome.statusBg,
+              color: demandSurfaceChrome.statusText,
+              border: demandSurfaceChrome.chipSelectedBorder,
+            }}
+          >
+            {urgentDemandItems.length > 0
+              ? "\u26A0\uFE0F Respond"
+              : demandItems.length > 0
+              ? "\uD83D\uDCE6 Open"
+              : "\u2705 Steady"}
+          </span>
+
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: isPhone ? 30 : 34,
+              height: isPhone ? 30 : 34,
+              borderRadius: 999,
+              border: "1px solid rgba(15,59,116,0.12)",
+              color: DASHBOARD_BRAND.accentDeep,
+              fontSize: isPhone ? 18 : 20,
+              fontWeight: 1000,
+              transform: demandGuideOpen ? "rotate(90deg)" : "rotate(0deg)",
+              transition: "transform 160ms ease",
+            }}
+          >
+            &gt;
+          </span>
+        </button>
 
         {demandGuideOpen ? (
+          <>
           <div
             style={{
               marginTop: isPhone ? 9 : 12,
@@ -8708,7 +8743,6 @@ export default function DashboardPage() {
               {demandGuideBody}
             </div>
           </div>
-        ) : null}
 
         <div
           style={{
@@ -8971,6 +9005,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+          </>
+        ) : null}
       </section>
 
       <section
@@ -9734,53 +9770,178 @@ export default function DashboardPage() {
               }}
             />
 
-            <div
+            <button
+              type="button"
+              aria-expanded={uiState.trustExpanded}
+              onClick={(event) =>
+                runDashboardUiMutation(event, () =>
+                  updateUiState({ trustExpanded: !uiState.trustExpanded })
+                )
+              }
+              onPointerDown={consumeDashboardPointerEvent}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
+                width: "100%",
+                display: "grid",
+                gridTemplateColumns: "auto minmax(0, 1fr) auto auto",
                 gap: isPhone ? 8 : 12,
                 alignItems: "center",
-                flexWrap: "wrap",
+                minHeight: isPhone ? 58 : 62,
+                padding: isPhone ? "9px 10px" : "10px 12px",
+                borderRadius: isPhone ? 17 : 18,
+                border: "1px solid rgba(11,99,209,0.14)",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+                color: DASHBOARD_BRAND.ink,
+                boxShadow:
+                  "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
+                cursor: "pointer",
+                touchAction: "manipulation",
+                textAlign: "left",
               }}
             >
-              <DashboardSectionLabel label="Your Focus Commitments" />
-
-              <div
+              <span
+                aria-hidden="true"
                 style={{
-                  display: isPhone ? "grid" : "flex",
-                  gridTemplateColumns: isPhone ? "1fr 1.25fr" : undefined,
-                  gap: isPhone ? 7 : 8,
-                  flexWrap: "wrap",
-                  width: isPhone ? "100%" : undefined,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: isPhone ? 38 : 42,
+                  height: isPhone ? 38 : 42,
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+                  border: "1px solid rgba(11,99,209,0.16)",
+                  boxShadow:
+                    "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+                  fontSize: isPhone ? 18 : 20,
+                  lineHeight: 1,
                 }}
               >
-                {focusSummary.nextReviewLabel ? (
-                  <span style={badge(false)}>{focusSummary.nextReviewLabel}</span>
-                ) : null}
-                <span style={badge(true)}>Max 2 active</span>
-                <button
-                  type="button"
-                  onClick={(event) =>
-                    runDashboardUiMutation(event, () =>
-                      setFocusComposerOpen((prev) => !prev)
-                    )
-                  }
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={focusCommitmentButton(
-                    activeFocusCount >= 2
-                      ? {
-                          opacity: 0.7,
-                          cursor: "not-allowed",
-                          background:
-                            "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)",
-                        }
-                      : {}
-                  )}
-                  disabled={activeFocusCount >= 2}
+                {dashboardSectionSignal("Your Focus Commitments")}
+              </span>
+
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    color: DASHBOARD_BRAND.ink,
+                    fontSize: isPhone ? 17 : 21,
+                    fontWeight: 1000,
+                    lineHeight: 1.1,
+                  }}
                 >
-                  {focusComposerOpen ? "Close composer" : "Add commitment"}
-                </button>
-              </div>
+                  Your Focus Commitments
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: DASHBOARD_BRAND.helper,
+                    fontSize: isPhone ? 12 : 13,
+                    fontWeight: 750,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {activeFocusCount > 0
+                    ? `${activeFocusCount} active commitment${
+                        activeFocusCount === 1 ? "" : "s"
+                      } visible.`
+                    : "No active commitment yet."}
+                </span>
+              </span>
+
+              <span
+                style={{
+                  ...badge(false),
+                  minHeight: isPhone ? 34 : 36,
+                  minWidth: isPhone ? 82 : 104,
+                  justifyContent: "center",
+                  padding: isPhone ? "7px 9px" : "8px 12px",
+                  background:
+                    focusSummary.behindCount > 0
+                      ? "rgba(254,242,242,0.92)"
+                      : focusSummary.watchCount > 0
+                      ? "rgba(255,251,235,0.94)"
+                      : "rgba(240,253,244,0.92)",
+                  color:
+                    focusSummary.behindCount > 0
+                      ? "#991B1B"
+                      : focusSummary.watchCount > 0
+                      ? "#92400E"
+                      : "#166534",
+                  border:
+                    focusSummary.behindCount > 0
+                      ? "1px solid rgba(239,68,68,0.16)"
+                      : focusSummary.watchCount > 0
+                      ? "1px solid rgba(245,158,11,0.16)"
+                      : "1px solid rgba(34,197,94,0.16)",
+                }}
+              >
+                {focusSummary.behindCount > 0
+                  ? `\u26A0\uFE0F Behind ${focusSummary.behindCount}`
+                  : focusSummary.watchCount > 0
+                  ? `\u23F3 Watch ${focusSummary.watchCount}`
+                  : "\u2705 Steady"}
+              </span>
+
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: isPhone ? 30 : 34,
+                  height: isPhone ? 30 : 34,
+                  borderRadius: 999,
+                  border: "1px solid rgba(15,59,116,0.12)",
+                  color: DASHBOARD_BRAND.accentDeep,
+                  fontSize: isPhone ? 18 : 20,
+                  fontWeight: 1000,
+                  transform: uiState.trustExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                  transition: "transform 160ms ease",
+                }}
+              >
+                &gt;
+              </span>
+            </button>
+
+            {uiState.trustExpanded ? (
+              <>
+            <div
+              style={{
+                marginTop: isPhone ? 10 : 12,
+                display: isPhone ? "grid" : "flex",
+                gridTemplateColumns: isPhone ? "1fr 1.25fr" : undefined,
+                gap: isPhone ? 7 : 8,
+                flexWrap: "wrap",
+                width: isPhone ? "100%" : undefined,
+              }}
+            >
+              {focusSummary.nextReviewLabel ? (
+                <span style={badge(false)}>{focusSummary.nextReviewLabel}</span>
+              ) : null}
+              <span style={badge(true)}>Max 2 active</span>
+              <button
+                type="button"
+                onClick={(event) =>
+                  runDashboardUiMutation(event, () =>
+                    setFocusComposerOpen((prev) => !prev)
+                  )
+                }
+                onPointerDown={consumeDashboardPointerEvent}
+                style={focusCommitmentButton(
+                  activeFocusCount >= 2
+                    ? {
+                        opacity: 0.7,
+                        cursor: "not-allowed",
+                        background:
+                          "linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)",
+                      }
+                    : {}
+                )}
+                disabled={activeFocusCount >= 2}
+              >
+                {focusComposerOpen ? "Close composer" : "Add commitment"}
+              </button>
             </div>
 
             <div

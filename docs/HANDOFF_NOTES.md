@@ -19529,3 +19529,22 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/dashboard`
   - no backend/auth/schema changes
+
+### Dashboard Demand/Focus collapse follow-up (2026-05-03)
+
+- Owner feedback: keep Market Wisdom open, but collapse the other lower dashboard surfaces so Spotlight can become the visual centre without the page becoming too tall.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - changed `Your Demand Box` into the same compact accordion-row pattern.
+  - moved the demand guide, demand summary, empty state (`No open demand...`), and demand action button behind the Demand Box open state.
+  - changed `Your Focus Commitments` into a compact accordion-row pattern with a target icon, summary, status chip, and rotating chevron.
+  - moved focus metrics, add-commitment controls, composer, active commitments, and empty commitment card behind the Focus Commitments open state.
+  - left `Your Market Wisdom` open as requested.
+  - kept row button dimensions fixed so opening sections is less jumpy.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Scope:
+  - `/app/dashboard`
+  - no backend/auth/schema changes
