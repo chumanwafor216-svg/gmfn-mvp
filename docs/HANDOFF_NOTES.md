@@ -19439,20 +19439,24 @@ GSN-branded invite composer and invite-entry continuity.
   - `/guide`
   - no backend/auth/schema changes
 
-### Dashboard expandable primer placement (2026-05-03)
+### Dashboard guide removal and preferred arrangement polish (2026-05-03)
 
-- Owner shared a proposed dark `What you will find` primer and dashboard pattern for low-literacy, underbanked/unbanked users.
-- Product judgment applied:
-  - Do not insert the primer between `/cover` and `/welcome`; that would slow the entry gate.
-  - Put the expandable primer on `/app/dashboard`, near the top after the existing dashboard help disclosure, where it explains the system after entry.
-  - Leave `/app/dashboard` Market Wisdom untouched because its presentation/interaction model is currently frozen unless explicitly changed.
-- Updated `frontend/src/pages/DashboardPage.tsx`:
-  - added `DASHBOARD_FIND_ITEMS` for six icon-led dashboard concepts: Identity First, Community Home, Marketplace Access, Shop Control, Trust Events, and Insights.
-  - added an expandable institutional dark/navy-gold primer block titled `What you will find`.
-  - made the primer collapsed on phone by default and open on wider screens.
-  - added a GSN trust strip: `You are in good hands.`
+- Owner instruction: delete the dashboard guide/primer and polish toward the supplied dashboard arrangement screenshot.
+- Removed the expandable `/app/dashboard` primer titled `What you will find`.
+- Removed the dashboard-only helper data and styling function added for that primer.
+- Removed the visible generic dashboard guide/search surface and long `How Dashboard Helps You` explainer from the dashboard top.
+- Added a clean top arrangement:
+  - `Main Movement / Dashboard` header with Menu and Attention Guide controls
+  - `Identity Passport` card with `Trust is the first currency`, profile image, GSN ID, trust/CCI/TrustSlip status, and `View Identity`
+  - simple `What do you want to do next?` action row: Marketplace, Create Demand, Trust Events, My Identity
+  - symbolic shortcut icons for the four actions so low-literacy users can scan the options faster without depending only on text
+- Reordered dashboard grid presentation to match the preferred flow:
+  - Spotlight before What Matters Now
+  - What Matters Now before Demand Box
+  - Regular Apps before Market Wisdom and Focus Commitments
+- Market Wisdom internals were not changed; only its dashboard grid placement was pushed lower in the visual order.
 - Important caveat:
-  - `DashboardPage.tsx` already had pre-existing local dirty changes before this primer edit, including UI storage key/default collapse behavior and disabled attention auto-open. Those were preserved and not audited as part of this change.
+  - `DashboardPage.tsx` still has pre-existing local dirty changes unrelated to this removal, including UI storage key/default collapse behavior and disabled attention auto-open. Do not revert them without owner approval.
 - Verification:
   - `npm exec -- eslint src/pages/DashboardPage.tsx`
     -> passed

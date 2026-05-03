@@ -1,9 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import DomainIntroToggle from "../components/DomainIntroToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
-import NextActionGuide, {
-  type NextActionGuideItem,
-} from "../components/NextActionGuide";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import SystemPictureFrame from "../components/SystemPictureFrame";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -279,62 +275,6 @@ const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
 const DASHBOARD_AVATAR_MAX_BYTES = 360 * 1024;
 const DASHBOARD_AVATAR_MAX_DIMENSION = 1280;
 const MARKET_WISDOM_ROTATION_MS = 45000;
-
-const DASHBOARD_HELP_BODY =
-  "Dashboard helps me keep my market life, community duties, shop chances, and trust record in one first look. In real life, I may not know what my friends have in their shops unless I travel there. I may forget a promise unless somebody reminds me. I may miss a need, a payment, or an act of kindness because life is busy. Dashboard brings those signals back before they disappear.";
-
-const DASHBOARD_HELP_BULLETS = [
-  "Market Wisdom reads the day for me. It turns the movement around my money, trust, community, shop, and attention into a plain signal before I start opening many pages.",
-  "Community Home is where the working tools live. If I want to invite trusted people, manage my shop, prepare spotlight, choose a community, or open the marketplace from the right context, Dashboard points me there first.",
-  "Spotlight is not just a display. It lets me see, from home, office, shop, or abroad, what trusted people in my community are showing, selling, or promoting. I can buy, support, or help resell without first walking to their shop.",
-  "Focus Commitment keeps my promises beside me. Instead of depending only on memory, a spouse, or a friend to remind me, I can set a target, check in, adjust honestly, and let the app record the follow-through.",
-  "Demand Box means opportunity can come from what people are asking for, not only what I already displayed. A need can become trade, supply, service, support, or a new responsibility I can answer.",
-  "Notifications are event memory. They keep payment movement, requests, kindness, approvals, demand, spotlight, repayment, and unfinished duties from disappearing inside a busy day.",
-  "If I borrow, lend, repay, support someone, or make a contribution from another city or country, Dashboard helps keep the evidence together. The record can later show what actually happened, not only what somebody remembers.",
-  "TrustSlip is the proof layer behind the story. When these events show that I follow through, repay, respond, and support honestly, my TrustSlip has stronger evidence to carry when someone needs to trust me.",
-];
-
-const DASHBOARD_HELP_NOTE =
-  "Innovation wedge: GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.";
-
-const DASHBOARD_FIND_ITEMS = [
-  {
-    id: "identity",
-    icon: "ID",
-    title: "Identity First",
-    detail: "Secure your identity and build your trust profile.",
-  },
-  {
-    id: "community",
-    icon: "HOME",
-    title: "Community Home",
-    detail: "Manage your communities, members, and resources.",
-  },
-  {
-    id: "marketplace",
-    icon: "BUY",
-    title: "Marketplace Access",
-    detail: "Buy, sell, request, and respond inside trusted communities.",
-  },
-  {
-    id: "shop",
-    icon: "SHOP",
-    title: "Shop Control",
-    detail: "Run your shop, manage products, spotlight items, and reach people.",
-  },
-  {
-    id: "trust-events",
-    icon: "TIME",
-    title: "Trust Events",
-    detail: "Track deadlines, commitments, checks, and time-bound actions.",
-  },
-  {
-    id: "insights",
-    icon: "READ",
-    title: "Insights",
-    detail: "See activity, growth, trust progress, and what needs attention.",
-  },
-] as const;
 
 const PUBLIC_ROUTE_PREFIXES = [
   "cover",
@@ -696,26 +636,83 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function dashboardPrimerIcon(): React.CSSProperties {
-  return {
-    width: 46,
-    height: 46,
-    borderRadius: 999,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    border: "1px solid rgba(201,154,39,0.28)",
-    background:
-      "radial-gradient(circle at 35% 28%, rgba(243,208,106,0.20) 0%, rgba(243,208,106,0) 38%), linear-gradient(180deg, rgba(15,59,116,0.96) 0%, rgba(8,28,48,0.96) 100%)",
-    color: "#F3D06A",
-    fontSize: 10,
-    fontWeight: 1000,
-    letterSpacing: 0.5,
-    lineHeight: 1,
-    boxShadow:
-      "0 12px 24px rgba(7,16,28,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
+type DashboardQuickActionIconKind =
+  | "marketplace"
+  | "demand"
+  | "trust"
+  | "identity";
+
+function DashboardQuickActionIcon({
+  kind,
+  isPhone,
+}: {
+  kind: DashboardQuickActionIconKind;
+  isPhone: boolean;
+}) {
+  const size = isPhone ? 19 : 21;
+
+  const paths: Record<DashboardQuickActionIconKind, React.ReactNode> = {
+    marketplace: (
+      <>
+        <path d="M7 9h10l-1.2 8.2A2 2 0 0 1 13.9 19H10.1a2 2 0 0 1-1.9-1.8L7 9Z" />
+        <path d="M9 9V7a3 3 0 0 1 6 0v2" />
+      </>
+    ),
+    demand: (
+      <>
+        <circle cx="12" cy="12" r="7.2" />
+        <path d="M12 8.6v6.8" />
+        <path d="M8.6 12h6.8" />
+      </>
+    ),
+    trust: (
+      <>
+        <path d="M12 4.6 18 7v4.8c0 3.4-2.2 6.1-6 7.6-3.8-1.5-6-4.2-6-7.6V7l6-2.4Z" />
+        <path d="m9.4 12 1.7 1.7 3.6-3.8" />
+      </>
+    ),
+    identity: (
+      <>
+        <circle cx="12" cy="8.6" r="3.1" />
+        <path d="M6.7 18.6c.7-3 2.5-4.6 5.3-4.6s4.6 1.6 5.3 4.6" />
+      </>
+    ),
   };
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: isPhone ? 34 : 38,
+        height: isPhone ? 34 : 38,
+        borderRadius: 999,
+        background:
+          "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+        border: "1px solid rgba(11,99,209,0.16)",
+        color: DASHBOARD_BRAND.accentDeep,
+        boxShadow:
+          "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+        flexShrink: 0,
+      }}
+    >
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        focusable="false"
+      >
+        {paths[kind]}
+      </svg>
+    </span>
+  );
 }
 
 function fieldInputStyle(): React.CSSProperties {
@@ -4357,191 +4354,6 @@ export default function DashboardPage() {
     ]
   );
 
-  const dashboardNextActionItems = useMemo<NextActionGuideItem[]>(() => {
-    const routeItems: NextActionGuideItem[] = [
-      {
-        id: `priority-${priorityRoutes.primaryRoute.key}`,
-        label: routeSurfaceLabel(priorityRoutes.primaryRoute),
-        detail:
-          priorityRoutes.primaryRoute.reason ||
-          priorityRoutes.primaryRoute.detail ||
-          priorityRoutes.detail,
-        technical: priorityRoutes.title,
-        to: priorityRoutes.primaryRoute.to,
-        keywords: [
-          priorityRoutes.primaryRoute.key,
-          priorityRoutes.primaryRoute.label,
-          priorityRoutes.title,
-          priorityRoutes.detail,
-          "recommended",
-          "next",
-        ],
-        tone: "primary",
-      },
-      ...priorityRoutes.supportingRoutes.map((route) => ({
-        id: `support-${route.key}`,
-        label: routeSurfaceLabel(route),
-        detail: route.detail,
-        technical: route.label,
-        to: route.to,
-        keywords: [route.key, route.label, route.detail],
-        tone: "secondary" as const,
-      })),
-      {
-        id: "spotlight",
-        label: "Spotlight",
-        detail:
-          "Open the spotlight task family so GSN can lead free spotlight, subscription spotlight, Vault, or shop setup from one place.",
-        technical: "Guided spotlight",
-        to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT,
-        keywords: [
-          "spotlight",
-          "make spotlight",
-          "publish spotlight",
-          "free spotlight",
-          "subscription spotlight",
-          "vault",
-        ],
-        tone: "secondary",
-      },
-      {
-        id: "community",
-        label: "Community Home",
-        detail:
-          "Open the working tools: invite people, choose a community, manage shop, prepare spotlight, and enter the right marketplace.",
-        technical: "Community Home",
-        to: DASHBOARD_TARGETS.COMMUNITY,
-        keywords: [
-          "community",
-          "group",
-          "choose",
-          "home",
-          "marketplace",
-          "tools",
-          "invite",
-          "shop",
-        ],
-        tone: "secondary",
-      },
-      {
-        id: "marketplace",
-        label: "Marketplace",
-        detail: "Open one selected community for live marketplace work.",
-        technical: "Marketplace",
-        to: DASHBOARD_TARGETS.MARKETPLACE,
-        keywords: ["marketplace", "market", "trade", "buy", "sell", "shop"],
-        tone: "secondary",
-      },
-      {
-        id: "money-in",
-        label: "Money In",
-        detail: "Open the pay-in path for deposits and pool funding.",
-        technical: "Payment pool",
-        to: DASHBOARD_TARGETS.MONEY_IN,
-        keywords: ["money in", "deposit", "pay in", "pool", "fund", "payment"],
-        tone: "soft",
-      },
-      {
-        id: "money-out",
-        label: "Money Out",
-        detail: "Open the withdrawal and payout instruction path.",
-        technical: "Withdrawal",
-        to: DASHBOARD_TARGETS.MONEY_OUT,
-        keywords: ["money out", "withdraw", "payout", "cash out"],
-        tone: "soft",
-      },
-      {
-        id: "support",
-        label: "Borrow or support",
-        detail: "Open loans, guarantor, borrowing, lending, and support work.",
-        technical: "Loans and support",
-        to: DASHBOARD_TARGETS.LOANS,
-        keywords: ["loan", "borrow", "lend", "support", "guarantor"],
-        tone: "secondary",
-      },
-      {
-        id: "finance",
-        label: "Finance",
-        detail: "Review pool position, locks, support, and money movement.",
-        technical: "Finance",
-        to: DASHBOARD_TARGETS.FINANCE,
-        keywords: ["finance", "money", "balance", "pool", "earnings"],
-        tone: "secondary",
-      },
-      {
-        id: "trust",
-        label: "Trust Passport",
-        detail: "Read trust, repair pressure, and carried trust story.",
-        technical: "Trust",
-        to: DASHBOARD_TARGETS.TRUST,
-        keywords: ["trust", "passport", "repair", "score", "reading"],
-        tone: "secondary",
-      },
-      {
-        id: "identity",
-        label: "CCI",
-        detail: "Review identity continuity and cross-community integrity.",
-        technical: "Identity integrity",
-        to: DASHBOARD_TARGETS.CCI,
-        keywords: ["identity", "cci", "integrity", "continuity", "review"],
-        tone: "soft",
-      },
-      {
-        id: "trust-slip",
-        label: "TrustSlip",
-        detail: "Open the portable verification and merchant trust record.",
-        technical: "TrustSlip",
-        to: DASHBOARD_TARGETS.TRUST_SLIP,
-        keywords: ["trustslip", "verify", "verification", "merchant", "qr"],
-        tone: "soft",
-      },
-      {
-        id: "demand-box",
-        label: "Demand Box",
-        detail: "Open visible needs, requests, and demand signals.",
-        technical: "Demand Box",
-        to: DASHBOARD_TARGETS.DEMAND_BOX,
-        keywords: ["demand", "need", "request", "opportunity", "supply"],
-        tone: "soft",
-      },
-      {
-        id: "notifications",
-        label: "What Matters Now",
-        detail: "Open the action queue and items needing attention.",
-        technical: "Notifications",
-        to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
-        keywords: ["notice", "notification", "inbox", "alert", "queue"],
-        tone: "soft",
-      },
-      {
-        id: "shop",
-        label: "Shop",
-        detail: "Open your shop and seller-facing tools.",
-        technical: "Shop",
-        to: myShopLink,
-        keywords: ["shop", "seller", "goods", "service", "store"],
-        tone: "soft",
-      },
-    ];
-
-    const seen = new Set<string>();
-    return routeItems.filter((item) => {
-      const key = item.label.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [myShopLink, priorityRoutes]);
-
-  const dashboardGuideSearchItems = useMemo<NextActionGuideItem[]>(
-    () =>
-      dashboardNextActionItems.filter(
-        (item) =>
-          !item.id.startsWith("priority-") && !item.id.startsWith("support-")
-      ),
-    [dashboardNextActionItems]
-  );
-
   const urgentDemandCount = useMemo(
     () =>
       demandItems.filter((item) => safeStr(item.urgency).toLowerCase() === "high")
@@ -4800,18 +4612,6 @@ export default function DashboardPage() {
   ) {
     consumeDashboardButtonEvent(event);
     navigateWithOrigin(navigate, to, location);
-  }
-
-  function handleDashboardNextAction(
-    item: NextActionGuideItem,
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    if (!item.to) {
-      consumeDashboardButtonEvent(event);
-      return;
-    }
-
-    openDashboardRoute(event, item.to);
   }
 
   function runDashboardUiMutation(
@@ -6011,7 +5811,7 @@ export default function DashboardPage() {
                 color: attentionPopupChrome.reminderText,
                 minHeight: 42,
                 padding: "8px 12px",
-                display: "inline-flex",
+                display: "none",
                 alignItems: "center",
                 gap: 9,
                 fontWeight: 900,
@@ -6077,324 +5877,389 @@ export default function DashboardPage() {
           gap: isPhone ? 8 : 18,
         }}
       >
-        <details
+        <div
           style={{
-            borderRadius: isPhone ? 14 : 22,
-            padding: isPhone ? "5px 8px" : 12,
-            background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FE 100%)",
-            border: "1px solid rgba(11,99,209,0.12)",
-            boxShadow: "0 14px 30px rgba(11,99,209,0.06)",
+            display: "grid",
+            gridTemplateColumns: isPhone
+              ? "auto minmax(0, 1fr) auto"
+              : "auto minmax(0, 1fr) auto",
+            gap: isPhone ? 10 : 18,
+            alignItems: "center",
           }}
         >
-          <summary
+          <button
+            type="button"
+            onClick={(event) => openDashboardRoute(event, DASHBOARD_TARGETS.COMMUNITY)}
+            onPointerDown={consumeDashboardPointerEvent}
             style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) auto",
+              display: "inline-flex",
               alignItems: "center",
-              gap: isPhone ? 6 : 10,
-              listStyle: "none",
+              justifyContent: "center",
+              gap: isPhone ? 7 : 9,
+              minHeight: isPhone ? 42 : 52,
+              padding: isPhone ? "8px 12px" : "10px 18px",
+              borderRadius: isPhone ? 14 : 18,
+              border: "1px solid rgba(16,37,59,0.10)",
+              background: "#FFFFFF",
+              color: DASHBOARD_BRAND.ink,
+              boxShadow:
+                "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.88)",
+              fontWeight: 950,
+              fontSize: isPhone ? 12.5 : 15,
               cursor: "pointer",
               touchAction: "manipulation",
             }}
           >
-            <span style={{ minWidth: 0 }}>
-              <span
-                style={{
-                  display: isPhone ? "none" : "block",
-                  color: "#0B63D1",
-                  fontSize: isPhone ? 9.8 : 11,
-                  fontWeight: 900,
-                  letterSpacing: 0.32,
-                  textTransform: "uppercase",
-                }}
-              >
-                First look
-              </span>
-              <span
-                style={{
-                  display: "block",
-                  marginTop: isPhone ? 0 : 3,
-                  color: "#102A43",
-                  fontSize: isPhone ? 12.8 : 16,
-                  fontWeight: 900,
-                  lineHeight: isPhone ? 1.05 : 1.15,
-                }}
-              >
-                {isPhone ? "Dashboard guide" : "Your Dashboard"}
-              </span>
-            </span>
             <span
+              aria-hidden="true"
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: isPhone ? 24 : 38,
-                minWidth: isPhone ? 48 : 82,
-                padding: isPhone ? "3px 8px" : "8px 13px",
-                borderRadius: 999,
-                background: "#FFFFFF",
-                border: "1px solid rgba(11,99,209,0.16)",
-                color: "#14324C",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.70)",
-                fontSize: isPhone ? 10.5 : 13,
-                fontWeight: 900,
+                display: "grid",
+                gap: 3,
+                width: isPhone ? 15 : 18,
               }}
             >
-              Open
+              {[0, 1, 2].map((bar) => (
+                <span
+                  key={bar}
+                  style={{
+                    display: "block",
+                    height: 2,
+                    borderRadius: 999,
+                    background: DASHBOARD_BRAND.ink,
+                  }}
+                />
+              ))}
             </span>
-          </summary>
+            <span>Menu</span>
+          </button>
 
-          <div
-            style={{
-              marginTop: isPhone ? 6 : 12,
-              display: "grid",
-              gridTemplateColumns: isPhone ? "auto minmax(0, 1fr)" : "1fr",
-              gap: isPhone ? 7 : 8,
-              alignItems: "center",
-              borderRadius: isPhone ? 13 : 18,
-              padding: isPhone ? "7px 8px" : 14,
-              background:
-                "radial-gradient(circle at top left, rgba(11,99,209,0.16) 0%, rgba(11,99,209,0) 35%), linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(237,246,255,0.94) 100%)",
-              border: "1px solid rgba(11,99,209,0.14)",
-              color: "#233D57",
-              fontSize: isPhone ? 11.4 : 14,
-              fontWeight: 800,
-              lineHeight: isPhone ? 1.32 : 1.75,
-              boxShadow:
-                "inset 0 1px 0 rgba(255,255,255,0.88), 0 10px 20px rgba(10,24,49,0.05)",
-            }}
-          >
-            {isPhone ? (
-              <span
-                aria-hidden="true"
-                style={{
-                  width: 9,
-                  height: 36,
-                  borderRadius: 999,
-                  background:
-                    "linear-gradient(180deg, #0B63D1 0%, #F3D06A 100%)",
-                  boxShadow: "0 8px 16px rgba(11,99,209,0.16)",
-                }}
-              />
-            ) : null}
-            <span>
-              Dashboard is your quick first look. It shows what needs attention
-              now and points you to the right page to handle it. For the tools
-              that make GSN work, open Community Home: invite people, manage
-              your shop, prepare spotlight, choose a community, and enter the
-              marketplace from the right place.
-            </span>
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                color: DASHBOARD_BRAND.label,
+                fontSize: isPhone ? 10 : 12,
+                fontWeight: 1000,
+                letterSpacing: 1.7,
+                textTransform: "uppercase",
+                lineHeight: 1,
+              }}
+            >
+              Main Movement
+            </div>
+            <div
+              style={{
+                marginTop: 4,
+                color: DASHBOARD_BRAND.ink,
+                fontSize: isPhone ? 25 : 34,
+                fontWeight: 1000,
+                lineHeight: 1,
+              }}
+            >
+              Dashboard
+            </div>
           </div>
-        </details>
 
-        <details
-          open={!isPhone}
-          style={{
-            borderRadius: isPhone ? 20 : 28,
-            padding: isPhone ? 10 : 16,
-            background:
-              "radial-gradient(circle at 18% 0%, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 32%), linear-gradient(180deg, #071526 0%, #0A2035 52%, #0F355A 100%)",
-            border: "1px solid rgba(201,154,39,0.24)",
-            boxShadow:
-              "0 24px 48px rgba(7,16,28,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-            color: "#F8FBFF",
-            overflow: "hidden",
-          }}
-        >
-          <summary
+          <button
+            type="button"
+            onClick={(event) =>
+              runDashboardUiMutation(event, () => setAttentionPopupVisible(true), 260)
+            }
+            onPointerDown={consumeDashboardPointerEvent}
             style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(0, 1fr) auto",
+              display: "inline-flex",
               alignItems: "center",
-              gap: 12,
-              listStyle: "none",
+              gap: isPhone ? 7 : 10,
+              minHeight: isPhone ? 42 : 52,
+              padding: isPhone ? "8px 10px" : "10px 18px",
+              borderRadius: isPhone ? 14 : 18,
+              border: "1px solid rgba(220,38,38,0.14)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,245,245,0.96) 100%)",
+              color: "#7F1D1D",
+              boxShadow:
+                "0 12px 24px rgba(220,38,38,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+              fontWeight: 1000,
               cursor: "pointer",
               touchAction: "manipulation",
             }}
           >
-            <span style={{ display: "grid", gap: 4, minWidth: 0 }}>
-              <span
+            <span
+              aria-hidden="true"
+              style={{
+                width: 9,
+                height: 9,
+                borderRadius: 999,
+                background: "#DC2626",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                display: "grid",
+                gap: 2,
+                textAlign: "left",
+                lineHeight: 1.05,
+                fontSize: isPhone ? 11.5 : 13,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span style={{ textTransform: "uppercase", letterSpacing: 0.5 }}>
+                Attention Guide
+              </span>
+              <span>{attentionStageLabel}</span>
+            </span>
+          </button>
+        </div>
+
+        <section
+          style={{
+            ...pageCard(
+              "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.10) 0%, rgba(11,99,209,0) 36%), linear-gradient(180deg, #F8FBFF 0%, #EEF5FF 100%)"
+            ),
+            order: 10,
+            padding: isPhone ? 14 : 20,
+            borderRadius: isPhone ? 22 : 28,
+            border: "1px solid rgba(15,59,116,0.14)",
+            boxShadow:
+              "0 18px 36px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isPhone ? "minmax(0, 1fr) 92px" : "minmax(0, 1fr) 220px",
+              gap: isPhone ? 12 : 22,
+              alignItems: "start",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
                 style={{
-                  color: "#F3D06A",
-                  fontSize: 11,
+                  display: "flex",
+                  gap: 10,
+                  alignItems: "center",
+                  color: DASHBOARD_BRAND.label,
+                  fontSize: isPhone ? 11 : 13,
                   fontWeight: 1000,
-                  letterSpacing: 2.4,
+                  letterSpacing: 1.2,
                   textTransform: "uppercase",
                 }}
               >
-                GSN
-              </span>
-              <span
+                <GSNBrandMark width={isPhone ? 22 : 28} height={isPhone ? 28 : 36} />
+                <span>Identity Passport</span>
+              </div>
+              <div
                 style={{
-                  color: "#F8FBFF",
-                  fontSize: isPhone ? 22 : 30,
+                  marginTop: isPhone ? 8 : 10,
+                  color: DASHBOARD_BRAND.ink,
+                  fontSize: isPhone ? 24 : 38,
                   fontWeight: 1000,
-                  lineHeight: 1.08,
+                  lineHeight: 1.05,
                   textWrap: "balance",
                 }}
               >
-                What you will find
-              </span>
-              <span
-                style={{
-                  color: "rgba(226,232,240,0.72)",
-                  fontSize: isPhone ? 12.5 : 14,
-                  fontWeight: 750,
-                  lineHeight: 1.45,
-                }}
-              >
-                Simple steps. Strong foundation.
-              </span>
-            </span>
-
-            <span
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: isPhone ? 34 : 40,
-                padding: isPhone ? "7px 11px" : "9px 14px",
-                borderRadius: 999,
-                border: "1px solid rgba(255,255,255,0.18)",
-                background:
-                  "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.06) 100%)",
-                color: "#F3D06A",
-                fontSize: isPhone ? 11.5 : 12.5,
-                fontWeight: 1000,
-                whiteSpace: "nowrap",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)",
-              }}
-            >
-              Read text
-            </span>
-          </summary>
-
-          <div
-            style={{
-              marginTop: isPhone ? 12 : 16,
-              height: 1,
-              background:
-                "linear-gradient(90deg, rgba(201,154,39,0) 0%, rgba(201,154,39,0.72) 50%, rgba(201,154,39,0) 100%)",
-            }}
-          />
-
-          <div
-            style={{
-              marginTop: isPhone ? 12 : 16,
-              display: "grid",
-              gridTemplateColumns: isPhone
-                ? "1fr"
-                : "repeat(2, minmax(0, 1fr))",
-              gap: isPhone ? 10 : 12,
-            }}
-          >
-            {DASHBOARD_FIND_ITEMS.map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "56px minmax(0, 1fr)",
-                  alignItems: "center",
-                  gap: 12,
-                  minHeight: isPhone ? 86 : 96,
-                  borderRadius: 18,
-                  border: "1px solid rgba(220,231,243,0.16)",
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.035) 100%)",
-                  boxShadow:
-                    "0 16px 30px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
-                  padding: isPhone ? 12 : 14,
-                }}
-              >
-                <span style={dashboardPrimerIcon()} aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span style={{ display: "grid", gap: 5, minWidth: 0 }}>
-                  <span
-                    style={{
-                      color: "#F8FBFF",
-                      fontSize: isPhone ? 15.5 : 17,
-                      fontWeight: 1000,
-                      lineHeight: 1.16,
-                    }}
-                  >
-                    {item.title}
-                  </span>
-                  <span
-                    style={{
-                      color: "rgba(226,232,240,0.72)",
-                      fontSize: isPhone ? 12.3 : 13,
-                      fontWeight: 760,
-                      lineHeight: 1.42,
-                    }}
-                  >
-                    {item.detail}
-                  </span>
+                Trust is{" "}
+                <span style={{ color: DASHBOARD_BRAND.goldText }}>
+                  the first currency
                 </span>
               </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  marginTop: isPhone ? 12 : 16,
+                  minHeight: 28,
+                  alignItems: "center",
+                  padding: "4px 13px",
+                  borderRadius: 999,
+                  background:
+                    "linear-gradient(180deg, rgba(255,249,225,0.98) 0%, rgba(239,207,113,0.94) 100%)",
+                  border: "1px solid rgba(145,103,19,0.22)",
+                  color: "#6B4300",
+                  fontSize: 12,
+                  fontWeight: 1000,
+                  letterSpacing: 0.8,
+                }}
+              >
+                GSN
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: DASHBOARD_BRAND.label,
+                  fontSize: isPhone ? 13 : 16,
+                  fontWeight: 850,
+                  letterSpacing: 0.2,
+                }}
+              >
+                Visible. Portable. Usable.
+              </div>
+            </div>
+
+            <div
+              style={{
+                width: "100%",
+                aspectRatio: "1 / 1",
+                borderRadius: isPhone ? 18 : 24,
+                overflow: "hidden",
+                border: "1px solid rgba(255,255,255,0.92)",
+                background:
+                  "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(218,232,248,0.96) 100%)",
+                boxShadow:
+                  "0 14px 28px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.92)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt="Profile"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    objectPosition: "center 18%",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <span
+                  style={{
+                    color: DASHBOARD_BRAND.accentDeep,
+                    fontSize: isPhone ? 24 : 42,
+                    fontWeight: 1000,
+                  }}
+                >
+                  {profileInitials}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: isPhone ? 14 : 18,
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              background:
+                "linear-gradient(180deg, #113A62 0%, #0A2035 100%)",
+              borderRadius: isPhone ? 14 : 18,
+              overflow: "hidden",
+              boxShadow: "0 16px 28px rgba(10,24,49,0.16)",
+            }}
+          >
+            {[
+              { label: "Trust", value: openTrust.classText, to: DASHBOARD_TARGETS.TRUST },
+              { label: "CCI", value: cci.classText, to: DASHBOARD_TARGETS.CCI },
+              {
+                label: "TrustSlip",
+                value: trustSlipCode || "Pending",
+                to: trustSlipCode ? `/app/trust-slip?code=${encodeURIComponent(trustSlipCode)}` : DASHBOARD_TARGETS.TRUST_SLIP,
+              },
+            ].map((item, index) => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={(event) => openDashboardRoute(event, item.to)}
+                onPointerDown={consumeDashboardPointerEvent}
+                style={{
+                  minWidth: 0,
+                  minHeight: isPhone ? 58 : 74,
+                  display: "grid",
+                  gridTemplateColumns: isPhone ? "1fr" : "auto minmax(0, 1fr) auto",
+                  gap: isPhone ? 3 : 10,
+                  alignItems: "center",
+                  justifyItems: isPhone ? "center" : "start",
+                  padding: isPhone ? "8px 6px" : "12px 16px",
+                  border: 0,
+                  borderLeft:
+                    index === 0 ? "0" : "1px solid rgba(255,255,255,0.15)",
+                  background: "transparent",
+                  color: "#F8FBFF",
+                  cursor: "pointer",
+                  textAlign: isPhone ? "center" : "left",
+                }}
+              >
+                <span
+                  style={{
+                    color: "rgba(248,251,255,0.84)",
+                    fontSize: isPhone ? 11 : 13,
+                    fontWeight: 800,
+                  }}
+                >
+                  {item.label}
+                </span>
+                <span
+                  style={{
+                    color: "#F3D06A",
+                    fontSize: isPhone ? 12 : 15,
+                    fontWeight: 1000,
+                    lineHeight: 1.05,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {item.value}
+                </span>
+                {!isPhone ? <span style={{ opacity: 0.72 }}>{">"}</span> : null}
+              </button>
             ))}
           </div>
 
           <div
             style={{
-              marginTop: isPhone ? 12 : 16,
+              marginTop: 12,
               display: "grid",
-              gridTemplateColumns: isPhone ? "64px minmax(0, 1fr)" : "74px minmax(0, 1fr)",
-              gap: 14,
+              gridTemplateColumns: isPhone ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
+              gap: 10,
               alignItems: "center",
-              borderRadius: 18,
-              border: "1px solid rgba(201,154,39,0.42)",
-              background:
-                "radial-gradient(circle at 88% 50%, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 42%), linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
-              boxShadow:
-                "0 18px 34px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-              padding: isPhone ? 12 : 14,
+              padding: isPhone ? "10px 12px" : "12px 16px",
+              borderRadius: isPhone ? 14 : 18,
+              background: "rgba(255,255,255,0.74)",
+              border: "1px solid rgba(16,37,59,0.08)",
             }}
           >
-            <span
+            <div
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: isPhone ? 58 : 66,
-                height: isPhone ? 58 : 66,
-                borderRadius: 18,
-                background:
-                  "linear-gradient(180deg, rgba(243,208,106,0.18) 0%, rgba(255,255,255,0.06) 100%)",
-                border: "1px solid rgba(243,208,106,0.28)",
+                display: "flex",
+                gap: 8,
+                alignItems: "baseline",
+                minWidth: 0,
+                color: DASHBOARD_BRAND.label,
+                fontSize: isPhone ? 12.5 : 14,
+                fontWeight: 900,
               }}
-              aria-hidden="true"
             >
-              <GSNBrandMark width={isPhone ? 28 : 34} height={isPhone ? 36 : 42} />
-            </span>
-            <span style={{ display: "grid", gap: 5 }}>
+              <span>GSN ID</span>
               <span
                 style={{
-                  color: "#F3D06A",
-                  fontSize: isPhone ? 15.5 : 17,
-                  fontWeight: 1000,
-                  lineHeight: 1.18,
+                  color: DASHBOARD_BRAND.ink,
+                  overflowWrap: "anywhere",
                 }}
               >
-                You are in good hands.
+                {visibleGsnId}
               </span>
-              <span
-                style={{
-                  color: "rgba(226,232,240,0.72)",
-                  fontSize: isPhone ? 12.3 : 13.5,
-                  fontWeight: 760,
-                  lineHeight: 1.45,
-                }}
-              >
-                GSN is built on transparency, security, and community trust.
-              </span>
-            </span>
+            </div>
+            <button
+              type="button"
+              onClick={(event) => openDashboardRoute(event, DASHBOARD_TARGETS.CCI)}
+              onPointerDown={consumeDashboardPointerEvent}
+              style={{
+                ...spotlightWhiteButton({
+                  minHeight: isPhone ? 42 : 40,
+                  width: isPhone ? "100%" : 160,
+                }),
+              }}
+            >
+              View Identity
+            </button>
           </div>
-        </details>
+        </section>
 
       <section
         style={{
           ...pageCard(DASHBOARD_BRAND.heroField),
+          display: "none",
           padding: isPhone ? 10 : isCompact ? 16 : 18,
           border: "1px solid rgba(255,255,255,0.14)",
           boxShadow:
@@ -7167,28 +7032,99 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <NextActionGuide
-        storageKey="gmfn.dashboard.nextActionGuide.v1"
-        compact={isPhone || isCompact}
-        items={dashboardNextActionItems}
-        searchItems={dashboardGuideSearchItems}
-        onSelect={handleDashboardNextAction}
-        intro="Say what you want in normal words, like loan, deposit, withdraw, shop, trust, community, or marketplace. GSN will point you to the closest route."
-      />
+      <section
+        style={{
+          ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+          order: 20,
+          border: "1px solid rgba(16,37,59,0.08)",
+          borderRadius: isPhone ? 20 : 24,
+          padding: isPhone ? 14 : 18,
+          boxShadow:
+            "0 14px 28px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
+        }}
+      >
+        <div
+          style={{
+            color: DASHBOARD_BRAND.ink,
+            fontSize: isPhone ? 18 : 22,
+            fontWeight: 1000,
+            lineHeight: 1.15,
+            marginBottom: isPhone ? 12 : 14,
+          }}
+        >
+          What do you want to do next?
+        </div>
 
-      <DomainIntroToggle
-        title="How Dashboard Helps You"
-        body={DASHBOARD_HELP_BODY}
-        bullets={DASHBOARD_HELP_BULLETS}
-        note={DASHBOARD_HELP_NOTE}
-        tone="blue"
-      />
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isPhone
+              ? "repeat(2, minmax(0, 1fr))"
+              : "repeat(4, minmax(0, 1fr))",
+            gap: isPhone ? 9 : 12,
+          }}
+        >
+          {[
+            {
+              label: "Marketplace",
+              icon: "marketplace" as const,
+              to: DASHBOARD_TARGETS.MARKETPLACE,
+            },
+            {
+              label: "Create Demand",
+              icon: "demand" as const,
+              to: DASHBOARD_TARGETS.DEMAND_BOX,
+            },
+            {
+              label: "Trust Events",
+              icon: "trust" as const,
+              to: DASHBOARD_TARGETS.TRUST,
+            },
+            {
+              label: "My Identity",
+              icon: "identity" as const,
+              to: DASHBOARD_TARGETS.CCI,
+            },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={(event) => openDashboardRoute(event, item.to)}
+              onPointerDown={consumeDashboardPointerEvent}
+              style={{
+                minHeight: isPhone ? 58 : 64,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: isPhone ? 8 : 10,
+                padding: isPhone ? "10px 8px" : "12px 14px",
+                borderRadius: isPhone ? 15 : 17,
+                border: "1px solid rgba(15,59,116,0.12)",
+                background:
+                  "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+                color: DASHBOARD_BRAND.ink,
+                boxShadow:
+                  "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
+                fontSize: isPhone ? 12.5 : 14,
+                fontWeight: 950,
+                cursor: "pointer",
+                touchAction: "manipulation",
+                textAlign: "center",
+              }}
+            >
+              <DashboardQuickActionIcon kind={item.icon} isPhone={isPhone} />
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </div>
+      </section>
 
       <section
         style={{
           ...pageCard(
             "radial-gradient(circle at top left, rgba(11,99,209,0.14) 0%, rgba(11,99,209,0) 38%), linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)"
           ),
+          order: 30,
           position: "relative",
           border: "1px solid rgba(15,59,116,0.16)",
           padding: isPhone ? 10 : isCompact ? 16 : 18,
@@ -8532,6 +8468,7 @@ export default function DashboardPage() {
       <section
         style={{
           ...pageCard(demandSurfaceChrome.shellBg),
+          order: 50,
           border: demandSurfaceChrome.shellBorder,
           padding: isPhone ? 13 : 20,
           borderRadius: isPhone ? 22 : 26,
@@ -8945,6 +8882,7 @@ export default function DashboardPage() {
       <section
         style={{
           ...pageCard(notificationSurfaceChrome.shellBg),
+          order: 40,
           border: notificationSurfaceChrome.shellBorder,
           padding: isPhone ? 13 : 20,
           borderRadius: isPhone ? 22 : 26,
@@ -8969,7 +8907,7 @@ export default function DashboardPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Notifications</div>
+            <div style={sectionLabel()}>What Matters Now</div>
             <div
               style={{
                 marginTop: 2,
@@ -9291,9 +9229,12 @@ export default function DashboardPage() {
       </section>
 
       <section
-        style={pageCard(
-          "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 26%), linear-gradient(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%)"
-        )}
+        style={{
+          ...pageCard(
+            "radial-gradient(circle at top, rgba(243,208,106,0.10) 0%, rgba(243,208,106,0) 26%), linear-gradient(180deg, #F7FBFF 0%, #EAF3FF 52%, #DCEAFB 100%)"
+          ),
+          order: 80,
+        }}
       >
         <div
           style={{
@@ -9522,7 +9463,13 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      <section id="most-used-apps" style={pageCard(DASHBOARD_BRAND.raisedPanel)}>
+      <section
+        id="most-used-apps"
+        style={{
+          ...pageCard(DASHBOARD_BRAND.raisedPanel),
+          order: 70,
+        }}
+      >
         <div
           style={{
             display: "grid",
@@ -9620,6 +9567,7 @@ export default function DashboardPage() {
 
       <section
         style={{
+          order: 90,
           marginTop: isPhone ? 10 : 14,
           ...pageCard(DASHBOARD_BRAND.raisedPanel),
           padding: isPhone ? 12 : 20,
