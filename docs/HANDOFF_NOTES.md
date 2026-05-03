@@ -19548,3 +19548,22 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/dashboard`
   - no backend/auth/schema changes
+
+### Dashboard mobile button stability follow-up (2026-05-03)
+
+- Owner feedback after phone review: the dashboard buttons still felt jumpy and landed awkwardly, especially the accordion rows and launcher buttons on mobile.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - added shared dashboard accordion row styles for consistent icon/title/chevron sizing.
+  - changed the action launcher, Demand Box, What Needs Your Attention, and Focus Commitments rows to use the same stable mobile grid.
+  - hid the separate status pill column on phone so labels, icons, and arrows no longer fight for horizontal space.
+  - made the expanded launcher buttons fixed-height on phone, with icon + label alignment that does not resize when labels wrap.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+- Important caveat:
+  - older local dirty dashboard state edits still exist in `frontend/src/pages/DashboardPage.tsx`; keep them unstaged unless the owner explicitly asks to commit them.
+- Scope:
+  - `/app/dashboard`
+  - no backend/auth/schema changes

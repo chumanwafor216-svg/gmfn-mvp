@@ -5320,6 +5320,120 @@ export default function DashboardPage() {
     lineHeight: 1.05,
     whiteSpace: "nowrap",
   };
+  const dashboardAccordionButtonStyle = (
+    border: string,
+    background: string
+  ): React.CSSProperties => ({
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: isPhone
+      ? "auto minmax(0, 1fr) auto"
+      : "auto minmax(0, 1fr) auto auto",
+    gap: isPhone ? 9 : 12,
+    alignItems: "center",
+    minHeight: isPhone ? 62 : 64,
+    padding: isPhone ? "10px 11px" : "11px 13px",
+    borderRadius: isPhone ? 17 : 18,
+    border,
+    background,
+    color: DASHBOARD_BRAND.ink,
+    boxShadow:
+      "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
+    cursor: "pointer",
+    touchAction: "manipulation",
+    textAlign: "left",
+  });
+  const dashboardAccordionIconStyle = (
+    background = "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+    border = "1px solid rgba(11,99,209,0.16)",
+    color: string | undefined = undefined
+  ): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: isPhone ? 40 : 42,
+    height: isPhone ? 40 : 42,
+    borderRadius: 999,
+    background,
+    border,
+    color,
+    boxShadow:
+      "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
+    fontSize: isPhone ? 18 : 20,
+    lineHeight: 1,
+    flexShrink: 0,
+  });
+  const dashboardAccordionTitleStyle: React.CSSProperties = {
+    display: "block",
+    color: DASHBOARD_BRAND.ink,
+    fontSize: isPhone ? 16.5 : 21,
+    fontWeight: 1000,
+    lineHeight: 1.1,
+  };
+  const dashboardAccordionSummaryStyle: React.CSSProperties = {
+    display: "block",
+    marginTop: 4,
+    color: DASHBOARD_BRAND.helper,
+    fontSize: isPhone ? 11.8 : 13,
+    fontWeight: 750,
+    lineHeight: 1.25,
+  };
+  const dashboardAccordionChevronStyle = (
+    expanded: boolean
+  ): React.CSSProperties => ({
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: isPhone ? 32 : 34,
+    height: isPhone ? 32 : 34,
+    borderRadius: 999,
+    border: "1px solid rgba(15,59,116,0.12)",
+    color: DASHBOARD_BRAND.accentDeep,
+    fontSize: isPhone ? 18 : 20,
+    fontWeight: 1000,
+    transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
+    transition: "transform 160ms ease",
+    flexShrink: 0,
+  });
+  const dashboardAccordionStatusStyle = (
+    background: string,
+    color: string,
+    border: string
+  ): React.CSSProperties => ({
+    ...badge(false),
+    minHeight: isPhone ? 26 : 36,
+    minWidth: isPhone ? 0 : 104,
+    justifyContent: "center",
+    padding: isPhone ? "4px 8px" : "8px 12px",
+    background,
+    color,
+    border,
+    fontSize: isPhone ? 10.5 : undefined,
+    lineHeight: 1.05,
+    whiteSpace: "nowrap",
+  });
+  const dashboardLauncherButtonStyle: React.CSSProperties = {
+    minHeight: isPhone ? 64 : 64,
+    height: isPhone ? 64 : undefined,
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr)",
+    alignItems: "center",
+    justifyContent: "stretch",
+    gap: isPhone ? 8 : 10,
+    padding: isPhone ? "9px 9px" : "12px 14px",
+    borderRadius: isPhone ? 15 : 17,
+    border: "1px solid rgba(15,59,116,0.12)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
+    color: DASHBOARD_BRAND.ink,
+    boxShadow:
+      "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
+    fontSize: isPhone ? 12.2 : 14,
+    fontWeight: 950,
+    cursor: "pointer",
+    touchAction: "manipulation",
+    textAlign: "left",
+    overflow: "hidden",
+  };
   const attentionConnectionText = isPhone
     ? "Focus shows follow-through. Trust is how your community reads it. CCI is how outsiders may read it. TrustSlip keeps later proof. The waiting request is the issue now."
     : trustAttentionCore.connectionText;
@@ -6962,85 +7076,28 @@ export default function DashboardPage() {
             )
           }
           onPointerDown={consumeDashboardPointerEvent}
-          style={{
-            width: "100%",
-            display: "grid",
-            gridTemplateColumns: "auto minmax(0, 1fr) auto",
-            alignItems: "center",
-            gap: isPhone ? 10 : 12,
-            minHeight: isPhone ? 58 : 62,
-            padding: isPhone ? "10px 12px" : "12px 14px",
-            borderRadius: isPhone ? 17 : 18,
-            border: "1px solid rgba(15,59,116,0.12)",
-            background: "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
-            color: DASHBOARD_BRAND.ink,
-            boxShadow:
-              "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
-            cursor: "pointer",
-            touchAction: "manipulation",
-            textAlign: "left",
-          }}
+          style={dashboardAccordionButtonStyle(
+            "1px solid rgba(15,59,116,0.12)",
+            "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+          )}
         >
           <span
             aria-hidden="true"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: isPhone ? 38 : 42,
-              height: isPhone ? 38 : 42,
-              borderRadius: 999,
-              background:
-                "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-              border: "1px solid rgba(11,99,209,0.16)",
-              boxShadow:
-                "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-              fontSize: isPhone ? 18 : 20,
-              lineHeight: 1,
-            }}
+            style={dashboardAccordionIconStyle()}
           >
             {dashboardSectionSignal("What do you want to do next?")}
           </span>
           <span style={{ minWidth: 0 }}>
-            <span
-              style={{
-                display: "block",
-                fontSize: isPhone ? 17 : 21,
-                fontWeight: 1000,
-                lineHeight: 1.1,
-              }}
-            >
+            <span style={dashboardAccordionTitleStyle}>
               What do you want to do next?
             </span>
-            <span
-              style={{
-                display: "block",
-                marginTop: 4,
-                color: DASHBOARD_BRAND.helper,
-                fontSize: isPhone ? 12 : 13,
-                fontWeight: 750,
-                lineHeight: 1.25,
-              }}
-            >
+            <span style={dashboardAccordionSummaryStyle}>
               Marketplace, demand, spotlight, trust, and more.
             </span>
           </span>
           <span
             aria-hidden="true"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: isPhone ? 30 : 34,
-              height: isPhone ? 30 : 34,
-              borderRadius: 999,
-              border: "1px solid rgba(15,59,116,0.12)",
-              color: DASHBOARD_BRAND.accentDeep,
-              fontSize: isPhone ? 18 : 20,
-              fontWeight: 1000,
-              transform: uiState.appsExpanded ? "rotate(90deg)" : "rotate(0deg)",
-              transition: "transform 160ms ease",
-            }}
+            style={dashboardAccordionChevronStyle(uiState.appsExpanded)}
           >
             &gt;
           </span>
@@ -7088,49 +7145,27 @@ export default function DashboardPage() {
               type="button"
               onClick={(event) => openDashboardRoute(event, item.to)}
               onPointerDown={consumeDashboardPointerEvent}
-              style={{
-                minHeight: isPhone ? 58 : 64,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: isPhone ? 8 : 10,
-                padding: isPhone ? "10px 8px" : "12px 14px",
-                borderRadius: isPhone ? 15 : 17,
-                border: "1px solid rgba(15,59,116,0.12)",
-                background:
-                  "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
-                color: DASHBOARD_BRAND.ink,
-                boxShadow:
-                  "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
-                fontSize: isPhone ? 12.5 : 14,
-                fontWeight: 950,
-                cursor: "pointer",
-                touchAction: "manipulation",
-                textAlign: "center",
-              }}
+              style={dashboardLauncherButtonStyle}
             >
               <span
                 aria-hidden="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: isPhone ? 34 : 38,
-                  height: isPhone ? 34 : 38,
-                  borderRadius: 999,
-                  background:
-                    "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-                  border: "1px solid rgba(11,99,209,0.16)",
-                  boxShadow:
-                    "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-                  fontSize: isPhone ? 17 : 19,
-                  lineHeight: 1,
-                  flexShrink: 0,
-                }}
+                style={dashboardAccordionIconStyle(
+                  "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+                  "1px solid rgba(11,99,209,0.16)"
+                )}
               >
                 {dashboardActionSignal(item.label)}
               </span>
-              <span>{item.label}</span>
+              <span
+                style={{
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  lineHeight: 1.15,
+                }}
+              >
+                {item.label}
+              </span>
             </button>
           ))}
         </div>
@@ -7178,49 +7213,27 @@ export default function DashboardPage() {
               type="button"
               onClick={(event) => openDashboardRoute(event, item.to)}
               onPointerDown={consumeDashboardPointerEvent}
-              style={{
-                minHeight: isPhone ? 58 : 64,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: isPhone ? 8 : 10,
-                padding: isPhone ? "10px 8px" : "12px 14px",
-                borderRadius: isPhone ? 15 : 17,
-                border: "1px solid rgba(15,59,116,0.12)",
-                background:
-                  "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
-                color: DASHBOARD_BRAND.ink,
-                boxShadow:
-                  "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
-                fontSize: isPhone ? 12.5 : 14,
-                fontWeight: 950,
-                cursor: "pointer",
-                touchAction: "manipulation",
-                textAlign: "center",
-              }}
+              style={dashboardLauncherButtonStyle}
             >
               <span
                 aria-hidden="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: isPhone ? 34 : 38,
-                  height: isPhone ? 34 : 38,
-                  borderRadius: 999,
-                  background:
-                    "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-                  border: "1px solid rgba(11,99,209,0.16)",
-                  boxShadow:
-                    "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-                  fontSize: isPhone ? 17 : 19,
-                  lineHeight: 1,
-                  flexShrink: 0,
-                }}
+                style={dashboardAccordionIconStyle(
+                  "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
+                  "1px solid rgba(11,99,209,0.16)"
+                )}
               >
                 {dashboardActionSignal(item.label)}
               </span>
-              <span>{item.label}</span>
+              <span
+                style={{
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  lineHeight: 1.15,
+                }}
+              >
+                {item.label}
+              </span>
             </button>
           ))}
           </div>
@@ -8596,68 +8609,27 @@ export default function DashboardPage() {
           aria-expanded={demandGuideOpen}
           onClick={toggleDemandGuide}
           onPointerDown={consumeDashboardPointerEvent}
-          style={{
-            width: "100%",
-            display: "grid",
-            gridTemplateColumns: "auto minmax(0, 1fr) auto auto",
-            gap: isPhone ? 8 : 12,
-            alignItems: "center",
-            minHeight: isPhone ? 58 : 62,
-            padding: isPhone ? "9px 10px" : "10px 12px",
-            borderRadius: isPhone ? 17 : 18,
-            border: demandSurfaceChrome.chipBorder,
-            background: demandSurfaceChrome.chipBg,
-            color: DASHBOARD_BRAND.ink,
-            boxShadow:
-              "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
-            cursor: "pointer",
-            touchAction: "manipulation",
-            textAlign: "left",
-          }}
+          style={dashboardAccordionButtonStyle(
+            demandSurfaceChrome.chipBorder,
+            demandSurfaceChrome.chipBg
+          )}
         >
           <span
             aria-hidden="true"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: isPhone ? 38 : 42,
-              height: isPhone ? 38 : 42,
-              borderRadius: 999,
-              background: demandSurfaceChrome.statusBg,
-              border: demandSurfaceChrome.chipSelectedBorder,
-              color: demandSurfaceChrome.statusText,
-              boxShadow:
-                "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-              fontSize: isPhone ? 18 : 20,
-              lineHeight: 1,
-            }}
+            style={dashboardAccordionIconStyle(
+              demandSurfaceChrome.statusBg,
+              demandSurfaceChrome.chipSelectedBorder,
+              demandSurfaceChrome.statusText
+            )}
           >
             {dashboardSectionSignal("Your Demand Box")}
           </span>
 
           <span style={{ minWidth: 0 }}>
-            <span
-              style={{
-                display: "block",
-                color: DASHBOARD_BRAND.ink,
-                fontSize: isPhone ? 17 : 21,
-                fontWeight: 1000,
-                lineHeight: 1.1,
-              }}
-            >
+            <span style={dashboardAccordionTitleStyle}>
               Your Demand Box
             </span>
-            <span
-              style={{
-                display: "block",
-                marginTop: 4,
-                color: DASHBOARD_BRAND.helper,
-                fontSize: isPhone ? 12 : 13,
-                fontWeight: 750,
-                lineHeight: 1.25,
-              }}
-            >
+            <span style={dashboardAccordionSummaryStyle}>
               {demandItems.length > 0
                 ? `${demandItems.length} demand request${
                     demandItems.length === 1 ? "" : "s"
@@ -8668,14 +8640,12 @@ export default function DashboardPage() {
 
           <span
             style={{
-              ...badge(false),
-              minHeight: isPhone ? 34 : 36,
-              minWidth: isPhone ? 82 : 104,
-              justifyContent: "center",
-              padding: isPhone ? "7px 9px" : "8px 12px",
-              background: demandSurfaceChrome.statusBg,
-              color: demandSurfaceChrome.statusText,
-              border: demandSurfaceChrome.chipSelectedBorder,
+              ...dashboardAccordionStatusStyle(
+                demandSurfaceChrome.statusBg,
+                demandSurfaceChrome.statusText,
+                demandSurfaceChrome.chipSelectedBorder
+              ),
+              display: isPhone ? "none" : "inline-flex",
             }}
           >
             {urgentDemandItems.length > 0
@@ -8687,20 +8657,7 @@ export default function DashboardPage() {
 
           <span
             aria-hidden="true"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: isPhone ? 30 : 34,
-              height: isPhone ? 30 : 34,
-              borderRadius: 999,
-              border: "1px solid rgba(15,59,116,0.12)",
-              color: DASHBOARD_BRAND.accentDeep,
-              fontSize: isPhone ? 18 : 20,
-              fontWeight: 1000,
-              transform: demandGuideOpen ? "rotate(90deg)" : "rotate(0deg)",
-              transition: "transform 160ms ease",
-            }}
+            style={dashboardAccordionChevronStyle(demandGuideOpen)}
           >
             &gt;
           </span>
@@ -9036,68 +8993,27 @@ export default function DashboardPage() {
             )
           }
           onPointerDown={consumeDashboardPointerEvent}
-          style={{
-            width: "100%",
-            display: "grid",
-            gridTemplateColumns: "auto minmax(0, 1fr) auto auto",
-            gap: isPhone ? 8 : 12,
-            alignItems: "center",
-            minHeight: isPhone ? 58 : 62,
-            padding: isPhone ? "9px 10px" : "10px 12px",
-            borderRadius: isPhone ? 17 : 18,
-            border: notificationSurfaceChrome.chipBorder,
-            background: notificationSurfaceChrome.chipBg,
-            color: DASHBOARD_BRAND.ink,
-            boxShadow:
-              "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.86)",
-            cursor: "pointer",
-            touchAction: "manipulation",
-            textAlign: "left",
-          }}
+          style={dashboardAccordionButtonStyle(
+            notificationSurfaceChrome.chipBorder,
+            notificationSurfaceChrome.chipBg
+          )}
         >
           <span
             aria-hidden="true"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: isPhone ? 38 : 42,
-              height: isPhone ? 38 : 42,
-              borderRadius: 999,
-              background: notificationSurfaceChrome.statusBg,
-              border: notificationSurfaceChrome.chipSelectedBorder,
-              color: notificationSurfaceChrome.statusText,
-              boxShadow:
-                "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-              fontSize: isPhone ? 18 : 20,
-              lineHeight: 1,
-            }}
+            style={dashboardAccordionIconStyle(
+              notificationSurfaceChrome.statusBg,
+              notificationSurfaceChrome.chipSelectedBorder,
+              notificationSurfaceChrome.statusText
+            )}
           >
             {dashboardSectionSignal("What needs your attention")}
           </span>
 
           <span style={{ minWidth: 0 }}>
-            <span
-              style={{
-                display: "block",
-                color: DASHBOARD_BRAND.ink,
-                fontSize: isPhone ? 17 : 21,
-                fontWeight: 1000,
-                lineHeight: 1.1,
-              }}
-            >
+            <span style={dashboardAccordionTitleStyle}>
               What needs your attention
             </span>
-            <span
-              style={{
-                display: "block",
-                marginTop: 4,
-                color: DASHBOARD_BRAND.helper,
-                fontSize: isPhone ? 12 : 13,
-                fontWeight: 750,
-                lineHeight: 1.25,
-              }}
-            >
+            <span style={dashboardAccordionSummaryStyle}>
               {dashboardNoticeTotalCount > 0
                 ? `${dashboardNoticeTotalCount} alert${
                     dashboardNoticeTotalCount === 1 ? "" : "s"
@@ -9108,14 +9024,12 @@ export default function DashboardPage() {
 
           <span
             style={{
-              ...badge(false),
-              minHeight: isPhone ? 34 : 36,
-              minWidth: isPhone ? 82 : 104,
-              justifyContent: "center",
-              padding: isPhone ? "7px 9px" : "8px 12px",
-              background: notificationSurfaceChrome.statusBg,
-              border: notificationSurfaceChrome.chipSelectedBorder,
-              color: notificationSurfaceChrome.statusText,
+              ...dashboardAccordionStatusStyle(
+                notificationSurfaceChrome.statusBg,
+                notificationSurfaceChrome.statusText,
+                notificationSurfaceChrome.chipSelectedBorder
+              ),
+              display: isPhone ? "none" : "inline-flex",
             }}
           >
             {dashboardNoticeSummary.counts.actNow > 0
@@ -9129,20 +9043,7 @@ export default function DashboardPage() {
 
           <span
             aria-hidden="true"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: isPhone ? 30 : 34,
-              height: isPhone ? 30 : 34,
-              borderRadius: 999,
-              border: "1px solid rgba(15,59,116,0.12)",
-              color: DASHBOARD_BRAND.accentDeep,
-              fontSize: isPhone ? 18 : 20,
-              fontWeight: 1000,
-              transform: uiState.inboxExpanded ? "rotate(90deg)" : "rotate(0deg)",
-              transition: "transform 160ms ease",
-            }}
+            style={dashboardAccordionChevronStyle(uiState.inboxExpanded)}
           >
             &gt;
           </span>
@@ -9779,68 +9680,23 @@ export default function DashboardPage() {
                 )
               }
               onPointerDown={consumeDashboardPointerEvent}
-              style={{
-                width: "100%",
-                display: "grid",
-                gridTemplateColumns: "auto minmax(0, 1fr) auto auto",
-                gap: isPhone ? 8 : 12,
-                alignItems: "center",
-                minHeight: isPhone ? 58 : 62,
-                padding: isPhone ? "9px 10px" : "10px 12px",
-                borderRadius: isPhone ? 17 : 18,
-                border: "1px solid rgba(11,99,209,0.14)",
-                background: "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)",
-                color: DASHBOARD_BRAND.ink,
-                boxShadow:
-                  "0 10px 18px rgba(10,24,49,0.045), inset 0 1px 0 rgba(255,255,255,0.88)",
-                cursor: "pointer",
-                touchAction: "manipulation",
-                textAlign: "left",
-              }}
+              style={dashboardAccordionButtonStyle(
+                "1px solid rgba(11,99,209,0.14)",
+                "linear-gradient(180deg, #FFFFFF 0%, #F5F9FF 100%)"
+              )}
             >
               <span
                 aria-hidden="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: isPhone ? 38 : 42,
-                  height: isPhone ? 38 : 42,
-                  borderRadius: 999,
-                  background:
-                    "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
-                  border: "1px solid rgba(11,99,209,0.16)",
-                  boxShadow:
-                    "0 8px 16px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
-                  fontSize: isPhone ? 18 : 20,
-                  lineHeight: 1,
-                }}
+                style={dashboardAccordionIconStyle()}
               >
                 {dashboardSectionSignal("Your Focus Commitments")}
               </span>
 
               <span style={{ minWidth: 0 }}>
-                <span
-                  style={{
-                    display: "block",
-                    color: DASHBOARD_BRAND.ink,
-                    fontSize: isPhone ? 17 : 21,
-                    fontWeight: 1000,
-                    lineHeight: 1.1,
-                  }}
-                >
+                <span style={dashboardAccordionTitleStyle}>
                   Your Focus Commitments
                 </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    color: DASHBOARD_BRAND.helper,
-                    fontSize: isPhone ? 12 : 13,
-                    fontWeight: 750,
-                    lineHeight: 1.25,
-                  }}
-                >
+                <span style={dashboardAccordionSummaryStyle}>
                   {activeFocusCount > 0
                     ? `${activeFocusCount} active commitment${
                         activeFocusCount === 1 ? "" : "s"
@@ -9851,29 +9707,24 @@ export default function DashboardPage() {
 
               <span
                 style={{
-                  ...badge(false),
-                  minHeight: isPhone ? 34 : 36,
-                  minWidth: isPhone ? 82 : 104,
-                  justifyContent: "center",
-                  padding: isPhone ? "7px 9px" : "8px 12px",
-                  background:
+                  ...dashboardAccordionStatusStyle(
                     focusSummary.behindCount > 0
                       ? "rgba(254,242,242,0.92)"
                       : focusSummary.watchCount > 0
                       ? "rgba(255,251,235,0.94)"
                       : "rgba(240,253,244,0.92)",
-                  color:
                     focusSummary.behindCount > 0
                       ? "#991B1B"
                       : focusSummary.watchCount > 0
                       ? "#92400E"
                       : "#166534",
-                  border:
                     focusSummary.behindCount > 0
                       ? "1px solid rgba(239,68,68,0.16)"
                       : focusSummary.watchCount > 0
                       ? "1px solid rgba(245,158,11,0.16)"
-                      : "1px solid rgba(34,197,94,0.16)",
+                      : "1px solid rgba(34,197,94,0.16)"
+                  ),
+                  display: isPhone ? "none" : "inline-flex",
                 }}
               >
                 {focusSummary.behindCount > 0
@@ -9885,20 +9736,7 @@ export default function DashboardPage() {
 
               <span
                 aria-hidden="true"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: isPhone ? 30 : 34,
-                  height: isPhone ? 30 : 34,
-                  borderRadius: 999,
-                  border: "1px solid rgba(15,59,116,0.12)",
-                  color: DASHBOARD_BRAND.accentDeep,
-                  fontSize: isPhone ? 18 : 20,
-                  fontWeight: 1000,
-                  transform: uiState.trustExpanded ? "rotate(90deg)" : "rotate(0deg)",
-                  transition: "transform 160ms ease",
-                }}
+                style={dashboardAccordionChevronStyle(uiState.trustExpanded)}
               >
                 &gt;
               </span>
@@ -10607,6 +10445,8 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+              </>
+            ) : null}
           </div>
       </section>
 
