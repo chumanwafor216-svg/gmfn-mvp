@@ -19568,3 +19568,30 @@ GSN-branded invite composer and invite-entry continuity.
 - Scope:
   - `/app/dashboard`
   - no backend/auth/schema changes
+
+### GMFN/GSN UX governance docs (2026-05-03)
+
+- Owner instruction: keep Codex restricted to the GMFN/GSN repo and stop treating Codex as a UX designer. Codex should implement locked specs and reference mockups.
+- Updated `AGENTS.md`:
+  - added explicit repo boundary against switching to `present-mvp`.
+  - added UX implementation rules, visual language, pre-auth bottom-nav restrictions, screen responsibility rules, entry-flow rules, and done/forbidden UX criteria.
+  - preserved the existing GMFN project protocol, freeze, route, and product-identity rules instead of replacing them.
+- Added documentation:
+  - `docs/DESIGN_SYSTEM.md`
+  - `docs/SCREEN_REGISTRY.md`
+  - `docs/SCREEN_SPECS.md`
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md`
+  - `docs/reference-mockups/README.md`
+- Added project Codex config:
+  - `.codex/config.toml`
+- Added frontend design tokens adapted to this repo:
+  - `frontend/src/design/tokens.ts`
+  - Did not create `apps/mobile/src/design/tokens.js` because this repo has `frontend/`, not `apps/mobile/`, and the owner explicitly restricted work to this GMFN/GSN workspace.
+- Verification:
+  - `npm exec -- eslint src/design/tokens.ts`
+    -> passed
+  - `npm run build`
+    -> passed
+- Important caveat:
+  - reference screenshots still need to be saved as actual files under `docs/reference-mockups/`; current chat images are not automatically present as repo files.
+  - older local dirty dashboard state edits still exist in `frontend/src/pages/DashboardPage.tsx`; keep them unstaged unless the owner explicitly asks to commit them.

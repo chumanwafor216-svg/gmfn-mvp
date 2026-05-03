@@ -1,0 +1,212 @@
+# Screen Specs
+
+## CoverPage
+
+Purpose:
+Create emotional trust and entry.
+
+Must show:
+- GSN mark
+- Shield / star emblem
+- Global Support Network
+- Trust made visible for stronger communities.
+- Trust Infrastructure Protocol card
+- Open Welcome button
+- Read the full guide first button
+- Secure / Verified / Global badges
+
+Must not show:
+- bottom navigation
+- sign-in fields
+- registration form
+- dashboard content
+
+Primary action:
+
+```text
+Open Welcome
+```
+
+## WelcomeGuidePage
+
+Purpose:
+Explain what the user will find.
+
+Must show:
+- GSN
+- What you will find
+- Simple steps. Strong foundation.
+- Identity First
+- Community Home
+- Marketplace Access
+- Shop Control
+- Trust Events
+- Insights
+- You are in good hands card
+- Continue button
+- Already a member? Sign in
+
+Must not show:
+- bottom navigation
+- community form
+- marketplace feed
+- dashboard blocks
+
+Primary action:
+
+```text
+Continue
+```
+
+## AuthGatewayPage
+
+Purpose:
+Choose existing member or new member.
+
+Must show:
+- GSN
+- Welcome
+- Choose how you want to continue.
+- Existing member card
+- Sign in button
+- New member card
+- Sign up button
+- note: After registration or approval, you will return here and sign in as an existing member.
+
+Primary actions:
+- Sign in
+- Sign up
+
+Rules:
+- Existing users go to SignInPage.
+- New users go to SignUpChoicePage.
+
+## SignInPage
+
+Purpose:
+Existing member login.
+
+Must show:
+- GSN
+- Welcome back
+- Sign in to continue where you left off.
+- Phone number or email field
+- Verification code field
+- Send code action
+- Continue button
+- Open sign-in help
+- Start a new community link
+- Request to join a community link
+- privacy note
+
+Must not show:
+- bottom navigation
+- dashboard content
+
+Primary action:
+
+```text
+Continue
+```
+
+## SignUpChoicePage
+
+Purpose:
+New member chooses starting path.
+
+Must show:
+- GSN
+- New member sign up
+- Choose your starting path.
+- Create community card
+- Join request membership card
+- information note: Once your setup or join request is completed, you will sign in from the Existing Member page.
+
+Primary actions:
+- Start community
+- Request to join
+
+Rules:
+- Create community goes to StartCommunityPage.
+- Request to join goes to JoinRequestMembershipPage.
+- After successful completion, user returns to SignInPage.
+
+## StartCommunityPage
+
+Purpose:
+Create a new community as founder/starter.
+
+Must show:
+- 3-step wizard
+- Step 1: Your details
+- Step 2: Bank and wallet details
+- Step 3: Community setup
+
+Rules:
+- Only one step expanded at a time.
+- Future steps collapsed.
+- User completes Step 1 before Step 2.
+- User completes Step 2 before Step 3.
+- After Step 3, show CommunityCreatedPage.
+- Then return to SignInPage or allow Open Community Home after sign-in.
+
+## JoinRequestMembershipPage
+
+Purpose:
+Request membership in an existing community.
+
+Must show:
+- invite code or community code input
+- requester details
+- reason / short note
+- submit request button
+- privacy and approval note
+
+After submission:
+- show JoinRequestSubmittedPage
+- tell user they must sign in as existing member after approval or completion
+
+## CommunityHomePage
+
+Purpose:
+Overview of selected community.
+
+Must show:
+- Community identity hero
+- Holder count
+- GSN ID status
+- Communities count
+- Money across communities
+- What do you want to do next?
+- Search actions
+- Choose community
+- Enter marketplace
+- Join community
+- Grow circle
+- Your Communities preview
+- compact rows:
+  - Owner Actions
+  - Owner Shop Control
+  - Grow Trusted Circle
+  - Owner Spotlight Status
+
+Must not expose all owner tools on this page.
+
+## OwnerShopControlPage
+
+Purpose:
+Owner-side shop tools.
+
+Must show:
+- GSN ID status
+- selected community
+- shop trust
+- Open Public Shop Face
+- Copy Public Shop Link
+- Open Community Marketplace
+- Pictures & Products
+- Owner Spotlight
+- Paid Spotlight
+- Private Vault Access
+- Grow Trusted Circle
+- Owner Spotlight Status

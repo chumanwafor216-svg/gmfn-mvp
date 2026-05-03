@@ -1,0 +1,6 @@
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
