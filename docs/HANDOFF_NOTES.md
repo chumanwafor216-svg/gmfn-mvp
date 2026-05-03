@@ -19357,3 +19357,84 @@ GSN-branded invite composer and invite-entry continuity.
 - Shared logic impact:
   - no auth, backend, or route-contract behavior changed
   - this work stayed route-local and focused on pilot-facing route truth / continuity only
+
+### Entry cover-to-welcome bridge polish (2026-05-03)
+
+- Continued the public entry flow polish after `/cover` and `/guide` were updated and pushed in commit `8e6dfe2`.
+- Important product-owner instruction:
+  - Treat `/cover` as visually frozen unless the owner explicitly asks to change the visual design again.
+  - The change below only corrected the route bridge from the frozen cover.
+- Route/link changes:
+  - `frontend/src/pages/CoverPage.tsx`
+    - changed the general `Continue` destination from `/create` to `/welcome`.
+    - create/invite/approved/existing mode destinations remain `/create`, `/join`, `/activate-membership`, and `/login`.
+- UI/content changes:
+  - `frontend/src/pages/WelcomePage.tsx`
+    - strengthened the two-card welcome choice screen around `Existing member / Sign in` and `New member / Sign up`.
+    - added icon-led institutional cards for the owner-requested low-literacy visual cues.
+    - preserved the explicit activation note so approved users still have a visible route to activation.
+    - refined the second step into clear `Start community` and `Join community` choices.
+  - `frontend/src/pages/LoginPage.tsx`
+    - aligned the sign-in bridge more closely with the owner screenshots: `Welcome back`, badge presence, icon-led inputs, `Continue`, sign-in help, start-new-community link, protected-data trust block, and activation fallback.
+    - kept the password field because the live sign-in implementation still requires email/password.
+- Verification:
+  - `npm exec -- eslint src/pages/CoverPage.tsx src/pages/WelcomePage.tsx src/pages/LoginPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+  - `http://192.168.1.38:5174/welcome`
+    -> returned `200`
+  - `http://192.168.1.38:5174/login?force=1`
+    -> returned `200`
+- Routes impacted:
+  - `/cover`
+  - `/welcome`
+  - `/login`
+  - existing links onward to `/create`, `/join`, `/activate-membership`, and `/guide`
+- Current caveat:
+  - there are still unrelated pre-existing dirty files/logs in the worktree, especially `frontend/src/pages/DashboardPage.tsx` and generated/local log files. Do not revert them without owner approval.
+
+### Welcome page simplification follow-up (2026-05-03)
+
+- Owner feedback: `/welcome` should be a clean decision gate, not a guide page.
+- Updated `frontend/src/pages/WelcomePage.tsx`:
+  - removed the visible `GSN and I` launcher from the welcome header
+  - removed the hidden welcome-page guide panel/content from source
+  - removed the `After registration, approval, or activation...` info block from the normal choice screen
+  - removed the bottom `One Clear Next Step` / `Open full GSN guide` block
+- Verification:
+  - `npm exec -- eslint src/pages/WelcomePage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+  - `http://192.168.1.38:5174/welcome`
+    -> returned `200`
+- Scope:
+  - `/welcome` only
+  - no auth, backend, or route-contract changes
+
+### Cover `My GSN and I` wording and return flow (2026-05-03)
+
+- Owner correction: the cover secondary action is not a "guide" yet; it is `My GSN and I`, meaning the public reader should understand what GSN can do before entering the protocol.
+- Updated `frontend/src/pages/CoverPage.tsx`:
+  - changed `Read the full guide first` to `Read My GSN and I`
+  - when opening `/guide`, passes a `returnTo` route state back to the current cover URL
+- Updated `frontend/src/pages/MyGMFNAndIPage.tsx` public `/guide` mode:
+  - changed the public page framing to `My GSN and I`
+  - changed the headline to `22 things GSN can do for you`
+  - added top `Close` and `Continue` actions
+  - added bottom `Collapse` and `Continue` actions
+  - close/collapse/continue return to the cover URL that opened the page, falling back to `/cover`
+- Verification:
+  - `npm exec -- eslint src/pages/CoverPage.tsx src/pages/MyGMFNAndIPage.tsx`
+    -> passed
+  - `npm run build`
+    -> passed
+  - `http://192.168.1.38:5174/cover`
+    -> returned `200`
+  - `http://192.168.1.38:5174/guide`
+    -> returned `200`
+- Scope:
+  - `/cover`
+  - `/guide`
+  - no backend/auth/schema changes

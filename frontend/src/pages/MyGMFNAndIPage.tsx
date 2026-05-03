@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide, {
   type NextActionGuideItem,
@@ -394,10 +394,72 @@ function publicKeyChip(kind: "category" | "tone" = "category"): React.CSSPropert
   };
 }
 
-function PublicCapabilitiesGuidePage({ compact }: { compact: boolean }) {
+function publicCloseButton(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: primary ? 48 : 40,
+    padding: primary ? "13px 18px" : "10px 14px",
+    borderRadius: 999,
+    border: primary
+      ? "1px solid rgba(255,255,255,0.78)"
+      : "1px solid rgba(201,154,39,0.32)",
+    background: primary
+      ? "linear-gradient(180deg, #FFFFFF 0%, #EEF4FA 64%, #DCE7F2 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.05) 100%)",
+    color: primary ? "#10253B" : "#F3D06A",
+    fontSize: primary ? 15 : 13,
+    fontWeight: 1000,
+    cursor: "pointer",
+    textDecoration: "none",
+    boxShadow: primary
+      ? "0 16px 28px rgba(1,13,32,0.24), inset 0 1px 0 rgba(255,255,255,0.90)"
+      : "0 12px 24px rgba(1,13,32,0.16), inset 0 1px 0 rgba(255,255,255,0.10)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function PublicCapabilitiesGuidePage({
+  compact,
+  onClose,
+}: {
+  compact: boolean;
+  onClose: () => void;
+}) {
   return (
     <main style={publicGuideShell()}>
       <div style={publicGuideFrame()}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            marginBottom: 14,
+          }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            {...buttonGuardProps()}
+            style={publicCloseButton(false)}
+          >
+            Close
+          </button>
+
+          <button
+            type="button"
+            onClick={onClose}
+            {...buttonGuardProps()}
+            style={publicCloseButton(true)}
+          >
+            Continue
+          </button>
+        </div>
+
         <section style={publicGuideHeader()}>
           <div
             style={{
@@ -408,7 +470,7 @@ function PublicCapabilitiesGuidePage({ compact }: { compact: boolean }) {
               textTransform: "uppercase",
             }}
           >
-            GSN Capability Map
+            My GSN and I
           </div>
 
           <h1
@@ -421,7 +483,7 @@ function PublicCapabilitiesGuidePage({ compact }: { compact: boolean }) {
               letterSpacing: 0,
             }}
           >
-            22 Core Capabilities
+            22 things GSN can do for you
           </h1>
 
           <div
@@ -433,8 +495,8 @@ function PublicCapabilitiesGuidePage({ compact }: { compact: boolean }) {
               maxWidth: 760,
             }}
           >
-            A compact register of what GSN can do. Read the number, the name,
-            the sign, and the short line.
+            Read the number, the name, the sign, and the short line. When you
+            are done, close this page and continue into the entry protocol.
           </div>
         </section>
 
@@ -518,6 +580,33 @@ function PublicCapabilitiesGuidePage({ compact }: { compact: boolean }) {
             );
           })}
         </section>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 12,
+            flexWrap: "wrap",
+            marginTop: 18,
+          }}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            {...buttonGuardProps()}
+            style={publicCloseButton(false)}
+          >
+            Collapse
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            {...buttonGuardProps()}
+            style={publicCloseButton(true)}
+          >
+            Continue
+          </button>
+        </div>
       </div>
     </main>
   );
@@ -585,7 +674,10 @@ async function callFirstAvailable<T = any>(
 
 export default function MyGMFNAndIPage() {
   const location = useLocation();
+  const navigate = useNavigate();
   const isAppRoute = location.pathname.startsWith("/app/");
+  const routeState = (location.state || {}) as { returnTo?: string };
+  const publicReturnTo = safeStr(routeState.returnTo) || "/cover";
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -818,8 +910,17 @@ export default function MyGMFNAndIPage() {
     showNotice("success", "Settings reset to the calmer defaults.");
   }
 
+  function closePublicGuide() {
+    navigate(publicReturnTo, { replace: false });
+  }
+
   if (!isAppRoute) {
-    return <PublicCapabilitiesGuidePage compact={isCompact} />;
+    return (
+      <PublicCapabilitiesGuidePage
+        compact={isCompact}
+        onClose={closePublicGuide}
+      />
+    );
   }
 
   if (loading) {

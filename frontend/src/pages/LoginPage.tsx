@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
+import GSNBrandMonument from "../components/GSNBrandMonument";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
 function pageShell(compact = false): React.CSSProperties {
@@ -85,24 +86,24 @@ function stableTapStyle(): React.CSSProperties {
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
     ...stableTapStyle(),
-    width: "min(100%, 60%)",
-    padding: "14px 18px",
-    borderRadius: 16,
+    width: "100%",
+    padding: "17px 18px",
+    borderRadius: 999,
     border: disabled
       ? "1px solid rgba(161,179,199,0.48)"
-      : "1px solid rgba(82,128,186,0.62)",
+      : "1px solid rgba(255,255,255,0.78)",
     background: disabled
       ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
-    color: disabled ? "#6B7B8D" : "#FFFFFF",
+      : "linear-gradient(180deg, #FFFFFF 0%, #F2F6FB 58%, #DEE8F3 100%)",
+    color: disabled ? "#6B7B8D" : "#10253B",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 15,
+    fontSize: 16,
     opacity: disabled ? 0.82 : 1,
     textAlign: "center",
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
+      : "0 20px 36px rgba(1,13,32,0.30), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -8px 12px rgba(120,142,170,0.10)",
     textShadow: "none",
   };
 }
@@ -112,17 +113,17 @@ function secondaryBtn(): React.CSSProperties {
     ...stableTapStyle(),
     width: "100%",
     padding: "14px 18px",
-    borderRadius: 16,
+    borderRadius: 999,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(229,237,249,0.98) 100%)",
-    color: "#123055",
+      "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)",
+    color: "#F3D06A",
     fontWeight: 1000,
-    border: "1px solid rgba(16,37,59,0.12)",
+    border: "1px solid rgba(243,208,106,0.26)",
     cursor: "pointer",
     fontSize: 15,
     textAlign: "center",
     boxShadow:
-      "0 14px 28px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
+      "0 14px 28px rgba(0,8,18,0.18), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -6px 10px rgba(6,18,35,0.12)",
   };
 }
 
@@ -331,6 +332,14 @@ export default function LoginPage() {
     }
   }
 
+  function openCreateRoute() {
+    nav("/create");
+  }
+
+  function openActivationRoute() {
+    nav("/activate-membership");
+  }
+
   return (
     <div style={pageShell(isCompact)}>
       <div
@@ -403,14 +412,28 @@ export default function LoginPage() {
             style={{
               width: innerRailWidth,
               margin: isCompact ? "10px auto 0" : "18px auto 0",
-              fontSize: isCompact ? 18 : 24,
+              fontSize: isCompact ? 34 : 44,
               fontWeight: 1000,
               color: "#F8FBFF",
-              lineHeight: isCompact ? 1.14 : 1.2,
+              lineHeight: isCompact ? 1.08 : 1.1,
               textAlign: "center",
             }}
           >
-            Existing member sign in to continue
+            Welcome back
+          </div>
+
+          <div
+            style={{
+              width: innerRailWidth,
+              margin: "8px auto 0",
+              color: "rgba(226,232,240,0.78)",
+              fontSize: isCompact ? 14 : 16,
+              fontWeight: 750,
+              lineHeight: 1.5,
+              textAlign: "center",
+            }}
+          >
+            Sign in to continue where you left off.
           </div>
 
           {guideOpen ? (
@@ -600,6 +623,33 @@ export default function LoginPage() {
           ) : null}
         </div>
 
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            position: "relative",
+            zIndex: 1,
+            marginTop: isCompact ? -2 : 2,
+            marginBottom: isCompact ? -2 : 0,
+          }}
+          aria-hidden="true"
+        >
+          <div
+            style={{
+              borderRadius: 999,
+              padding: 8,
+              background:
+                "radial-gradient(circle, rgba(243,208,106,0.18) 0%, rgba(243,208,106,0.00) 66%)",
+              boxShadow: "0 18px 34px rgba(0,8,18,0.22)",
+            }}
+          >
+            <GSNBrandMonument
+              width={isCompact ? 64 : 78}
+              height={isCompact ? 104 : 128}
+            />
+          </div>
+        </div>
+
         {founderEmail || founderCommunityName ? (
           <div
             style={{
@@ -675,50 +725,132 @@ export default function LoginPage() {
           <form onSubmit={onSubmit}>
             <div
               style={{
-                borderRadius: 24,
-                border: "1px solid rgba(255,255,255,0.30)",
+                borderRadius: 26,
+                border: "1px solid rgba(243,208,106,0.24)",
                 background:
-                  "linear-gradient(180deg, rgba(252,254,255,0.99) 0%, rgba(242,247,252,0.98) 58%, rgba(230,238,248,0.96) 100%)",
+                  "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)",
                 boxShadow:
-                  "0 18px 36px rgba(4,14,32,0.18), inset 0 1px 0 rgba(255,255,255,0.86)",
-                padding: 22,
+                  "0 24px 46px rgba(0,8,18,0.26), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -12px 24px rgba(6,18,35,0.12)",
+                padding: isCompact ? 18 : 22,
                 overflow: "hidden",
               }}
             >
             <div
               style={{
                 display: "grid",
-                gap: 12,
-                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gap: 14,
+                gridTemplateColumns: "1fr",
               }}
             >
               <div>
-                <div style={labelText()}>Email</div>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                  autoComplete="username"
-                  style={{ ...inputStyle(), marginTop: 8 }}
-                />
+                <div
+                  style={{
+                    ...labelText(),
+                    color: "rgba(248,251,255,0.92)",
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  Phone number or email
+                </div>
+                <div
+                  style={{
+                    marginTop: 9,
+                    display: "grid",
+                    gridTemplateColumns: "42px minmax(0, 1fr)",
+                    alignItems: "center",
+                    borderRadius: 18,
+                    border: "1px solid rgba(220,231,243,0.32)",
+                    background:
+                      "linear-gradient(180deg, rgba(8,26,47,0.82) 0%, rgba(7,22,38,0.82) 100%)",
+                    boxShadow:
+                      "inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 22px rgba(0,8,18,0.14)",
+                    paddingLeft: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#F3D06A",
+                      fontSize: 20,
+                      textAlign: "center",
+                    }}
+                    aria-hidden="true"
+                  >
+                    👤
+                  </span>
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your phone number or email"
+                    autoComplete="username"
+                    style={{
+                      ...inputStyle(),
+                      border: "none",
+                      boxShadow: "none",
+                      background: "transparent",
+                      color: "#F8FBFF",
+                      minHeight: 52,
+                    }}
+                  />
+                </div>
               </div>
 
               <div>
-                <div style={labelText()}>Password</div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  autoComplete="current-password"
-                  style={{ ...inputStyle(), marginTop: 8 }}
-                />
+                <div
+                  style={{
+                    ...labelText(),
+                    color: "rgba(248,251,255,0.92)",
+                    letterSpacing: 0.2,
+                  }}
+                >
+                  Password
+                </div>
+                <div
+                  style={{
+                    marginTop: 9,
+                    display: "grid",
+                    gridTemplateColumns: "42px minmax(0, 1fr)",
+                    alignItems: "center",
+                    borderRadius: 18,
+                    border: "1px solid rgba(220,231,243,0.32)",
+                    background:
+                      "linear-gradient(180deg, rgba(8,26,47,0.82) 0%, rgba(7,22,38,0.82) 100%)",
+                    boxShadow:
+                      "inset 0 1px 0 rgba(255,255,255,0.09), 0 12px 22px rgba(0,8,18,0.14)",
+                    paddingLeft: 4,
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#F3D06A",
+                      fontSize: 19,
+                      textAlign: "center",
+                    }}
+                    aria-hidden="true"
+                  >
+                    🔒
+                  </span>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    style={{
+                      ...inputStyle(),
+                      border: "none",
+                      boxShadow: "none",
+                      background: "transparent",
+                      color: "#F8FBFF",
+                      minHeight: 52,
+                    }}
+                  />
+                </div>
               </div>
             </div>
 
             <div
               style={{
-                marginTop: 18,
+                marginTop: 20,
                 display: "flex",
                 justifyContent: "center",
               }}
@@ -729,11 +861,125 @@ export default function LoginPage() {
                 {...buttonGuardProps()}
                 style={primaryBtn(busy)}
               >
-                {busy ? "Signing in..." : "Sign in"}
+                {busy ? "Continuing..." : "Continue"}
+              </button>
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                {...buttonGuardProps()}
+                style={secondaryBtn()}
+              >
+                <span aria-hidden="true" style={{ marginRight: 8 }}>
+                  💬
+                </span>
+                Open sign-in help
               </button>
             </div>
             </div>
           </form>
+
+          <button
+            type="button"
+            onClick={openCreateRoute}
+            {...buttonGuardProps()}
+            style={{
+              ...stableTapStyle(),
+              width: "100%",
+              border: "none",
+              background: "transparent",
+              color: "#A9C4F7",
+              fontSize: 15,
+              fontWeight: 900,
+              cursor: "pointer",
+              padding: "2px 0",
+              textAlign: "center",
+            }}
+          >
+            Start a new community{" "}
+            <span style={{ color: "#F3D06A" }} aria-hidden="true">
+              &gt;
+            </span>
+          </button>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "52px minmax(0, 1fr)" : "64px minmax(0, 1fr)",
+              gap: 16,
+              alignItems: "center",
+              borderRadius: 24,
+              border: "1px solid rgba(220,231,243,0.16)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
+              boxShadow:
+                "0 20px 36px rgba(0,8,18,0.18), inset 0 1px 0 rgba(255,255,255,0.09)",
+              padding: isCompact ? "15px 16px" : "18px 20px",
+            }}
+          >
+            <div
+              style={{
+                width: isCompact ? 50 : 58,
+                height: isCompact ? 50 : 58,
+                borderRadius: 999,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(8,25,43,0.58)",
+                border: "1px solid rgba(243,208,106,0.28)",
+                color: "#F3D06A",
+                fontSize: isCompact ? 22 : 25,
+              }}
+              aria-hidden="true"
+            >
+              🔒
+            </div>
+            <div style={{ display: "grid", gap: 6 }}>
+              <div
+                style={{
+                  fontSize: isCompact ? 17 : 19,
+                  fontWeight: 1000,
+                  lineHeight: 1.22,
+                  color: "#F8FBFF",
+                }}
+              >
+                Your identity and community data stay protected.
+              </div>
+              <div
+                style={{
+                  fontSize: 13,
+                  fontWeight: 800,
+                  color: "rgba(226,232,240,0.70)",
+                  lineHeight: 1.45,
+                }}
+              >
+                Secure sign-in · Trusted access
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={openActivationRoute}
+            {...buttonGuardProps()}
+            style={{
+              ...stableTapStyle(),
+              width: "100%",
+              border: "1px solid rgba(243,208,106,0.18)",
+              background: "rgba(255,255,255,0.035)",
+              color: "rgba(243,208,106,0.92)",
+              borderRadius: 999,
+              fontSize: 13,
+              fontWeight: 900,
+              cursor: "pointer",
+              padding: "10px 14px",
+              textAlign: "center",
+            }}
+          >
+            Already approved? Activate membership
+          </button>
           </div>
         </div>
       </div>

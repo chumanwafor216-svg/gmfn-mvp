@@ -356,7 +356,7 @@ function nextRouteForMode(mode: EntryMode): string {
 
   if (mode === "existing") return "/login";
 
-  return "/create";
+  return "/welcome";
 
 }
 
@@ -1498,9 +1498,12 @@ export default function CoverPage() {
 
         location.state && typeof location.state === "object"
 
-          ? { ...(location.state as Record<string, unknown>) }
+          ? {
+              ...(location.state as Record<string, unknown>),
+              returnTo: `${location.pathname}${location.search || ""}`,
+            }
 
-          : undefined,
+          : { returnTo: `${location.pathname}${location.search || ""}` },
 
     });
 
@@ -1579,7 +1582,7 @@ export default function CoverPage() {
 
             >
 
-              Read the full guide first
+              Read My GSN and I
 
             </button>
             </div>
