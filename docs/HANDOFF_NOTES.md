@@ -19557,6 +19557,7 @@ GSN-branded invite composer and invite-entry continuity.
   - changed the action launcher, Demand Box, What Needs Your Attention, and Focus Commitments rows to use the same stable mobile grid.
   - hid the separate status pill column on phone so labels, icons, and arrows no longer fight for horizontal space.
   - made the expanded launcher buttons fixed-height on phone, with icon + label alignment that does not resize when labels wrap.
+  - replaced the Focus Commitments expanded-state JSX fragment with a single display-contents wrapper after Render reported a fragment/div mismatch during deploy.
 - Verification:
   - `npm exec -- eslint src/pages/DashboardPage.tsx`
     -> passed

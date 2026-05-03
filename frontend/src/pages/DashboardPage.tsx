@@ -9743,7 +9743,7 @@ export default function DashboardPage() {
             </button>
 
             {uiState.trustExpanded ? (
-              <>
+              <div style={{ display: "contents" }}>
             <div
               style={{
                 marginTop: isPhone ? 10 : 12,
@@ -10445,7 +10445,7 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
-              </>
+              </div>
             ) : null}
           </div>
       </section>
