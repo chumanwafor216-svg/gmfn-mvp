@@ -188,6 +188,341 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
+function publicGuideShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    padding: "18px",
+    boxSizing: "border-box",
+    background:
+      "radial-gradient(circle at 16% 0%, rgba(201,154,39,0.16) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 92% 10%, rgba(83,132,178,0.18) 0%, rgba(83,132,178,0) 30%), linear-gradient(180deg, #07131F 0%, #12304A 42%, #D9E4EF 42.1%, #EEF3F8 100%)",
+    color: "#F8FBFF",
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+  };
+}
+
+function publicGuideFrame(): React.CSSProperties {
+  return {
+    width: "min(100%, 1160px)",
+    margin: "0 auto",
+    display: "grid",
+    gap: 14,
+  };
+}
+
+function publicGuideHeader(): React.CSSProperties {
+  return {
+    borderRadius: 20,
+    border: "1px solid rgba(214,228,242,0.22)",
+    background:
+      "linear-gradient(180deg, rgba(13,31,50,0.92) 0%, rgba(7,20,35,0.98) 100%)",
+    boxShadow:
+      "0 24px 54px rgba(1,9,22,0.34), inset 0 1px 0 rgba(255,255,255,0.08)",
+    padding: "18px",
+  };
+}
+
+function publicCapabilityCard(category: string): React.CSSProperties {
+  const accent =
+    category === "trade"
+      ? "#C8A85C"
+      : category === "visibility"
+      ? "#5E8CB7"
+      : category === "finance"
+      ? "#5E9C84"
+      : category === "support"
+      ? "#8B9BB0"
+      : category === "community"
+      ? "#6F87AD"
+      : category === "identity"
+      ? "#A8775B"
+      : category === "work"
+      ? "#7E8C9C"
+      : "#1D4D76";
+
+  return {
+    position: "relative",
+    overflow: "hidden",
+    minHeight: 150,
+    borderRadius: 14,
+    border: "1px solid rgba(11,31,51,0.13)",
+    background:
+      `linear-gradient(90deg, ${accent} 0%, ${accent} 1.2%, rgba(255,255,255,0) 1.21%), radial-gradient(circle at 14% 12%, rgba(18,49,77,0.055) 0%, rgba(18,49,77,0) 32%), linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(239,245,251,0.985) 100%)`,
+    boxShadow:
+      "0 14px 28px rgba(8,24,42,0.13), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -1px 0 rgba(8,24,42,0.04)",
+    padding: "16px 16px 15px",
+  };
+}
+
+function publicCapabilityNumber(): React.CSSProperties {
+  return {
+    position: "absolute",
+    top: 13,
+    right: 13,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 38,
+    height: 32,
+    borderRadius: 11,
+    background:
+      "linear-gradient(180deg, #12314D 0%, #081D33 100%)",
+    color: "#F4D37B",
+    border: "1px solid rgba(201,154,39,0.30)",
+    boxShadow:
+      "0 10px 22px rgba(1,9,22,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
+    fontWeight: 1000,
+    fontSize: 13,
+  };
+}
+
+function publicCapabilityIcon(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    background:
+      "linear-gradient(180deg, rgba(247,251,255,0.96) 0%, rgba(223,234,245,0.96) 100%)",
+    border: "1px solid rgba(18,49,77,0.12)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -2px 0 rgba(8,24,42,0.05), 0 12px 22px rgba(8,24,42,0.10)",
+    color: "#12314D",
+    fontSize: 27,
+    lineHeight: 1,
+  };
+}
+
+const PUBLIC_CAPABILITY_LINES: Record<number, string> = {
+  1: "Reduces risk before money moves.",
+  2: "Makes buying and selling safer through visible trust.",
+  3: "Lets trust travel beyond one community.",
+  4: "Shows warning signals before people act.",
+  5: "Helps trusted value get seen first.",
+  6: "Gives stronger trust more reach.",
+  7: "Carries one market presence across communities.",
+  8: "Turns visible trust into people-backed lending confidence.",
+  9: "Makes support accountable and measurable.",
+  10: "Shortens uncertainty when urgent help is needed.",
+  11: "Carries trust across distance and borders.",
+  12: "Adds a visible trust layer to savings groups.",
+  13: "Turns contribution memory into usable record.",
+  14: "Keeps trust from resetting when people move.",
+  15: "Lets a member carry their good name as proof.",
+  16: "Keeps earned reputation useful in new spaces.",
+  17: "Gives one trusted identity one wider shop presence.",
+  18: "Makes informal service work more visible and trusted.",
+  19: "Helps work decisions read credibility before commitment.",
+  20: "Makes real needs visible before the market misses them.",
+  21: "Turns shared trust into community economic strength.",
+  22: "Builds disciplined follow-through for savings, repayment, and goals.",
+};
+
+const PUBLIC_CAPABILITY_ICONS: Record<number, string> = {
+  1: "🔐",
+  2: "🛒",
+  3: "🌍",
+  4: "🛡️",
+  5: "📣",
+  6: "⭐",
+  7: "🏪",
+  8: "💰",
+  9: "🤝",
+  10: "🚨",
+  11: "🌐",
+  12: "🧺",
+  13: "📋",
+  14: "🧭",
+  15: "🪪",
+  16: "🎖️",
+  17: "🏬",
+  18: "🛠️",
+  19: "👤",
+  20: "📦",
+  21: "🏛️",
+  22: "✅",
+};
+
+function publicCapabilityLine(item: (typeof GMFN_CAPABILITIES)[number]) {
+  return PUBLIC_CAPABILITY_LINES[item.id] || item.gmfn || item.proverb;
+}
+
+function publicCapabilityVisual(item: (typeof GMFN_CAPABILITIES)[number]) {
+  return PUBLIC_CAPABILITY_ICONS[item.id] || "◈";
+}
+
+function publicCategoryKey(category: string): string {
+  if (category === "trade") return "MARKET";
+  if (category === "visibility") return "VISIBILITY";
+  if (category === "finance") return "MONEY";
+  if (category === "support") return "SUPPORT";
+  if (category === "community") return "COMMUNITY";
+  if (category === "identity") return "TRUST ID";
+  if (category === "work") return "WORK";
+  return "OPERATING";
+}
+
+function publicToneKey(tone: string): string {
+  if (tone === "alert") return "RISK";
+  if (tone === "spotlight") return "REACH";
+  if (tone === "calm") return "STEADY";
+  return "FOCUS";
+}
+
+function publicKeyChip(kind: "category" | "tone" = "category"): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 24,
+    padding: "4px 8px",
+    borderRadius: 999,
+    border:
+      kind === "category"
+        ? "1px solid rgba(18,49,77,0.13)"
+        : "1px solid rgba(201,154,39,0.22)",
+    background:
+      kind === "category"
+        ? "rgba(18,49,77,0.07)"
+        : "rgba(201,154,39,0.10)",
+    color: kind === "category" ? "#12314D" : "#76591D",
+    fontSize: 10,
+    fontWeight: 1000,
+    letterSpacing: 0.7,
+    textTransform: "uppercase",
+    whiteSpace: "nowrap",
+  };
+}
+
+function PublicCapabilitiesGuidePage({ compact }: { compact: boolean }) {
+  return (
+    <main style={publicGuideShell()}>
+      <div style={publicGuideFrame()}>
+        <section style={publicGuideHeader()}>
+          <div
+            style={{
+              color: "#C8A85C",
+              fontSize: 12,
+              fontWeight: 1000,
+              letterSpacing: 2.8,
+              textTransform: "uppercase",
+            }}
+          >
+            GSN Capability Map
+          </div>
+
+          <h1
+            style={{
+              margin: "10px 0 0",
+              color: "#F8FBFF",
+              fontSize: compact ? 30 : 42,
+              lineHeight: 1.05,
+              fontWeight: 1000,
+              letterSpacing: 0,
+            }}
+          >
+            22 Core Capabilities
+          </h1>
+
+          <div
+            style={{
+              marginTop: 10,
+              color: "#D6E3F0",
+              fontSize: 14,
+              lineHeight: 1.55,
+              maxWidth: 760,
+            }}
+          >
+            A compact register of what GSN can do. Read the number, the name,
+            the sign, and the short line.
+          </div>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: compact
+              ? "repeat(auto-fit, minmax(158px, 1fr))"
+              : "repeat(4, minmax(0, 1fr))",
+            gap: 10,
+          }}
+        >
+          {GMFN_CAPABILITIES.map((item) => {
+            const line = publicCapabilityLine(item);
+
+            return (
+              <article key={item.id} style={publicCapabilityCard(item.category)}>
+                <span style={publicCapabilityNumber()}>{item.id}</span>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "58px 1fr",
+                    gap: 13,
+                    alignItems: "start",
+                    paddingRight: 34,
+                  }}
+                >
+                  <span
+                    style={publicCapabilityIcon()}
+                    aria-hidden="true"
+                  >
+                    {publicCapabilityVisual(item)}
+                  </span>
+
+                  <div>
+                    <h2
+                      style={{
+                        margin: 0,
+                        color: "#071D33",
+                        fontSize: 17,
+                        lineHeight: 1.18,
+                        fontWeight: 1000,
+                        letterSpacing: 0,
+                        paddingTop: 2,
+                      }}
+                    >
+                      {item.title}
+                    </h2>
+
+                    <div
+                      style={{
+                        marginTop: 8,
+                        color: "#32465C",
+                        fontSize: 13,
+                        lineHeight: 1.42,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {line}
+                    </div>
+
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: "flex",
+                        gap: 6,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <span style={publicKeyChip("category")}>
+                        {publicCategoryKey(item.category)}
+                      </span>
+                      <span style={publicKeyChip("tone")}>
+                        {publicToneKey(item.tone)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      </div>
+    </main>
+  );
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -318,6 +653,11 @@ export default function MyGMFNAndIPage() {
     let alive = true;
 
     (async () => {
+      if (!isAppRoute) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
 
       try {
@@ -346,7 +686,7 @@ export default function MyGMFNAndIPage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [isAppRoute]);
 
   const displayName = useMemo(() => {
     return (
@@ -476,6 +816,10 @@ export default function MyGMFNAndIPage() {
   function resetSettings() {
     setSettings(DEFAULT_SETTINGS);
     showNotice("success", "Settings reset to the calmer defaults.");
+  }
+
+  if (!isAppRoute) {
+    return <PublicCapabilitiesGuidePage compact={isCompact} />;
   }
 
   if (loading) {

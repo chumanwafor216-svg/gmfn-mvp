@@ -1,3 +1,31 @@
+### Public guide narrowed to institutional 22-capabilities-only page (2026-05-03)
+
+- Froze the current `/cover` visual direction by request and did not touch `frontend/src/pages/CoverPage.tsx` in this change.
+- Corrected the public `Read the full guide first` destination rendered by `/guide` in `frontend/src/pages/MyGMFNAndIPage.tsx`.
+- Public `/guide` now renders a dedicated institutional capabilities reading page instead of lifting the broader `My GSN and I` member/settings surface into the public route.
+- Public `/guide` now contains only:
+  - a compact institutional capability-map header
+  - the 22 core GSN capabilities from `frontend/src/lib/gmfnCapabilities.ts`
+  - one practical emoji/sign badge per capability for low-literacy scanning
+  - one short plain-language line per capability
+  - visual key chips for capability category and tone
+- Replaced the earlier long `What it is` / `How it works` / `Why it matters` public guide structure because it repeated the same source idea too many times and made the page too heavy to scan.
+- Updated the public `/guide` visual direction from a mostly dark navy reading page into a lighter civic/institutional capability map with white cards, dark ink, category accent rails, and a calmer blue-steel background.
+- Removed from the public `/guide` experience by route-local branching:
+  - public next-step chooser
+  - trust-document family map
+  - trust use-case chooser
+  - member identity/community badges
+  - settings tabs and signed-in member framing
+- Preserved `/app/my-gmfn-and-i` behavior for the signed-in member guide/settings route.
+- Shared logic impact:
+  - no backend rule changed
+  - no auth, route contract, schema, or dashboard frozen area changed
+  - the 22-capability source remains shared in `frontend/src/lib/gmfnCapabilities.ts`
+- Verification:
+  - `npm exec -- eslint src/pages/MyGMFNAndIPage.tsx` passed
+  - `npm run build` passed
+
 ### Approval and activation family received a darker polished surface pass (2026-04-29 22:38)
 
 - Continued the GMFN-only pilot-readiness workstream by taking the strongest remaining active public decision/activation surfaces through a darker institutional polish pass instead of leaving them as lighter holdouts beside the already-upgraded entry family.

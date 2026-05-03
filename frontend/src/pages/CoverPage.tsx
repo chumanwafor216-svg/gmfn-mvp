@@ -505,15 +505,15 @@ function buttonDockStyle(): React.CSSProperties {
 
     padding: "12px 12px 14px",
 
-    borderRadius: 24,
+    borderRadius: 26,
 
-    border: "1px solid rgba(227,235,243,0.18)",
+    border: "1px solid rgba(227,235,243,0.22)",
 
     background:
-      "linear-gradient(180deg, rgba(12,27,44,0.24) 0%, rgba(8,19,33,0.46) 100%)",
+      "linear-gradient(180deg, rgba(13,31,50,0.40) 0%, rgba(7,18,32,0.68) 100%)",
 
     boxShadow:
-      "0 18px 36px rgba(3,10,22,0.28), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(3,10,22,0.22)",
+      "0 22px 44px rgba(1,9,22,0.40), inset 0 1px 0 rgba(255,255,255,0.11), inset 0 -1px 0 rgba(3,10,22,0.34)",
 
     backdropFilter: "blur(12px)",
 
@@ -535,33 +535,39 @@ function buttonStyle(disabled = false): React.CSSProperties {
 
     justifyContent: "center",
 
-    minHeight: 56,
+    minHeight: 58,
 
-    minWidth: 228,
+    minWidth: 236,
 
-    padding: "13px 22px",
+    padding: "14px 24px",
 
-    borderRadius: 18,
+    borderRadius: 17,
 
-    border: disabled ? "1px solid rgba(161,179,199,0.48)" : "1px solid rgba(205,220,236,0.92)",
+    border: disabled
+      ? "1px solid rgba(161,179,199,0.48)"
+      : "1px solid rgba(239,246,255,0.95)",
 
     background: disabled
       ? "linear-gradient(180deg, #97AABE 0%, #869CAF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F3F7FB 52%, #E2EAF3 100%)",
+      : "linear-gradient(180deg, #FFFFFF 0%, #F5F8FC 38%, #DCE7F2 100%)",
 
-    color: "#0A233B",
+    color: "#071D33",
 
-    fontWeight: 900,
+    fontWeight: 1000,
 
-    fontSize: 16,
+    fontSize: 17,
 
-    letterSpacing: "0.02em",
+    letterSpacing: "0.055em",
 
     cursor: disabled ? "not-allowed" : "pointer",
 
     boxShadow: disabled
       ? "none"
-      : "0 20px 36px rgba(1,13,32,0.22), inset 0 1px 0 rgba(255,255,255,0.98), inset 0 -2px 0 rgba(108,129,154,0.24)",
+      : "0 24px 42px rgba(1,10,24,0.34), 0 0 0 1px rgba(204,172,99,0.20), inset 0 1px 0 rgba(255,255,255,1), inset 0 -3px 0 rgba(91,114,140,0.28)",
+
+    textTransform: "uppercase",
+
+    textShadow: disabled ? "none" : "0 1px 0 rgba(255,255,255,0.62)",
 
     whiteSpace: "normal",
 
@@ -708,6 +714,18 @@ function GSNSplashArtwork() {
 
           </linearGradient>
 
+          <linearGradient id="titleEmbossFill" x1="0" y1="0" x2="0" y2="1">
+
+            <stop offset="0%" stopColor="#F8FBFF" />
+
+            <stop offset="34%" stopColor="#E7EEF6" />
+
+            <stop offset="64%" stopColor="#C6D4E3" />
+
+            <stop offset="100%" stopColor="#8FA3B8" />
+
+          </linearGradient>
+
           <linearGradient id="diamondLiftFill" x1="0" y1="0" x2="0" y2="1">
 
             <stop offset="0%" stopColor="#FFFFFF" />
@@ -800,6 +818,42 @@ function GSNSplashArtwork() {
             <feMerge>
 
               <feMergeNode in="shadow" />
+
+              <feMergeNode in="SourceGraphic" />
+
+            </feMerge>
+
+          </filter>
+
+          <filter id="titleEmbossShadow" x="-80%" y="-100%" width="260%" height="300%">
+
+            <feOffset dx="0" dy="4" result="lowerOffset" />
+
+            <feGaussianBlur in="lowerOffset" stdDeviation="3" result="lowerBlur" />
+
+            <feColorMatrix
+              in="lowerBlur"
+              type="matrix"
+              values="0 0 0 0 0.01 0 0 0 0 0.04 0 0 0 0 0.10 0 0 0 0.82 0"
+              result="lowerShadow"
+            />
+
+            <feOffset dx="0" dy="-0.8" result="upperOffset" />
+
+            <feGaussianBlur in="upperOffset" stdDeviation="0.5" result="upperGlow" />
+
+            <feColorMatrix
+              in="upperGlow"
+              type="matrix"
+              values="0 0 0 0 0.88 0 0 0 0 0.94 0 0 0 0 1.00 0 0 0 0.34 0"
+              result="topHighlight"
+            />
+
+            <feMerge>
+
+              <feMergeNode in="lowerShadow" />
+
+              <feMergeNode in="topHighlight" />
 
               <feMergeNode in="SourceGraphic" />
 
@@ -953,7 +1007,7 @@ function GSNSplashArtwork() {
 
 
 
-        <g transform="translate(0,10)">
+        <g transform="translate(81,15) scale(0.82)">
 
           <path
 
@@ -1220,11 +1274,11 @@ function GSNSplashArtwork() {
 
 
 
-        <g transform="translate(120,1048)">
+        <g transform="translate(120,930)">
           <path
             d="
               M214 18
-              L252 -8
+              L252 -6
               H408
               L446 18
               Z
@@ -1238,7 +1292,7 @@ function GSNSplashArtwork() {
             x="0"
             y="0"
             width="660"
-            height="246"
+            height="128"
             rx="32"
             fill="rgba(7,19,35,0.62)"
             stroke="rgba(255,255,255,0.10)"
@@ -1247,9 +1301,9 @@ function GSNSplashArtwork() {
 
           <rect
             x="24"
-            y="22"
+            y="20"
             width="612"
-            height="202"
+            height="88"
             rx="24"
             fill="rgba(255,255,255,0.028)"
             stroke="rgba(201,154,39,0.18)"
@@ -1258,9 +1312,9 @@ function GSNSplashArtwork() {
 
           <rect
             x="40"
-            y="36"
+            y="34"
             width="580"
-            height="174"
+            height="60"
             rx="18"
             fill="none"
             stroke="rgba(255,255,255,0.06)"
@@ -1270,7 +1324,7 @@ function GSNSplashArtwork() {
 
           <rect
             x="52"
-            y="40"
+            y="38"
             width="556"
             height="3"
             rx="1.5"
@@ -1278,26 +1332,13 @@ function GSNSplashArtwork() {
           />
 
           <text
-            x="330"
-            y="82"
+            x="332"
+            y="92"
             textAnchor="middle"
-            fill="#CCAC63"
-            fontSize="22"
-            fontWeight="800"
-            letterSpacing="5.8"
-            fontFamily="Arial, Helvetica, sans-serif"
-          >
-            TRUST INFRASTRUCTURE PROTOCOL
-          </text>
-
-          <text
-            x="330"
-            y="136"
-            textAnchor="middle"
-            fill="#F2F6FA"
-            fontSize="34"
-            fontWeight="700"
-            letterSpacing="1.8"
+            fill="rgba(1,9,22,0.62)"
+            fontSize="38"
+            fontWeight="850"
+            letterSpacing="1.2"
             fontFamily="Arial, Helvetica, sans-serif"
           >
             Global Support Network
@@ -1305,28 +1346,31 @@ function GSNSplashArtwork() {
 
           <text
             x="330"
-            y="180"
+            y="88"
             textAnchor="middle"
-            fill="#C2D0DD"
-            fontSize="22"
-            fontWeight="500"
-            letterSpacing="0.3"
+            fill="url(#titleEmbossFill)"
+            stroke="rgba(238,246,255,0.24)"
+            strokeWidth="0.7"
+            filter="url(#titleEmbossShadow)"
+            fontSize="38"
+            fontWeight="850"
+            letterSpacing="1.2"
             fontFamily="Arial, Helvetica, sans-serif"
           >
-            Trust made visible for stronger communities.
+            Global Support Network
           </text>
 
           <text
             x="330"
-            y="206"
+            y="86.5"
             textAnchor="middle"
-            fill="rgba(225,235,246,0.52)"
-            fontSize="14"
-            fontWeight="700"
-            letterSpacing="4"
+            fill="rgba(255,255,255,0.16)"
+            fontSize="38"
+            fontWeight="850"
+            letterSpacing="1.2"
             fontFamily="Arial, Helvetica, sans-serif"
           >
-            TRUSTED COMMUNITY ENTRY
+            Global Support Network
           </text>
 
           <path
@@ -1502,7 +1546,7 @@ export default function CoverPage() {
 
             >
 
-              {busy ? "Opening..." : "Open Welcome"}
+              {busy ? "Continuing..." : "Continue"}
 
             </button>
 
@@ -1520,14 +1564,17 @@ export default function CoverPage() {
                 ...buttonStyle(false),
                 ...stableTapStyle(),
                 minHeight: 40,
-                padding: "10px 18px",
-                borderRadius: 999,
-                background: "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.07) 100%)",
-                color: "#FFFFFF",
-                border: "1px solid rgba(255,255,255,0.16)",
-                boxShadow: "0 10px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.12)",
+                padding: "10px 20px",
+                borderRadius: 18,
+                background: "linear-gradient(180deg, rgba(235,244,255,0.20) 0%, rgba(98,126,153,0.13) 100%)",
+                color: "#F4F8FC",
+                border: "1px solid rgba(221,232,244,0.22)",
+                boxShadow: "0 14px 28px rgba(1,9,22,0.26), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(2,12,24,0.28)",
                 fontSize: 13,
                 fontWeight: 900,
+                letterSpacing: "0.025em",
+                textTransform: "none",
+                textShadow: "0 1px 0 rgba(0,0,0,0.30)",
               }}
 
             >
