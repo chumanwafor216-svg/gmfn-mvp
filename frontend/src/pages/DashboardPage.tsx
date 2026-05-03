@@ -638,25 +638,123 @@ function helperText(): React.CSSProperties {
 
 function dashboardActionSignal(label: string): string {
   switch (label) {
+    case "Your Marketplace":
     case "Marketplace":
       return "\uD83D\uDED2";
     case "Create Demand":
+    case "Create Your Demand":
       return "\u2795";
+    case "Your Spotlight":
     case "Spotlight":
       return "\u2B50";
+    case "Your Trust Events":
     case "Trust Events":
       return "\uD83D\uDEE1\uFE0F";
+    case "Your Community":
     case "Community":
       return "\uD83D\uDC65";
+    case "Your Shop":
     case "Shop":
       return "\uD83C\uDFEA";
+    case "Your Alerts":
     case "What Matters Now":
       return "\uD83D\uDD14";
+    case "Your Identity":
     case "My Identity":
       return "\uD83D\uDC64";
+    case "Trust":
+      return "\uD83D\uDEE1\uFE0F";
+    case "CCI":
+      return "\uD83D\uDD17";
+    case "TrustSlip":
+      return "\uD83D\uDCC4";
     default:
       return "\u2022";
   }
+}
+
+function dashboardSectionSignal(label: string): string {
+  switch (label) {
+    case "Your Identity Passport":
+      return "\uD83D\uDEE1\uFE0F";
+    case "Your Spotlight":
+      return "\u2B50";
+    case "Your Demand Box":
+      return "\uD83D\uDCE6";
+    case "What needs your attention":
+    case "What Matters Now":
+      return "\uD83D\uDD14";
+    case "Your Market Wisdom":
+      return "\uD83E\uDDED";
+    case "Your Focus Commitments":
+      return "\uD83C\uDFAF";
+    case "Your community":
+      return "\uD83D\uDC65";
+    case "Posted":
+      return "\uD83D\uDCC5";
+    case "Seller GSN ID":
+      return "\uD83D\uDC64";
+    case "Actions":
+      return "\u2705";
+    case "Your new commitment":
+      return "\u2795";
+    case "Your next review":
+      return "\uD83D\uDCC5";
+    case "Days left":
+      return "\u23F3";
+    case "Your execution signal":
+      return "\u2705";
+    case "Your Commitment Builder":
+      return "\uD83C\uDFAF";
+    default:
+      return "\u2022";
+  }
+}
+
+function DashboardSectionLabel({
+  label,
+  signal,
+  style,
+}: {
+  label: string;
+  signal?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      style={{
+        ...sectionLabel(),
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        ...style,
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 22,
+          height: 22,
+          borderRadius: 999,
+          background:
+            "linear-gradient(180deg, rgba(235,244,255,0.98) 0%, rgba(221,234,250,0.88) 100%)",
+          border: "1px solid rgba(11,99,209,0.14)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
+          fontSize: 13,
+          lineHeight: 1,
+          letterSpacing: 0,
+          textTransform: "none",
+          flexShrink: 0,
+        }}
+      >
+        {signal || dashboardSectionSignal(label)}
+      </span>
+      <span>{label}</span>
+    </div>
+  );
 }
 
 function fieldInputStyle(): React.CSSProperties {
@@ -1520,9 +1618,9 @@ function getOpenTrustState(
       classText: "Pending",
       scoreText: "—",
       tone: "neutral",
-      statusText: "Select a community to view Open Trust",
+      statusText: "Select your community to view your Open Trust",
       whyText:
-        "Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
+        "Your Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
     };
   }
 
@@ -1530,9 +1628,9 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "Open Trust is being prepared",
+    statusText: "Your Open Trust is being prepared",
     whyText:
-      "Open Trust reflects your standing in the community you are using now and will appear here when available.",
+      "Your Open Trust reflects your standing in the community you are using now and will appear here when available.",
   };
 }
 
@@ -1587,7 +1685,7 @@ function dashboardNoticeSource(text: string, target: string): string {
     to.includes("/app/identity") ||
     to.includes("/app/trust-slip")
   ) {
-    return "Trust Events";
+    return "Your Trust Events";
   }
 
   if (
@@ -1602,7 +1700,7 @@ function dashboardNoticeSource(text: string, target: string): string {
     ]) ||
     to.includes("/app/demand-box")
   ) {
-    return "Demand Box";
+    return "Your Demand Box";
   }
 
   if (
@@ -1613,7 +1711,7 @@ function dashboardNoticeSource(text: string, target: string): string {
       "market spotlight",
     ])
   ) {
-    return "Spotlight Demand";
+    return "Your Spotlight";
   }
 
   if (
@@ -1631,7 +1729,7 @@ function dashboardNoticeSource(text: string, target: string): string {
     to.includes("/app/payment/pool") ||
     to.includes("/app/withdrawal-instructions")
   ) {
-    return "Open Finance";
+    return "Your Finance";
   }
 
   if (
@@ -1646,7 +1744,7 @@ function dashboardNoticeSource(text: string, target: string): string {
     to.includes("/app/loans") ||
     to.includes("/app/loan-")
   ) {
-    return "Support Path";
+    return "Your Support Path";
   }
 
   if (
@@ -1664,11 +1762,11 @@ function dashboardNoticeSource(text: string, target: string): string {
     to.includes("#focus-commitments") ||
     to.includes("#trust-journey")
   ) {
-    return "Focus Commitments";
+    return "Your Focus Commitments";
   }
 
   if (to.includes("/app/marketplace") || to.includes("/app/shop/")) {
-    return "Marketplace";
+    return "Your Marketplace";
   }
 
   return "General";
@@ -1684,14 +1782,19 @@ function dashboardNoticeScore(
   const sourceScore =
     source === "Join Links" ||
     source === "Trust Events" ||
+    source === "Your Trust Events" ||
     source === "Community Voting"
       ? 20
       : source === "Demand Box" ||
+        source === "Your Demand Box" ||
         source === "Open Finance" ||
+        source === "Your Finance" ||
         source === "Support Path" ||
-        source === "Focus Commitments"
+        source === "Your Support Path" ||
+        source === "Focus Commitments" ||
+        source === "Your Focus Commitments"
       ? 12
-      : source === "Spotlight Demand"
+      : source === "Spotlight Demand" || source === "Your Spotlight"
       ? 6
       : 0;
 
@@ -1846,8 +1949,8 @@ function buildMostUsedAppFallback(params: {
     },
     marketplace: {
       key: "marketplace",
-      label: "Marketplace",
-      detail: "Your community marketplace page.",
+      label: "Your Marketplace",
+      detail: "See goods, services, and trusted trade around you.",
       to: DASHBOARD_TARGETS.MARKETPLACE,
       count: 0,
       lastOpenedAt: "",
@@ -1886,8 +1989,8 @@ function buildMostUsedAppFallback(params: {
     },
     notifications: {
       key: "notifications",
-      label: "What Matters Now",
-      detail: "Organised live actions and next priorities.",
+      label: "Your Alerts",
+      detail: "See what needs your attention now.",
       to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
       count: 0,
       lastOpenedAt: "",
@@ -1926,8 +2029,8 @@ function buildMostUsedAppFallback(params: {
     },
     "demand-box": {
       key: "demand-box",
-      label: "Demand Box",
-      detail: "Your demand page.",
+      label: "Your Demand Box",
+      detail: "Ask for goods, service, support, or follow-up.",
       to: DASHBOARD_TARGETS.DEMAND_BOX,
       count: 0,
       lastOpenedAt: "",
@@ -2088,14 +2191,14 @@ function buildPriorityRoutes(params: {
       primaryRoute: trustPrimary
         ? {
             key: "trust",
-            label: "Open Trust",
+            label: "Open your Trust",
             detail: "Review the trust pressure in your community.",
             to: DASHBOARD_TARGETS.TRUST,
             reason: "Trust pressure should be handled before new exposure.",
           }
         : {
             key: "cci",
-            label: "Open CCI",
+            label: "Open your CCI",
             detail: "Review the cross-community integrity pressure.",
             to: DASHBOARD_TARGETS.CCI,
             reason: "Integrity pressure should be handled before new exposure.",
@@ -2104,25 +2207,25 @@ function buildPriorityRoutes(params: {
         trustPrimary
           ? {
               key: "cci",
-              label: "Open CCI",
+              label: "Open your CCI",
               detail: "Review the cross-community integrity reading.",
               to: DASHBOARD_TARGETS.CCI,
             }
           : {
               key: "trust",
-              label: "Open Trust",
+              label: "Open your Trust",
               detail: "Read what is weakening trust now.",
               to: DASHBOARD_TARGETS.TRUST,
             },
         {
           key: "trust-slip",
-          label: "Open TrustSlip",
+          label: "Open your TrustSlip",
           detail: "Check whether your verification record is ready.",
           to: DASHBOARD_TARGETS.TRUST_SLIP,
         },
         {
           key: "notifications",
-          label: "Open What Matters Now",
+          label: "Open your alerts",
           detail: "Review the actions waiting for you now.",
             to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
           },
@@ -2146,19 +2249,19 @@ function buildPriorityRoutes(params: {
       supportingRoutes: [
         {
           key: "community",
-          label: "Open Community",
+          label: "Open your Community",
           detail: "Manage the wider operating room around membership.",
           to: DASHBOARD_TARGETS.COMMUNITY,
         },
         {
           key: "notifications",
-          label: "Open What Matters Now",
-          detail: "Keep the action queue clean.",
+          label: "Open your alerts",
+          detail: "Keep your action queue clean.",
           to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
         },
         {
           key: "trust",
-          label: "Open Trust",
+          label: "Open your Trust",
           detail: "Protect the credibility of your response discipline.",
           to: DASHBOARD_TARGETS.TRUST,
         },
@@ -2173,7 +2276,7 @@ function buildPriorityRoutes(params: {
         "Identity, verification, and stable footing come before expansion. Finish the core setup cleanly.",
       primaryRoute: {
         key: "trust-slip",
-        label: "Open TrustSlip",
+        label: "Open your TrustSlip",
         detail: safeStr(params.trustSlipCode)
           ? "Review your verification record."
           : "Complete your verification record.",
@@ -2183,13 +2286,13 @@ function buildPriorityRoutes(params: {
       supportingRoutes: [
         {
           key: "trust",
-          label: "Open Trust Passport",
+          label: "Open your Trust Passport",
           detail: "Understand the trust path clearly.",
           to: DASHBOARD_TARGETS.TRUST,
         },
         {
           key: "community",
-          label: "Open Community",
+          label: "Open your Community",
           detail: "Stabilise your operating base.",
           to: DASHBOARD_TARGETS.COMMUNITY,
         },
@@ -2216,7 +2319,7 @@ function buildPriorityRoutes(params: {
             } are waiting in the queue.`,
       primaryRoute: {
         key: "demand-box",
-        label: "Open Demand Box",
+        label: "Open your Demand Box",
         detail: "Respond to visible need signals before they drift.",
         to: DASHBOARD_TARGETS.DEMAND_BOX,
         reason: "Opportunity and responsibility are both gathering here.",
@@ -2224,20 +2327,20 @@ function buildPriorityRoutes(params: {
       supportingRoutes: [
         {
           key: "marketplace",
-          label: "Open Marketplace",
+          label: "Open your Marketplace",
           detail: "Match supply and demand with context.",
           to: DASHBOARD_TARGETS.MARKETPLACE,
         },
         {
           key: "finance",
-          label: "Open Finance",
+          label: "Open your Finance",
           detail: "Review money readiness and movement.",
           to: DASHBOARD_TARGETS.FINANCE,
         },
         {
           key: "notifications",
-          label: "Open What Matters Now",
-          detail: "Keep the action queue visible.",
+          label: "Open your alerts",
+          detail: "Keep your action queue visible.",
           to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
         },
       ],
@@ -2251,7 +2354,7 @@ function buildPriorityRoutes(params: {
         "Your trust, shop, and marketplace presence should work together rather than compete for attention.",
       primaryRoute: {
         key: "shop",
-        label: "Open Shop",
+        label: "Open your Shop",
         detail: "Start from the seller page first.",
         to: params.myShopLink,
         reason: "Your trade page is the clearest value signal right now.",
@@ -2259,19 +2362,19 @@ function buildPriorityRoutes(params: {
       supportingRoutes: [
         {
           key: "marketplace",
-          label: "Open Marketplace",
+          label: "Open your Marketplace",
           detail: "See wider movement around your goods and services.",
           to: DASHBOARD_TARGETS.MARKETPLACE,
         },
         {
           key: "trust-slip",
-          label: "Open TrustSlip",
+          label: "Open your TrustSlip",
           detail: "Keep merchant verification ready.",
           to: DASHBOARD_TARGETS.TRUST_SLIP,
         },
         {
           key: "finance",
-          label: "Open Finance",
+          label: "Open your Finance",
           detail: "Connect visibility with money discipline.",
           to: DASHBOARD_TARGETS.FINANCE,
         },
@@ -2285,27 +2388,27 @@ function buildPriorityRoutes(params: {
       "No major pressure is dominating the dashboard. Use the clean route and keep momentum disciplined.",
     primaryRoute: {
       key: "notifications",
-      label: "Open What Matters Now",
-      detail: "Review the organised queue first.",
+      label: "Open your alerts",
+      detail: "Review your organised queue first.",
       to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
       reason: "The cleanest operating choice is to review the queue before branching.",
     },
     supportingRoutes: [
       {
         key: "community",
-        label: "Open Community",
+        label: "Open your Community",
         detail: "Keep the operating room in shape.",
         to: DASHBOARD_TARGETS.COMMUNITY,
       },
       {
         key: "marketplace",
-        label: "Open Marketplace",
+        label: "Open your Marketplace",
         detail: "Watch visible opportunity.",
         to: DASHBOARD_TARGETS.MARKETPLACE,
       },
       {
         key: "finance",
-        label: "Open Finance",
+        label: "Open your Finance",
         detail: "Check money discipline and exposure.",
         to: DASHBOARD_TARGETS.FINANCE,
       },
@@ -3223,9 +3326,13 @@ export default function DashboardPage() {
         ])
           ? "actNow"
           : source === "Demand Box" ||
+            source === "Your Demand Box" ||
             source === "Open Finance" ||
+            source === "Your Finance" ||
             source === "Support Path" ||
+            source === "Your Support Path" ||
             source === "Trust Events" ||
+            source === "Your Trust Events" ||
             textContainsAny(lower, [
               "due",
               "soon",
@@ -3288,11 +3395,11 @@ export default function DashboardPage() {
                 } visible`,
           detail:
             urgentCount > 0
-              ? "Urgent requests are active in Demand Box. Review the highest-pressure requests before they drift further."
-              : "Open requests are active in Demand Box. Review what is moving and decide whether you need to respond.",
-          ctaLabel: "Open Demand Box",
+              ? "Urgent requests are active in your Demand Box. Review the highest-pressure requests before they drift further."
+              : "Open requests are active in your Demand Box. Review what is moving and decide whether you need to respond.",
+          ctaLabel: "Open your Demand Box",
           ctaTo: DASHBOARD_TARGETS.DEMAND_BOX,
-          source: "Demand Box",
+          source: "Your Demand Box",
           bucket: urgentCount > 0 ? "actNow" : "dueSoon",
           scoreBoost: urgentCount > 0 ? 14 : 8,
         })
@@ -3306,16 +3413,16 @@ export default function DashboardPage() {
           title: safeStr(
             activeSpotlight.title ||
               activeSpotlight.message ||
-              "Marketplace spotlight live"
+              "Your Marketplace Spotlight is live"
           ),
           detail: safeStr(
-            activeSpotlight.body ||
+              activeSpotlight.body ||
               activeSpotlight.message ||
-              "Spotlight is live in the marketplace. Watch the visibility, demand, and trust signals around this seller."
+              "Your Spotlight is live in the marketplace. Watch the visibility, demand, and trust signals around this seller."
           ),
-          ctaLabel: "Open Marketplace",
+          ctaLabel: "Open your Marketplace",
           ctaTo: spotlightMarketplaceTo(activeSpotlight),
-          source: "Spotlight Demand",
+          source: "Your Spotlight",
           bucket: "watch",
         })
       );
@@ -3344,7 +3451,7 @@ export default function DashboardPage() {
               : trustNotice.ctaRouteKey === "cci"
               ? DASHBOARD_TARGETS.CCI
               : DASHBOARD_TARGETS.TRUST_SLIP,
-          source: "Trust Events",
+          source: "Your Trust Events",
           bucket: trustNotice.bucket,
           scoreBoost: trustNotice.bucket === "actNow" ? 16 : 10,
         })
@@ -3354,12 +3461,12 @@ export default function DashboardPage() {
     pushItem(
       makeItem({
         id: "synthetic-finance-review",
-        title: "Finance record ready to review",
+        title: "Your finance record is ready to review",
         detail:
-          "Open Finance to review pool position, money-in events, money-out movement, locks, and support needs.",
-        ctaLabel: "Open Finance",
+          "Open your Finance to review pool position, money-in events, money-out movement, locks, and support needs.",
+        ctaLabel: "Open your Finance",
         ctaTo: DASHBOARD_TARGETS.FINANCE,
-        source: "Open Finance",
+        source: "Your Finance",
         bucket: "watch",
         scoreBoost: -10,
       })
@@ -3373,10 +3480,10 @@ export default function DashboardPage() {
             focusSummary.behindCount === 1 ? "" : "s"
           } behind`,
           detail:
-            "A focus checkpoint or due date has slipped. Open Focus Commitments to check in, replan honestly, or complete the target before execution discipline weakens further.",
-          ctaLabel: "Open Focus Commitments",
+            "Your focus checkpoint or due date has slipped. Open your Focus Commitments to check in, replan honestly, or complete the target before execution discipline weakens further.",
+          ctaLabel: "Open your Focus Commitments",
           ctaTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
-          source: "Focus Commitments",
+          source: "Your Focus Commitments",
           bucket: "actNow",
           scoreBoost: 14,
         })
@@ -3393,7 +3500,7 @@ export default function DashboardPage() {
             : "Keep the next checkpoint visible before it drifts into pressure.",
           ctaLabel: "Review commitments",
           ctaTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
-          source: "Focus Commitments",
+          source: "Your Focus Commitments",
           bucket: "dueSoon",
           scoreBoost: 10,
         })
@@ -3402,13 +3509,13 @@ export default function DashboardPage() {
       pushItem(
         makeItem({
           id: "synthetic-focus-steady",
-          title: "Focus commitments active",
+          title: "Your focus commitments are active",
           detail: focusSummary.nextReviewLabel
             ? `${focusSummary.nextReviewLabel}. ${focusSummary.disciplineLine}.`
             : focusSummary.disciplineLine,
-          ctaLabel: "Open commitments",
+          ctaLabel: "Open your commitments",
           ctaTo: `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`,
-          source: "Focus Commitments",
+          source: "Your Focus Commitments",
           bucket: "watch",
           scoreBoost: 4,
         })
@@ -3522,7 +3629,7 @@ export default function DashboardPage() {
 
         if (detailParts.length === 0) {
           detailParts.push(
-            `${sortedRows.length} notification${sortedRows.length === 1 ? "" : "s"} ready`
+            `${sortedRows.length} alert${sortedRows.length === 1 ? "" : "s"} ready for you`
           );
         }
 
@@ -3538,9 +3645,9 @@ export default function DashboardPage() {
           to: first?.ctaTo || DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
           ctaLabel:
             sortedRows.length === 1
-              ? safeStr(first?.ctaLabel || "Open notification")
+              ? safeStr(first?.ctaLabel || "Open your alert")
               : safeStr(first?.source || "General") === "General"
-              ? "Open notifications"
+              ? "Open your alerts"
               : `Open ${safeStr(first?.source || "screen")}`,
           tone,
           rows: sortedRows,
@@ -3586,7 +3693,7 @@ export default function DashboardPage() {
         detail:
           sortedRows.length > 0
             ? first?.title ||
-              `${sortedRows.length} notification${sortedRows.length === 1 ? "" : "s"} ready`
+              `${sortedRows.length} alert${sortedRows.length === 1 ? "" : "s"} ready for you`
             : emptyDetail,
         count: sortedRows.length,
         unreadCount,
@@ -3594,7 +3701,7 @@ export default function DashboardPage() {
         dueSoonCount,
         watchCount,
         to: first?.ctaTo || DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
-        ctaLabel: first?.ctaLabel || "Open notifications",
+        ctaLabel: first?.ctaLabel || "Open your alerts",
         tone,
         rows: sortedRows,
       };
@@ -3620,7 +3727,7 @@ export default function DashboardPage() {
         "Unread",
         dashboardNoticeSummary.allRows.filter((item) => item.unread),
         "blue",
-        "No unread notification is waiting right now."
+        "No unread alert is waiting for you right now."
       ),
     ].filter((group) => group.count > 0);
   }, [dashboardNoticeSummary]);
@@ -3638,7 +3745,7 @@ export default function DashboardPage() {
 
   const dashboardNoticeSummaryLine = useMemo(() => {
     if (dashboardNoticeTotalCount === 0) {
-      return "No new notification is waiting right now.";
+      return "No new alert is waiting for you right now.";
     }
 
     const visibleSources = dashboardNoticeSourceGroups
@@ -3654,7 +3761,7 @@ export default function DashboardPage() {
             visibleSources[visibleSources.length - 1]
           }`;
 
-    return `You have ${dashboardNoticeTotalCount} notification${
+    return `You have ${dashboardNoticeTotalCount} alert${
       dashboardNoticeTotalCount === 1 ? "" : "s"
     } from ${sourceLine}${
       moreSources > 0
@@ -3664,7 +3771,7 @@ export default function DashboardPage() {
   }, [dashboardNoticeSourceGroups, dashboardNoticeTotalCount]);
   const dashboardNoticePhoneSummaryLine = useMemo(() => {
     if (dashboardNoticeTotalCount === 0) {
-      return "No new notification is waiting right now.";
+      return "No new alert is waiting for you right now.";
     }
 
     const firstSource = safeStr(
@@ -3677,7 +3784,7 @@ export default function DashboardPage() {
     );
     const otherScreens = Math.max(dashboardNoticeSourceGroups.length - 1, 0);
 
-    return `${dashboardNoticeTotalCount} notification${
+    return `${dashboardNoticeTotalCount} alert${
       dashboardNoticeTotalCount === 1 ? "" : "s"
     } waiting${
       firstSource ? `. First: ${firstSource}` : ""
@@ -3700,7 +3807,7 @@ export default function DashboardPage() {
   const dashboardNoticePrimaryActionTo =
     dashboardNoticeLeadItem?.ctaTo || DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
   const dashboardNoticePrimaryActionLabel =
-    dashboardNoticeLeadItem?.ctaLabel || "Open notifications";
+    dashboardNoticeLeadItem?.ctaLabel || "Open your alerts";
   const notificationSurfaceChrome = useMemo(() => {
     if (dashboardNoticeSummary.counts.actNow > 0) {
       return {
@@ -3816,7 +3923,7 @@ export default function DashboardPage() {
       ? "Create demand"
       : urgentDemandItems.length > 0
       ? "Open urgent demand"
-      : "Open Demand Box";
+      : "Open your Demand Box";
   const demandCommunityLabel = currentCommunityName(currentClan, selectedClanId);
   const demandRequesterId = safeStr(currentDemandItem?.requester_gmfn_id || "");
   const demandRequesterTrust = safeStr(
@@ -3828,7 +3935,7 @@ export default function DashboardPage() {
     ? "A person's request is live in your community."
     : "Create demand when you personally need help.";
   const demandGuideBody =
-    "Demand Box is personal: you say what you need, and your GSN trust signal shows who is asking. The community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
+    "Your Demand Box is personal: you say what you need, and your GSN trust signal shows who is asking. Your community name shows where you are sending it from. Payment terms and TrustSlip expectations help both sides agree before work starts.";
 
   const demandSurfaceChrome = useMemo(() => {
     if (urgentDemandItems.length > 0) {
@@ -3990,7 +4097,7 @@ export default function DashboardPage() {
 
   const marketWisdomNowLine = useMemo(() => {
     if (activeSpotlight) {
-      return "Spotlight is live. Check seller trust before the next move.";
+      return "Your Spotlight is live. Check seller trust before the next move.";
     }
 
     if (urgentDemandItems.length > 0) {
@@ -5998,7 +6105,8 @@ export default function DashboardPage() {
                 }}
               >
                 <GSNBrandMark width={isPhone ? 22 : 28} height={isPhone ? 28 : 36} />
-                <span>Identity Passport</span>
+                <span>{dashboardSectionSignal("Your Identity Passport")}</span>
+                <span>Your Identity Passport</span>
               </div>
               <div
                 style={{
@@ -6010,7 +6118,7 @@ export default function DashboardPage() {
                   textWrap: "balance",
                 }}
               >
-                Trust is{" "}
+                Your trust is{" "}
                 <span style={{ color: DASHBOARD_BRAND.goldText }}>
                   the first currency
                 </span>
@@ -6138,9 +6246,14 @@ export default function DashboardPage() {
                     color: "rgba(248,251,255,0.84)",
                     fontSize: isPhone ? 11 : 13,
                     fontWeight: 800,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 5,
                   }}
                 >
-                  {item.label}
+                  <span aria-hidden="true">{dashboardActionSignal(item.label)}</span>
+                  <span>{item.label}</span>
                 </span>
                 <span
                   style={{
@@ -7054,7 +7167,7 @@ export default function DashboardPage() {
         >
           {[
             {
-              label: "Marketplace",
+              label: "Your Marketplace",
               icon: "marketplace" as const,
               emoji: "🛒",
               to: DASHBOARD_TARGETS.MARKETPLACE,
@@ -7066,13 +7179,13 @@ export default function DashboardPage() {
               to: DASHBOARD_TARGETS.DEMAND_BOX,
             },
             {
-              label: "Spotlight",
+              label: "Your Spotlight",
               icon: "spotlight" as const,
               emoji: "⭐",
               to: DASHBOARD_TARGETS.COMMUNITY_SPOTLIGHT,
             },
             {
-              label: "Trust Events",
+              label: "Your Trust Events",
               icon: "trust" as const,
               emoji: "🛡️",
               to: DASHBOARD_TARGETS.TRUST,
@@ -7143,25 +7256,25 @@ export default function DashboardPage() {
           >
             {[
               {
-                label: "Community",
+                label: "Your Community",
                 icon: "community" as const,
                 emoji: "👥",
                 to: DASHBOARD_TARGETS.COMMUNITY,
               },
               {
-                label: "Shop",
+                label: "Your Shop",
                 icon: "shop" as const,
                 emoji: "🏪",
                 to: DASHBOARD_TARGETS.SHOP_ME,
               },
               {
-                label: "What Matters Now",
+                label: "Your Alerts",
                 icon: "notifications" as const,
                 emoji: "🔔",
                 to: DASHBOARD_TARGETS.WHAT_MATTERS_NOW,
               },
             {
-              label: "My Identity",
+              label: "Your Identity",
               icon: "identity" as const,
                 emoji: "🪪",
               to: DASHBOARD_TARGETS.CCI,
@@ -7257,7 +7370,7 @@ export default function DashboardPage() {
           }}
           >
             <div>
-              <div style={sectionLabel()}>Spotlight</div>
+              <DashboardSectionLabel label="Your Spotlight" />
               <div
                 style={{
                   marginTop: 8,
@@ -7334,7 +7447,7 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 style={secondaryBtn(false)}
               >
-                Open spotlight tasks
+                Open your Spotlight tasks
               </button>
             ) : null}
           </div>
@@ -7370,7 +7483,7 @@ export default function DashboardPage() {
                   {safeStr(
                     activeSpotlight?.title ||
                       activeSpotlight?.message ||
-                      "Community Spotlight"
+                      "Your community Spotlight"
                   )}
                 </div>
 
@@ -7384,9 +7497,9 @@ export default function DashboardPage() {
                   {safeStr(
                     activeSpotlight?.source_shop_name ||
                       activeSpotlight?.author_name ||
-                      "Community seller"
+                      "Your community seller"
                   )}{" "}
-                  •{" "}
+                  -{" "}
                   {safeStr(
                     activeSpotlight?.source_clan_name ||
                       currentCommunityName(currentClan, selectedClanId)
@@ -7418,14 +7531,14 @@ export default function DashboardPage() {
                   onPointerDown={consumeDashboardPointerEvent}
                   style={primaryBtn(false)}
                 >
-                  Open spotlight tasks
+                  Open your Spotlight tasks
                 </button>
               </div>
             </div>
           </div>
         ) : spotlightLoading ? (
           <div style={{ marginTop: 16, color: "#64748B" }}>
-            Loading spotlight...
+            Loading your Spotlight...
           </div>
         ) : activeSpotlight ? (
           <>
@@ -7577,7 +7690,7 @@ export default function DashboardPage() {
                     {safeStr(
                       activeSpotlight.title ||
                         activeSpotlight.message ||
-                        "Community Spotlight"
+                        "Your community Spotlight"
                     )}
                   </div>
                   <div
@@ -7592,7 +7705,7 @@ export default function DashboardPage() {
                     {safeStr(
                       activeSpotlight.source_shop_name ||
                         activeSpotlight.author_name ||
-                        "Community seller"
+                        "Your community seller"
                     )}{" "}
                     -{" "}
                     {safeStr(
@@ -7657,7 +7770,7 @@ export default function DashboardPage() {
                     {safeStr(
                       activeSpotlight.title ||
                         activeSpotlight.message ||
-                        "Community Spotlight"
+                        "Your community Spotlight"
                     )}
                   </div>
 
@@ -7671,7 +7784,7 @@ export default function DashboardPage() {
                     {safeStr(
                       activeSpotlight.source_shop_name ||
                         activeSpotlight.author_name ||
-                        "Community seller"
+                        "Your community seller"
                     )}{" "}
                     •{" "}
                     {safeStr(
@@ -7728,7 +7841,7 @@ export default function DashboardPage() {
                         dashboardPhoneButton
                       )}
                     >
-                      Open marketplace
+                      Open your Marketplace
                     </button>
                     {safeStr(activeSpotlight.author_gmfn_id || "") ? (
                       <button
@@ -7740,7 +7853,7 @@ export default function DashboardPage() {
                           dashboardPhoneButton
                         )}
                       >
-                        Open shop
+                        Open your Shop
                       </button>
                     ) : null}
                     <button
@@ -7826,7 +7939,7 @@ export default function DashboardPage() {
                       fontWeight: 800,
                     }}
                   >
-                    Open Community Home to upload a picture or video. GSN will
+                    Open your Community Home to upload a picture or video. GSN will
                     show it here as a quick live preview, then people can open
                     your marketplace or shop for the full details.
                   </div>
@@ -8177,7 +8290,7 @@ export default function DashboardPage() {
                   {safeStr(
                     activeSpotlight!.source_shop_name ||
                       activeSpotlight!.author_name ||
-                      "Community seller"
+                      "Your community seller"
                   )}
                 </div>
 
@@ -8198,7 +8311,7 @@ export default function DashboardPage() {
                   {safeStr(
                     activeSpotlight!.title ||
                       activeSpotlight!.message ||
-                      "Community Spotlight"
+                      "Your community Spotlight"
                   )}
                 </div>
 
@@ -8261,7 +8374,7 @@ export default function DashboardPage() {
                       {safeStr(
                         activeSpotlight.source_shop_name ||
                           activeSpotlight.author_name ||
-                          "Community seller"
+                          "Your community seller"
                       )}
                     </div>
 
@@ -8297,7 +8410,7 @@ export default function DashboardPage() {
                           "1px solid rgba(212,175,55,0.12)"
                         )}
                       >
-                        <div style={sectionLabel()}>Community</div>
+                        <DashboardSectionLabel label="Your community" />
                         <div
                           style={{
                             marginTop: 8,
@@ -8319,7 +8432,7 @@ export default function DashboardPage() {
                           "1px solid rgba(212,175,55,0.12)"
                         )}
                       >
-                        <div style={sectionLabel()}>Posted</div>
+                        <DashboardSectionLabel label="Posted" />
                         <div
                           style={{
                             marginTop: 8,
@@ -8339,7 +8452,7 @@ export default function DashboardPage() {
                             "1px solid rgba(212,175,55,0.12)"
                           )}
                         >
-                          <div style={sectionLabel()}>GMFN ID</div>
+                          <DashboardSectionLabel label="Seller GSN ID" />
                           <div
                             style={{
                               marginTop: 8,
@@ -8365,7 +8478,7 @@ export default function DashboardPage() {
                       boxShadow: "0 18px 36px rgba(2,12,27,0.24)",
                     }}
                   >
-                    <div style={sectionLabel()}>Actions</div>
+                    <DashboardSectionLabel label="Actions" />
 
                     <div
                       style={{
@@ -8395,7 +8508,7 @@ export default function DashboardPage() {
                             backdropFilter: "blur(10px)",
                           }}
                         >
-                          Short video spotlight
+                          Your short video Spotlight
                         </span>
                       </div>
                     ) : null}
@@ -8413,7 +8526,7 @@ export default function DashboardPage() {
                         onPointerDown={consumeDashboardPointerEvent}
                         style={secondaryBtn(false)}
                       >
-                        Open marketplace
+                        Open your Marketplace
                       </button>
                     </div>
 
@@ -8475,7 +8588,7 @@ export default function DashboardPage() {
                 alignItems: "center",
               }}
             >
-              <span style={badge(true)}>No live spotlight now</span>
+              <span style={badge(true)}>No live Spotlight for you</span>
               <span
                 style={{
                   ...badge(false),
@@ -8500,7 +8613,7 @@ export default function DashboardPage() {
               {safeStr(
                 latestSpotlightSnapshot.title ||
                   latestSpotlightSnapshot.message ||
-                  "Most recent community spotlight"
+                  "Your most recent community Spotlight"
               )}
             </div>
 
@@ -8508,9 +8621,9 @@ export default function DashboardPage() {
               {safeStr(
                 latestSpotlightSnapshot.source_shop_name ||
                   latestSpotlightSnapshot.author_name ||
-                  "Community seller"
+                  "Your community seller"
               )}{" "}
-              •{" "}
+              -{" "}
               {safeStr(
                 latestSpotlightSnapshot.source_clan_name ||
                   currentCommunityName(currentClan, selectedClanId)
@@ -8528,8 +8641,8 @@ export default function DashboardPage() {
             </div>
 
             <div style={{ ...helperText(), maxWidth: 860 }}>
-              This spotlight has ended. Open Community Home to publish a new
-              spotlight.
+              Your last Spotlight has ended. Open your Community Home when you want
+              to publish your next Spotlight.
             </div>
 
             <div
@@ -8548,7 +8661,7 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardFillButton(secondaryBtn(false))}
               >
-                Open marketplace
+                Open your Marketplace
               </button>
               <button
                 type="button"
@@ -8556,13 +8669,13 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardFillButton(secondaryBtn(false))}
               >
-                Open spotlight tasks
+                Open your Spotlight tasks
               </button>
             </div>
           </div>
         ) : (
           <div style={{ marginTop: 16, color: "#64748B" }}>
-            No active spotlight is available yet.
+            No Spotlight is live for you right now.
           </div>
         )}
       </section>
@@ -8595,7 +8708,7 @@ export default function DashboardPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Demand Box</div>
+            <DashboardSectionLabel label="Your Demand Box" />
             <div
               style={{
                 marginTop: 3,
@@ -8604,7 +8717,7 @@ export default function DashboardPage() {
                 maxWidth: 420,
               }}
             >
-              Live demand in your community.
+              Your live requests and community demand.
             </div>
           </div>
           <div
@@ -8629,7 +8742,7 @@ export default function DashboardPage() {
                 flex: isPhone ? "1 1 0" : "0 0 auto",
               })}
             >
-              {demandGuideOpen ? "Close guide" : "About Demand Box"}
+              {demandGuideOpen ? "Close guide" : "About your Demand Box"}
             </button>
             <span
               style={{
@@ -8852,7 +8965,7 @@ export default function DashboardPage() {
                 >
                   {safeStr(
                     currentDemandItem.description ||
-                      "Open Demand Box to read the full request."
+                      "Open your Demand Box to read the full request."
                   )}
                 </div>
 
@@ -8923,7 +9036,7 @@ export default function DashboardPage() {
                     lineHeight: isPhone ? 1.24 : 1.3,
                   }}
                 >
-                  No open demand is waiting.
+                  No open demand is waiting for you.
                 </div>
                 <div
                   style={{
@@ -9009,7 +9122,7 @@ export default function DashboardPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>What Matters Now</div>
+              <DashboardSectionLabel label="What needs your attention" />
             <div
               style={{
                 marginTop: 2,
@@ -9018,7 +9131,7 @@ export default function DashboardPage() {
                 maxWidth: 420,
               }}
             >
-              See where the latest notification came from.
+              See what needs your attention now.
             </div>
           </div>
 
@@ -9045,7 +9158,7 @@ export default function DashboardPage() {
                 flex: isPhone ? "1 1 0" : "0 0 auto",
               }}
             >
-              Notifications
+              Your alerts
             </span>
             <span
               style={{
@@ -9178,7 +9291,7 @@ export default function DashboardPage() {
             </div>
           ) : guidanceLoading && dashboardNoticeTotalCount === 0 ? (
             <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.7 }}>
-              Preparing dashboard notifications...
+              Preparing your dashboard alerts...
             </div>
           ) : null}
 
@@ -9317,13 +9430,13 @@ export default function DashboardPage() {
                     width: "100%",
                   })}
                 >
-                  Open notifications
+                  Open your alerts
                 </button>
               </div>
             </div>
           ) : noticesLoading && dashboardNoticeTotalCount === 0 ? (
             <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.7 }}>
-              Loading notifications...
+              Loading your alerts...
             </div>
           ) : null}
 
@@ -9348,14 +9461,10 @@ export default function DashboardPage() {
           }}
         >
           <div>
-            <div
-              style={{
-                ...sectionLabel(),
-                color: "#0F3B74",
-              }}
-            >
-              Market Wisdom
-            </div>
+            <DashboardSectionLabel
+              label="Your Market Wisdom"
+              style={{ color: "#0F3B74" }}
+            />
           </div>
         </div>
 
@@ -9389,7 +9498,7 @@ export default function DashboardPage() {
                 flex: "1 1 280px",
               }}
             >
-              {activeWisdomTitle || "Live GSN reading"}
+              {activeWisdomTitle || "Your live GSN reading"}
             </div>
 
             <div
@@ -9524,7 +9633,14 @@ export default function DashboardPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Commitment Builder
+                  <DashboardSectionLabel
+                    label="Your Commitment Builder"
+                    style={{
+                      color: DASHBOARD_BRAND.ink,
+                      fontSize: 14,
+                      letterSpacing: 0.12,
+                    }}
+                  />
                 </div>
                 <div
                   style={{
@@ -9534,7 +9650,7 @@ export default function DashboardPage() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Keep follow-through close when today's signal points to execution.
+                  Keep your follow-through close when today's signal points to execution.
                 </div>
               </div>
 
@@ -9710,7 +9826,7 @@ export default function DashboardPage() {
                 flexWrap: "wrap",
               }}
             >
-              <div style={sectionLabel()}>Focus Commitments</div>
+              <DashboardSectionLabel label="Your Focus Commitments" />
 
               <div
                 style={{
@@ -9859,7 +9975,7 @@ export default function DashboardPage() {
                   }}
                 >
                   <div>
-                    <div style={sectionLabel()}>New commitment</div>
+                    <DashboardSectionLabel label="Your new commitment" />
                     <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                       Keep it measurable and time-bound.
                     </div>
@@ -10197,7 +10313,7 @@ export default function DashboardPage() {
                             "1px solid rgba(11,99,209,0.08)"
                           )}
                         >
-                          <div style={sectionLabel()}>Next review</div>
+                          <DashboardSectionLabel label="Your next review" />
                           <div
                             style={{
                               marginTop: 8,
@@ -10216,7 +10332,7 @@ export default function DashboardPage() {
                             "1px solid rgba(11,31,51,0.08)"
                           )}
                         >
-                          <div style={sectionLabel()}>Days to due</div>
+                          <DashboardSectionLabel label="Days left" />
                           <div
                             style={{
                               marginTop: 8,
@@ -10230,7 +10346,7 @@ export default function DashboardPage() {
                         </div>
 
                         <div style={statTile(meta.bg, meta.border)}>
-                          <div style={sectionLabel()}>Execution signal</div>
+                          <DashboardSectionLabel label="Your execution signal" />
                           <div
                             style={{
                               marginTop: 8,

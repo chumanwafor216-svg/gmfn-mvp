@@ -19459,6 +19459,11 @@ GSN-branded invite composer and invite-entry continuity.
 - Hid the separate Regular Apps block because the main launcher now serves that purpose.
 - On phone, compacted the right-side top control to `Tools` so it stops crowding the `Dashboard` heading.
 - Market Wisdom internals were not changed; only its dashboard grid placement was pushed lower in the visual order.
+- Follow-up polish:
+  - extended the emoji/sign-language treatment beyond the main launcher into dashboard section headers and key detail labels.
+  - changed visible dashboard copy toward direct user-addressed language, such as `Your Marketplace`, `Your Spotlight`, `Your Demand Box`, `Your alerts`, and `Your Focus Commitments`.
+  - changed generic notification language to user-facing alert language where it appears on `/app/dashboard`.
+  - did not debug Spotlight data/media behavior yet; this pass only made the dashboard language and visual signals clearer before the requested Spotlight investigation.
 - Important caveat:
   - `DashboardPage.tsx` still has pre-existing local dirty changes unrelated to this removal, including UI storage key/default collapse behavior and disabled attention auto-open. Do not revert them without owner approval.
 - Verification:
