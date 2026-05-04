@@ -123,6 +123,8 @@ type VaultConfigRecord = {
   billing_cycle?: string | null;
 };
 
+type VaultPanelKey = "payment" | "blocks" | "link" | "flow";
+
 const VAULT_SLOT_LIMIT = 6;
 const VAULT_PAYMENT_DUE_DAYS = 7;
 const VAULT_LINK_DEFAULT_HOURS = 72;
@@ -327,9 +329,15 @@ function buildVaultSlots(
   return next;
 }
 
-function productFromVaultBlock(block: any): ProductRecord | null {
-  const src = block?.product || {};
+function productFromVaultBlock(block: any, fallback?: ProductRecord | null): ProductRecord | null {
+  const src = block?.product && typeof block.product === "object" ? block.product : fallback || {};
   const id = Number(src?.id || block?.product_id || 0);
+  const state = firstTruthy(block?.state).toLowerCase();
+  const blockActive = state === "active";
+  const hasRealProduct =
+    Boolean(src?.id) &&
+    Boolean(firstTruthy(src?.name, src?.description, src?.image_url, src?.video_url, src?.price));
+  if (!hasRealProduct) return null;
   if (!id) return null;
   return {
     ...src,
@@ -337,7 +345,7 @@ function productFromVaultBlock(block: any): ProductRecord | null {
     shop_id: Number(src?.shop_id || block?.shop_id || 0),
     clan_id: Number(src?.clan_id || 0),
     visibility_mode: firstTruthy(src?.visibility_mode, "vault_private"),
-    is_active: src?.is_active !== false,
+    is_active: blockActive && src?.is_active !== false,
     vault_slot_number: Number(block?.slot_number || 0) || null,
     vault_block_id: Number(block?.id || 0) || null,
   };
@@ -353,8 +361,9 @@ function mergeVaultStatusProducts(
     if (id) byId.set(id, item);
   });
   rowsOf<any>(status?.blocks).forEach((block) => {
-    const item = productFromVaultBlock(block);
-    const id = safeStr(item?.id);
+    const fallback = byId.get(safeStr(block?.product_id));
+    const item = productFromVaultBlock(block, fallback);
+    const id = safeStr(item?.id || block?.product_id);
     if (!item || !id) return;
     byId.set(id, {
       ...(byId.get(id) || {}),
@@ -366,12 +375,33 @@ function mergeVaultStatusProducts(
   return Array.from(byId.values());
 }
 
-function buildBackendVaultSlots(status: VaultShopStatus | null): Array<ProductRecord | null> | null {
+function buildBackendVaultSlots(
+  status: VaultShopStatus | null,
+  fallbackProducts: ProductRecord[] = []
+): Array<ProductRecord | null> | null {
   const activeBlocks = rowsOf<any>(status?.blocks)
     .filter((block) => firstTruthy(block?.state).toLowerCase() === "active")
     .sort((a, b) => Number(a?.slot_number || 0) - Number(b?.slot_number || 0));
   if (activeBlocks.length <= 0) return null;
-  return activeBlocks.map((block) => productFromVaultBlock(block));
+  const fallbackById = new Map<string, ProductRecord>();
+  fallbackProducts.forEach((item) => {
+    const id = safeStr(item?.id);
+    if (id) fallbackById.set(id, item);
+  });
+  const next = Array.from({ length: VAULT_SLOT_LIMIT }, () => null as ProductRecord | null);
+  const usedProductIds = new Set<string>();
+  const usedSlotNumbers = new Set<number>();
+  activeBlocks.forEach((block) => {
+    const slotNumber = Number(block?.slot_number || 0);
+    if (!Number.isFinite(slotNumber) || slotNumber < 1 || slotNumber > VAULT_SLOT_LIMIT) return;
+    const item = productFromVaultBlock(block, fallbackById.get(safeStr(block?.product_id)));
+    const productId = safeStr(item?.id);
+    if (!item || !productId || usedProductIds.has(productId) || usedSlotNumbers.has(slotNumber)) return;
+    next[slotNumber - 1] = item;
+    usedProductIds.add(productId);
+    usedSlotNumbers.add(slotNumber);
+  });
+  return next;
 }
 
 function paymentMeta(payment?: ExpectedPaymentRecord | null): any {
@@ -406,12 +436,6 @@ function settlementListValue(settlement: SettlementRecord | null, key: keyof Set
 function paymentLine(label: string, value: unknown): string {
   const text = firstTruthy(value);
   return text ? `${label}: ${text}` : "";
-}
-
-function vaultPaymentStatusLabel(payment?: ExpectedPaymentRecord | null): string {
-  if (!payment) return "Not started";
-  if (isConfirmedPayment(payment)) return "Confirmed";
-  return firstTruthy(payment.status, "Awaiting transfer");
 }
 
 function isConfirmedPayment(payment?: ExpectedPaymentRecord | null): boolean {
@@ -529,6 +553,119 @@ function badge(primary = false): React.CSSProperties {
   return brandBadge(primary);
 }
 
+function stepBadge(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    background: "linear-gradient(180deg, #0C4FA8 0%, #0A63C8 100%)",
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: 950,
+    flex: "0 0 auto",
+    boxShadow: "0 8px 16px rgba(12,79,168,0.22)",
+  };
+}
+
+function stepTitle(): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    color: gmfnBrand.colors.accent,
+    fontSize: 15,
+    fontWeight: 950,
+    letterSpacing: 0.35,
+    textTransform: "uppercase",
+  };
+}
+
+function VaultDoorVisual() {
+  const boltStyle: React.CSSProperties = {
+    position: "absolute",
+    width: 18,
+    height: 30,
+    borderRadius: 5,
+    background: "linear-gradient(180deg, rgba(22,43,66,0.88), rgba(6,18,33,0.94))",
+    border: "1px solid rgba(255,255,255,0.10)",
+    boxShadow: "inset 0 2px 7px rgba(255,255,255,0.08), 0 8px 18px rgba(0,0,0,0.24)",
+  };
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: "min(220px, 78%)",
+        aspectRatio: "1 / 1",
+        borderRadius: 26,
+        position: "relative",
+        background:
+          "radial-gradient(circle at 32% 24%, rgba(255,255,255,0.22), transparent 24%), linear-gradient(145deg, #385B84 0%, #182F4F 45%, #0A1B31 100%)",
+        border: "1px solid rgba(255,255,255,0.18)",
+        boxShadow: "inset 0 1px 18px rgba(255,255,255,0.12), inset 0 -18px 32px rgba(0,0,0,0.26), 0 20px 46px rgba(0,0,0,0.34)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: "18%",
+          borderRadius: 18,
+          background: "linear-gradient(145deg, rgba(96,126,162,0.72), rgba(11,27,48,0.94))",
+          border: "2px solid rgba(255,255,255,0.10)",
+          boxShadow: "inset 0 0 0 10px rgba(1,13,27,0.24), inset 0 18px 26px rgba(255,255,255,0.08)",
+        }}
+      />
+      <div style={{ ...boltStyle, left: "16%", top: "34%" }} />
+      <div style={{ ...boltStyle, right: "16%", top: "34%" }} />
+      <div style={{ ...boltStyle, left: "16%", bottom: "34%" }} />
+      <div style={{ ...boltStyle, right: "16%", bottom: "34%" }} />
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "31%",
+          aspectRatio: "1 / 1",
+          borderRadius: 999,
+          background: "radial-gradient(circle, #5D7695 0%, #2D4C6E 44%, #10243C 72%, #071728 100%)",
+          border: "2px solid rgba(255,255,255,0.15)",
+          boxShadow: "inset 0 8px 14px rgba(255,255,255,0.14), inset 0 -12px 18px rgba(0,0,0,0.34), 0 10px 24px rgba(0,0,0,0.30)",
+        }}
+      >
+        {[0, 45, 90, 135].map((angle) => (
+          <span
+            key={angle}
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              width: "42%",
+              height: 7,
+              borderRadius: 999,
+              background: "rgba(213,227,242,0.42)",
+              transform: `translate(-50%, -50%) rotate(${angle}deg)`,
+              transformOrigin: "center",
+            }}
+          />
+        ))}
+        <span
+          style={{
+            position: "absolute",
+            inset: "36%",
+            borderRadius: 999,
+            background: "#081A2F",
+            border: "1px solid rgba(255,255,255,0.20)",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -557,14 +694,6 @@ function actionGrid(isCompact: boolean, min = 150): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: isCompact ? "1fr" : `repeat(auto-fit, minmax(${min}px, 1fr))`,
-    gap: 10,
-  };
-}
-
-function slotChoiceGrid(isCompact: boolean): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
     gap: 10,
   };
 }
@@ -663,6 +792,12 @@ export default function VaultControlPage() {
   const [paymentSlots, setPaymentSlots] = useState(1);
   const [confirmedPaymentQuoteKey, setConfirmedPaymentQuoteKey] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
+  const [openVaultPanels, setOpenVaultPanels] = useState<Record<VaultPanelKey, boolean>>({
+    payment: false,
+    blocks: false,
+    link: false,
+    flow: false,
+  });
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
   const [productName, setProductName] = useState("");
@@ -769,14 +904,25 @@ export default function VaultControlPage() {
     void loadPage();
   }, [loadPage]);
 
+  const activeBackendVaultProductIds = useMemo(() => {
+    const ids = new Set<string>();
+    rowsOf<any>(vaultStatus?.blocks).forEach((block) => {
+      if (firstTruthy(block?.state).toLowerCase() !== "active") return;
+      const id = firstTruthy(block?.product?.id, block?.product_id);
+      if (id) ids.add(id);
+    });
+    return ids;
+  }, [vaultStatus]);
+
   const vaultProducts = useMemo(
     () =>
       products.filter(
         (item) =>
           firstTruthy(item.visibility_mode, "community_visible") === "vault_private" &&
-          item.is_active !== false
+          item.is_active !== false &&
+          (!vaultStatus || activeBackendVaultProductIds.has(safeStr(item.id)))
       ),
-    [products]
+    [activeBackendVaultProductIds, products, vaultStatus]
   );
 
   const vaultPayments = useMemo(
@@ -795,8 +941,8 @@ export default function VaultControlPage() {
     const confirmedSlots = vaultPayments
       .filter(isConfirmedPayment)
       .reduce((total, item) => total + paymentQuantity(item), 0);
-    return Math.min(VAULT_SLOT_LIMIT, Math.max(confirmedSlots, vaultProducts.length));
-  }, [vaultPayments, vaultProducts.length, vaultStatus?.active_paid_slots]);
+    return Math.min(VAULT_SLOT_LIMIT, confirmedSlots);
+  }, [vaultPayments, vaultStatus?.active_paid_slots]);
 
   const latestVaultPayment = vaultPayments[0] || null;
   useEffect(() => {
@@ -809,7 +955,7 @@ export default function VaultControlPage() {
   }, [shop?.id, vaultProducts, confirmedVaultSlots]);
 
   const slots = useMemo(() => {
-    const backendSlots = buildBackendVaultSlots(vaultStatus);
+    const backendSlots = buildBackendVaultSlots(vaultStatus, vaultProducts);
     if (backendSlots) return backendSlots;
     return buildVaultSlots(vaultProducts, confirmedVaultSlots, vaultSlotMap);
   }, [confirmedVaultSlots, vaultProducts, vaultSlotMap, vaultStatus]);
@@ -835,7 +981,6 @@ export default function VaultControlPage() {
     : "No link";
   const selectedBlockLinkedAt = firstTruthy(selectedBlockPrimaryLink?.created_at);
   const selectedBlockLinkExpiresAt = firstTruthy(selectedBlockPrimaryLink?.expires_at);
-  const shopImageUrl = resolveAssetSrc(shop?.image_url);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
   const vaultPaymentDueDays = Math.max(
@@ -938,6 +1083,49 @@ export default function VaultControlPage() {
     paymentLine("Payment code", activeVaultPaymentReference),
     paymentLine("Expires", safeDateTime(activeVaultPaymentDueAt) || `${vaultPaymentDueDays} days after generation`),
   ].filter(Boolean);
+
+  function toggleVaultPanel(panel: VaultPanelKey) {
+    setOpenVaultPanels((prev) => ({ ...prev, [panel]: !prev[panel] }));
+  }
+
+  function panelHeader(
+    panel: VaultPanelKey,
+    step: number,
+    title: string,
+    summary: string
+  ) {
+    const open = openVaultPanels[panel];
+    return (
+      <button
+        type="button"
+        {...buttonGuardProps()}
+        onClick={() => toggleVaultPanel(panel)}
+        aria-expanded={open}
+        style={{
+          width: "100%",
+          minHeight: 72,
+          border: "none",
+          background: "transparent",
+          padding: 0,
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          gap: 14,
+          alignItems: "center",
+          textAlign: "left",
+          cursor: "pointer",
+          boxSizing: "border-box",
+        }}
+      >
+        <span style={{ minWidth: 0 }}>
+          <span style={stepTitle()}>{step > 0 ? <span style={stepBadge()}>{step}</span> : null}{title}</span>
+          <span style={{ display: "block", marginTop: 8, ...helperText(), fontWeight: 800 }}>{summary}</span>
+        </span>
+        <span style={{ ...brandActionButton("soft"), width: 116, minHeight: 44, padding: "10px 12px" }}>
+          {open ? "Collapse" : "Open"}
+        </span>
+      </button>
+    );
+  }
 
   function copyVaultPaymentInstruction() {
     const text = vaultPaymentTransferLines.join("\n");
@@ -1100,6 +1288,7 @@ export default function VaultControlPage() {
       });
       setVaultInstruction(result as ExpectedPaymentRecord);
       setVaultSettlement((result?.settlement || vaultSettlement || null) as SettlementRecord | null);
+      setOpenVaultPanels((prev) => ({ ...prev, payment: true }));
       await loadPage();
       const reference = firstTruthy(result?.reference_display, result?.reference);
       showNotice(
@@ -1131,7 +1320,7 @@ export default function VaultControlPage() {
       return;
     }
     if (!confirmedVaultSlots) {
-      setFormNotice({ tone: "error", text: "Activate at least one Vault slot before adding private offers." });
+      setFormNotice({ tone: "error", text: "Activate at least one paid Vault slot before adding block content." });
       return;
     }
     if (!editingProductId && vaultProducts.length >= confirmedVaultSlots) {
@@ -1139,7 +1328,7 @@ export default function VaultControlPage() {
       return;
     }
     if (!firstTruthy(productName)) {
-      setFormNotice({ tone: "error", text: "Add the private offer name first." });
+      setFormNotice({ tone: "error", text: "Add the block name first." });
       return;
     }
     if (!firstTruthy(productPrice)) {
@@ -1243,12 +1432,8 @@ export default function VaultControlPage() {
       showNotice("error", "Shop record is not ready.");
       return;
     }
-    if (vaultProducts.length === 0) {
-      showNotice("error", "Add at least one private Vault block before creating a link.");
-      return;
-    }
     if (!selectedProduct?.id) {
-      showNotice("error", "Choose the Vault block you want to share, then create its private link.");
+      showNotice("error", "Add content to this Vault block before creating its private link.");
       return;
     }
     setCreatingLink(true);
@@ -1315,91 +1500,43 @@ export default function VaultControlPage() {
     <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gap: 16, paddingBottom: 36 }}>
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section style={pageCard(gmfnBrand.gradients.hero)}>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0,1fr) 260px",
-            gap: 16,
-            alignItems: "stretch",
-          }}
-        >
+      <section style={{ ...pageCard(gmfnBrand.gradients.hero), padding: isCompact ? 20 : 26 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 330px", gap: 28, alignItems: "center" }}>
           <div>
-            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold }}>Vault Control</div>
-            <h1
-              style={{
-                margin: "10px 0 0",
-                color: "#FFFFFF",
-                fontSize: isCompact ? 30 : 40,
-                lineHeight: 1.05,
-                fontWeight: 950,
-              }}
-            >
+            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>VAULT CONTROL</div>
+            <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: isCompact ? 28 : 34, lineHeight: 1.08, fontWeight: 950, textTransform: "uppercase" }}>
               {shopName}
             </h1>
-            <div style={{ marginTop: 10, ...helperText(), color: gmfnBrand.colors.darkMuted, maxWidth: 720 }}>
+            <div style={{ marginTop: 12, color: gmfnBrand.colors.darkMuted, fontSize: 16, lineHeight: 1.55, maxWidth: 560 }}>
               Same shop signboard. Private paid blocks. Access only through a link you create.
             </div>
-            <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <span style={badge(true)}>Vault</span>
               <span style={badge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} paid slots</span>
-              <span style={badge(vaultProducts.length > 0)}>{vaultProducts.length} private offers</span>
-              <span style={badge(vaultLinks.length > 0)}>{vaultLinks.length} links</span>
+              <span style={badge(false)}>One block at a time</span>
             </div>
           </div>
-
-          <div
-            style={{
-              borderRadius: 24,
-              overflow: "hidden",
-              minHeight: 190,
-              background: "rgba(255,255,255,0.08)",
-              border: "1px solid rgba(212,175,55,0.22)",
-              position: "relative",
-            }}
-          >
-            {shopImageUrl ? (
-              <img
-                src={shopImageUrl}
-                alt={shopName}
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-              />
-            ) : null}
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                background: "linear-gradient(180deg, rgba(5,15,28,0.08) 0%, rgba(5,15,28,0.72) 100%)",
-                display: "flex",
-                alignItems: "flex-end",
-                padding: 14,
-                boxSizing: "border-box",
-              }}
-            >
-              <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 18 }}>
-                Private Vault
-              </div>
+          <div style={{ minHeight: 230, borderRadius: 22, overflow: "hidden", background: "linear-gradient(145deg, rgba(88,123,166,0.50) 0%, rgba(13,32,56,0.94) 62%, rgba(5,17,31,0.98) 100%)", border: "1px solid rgba(255,255,255,0.16)", position: "relative", display: "grid", placeItems: "center", padding: 20, boxSizing: "border-box" }}>
+            <VaultDoorVisual />
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(circle at 50% 20%, rgba(255,255,255,0.14), transparent 34%), linear-gradient(180deg, transparent 0%, rgba(8,27,45,0.52) 100%)" }} />
+            <div style={{ position: "absolute", left: 22, right: 22, bottom: 22, color: "#FFFFFF", fontWeight: 950, fontSize: 24, textAlign: "center" }}>
+              <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 24 }}>Private Vault</div>
             </div>
           </div>
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Activate private blocks</div>
-        <div style={{ marginTop: 8, ...helperText(), maxWidth: 780 }}>
-          Pay for the number of Vault blocks you want to use. The current rail is bank transfer with a matching reference. Card payment is not connected in this pilot yet.
-        </div>
-        <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
-          Pricing: 1-5 slots are GBP 1 each. 6 slots use the GBP 5 bundle.
-        </div>
-        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "280px minmax(0, 1fr)", gap: 12 }}>
-          <div>
-            <div style={sectionLabel()}>Slots to activate</div>
-            <div
-              role="radiogroup"
-              aria-label="Slots to activate"
-              style={{ marginTop: 8, ...slotChoiceGrid(isCompact) }}
-            >
+      <section style={{ ...pageCard("#FFFFFF"), padding: 0, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr" }}>
+          <div style={{ padding: 22, borderRight: isCompact ? "none" : `1px solid ${gmfnBrand.colors.line}` }}>
+            <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div>
+            <div style={{ marginTop: 12, color: gmfnBrand.colors.inkSoft, fontSize: 16, lineHeight: 1.55 }}>
+              Choose the number of Vault blocks you want. Paid blocks are private positions.
+            </div>
+            <div style={{ marginTop: 14, ...noticeCard("info"), background: "#FFF9E8", color: gmfnBrand.colors.ink }}>
+              Pricing: 1-5 slots are GBP 1 each. 6 slots use the GBP 5 bundle.
+            </div>
+            <div role="radiogroup" aria-label="Slots to activate" style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
               {[1, 2, 3, 4, 5, 6].map((slot) => {
                 const selected = Number(paymentSlots) === slot;
                 return (
@@ -1416,29 +1553,20 @@ export default function VaultControlPage() {
                     style={slotChoiceButton(selected)}
                   >
                     <span>{slot}</span>
-                    <span style={{ fontSize: 11, fontWeight: 900, opacity: 0.9 }}>
-                      slot{slot === 1 ? "" : "s"}
-                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 900, opacity: 0.9 }}>slot{slot === 1 ? "" : "s"}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-          <div style={{ ...innerCard("#F8FBFF") }}>
-            <div style={sectionLabel()}>Payment preview</div>
-            <div style={{ marginTop: 6, color: gmfnBrand.colors.ink, fontSize: 22, fontWeight: 950 }}>
+          <div style={{ padding: 22 }}>
+            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.accent }}>Payment preview</div>
+            <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
               {selectedVaultSlotCount} slot{selectedVaultSlotCount === 1 ? "" : "s"} selected = {selectedVaultPaymentLabel}
             </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              {selectedVaultBundleText}
-            </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
+            <div style={{ marginTop: 14, ...helperText() }}>{selectedVaultBundleText}</div>
+            <div style={{ marginTop: 14, ...helperText() }}>
               Confirm this quote first. GSN will generate the payment code against this exact slot count and amount, then the bank rail can cross-check the code and amount before Vault opens.
-            </div>
-            <div style={{ marginTop: 10, ...noticeCard(paymentQuoteConfirmed ? "success" : "info") }}>
-              {paymentQuoteConfirmed
-                ? `Agreed: ${selectedVaultAgreementText}. The payment code will be created for this exact quote.`
-                : `Review: ${selectedVaultAgreementText}. Agree to this quote before generating the payment code.`}
             </div>
             <button
               type="button"
@@ -1447,369 +1575,244 @@ export default function VaultControlPage() {
                 setConfirmedPaymentQuoteKey(selectedVaultQuoteKey);
                 showNotice("success", `Vault quote confirmed: ${selectedVaultAgreementText}.`);
               }}
-              style={{
-                ...brandActionButton(paymentQuoteConfirmed ? "secondary" : "primary"),
-                marginTop: 10,
-                minHeight: 56,
-                width: "100%",
-              }}
+              style={{ ...brandActionButton("primary"), marginTop: 18, minHeight: 62, width: "100%" }}
             >
-              {paymentQuoteConfirmed ? "Quote confirmed" : `Agree: ${selectedVaultAgreementText}`}
+              Agree: {selectedVaultAgreementText}
             </button>
-            <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
-              Payment instructions expire {vaultPaymentDueDays} days after generation unless the bank rail returns a different due time.
-            </div>
-          </div>
-          {identityBlocked ? (
-            <div style={{ gridColumn: isCompact ? "auto" : "1 / -1", ...noticeCard("info") }}>
-              Your identity continuity needs review, so private sharing may stay limited. You can still generate the Vault payment code here because the bank-transfer rail will match the payment by amount and code.
-            </div>
-          ) : null}
-          <div style={{ alignSelf: "end", ...actionGrid(isCompact, 170), gridColumn: isCompact ? "auto" : "1 / -1" }}>
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              onClick={() => {
-                if (!paymentQuoteConfirmed) {
-                  showNotice("info", `Confirm this Vault quote first: ${selectedVaultAgreementText}.`);
-                  return;
-                }
-                void createVaultInstruction(paymentSlots);
-              }}
-              disabled={creatingPayment || !shop?.id}
-              style={{
-                ...brandActionButton("primary", creatingPayment || !shop?.id),
-                minHeight: 64,
-                width: "100%",
-                position: "relative",
-                zIndex: 2,
-                touchAction: "manipulation",
-              }}
-            >
-              {creatingPayment ? "Generating payment code..." : paymentQuoteConfirmed ? "Generate payment code" : "Confirm quote first"}
-            </button>
-          </div>
-        </div>
-        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={badge(isConfirmedPayment(activeVaultPayment))}>
-            Payment: {vaultPaymentStatusLabel(activeVaultPayment)}
-          </span>
-          {activeVaultPayment ? (
-            <span style={badge(false)}>
-              Code: {firstTruthy(activeVaultPaymentReference, "Awaiting code")}
-            </span>
-          ) : null}
-        </div>
-        {activeVaultPayment ? (
-          <div style={{ marginTop: 14, ...innerCard("#FCFEFF") }}>
-            <div style={sectionLabel()}>Payment code and bank transfer</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Transfer the exact amount into the account below and use the exact payment code. Use the identifier your country or bank asks for: sort code in the UK, routing in the US, IBAN and SWIFT/BIC for Europe, Egypt, MENA or international wires, and local bank, branch, IFSC or mobile-money codes where configured.
-            </div>
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              {vaultPaymentTransferLines.map((line) => {
-                const [label, ...rest] = line.split(":");
-                const value = rest.join(":").trim();
-                return (
-                  <div key={line} style={innerCard("#FFFFFF")}>
-                    <div style={sectionLabel()}>{label}</div>
-                    <div style={{ marginTop: 6, color: gmfnBrand.colors.ink, fontWeight: 950, overflowWrap: "anywhere" }}>
-                      {value}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {settlementValue(vaultSettlement, "support_note") ? (
-              <div style={{ marginTop: 10, ...helperText() }}>
-                {settlementValue(vaultSettlement, "support_note")}
-              </div>
-            ) : null}
-            <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
+            {!activeVaultPayment ? (
               <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={copyVaultPaymentInstruction}
-                style={brandActionButton("secondary", vaultPaymentTransferLines.length === 0)}
-                disabled={vaultPaymentTransferLines.length === 0}
-              >
-                Copy payment details
-              </button>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void loadPage()}
-                style={brandActionButton("soft")}
-              >
-                Check payment status
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ marginTop: 14, ...noticeCard("info") }}>
-            Select the number of slots, confirm the preview amount, then tap Generate payment code to open the exact account details and payment code.
-          </div>
-        )}
-      </section>
-
-      <section id="vault-private-block-room" style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Vault private block room</div>
-        <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          This is the fixed inner page for Vault. All 6 private positions stay here, but locked positions cannot be used until payment confirms.
-        </div>
-
-        {confirmedVaultSlots <= 0 ? (
-          <div style={{ marginTop: 14, ...noticeCard("info") }}>
-            The Vault room is ready, but no private block is active yet. Create the payment request above, complete payment, then the paid positions unlock here.
-          </div>
-        ) : null}
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))",
-            gap: 10,
-          }}
-        >
-          {vaultInnerSlots.map((item, index) => {
-            const slotNumber = index + 1;
-            const selected = selectedSlot === slotNumber;
-            const active = slotNumber <= confirmedVaultSlots;
-            return (
-              <button
-                key={slotNumber}
                 type="button"
                 {...buttonGuardProps()}
                 onClick={() => {
-                  setSelectedSlot(slotNumber);
-                  if (!active) {
-                    showNotice("info", `Vault block #${slotNumber} is locked. Activate paid slots before adding a private offer there.`);
+                  if (!paymentQuoteConfirmed) {
+                    showNotice("info", `Confirm this Vault quote first: ${selectedVaultAgreementText}.`);
+                    return;
                   }
+                  void createVaultInstruction(paymentSlots);
                 }}
-                style={{
-                  ...brandActionButton(selected ? "primary" : "secondary"),
-                  minHeight: 92,
-                  display: "grid",
-                  alignContent: "center",
-                  gap: 5,
-                  borderRadius: 18,
-                  opacity: active ? 1 : 0.72,
-                }}
+                disabled={creatingPayment || !shop?.id}
+                style={{ ...brandActionButton("secondary", creatingPayment || !shop?.id), marginTop: 10, minHeight: 54, width: "100%" }}
               >
-                <span>Block #{slotNumber}</span>
-                <span style={{ fontSize: 12, opacity: 0.9 }}>
-                  {!active ? "Locked" : item ? "Private offer" : "Empty"}
-                </span>
+                {creatingPayment ? "Generating payment code..." : "Generate payment code"}
               </button>
+            ) : null}
+            <div style={{ marginTop: 14, ...helperText(), fontWeight: 800 }}>
+              Payment instructions expire {vaultPaymentDueDays} days after generation unless the bank rail returns a different due time.
+            </div>
+            {identityBlocked ? (
+              <div style={{ marginTop: 14, ...noticeCard("info") }}>
+                Identity review may limit private sharing, but you can still generate the payment code here.
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        {panelHeader(
+          "payment",
+          2,
+          "Payment code and bank transfer",
+          activeVaultPayment
+            ? `${activeVaultPaymentReference || "Payment code ready"} - ${activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : "amount shown inside"}`
+            : "Generate the payment code after agreeing to the quote."
+        )}
+        {openVaultPanels.payment ? activeVaultPayment ? (
+          <>
+            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 14 }}>
+              {[vaultPaymentTransferLines.slice(0, Math.ceil(vaultPaymentTransferLines.length / 2)), vaultPaymentTransferLines.slice(Math.ceil(vaultPaymentTransferLines.length / 2))].map((group, groupIndex) => (
+                <div key={groupIndex} style={{ border: `1px solid ${gmfnBrand.colors.line}`, borderRadius: 18, overflow: "hidden", background: "#FFFFFF" }}>
+                  {group.map((line) => {
+                    const [label, ...rest] = line.split(":");
+                    const value = rest.join(":").trim();
+                    return (
+                      <div key={line} style={{ display: "grid", gridTemplateColumns: "minmax(120px, 0.42fr) minmax(0, 0.58fr)", gap: 10, padding: "12px 14px", borderBottom: `1px solid ${gmfnBrand.colors.line}` }}>
+                        <div style={{ color: gmfnBrand.colors.inkSoft, fontWeight: 900, fontSize: 13 }}>{label}</div>
+                        <div style={{ color: gmfnBrand.colors.ink, fontWeight: 900, overflowWrap: "anywhere", fontSize: 13 }}>{value}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
+              <button type="button" {...buttonGuardProps()} onClick={copyVaultPaymentInstruction} style={brandActionButton("secondary", vaultPaymentTransferLines.length === 0)} disabled={vaultPaymentTransferLines.length === 0}>
+                Copy payment details
+              </button>
+              <button type="button" {...buttonGuardProps()} onClick={() => void loadPage()} style={brandActionButton("soft")}>
+                Check payment status
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ marginTop: 14, ...noticeCard("info") }}>
+            Select slots, agree to the quote, then generate the payment code. The bank details stay here until the instruction is paid, expired, or cancelled.
+          </div>
+        ) : null}
+      </section>
+
+      <section id="vault-private-block-room" style={pageCard("#FFFFFF")}>
+        {panelHeader(
+          "blocks",
+          3,
+          "Private Vault blocks",
+          `${confirmedVaultSlots} / ${VAULT_SLOT_LIMIT} paid slots. Block #${selectedSlot} is selected.`
+        )}
+        {openVaultPanels.blocks ? (
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 16 }}>
+            <div style={innerCard("#FCFEFF")}>
+          <div style={stepTitle()}><span style={stepBadge()}>3</span>Choose a block</div>
+          <div style={{ display: "none" }}>
+            <span>● Paid position</span><span>● Locked</span><span>○ Empty</span>
+          </div>
+          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(true)}>Paid position</span><span style={badge(false)}>Locked</span><span style={badge(false)}>Empty</span>
+          </div>
+          {confirmedVaultSlots <= 0 ? (
+            <div style={{ marginTop: 14, ...noticeCard("info") }}>
+              No private block is active yet. Generate a payment code above, complete the bank transfer, and the paid blocks will unlock here.
+            </div>
+          ) : null}
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
+            {vaultInnerSlots.map((item, index) => {
+              const slotNumber = index + 1;
+              const selected = selectedSlot === slotNumber;
+              const active = slotNumber <= confirmedVaultSlots;
+              return (
+                <button
+                  key={slotNumber}
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={() => {
+                    setSelectedSlot(slotNumber);
+                    if (!active) showNotice("info", `Vault block #${slotNumber} is locked. Activate paid slots before adding content there.`);
+                  }}
+                  style={{ ...slotChoiceButton(selected), minHeight: 96, opacity: active ? 1 : 0.82 }}
+                >
+                  <span>Block #{slotNumber}</span>
+                  <span style={{ fontSize: 12, fontWeight: 900, opacity: 0.9 }}>{!active ? "Locked" : item ? "Private content" : "Empty"}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={innerCard("#FCFEFF")}>
+          <div style={stepTitle()}><span style={stepBadge()}>4</span>Selected private block</div>
+          <div style={{ marginTop: 14, borderRadius: 18, overflow: "hidden", minHeight: 160, background: gmfnBrand.gradients.hero }}>
+            {selectedProduct ? (
+              <SpotlightMediaFrame
+                imageUrl={resolveAssetSrc(selectedProduct.image_url)}
+                videoUrl={resolveAssetSrc(selectedProduct.video_url)}
+                videoPoster={resolveAssetSrc(selectedProduct.image_url) || undefined}
+                alt={firstTruthy(selectedProduct.name, `Vault block #${selectedSlot}`)}
+                frameStyle={{ width: "100%", height: "100%", minHeight: 160, borderRadius: 18, border: "none" }}
+                mediaStyle={{ width: "100%", height: "100%", objectFit: "cover" }}
+                autoPlayVideo={Boolean(selectedProduct.video_url)}
+                mutedVideo={Boolean(selectedProduct.video_url)}
+                loopVideo={Boolean(selectedProduct.video_url)}
+                showAudioUnlock={Boolean(selectedProduct.video_url)}
+                audioUnlockLabel="Sound on"
+              />
+            ) : (
+              <div style={{ height: 160, display: "grid", placeItems: "center", color: "#FFFFFF", fontWeight: 950 }}>{selectedSeatIsActive ? `Block #${selectedSlot} is empty` : `Block #${selectedSlot} is locked`}</div>
+            )}
+          </div>
+          <div style={{ marginTop: 14, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>Block #{selectedSlot}</div>
+          <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(selectedSeatIsActive)}>{selectedSeatIsActive ? "Paid position" : "Locked"}</span>
+            <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? "In use" : "Empty"}</span>
+            <span style={badge(false)}>Private Vault</span>
+          </div>
+          <div style={{ marginTop: 12, ...helperText() }}>
+            {selectedProduct ? firstTruthy(selectedProduct.description, "This private block has no note yet.") : selectedSeatIsActive ? "Add the private content for this block. Use a picture, a short video, or both." : "Pay for this block before adding private content."}
+          </div>
+          <div style={{ marginTop: 14 }}>
+            {!selectedSeatIsActive ? (
+              <button type="button" {...buttonGuardProps()} onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)} style={brandActionButton("secondary")}>Locked until paid</button>
+            ) : selectedProduct ? (
+              <div style={actionGrid(isCompact, 160)}>
+                <button type="button" {...buttonGuardProps()} onClick={() => startEdit(selectedProduct, selectedSlot)} style={brandActionButton("primary")}>Edit block #{selectedSlot}</button>
+                <button type="button" {...buttonGuardProps()} onClick={() => void hideProduct(selectedProduct)} disabled={savingProduct} style={brandActionButton("secondary", savingProduct)}>Hide block</button>
+              </div>
+            ) : (
+              <button type="button" {...buttonGuardProps()} onClick={() => startAdd(selectedSlot)} style={{ ...brandActionButton("primary"), width: "100%" }}>Add private offer</button>
+            )}
+          </div>
+        </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        {panelHeader(
+          "link",
+          5,
+          "Private block link",
+          selectedBlockPrimaryLink ? `${selectedBlockLinkStatus}. Block #${selectedSlot} link is available.` : `No link yet for Block #${selectedSlot}.`
+        )}
+        {openVaultPanels.link ? (
+        <>
+        <div style={{ marginTop: 10, ...helperText() }}>
+          Share Block #{selectedSlot} only. The viewer sees this offer, your shop identity, and the link expiry. No other Vault block opens from this link.
+        </div>
+        <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <span style={badge(Boolean(selectedBlockPrimaryLink))}>{selectedBlockPrimaryLink ? selectedBlockLinkStatus : "No link"}</span>
+          <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? `Offer #${selectedProduct.id}` : "No offer yet"}</span>
+          {selectedProduct?.vault_block_id ? <span style={badge(true)}>Block tag #{selectedProduct.vault_block_id}</span> : null}
+        </div>
+        {selectedBlockPrimaryLink ? (
+          <div style={{ marginTop: 8, ...helperText() }}>
+            {selectedBlockLinkedAt ? `Created: ${safeDateTime(selectedBlockLinkedAt)}. ` : ""}Expires: {safeDateTime(selectedBlockLinkExpiresAt) || "No expiry returned yet"}.
+          </div>
+        ) : null}
+        <div style={{ marginTop: 14, ...actionGrid(isCompact, 150) }}>
+          <button
+            type="button"
+            {...buttonGuardProps()}
+            onClick={() => {
+              if (identityBlocked) {
+                showNotice("info", "Complete identity review before sharing private Vault links.");
+                return;
+              }
+              if (!selectedSeatIsActive) {
+                showNotice("info", `Vault block #${selectedSlot} is locked. Activate it before creating a private link.`);
+                return;
+              }
+              if (!selectedProduct) {
+                showNotice("info", `Add private content to block #${selectedSlot} before creating its link.`);
+                return;
+              }
+              void createViewingLink();
+            }}
+            style={{ ...brandActionButton("primary", creatingLink), gridColumn: isCompact ? "auto" : "1 / -1" }}
+          >
+            {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "Replace block link" : "Create block link"}
+          </button>
+          <button type="button" {...buttonGuardProps()} onClick={() => { if (navigator?.clipboard?.writeText && selectedBlockLinkUrl) { void navigator.clipboard.writeText(selectedBlockLinkUrl); showNotice("success", `Vault block #${selectedSlot} link copied.`); return; } showNotice("info", "Create this block link before copying it."); }} style={brandActionButton("soft")}>Copy block link</button>
+          <button type="button" {...buttonGuardProps()} onClick={() => { if (selectedBlockLinkUrl) { window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer"); return; } showNotice("info", "Create this block link before opening the private view."); }} style={brandActionButton("secondary")}>Open private view</button>
+          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}>Extend link</button>
+          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}>Revoke link</button>
+        </div>
+        </>
+        ) : null}
+      </section>
+
+      <section style={{ ...pageCard(gmfnBrand.gradients.hero), padding: isCompact ? 18 : 22 }}>
+        {panelHeader("flow", 0, "Your 3-step flow", "Open this only when you want the short Vault process reminder.")}
+        {openVaultPanels.flow ? (
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr 1fr", gap: 12, color: "#FFFFFF" }}>
+          {["Activate slots|Choose and pay for your Vault slots.", "Add private offer|Add your content to the paid block.", "Create block link|Share the link privately. Access is by link only."].map((entry, index) => {
+            const [title, text] = entry.split("|");
+            return (
+              <div key={title} style={{ display: "grid", gridTemplateColumns: "36px minmax(0,1fr)", gap: 10, alignItems: "start" }}>
+                <span style={stepBadge()}>{index + 1}</span>
+                <div><div style={{ fontWeight: 950 }}>{title}</div><div style={{ marginTop: 4, color: gmfnBrand.colors.darkMuted, fontSize: 13, lineHeight: 1.45 }}>{text}</div></div>
+              </div>
             );
           })}
         </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "300px minmax(0,1fr)",
-            gap: 14,
-          }}
-        >
-              <div
-                style={{
-                  borderRadius: 22,
-                  overflow: "hidden",
-                  minHeight: 220,
-                  background: gmfnBrand.gradients.hero,
-                }}
-              >
-                {selectedProduct ? (
-                  <SpotlightMediaFrame
-                    imageUrl={resolveAssetSrc(selectedProduct.image_url)}
-                    videoUrl={resolveAssetSrc(selectedProduct.video_url)}
-                    videoPoster={resolveAssetSrc(selectedProduct.image_url) || undefined}
-                    alt={firstTruthy(selectedProduct.name, `Vault block #${selectedSlot}`)}
-                    frameStyle={{ width: "100%", height: "100%", minHeight: 220, borderRadius: 22, border: "none" }}
-                    mediaStyle={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    autoPlayVideo={Boolean(selectedProduct.video_url)}
-                    mutedVideo={Boolean(selectedProduct.video_url)}
-                    loopVideo={Boolean(selectedProduct.video_url)}
-                    showAudioUnlock={Boolean(selectedProduct.video_url)}
-                    audioUnlockLabel="Sound on"
-                  />
-                ) : (
-                  <div style={{ height: 220, display: "grid", placeItems: "center", color: "#FFFFFF", fontWeight: 900 }}>
-                    {selectedSeatIsActive ? `Block #${selectedSlot} is empty` : `Block #${selectedSlot} is locked`}
-                  </div>
-                )}
-              </div>
-
-              <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Selected private block</div>
-                <div style={{ marginTop: 8, color: gmfnBrand.colors.ink, fontSize: 26, fontWeight: 950 }}>
-                  Block #{selectedSlot}
-                </div>
-                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <span style={badge(selectedSeatIsActive)}>{selectedSeatIsActive ? "Paid position" : "Locked"}</span>
-                  <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? "In use" : "Empty"}</span>
-                  <span style={badge(false)}>Private Vault</span>
-                  {selectedProduct?.video_url ? <span style={badge(false)}>Video</span> : null}
-                </div>
-                <div style={{ marginTop: 12, ...helperText() }}>
-                  {selectedProduct
-                    ? firstTruthy(selectedProduct.description, "This private block has no description yet.")
-                    : selectedSeatIsActive
-                      ? "Add a private offer. It can use a picture or a short video."
-                      : "This position is reserved inside Vault. It becomes usable after payment confirms enough private blocks."}
-                </div>
-                {selectedProduct ? (
-                  <div style={{ marginTop: 10, color: gmfnBrand.colors.ink, fontWeight: 900 }}>
-                    {firstTruthy(selectedProduct.name, "Private offer")}{" "}
-                    {firstTruthy(selectedProduct.price, "0")}{" "}
-                    {firstTruthy(selectedProduct.currency, "NGN")}
-                  </div>
-                ) : null}
-                <div style={{ marginTop: 14, ...actionGrid(isCompact, 160) }}>
-                  {!selectedSeatIsActive ? (
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)}
-                      style={brandActionButton("secondary")}
-                    >
-                      Locked until paid
-                    </button>
-                  ) : selectedProduct ? (
-                    <>
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
-                        onClick={() => startEdit(selectedProduct, selectedSlot)}
-                        style={brandActionButton("primary")}
-                      >
-                        Edit block #{selectedSlot}
-                      </button>
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
-                        onClick={() => void hideProduct(selectedProduct)}
-                        disabled={savingProduct}
-                        style={brandActionButton("secondary", savingProduct)}
-                      >
-                        Hide block
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => startAdd(selectedSlot)}
-                      style={brandActionButton("primary")}
-                    >
-                      Add private offer
-                    </button>
-                  )}
-                </div>
-                <div style={{ marginTop: 14, ...innerCard("#FFFFFF") }}>
-                  <div style={sectionLabel()}>Private link for this block</div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    This link is attached to Block #{selectedSlot}. It opens only this private offer, with the shop identity and this block's picture/video/details already carried into the viewer page.
-                  </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(Boolean(selectedBlockPrimaryLink))}>
-                      {selectedBlockPrimaryLink ? selectedBlockLinkStatus : "No link"}
-                    </span>
-                    <span style={badge(Boolean(selectedProduct))}>
-                      {selectedProduct ? `Offer #${selectedProduct.id}` : "No offer yet"}
-                    </span>
-                    {selectedProduct?.vault_block_id ? (
-                      <span style={badge(true)}>Block tag #{selectedProduct.vault_block_id}</span>
-                    ) : null}
-                  </div>
-                  {selectedBlockPrimaryLink ? (
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      {selectedBlockLinkedAt ? `Created: ${safeDateTime(selectedBlockLinkedAt)}. ` : ""}
-                      Expires: {safeDateTime(selectedBlockLinkExpiresAt) || "No expiry returned yet"}.
-                    </div>
-                  ) : null}
-                  <div style={{ marginTop: 12, ...actionGrid(isCompact, 150) }}>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => {
-                        if (identityBlocked) {
-                          showNotice("info", "Complete identity review before sharing private Vault links.");
-                          return;
-                        }
-                        if (!selectedSeatIsActive) {
-                          showNotice("info", `Vault block #${selectedSlot} is locked. Activate it before creating a private link.`);
-                          return;
-                        }
-                        if (!selectedProduct) {
-                          showNotice("info", `Add a private offer to block #${selectedSlot} before creating its link.`);
-                          return;
-                        }
-                        void createViewingLink();
-                      }}
-                      style={brandActionButton("primary", creatingLink)}
-                    >
-                      {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "Create fresh link" : "Create block link"}
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => {
-                        if (navigator?.clipboard?.writeText && selectedBlockLinkUrl) {
-                          void navigator.clipboard.writeText(selectedBlockLinkUrl);
-                          showNotice("success", `Vault block #${selectedSlot} link copied.`);
-                          return;
-                        }
-                        showNotice("info", "Create this block link before copying it.");
-                      }}
-                      disabled={!selectedBlockLinkUrl}
-                      style={brandActionButton("soft", !selectedBlockLinkUrl)}
-                    >
-                      Copy block link
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => {
-                        if (selectedBlockLinkUrl) window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer");
-                      }}
-                      disabled={!selectedBlockLinkUrl}
-                      style={brandActionButton("secondary", !selectedBlockLinkUrl)}
-                    >
-                      Open private view
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")}
-                      disabled={!selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id)}
-                      style={brandActionButton("secondary", !selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id))}
-                    >
-                      Extend link
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")}
-                      disabled={!selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"}
-                      style={brandActionButton("secondary", !selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}
-                    >
-                      Revoke link
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+        ) : null}
       </section>
 
       {editorOpen ? (
@@ -1878,58 +1881,6 @@ export default function VaultControlPage() {
           </div>
         </section>
       ) : null}
-
-      <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Access link history</div>
-        <div style={{ marginTop: 8, ...helperText(), maxWidth: 780 }}>
-          This is the audit trail of Vault links already created. Create, copy, extend, or revoke the main link from the selected block above so the action stays attached to the right private offer.
-        </div>
-        <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-          {vaultLinks.length === 0 ? (
-            <div style={helperText()}>No Vault link yet.</div>
-          ) : (
-            vaultLinks.map((link) => {
-              const id = firstTruthy(link.id);
-              const productId = firstTruthy(link.product_id);
-              const blockId = firstTruthy((link as any).block_id);
-              const linkedSlot =
-                vaultInnerSlots.findIndex((item) => {
-                  if (!item) return false;
-                  return (
-                    (productId && safeStr(item.id) === productId) ||
-                    (blockId && safeStr(item.vault_block_id) === blockId)
-                  );
-                }) + 1;
-              return (
-                <div key={id} style={innerCard("#FCFEFF")}>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>Link #{id}</span>
-                    <span style={badge(Boolean(linkedSlot))}>{linkedSlot ? `Block #${linkedSlot}` : "Legacy shop-scope link"}</span>
-                    <span style={badge(false)}>{firstTruthy(link.status, "active")}</span>
-                    <span style={badge(false)}>{Number(link.views_used || 0)} / {Number(link.max_views || 0) || "unlimited"} views</span>
-                  </div>
-                  <div style={{ marginTop: 8, ...helperText() }}>Expires: {firstTruthy(link.expires_at, "No expiry")}</div>
-                  <div style={{ marginTop: 8, ...helperText() }}>
-                    {linkedSlot
-                      ? "Select that block above to copy, open, extend, or revoke this link."
-                      : "Legacy shop-scope link. Replace it from a specific Vault block when possible."}
-                  </div>
-                  {linkedSlot ? (
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => setSelectedSlot(linkedSlot)}
-                      style={{ ...brandActionButton("soft"), marginTop: 10 }}
-                    >
-                      Select block #{linkedSlot}
-                    </button>
-                  ) : null}
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
     </div>
   );
 }

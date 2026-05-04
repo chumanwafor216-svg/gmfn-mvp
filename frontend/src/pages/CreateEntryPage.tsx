@@ -378,6 +378,18 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function structuredErrorDetail(err: any): Record<string, any> | null {
+  const raw = safeStr(err?.message || err);
+  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 function resolveIssuedGmfnId(out: any, me: any): string {
   return safeStr(
     me?.gmfn_id ||
@@ -929,6 +941,32 @@ export default function CreateEntryPage() {
     }
   }
 
+  function openActivationFromStructuredError(err: any): boolean {
+    const detail = structuredErrorDetail(err);
+    if (
+      detail?.code !== "entry_activation_pending" &&
+      detail?.next_action !== "activate_membership"
+    ) {
+      return false;
+    }
+
+    const gmfnId = safeStr(detail?.gmfn_id).toUpperCase();
+    const activationPath =
+      safeStr(detail?.activation_path) ||
+      (gmfnId ? `/activate-membership?gmfn_id=${encodeURIComponent(gmfnId)}` : "");
+
+    if (!activationPath) return false;
+
+    clearPublicEntryState();
+    nav(activationPath, {
+      replace: true,
+      state: {
+        gmfn_id: gmfnId || undefined,
+      },
+    });
+    return true;
+  }
+
   async function startAndMaybeConfirmPhoneSession(): Promise<{
     verificationId: number;
     autoConfirmed: boolean;
@@ -1036,6 +1074,8 @@ export default function CreateEntryPage() {
       const started = await startAndMaybeConfirmPhoneSession();
       setSuccess(started.message);
     } catch (err: any) {
+      if (openActivationFromStructuredError(err)) return;
+
       if (isPhoneAlreadyRegisteredError(err)) {
         const recovered = await recoverCompletedCreateEntry();
         if (recovered) return;
@@ -1312,12 +1352,16 @@ export default function CreateEntryPage() {
     try {
       await submitCreateEntry(verificationId);
     } catch (err: any) {
+      if (openActivationFromStructuredError(err)) return;
+
       if (isPhoneSessionExpiredError(err) && canContinueBank) {
         try {
           const refreshedVerificationId = await refreshPilotPhoneSession();
           await saveBankDetailsForVerification(refreshedVerificationId);
           await submitCreateEntry(refreshedVerificationId);
         } catch (retryErr: any) {
+          if (openActivationFromStructuredError(retryErr)) return;
+
           if (isCompletedAccountError(retryErr)) {
             const recovered = await recoverCompletedCreateEntry();
             if (recovered) return;
@@ -1329,6 +1373,8 @@ export default function CreateEntryPage() {
           );
         }
       } else if (isCompletedAccountError(err)) {
+        if (openActivationFromStructuredError(err)) return;
+
         const recovered = await recoverCompletedCreateEntry();
         if (recovered) return;
 

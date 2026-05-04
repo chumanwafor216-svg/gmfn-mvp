@@ -13,9 +13,11 @@ from sqlalchemy.orm import Session
 from app.api.routes.auth import (
     _create_founder_clan,
     _ensure_user_gmfn_id,
+    _is_user_approved_somewhere,
     _validate_founder_invite,
 )
 from app.core.security import create_access_token, get_password_hash
+from app.core.auth import is_user_activation_pending
 from app.db.database import get_db
 from app.db.models import Clan, EntryPhoneVerification, User, UserPayoutDestination
 from app.db.verification_models import IdentityVerificationCheck
@@ -123,6 +125,55 @@ class CreateEntryOut(BaseModel):
     next_step: str
     access_token: Optional[str] = None
     token_type: Optional[str] = None
+
+
+def _entry_duplicate_identity_error(
+    *,
+    db: Session,
+    user: User,
+    field_label: str,
+) -> HTTPException:
+    gmfn_id = _clean_text(getattr(user, "gmfn_id", ""), upper=True)
+    approved = _is_user_approved_somewhere(db, user)
+
+    if is_user_activation_pending(user) and approved:
+        activation_path = (
+            f"/activate-membership?gmfn_id={gmfn_id}" if gmfn_id else "/activate-membership"
+        )
+        return HTTPException(
+            status_code=409,
+            detail={
+                "code": "entry_activation_pending",
+                "message": (
+                    f"This {field_label} is already attached to an unfinished GSN entry. "
+                    "The community was created, but the account still needs membership activation before sign-in will work."
+                ),
+                "next_action": "activate_membership",
+                "next_action_label": "Activate membership",
+                "activation_path": activation_path,
+                "gmfn_id": gmfn_id or None,
+            },
+        )
+
+    if is_user_activation_pending(user):
+        return HTTPException(
+            status_code=409,
+            detail={
+                "code": "entry_pending_admin_review",
+                "message": (
+                    f"This {field_label} is already attached to a pending GSN identity. "
+                    "Ask the pilot helper to review the intake record before starting again."
+                ),
+                "next_action": "admin_review",
+                "next_action_label": "Ask pilot helper to review",
+                "gmfn_id": gmfn_id or None,
+            },
+        )
+
+    return HTTPException(
+        status_code=400,
+        detail=f"{field_label.capitalize()} already registered",
+    )
 
 
 def _clean_text(value: object, *, upper: bool = False) -> str:
@@ -472,7 +523,11 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
 
     phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
     if phone_clash:
-        raise HTTPException(status_code=400, detail="Phone number already registered")
+        raise _entry_duplicate_identity_error(
+            db=db,
+            user=phone_clash,
+            field_label="phone number",
+        )
 
     preview_enabled = _entry_otp_preview_enabled()
     resumable = _find_resumable_entry_phone_session(
@@ -718,11 +773,19 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
 
     phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
     if phone_clash:
-        raise HTTPException(status_code=400, detail="Phone number already registered")
+        raise _entry_duplicate_identity_error(
+            db=db,
+            user=phone_clash,
+            field_label="phone number",
+        )
 
     email_clash = db.query(User).filter(User.email == email).first()
     if email_clash:
-        raise HTTPException(status_code=400, detail="Email already registered")
+        raise _entry_duplicate_identity_error(
+            db=db,
+            user=email_clash,
+            field_label="email",
+        )
 
     clan_name = _clean_text(payload.clan_name)
     if db.query(Clan).filter(Clan.name == clan_name).first():

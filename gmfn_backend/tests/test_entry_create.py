@@ -114,6 +114,33 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert create_body["next_step"] == "activate-membership"
     assert create_body["email"].endswith("@founder-entry.gsnmail.app")
 
+    pending_login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "+2348012345678",
+            "password": "secret123",
+        },
+    )
+    assert pending_login_res.status_code == 401, pending_login_res.text
+    pending_login_body = pending_login_res.json()
+    assert pending_login_body["detail"]["code"] == "account_activation_pending"
+    assert pending_login_body["detail"]["gmfn_id"] == create_body["gmfn_id"]
+    assert "activate-membership" in pending_login_body["detail"]["activation_path"]
+
+    blocked_restart_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Mama Chuks",
+            "phone_e164": "+2348012345678",
+            "browser_locale": "en-NG",
+        },
+    )
+    assert blocked_restart_res.status_code == 409, blocked_restart_res.text
+    blocked_restart_body = blocked_restart_res.json()
+    assert blocked_restart_body["detail"]["code"] == "entry_activation_pending"
+    assert blocked_restart_body["detail"]["gmfn_id"] == create_body["gmfn_id"]
+    assert "activate-membership" in blocked_restart_body["detail"]["activation_path"]
+
     activate_res = client.post(
         "/auth/activate-membership",
         json={

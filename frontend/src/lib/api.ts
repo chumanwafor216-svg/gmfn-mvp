@@ -3405,6 +3405,8 @@ export type ExtendVaultShopAccessLinkInput = {
 
 export type VaultShopAccessProduct = {
   id?: number | string;
+  block_id?: number | string | null;
+  vault_block_id?: number | string | null;
   name?: string | null;
   description?: string | null;
   price?: string | null;
@@ -3649,6 +3651,8 @@ function normalizeVaultAccessProduct(raw: any): VaultShopAccessProduct {
 
   return {
     id: src?.id ?? src?.product_id,
+    block_id: src?.block_id ?? src?.vault_block_id ?? src?.vault_block?.id ?? null,
+    vault_block_id: src?.vault_block_id ?? src?.block_id ?? src?.vault_block?.id ?? null,
     name: vaultFirstTruthy(src?.name, src?.title, src?.product_name),
     description: vaultFirstTruthy(
       src?.description,
@@ -3677,6 +3681,8 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
   const src = raw?.item || raw?.view || raw?.data || raw || {};
   const shop = src?.shop || src?.shop_summary || src;
   const policySrc = src?.policy || src?.access_policy || src?.link || src;
+  const viewProductId = src?.product_id ?? policySrc?.product_id ?? null;
+  const viewBlockId = src?.block_id ?? policySrc?.block_id ?? null;
 
   const expiresAt = vaultFirstTruthy(policySrc?.expires_at, shop?.expires_at, src?.expires_at);
   const revokedAt = vaultFirstTruthy(policySrc?.revoked_at, shop?.revoked_at, src?.revoked_at);
@@ -3715,14 +3721,35 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
     status = "exhausted";
   }
 
-  const productRows = vaultRowsOf<any>(
+  const rawProductRows = vaultRowsOf<any>(
     src?.products || src?.items || shop?.products || src?.shop_products
   ).map((item) => normalizeVaultAccessProduct(item));
+  const productRows = rawProductRows
+    .filter((item) => {
+      if (viewProductId) return vaultSafeStr(item.id) === vaultSafeStr(viewProductId);
+      if (viewBlockId) {
+        return (
+          vaultSafeStr(item.block_id) === vaultSafeStr(viewBlockId) ||
+          vaultSafeStr(item.vault_block_id) === vaultSafeStr(viewBlockId)
+        );
+      }
+      return rawProductRows.length <= 1;
+    })
+    .filter((item, index, rows) => {
+      const key = vaultFirstTruthy(item.id, item.block_id, item.vault_block_id, index);
+      return rows.findIndex((candidate, candidateIndex) => {
+        const candidateKey = vaultFirstTruthy(candidate.id, candidate.block_id, candidate.vault_block_id, candidateIndex);
+        return candidateKey === key;
+      }) === index;
+    });
+  if (!viewProductId && !viewBlockId && rawProductRows.length > 1) {
+    status = "invalid";
+  }
 
   return {
     token: vaultFirstTruthy(src?.token, policySrc?.token, src?.code),
-    product_id: src?.product_id ?? policySrc?.product_id ?? null,
-    block_id: src?.block_id ?? policySrc?.block_id ?? null,
+    product_id: viewProductId,
+    block_id: viewBlockId,
     status,
     shop_id: shop?.id ?? shop?.shop_id ?? src?.shop_id,
     vault_shop_id: src?.vault_shop_id ?? shop?.vault_shop_id,

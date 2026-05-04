@@ -1,5 +1,45 @@
 # Handoff Notes
 
+## 2026-05-04 Entry Recovery Trap Repair
+
+- Tester complaint: a user could begin Create Community, leave before finishing/activation, then later be blocked by saved details while sign-in still said the account was not active.
+- Backend truth: pending phone verification sessions should remain resumable; they are not the problem. The problem was pending `users` identities returning generic duplicate/sign-in failures instead of an activation route.
+- Updated `gmfn_backend/app/api/routes/auth.py`:
+  - `/auth/login` now detects an approved but activation-pending identity and returns structured detail with `code = account_activation_pending`, `gmfn_id`, `activation_path`, and clear next-action copy.
+  - Normal wrong-password/unknown-user failures still return the generic invalid credentials response.
+- Updated `gmfn_backend/app/api/routes/entry.py`:
+  - duplicate phone/email checks now distinguish active duplicates from activation-pending duplicates.
+  - pending approved duplicates return `code = entry_activation_pending` and an activation path instead of sending the user back into a dead restart loop.
+  - pending identities without approval return `entry_pending_admin_review` so the pilot helper can review intake instead of telling the user to sign in.
+- Updated `src/pages/LoginPage.tsx`:
+  - sign-in now understands the structured pending-activation response and shows an `Activate membership` action instead of only the generic red error.
+- Updated `src/pages/CreateEntryPage.tsx`:
+  - create-community duplicate/pending responses now route to the activation page when the backend says the identity is activation-pending.
+- Added regression coverage in `gmfn_backend/tests/test_entry_create.py` for pending login and blocked restart after a create-community account exists but before activation.
+- Verification: `python -m py_compile app\api\routes\entry.py app\api\routes\auth.py` passed; `python -m pytest -q tests\test_entry_create.py --basetemp C:\tmp\pytest-entry-recovery-2` passed: 14 passed; frontend eslint for Login/Create/Vault/API passed; `npm run build` passed.
+- Remaining truth: this code fix prevents the trap for future pending identities and gives a recovery path when the backend can identify the pending user. Any already-stuck production tester may still need a pilot helper to check their exact email/phone in the live database if their partial record is inconsistent or missing approval.
+
+## 2026-05-04 Vault Pre-Freeze Cleanup
+
+- Owner direction: before freezing Vault, remove old/global link surfaces and any wording that makes owners decode old history instead of working on the selected block.
+- Updated `src/pages/VaultControlPage.tsx`:
+  - reshaped the Vault hero to match the owner screenshot structure: one dark signboard card, `VAULT CONTROL` label, large uppercase shop name, short Vault explanation, status pills, and the large `Private Vault` frame inside the same card.
+  - replaced the old padlock fallback with a vault-door visual in the `Private Vault` frame. The shop name remains the signboard identity; the visual now communicates a private Vault without culturally ambiguous lock/key symbolism.
+  - added stable collapsible panels for payment details, private block management, block link controls, and the 3-step reminder so the page can stay shorter without deleting the approved Vault workflow.
+  - removed the lower `Access link history` user-facing section, including legacy shop-scope link copy, so link actions no longer appear in two places.
+  - kept create/copy/open/extend/revoke controls inside the selected private block panel only.
+  - tightened Vault block copy to direct owner guidance: paid blocks accept one private picture/video, locked blocks open after payment, and each private link opens one selected block only.
+  - copy/open/extend/revoke link buttons now stay tappable for recoverable missing-link states and explain the blocker instead of becoming dead disabled controls.
+  - removed global hero counts for total private offers and total links so owners do not work from old global link/offer totals.
+  - stopped product rows from proving paid Vault capacity; normal capacity now comes from backend Vault status or confirmed Vault payment only.
+  - active backend `vault_blocks.slot_number` now places products into the matching fixed slot and ignores duplicate slot claims instead of overwriting a block.
+- Updated `src/lib/api.ts`:
+  - Vault private access views now dedupe returned products and filter to the returned `product_id` or `block_id` when present.
+  - A legacy unscoped access response that returns multiple private products is treated as invalid instead of being normalized into a multi-offer Vault view.
+- Verification: `npm exec -- eslint src/pages/VaultControlPage.tsx src/lib/api.ts` passed, `npm run build` passed, and `git diff --check` passed on 2026-05-04 after the final freeze wording.
+- Truth: legacy links may still exist in backend data for compatibility, but the owner Vault page no longer promotes them as a normal workflow. New owner action should replace them from the selected block.
+- Freeze status: frozen on 2026-05-04. Do not reopen `/app/vault-control`, `/vault/:token`, Vault payment-code generation, block-scoped link controls, or Vault private media behavior unless the product owner explicitly reopens the Vault lane.
+
 ## 2026-05-04 Vault Block-Scoped Link Controls
 
 - Owner product direction: Vault links should sit inside the exact Vault block they open, not float as a general Vault link.
@@ -8,14 +48,14 @@
   - selected block panel now includes `Private link for this block`.
   - link status, offer id, block tag, created/expiry details, copy, open, extend, revoke, and create/fresh-link actions now live inside the selected block.
   - create-link action still sends the selected private offer `product_id`; backend derives the block scope.
-  - lower `Access links` became `Access link history`, so it records existing links without competing as the main link creation surface.
+  - At this stage, lower `Access links` became `Access link history`; this was later removed from the owner surface in the 2026-05-04 Vault Pre-Freeze Cleanup above.
 - Updated `docs/VAULT_CONTROL_FREEZE.md` to freeze block-panel link controls as the primary owner experience.
 
 ## 2026-05-04 Vault Inner Block Room
 
 - Owner product direction: Vault should have a fixed inner page/room inside `/app/vault-control`, like Shop Gallery blocks, but private and closed.
 - Updated `src/pages/VaultControlPage.tsx`:
-  - `Private Vault blocks` is now `Vault private block room`.
+  - `Private Vault blocks` was temporarily named `Vault private block room`; it was later renamed back to the cleaner `Private Vault blocks` label in the 2026-05-04 Vault Pre-Freeze Cleanup above.
   - all 6 Vault positions are always visible in that room.
   - unpaid positions show as locked and explain that payment must confirm first.
   - paid positions stay in the same place and become usable for add/edit/hide private picture/video offers.

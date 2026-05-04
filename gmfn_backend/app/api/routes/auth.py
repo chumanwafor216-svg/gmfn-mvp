@@ -138,7 +138,7 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     return user
 
 
-def authenticate_user_by_identity(db: Session, identity: str, password: str) -> User | None:
+def _find_user_by_identity(db: Session, identity: str) -> User | None:
     raw = str(identity or "").strip()
     if not raw:
         return None
@@ -148,6 +148,11 @@ def authenticate_user_by_identity(db: Session, identity: str, password: str) -> 
         user = db.query(User).filter(User.gmfn_id == raw).first()
     if not user:
         user = db.query(User).filter(User.phone_e164 == raw).first()
+    return user
+
+
+def authenticate_user_by_identity(db: Session, identity: str, password: str) -> User | None:
+    user = _find_user_by_identity(db, identity)
     if not user:
         return None
 
@@ -609,6 +614,30 @@ def login(
 
     user = authenticate_user_by_identity(db, identity=identity, password=password)
     if not user:
+        pending_user = _find_user_by_identity(db, identity)
+        if pending_user and is_user_activation_pending(pending_user):
+            gmfn_id = str(getattr(pending_user, "gmfn_id", "") or "").strip().upper()
+            approved = _is_user_approved_somewhere(db, pending_user)
+            if approved:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail={
+                        "code": "account_activation_pending",
+                        "message": (
+                            "This identity exists, but membership activation is not finished yet. "
+                            "Activate membership first, then sign in with the password you create there."
+                        ),
+                        "next_action": "activate_membership",
+                        "next_action_label": "Activate membership",
+                        "activation_path": (
+                            f"/activate-membership?gmfn_id={gmfn_id}"
+                            if gmfn_id
+                            else "/activate-membership"
+                        ),
+                        "gmfn_id": gmfn_id or None,
+                    },
+                )
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials or account not yet activated",

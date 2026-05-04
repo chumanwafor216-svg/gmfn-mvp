@@ -214,6 +214,18 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function structuredErrorDetail(err: any): Record<string, any> | null {
+  const raw = safeStr(err?.message || err);
+  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
@@ -253,6 +265,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [activationPath, setActivationPath] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const innerRailWidth = "min(100%, 760px)";
 
@@ -297,6 +310,7 @@ export default function LoginPage() {
     setBusy(true);
     setErr(null);
     setMsg(null);
+    setActivationPath(null);
 
     try {
       const u = safeStr(email);
@@ -316,6 +330,20 @@ export default function LoginPage() {
         e?.message ||
           "Unable to sign in. Confirm that your account is already active."
       );
+      const detail = structuredErrorDetail(e);
+
+      if (
+        detail?.code === "account_activation_pending" ||
+        detail?.next_action === "activate_membership"
+      ) {
+        const nextPath = safeStr(detail?.activation_path) || "/activate-membership";
+        setActivationPath(nextPath);
+        setErr(
+          safeStr(detail?.message) ||
+            "This identity exists, but membership activation is not finished yet. Activate membership first, then sign in."
+        );
+        return;
+      }
 
       if (
         raw.toLowerCase().includes("invalid credentials") ||
@@ -337,7 +365,7 @@ export default function LoginPage() {
   }
 
   function openActivationRoute() {
-    nav("/activate-membership");
+    nav(activationPath || "/activate-membership");
   }
 
   return (
@@ -715,7 +743,19 @@ export default function LoginPage() {
             }}
           >
           {err ? (
-            <div style={{ marginBottom: 16, ...noticeStyle("error") }}>{err}</div>
+            <div style={{ marginBottom: 16, display: "grid", gap: 10 }}>
+              <div style={noticeStyle("error")}>{err}</div>
+              {activationPath ? (
+                <button
+                  type="button"
+                  onClick={openActivationRoute}
+                  {...buttonGuardProps()}
+                  style={secondaryBtn()}
+                >
+                  Activate membership
+                </button>
+              ) : null}
+            </div>
           ) : null}
 
           {msg ? (

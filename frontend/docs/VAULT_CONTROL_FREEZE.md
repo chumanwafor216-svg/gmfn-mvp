@@ -8,6 +8,14 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 
 The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 
+## Freeze Status
+
+Frozen on 2026-05-04 after the final owner review pass.
+
+The frozen owner structure is: Vault hero, quote-gated slot activation, payment code and bank-transfer instruction, fixed six-position private block room, selected-block offer editor, selected-block private link controls, and compact collapsible supporting panels.
+
+Future work may add real payment providers, stronger admin reporting, or production settlement configuration, but must not casually merge Vault back into Shop Gallery, Free Spotlight, Subscription Spotlight, or generic Shop Control.
+
 ## Route Ownership
 
 - Owner route: `/app/vault-control`
@@ -36,17 +44,21 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 16. Payment code generation must be quote-gated: the owner must explicitly agree to the visible slot count and GBP amount first. Changing the selected slot count clears that agreement, and the frontend must refuse to create a payment code until the currently visible quote is confirmed.
 17. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
 18. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
-19. The primary link controls must live inside the selected Vault block panel: create, copy, open private view, extend, and revoke. A lower Access Link History may exist, but it must not compete as the primary create-link surface.
+19. The primary link controls must live inside the selected Vault block panel: create, copy, open private view, extend, and revoke. Do not reintroduce a lower owner-facing Access Link History surface; old/legacy link records belong in backend/admin audit, not in the normal owner workflow.
 20. Frontend link creation must keep sending the selected private offer `product_id`; the backend derives and stores the matching `block_id`. Do not replace product-scoped link creation with a general shop/Vault link.
 21. Default private link expiry is 72 hours.
 22. Vault slot activation duration is 30 days by default.
 23. `/app/vault-control` must read backend Vault block status from the shop Vault status contract when available.
 24. Saving a private Vault offer must send the selected `vault_slot_number`.
 25. New Vault links must carry both the selected product scope and backend block scope.
-26. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
-27. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
-28. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must always include a visible `Sort code / bank code` provision, then add region-specific labels such as UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail when that identifier is required by the configured region; irrelevant regional identifiers should not distract the owner.
-29. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
+26. Existing private product rows must not prove paid Vault capacity. Owner slot capacity comes from backend Vault status first, then confirmed Vault payment fallback only.
+27. Backend `vault_blocks.slot_number` is the fixed owner-room placement. Frontend must not slide slot 3 into slot 2 just because slot 2 is empty, and duplicate backend slot claims must not overwrite an earlier block.
+28. Visitor Vault access must show only the returned `product_id` or `block_id` scope. A legacy unscoped response with multiple private products is not a normal private-block view.
+29. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
+30. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
+31. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must always include a visible `Sort code / bank code` provision, then add region-specific labels such as UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail when that identifier is required by the configured region; irrelevant regional identifiers should not distract the owner.
+32. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
+33. The Vault owner page may use collapsible panels to reduce exposed page length, but collapsing must not delete or merge the payment instruction, fixed block room, selected-block editor, or block-scoped link controls.
 
 ## Do Not Reintroduce
 
@@ -56,6 +68,7 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 - Do not show unpaid private blocks as usable blocks.
 - Do not drop `video_url` from Vault private products.
 - Do not create new shop-scope Vault links that expose every private offer at once.
+- Do not bring back the old global/legacy access-link history block on the owner Vault page.
 
 ## Remaining Backend Truth
 
@@ -84,7 +97,7 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 10. Add a private picture block.
 11. Add a private video block.
 12. From the selected block panel, create a Vault access link and confirm the block panel shows copy/open/extend/revoke controls for that block.
-13. Confirm the lower Access Link History shows existing links without acting as the main create-link surface.
+13. Confirm there is no lower global Access Link History competing with the selected block.
 14. Open `/vault/:token` and confirm only private Vault products are shown.
 15. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
 
