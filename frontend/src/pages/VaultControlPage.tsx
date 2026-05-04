@@ -72,6 +72,7 @@ type ExpectedPaymentRecord = {
   expected_type?: string | null;
   amount?: string | null;
   currency?: string | null;
+  due_at?: string | null;
   reference_display?: string | null;
   status?: string | null;
   confirmed_at?: string | null;
@@ -92,6 +93,7 @@ type SettlementRecord = {
 };
 
 const VAULT_SLOT_LIMIT = 6;
+const VAULT_PAYMENT_DUE_DAYS = 7;
 const VAULT_SLOT_STORAGE_PREFIX = "gmfn.vaultControl.slotMap.v1";
 
 function safeStr(value: unknown): string {
@@ -118,6 +120,36 @@ function rowsOf<T = any>(input: any): T[] {
 function numberLike(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function vaultSlotPaymentAmount(slotCount: unknown): number {
+  const slots = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(slotCount || 1)));
+  return slots === VAULT_SLOT_LIMIT ? 5 : slots;
+}
+
+function formatMoney(amount: unknown, currency = "GBP"): string {
+  const n = Number(amount);
+  if (!Number.isFinite(n)) {
+    const text = safeStr(amount);
+    return text ? `${currency} ${text}` : "";
+  }
+  const hasPence = Math.abs(n % 1) > 0;
+  return `${currency} ${n.toFixed(hasPence ? 2 : 0)}`;
+}
+
+function safeDateTime(value: unknown): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return raw;
+  try {
+    return date.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return raw;
+  }
 }
 
 function vaultSlotStorageKey(shopId: unknown): string {
@@ -649,6 +681,16 @@ export default function VaultControlPage() {
   );
   const activeVaultPaymentAmount = firstTruthy(activeVaultPayment?.amount);
   const activeVaultPaymentCurrency = firstTruthy(activeVaultPayment?.currency, "GBP");
+  const activeVaultPaymentDueAt = firstTruthy(activeVaultPayment?.due_at);
+  const selectedVaultSlotCount = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(paymentSlots || 1)));
+  const selectedVaultPaymentAmount = vaultSlotPaymentAmount(selectedVaultSlotCount);
+  const selectedVaultPaymentLabel = formatMoney(selectedVaultPaymentAmount, "GBP");
+  const selectedVaultBundleText =
+    selectedVaultSlotCount === VAULT_SLOT_LIMIT
+      ? "This uses the 6-slot bundle, so the total stays at GBP 5."
+      : selectedVaultSlotCount >= 3
+        ? `You can also choose 6 slots for GBP 5 instead of ${selectedVaultPaymentLabel}.`
+        : "The 6-slot bundle is available for GBP 5 when you need the full private rack.";
   const vaultPaymentTransferLines = [
     paymentLine("Rail", settlementValue(vaultSettlement, "rail_name")),
     paymentLine("Bank", settlementValue(vaultSettlement, "bank_name")),
@@ -656,8 +698,9 @@ export default function VaultControlPage() {
     paymentLine("Account number", settlementValue(vaultSettlement, "account_number")),
     paymentLine("Sort code", settlementValue(vaultSettlement, "sort_code")),
     paymentLine("Country", settlementValue(vaultSettlement, "country")),
-    paymentLine("Amount", activeVaultPaymentAmount ? `${activeVaultPaymentCurrency} ${activeVaultPaymentAmount}` : ""),
-    paymentLine("Reference", activeVaultPaymentReference),
+    paymentLine("Amount", activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : ""),
+    paymentLine("Payment code", activeVaultPaymentReference),
+    paymentLine("Expires", safeDateTime(activeVaultPaymentDueAt) || `${VAULT_PAYMENT_DUE_DAYS} days after generation`),
   ].filter(Boolean);
 
   function copyVaultPaymentInstruction() {
@@ -799,6 +842,7 @@ export default function VaultControlPage() {
       showNotice("error", "Shop record is not ready.");
       return;
     }
+    const safeQuantity = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(quantityTotal || 1)));
     setCreatingPayment(true);
     try {
       const result = await apiJson<any>("/api/payment-instructions/vault", {
@@ -806,7 +850,7 @@ export default function VaultControlPage() {
         body: JSON.stringify({
           clan_id: Number(shop.clan_id || selectedClanId || 0),
           shop_id: Number(shop.id),
-          quantity_total: Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(quantityTotal || 1))),
+          quantity_total: safeQuantity,
           currency: "GBP",
         }),
       });
@@ -817,8 +861,8 @@ export default function VaultControlPage() {
       showNotice(
         "success",
         reference
-          ? `Vault bank transfer instruction is ready. Use reference ${reference}.`
-          : `Vault payment request created for ${quantityTotal} slot${quantityTotal === 1 ? "" : "s"}.`
+          ? `Vault payment code is ready: ${reference}. Use that exact code in the bank transfer.`
+          : `Vault payment request created for ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} at ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
       );
       if (navigator?.clipboard?.writeText && reference) {
         void navigator.clipboard.writeText(reference);
@@ -1111,7 +1155,22 @@ export default function VaultControlPage() {
               ))}
             </select>
           </div>
-          <div style={{ alignSelf: "end", ...actionGrid(isCompact, 170) }}>
+          <div style={{ ...innerCard("#F8FBFF") }}>
+            <div style={sectionLabel()}>Payment preview</div>
+            <div style={{ marginTop: 6, color: gmfnBrand.colors.ink, fontSize: 22, fontWeight: 950 }}>
+              {selectedVaultSlotCount} slot{selectedVaultSlotCount === 1 ? "" : "s"} selected = {selectedVaultPaymentLabel}
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              {selectedVaultBundleText}
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Tap Generate payment code next. GSN will then show the account details and a unique code to use in the bank transfer, so the system knows this payment is for Vault.
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
+              Payment instructions expire {VAULT_PAYMENT_DUE_DAYS} days after generation unless the bank rail returns a different due time.
+            </div>
+          </div>
+          <div style={{ alignSelf: "end", ...actionGrid(isCompact, 170), gridColumn: isCompact ? "auto" : "1 / -1" }}>
             <button
               type="button"
               {...buttonGuardProps()}
@@ -1119,7 +1178,7 @@ export default function VaultControlPage() {
               disabled={identityBlocked || creatingPayment || !shop?.id}
               style={brandActionButton("primary", identityBlocked || creatingPayment || !shop?.id)}
             >
-              {identityBlocked ? "Review identity first" : creatingPayment ? "Preparing bank instruction..." : "Continue to bank transfer"}
+              {identityBlocked ? "Review identity first" : creatingPayment ? "Generating payment code..." : "Generate payment code"}
             </button>
           </div>
         </div>
@@ -1129,15 +1188,15 @@ export default function VaultControlPage() {
           </span>
           {activeVaultPayment ? (
             <span style={badge(false)}>
-              Ref: {firstTruthy(activeVaultPaymentReference, "Awaiting reference")}
+              Code: {firstTruthy(activeVaultPaymentReference, "Awaiting code")}
             </span>
           ) : null}
         </div>
         {activeVaultPayment ? (
           <div style={{ marginTop: 14, ...innerCard("#FCFEFF") }}>
-            <div style={sectionLabel()}>Bank transfer instruction</div>
+            <div style={sectionLabel()}>Payment code and bank transfer</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Transfer the exact amount into the account below and use the exact reference. The Vault slots open after the bank payment is matched and confirmed.
+              Transfer the exact amount into the account below and use the exact payment code. This is how GSN knows the money is for Vault and opens the paid slots after bank confirmation.
             </div>
             <div
               style={{
@@ -1187,7 +1246,7 @@ export default function VaultControlPage() {
           </div>
         ) : (
           <div style={{ marginTop: 14, ...noticeCard("info") }}>
-            Select the number of slots, then tap Continue to bank transfer to generate the exact amount, account, and reference.
+            Select the number of slots, confirm the preview amount, then tap Generate payment code to open the exact account details and payment code.
           </div>
         )}
       </section>

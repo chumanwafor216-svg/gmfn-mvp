@@ -29,6 +29,8 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 11. Vault owner controls keep a local product-id-to-slot map so the block the owner selected does not drift just because the backend returns products newest-first.
 12. Vault payment starts on the existing bank-transfer rail. Card payment is not connected in this pilot unless a real processor integration is added.
 13. The Vault payment surface must show the exact amount, settlement account details, and matching reference after the owner creates the instruction.
+14. Slot selection must not be silent. Before a payment code is generated, the page must immediately show the chosen slot count, exact price, the 6-slot bundle option, and the fact that the bank-transfer code/reference is required for reconciliation.
+15. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
 
 ## Do Not Reintroduce
 
@@ -51,10 +53,12 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 1. Open `/app/vault-control`.
 2. Confirm the hero uses the main shop image/name and says Vault.
 3. Create a Vault payment request for 1-6 slots.
-4. Confirm the screen shows bank transfer account details, amount, and the exact reference.
-5. After confirmation, confirm only the paid slot count appears.
-6. Add a private picture block.
-7. Add a private video block.
-8. Create a Vault access link.
-9. Open `/vault/:token` and confirm only private Vault products are shown.
-10. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
+4. Before generating the instruction, select 3 slots and confirm the page says 3 slots equals GBP 3 and offers the 6-slot GBP 5 bundle.
+5. Generate the payment code.
+6. Confirm the screen shows bank transfer account details, amount, the exact payment code, and expiry/due information.
+7. After confirmation, confirm only the paid slot count appears.
+8. Add a private picture block.
+9. Add a private video block.
+10. Create a Vault access link.
+11. Open `/vault/:token` and confirm only private Vault products are shown.
+12. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
