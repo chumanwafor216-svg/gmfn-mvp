@@ -261,6 +261,8 @@ def create_feature_subscription_instruction(
     due_at: Optional[datetime],
     trust_event_id: Optional[int] = None,
     meta: Optional[Dict[str, Any]] = None,
+    commit: bool = True,
+    refresh: bool = True,
 ) -> Dict[str, Any]:
     amount = _d(amount)
     if amount <= Decimal("0.00"):
@@ -277,8 +279,8 @@ def create_feature_subscription_instruction(
         due_at=due_at,
         trust_event_id=trust_event_id,
         meta=meta,
-        commit=True,
-        refresh=True,
+        commit=commit,
+        refresh=refresh,
     )
 
     return {
@@ -303,21 +305,22 @@ def create_vault_subscription_instruction(
     quantity_total: int,
     currency: str = "GBP",
     amount: Optional[Decimal] = None,
-    billing_cycle: str = ANNUAL_BILLING_CYCLE,
+    billing_cycle: str = VAULT_DEFAULT_BILLING_CYCLE,
     due_at: Optional[datetime] = None,
 ) -> Dict[str, Any]:
     qty = _positive_int(quantity_total, name="quantity_total")
     resolved_amount = _d(amount) if amount is not None else calc_vault_subscription_amount(qty)
 
-    plan_code = PLAN_VAULT_SLOT_1_PERIOD if qty == 1 else PLAN_VAULT_SLOT_6_PERIOD
+    plan_code = PLAN_VAULT_SLOT_6_PERIOD if qty == 6 else PLAN_VAULT_SLOT_1_PERIOD
     reference_display = build_vault_subscription_reference(
         owner_user_id=int(owner_user_id),
         shop_id=int(shop_id),
         quantity_total=qty,
         cycle_code=billing_cycle,
     )
+    instruction_due_at = due_at or _default_due_at()
 
-    return create_feature_subscription_instruction(
+    out = create_feature_subscription_instruction(
         db,
         clan_id=int(clan_id),
         user_id=int(owner_user_id),
@@ -325,7 +328,7 @@ def create_vault_subscription_instruction(
         amount=resolved_amount,
         currency=currency,
         reference_display=reference_display,
-        due_at=due_at or _default_due_at(),
+        due_at=instruction_due_at,
         meta=_feature_subscription_meta(
           feature_code=FEATURE_VAULT_SLOT,
           plan_code=plan_code,
@@ -339,7 +342,36 @@ def create_vault_subscription_instruction(
               "vault_slot_duration_days": VAULT_SLOT_DURATION_DAYS,
           },
         ),
+        commit=False,
+        refresh=True,
     )
+    try:
+        from app.db.bank_models import ExpectedPayment
+        from app.services.vault_domain_service import create_vault_order_from_expected_payment
+
+        exp = db.get(ExpectedPayment, int(out["expected_payment_id"]))
+        if exp is not None:
+            order = create_vault_order_from_expected_payment(
+                db,
+                expected_payment=exp,
+                shop_id=int(shop_id),
+                owner_user_id=int(owner_user_id),
+                clan_id=int(clan_id),
+                slot_count=qty,
+                amount_due=resolved_amount,
+                currency=currency,
+                payment_reference=reference_display,
+                instruction_expires_at=instruction_due_at,
+            )
+            db.commit()
+            db.refresh(order)
+            out["vault_order_id"] = int(order.id)
+            out["vault_order_status"] = str(order.status)
+    except Exception:
+        db.rollback()
+        raise
+
+    return out
 
 
 def create_merchant_verify_instruction(

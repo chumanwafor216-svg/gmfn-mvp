@@ -9,11 +9,13 @@ import {
   getMe,
   getMyIdentityRisk,
   getSelectedClanId,
+  getVaultShopStatus,
   listVaultShopAccessLinks,
   revokeVaultShopAccessLink,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
   type VaultLinkItem,
+  type VaultShopStatus,
 } from "../lib/api";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
@@ -63,6 +65,8 @@ type ProductRecord = {
   image_url?: string | null;
   video_url?: string | null;
   visibility_mode?: string | null;
+  vault_slot_number?: number | string | null;
+  vault_block_id?: number | string | null;
   is_active?: boolean;
   created_at?: string | null;
 };
@@ -88,7 +92,22 @@ type SettlementRecord = {
   account_name?: string | null;
   account_number?: string | null;
   sort_code?: string | null;
+  routing_number?: string | null;
+  ach_routing_number?: string | null;
+  wire_routing_number?: string | null;
+  iban?: string | null;
+  swift_bic?: string | null;
+  bank_code?: string | null;
+  branch_code?: string | null;
+  branch_name?: string | null;
+  ifsc_code?: string | null;
+  mobile_money_provider?: string | null;
+  mobile_money_number?: string | null;
   country?: string | null;
+  region_code?: string | null;
+  payment_networks?: string[] | null;
+  regional_requirements?: Record<string, string[]> | null;
+  missing_field_text?: string | null;
   support_note?: string | null;
 };
 
@@ -304,6 +323,53 @@ function buildVaultSlots(
   return next;
 }
 
+function productFromVaultBlock(block: any): ProductRecord | null {
+  const src = block?.product || {};
+  const id = Number(src?.id || block?.product_id || 0);
+  if (!id) return null;
+  return {
+    ...src,
+    id,
+    shop_id: Number(src?.shop_id || block?.shop_id || 0),
+    clan_id: Number(src?.clan_id || 0),
+    visibility_mode: firstTruthy(src?.visibility_mode, "vault_private"),
+    is_active: src?.is_active !== false,
+    vault_slot_number: Number(block?.slot_number || 0) || null,
+    vault_block_id: Number(block?.id || 0) || null,
+  };
+}
+
+function mergeVaultStatusProducts(
+  baseProducts: ProductRecord[],
+  status: VaultShopStatus | null
+): ProductRecord[] {
+  const byId = new Map<string, ProductRecord>();
+  baseProducts.forEach((item) => {
+    const id = safeStr(item?.id);
+    if (id) byId.set(id, item);
+  });
+  rowsOf<any>(status?.blocks).forEach((block) => {
+    const item = productFromVaultBlock(block);
+    const id = safeStr(item?.id);
+    if (!item || !id) return;
+    byId.set(id, {
+      ...(byId.get(id) || {}),
+      ...item,
+      image_url: firstTruthy(item.image_url, byId.get(id)?.image_url),
+      video_url: firstTruthy(item.video_url, byId.get(id)?.video_url),
+    });
+  });
+  return Array.from(byId.values());
+}
+
+function buildBackendVaultSlots(status: VaultShopStatus | null): Array<ProductRecord | null> | null {
+  const activeBlocks = rowsOf<any>(status?.blocks)
+    .filter((block) => firstTruthy(block?.state).toLowerCase() === "active")
+    .sort((a, b) => Number(a?.slot_number || 0) - Number(b?.slot_number || 0));
+  if (activeBlocks.length <= 0) return null;
+  return activeBlocks.map((block) => productFromVaultBlock(block));
+}
+
 function paymentMeta(payment?: ExpectedPaymentRecord | null): any {
   const raw = payment?.meta ?? payment?.meta_json ?? {};
   if (typeof raw === "string") {
@@ -326,6 +392,11 @@ function paymentQuantity(payment?: ExpectedPaymentRecord | null): number {
 
 function settlementValue(settlement: SettlementRecord | null, key: keyof SettlementRecord): string {
   return firstTruthy(settlement?.[key]);
+}
+
+function settlementListValue(settlement: SettlementRecord | null, key: keyof SettlementRecord): string {
+  const value = settlement?.[key];
+  return Array.isArray(value) ? value.map((item) => safeStr(item)).filter(Boolean).join(", ") : "";
 }
 
 function paymentLine(label: string, value: unknown): string {
@@ -486,6 +557,31 @@ function actionGrid(isCompact: boolean, min = 150): React.CSSProperties {
   };
 }
 
+function slotChoiceGrid(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
+    gap: 10,
+  };
+}
+
+function slotChoiceButton(selected: boolean): React.CSSProperties {
+  return {
+    ...brandActionButton(selected ? "primary" : "secondary"),
+    minHeight: 68,
+    width: "100%",
+    borderRadius: 18,
+    display: "grid",
+    alignContent: "center",
+    justifyItems: "center",
+    gap: 3,
+    padding: "12px 8px",
+    position: "relative",
+    zIndex: 2,
+    touchAction: "manipulation",
+  };
+}
+
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   return {
     ...pageCard(
@@ -536,6 +632,7 @@ export default function VaultControlPage() {
   const [vaultInstruction, setVaultInstruction] = useState<ExpectedPaymentRecord | null>(null);
   const [vaultSettlement, setVaultSettlement] = useState<SettlementRecord | null>(null);
   const [vaultConfig, setVaultConfig] = useState<VaultConfigRecord | null>(null);
+  const [vaultStatus, setVaultStatus] = useState<VaultShopStatus | null>(null);
   const [vaultSlotMap, setVaultSlotMap] = useState<Record<string, number>>({});
   const [identityBlocked, setIdentityBlocked] = useState(false);
   const [creatingPayment, setCreatingPayment] = useState(false);
@@ -603,6 +700,7 @@ export default function VaultControlPage() {
         setProducts([]);
         setVaultLinks([]);
         setExpectedPayments([]);
+        setVaultStatus(null);
         return;
       }
 
@@ -617,6 +715,7 @@ export default function VaultControlPage() {
         setProducts([]);
         setVaultLinks([]);
         setExpectedPayments([]);
+        setVaultStatus(null);
         return;
       }
 
@@ -625,15 +724,17 @@ export default function VaultControlPage() {
         `/api/bank/expected?clan_id=${clanId}&limit=100` +
         (Number(meRes?.id || 0) > 0 ? `&user_id=${Number(meRes.id)}` : "");
 
-      const [productsRes, linksRes, expectedRes] = await Promise.all([
+      const [productsRes, linksRes, expectedRes, vaultStatusRes] = await Promise.all([
         apiJson<any>(
           `/api/marketplace/products?clan_id=${clanId}&shop_id=${shopItem.id}&include_private_manage=true&only_active=false&limit=200`
         ).catch(() => ({ items: [] })),
         listVaultShopAccessLinks(shopItem.id).catch(() => []),
         apiJson<any>(expectedPath).catch(() => []),
+        getVaultShopStatus(shopItem.id).catch(() => null),
       ]);
 
-      setProducts(rowsOf<ProductRecord>(productsRes));
+      setVaultStatus(vaultStatusRes || null);
+      setProducts(mergeVaultStatusProducts(rowsOf<ProductRecord>(productsRes), vaultStatusRes || null));
       setVaultLinks(Array.isArray(linksRes) ? linksRes : []);
       setExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
     } finally {
@@ -664,11 +765,15 @@ export default function VaultControlPage() {
   );
 
   const confirmedVaultSlots = useMemo(() => {
+    const backendSlots = Number(vaultStatus?.active_paid_slots ?? 0);
+    if (Number.isFinite(backendSlots) && backendSlots > 0) {
+      return Math.min(VAULT_SLOT_LIMIT, backendSlots);
+    }
     const confirmedSlots = vaultPayments
       .filter(isConfirmedPayment)
       .reduce((total, item) => total + paymentQuantity(item), 0);
     return Math.min(VAULT_SLOT_LIMIT, Math.max(confirmedSlots, vaultProducts.length));
-  }, [vaultPayments, vaultProducts.length]);
+  }, [vaultPayments, vaultProducts.length, vaultStatus?.active_paid_slots]);
 
   const latestVaultPayment = vaultPayments[0] || null;
   useEffect(() => {
@@ -680,10 +785,16 @@ export default function VaultControlPage() {
     setVaultSlotMap(normalizeVaultSlotMap(shop.id, vaultProducts, confirmedVaultSlots));
   }, [shop?.id, vaultProducts, confirmedVaultSlots]);
 
-  const slots = useMemo(
-    () => buildVaultSlots(vaultProducts, confirmedVaultSlots, vaultSlotMap),
-    [confirmedVaultSlots, vaultProducts, vaultSlotMap]
-  );
+  const slots = useMemo(() => {
+    const backendSlots = buildBackendVaultSlots(vaultStatus);
+    if (backendSlots) return backendSlots;
+    return buildVaultSlots(vaultProducts, confirmedVaultSlots, vaultSlotMap);
+  }, [confirmedVaultSlots, vaultProducts, vaultSlotMap, vaultStatus]);
+  useEffect(() => {
+    if (slots.length > 0 && selectedSlot > slots.length) {
+      setSelectedSlot(1);
+    }
+  }, [selectedSlot, slots.length]);
   const selectedProduct = slots[selectedSlot - 1] || null;
   const shopImageUrl = resolveAssetSrc(shop?.image_url);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
@@ -715,13 +826,39 @@ export default function VaultControlPage() {
       : selectedVaultSlotCount >= 3
         ? `You can also choose 6 slots for GBP 5 instead of ${selectedVaultPaymentLabel}.`
         : "The 6-slot bundle is available for GBP 5 when you need the full private rack.";
+  const settlementMissingText = settlementValue(vaultSettlement, "missing_field_text") || "Not configured for this pilot rail yet.";
+  const vaultPaymentRegionLabel = firstTruthy(
+    settlementValue(vaultSettlement, "region_code").replace(/_/g, " "),
+    settlementValue(vaultSettlement, "country")
+  );
+  const vaultPaymentAfricaIdentifier = firstTruthy(
+    settlementValue(vaultSettlement, "bank_code"),
+    settlementValue(vaultSettlement, "branch_code"),
+    settlementValue(vaultSettlement, "mobile_money_number")
+  );
+  const vaultPaymentAsiaIdentifier = firstTruthy(
+    settlementValue(vaultSettlement, "ifsc_code"),
+    settlementValue(vaultSettlement, "bank_code"),
+    settlementValue(vaultSettlement, "branch_code"),
+    settlementValue(vaultSettlement, "swift_bic")
+  );
   const vaultPaymentTransferLines = [
     paymentLine("Rail", settlementValue(vaultSettlement, "rail_name")),
+    paymentLine("Payment networks", settlementListValue(vaultSettlement, "payment_networks")),
     paymentLine("Bank", settlementValue(vaultSettlement, "bank_name")),
     paymentLine("Account name", settlementValue(vaultSettlement, "account_name")),
     paymentLine("Account number", settlementValue(vaultSettlement, "account_number")),
-    paymentLine("Sort code", settlementValue(vaultSettlement, "sort_code")),
     paymentLine("Country", settlementValue(vaultSettlement, "country")),
+    paymentLine("Region profile", vaultPaymentRegionLabel),
+    paymentLine("UK sort code", settlementValue(vaultSettlement, "sort_code") || settlementMissingText),
+    paymentLine("US routing number", settlementValue(vaultSettlement, "routing_number") || settlementMissingText),
+    paymentLine("ACH routing", settlementValue(vaultSettlement, "ach_routing_number")),
+    paymentLine("Wire routing", settlementValue(vaultSettlement, "wire_routing_number")),
+    paymentLine("IBAN", settlementValue(vaultSettlement, "iban") || settlementMissingText),
+    paymentLine("SWIFT/BIC", settlementValue(vaultSettlement, "swift_bic") || settlementMissingText),
+    paymentLine("Africa bank/mobile code", vaultPaymentAfricaIdentifier || settlementMissingText),
+    paymentLine("Asia local code", vaultPaymentAsiaIdentifier || settlementMissingText),
+    paymentLine("Branch name", settlementValue(vaultSettlement, "branch_name")),
     paymentLine("Amount", activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : ""),
     paymentLine("Payment code", activeVaultPaymentReference),
     paymentLine("Expires", safeDateTime(activeVaultPaymentDueAt) || `${vaultPaymentDueDays} days after generation`),
@@ -964,6 +1101,7 @@ export default function VaultControlPage() {
         image_url: nextImageUrl,
         video_url: nextVideoUrl,
         visibility_mode: "vault_private",
+        vault_slot_number: selectedSlot,
       };
       const path = editingProductId
         ? `/api/marketplace/products/${editingProductId}`
@@ -1171,18 +1309,34 @@ export default function VaultControlPage() {
         <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
           Pricing: 1-5 slots are GBP 1 each. 6 slots use the GBP 5 bundle.
         </div>
-        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "180px minmax(0, 1fr)", gap: 12 }}>
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "280px minmax(0, 1fr)", gap: 12 }}>
           <div>
             <div style={sectionLabel()}>Slots to activate</div>
-            <select
-              value={paymentSlots}
-              onChange={(event) => setPaymentSlots(Number(event.target.value))}
-              style={{ ...inputStyle(), marginTop: 8 }}
+            <div
+              role="radiogroup"
+              aria-label="Slots to activate"
+              style={{ marginTop: 8, ...slotChoiceGrid(isCompact) }}
             >
-              {[1, 2, 3, 4, 5, 6].map((slot) => (
-                <option key={slot} value={slot}>{slot} slot{slot === 1 ? "" : "s"}</option>
-              ))}
-            </select>
+              {[1, 2, 3, 4, 5, 6].map((slot) => {
+                const selected = Number(paymentSlots) === slot;
+                return (
+                  <button
+                    key={slot}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    {...buttonGuardProps()}
+                    onClick={() => setPaymentSlots(slot)}
+                    style={slotChoiceButton(selected)}
+                  >
+                    <span>{slot}</span>
+                    <span style={{ fontSize: 11, fontWeight: 900, opacity: 0.9 }}>
+                      slot{slot === 1 ? "" : "s"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div style={{ ...innerCard("#F8FBFF") }}>
             <div style={sectionLabel()}>Payment preview</div>
@@ -1193,21 +1347,33 @@ export default function VaultControlPage() {
               {selectedVaultBundleText}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Tap Generate payment code next. GSN will then show the account details and a unique code to use in the bank transfer, so the system knows this payment is for Vault.
+              Tap Generate payment code next. GSN will then show the account details, regional bank identifiers, and a unique code to use in the transfer, so the system knows this payment is for Vault.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
               Payment instructions expire {vaultPaymentDueDays} days after generation unless the bank rail returns a different due time.
             </div>
           </div>
+          {identityBlocked ? (
+            <div style={{ gridColumn: isCompact ? "auto" : "1 / -1", ...noticeCard("info") }}>
+              Your identity continuity needs review, so private sharing may stay limited. You can still generate the Vault payment code here because the bank-transfer rail will match the payment by amount and code.
+            </div>
+          ) : null}
           <div style={{ alignSelf: "end", ...actionGrid(isCompact, 170), gridColumn: isCompact ? "auto" : "1 / -1" }}>
             <button
               type="button"
               {...buttonGuardProps()}
               onClick={() => void createVaultInstruction(paymentSlots)}
-              disabled={identityBlocked || creatingPayment || !shop?.id}
-              style={brandActionButton("primary", identityBlocked || creatingPayment || !shop?.id)}
+              disabled={creatingPayment || !shop?.id}
+              style={{
+                ...brandActionButton("primary", creatingPayment || !shop?.id),
+                minHeight: 64,
+                width: "100%",
+                position: "relative",
+                zIndex: 2,
+                touchAction: "manipulation",
+              }}
             >
-              {identityBlocked ? "Review identity first" : creatingPayment ? "Generating payment code..." : "Generate payment code"}
+              {creatingPayment ? "Generating payment code..." : "Generate payment code"}
             </button>
           </div>
         </div>
@@ -1225,7 +1391,7 @@ export default function VaultControlPage() {
           <div style={{ marginTop: 14, ...innerCard("#FCFEFF") }}>
             <div style={sectionLabel()}>Payment code and bank transfer</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Transfer the exact amount into the account below and use the exact payment code. This is how GSN knows the money is for Vault and opens the paid slots after bank confirmation.
+              Transfer the exact amount into the account below and use the exact payment code. Use the identifier your country or bank asks for: sort code in the UK, routing in the US, IBAN and SWIFT/BIC for Europe, Egypt, MENA or international wires, and local bank, branch, IFSC or mobile-money codes where configured.
             </div>
             <div
               style={{
@@ -1518,7 +1684,15 @@ export default function VaultControlPage() {
               const url = vaultLinkUrl(link);
               const id = firstTruthy(link.id);
               const productId = firstTruthy(link.product_id);
-              const linkedSlot = productId ? vaultSlotMap[productId] : 0;
+              const blockId = firstTruthy((link as any).block_id);
+              const linkedSlot =
+                slots.findIndex((item) => {
+                  if (!item) return false;
+                  return (
+                    (productId && safeStr(item.id) === productId) ||
+                    (blockId && safeStr(item.vault_block_id) === blockId)
+                  );
+                }) + 1;
               return (
                 <div key={id} style={innerCard("#FCFEFF")}>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>

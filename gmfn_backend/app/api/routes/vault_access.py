@@ -18,6 +18,7 @@ from app.services.vault_access_service import (
     resolve_vault_access_view,
     revoke_vault_access_link,
 )
+from app.services.vault_domain_service import vault_status_for_shop
 
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace-vault-access"])
@@ -84,6 +85,7 @@ def _link_out(link: VaultAccessLink) -> Dict[str, Any]:
         "id": int(link.id),
         "shop_id": int(link.shop_id),
         "product_id": int(link.product_id) if getattr(link, "product_id", None) is not None else None,
+        "block_id": int(link.block_id) if getattr(link, "block_id", None) is not None else None,
         "owner_user_id": int(link.owner_user_id),
         "token": token,
         "status": str(getattr(link, "status", "") or "active"),
@@ -149,6 +151,22 @@ def list_shop_vault_access_links(
     _require_shop_manager(db=db, shop_id=int(shop_id), current_user=current_user)
     links = list_vault_links_for_shop(db, shop_id=int(shop_id))
     return {"ok": True, "items": [_link_out(link) for link in links]}
+
+
+@router.get("/shops/{shop_id}/vault-status")
+def get_shop_vault_status(
+    shop_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    shop = _require_shop_manager(db=db, shop_id=int(shop_id), current_user=current_user)
+    status = vault_status_for_shop(
+        db,
+        shop_id=int(shop.id),
+        owner_user_id=int(shop.owner_user_id),
+    )
+    db.commit()
+    return status
 
 
 @router.post("/vault-access-links/{link_id}/revoke")

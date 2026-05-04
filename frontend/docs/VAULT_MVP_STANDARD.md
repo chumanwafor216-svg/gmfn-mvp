@@ -46,21 +46,30 @@ The public shop remains normal. Vault adds paid private blocks that are hidden f
 
 ## Current Implementation Truth
 
-The current implementation does not yet have dedicated `vault_orders`, `vault_blocks`, or `vault_private_offers` tables.
+The implementation now has dedicated Vault domain tables for the MVP lane:
 
-Current backend equivalents:
+- `vault_orders` records the Vault payment/order instruction.
+- `vault_blocks` records the fixed 1-6 private block positions for one shop.
+- `vault_private_offers` mirrors the private product content attached to a block.
+- `vault_access_logs` records Vault link open/status attempts.
 
-- Vault order/payment instruction: `expected_payments.expected_type = vault_subscription`.
-- Slot entitlement: `feature_entitlements.feature_code = vault_slot`.
-- Private block content: `marketplace_products.visibility_mode = vault_private`.
-- Private link: `vault_access_links`.
+The MVP still keeps compatibility with older payment and product records:
 
-This is acceptable for the MVP only while the behavior matches the product rule. Do not expose these internal substitutions in user-facing copy.
+- Payment reconciliation still starts from `expected_payments.expected_type = vault_subscription`.
+- Vault expected payments must be created through the Vault payment-instruction service so every payment instruction has a matching `vault_orders` row. Do not reintroduce a shortcut helper that creates a Vault expected payment without a Vault order.
+- Active payment rights still grant/extend `feature_entitlements.feature_code = vault_slot`.
+- Private offer content is still saved as `marketplace_products.visibility_mode = vault_private`.
+- New private links are saved in `vault_access_links` with both `product_id` and `block_id`.
+- Legacy links without `product_id` or `block_id` remain legacy shop-scope links and should be replaced.
 
-## Backend Contract Corrections Required
+Do not expose these internal table names in user-facing copy.
 
-- New Vault links must include `product_id` so the link opens one selected private offer/block.
-- Legacy links without `product_id` are legacy shop-scope links and should not be used as the future product rule.
+## Implemented Backend Contract
+
+- New Vault links must include `product_id` and `block_id` so the link opens one selected private offer/block.
+- Legacy links without `product_id` or `block_id` are legacy shop-scope links and should not be used as the future product rule.
+- Owner Vault Control must read backend `vault_blocks` status instead of relying on browser-only slot memory.
+- Saving a private offer must send the selected `vault_slot_number` so the backend attaches it to the intended active block.
 - Payment reconciliation must keep using expected-payment matching rather than a separate payment engine.
 - Exact reference plus exact amount can auto-confirm.
 - Wrong reference, short amount, duplicate, late, or ambiguous payments require admin review and must not auto-unlock slots.
@@ -69,5 +78,5 @@ This is acceptable for the MVP only while the behavior matches the product rule.
 
 - Do not claim Vault content cannot be saved. Say private controlled access.
 - Do not claim card payment exists until a real processor exists.
-- Do not claim block order is permanent across devices until backend slot numbers exist.
+- Do not claim old browser-local slot memory is the source of truth. Backend `vault_blocks.slot_number` is now the cross-device block position.
 - Do not claim a legacy shop-scope Vault link is the final private-block link model.

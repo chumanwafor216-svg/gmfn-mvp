@@ -22,16 +22,20 @@ from app.db.models import (
     MarketplaceShop,
     User,
 )
-from app.services.feature_entitlements_service import (
-    get_active_feature_quantity,
-    has_active_feature,
-)
+from app.services.feature_entitlements_service import has_active_feature
 from app.services.trust_events_services import log_trust_event
+from app.services.vault_domain_service import (
+    archive_vault_offer_for_product,
+    attach_product_to_vault_block,
+    ensure_vault_blocks,
+    expire_vault_blocks,
+    find_vault_block_for_product,
+    sync_legacy_entitlements_to_blocks,
+)
 
 router = APIRouter(prefix="/marketplace", tags=["marketplace"])
 
 FREE_COMMUNITY_PRODUCT_SLOTS = 12
-MAX_VAULT_PRIVATE_PRODUCT_SLOTS = 6
 
 TOTAL_DISTRIBUTION_SLOTS = 10
 ORIGIN_SPOTLIGHT_RESERVED_SLOTS = 1
@@ -522,6 +526,7 @@ class MarketplaceProductCreateIn(BaseModel):
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
     visibility_mode: Optional[str] = Field(default=VISIBILITY_COMMUNITY, max_length=32)
+    vault_slot_number: Optional[int] = Field(default=None, ge=1, le=6)
 
 
 class MarketplaceProductUpdateIn(BaseModel):
@@ -534,6 +539,7 @@ class MarketplaceProductUpdateIn(BaseModel):
     image_url: Optional[str] = Field(default=None, max_length=4000)
     video_url: Optional[str] = Field(default=None, max_length=4000)
     visibility_mode: Optional[str] = Field(default=None, max_length=32)
+    vault_slot_number: Optional[int] = Field(default=None, ge=1, le=6)
     clear_image: Optional[bool] = False
     remove_image: Optional[bool] = False
     delete_image: Optional[bool] = False
@@ -628,6 +634,9 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
     )
     image_url = _available_media_url(getattr(product, "image_url", None))
     video_url = _available_media_url(getattr(product, "video_url", None))
+    vault_block = None
+    if visibility_mode == VISIBILITY_VAULT:
+        vault_block = find_vault_block_for_product(db, product_id=int(product.id))
 
     return {
         "id": int(product.id),
@@ -644,6 +653,16 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "image_url_available": bool(image_url),
         "video_url_available": bool(video_url),
         "visibility_mode": visibility_mode,
+        "vault_slot_number": (
+            int(vault_block.slot_number)
+            if vault_block is not None and getattr(vault_block, "slot_number", None) is not None
+            else None
+        ),
+        "vault_block_id": (
+            int(vault_block.id)
+            if vault_block is not None and getattr(vault_block, "id", None) is not None
+            else None
+        ),
         "is_active": bool(product.is_active),
         "created_at": product.created_at.isoformat() if product.created_at else None,
         "origin_clan_id": int(product.clan_id),
@@ -1393,34 +1412,40 @@ def create_marketplace_product(
                 detail=f"Maximum of {FREE_COMMUNITY_PRODUCT_SLOTS} community-visible products allowed per shop",
             )
     else:
-        entitled_slots = min(
-            MAX_VAULT_PRIVATE_PRODUCT_SLOTS,
-            get_active_feature_quantity(
-                db,
-                owner_user_id=int(current_user.id),
-                feature_code=FEATURE_VAULT_SLOT,
-                shop_id=int(shop.id),
-            ),
-        )
-        active_vault_count = _count_active_products_for_shop(
+        sync_legacy_entitlements_to_blocks(
             db,
             shop_id=int(shop.id),
-            visibility_mode=VISIBILITY_VAULT,
+            owner_user_id=int(current_user.id),
         )
+        expire_vault_blocks(db, shop_id=int(shop.id))
+        vault_blocks = ensure_vault_blocks(db, shop_id=int(shop.id))
+        active_empty_blocks = [
+            block
+            for block in vault_blocks
+            if str(getattr(block, "state", "") or "") == "active"
+            and getattr(block, "product_id", None) is None
+        ]
+        if payload.vault_slot_number is not None:
+            requested = next(
+                (block for block in vault_blocks if int(block.slot_number) == int(payload.vault_slot_number)),
+                None,
+            )
+            if requested is None or str(getattr(requested, "state", "") or "") != "active":
+                raise HTTPException(
+                    status_code=403,
+                    detail="Selected Vault block is not active. Activate a paid Vault slot first.",
+                )
+            if getattr(requested, "product_id", None) is not None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Selected Vault block already has private content. Edit that block or choose an empty one.",
+                )
+            active_empty_blocks = [requested]
 
-        if entitled_slots <= 0:
+        if not active_empty_blocks:
             raise HTTPException(
                 status_code=403,
-                detail="No active Vault slot entitlement found for this shop.",
-            )
-
-        if active_vault_count >= entitled_slots:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Vault slot capacity reached for this shop. "
-                    f"Active private slots: {active_vault_count} / {entitled_slots}."
-                ),
+                detail="No active empty Vault block is available for this shop.",
             )
 
     product = MarketplaceProduct(
@@ -1440,9 +1465,22 @@ def create_marketplace_product(
     if hasattr(product, "video_url"):
         setattr(product, "video_url", _safe_str(payload.video_url) or None)
 
-    db.add(product)
-    db.commit()
-    db.refresh(product)
+    try:
+        db.add(product)
+        db.flush()
+        if visibility_mode == VISIBILITY_VAULT:
+            attach_product_to_vault_block(
+                db,
+                shop_id=int(shop.id),
+                owner_user_id=int(current_user.id),
+                product=product,
+                slot_number=payload.vault_slot_number,
+            )
+        db.commit()
+        db.refresh(product)
+    except ValueError as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     log_trust_event(
         db,
@@ -1611,36 +1649,56 @@ def update_marketplace_product(
                 detail=f"Maximum of {FREE_COMMUNITY_PRODUCT_SLOTS} community-visible products allowed per shop",
             )
     elif target_active:
-        entitled_slots = min(
-            MAX_VAULT_PRIVATE_PRODUCT_SLOTS,
-            get_active_feature_quantity(
-                db,
-                owner_user_id=int(current_user.id),
-                feature_code=FEATURE_VAULT_SLOT,
-                shop_id=int(target_shop_id),
-            ),
-        )
-        active_vault_count = _count_active_products_for_shop(
+        sync_legacy_entitlements_to_blocks(
             db,
             shop_id=int(target_shop_id),
-            visibility_mode=VISIBILITY_VAULT,
-            exclude_product_id=int(product.id),
+            owner_user_id=int(current_user.id),
         )
-
-        if entitled_slots <= 0:
+        expire_vault_blocks(db, shop_id=int(target_shop_id))
+        vault_blocks = ensure_vault_blocks(db, shop_id=int(target_shop_id))
+        current_block = next(
+            (
+                block
+                for block in vault_blocks
+                if getattr(block, "product_id", None) is not None
+                and int(block.product_id) == int(product.id)
+            ),
+            None,
+        )
+        if payload.vault_slot_number is not None:
+            requested = next(
+                (block for block in vault_blocks if int(block.slot_number) == int(payload.vault_slot_number)),
+                None,
+            )
+            if requested is None or str(getattr(requested, "state", "") or "") != "active":
+                raise HTTPException(
+                    status_code=403,
+                    detail="Selected Vault block is not active. Activate a paid Vault slot first.",
+                )
+            if (
+                getattr(requested, "product_id", None) is not None
+                and int(requested.product_id) != int(product.id)
+            ):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Selected Vault block already has private content. Edit that block or choose an empty one.",
+                )
+        active_empty_exists = any(
+            str(getattr(block, "state", "") or "") == "active"
+            and getattr(block, "product_id", None) is None
+            for block in vault_blocks
+        )
+        if current_block is None and not active_empty_exists and payload.vault_slot_number is None:
             raise HTTPException(
                 status_code=403,
-                detail="No active Vault slot entitlement found for this shop.",
+                detail="No active empty Vault block is available for this shop.",
             )
-
-        if active_vault_count >= entitled_slots:
-            raise HTTPException(
-                status_code=400,
-                detail=(
-                    f"Vault slot capacity reached for this shop. "
-                    f"Active private slots: {active_vault_count} / {entitled_slots}."
-                ),
-            )
+        if (
+            payload.vault_slot_number is not None
+            and current_block is not None
+            and int(current_block.slot_number) != int(payload.vault_slot_number)
+        ):
+            changed = True
 
     if target_visibility != current_visibility:
         if target_visibility == VISIBILITY_VAULT:
@@ -1657,39 +1715,54 @@ def update_marketplace_product(
         changed = True
 
     if changed:
-        db.add(product)
-        db.commit()
-        db.refresh(product)
+        try:
+            db.add(product)
+            db.flush()
 
-        event_type = "marketplace.product.updated"
-        reason = "marketplace_product_updated"
-        if soft_remove_requested:
-            event_type = "marketplace.product.removed"
-            reason = "marketplace_product_removed"
-        elif restore_requested:
-            event_type = "marketplace.product.restored"
-            reason = "marketplace_product_restored"
+            if target_visibility == VISIBILITY_VAULT and bool(getattr(product, "is_active", True)):
+                attach_product_to_vault_block(
+                    db,
+                    shop_id=int(target_shop_id),
+                    owner_user_id=int(current_user.id),
+                    product=product,
+                    slot_number=payload.vault_slot_number,
+                )
+            elif current_visibility == VISIBILITY_VAULT or target_visibility == VISIBILITY_VAULT:
+                archive_vault_offer_for_product(db, product_id=int(product.id))
 
-        log_trust_event(
-            db,
-            event_type=event_type,
-            clan_id=resolved_clan_id,
-            actor_user_id=int(current_user.id),
-            subject_user_id=int(current_user.id),
-            loan_id=None,
-            guarantor_id=None,
-            meta={
-                "product_id": int(product.id),
-                "shop_id": int(product.shop_id),
-                "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
-                "removed_reposts": removed_reposts,
-                "image_url": getattr(product, "image_url", None),
-                "reason": reason,
-            },
-            commit=False,
-            refresh=False,
-        )
-        db.commit()
+            event_type = "marketplace.product.updated"
+            reason = "marketplace_product_updated"
+            if soft_remove_requested:
+                event_type = "marketplace.product.removed"
+                reason = "marketplace_product_removed"
+            elif restore_requested:
+                event_type = "marketplace.product.restored"
+                reason = "marketplace_product_restored"
+
+            log_trust_event(
+                db,
+                event_type=event_type,
+                clan_id=resolved_clan_id,
+                actor_user_id=int(current_user.id),
+                subject_user_id=int(current_user.id),
+                loan_id=None,
+                guarantor_id=None,
+                meta={
+                    "product_id": int(product.id),
+                    "shop_id": int(product.shop_id),
+                    "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
+                    "removed_reposts": removed_reposts,
+                    "image_url": getattr(product, "image_url", None),
+                    "reason": reason,
+                },
+                commit=False,
+                refresh=False,
+            )
+            db.commit()
+            db.refresh(product)
+        except ValueError as exc:
+            db.rollback()
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     return {
         "ok": True,

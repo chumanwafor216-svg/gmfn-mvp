@@ -59,7 +59,9 @@ function writeStorage(key: string, value: string | null): void {
     }
 
     window.localStorage.setItem(key, String(value));
-  } catch {}
+  } catch {
+    // Storage writes are best-effort only.
+  }
 }
 
 function buildUrl(path: string): string {
@@ -102,7 +104,9 @@ export function setSelectedClanId(clanId: number | null): void {
   try {
     if (clanId == null) writeStorage(GMFN_SELECTED_CLAN_ID_KEY, null);
     else writeStorage(GMFN_SELECTED_CLAN_ID_KEY, String(clanId));
-  } catch {}
+  } catch {
+    // Selected community persistence is best-effort only.
+  }
 }
 
 export function getEntryMode(): EntryMode | null {
@@ -1912,7 +1916,9 @@ function readLocalMySettings(): MySettingsPayload {
 function writeLocalMySettings(settings: MySettingsPayload): void {
   try {
     writeStorage(GMFN_MY_SETTINGS_KEY, JSON.stringify(settings));
-  } catch {}
+  } catch {
+    // Local settings persistence is best-effort only.
+  }
 }
 
 export async function getMySettings(): Promise<MySettingsPayload> {
@@ -2531,6 +2537,7 @@ export async function createMarketplaceReview(_payload: {
   rating: number;
   review_text?: string | null;
 }): Promise<any> {
+  void _payload;
   return {
     ok: false,
     detail: "Marketplace review endpoint is not enabled in the backend yet.",
@@ -2580,10 +2587,14 @@ function tryLegacyCopy(text: string) {
 
     try {
       document.execCommand("copy");
-    } catch {}
+    } catch {
+      // Legacy copy can fail in restricted browser contexts.
+    }
 
     ta.remove();
-  } catch {}
+  } catch {
+    // Copy is best-effort only.
+  }
 }
 
 /* =========================
@@ -3358,6 +3369,7 @@ export type VaultLinkItem = {
   id: number | string;
   shop_id: number | string;
   product_id?: number | string | null;
+  block_id?: number | string | null;
   access_url: string;
   token: string;
   expires_at?: string | null;
@@ -3370,7 +3382,7 @@ export type VaultLinkItem = {
   revoked_at?: string | null;
   created_at?: string | null;
   last_opened_at?: string | null;
-  status?: "active" | "expired" | "revoked" | "exhausted" | "product_inactive";
+  status?: "active" | "expired" | "revoked" | "exhausted" | "product_inactive" | "block_inactive";
 };
 
 export type CreateVaultShopAccessLinkInput = {
@@ -3401,12 +3413,36 @@ export type VaultShopAccessProduct = {
   video_url?: string | null;
 };
 
+export type VaultBlockItem = {
+  id: number | string;
+  shop_id?: number | string;
+  slot_number: number;
+  state: string;
+  product_id?: number | string | null;
+  product?: VaultShopAccessProduct | null;
+  activated_at?: string | null;
+  expires_at?: string | null;
+  content_status?: string | null;
+};
+
+export type VaultShopStatus = {
+  ok?: boolean;
+  shop_id?: number | string;
+  max_slots?: number;
+  active_paid_slots?: number;
+  private_offers_count?: number;
+  active_links_count?: number;
+  blocks?: VaultBlockItem[];
+  orders?: any[];
+};
+
 export type VaultShopAccessView = {
   token?: string;
-  status?: "active" | "expired" | "revoked" | "exhausted" | "product_inactive" | "invalid";
+  status?: "active" | "expired" | "revoked" | "exhausted" | "product_inactive" | "block_inactive" | "invalid";
   shop_id?: number | string;
   vault_shop_id?: number | string;
   product_id?: number | string | null;
+  block_id?: number | string | null;
   shop_name?: string | null;
   shop_description?: string | null;
   owner_name?: string | null;
@@ -3564,7 +3600,8 @@ function normalizeVaultLinkItem(raw: any): VaultLinkItem {
     rawStatus === "revoked" ||
     rawStatus === "expired" ||
     rawStatus === "exhausted" ||
-    rawStatus === "product_inactive"
+    rawStatus === "product_inactive" ||
+    rawStatus === "block_inactive"
       ? (rawStatus as VaultLinkItem["status"])
       : "active";
 
@@ -3590,6 +3627,7 @@ function normalizeVaultLinkItem(raw: any): VaultLinkItem {
     id: src?.id ?? src?.link_id ?? "",
     shop_id: src?.shop_id ?? src?.vault_shop_id ?? "",
     product_id: src?.product_id ?? src?.marketplace_product_id ?? null,
+    block_id: src?.block_id ?? src?.vault_block_id ?? null,
     access_url: vaultFirstTruthy(src?.access_url, src?.url),
     token: vaultFirstTruthy(src?.token, src?.code),
     expires_at: expiresAt || null,
@@ -3656,7 +3694,8 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
   if (rawStatus.includes("revoke")) status = "revoked";
   if (rawStatus.includes("expire")) status = "expired";
   if (rawStatus.includes("exhaust")) status = "exhausted";
-  if (rawStatus.includes("product_inactive")) status = "product_inactive";
+  if (rawStatus.includes("block_inactive")) status = "block_inactive";
+  else if (rawStatus.includes("product_inactive")) status = "product_inactive";
 
   if (revokedAt) {
     status = "revoked";
@@ -3683,6 +3722,7 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
   return {
     token: vaultFirstTruthy(src?.token, policySrc?.token, src?.code),
     product_id: src?.product_id ?? policySrc?.product_id ?? null,
+    block_id: src?.block_id ?? policySrc?.block_id ?? null,
     status,
     shop_id: shop?.id ?? shop?.shop_id ?? src?.shop_id,
     vault_shop_id: src?.vault_shop_id ?? shop?.vault_shop_id,
@@ -3821,6 +3861,34 @@ export async function listVaultShopAccessLinks(
   );
 
   return vaultRowsOf<any>(res).map((row) => normalizeVaultLinkItem(row));
+}
+
+export async function getVaultShopStatus(
+  shopId: number | string
+): Promise<VaultShopStatus> {
+  const safeShopId = String(shopId);
+
+  return vaultTryJson<VaultShopStatus>(
+    [
+      {
+        method: "GET",
+        path: `/vault/shops/${encodeURIComponent(safeShopId)}/status`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/shops/${encodeURIComponent(safeShopId)}/vault-status`,
+      },
+      {
+        method: "GET",
+        path: `/marketplace/shops/${encodeURIComponent(safeShopId)}/vault-blocks`,
+      },
+      {
+        method: "GET",
+        path: `/vault-shops/${encodeURIComponent(safeShopId)}/status`,
+      },
+    ],
+    true
+  );
 }
 
 export async function revokeVaultShopAccessLink(

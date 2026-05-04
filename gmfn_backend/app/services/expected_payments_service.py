@@ -293,8 +293,8 @@ def ensure_loan_repayment_expected_payment(
 def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
     """
     Agreed MVP pricing:
-    - 1-5 Vault slots for one year = 1.00 GBP per slot
-    - 6 Vault slots for one year = 5.00 GBP bundle
+    - 1-5 Vault slots for the 30-day MVP cycle = 1.00 GBP per slot
+    - 6 Vault slots for the 30-day MVP cycle = 5.00 GBP bundle
     """
     qty = _positive_int(quantity_total, name="quantity_total")
 
@@ -319,58 +319,6 @@ def build_vault_subscription_reference(
     return (
         f"GMFN-VAULT-U{int(owner_user_id)}-S{int(shop_id)}-Q{qty}-"
         f"{str(cycle_code).strip().upper()}-{_timestamp_code()}-{_unique_suffix()}"
-    )
-
-
-def ensure_vault_subscription_expected_payment(
-    db: Session,
-    *,
-    clan_id: int,
-    owner_user_id: int,
-    shop_id: int,
-    quantity_total: int,
-    amount: Optional[Any] = None,
-    currency: str = "GBP",
-    billing_cycle: str = VAULT_DEFAULT_BILLING_CYCLE,
-    due_at: Optional[datetime] = None,
-    commit: bool = False,
-    refresh: bool = False,
-) -> ExpectedPayment:
-    qty = _positive_int(quantity_total, name="quantity_total")
-    resolved_amount = _d(amount) if amount is not None else calc_vault_subscription_amount(qty)
-
-    plan_code = PLAN_VAULT_SLOT_1_PERIOD if qty == 1 else PLAN_VAULT_SLOT_6_PERIOD
-    reference_display = build_vault_subscription_reference(
-        owner_user_id=int(owner_user_id),
-        shop_id=int(shop_id),
-        quantity_total=qty,
-        cycle_code=billing_cycle,
-    )
-
-    return create_expected_payment(
-        db,
-        clan_id=int(clan_id),
-        user_id=int(owner_user_id),
-        expected_type="vault_subscription",
-        amount=resolved_amount,
-        currency=currency,
-        reference_display=reference_display,
-        due_at=due_at or _default_due_at(),
-        trust_event_id=None,
-        meta={
-            "feature_code": FEATURE_VAULT_SLOT,
-            "plan_code": plan_code,
-            "owner_user_id": int(owner_user_id),
-            "shop_id": int(shop_id),
-            "quantity_total": qty,
-            "billing_cycle": str(billing_cycle).strip().lower() or VAULT_DEFAULT_BILLING_CYCLE,
-            "payment_reference": normalize_reference(reference_display),
-            "payment_context": "vault_slot_purchase",
-            "payment_beneficiary_scope": "platform",
-            "vault_slot_duration_days": VAULT_SLOT_DURATION_DAYS,
-        },
-        commit=commit,
-        refresh=refresh,
     )
 
 

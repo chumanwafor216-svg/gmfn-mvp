@@ -22,6 +22,11 @@ from app.services.payment_instruction_service import (
 )
 from app.services.settlement_config_service import get_settlement_config
 from app.services.vault_access_service import DEFAULT_LINK_EXPIRY_HOURS
+from app.services.vault_domain_service import (
+    ensure_vault_blocks,
+    expire_vault_blocks,
+    sync_legacy_entitlements_to_blocks,
+)
 
 router = APIRouter(prefix="/payment-instructions", tags=["payment-instructions"])
 
@@ -146,6 +151,27 @@ def create_vault_instruction(
         raise HTTPException(
             status_code=400,
             detail="Vault subscription currently supports quantity_total from 1 to 6 only.",
+        )
+    sync_legacy_entitlements_to_blocks(
+        db,
+        shop_id=int(payload.shop_id),
+        owner_user_id=int(current_user.id),
+    )
+    expire_vault_blocks(db, shop_id=int(payload.shop_id))
+    blocks = ensure_vault_blocks(db, shop_id=int(payload.shop_id))
+    available_slots = sum(
+        1
+        for block in blocks
+        if str(getattr(block, "state", "") or "") in {"inactive", "expired"}
+    )
+    if quantity_total > available_slots:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Vault has {available_slots} available paid slot"
+                f"{'' if available_slots == 1 else 's'} right now. "
+                "Reduce the slot count or wait for an active block to expire."
+            ),
         )
 
     out = create_vault_subscription_instruction(

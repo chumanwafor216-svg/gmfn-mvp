@@ -183,6 +183,7 @@ function statusLabel(status: string): string {
   if (status === "revoked") return "Link revoked";
   if (status === "exhausted") return "View limit reached";
   if (status === "product_inactive") return "Private block unavailable";
+  if (status === "block_inactive") return "Private block unavailable";
   return "Access unavailable";
 }
 

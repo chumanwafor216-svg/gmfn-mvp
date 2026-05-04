@@ -1,5 +1,16 @@
 # Handoff Notes
 
+## 2026-05-04 Vault Payment Regional Identifiers
+
+- Owner phone feedback: the Vault payment panel showed account name/account number but no sort code, routing, IBAN/SWIFT, or local regional identifiers.
+- Updated `src/pages/VaultControlPage.tsx`:
+  - after `Generate payment code`, the bank-transfer panel now exposes UK sort code, US routing, IBAN, SWIFT/BIC, Africa bank/mobile code, Asia local code, branch name, country, region profile, payment networks, amount, payment code, and expiry.
+  - missing critical pilot identifiers show as not configured instead of disappearing from the UI.
+  - payment preview/help copy now tells owners to use the identifier their bank/region requires.
+- Updated `src/lib/communityMoney.ts` so the shared settlement normalizer preserves the same international fields for other money-instruction surfaces.
+- Updated `frontend/docs/VAULT_CONTROL_FREEZE.md` to lock this behavior.
+- Caveat: this does not connect new banking processors. It makes the settlement contract and UI ready to show real regional details once the correct environment values are configured.
+
 ## 2026-05-03
 
 - Entry flow overload reduction:
@@ -103,6 +114,12 @@
   - Vault payment rail repair: The existing real rail is bank transfer through payment instructions and expected-payment reconciliation; card payment is not integrated. `src/pages/VaultControlPage.tsx` now shows the Vault bank-transfer instruction after creation: amount, settlement account, exact reference, copy details, and check status. The Vault page-local API wrapper now strips a duplicate `/api` prefix when the configured API base is already `/api`, preventing `/api/api/...` requests. Backend Vault pricing in `app/services/payment_instruction_service.py` and `app/services/expected_payments_service.py` now supports 1-5 slots at GBP 1 per slot and the 6-slot GBP 5 bundle.
   - Vault payment conversation repair: `/app/vault-control` now answers immediately after slot selection. The payment preview shows chosen slot count, exact GBP total, the 6-slot GBP 5 bundle option, and explains that the owner must generate/use the exact payment code for bank reconciliation. After generation, the bank-transfer panel labels the reference as `Payment code`, shows expiry/due information, and explains that the code is what opens Vault slots after bank confirmation.
   - Vault MVP standardization pass: `docs/VAULT_MVP_STANDARD.md` records Vault as a private paid layer under the existing shop, not a separate shop. New Vault access links now carry a selected product/block scope (`product_id`) through backend route/service/model, frontend API, and `/app/vault-control`, so newly created links open the selected private block instead of every private Vault offer. Legacy links without `product_id` are explicitly documented as legacy shop-scope links. Vault link default expiry is now 72 hours on both frontend and backend, and Vault payment-created entitlements now use the 30-day/monthly cycle instead of the previous annual default.
+  - Vault backend domain finish-up: the uncommitted backend Vault work was carried forward into a coherent dedicated MVP domain. `vault_orders`, `vault_blocks`, `vault_private_offers`, and `vault_access_logs` now exist in the ORM/migration path; payment instruction creation creates a Vault order; exact bank reconciliation activates backend Vault blocks; private product save/update attaches to the selected active Vault block; inactive/private-product removal archives the block offer and revokes active links. `/marketplace/shops/{shop_id}/vault-status` now exposes backend block/order/link status for the owner page.
+  - Vault Control cross-device slot repair: `src/pages/VaultControlPage.tsx` now reads backend Vault status through `getVaultShopStatus`, renders active paid blocks from backend `vault_blocks`, sends `vault_slot_number` when saving a private offer, and labels links from backend `block_id`/product scope instead of relying only on browser-local product-slot memory.
+  - Vault link scope hardening: new Vault links now require a selected active private product/block, store both `product_id` and `block_id`, revoke the previous active link for that block/product, and log Vault access attempts through `vault_access_logs`. Legacy shop-scope links are still readable but are no longer created by the normal owner flow.
+  - Vault documentation correction: `docs/VAULT_MVP_STANDARD.md` and `docs/VAULT_CONTROL_FREEZE.md` now record backend blocks/orders as the implementation truth instead of saying permanent block order still needs a backend contract.
+  - Vault phone slot-control repair: `/app/vault-control` no longer uses a native dropdown for `Slots to activate`. The payment slot selector is now six large stable tap tiles, and the `Generate payment code` button is taller/full-width so the visible phone tap target matches the real click area.
+  - Vault payment-code visibility repair: identity continuity review no longer hides or renames the payment-code button. The button stays `Generate payment code` and remains usable for the bank-transfer rail; identity review is explained separately and may still limit private access-link sharing.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -145,6 +162,31 @@
   - `python -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py` passed on 2026-05-04 after allowing Vault slot quantities 1 through 6.
   - `python -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py ..\gmfn_backend\app\services\payment_instruction_service.py ..\gmfn_backend\app\services\expected_payments_service.py` passed on 2026-05-04 after the Vault pricing repair.
   - `python -m py_compile ..\gmfn_backend\app\db\models.py ..\gmfn_backend\app\api\routes\payment_instructions.py ..\gmfn_backend\app\api\routes\vault_access.py ..\gmfn_backend\app\services\vault_access_service.py ..\gmfn_backend\app\services\payment_instruction_service.py ..\gmfn_backend\app\services\expected_payments_service.py ..\gmfn_backend\alembic\versions\20260504_add_vault_access_link_product_id.py` passed on 2026-05-04 after product-scoped Vault links and 30-day/72-hour defaults.
+  - `python -m py_compile ..\gmfn_backend\app\db\models.py ..\gmfn_backend\app\services\vault_domain_service.py ..\gmfn_backend\app\services\vault_access_service.py ..\gmfn_backend\app\api\routes\vault_access.py ..\gmfn_backend\app\api\routes\marketplace.py ..\gmfn_backend\app\services\payment_instruction_service.py ..\gmfn_backend\app\services\expected_payments_service.py ..\gmfn_backend\app\services\bank_application_service.py ..\gmfn_backend\alembic\versions\20260504_add_vault_domain_tables.py` passed on 2026-05-04 after the Vault backend domain finish-up.
+  - `npm exec -- eslint src/pages/VaultControlPage.tsx src/lib/api.ts` passed on 2026-05-04 after the Vault status/frontend contract pass.
+  - `npm run build` passed again on 2026-05-04 after the Vault backend-status owner page pass.
+  - `python -m pytest -q gmfn_backend\tests\test_reconciliation_integrity.py` passed on 2026-05-04 after the cross-metadata `VaultOrder.expected_payment_id` fix.
+  - `python -m pytest -q gmfn_backend\tests\test_reconciliation_integrity.py gmfn_backend\tests\test_marketplace_public_shop.py` initially exposed a real cross-metadata ORM issue: `VaultOrder.expected_payment_id` could not be a core-model `ForeignKey` to the bank metadata table in core-only test setup. The ORM model now keeps that as an indexed integer.
+  - `python -m pytest -q gmfn_backend\tests\test_reconciliation_integrity.py gmfn_backend\tests\test_marketplace_public_shop.py` then had 5 tests pass and 2 fail only because pytest could not create temp directories inside the sandbox.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp pytest-tmp-vault` passed outside the sandbox on 2026-05-04 after temp-directory permission was granted.
+  - `gmfn_backend/tests/test_vault_domain.py` was added for the backend Vault owner-status and one-block access-link contracts.
+  - `python -m pytest -q gmfn_backend\tests\test_vault_domain.py --basetemp pytest-tmp-vault-domain` passed on 2026-05-04.
+  - `python -m pytest -q gmfn_backend\tests\test_vault_domain.py gmfn_backend\tests\test_reconciliation_integrity.py gmfn_backend\tests\test_marketplace_public_shop.py --basetemp pytest-tmp-vault-bundle` passed outside the sandbox on 2026-05-04 after temp-directory permission was granted: 9 passed.
+  - `python -m pytest -q gmfn_backend\tests --basetemp pytest-tmp-backend-full` passed outside the sandbox on 2026-05-04 after temp-directory permission was granted: 96 passed.
+  - `npm run build` passed again on 2026-05-04 after the focused Vault test/docs follow-up.
+  - `npm exec -- eslint src/pages/VaultControlPage.tsx` passed on 2026-05-04 after the Vault phone slot-control repair.
+  - `npm run build` passed again on 2026-05-04 after the Vault phone slot-control repair.
+  - `npm exec -- eslint src/pages/VaultControlPage.tsx` passed on 2026-05-04 after the Vault payment-code visibility repair.
+  - `npm run build` passed again on 2026-05-04 after the Vault payment-code visibility repair.
+  - Local dev SQLite DB was backed up to `gmfn_backend/gmfn.db.backup_before_vault_domain_20260504_163112`, then upgraded with Alembic using `GMFN_DEV_MODE=1`; current revision is `20260504_add_vault_domain_tables (head)`.
+  - Dev DB schema check confirmed `vault_orders`, `vault_blocks`, `vault_private_offers`, `vault_access_logs`, and `vault_access_links.product_id` / `vault_access_links.block_id`.
+  - Backend health responded at `http://127.0.0.1:8012/health`.
+  - Frontend Vite responded at `http://127.0.0.1:5173/`, and `http://127.0.0.1:5173/api/health` successfully reached the backend through the Vite proxy.
+  - Faraday/Planck line audit found and fixed a real pre-freeze risk in `gmfn_backend/app/api/routes/marketplace.py`: Vault product update now saves the product, selected block attachment/archive, and trust event in one transaction, so a failed block attach cannot leave an orphan private product.
+  - The unused `ensure_vault_subscription_expected_payment` helper was removed from `gmfn_backend/app/services/expected_payments_service.py` because it could create a Vault expected payment without a matching Vault order. The only active Vault payment-instruction path now goes through `payment_instruction_service.create_vault_subscription_instruction`.
+  - `python -m pytest -q ..\gmfn_backend\tests --basetemp C:\tmp\pytest-backend-vault-full-2` passed outside the sandbox after the final transaction cleanup: 96 passed.
+  - `npm run build` passed again after the final transaction cleanup.
 
 - Remaining risk:
   - Frontend build confirms the upload/publish code compiles. Actual picture/video display still depends on the backend process using the same `GMFN_UPLOADS_DIR` for upload saving and `/uploads` static serving.
+  - Dedicated Vault migration has been exercised against the local dev SQLite database only; production/staging still needs the normal deployment migration path.

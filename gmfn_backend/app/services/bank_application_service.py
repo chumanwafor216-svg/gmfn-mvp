@@ -12,6 +12,10 @@ from app.db.models import PoolEvent, User
 from app.services.feature_entitlements_service import grant_or_extend_entitlement
 from app.services.repayments_service import create_repayment
 from app.services.trust_events_services import log_trust_event
+from app.services.vault_domain_service import (
+    activate_vault_order_from_expected_payment,
+    mark_vault_order_payment_detected,
+)
 
 
 def _now_utc() -> datetime:
@@ -62,6 +66,14 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return int(value)
     except Exception:
         return default
+
+
+def _to_aware(dt: Optional[datetime]) -> Optional[datetime]:
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def _find_pool_event_for_expected(db: Session, *, exp: ExpectedPayment) -> Optional[PoolEvent]:
@@ -362,6 +374,7 @@ def _apply_feature_subscription(
             "entitlement_id": existing_entitlement_id,
         }
 
+    expected_type = _safe_str(exp.expected_type).lower()
     feature_code = _safe_str(meta.get("feature_code"))
     plan_code = _safe_str(meta.get("plan_code"))
     owner_user_id = _safe_int(meta.get("owner_user_id"), int(exp.user_id))
@@ -375,7 +388,6 @@ def _apply_feature_subscription(
     )
 
     if not feature_code:
-        expected_type = _safe_str(exp.expected_type).lower()
         if expected_type == "vault_subscription":
             feature_code = "vault_slot"
         elif expected_type == "merchant_verify_subscription":
@@ -390,6 +402,48 @@ def _apply_feature_subscription(
             "kind": "feature_subscription",
             "reason": "missing_feature_meta",
         }
+
+    vault_activation: Optional[Dict[str, Any]] = None
+    if expected_type == "vault_subscription":
+        event_time = (
+            _to_aware(getattr(be, "posted_at", None))
+            or _to_aware(getattr(be, "value_at", None))
+            or _to_aware(getattr(be, "ingested_at", None))
+            or _now_utc()
+        )
+        due_at = _to_aware(getattr(exp, "due_at", None))
+        if due_at is not None and event_time > due_at:
+            meta["vault_late_payment_review"] = True
+            meta["last_detected_bank_event_id"] = int(be.id)
+            _set_meta_json(exp, meta)
+            mark_vault_order_payment_detected(
+                db,
+                expected_payment=exp,
+                bank_event=be,
+                reason="late_payment_after_instruction_expiry",
+            )
+            db.add(exp)
+            db.commit()
+            return {
+                "ok": True,
+                "applied": False,
+                "kind": "feature_subscription",
+                "reason": "late_payment_requires_admin_review",
+            }
+
+        vault_activation = activate_vault_order_from_expected_payment(
+            db,
+            expected_payment=exp,
+            bank_event=be,
+        )
+        if not bool(vault_activation.get("ok")):
+            db.commit()
+            return {
+                "ok": False,
+                "applied": False,
+                "kind": "feature_subscription",
+                "reason": _safe_str(vault_activation.get("reason"), "vault_activation_failed"),
+            }
 
     entitlement = grant_or_extend_entitlement(
         db,
@@ -419,6 +473,7 @@ def _apply_feature_subscription(
             "billing_cycle": billing_cycle,
             "payment_reference": payment_reference,
             "shop_id": int(shop_id) if shop_id is not None else None,
+            "vault_activation": vault_activation if expected_type == "vault_subscription" else None,
         },
     )
 
@@ -449,6 +504,7 @@ def _apply_feature_subscription(
             "currency": str(exp.currency),
             "reference": str(exp.reference_display),
             "shop_id": int(shop_id) if shop_id is not None else None,
+            "vault_activation": vault_activation if expected_type == "vault_subscription" else None,
             "expires_at": entitlement.expires_at.isoformat()
             if getattr(entitlement, "expires_at", None)
             else None,

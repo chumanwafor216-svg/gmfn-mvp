@@ -6,8 +6,12 @@ from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
 
-from app.db.models import MarketplaceProduct, MarketplaceShop, VaultAccessLink
+from app.db.models import MarketplaceProduct, MarketplaceShop, VaultAccessLink, VaultBlock
 from app.services.feature_entitlements_service import has_active_feature
+from app.services.vault_domain_service import (
+    find_vault_block_for_product,
+    log_vault_access,
+)
 
 FEATURE_VAULT_SLOT = "vault_slot"
 VISIBILITY_VAULT = "vault_private"
@@ -101,6 +105,17 @@ def _link_status(
         return "shop_inactive"
 
     product_id = getattr(link, "product_id", None)
+    block_id = getattr(link, "block_id", None)
+    block: Optional[VaultBlock] = None
+    if block_id is not None:
+        block = db.get(VaultBlock, int(block_id))
+        if (
+            block is None
+            or int(block.shop_id) != int(link.shop_id)
+            or _safe_str(getattr(block, "state", None)) != "active"
+        ):
+            return "block_inactive"
+
     if product_id is not None:
         product = _vault_product_for_link_scope(
             db,
@@ -109,6 +124,15 @@ def _link_status(
         )
         if product is None:
             return "product_inactive"
+        if block is None:
+            block = find_vault_block_for_product(db, product_id=int(product_id))
+        if (
+            block is None
+            or _safe_str(getattr(block, "state", None)) != "active"
+            or getattr(block, "product_id", None) is None
+            or int(block.product_id) != int(product_id)
+        ):
+            return "block_inactive"
 
     if not has_active_feature(
         db,
@@ -222,13 +246,24 @@ def create_vault_access_link(
     if _active_vault_product_count(db, shop_id=int(shop_id)) <= 0:
         raise ValueError("No active Vault products exist for this shop")
 
+    if product_id is None:
+        raise ValueError("Vault link must point to one selected private block")
+
     scoped_product = _vault_product_for_link_scope(
         db,
         shop_id=int(shop_id),
-        product_id=int(product_id) if product_id is not None else None,
+        product_id=int(product_id),
     )
-    if product_id is not None and scoped_product is None:
+    if scoped_product is None:
         raise ValueError("Vault link must point to an active private offer in this shop")
+
+    scoped_block = find_vault_block_for_product(db, product_id=int(scoped_product.id))
+    if (
+        scoped_block is None
+        or int(scoped_block.shop_id) != int(shop_id)
+        or _safe_str(getattr(scoped_block, "state", None)) != "active"
+    ):
+        raise ValueError("Vault link must point to an active paid Vault block")
 
     if not has_active_feature(
         db,
@@ -264,9 +299,22 @@ def create_vault_access_link(
             existing.revoked_at = _now_utc()
             db.add(existing)
 
+        active_block_links = (
+            db.query(VaultAccessLink)
+            .filter(VaultAccessLink.shop_id == int(shop_id))
+            .filter(VaultAccessLink.block_id == int(scoped_block.id))
+            .filter(VaultAccessLink.status == "active")
+            .all()
+        )
+        for existing in active_block_links:
+            existing.status = "revoked"
+            existing.revoked_at = _now_utc()
+            db.add(existing)
+
     row = VaultAccessLink(
         shop_id=int(shop_id),
         product_id=int(scoped_product.id) if scoped_product is not None else None,
+        block_id=int(scoped_block.id),
         owner_user_id=int(owner_user_id),
         token=token,
         status="active",
@@ -356,6 +404,8 @@ def resolve_vault_access_view(
 ) -> Dict[str, Any]:
     link = get_vault_link_by_token(db, token=_safe_str(token))
     if not link:
+        log_vault_access(db, link=None, token=token, result="not_found")
+        db.commit()
         return {
             "ok": False,
             "status": "not_found",
@@ -370,6 +420,8 @@ def resolve_vault_access_view(
 
     status = _link_status(db, link=link, shop=shop)
     if status != "active":
+        log_vault_access(db, link=link, token=token, result=status)
+        db.commit()
         return {
             "ok": False,
             "status": status,
@@ -379,6 +431,7 @@ def resolve_vault_access_view(
                 "exhausted": "This Vault access link has reached its view limit.",
                 "subscription_inactive": "Vault subscription is inactive for this shop.",
                 "shop_inactive": "This shop is not currently active.",
+                "block_inactive": "This private Vault block is no longer active.",
                 "product_inactive": "This private Vault block is no longer available.",
             }.get(status, "Vault access is not available."),
             "restrictions": {
@@ -396,6 +449,7 @@ def resolve_vault_access_view(
         link.views_used = int(getattr(link, "views_used", 0) or 0) + 1
         link.last_opened_at = _now_utc()
         db.add(link)
+        log_vault_access(db, link=link, token=token, result="opened")
         db.commit()
         db.refresh(link)
 
@@ -418,6 +472,7 @@ def resolve_vault_access_view(
         "detail": "Vault access active.",
         "token": link.token,
         "product_id": int(link.product_id) if getattr(link, "product_id", None) is not None else None,
+        "block_id": int(link.block_id) if getattr(link, "block_id", None) is not None else None,
         "shop": _shop_payload(shop) if shop else None,
         "products": [_product_payload(p) for p in products],
         "restrictions": {

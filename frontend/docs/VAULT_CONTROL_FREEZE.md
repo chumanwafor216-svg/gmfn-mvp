@@ -36,6 +36,13 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 16. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
 17. Default private link expiry is 72 hours.
 18. Vault slot activation duration is 30 days by default.
+19. `/app/vault-control` must read backend Vault block status from the shop Vault status contract when available.
+20. Saving a private Vault offer must send the selected `vault_slot_number`.
+21. New Vault links must carry both the selected product scope and backend block scope.
+22. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
+23. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
+24. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must account for UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail rather than disappearing from the screen.
+25. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
 
 ## Do Not Reintroduce
 
@@ -51,11 +58,13 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 - The current backend Vault cap is 6 private slots.
 - Vault link creation requires at least one active private Vault product and an active Vault entitlement.
 - Payment confirmation is still driven by the bank/expected-payment reconciliation process.
-- Marketplace products do not yet have a backend `vault_slot_number` field. The frontend stabilizes slot display in the current browser with local slot memory, but a permanent cross-device slot order requires a backend field and API contract.
+- Marketplace products do not carry a permanent `vault_slot_number` field. Permanent cross-device slot order now comes from `vault_blocks.slot_number`, and private products attach to those blocks through `vault_blocks.product_id`.
 - Current Vault pricing is GBP 1 per slot for 1-5 slots, and GBP 5 for the 6-slot bundle.
-- The backend still uses expected payments plus feature entitlements rather than dedicated `vault_orders` and `vault_blocks` tables. This is an MVP substitution, not the final domain model.
-- Vault private offer content is currently stored as `marketplace_products.visibility_mode = vault_private`.
+- The backend now has dedicated `vault_orders`, `vault_blocks`, `vault_private_offers`, and `vault_access_logs` tables for the MVP Vault lane.
+- Vault payment matching still starts from expected payments and feature entitlements because that is the real bank-transfer reconciliation rail.
+- Vault private offer content is still stored as `marketplace_products.visibility_mode = vault_private`, with `vault_private_offers` mirroring the selected block content.
 - Legacy Vault links created before product-scoped links may not have `product_id`; treat them as legacy and replace them with block-scoped links.
+- Legacy Vault links created before block-scoped links may not have `block_id`; treat them as legacy and replace them with block-scoped links.
 
 ## Manual Check
 
@@ -71,3 +80,7 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 10. Create a Vault access link.
 11. Open `/vault/:token` and confirm only private Vault products are shown.
 12. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
+
+## Automated Check
+
+- `python -m pytest -q gmfn_backend\tests\test_vault_domain.py gmfn_backend\tests\test_reconciliation_integrity.py gmfn_backend\tests\test_marketplace_public_shop.py --basetemp pytest-tmp-vault-bundle` passed on 2026-05-04.

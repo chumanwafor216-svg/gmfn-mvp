@@ -6,7 +6,21 @@ export type CommunityMoneySettlement = {
   accountName: string;
   accountNumber: string;
   sortCode: string;
+  routingNumber: string;
+  achRoutingNumber: string;
+  wireRoutingNumber: string;
+  iban: string;
+  swiftBic: string;
+  bankCode: string;
+  branchCode: string;
+  branchName: string;
+  ifscCode: string;
+  mobileMoneyProvider: string;
+  mobileMoneyNumber: string;
   country: string;
+  regionCode: string;
+  paymentNetworks: string[];
+  missingFieldText: string;
   supportNote: string;
 };
 
@@ -151,12 +165,6 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
-function parseMoneyNumber(value: any): number {
-  const raw = safeStr(value).replace(/,/g, "");
-  const n = Number(raw);
-  return Number.isFinite(n) ? n : 0;
-}
-
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -255,18 +263,62 @@ function normalizeCommunitySettlement(raw: any): CommunityMoneySettlement | null
 
   if (!src || typeof src !== "object") return null;
 
+  const paymentNetworks = src?.payment_networks || src?.paymentNetworks;
+
   const settlement: CommunityMoneySettlement = {
     railName: firstTruthy(src?.rail_name, src?.railName),
     bankName: firstTruthy(src?.bank_name, src?.bankName),
     accountName: firstTruthy(src?.account_name, src?.accountName),
     accountNumber: firstTruthy(src?.account_number, src?.accountNumber),
     sortCode: firstTruthy(src?.sort_code, src?.sortCode),
+    routingNumber: firstTruthy(src?.routing_number, src?.routingNumber),
+    achRoutingNumber: firstTruthy(src?.ach_routing_number, src?.achRoutingNumber),
+    wireRoutingNumber: firstTruthy(src?.wire_routing_number, src?.wireRoutingNumber),
+    iban: firstTruthy(src?.iban),
+    swiftBic: firstTruthy(src?.swift_bic, src?.swiftBic, src?.bic),
+    bankCode: firstTruthy(src?.bank_code, src?.bankCode),
+    branchCode: firstTruthy(src?.branch_code, src?.branchCode),
+    branchName: firstTruthy(src?.branch_name, src?.branchName),
+    ifscCode: firstTruthy(src?.ifsc_code, src?.ifscCode),
+    mobileMoneyProvider: firstTruthy(src?.mobile_money_provider, src?.mobileMoneyProvider),
+    mobileMoneyNumber: firstTruthy(src?.mobile_money_number, src?.mobileMoneyNumber),
     country: firstTruthy(src?.country),
+    regionCode: firstTruthy(src?.region_code, src?.regionCode),
+    paymentNetworks: Array.isArray(paymentNetworks)
+      ? paymentNetworks.map((item: any) => safeStr(item)).filter(Boolean)
+      : [],
+    missingFieldText: firstTruthy(src?.missing_field_text, src?.missingFieldText),
     supportNote: firstTruthy(src?.support_note, src?.supportNote),
   };
 
   const visible = Object.values(settlement).some((value) => safeStr(value));
   return visible ? settlement : null;
+}
+
+function settlementDetailLines(settlement: CommunityMoneySettlement | null): string[] {
+  if (!settlement) return [];
+
+  return [
+    settlement.bankName ? `Bank: ${settlement.bankName}` : "",
+    settlement.accountName ? `Account name: ${settlement.accountName}` : "",
+    settlement.accountNumber ? `Account number: ${settlement.accountNumber}` : "",
+    settlement.sortCode ? `UK sort code: ${settlement.sortCode}` : "",
+    settlement.routingNumber ? `US routing number: ${settlement.routingNumber}` : "",
+    settlement.achRoutingNumber ? `ACH routing: ${settlement.achRoutingNumber}` : "",
+    settlement.wireRoutingNumber ? `Wire routing: ${settlement.wireRoutingNumber}` : "",
+    settlement.iban ? `IBAN: ${settlement.iban}` : "",
+    settlement.swiftBic ? `SWIFT/BIC: ${settlement.swiftBic}` : "",
+    settlement.bankCode ? `Bank code: ${settlement.bankCode}` : "",
+    settlement.branchCode ? `Branch code: ${settlement.branchCode}` : "",
+    settlement.branchName ? `Branch name: ${settlement.branchName}` : "",
+    settlement.ifscCode ? `IFSC: ${settlement.ifscCode}` : "",
+    settlement.mobileMoneyProvider ? `Mobile money: ${settlement.mobileMoneyProvider}` : "",
+    settlement.mobileMoneyNumber ? `Mobile money number: ${settlement.mobileMoneyNumber}` : "",
+    settlement.country ? `Country: ${settlement.country}` : "",
+    settlement.regionCode ? `Region profile: ${settlement.regionCode.replace(/_/g, " ")}` : "",
+    settlement.paymentNetworks.length ? `Payment networks: ${settlement.paymentNetworks.join(", ")}` : "",
+    settlement.supportNote ? settlement.supportNote : "",
+  ].filter(Boolean);
 }
 
 function normalizePaymentRail(raw: any): PaymentRail | null {
@@ -294,13 +346,14 @@ function normalizePaymentRailContext(raw: any): PaymentRailContext | null {
   if (!raw) return null;
 
   const src = raw?.item || raw?.data || raw;
+  const availableRails = src?.available_rails || src?.availableRails;
 
   return {
     instructionType: firstTruthy(src?.instruction_type, src?.instructionType),
     currency: firstTruthy(src?.currency, "NGN"),
     defaultRail: normalizePaymentRail(src?.default_rail || src?.defaultRail),
-    availableRails: Array.isArray(src?.available_rails || src?.availableRails)
-      ? (src?.available_rails || src?.availableRails)
+    availableRails: Array.isArray(availableRails)
+      ? availableRails
           .map((item: any) => normalizePaymentRail(item))
           .filter(Boolean) as PaymentRail[]
       : [],
@@ -412,12 +465,7 @@ function buildRouteFromContext(params: {
 
   const detailLines = [
     defaultRail?.label ? `Rail: ${defaultRail.label}` : "",
-    settlement?.bankName ? `Bank: ${settlement.bankName}` : "",
-    settlement?.accountName ? `Account name: ${settlement.accountName}` : "",
-    settlement?.accountNumber ? `Account number: ${settlement.accountNumber}` : "",
-    settlement?.sortCode ? `Sort code: ${settlement.sortCode}` : "",
-    settlement?.country ? `Country: ${settlement.country}` : "",
-    settlement?.supportNote ? settlement.supportNote : "",
+    ...settlementDetailLines(settlement),
   ].filter(Boolean);
 
   return {
@@ -705,16 +753,7 @@ export async function createPoolDepositInstruction(params: {
       normalized.settlement?.railName
         ? `Rail: ${normalized.settlement.railName}`
         : "",
-      normalized.settlement?.bankName
-        ? `Bank: ${normalized.settlement.bankName}`
-        : "",
-      normalized.settlement?.accountName
-        ? `Account name: ${normalized.settlement.accountName}`
-        : "",
-      normalized.settlement?.accountNumber
-        ? `Account number: ${normalized.settlement.accountNumber}`
-        : "",
-      normalized.settlement?.supportNote || "",
+      ...settlementDetailLines(normalized.settlement),
     ]
       .filter(Boolean)
       .join("\n"),
@@ -765,16 +804,7 @@ export async function createLoanRepaymentInstruction(params: {
       normalized.settlement?.railName
         ? `Rail: ${normalized.settlement.railName}`
         : "",
-      normalized.settlement?.bankName
-        ? `Bank: ${normalized.settlement.bankName}`
-        : "",
-      normalized.settlement?.accountName
-        ? `Account name: ${normalized.settlement.accountName}`
-        : "",
-      normalized.settlement?.accountNumber
-        ? `Account number: ${normalized.settlement.accountNumber}`
-        : "",
-      normalized.settlement?.supportNote || "",
+      ...settlementDetailLines(normalized.settlement),
     ]
       .filter(Boolean)
       .join("\n"),
@@ -824,12 +854,7 @@ export async function getLoanWithdrawalInstruction(
     title: firstTruthy(raw?.title, "Approved Loan Withdrawal Instruction"),
     detail: [
       settlement?.railName ? `Rail: ${settlement.railName}` : "",
-      settlement?.bankName ? `Bank: ${settlement.bankName}` : "",
-      settlement?.accountName ? `Account name: ${settlement.accountName}` : "",
-      settlement?.accountNumber
-        ? `Account number: ${settlement.accountNumber}`
-        : "",
-      settlement?.supportNote || "",
+      ...settlementDetailLines(settlement),
     ]
       .filter(Boolean)
       .join("\n"),

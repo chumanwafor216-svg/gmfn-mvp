@@ -11,6 +11,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
+    Index,
     Integer,
     Numeric,
     String,
@@ -1276,6 +1277,166 @@ class FeatureEntitlement(Base):
     )
 
 
+class VaultOrder(Base):
+    __tablename__ = "vault_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    owner_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    clan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("clans.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    slot_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    amount_due: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    currency: Mapped[str] = mapped_column(String(8), nullable=False, default="GBP", server_default="GBP")
+    pricing_rule: Mapped[str] = mapped_column(String(32), nullable=False, default="unit", server_default="unit")
+    payment_method: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="bank_transfer",
+        server_default="bank_transfer",
+    )
+    payment_reference: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
+    # expected_payments lives in the bank metadata in tests, so keep this as an
+    # indexed id in the ORM model instead of a cross-metadata ForeignKey.
+    expected_payment_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+    bank_event_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, index=True)
+
+    status: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="instruction_generated",
+        server_default="instruction_generated",
+        index=True,
+    )
+    instruction_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    confirmed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancelled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class VaultBlock(Base):
+    __tablename__ = "vault_blocks"
+
+    __table_args__ = (
+        UniqueConstraint("shop_id", "slot_number", name="uq_vault_blocks_shop_slot_v1"),
+        Index("ix_vault_blocks_shop_state_v1", "shop_id", "state"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    slot_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    state: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="inactive",
+        server_default="inactive",
+        index=True,
+    )
+    current_order_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("vault_orders.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class VaultPrivateOffer(Base):
+    __tablename__ = "vault_private_offers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    block_id: Mapped[int] = mapped_column(
+        ForeignKey("vault_blocks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    shop_id: Mapped[int] = mapped_column(
+        ForeignKey("marketplace_shops.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    media_type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    media_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    caption: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    owner_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="draft",
+        server_default="draft",
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
 class VaultAccessLink(Base):
     __tablename__ = "vault_access_links"
 
@@ -1288,6 +1449,11 @@ class VaultAccessLink(Base):
     )
     product_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    block_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("vault_blocks.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
@@ -1367,6 +1533,27 @@ class VaultAccessLink(Base):
         server_default=func.now(),
         index=True,
     )
+
+
+class VaultAccessLog(Base):
+    __tablename__ = "vault_access_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+
+    link_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("vault_access_links.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    token_hash: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
+    viewed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=utcnow,
+        index=True,
+    )
+    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    result: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
 
 
 class FeatureUsageEvent(Base):
