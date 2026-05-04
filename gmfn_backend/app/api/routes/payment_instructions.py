@@ -11,6 +11,9 @@ from app.core.auth import get_current_user
 from app.db.database import get_db
 from app.db.models import MarketplaceShop, User
 from app.services.payment_instruction_service import (
+    PAYMENT_DUE_WINDOW_DAYS,
+    VAULT_DEFAULT_BILLING_CYCLE,
+    VAULT_SLOT_DURATION_DAYS,
     create_loan_repayment_instruction,
     create_pool_deposit_instruction,
     create_merchant_verify_instruction,
@@ -18,6 +21,7 @@ from app.services.payment_instruction_service import (
     create_vault_subscription_instruction,
 )
 from app.services.settlement_config_service import get_settlement_config
+from app.services.vault_access_service import DEFAULT_LINK_EXPIRY_HOURS
 
 router = APIRouter(prefix="/payment-instructions", tags=["payment-instructions"])
 
@@ -224,4 +228,16 @@ def my_instruction_config(
             "spotlight_subscription",
         ],
         "vault_supported_quantities": [1, 2, 3, 4, 5, 6],
+        "vault_config": {
+            "max_slots": 6,
+            "unit_price_gbp": "1.00",
+            "bundle_slot_count": 6,
+            "bundle_price_gbp": "5.00",
+            "payment_instruction_expiry_days": PAYMENT_DUE_WINDOW_DAYS,
+            "vault_slot_duration_days": VAULT_SLOT_DURATION_DAYS,
+            "default_link_expiry_hours": DEFAULT_LINK_EXPIRY_HOURS,
+            "payment_method": "bank_transfer",
+            "payment_beneficiary_scope": "platform",
+            "billing_cycle": VAULT_DEFAULT_BILLING_CYCLE,
+        },
     }

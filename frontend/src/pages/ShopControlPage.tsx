@@ -77,6 +77,7 @@ type BroadcastRecord = {
 type VaultLinkRecord = {
   id: number;
   shop_id: number;
+  product_id?: number | string | null;
   access_url?: string | null;
   token?: string | null;
   status?: string | null;
@@ -1338,7 +1339,7 @@ export default function ShopControlPage() {
 
   function vaultDefaultExpiry(): string {
     const next = new Date();
-    next.setDate(next.getDate() + 7);
+    next.setHours(next.getHours() + 72);
     return next.toISOString();
   }
 
@@ -1347,17 +1348,23 @@ export default function ShopControlPage() {
       showNotice("error", "Shop record is not available.");
       return;
     }
+    const firstVaultProduct = vaultProducts[0];
+    if (!firstVaultProduct?.id) {
+      showNotice("error", "Add a private Vault offer before creating a link.");
+      return;
+    }
 
     setCreatingVaultLink(true);
     try {
       const link = await createVaultShopAccessLink({
         shop_id: shop.id,
+        product_id: firstVaultProduct.id,
         expires_at: vaultDefaultExpiry(),
         max_views: 20,
         watermark_enabled: true,
       });
       setVaultLinks((prev) => [link as VaultLinkRecord, ...prev]);
-      copyText(vaultLinkUrl(link as VaultLinkRecord), "Vault viewing link created and copied.");
+      copyText(vaultLinkUrl(link as VaultLinkRecord), "Vault viewing link for one private offer created and copied.");
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault viewing link could not be created.");
     } finally {
@@ -1406,7 +1413,7 @@ export default function ShopControlPage() {
           Number(item.id) === linkId ? (updated as VaultLinkRecord) : item
         )
       );
-      showNotice("success", "Vault viewing link extended for 7 more days.");
+      showNotice("success", "Vault viewing link extended for 72 more hours.");
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault viewing link could not be extended.");
     } finally {
@@ -3363,7 +3370,7 @@ export default function ShopControlPage() {
                     >
                       {busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "extend"
                         ? "Extending..."
-                        : "Extend 7 days"}
+                        : "Extend 72 hours"}
                     </button>
                     <button
                       type="button"

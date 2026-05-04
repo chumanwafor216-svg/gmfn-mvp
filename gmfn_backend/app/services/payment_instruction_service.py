@@ -16,13 +16,15 @@ from app.services.expected_payments_service import (
 
 PAYMENT_DUE_WINDOW_DAYS = 7
 ANNUAL_BILLING_CYCLE = "annual"
+VAULT_DEFAULT_BILLING_CYCLE = "monthly"
+VAULT_SLOT_DURATION_DAYS = 30
 
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_MERCHANT_VERIFY = "merchant_verify"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 
-PLAN_VAULT_SLOT_1_YEAR = "vault_slot_1_year"
-PLAN_VAULT_SLOT_6_YEAR = "vault_slot_6_year"
+PLAN_VAULT_SLOT_1_PERIOD = "vault_slot_1_30d"
+PLAN_VAULT_SLOT_6_PERIOD = "vault_slot_6_30d"
 PLAN_MERCHANT_VERIFY_YEAR = "merchant_verify_year"
 PLAN_SPOTLIGHT_PRIORITY_YEAR = "spotlight_priority_year"
 PLAN_SPOTLIGHT_CREDIT_PACK = "spotlight_credit_pack"
@@ -64,8 +66,8 @@ def _positive_int(value: Any, *, name: str) -> int:
 def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
     """
     Current agreed MVP pricing:
-    - 1-5 Vault slots for one year = 1.00 GBP per slot
-    - 6 Vault slots for one year = 5.00 GBP bundle
+    - 1-5 Vault slots = 1.00 GBP per slot
+    - 6 Vault slots = 5.00 GBP bundle
     """
     qty = _positive_int(quantity_total, name="quantity_total")
 
@@ -84,7 +86,7 @@ def build_vault_subscription_reference(
     owner_user_id: int,
     shop_id: int,
     quantity_total: int,
-    cycle_code: str = ANNUAL_BILLING_CYCLE,
+    cycle_code: str = VAULT_DEFAULT_BILLING_CYCLE,
 ) -> str:
     qty = _positive_int(quantity_total, name="quantity_total")
     return (
@@ -126,15 +128,17 @@ def _feature_subscription_meta(
     owner_user_id: int,
     shop_id: Optional[int] = None,
     quantity_total: int = 1,
-    billing_cycle: str = ANNUAL_BILLING_CYCLE,
+    billing_cycle: str = VAULT_DEFAULT_BILLING_CYCLE,
     extra: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    feature = str(feature_code).strip()
+    fallback_cycle = VAULT_DEFAULT_BILLING_CYCLE if feature == FEATURE_VAULT_SLOT else ANNUAL_BILLING_CYCLE
     payload: Dict[str, Any] = {
-        "feature_code": str(feature_code).strip(),
+        "feature_code": feature,
         "plan_code": str(plan_code).strip(),
         "owner_user_id": int(owner_user_id),
         "quantity_total": int(quantity_total),
-        "billing_cycle": str(billing_cycle).strip().lower() or ANNUAL_BILLING_CYCLE,
+        "billing_cycle": str(billing_cycle).strip().lower() or fallback_cycle,
     }
 
     if shop_id is not None:
@@ -305,7 +309,7 @@ def create_vault_subscription_instruction(
     qty = _positive_int(quantity_total, name="quantity_total")
     resolved_amount = _d(amount) if amount is not None else calc_vault_subscription_amount(qty)
 
-    plan_code = PLAN_VAULT_SLOT_1_YEAR if qty == 1 else PLAN_VAULT_SLOT_6_YEAR
+    plan_code = PLAN_VAULT_SLOT_1_PERIOD if qty == 1 else PLAN_VAULT_SLOT_6_PERIOD
     reference_display = build_vault_subscription_reference(
         owner_user_id=int(owner_user_id),
         shop_id=int(shop_id),
@@ -329,6 +333,11 @@ def create_vault_subscription_instruction(
           shop_id=int(shop_id),
           quantity_total=qty,
           billing_cycle=billing_cycle,
+          extra={
+              "payment_context": "vault_slot_purchase",
+              "payment_beneficiary_scope": "platform",
+              "vault_slot_duration_days": VAULT_SLOT_DURATION_DAYS,
+          },
         ),
     )
 

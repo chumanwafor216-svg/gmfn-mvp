@@ -3357,6 +3357,7 @@ export type VaultAccessPolicy = {
 export type VaultLinkItem = {
   id: number | string;
   shop_id: number | string;
+  product_id?: number | string | null;
   access_url: string;
   token: string;
   expires_at?: string | null;
@@ -3369,11 +3370,12 @@ export type VaultLinkItem = {
   revoked_at?: string | null;
   created_at?: string | null;
   last_opened_at?: string | null;
-  status?: "active" | "expired" | "revoked" | "exhausted";
+  status?: "active" | "expired" | "revoked" | "exhausted" | "product_inactive";
 };
 
 export type CreateVaultShopAccessLinkInput = {
   shop_id: number | string;
+  product_id?: number | string | null;
   vault_shop_id?: number | string;
   visibility_mode?: ShopVisibilityMode;
   expires_at?: string | null;
@@ -3401,9 +3403,10 @@ export type VaultShopAccessProduct = {
 
 export type VaultShopAccessView = {
   token?: string;
-  status?: "active" | "expired" | "revoked" | "exhausted" | "invalid";
+  status?: "active" | "expired" | "revoked" | "exhausted" | "product_inactive" | "invalid";
   shop_id?: number | string;
   vault_shop_id?: number | string;
+  product_id?: number | string | null;
   shop_name?: string | null;
   shop_description?: string | null;
   owner_name?: string | null;
@@ -3556,7 +3559,14 @@ function normalizeVaultLinkItem(raw: any): VaultLinkItem {
   const maxViews = vaultNumberLike(src?.max_views);
   const viewsUsed = vaultNumberLike(src?.views_used);
 
-  let status: VaultLinkItem["status"] = "active";
+  const rawStatus = vaultFirstTruthy(src?.status).toLowerCase();
+  let status: VaultLinkItem["status"] =
+    rawStatus === "revoked" ||
+    rawStatus === "expired" ||
+    rawStatus === "exhausted" ||
+    rawStatus === "product_inactive"
+      ? (rawStatus as VaultLinkItem["status"])
+      : "active";
 
   if (revokedAt) {
     status = "revoked";
@@ -3579,6 +3589,7 @@ function normalizeVaultLinkItem(raw: any): VaultLinkItem {
   return {
     id: src?.id ?? src?.link_id ?? "",
     shop_id: src?.shop_id ?? src?.vault_shop_id ?? "",
+    product_id: src?.product_id ?? src?.marketplace_product_id ?? null,
     access_url: vaultFirstTruthy(src?.access_url, src?.url),
     token: vaultFirstTruthy(src?.token, src?.code),
     expires_at: expiresAt || null,
@@ -3645,6 +3656,7 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
   if (rawStatus.includes("revoke")) status = "revoked";
   if (rawStatus.includes("expire")) status = "expired";
   if (rawStatus.includes("exhaust")) status = "exhausted";
+  if (rawStatus.includes("product_inactive")) status = "product_inactive";
 
   if (revokedAt) {
     status = "revoked";
@@ -3670,6 +3682,7 @@ function normalizeVaultAccessView(raw: any): VaultShopAccessView {
 
   return {
     token: vaultFirstTruthy(src?.token, policySrc?.token, src?.code),
+    product_id: src?.product_id ?? policySrc?.product_id ?? null,
     status,
     shop_id: shop?.id ?? shop?.shop_id ?? src?.shop_id,
     vault_shop_id: src?.vault_shop_id ?? shop?.vault_shop_id,

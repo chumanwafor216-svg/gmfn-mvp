@@ -1286,6 +1286,11 @@ class VaultAccessLink(Base):
         nullable=False,
         index=True,
     )
+    product_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("marketplace_products.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     owner_user_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,

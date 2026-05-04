@@ -92,8 +92,22 @@ type SettlementRecord = {
   support_note?: string | null;
 };
 
+type VaultConfigRecord = {
+  max_slots?: number | string | null;
+  unit_price_gbp?: number | string | null;
+  bundle_slot_count?: number | string | null;
+  bundle_price_gbp?: number | string | null;
+  payment_instruction_expiry_days?: number | string | null;
+  vault_slot_duration_days?: number | string | null;
+  default_link_expiry_hours?: number | string | null;
+  payment_method?: string | null;
+  payment_beneficiary_scope?: string | null;
+  billing_cycle?: string | null;
+};
+
 const VAULT_SLOT_LIMIT = 6;
 const VAULT_PAYMENT_DUE_DAYS = 7;
+const VAULT_LINK_DEFAULT_HOURS = 72;
 const VAULT_SLOT_STORAGE_PREFIX = "gmfn.vaultControl.slotMap.v1";
 
 function safeStr(value: unknown): string {
@@ -491,9 +505,9 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function vaultDefaultExpiry(): string {
+function vaultDefaultExpiry(hours = VAULT_LINK_DEFAULT_HOURS): string {
   const next = new Date();
-  next.setDate(next.getDate() + 7);
+  next.setHours(next.getHours() + Math.max(1, Number(hours || VAULT_LINK_DEFAULT_HOURS)));
   return next.toISOString();
 }
 
@@ -521,6 +535,7 @@ export default function VaultControlPage() {
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [vaultInstruction, setVaultInstruction] = useState<ExpectedPaymentRecord | null>(null);
   const [vaultSettlement, setVaultSettlement] = useState<SettlementRecord | null>(null);
+  const [vaultConfig, setVaultConfig] = useState<VaultConfigRecord | null>(null);
   const [vaultSlotMap, setVaultSlotMap] = useState<Record<string, number>>({});
   const [identityBlocked, setIdentityBlocked] = useState(false);
   const [creatingPayment, setCreatingPayment] = useState(false);
@@ -577,6 +592,7 @@ export default function VaultControlPage() {
       ]);
       setMe(meRes || null);
       setVaultSettlement((instructionConfigRes?.settlement || null) as SettlementRecord | null);
+      setVaultConfig((instructionConfigRes?.vault_config || null) as VaultConfigRecord | null);
       const continuity = (riskRes as any)?.continuity || {};
       const status = safeStr(continuity?.status).toLowerCase();
       setIdentityBlocked(status === "reverify_required" || status === "protected_lock");
@@ -675,6 +691,14 @@ export default function VaultControlPage() {
     ? publicFrontendUrl(`/shop/${encodeURIComponent(firstTruthy(shop?.gmfn_id, me?.gmfn_id))}`)
     : "";
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
+  const vaultPaymentDueDays = Math.max(
+    1,
+    Number(vaultConfig?.payment_instruction_expiry_days || VAULT_PAYMENT_DUE_DAYS)
+  );
+  const vaultLinkDefaultHours = Math.max(
+    1,
+    Number(vaultConfig?.default_link_expiry_hours || VAULT_LINK_DEFAULT_HOURS)
+  );
   const activeVaultPaymentReference = firstTruthy(
     activeVaultPayment?.reference_display,
     (activeVaultPayment as any)?.reference
@@ -700,7 +724,7 @@ export default function VaultControlPage() {
     paymentLine("Country", settlementValue(vaultSettlement, "country")),
     paymentLine("Amount", activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : ""),
     paymentLine("Payment code", activeVaultPaymentReference),
-    paymentLine("Expires", safeDateTime(activeVaultPaymentDueAt) || `${VAULT_PAYMENT_DUE_DAYS} days after generation`),
+    paymentLine("Expires", safeDateTime(activeVaultPaymentDueAt) || `${vaultPaymentDueDays} days after generation`),
   ].filter(Boolean);
 
   function copyVaultPaymentInstruction() {
@@ -1002,18 +1026,23 @@ export default function VaultControlPage() {
       showNotice("error", "Add at least one private Vault block before creating a link.");
       return;
     }
+    if (!selectedProduct?.id) {
+      showNotice("error", "Choose the Vault block you want to share, then create its private link.");
+      return;
+    }
     setCreatingLink(true);
     try {
       const link = await createVaultShopAccessLink({
         shop_id: shop.id,
-        expires_at: vaultDefaultExpiry(),
+        product_id: selectedProduct.id,
+        expires_at: vaultDefaultExpiry(vaultLinkDefaultHours),
         max_views: 20,
         watermark_enabled: true,
       });
       setVaultLinks((prev) => [link, ...prev]);
       const url = vaultLinkUrl(link);
       if (navigator?.clipboard?.writeText && url) void navigator.clipboard.writeText(url);
-      showNotice("success", "Vault access link created and copied.");
+      showNotice("success", `Vault link for block #${selectedSlot} created and copied.`);
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault access link could not be created.");
     } finally {
@@ -1026,9 +1055,9 @@ export default function VaultControlPage() {
     if (!id) return;
     setBusyLinkId(id);
     try {
-      const updated = await extendVaultShopAccessLink(id, vaultDefaultExpiry());
+      const updated = await extendVaultShopAccessLink(id, vaultDefaultExpiry(vaultLinkDefaultHours));
       setVaultLinks((prev) => prev.map((item) => firstTruthy(item.id) === id ? updated : item));
-      showNotice("success", "Vault link extended for 7 more days.");
+      showNotice("success", `Vault link extended for ${vaultLinkDefaultHours} more hours.`);
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault link could not be extended.");
     } finally {
@@ -1167,7 +1196,7 @@ export default function VaultControlPage() {
               Tap Generate payment code next. GSN will then show the account details and a unique code to use in the bank transfer, so the system knows this payment is for Vault.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
-              Payment instructions expire {VAULT_PAYMENT_DUE_DAYS} days after generation unless the bank rail returns a different due time.
+              Payment instructions expire {vaultPaymentDueDays} days after generation unless the bank rail returns a different due time.
             </div>
           </div>
           <div style={{ alignSelf: "end", ...actionGrid(isCompact, 170), gridColumn: isCompact ? "auto" : "1 / -1" }}>
@@ -1463,7 +1492,7 @@ export default function VaultControlPage() {
       <section style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>Access links</div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 780 }}>
-          A Vault block is private until you create and share a link. Links can expire, be extended, or be revoked.
+          A Vault block is private until you create and share a link. The link opens only the selected block, and it can expire, be extended, or be revoked.
         </div>
         <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
           <button
@@ -1473,7 +1502,7 @@ export default function VaultControlPage() {
             disabled={identityBlocked || creatingLink || vaultProducts.length === 0}
             style={brandActionButton("primary", identityBlocked || creatingLink || vaultProducts.length === 0)}
           >
-            {identityBlocked ? "Review identity first" : creatingLink ? "Creating link..." : vaultProducts.length === 0 ? "Add private offer first" : "Create access link"}
+            {identityBlocked ? "Review identity first" : creatingLink ? "Creating link..." : vaultProducts.length === 0 ? "Add private offer first" : selectedProduct ? `Create link for block #${selectedSlot}` : "Choose block to share"}
           </button>
           {publicShopLink ? (
             <OriginLink to={publicShopLink} style={brandActionButton("secondary")}>
@@ -1488,10 +1517,13 @@ export default function VaultControlPage() {
             vaultLinks.map((link) => {
               const url = vaultLinkUrl(link);
               const id = firstTruthy(link.id);
+              const productId = firstTruthy(link.product_id);
+              const linkedSlot = productId ? vaultSlotMap[productId] : 0;
               return (
                 <div key={id} style={innerCard("#FCFEFF")}>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(true)}>Link #{id}</span>
+                    <span style={badge(Boolean(linkedSlot))}>{linkedSlot ? `Block #${linkedSlot}` : "Legacy shop-scope link"}</span>
                     <span style={badge(false)}>{firstTruthy(link.status, "active")}</span>
                     <span style={badge(false)}>{Number(link.views_used || 0)} / {Number(link.max_views || 0) || "unlimited"} views</span>
                   </div>
@@ -1499,7 +1531,7 @@ export default function VaultControlPage() {
                   <div style={{ marginTop: 10, ...actionGrid(isCompact, 150) }}>
                     <button type="button" {...buttonGuardProps()} onClick={() => { if (navigator?.clipboard?.writeText && url) void navigator.clipboard.writeText(url); showNotice("success", "Vault link copied."); }} disabled={!url} style={brandActionButton("soft", !url)}>Copy link</button>
                     <button type="button" {...buttonGuardProps()} onClick={() => { if (url) window.open(url, "_blank", "noopener,noreferrer"); }} disabled={!url} style={brandActionButton("secondary", !url)}>Open link</button>
-                    <button type="button" {...buttonGuardProps()} onClick={() => void extendLink(link)} disabled={busyLinkId === id} style={brandActionButton("secondary", busyLinkId === id)}>Extend 7 days</button>
+                    <button type="button" {...buttonGuardProps()} onClick={() => void extendLink(link)} disabled={busyLinkId === id} style={brandActionButton("secondary", busyLinkId === id)}>Extend {vaultLinkDefaultHours} hours</button>
                     <button type="button" {...buttonGuardProps()} onClick={() => void revokeLink(link)} disabled={busyLinkId === id || firstTruthy(link.status).toLowerCase() === "revoked"} style={brandActionButton("secondary", busyLinkId === id || firstTruthy(link.status).toLowerCase() === "revoked")}>Revoke</button>
                   </div>
                 </div>

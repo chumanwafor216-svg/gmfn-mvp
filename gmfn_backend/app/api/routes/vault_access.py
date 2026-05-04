@@ -24,6 +24,7 @@ router = APIRouter(prefix="/marketplace", tags=["marketplace-vault-access"])
 
 
 class VaultAccessLinkCreateIn(BaseModel):
+    product_id: Optional[int] = None
     expires_at: Optional[datetime] = None
     max_views: Optional[int] = Field(default=None, ge=1)
     allow_download: bool = False
@@ -82,6 +83,7 @@ def _link_out(link: VaultAccessLink) -> Dict[str, Any]:
     return {
         "id": int(link.id),
         "shop_id": int(link.shop_id),
+        "product_id": int(link.product_id) if getattr(link, "product_id", None) is not None else None,
         "owner_user_id": int(link.owner_user_id),
         "token": token,
         "status": str(getattr(link, "status", "") or "active"),
@@ -124,6 +126,7 @@ def create_shop_vault_access_link(
             db,
             shop_id=int(shop.id),
             owner_user_id=int(shop.owner_user_id),
+            product_id=payload.product_id,
             expires_at=payload.expires_at,
             max_views=payload.max_views,
             allow_download=payload.allow_download,

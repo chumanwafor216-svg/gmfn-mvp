@@ -6,6 +6,8 @@ Vault is a paid private layer under the owner's main shop, not a second shop.
 
 The public Shop Gallery keeps 12 free public blocks. Vault opens paid private blocks up to the current Vault cap of 6.
 
+The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
+
 ## Route Ownership
 
 - Owner route: `/app/vault-control`
@@ -31,6 +33,9 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 13. The Vault payment surface must show the exact amount, settlement account details, and matching reference after the owner creates the instruction.
 14. Slot selection must not be silent. Before a payment code is generated, the page must immediately show the chosen slot count, exact price, the 6-slot bundle option, and the fact that the bank-transfer code/reference is required for reconciliation.
 15. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
+16. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
+17. Default private link expiry is 72 hours.
+18. Vault slot activation duration is 30 days by default.
 
 ## Do Not Reintroduce
 
@@ -39,6 +44,7 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 - Do not send `/app/vault-control` back into generic Shop Control as the primary experience.
 - Do not show unpaid private blocks as usable blocks.
 - Do not drop `video_url` from Vault private products.
+- Do not create new shop-scope Vault links that expose every private offer at once.
 
 ## Remaining Backend Truth
 
@@ -47,6 +53,9 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 - Payment confirmation is still driven by the bank/expected-payment reconciliation process.
 - Marketplace products do not yet have a backend `vault_slot_number` field. The frontend stabilizes slot display in the current browser with local slot memory, but a permanent cross-device slot order requires a backend field and API contract.
 - Current Vault pricing is GBP 1 per slot for 1-5 slots, and GBP 5 for the 6-slot bundle.
+- The backend still uses expected payments plus feature entitlements rather than dedicated `vault_orders` and `vault_blocks` tables. This is an MVP substitution, not the final domain model.
+- Vault private offer content is currently stored as `marketplace_products.visibility_mode = vault_private`.
+- Legacy Vault links created before product-scoped links may not have `product_id`; treat them as legacy and replace them with block-scoped links.
 
 ## Manual Check
 

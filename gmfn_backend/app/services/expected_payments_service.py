@@ -14,13 +14,15 @@ from app.services.reconciliation_service import normalize_reference
 
 PAYMENT_DUE_WINDOW_DAYS = 7
 ANNUAL_BILLING_CYCLE = "annual"
+VAULT_DEFAULT_BILLING_CYCLE = "monthly"
+VAULT_SLOT_DURATION_DAYS = 30
 
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_MERCHANT_VERIFY = "merchant_verify"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 
-PLAN_VAULT_SLOT_1_YEAR = "vault_slot_1_year"
-PLAN_VAULT_SLOT_6_YEAR = "vault_slot_6_year"
+PLAN_VAULT_SLOT_1_PERIOD = "vault_slot_1_30d"
+PLAN_VAULT_SLOT_6_PERIOD = "vault_slot_6_30d"
 PLAN_MERCHANT_VERIFY_YEAR = "merchant_verify_year"
 PLAN_SPOTLIGHT_PRIORITY_YEAR = "spotlight_priority_year"
 PLAN_SPOTLIGHT_CREDIT_PACK = "spotlight_credit_pack"
@@ -311,7 +313,7 @@ def build_vault_subscription_reference(
     owner_user_id: int,
     shop_id: int,
     quantity_total: int,
-    cycle_code: str = ANNUAL_BILLING_CYCLE,
+    cycle_code: str = VAULT_DEFAULT_BILLING_CYCLE,
 ) -> str:
     qty = _positive_int(quantity_total, name="quantity_total")
     return (
@@ -329,7 +331,7 @@ def ensure_vault_subscription_expected_payment(
     quantity_total: int,
     amount: Optional[Any] = None,
     currency: str = "GBP",
-    billing_cycle: str = ANNUAL_BILLING_CYCLE,
+    billing_cycle: str = VAULT_DEFAULT_BILLING_CYCLE,
     due_at: Optional[datetime] = None,
     commit: bool = False,
     refresh: bool = False,
@@ -337,7 +339,7 @@ def ensure_vault_subscription_expected_payment(
     qty = _positive_int(quantity_total, name="quantity_total")
     resolved_amount = _d(amount) if amount is not None else calc_vault_subscription_amount(qty)
 
-    plan_code = PLAN_VAULT_SLOT_1_YEAR if qty == 1 else PLAN_VAULT_SLOT_6_YEAR
+    plan_code = PLAN_VAULT_SLOT_1_PERIOD if qty == 1 else PLAN_VAULT_SLOT_6_PERIOD
     reference_display = build_vault_subscription_reference(
         owner_user_id=int(owner_user_id),
         shop_id=int(shop_id),
@@ -361,8 +363,11 @@ def ensure_vault_subscription_expected_payment(
             "owner_user_id": int(owner_user_id),
             "shop_id": int(shop_id),
             "quantity_total": qty,
-            "billing_cycle": str(billing_cycle).strip().lower() or ANNUAL_BILLING_CYCLE,
+            "billing_cycle": str(billing_cycle).strip().lower() or VAULT_DEFAULT_BILLING_CYCLE,
             "payment_reference": normalize_reference(reference_display),
+            "payment_context": "vault_slot_purchase",
+            "payment_beneficiary_scope": "platform",
+            "vault_slot_duration_days": VAULT_SLOT_DURATION_DAYS,
         },
         commit=commit,
         refresh=refresh,
