@@ -98,6 +98,7 @@
   - Shop Gallery upload/audio feedback repair: `src/pages/ShopAssetsPage.tsx` now leaves a persistent selected-block success/failure message after save instead of closing the form and relying on a short toast. `src/pages/ShopGalleryPage.tsx` remounts product videos when a card opens so the opened player does not inherit the closed muted preview state, and its open detail copy points users to the top `Sound on` control. `src/components/SpotlightMediaFrame.tsx` moved `Sound on` above native video controls and only marks audio unlocked after `play()` succeeds.
   - Free Spotlight video audio standardization: `src/components/SpotlightMediaFrame.tsx` now shows a reversible `Sound on` / `Sound off` toggle even when the surface starts as a muted motion preview. Free Spotlight display surfaces in Community Home, Dashboard, Community Marketplace Spotlight, Shop Control preview, and the public shop mini spotlight now pass the shared audio toggle for videos.
   - Vault private video display correction: backend Vault access already returns product `video_url`, and `src/lib/api.ts` now preserves it in `VaultShopAccessProduct`. `src/pages/ShopAccessPage.tsx` now renders private Vault product media through the shared `SpotlightMediaFrame`, so private video offers show muted motion first and expose the same reversible `Sound on` / `Sound off` control.
+  - Vault Control focus pass: `/app/vault-control` is now a real focused owner route in `src/pages/VaultControlPage.tsx`, not a redirect into mixed Shop Control. It inherits the main shop signboard, labels the private layer as Vault, lets owners request 1-6 paid Vault slots, shows only confirmed paid private blocks, saves picture/video private offers as `vault_private`, and creates/extends/revokes Vault access links. Community Home and the old community shop panel now route Vault actions directly to `/app/vault-control`. Backend payment instruction validation now accepts Vault quantities 1 through 6 instead of only 1 or 6. `docs/VAULT_CONTROL_FREEZE.md` records the lane rules.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -132,6 +133,8 @@
   - `npm run build` passed again on 2026-05-04 after the Shop Gallery upload/audio feedback repair.
   - `npm run build` passed again on 2026-05-04 after the Free Spotlight reversible video-audio toggle pass.
   - `npm run build` passed again on 2026-05-04 after the Vault private video display correction.
+  - `npm run build` passed again on 2026-05-04 after the focused Vault Control owner route.
+  - `python -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py` passed on 2026-05-04 after allowing Vault slot quantities 1 through 6.
 
 - Remaining risk:
   - Frontend build confirms the upload/publish code compiles. Actual picture/video display still depends on the backend process using the same `GMFN_UPLOADS_DIR` for upload saving and `/uploads` static serving.

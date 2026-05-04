@@ -2502,7 +2502,7 @@ function communityButtonGuardProps(): Pick<
           openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
           break;
         }
-        openCommunityRoute(event, "/app/shop-control#shop-control-vault");
+        openCommunityRoute(event, "/app/vault-control");
         break;
       case "spotlight-shop-setup":
         if (nextStep === "choose-community") {
@@ -3425,7 +3425,7 @@ function communityButtonGuardProps(): Pick<
               detail:
                 "Manage paid private access and vault links",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, "/app/shop-control#shop-control-vault"),
+                openCommunityRoute(event, "/app/vault-control"),
             },
             {
               icon: "🌟",

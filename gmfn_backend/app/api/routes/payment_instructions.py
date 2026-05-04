@@ -68,7 +68,7 @@ class LoanInstructionIn(BaseModel):
 class VaultInstructionIn(BaseModel):
     clan_id: int
     shop_id: int
-    quantity_total: int = Field(..., ge=1)
+    quantity_total: int = Field(..., ge=1, le=6)
     currency: str = "GBP"
 
 
@@ -138,10 +138,10 @@ def create_vault_instruction(
     )
 
     quantity_total = _safe_int(payload.quantity_total, 0)
-    if quantity_total not in {1, 6}:
+    if quantity_total < 1 or quantity_total > 6:
         raise HTTPException(
             status_code=400,
-            detail="Vault subscription currently supports quantity_total of 1 or 6 only.",
+            detail="Vault subscription currently supports quantity_total from 1 to 6 only.",
         )
 
     out = create_vault_subscription_instruction(
@@ -223,5 +223,5 @@ def my_instruction_config(
             "merchant_verify_subscription",
             "spotlight_subscription",
         ],
-        "vault_supported_quantities": [1, 6],
+        "vault_supported_quantities": [1, 2, 3, 4, 5, 6],
     }

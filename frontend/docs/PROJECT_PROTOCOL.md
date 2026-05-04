@@ -17,6 +17,7 @@ For media, Shop Gallery, or Spotlight work, also read:
 2. `docs/CONTROL_SURFACE_PROTOCOL.md`
 3. `docs/SHOP_GALLERY_FREEZE.md`
 4. `docs/FREE_SPOTLIGHT_FREEZE.md`
+5. `docs/VAULT_CONTROL_FREEZE.md` when the work touches Vault
 
 If a protocol file is missing, record that truth before changing code. Do not pretend the rule was checked.
 

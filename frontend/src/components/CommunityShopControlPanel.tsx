@@ -847,7 +847,7 @@ export default function CommunityShopControlPanel({
                 <button
                   type="button"
                   {...panelButtonGuardProps()}
-                  onClick={() => openPanelRoute("/app/shop-control?section=vault")}
+                  onClick={() => openPanelRoute("/app/vault-control")}
                   style={actionBtn("secondary")}
                 >
                   Private Vault Access

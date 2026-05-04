@@ -94,6 +94,7 @@ const RevenueAllocationPage = React.lazy(
 );
 const ShopControlPage = React.lazy(() => import("./pages/ShopControlPage"));
 const ShopAssetsPage = React.lazy(() => import("./pages/ShopAssetsPage"));
+const VaultControlPage = React.lazy(() => import("./pages/VaultControlPage"));
 const ShopAccessPage = React.lazy(() => import("./pages/ShopAccessPage"));
 const BuildFirstCirclePage = React.lazy(
   () => import("./pages/BuildFirstCirclePage")
@@ -597,7 +598,7 @@ export default function App() {
         />
         <Route
           path="vault-control"
-          element={<PreserveRedirect to="/app/shop-control#shop-control-vault" />}
+          element={<VaultControlPage />}
         />
         <Route
           path="free-spotlight"
