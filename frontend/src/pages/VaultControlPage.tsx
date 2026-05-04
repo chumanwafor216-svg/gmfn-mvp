@@ -796,12 +796,17 @@ export default function VaultControlPage() {
     if (backendSlots) return backendSlots;
     return buildVaultSlots(vaultProducts, confirmedVaultSlots, vaultSlotMap);
   }, [confirmedVaultSlots, vaultProducts, vaultSlotMap, vaultStatus]);
+  const vaultInnerSlots = useMemo(
+    () => Array.from({ length: VAULT_SLOT_LIMIT }, (_, index) => slots[index] || null),
+    [slots]
+  );
   useEffect(() => {
-    if (slots.length > 0 && selectedSlot > slots.length) {
+    if (selectedSlot > VAULT_SLOT_LIMIT) {
       setSelectedSlot(1);
     }
-  }, [selectedSlot, slots.length]);
-  const selectedProduct = slots[selectedSlot - 1] || null;
+  }, [selectedSlot]);
+  const selectedSeatIsActive = selectedSlot <= confirmedVaultSlots;
+  const selectedProduct = vaultInnerSlots[selectedSlot - 1] || null;
   const shopImageUrl = resolveAssetSrc(shop?.image_url);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
   const publicShopLink = firstTruthy(shop?.gmfn_id, me?.gmfn_id)
@@ -1529,59 +1534,68 @@ export default function VaultControlPage() {
         )}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Private Vault blocks</div>
+      <section id="vault-private-block-room" style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>Vault private block room</div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          Only paid slots appear here. Choose one block, then add or edit one private picture/video offer.
+          This is the fixed inner page for Vault. All 6 private positions stay here, but locked positions cannot be used until payment confirms.
         </div>
 
         {confirmedVaultSlots <= 0 ? (
           <div style={{ marginTop: 14, ...noticeCard("info") }}>
-            No Vault block is active yet. Create the payment request above, complete payment, then return here after confirmation.
+            The Vault room is ready, but no private block is active yet. Create the payment request above, complete payment, then the paid positions unlock here.
           </div>
-        ) : (
-          <>
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              {slots.map((item, index) => {
-                const slotNumber = index + 1;
-                const selected = selectedSlot === slotNumber;
-                return (
-                  <button
-                    key={slotNumber}
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() => setSelectedSlot(slotNumber)}
-                    style={{
-                      ...brandActionButton(selected ? "primary" : "secondary"),
-                      minHeight: 92,
-                      display: "grid",
-                      alignContent: "center",
-                      gap: 5,
-                      borderRadius: 18,
-                    }}
-                  >
-                    <span>Block #{slotNumber}</span>
-                    <span style={{ fontSize: 12, opacity: 0.9 }}>{item ? "Private offer" : "Empty"}</span>
-                  </button>
-                );
-              })}
-            </div>
+        ) : null}
 
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "300px minmax(0,1fr)",
-                gap: 14,
-              }}
-            >
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(6, minmax(0, 1fr))",
+            gap: 10,
+          }}
+        >
+          {vaultInnerSlots.map((item, index) => {
+            const slotNumber = index + 1;
+            const selected = selectedSlot === slotNumber;
+            const active = slotNumber <= confirmedVaultSlots;
+            return (
+              <button
+                key={slotNumber}
+                type="button"
+                {...buttonGuardProps()}
+                onClick={() => {
+                  setSelectedSlot(slotNumber);
+                  if (!active) {
+                    showNotice("info", `Vault block #${slotNumber} is locked. Activate paid slots before adding a private offer there.`);
+                  }
+                }}
+                style={{
+                  ...brandActionButton(selected ? "primary" : "secondary"),
+                  minHeight: 92,
+                  display: "grid",
+                  alignContent: "center",
+                  gap: 5,
+                  borderRadius: 18,
+                  opacity: active ? 1 : 0.72,
+                }}
+              >
+                <span>Block #{slotNumber}</span>
+                <span style={{ fontSize: 12, opacity: 0.9 }}>
+                  {!active ? "Locked" : item ? "Private offer" : "Empty"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "300px minmax(0,1fr)",
+            gap: 14,
+          }}
+        >
               <div
                 style={{
                   borderRadius: 22,
@@ -1606,7 +1620,7 @@ export default function VaultControlPage() {
                   />
                 ) : (
                   <div style={{ height: 220, display: "grid", placeItems: "center", color: "#FFFFFF", fontWeight: 900 }}>
-                    Block #{selectedSlot} is empty
+                    {selectedSeatIsActive ? `Block #${selectedSlot} is empty` : `Block #${selectedSlot} is locked`}
                   </div>
                 )}
               </div>
@@ -1617,6 +1631,7 @@ export default function VaultControlPage() {
                   Block #{selectedSlot}
                 </div>
                 <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <span style={badge(selectedSeatIsActive)}>{selectedSeatIsActive ? "Paid position" : "Locked"}</span>
                   <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? "In use" : "Empty"}</span>
                   <span style={badge(false)}>Private Vault</span>
                   {selectedProduct?.video_url ? <span style={badge(false)}>Video</span> : null}
@@ -1624,7 +1639,9 @@ export default function VaultControlPage() {
                 <div style={{ marginTop: 12, ...helperText() }}>
                   {selectedProduct
                     ? firstTruthy(selectedProduct.description, "This private block has no description yet.")
-                    : "Add a private offer. It can use a picture or a short video."}
+                    : selectedSeatIsActive
+                      ? "Add a private offer. It can use a picture or a short video."
+                      : "This position is reserved inside Vault. It becomes usable after payment confirms enough private blocks."}
                 </div>
                 {selectedProduct ? (
                   <div style={{ marginTop: 10, color: gmfnBrand.colors.ink, fontWeight: 900 }}>
@@ -1634,7 +1651,16 @@ export default function VaultControlPage() {
                   </div>
                 ) : null}
                 <div style={{ marginTop: 14, ...actionGrid(isCompact, 160) }}>
-                  {selectedProduct ? (
+                  {!selectedSeatIsActive ? (
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)}
+                      style={brandActionButton("secondary")}
+                    >
+                      Locked until paid
+                    </button>
+                  ) : selectedProduct ? (
                     <>
                       <button
                         type="button"
@@ -1667,8 +1693,6 @@ export default function VaultControlPage() {
                 </div>
               </div>
             </div>
-          </>
-        )}
       </section>
 
       {editorOpen ? (

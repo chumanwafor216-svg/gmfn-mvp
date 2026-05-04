@@ -1,5 +1,16 @@
 # Handoff Notes
 
+## 2026-05-04 Vault Inner Block Room
+
+- Owner product direction: Vault should have a fixed inner page/room inside `/app/vault-control`, like Shop Gallery blocks, but private and closed.
+- Updated `src/pages/VaultControlPage.tsx`:
+  - `Private Vault blocks` is now `Vault private block room`.
+  - all 6 Vault positions are always visible in that room.
+  - unpaid positions show as locked and explain that payment must confirm first.
+  - paid positions stay in the same place and become usable for add/edit/hide private picture/video offers.
+  - the section has stable anchor `#vault-private-block-room`.
+- Updated `docs/VAULT_CONTROL_FREEZE.md` so future assistants do not remove the fixed inner room or return to hiding unpaid Vault positions.
+
 ## 2026-05-04 Vault Sort Code Provision
 
 - Owner feedback: after the regional cleanup, the Vault payment instruction still did not show a visible provision for sort code.

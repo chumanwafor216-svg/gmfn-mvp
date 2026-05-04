@@ -22,28 +22,29 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 2. The Vault hero must clearly identify the surface as `Vault`.
 3. A Vault payment request can activate 1 to 6 private slots.
 4. Confirmed Vault payment quantity controls how many private blocks appear.
-5. Each paid private block can hold a picture or short video.
-6. Vault products use `visibility_mode = vault_private`.
-7. Vault products are not public gallery products.
-8. A visitor can only see Vault products through an active owner-created Vault link.
-9. Vault video surfaces use the shared muted-preview plus reversible `Sound on` / `Sound off` media rule.
-10. Vault must run as a focused task route on mobile. The general bottom rail should not compete with Vault payment, slot, editor, or link buttons.
-11. Vault owner controls keep a local product-id-to-slot map so the block the owner selected does not drift just because the backend returns products newest-first.
-12. Vault payment starts on the existing bank-transfer rail. Card payment is not connected in this pilot unless a real processor integration is added.
-13. The Vault payment surface must show the exact amount, settlement account details, and matching reference after the owner creates the instruction.
-14. Slot selection must not be silent. Before a payment code is generated, the page must immediately show the chosen slot count, exact price, the 6-slot bundle option, and the fact that the bank-transfer code/reference is required for reconciliation.
-15. Payment code generation must be quote-gated: the owner must explicitly agree to the visible slot count and GBP amount first. Changing the selected slot count clears that agreement, and the frontend must refuse to create a payment code until the currently visible quote is confirmed.
-16. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
-17. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
-18. Default private link expiry is 72 hours.
-19. Vault slot activation duration is 30 days by default.
-20. `/app/vault-control` must read backend Vault block status from the shop Vault status contract when available.
-21. Saving a private Vault offer must send the selected `vault_slot_number`.
-22. New Vault links must carry both the selected product scope and backend block scope.
-23. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
-24. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
-25. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must always include a visible `Sort code / bank code` provision, then add region-specific labels such as UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail when that identifier is required by the configured region; irrelevant regional identifiers should not distract the owner.
-26. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
+5. `/app/vault-control` must include a fixed inner Vault private block room with all 6 known positions visible. Unpaid positions stay locked and cannot be used; paid positions become usable in place.
+6. Each paid private block can hold a picture or short video.
+7. Vault products use `visibility_mode = vault_private`.
+8. Vault products are not public gallery products.
+9. A visitor can only see Vault products through an active owner-created Vault link.
+10. Vault video surfaces use the shared muted-preview plus reversible `Sound on` / `Sound off` media rule.
+11. Vault must run as a focused task route on mobile. The general bottom rail should not compete with Vault payment, slot, editor, or link buttons.
+12. Vault owner controls keep a local product-id-to-slot map so the block the owner selected does not drift just because the backend returns products newest-first.
+13. Vault payment starts on the existing bank-transfer rail. Card payment is not connected in this pilot unless a real processor integration is added.
+14. The Vault payment surface must show the exact amount, settlement account details, and matching reference after the owner creates the instruction.
+15. Slot selection must not be silent. Before a payment code is generated, the page must immediately show the chosen slot count, exact price, the 6-slot bundle option, and the fact that the bank-transfer code/reference is required for reconciliation.
+16. Payment code generation must be quote-gated: the owner must explicitly agree to the visible slot count and GBP amount first. Changing the selected slot count clears that agreement, and the frontend must refuse to create a payment code until the currently visible quote is confirmed.
+17. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
+18. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
+19. Default private link expiry is 72 hours.
+20. Vault slot activation duration is 30 days by default.
+21. `/app/vault-control` must read backend Vault block status from the shop Vault status contract when available.
+22. Saving a private Vault offer must send the selected `vault_slot_number`.
+23. New Vault links must carry both the selected product scope and backend block scope.
+24. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
+25. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
+26. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must always include a visible `Sort code / bank code` provision, then add region-specific labels such as UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail when that identifier is required by the configured region; irrelevant regional identifiers should not distract the owner.
+27. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
 
 ## Do Not Reintroduce
 
@@ -76,12 +77,13 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 5. Confirm the visible quote. Changing the slot count must clear the confirmation.
 6. Generate the payment code.
 7. Confirm the screen shows bank transfer account details, amount, the exact payment code, and expiry/due information.
-8. After confirmation, confirm only the paid slot count appears.
-9. Add a private picture block.
-10. Add a private video block.
-11. Create a Vault access link.
-12. Open `/vault/:token` and confirm only private Vault products are shown.
-13. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
+8. Confirm the inner Vault private block room shows all 6 positions, with unpaid positions locked.
+9. After confirmation, confirm the paid slot count becomes usable in the same inner block room.
+10. Add a private picture block.
+11. Add a private video block.
+12. Create a Vault access link.
+13. Open `/vault/:token` and confirm only private Vault products are shown.
+14. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
 
 ## Automated Check
 
