@@ -71,10 +71,7 @@ export default function SpotlightMediaFrame(
   const maxVideoSeconds = Number(props.maxVideoSeconds || 0);
   const shouldShowAudioUnlock =
     Boolean(videoSrc) &&
-    Boolean(props.showAudioUnlock) &&
-    Boolean(props.showVideoControls ?? true) &&
-    !(props.mutedVideo ?? false) &&
-    !audioUnlocked;
+    Boolean(props.showAudioUnlock);
 
   const frameStyle: React.CSSProperties = {
     position: "relative",
@@ -174,6 +171,14 @@ export default function SpotlightMediaFrame(
         const video = videoRef.current;
         if (!video) return;
 
+        if (audioUnlocked) {
+          video.muted = true;
+          video.defaultMuted = true;
+          video.volume = 0;
+          setAudioUnlocked(false);
+          return;
+        }
+
         video.muted = false;
         video.defaultMuted = false;
         video.volume = 1;
@@ -203,9 +208,13 @@ export default function SpotlightMediaFrame(
         cursor: "pointer",
         touchAction: "manipulation",
       }}
-      aria-label={props.audioUnlockLabel || "Turn video sound on"}
+      aria-label={
+        audioUnlocked
+          ? "Turn video sound off"
+          : props.audioUnlockLabel || "Turn video sound on"
+      }
     >
-      {props.audioUnlockLabel || "Sound on"}
+      {audioUnlocked ? "Sound off" : props.audioUnlockLabel || "Sound on"}
     </button>
   ) : null;
 

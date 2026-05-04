@@ -7663,6 +7663,8 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
+                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
+                  audioUnlockLabel="Sound on"
                   maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
                     <div
@@ -8128,6 +8130,8 @@ export default function DashboardPage() {
                   autoPlayVideo={Boolean(spotlightVideoCandidate)}
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
+                  showAudioUnlock={Boolean(spotlightVideoCandidate)}
+                  audioUnlockLabel="Sound on"
                   maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
                     <div

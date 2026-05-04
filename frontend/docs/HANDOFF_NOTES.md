@@ -96,6 +96,7 @@
   - Community Home header/button repair: the duplicated in-page Community Home top header no longer renders under the authenticated mobile app header. The remaining app header now uses `☰ Menu` and `🛠 Tools`, has wider phone columns, and AppLayout drawer/action links no longer use translateZ tap-layer hacks. Community Home owner action rows now sit above surrounding surfaces with a stronger isolated tap layer so `Owner Shop Control` owns the full visible row.
   - System tap-target repair: `src/index.css` no longer applies `transform: translateZ(0)` to every button. It now hard-resets transforms/containment on anchors, buttons, role-buttons, summaries, and submit/button inputs so older page-local tap-layer hacks cannot keep causing mobile hit-area drift.
   - Shop Gallery upload/audio feedback repair: `src/pages/ShopAssetsPage.tsx` now leaves a persistent selected-block success/failure message after save instead of closing the form and relying on a short toast. `src/pages/ShopGalleryPage.tsx` remounts product videos when a card opens so the opened player does not inherit the closed muted preview state, and its open detail copy points users to the top `Sound on` control. `src/components/SpotlightMediaFrame.tsx` moved `Sound on` above native video controls and only marks audio unlocked after `play()` succeeds.
+  - Free Spotlight video audio standardization: `src/components/SpotlightMediaFrame.tsx` now shows a reversible `Sound on` / `Sound off` toggle even when the surface starts as a muted motion preview. Free Spotlight display surfaces in Community Home, Dashboard, Community Marketplace Spotlight, Shop Control preview, and the public shop mini spotlight now pass the shared audio toggle for videos.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -128,6 +129,7 @@
   - `npm run build` passed again on 2026-05-04 after the Community Home duplicate-header and owner-row tap repair.
   - `npm run build` passed again on 2026-05-04 after the global interactive-control transform reset.
   - `npm run build` passed again on 2026-05-04 after the Shop Gallery upload/audio feedback repair.
+  - `npm run build` passed again on 2026-05-04 after the Free Spotlight reversible video-audio toggle pass.
 
 - Remaining risk:
   - Frontend build confirms the upload/publish code compiles. Actual picture/video display still depends on the backend process using the same `GMFN_UPLOADS_DIR` for upload saving and `/uploads` static serving.

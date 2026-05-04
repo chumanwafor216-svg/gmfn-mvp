@@ -2460,6 +2460,8 @@ export default function ShopControlPage() {
                     autoPlayVideo={Boolean(spotlightVideoPreviewUrl)}
                     mutedVideo={Boolean(spotlightVideoPreviewUrl)}
                     loopVideo={Boolean(spotlightVideoPreviewUrl)}
+                    showAudioUnlock={Boolean(spotlightVideoPreviewUrl)}
+                    audioUnlockLabel="Sound on"
                     maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   />
                 ) : (

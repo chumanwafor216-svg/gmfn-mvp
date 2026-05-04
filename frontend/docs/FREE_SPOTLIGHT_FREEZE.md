@@ -16,6 +16,7 @@ The Free Spotlight line is:
    - confirmed `shop_id`
 5. Community Home shows the optimistic live spotlight immediately.
 6. Dashboard spotlight remains visible by default and resolves `/uploads/...` media candidates.
+7. Spotlight video surfaces show motion muted first, then expose a clear `Sound on` / `Sound off` toggle through the shared media frame.
 
 ## Do Not Reintroduce
 
@@ -25,6 +26,7 @@ The Free Spotlight line is:
 - Do not add a second Shop Control spotlight publisher underneath the main Shop Control page. The active Shop Control spotlight surface is the portal section with `id="shop-control-spotlight"`.
 - Do not native-disable the free spotlight publish button for recoverable states. Let the click explain the blocker.
 - Do not bypass the shared stable tap-target guard on publish/cancel/preview controls. Spotlight buttons must not jump or become silent taps while media is preparing.
+- Do not remove the shared video audio toggle from Free Spotlight displays. Silent motion preview is allowed; opened/listening state must be explicit and reversible.
 
 ## Still Allowed
 
@@ -51,3 +53,4 @@ Manual check:
 6. Confirm live preview appears on Community Home.
 7. Open Dashboard and confirm Spotlight is visible.
 8. Confirm the publish button remains tappable and explains preparing/blocked states.
+9. If the Spotlight uses video, confirm motion previews muted, `Sound on` is visible, and the same button can turn sound off again.

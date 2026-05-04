@@ -36,7 +36,7 @@ Lane-specific colors are allowed, but the mechanical button behavior should stay
 
 Closed autoplay media can stay muted for mobile browser safety.
 
-Opened media that should have sound must show an explicit audio action, such as `Sound on`, that unmutes and plays inside the user tap.
+Opened media that should have sound must show an explicit audio action, such as `Sound on`, that unmutes and plays inside the user tap. After sound is active, the same surface must let the user turn sound off again without hunting through native video controls.
 
 ## Freeze Check
 

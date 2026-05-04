@@ -432,6 +432,8 @@ export default function CommunityMarketplaceSpotlight() {
                 autoPlayVideo={Boolean(activeItemView.heroVideoSrc)}
                 mutedVideo={Boolean(activeItemView.heroVideoSrc)}
                 loopVideo={Boolean(activeItemView.heroVideoSrc)}
+                showAudioUnlock={Boolean(activeItemView.heroVideoSrc)}
+                audioUnlockLabel="Sound on"
                 maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
               />
             ) : (

@@ -3958,6 +3958,8 @@ function communityButtonGuardProps(): Pick<
                       autoPlayVideo={Boolean(activeCommunitySpotlight.videoUrl)}
                       mutedVideo={Boolean(activeCommunitySpotlight.videoUrl)}
                       loopVideo={Boolean(activeCommunitySpotlight.videoUrl)}
+                      showAudioUnlock={Boolean(activeCommunitySpotlight.videoUrl)}
+                      audioUnlockLabel="Sound on"
                       maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                       fallback={
                         <div
@@ -4286,6 +4288,8 @@ function communityButtonGuardProps(): Pick<
                       autoPlayVideo={Boolean(freeSpotlightVideoPreviewUrl)}
                       mutedVideo={Boolean(freeSpotlightVideoPreviewUrl)}
                       loopVideo={Boolean(freeSpotlightVideoPreviewUrl)}
+                      showAudioUnlock={Boolean(freeSpotlightVideoPreviewUrl)}
+                      audioUnlockLabel="Sound on"
                       maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                     />
                   </div>

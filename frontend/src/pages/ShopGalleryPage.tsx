@@ -2162,6 +2162,8 @@ export default function ShopGalleryPage() {
                       autoPlayVideo={Boolean(miniSpotlightView.videoUrl)}
                       mutedVideo={Boolean(miniSpotlightView.videoUrl)}
                       loopVideo={Boolean(miniSpotlightView.videoUrl)}
+                      showAudioUnlock={Boolean(miniSpotlightView.videoUrl)}
+                      audioUnlockLabel="Sound on"
                       maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                     />
 

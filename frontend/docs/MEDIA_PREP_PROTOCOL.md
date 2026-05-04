@@ -18,6 +18,7 @@ Do not ask normal users to understand file sizes before they can continue.
 - Pictures use `prepareSpotlightImageFile` to resize/compress oversized images before upload.
 - Videos use `prepareSpotlightVideoFile` to prepare a short clip that fits the current pilot media limit.
 - If a selected video is already under the current upload size limit, keep the original file to preserve audio. Limit public playback in the player instead of re-recording a silent copy.
+- Video display surfaces should show safe muted motion first. When audio is available, the shared media frame must provide an explicit `Sound on` / `Sound off` toggle so the user controls listening.
 - Shop Gallery video-only blocks use `createShopGalleryCoverFromVideo` to generate the needed cover frame automatically.
 - If preparation succeeds, the UI should show an info notice such as: `We prepared a lighter picture automatically...`
 - If preparation is impossible in the current browser, the UI must show the reason directly beside the picker or submit button.
