@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
+import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   getVaultShopAccessView,
   recordVaultShopAccessOpen,
@@ -126,6 +127,54 @@ function actionBtn(primary = false): React.CSSProperties {
       ? "0 18px 32px rgba(1,13,32,0.24), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)"
       : "0 14px 28px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
   };
+}
+
+function apiBase(): string {
+  const raw =
+    (typeof import.meta !== "undefined" &&
+      (import.meta as any)?.env &&
+      (import.meta as any).env.VITE_API_BASE_URL) ||
+    "/api";
+
+  return String(raw || "").trim().replace(/\/+$/, "");
+}
+
+function apiOrigin(): string {
+  const base = apiBase();
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const url = new URL(base);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      return typeof window !== "undefined"
+        ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+        : "";
+    }
+  }
+
+  return typeof window !== "undefined"
+    ? String(window.location.origin || "").trim().replace(/\/+$/, "")
+    : "";
+}
+
+function resolveAssetSrc(raw: unknown): string {
+  const value = safeStr(raw);
+  if (!value) return "";
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("blob:")
+  ) {
+    return value;
+  }
+
+  if (value.startsWith("/")) {
+    return `${apiOrigin()}${value}`;
+  }
+
+  return `${apiOrigin()}/${value.replace(/^\/+/, "")}`;
 }
 
 function statusLabel(status: string): string {
@@ -575,91 +624,112 @@ export default function ShopAccessPage() {
                 This access link is active, but no private offers are being shown right now.
               </div>
             ) : (
-              products.map((product, index) => (
-                <div
-                  key={`${safeStr(product?.id) || index}`}
-                  style={{
-                    ...innerCard(
-                      "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)"
-                    ),
-                    border: "1px solid rgba(212,175,55,0.16)",
-                    boxShadow: "0 18px 40px rgba(2,12,27,0.22)",
-                  }}
-                >
+              products.map((product, index) => {
+                const productImageUrl = resolveAssetSrc(product?.image_url);
+                const productVideoUrl = resolveAssetSrc(product?.video_url);
+                const productTitle = firstTruthy(product?.name, "Vault product");
+
+                return (
                   <div
+                    key={`${safeStr(product?.id) || index}`}
                     style={{
-                      width: "100%",
-                      height: 220,
-                      borderRadius: 16,
-                      overflow: "hidden",
-                      background:
-                        "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: "1px solid rgba(212,175,55,0.12)",
+                      ...innerCard(
+                        "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)"
+                      ),
+                      border: "1px solid rgba(212,175,55,0.16)",
+                      boxShadow: "0 18px 40px rgba(2,12,27,0.22)",
                     }}
                   >
-                    {safeStr(product?.image_url) ? (
-                      <img
-                        src={safeStr(product?.image_url)}
-                        alt={firstTruthy(product?.name, "Vault product")}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    ) : (
-                      <div style={{ color: "#D7E3F1", fontWeight: 800 }}>
-                        No image shared
-                      </div>
-                    )}
-                  </div>
+                    <div
+                      style={{
+                        width: "100%",
+                        height: 220,
+                        borderRadius: 16,
+                        overflow: "hidden",
+                        background:
+                          "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        border: "1px solid rgba(212,175,55,0.12)",
+                      }}
+                    >
+                      {productVideoUrl || productImageUrl ? (
+                        <SpotlightMediaFrame
+                          imageUrl={productImageUrl}
+                          videoUrl={productVideoUrl}
+                          videoPoster={productImageUrl || undefined}
+                          alt={productTitle}
+                          frameStyle={{
+                            width: "100%",
+                            height: "100%",
+                            minHeight: 220,
+                            borderRadius: 16,
+                            border: "none",
+                            boxShadow: "none",
+                          }}
+                          mediaStyle={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                          autoPlayVideo={Boolean(productVideoUrl)}
+                          mutedVideo={Boolean(productVideoUrl)}
+                          loopVideo={Boolean(productVideoUrl)}
+                          showAudioUnlock={Boolean(productVideoUrl)}
+                          audioUnlockLabel="Sound on"
+                        />
+                      ) : (
+                        <div style={{ color: "#D7E3F1", fontWeight: 800 }}>
+                          No media shared
+                        </div>
+                      )}
+                    </div>
 
-                  <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>Private block</span>
-                    {safeStr(view?.watermark_text) ? (
-                      <span style={badge(false)}>{safeStr(view?.watermark_text)}</span>
-                    ) : null}
-                  </div>
+                    <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={badge(true)}>Private block</span>
+                      {productVideoUrl ? <span style={badge(false)}>Video</span> : null}
+                      {safeStr(view?.watermark_text) ? (
+                        <span style={badge(false)}>{safeStr(view?.watermark_text)}</span>
+                      ) : null}
+                    </div>
 
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 16,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    {firstTruthy(product?.name, "Vault product")}
-                  </div>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        fontSize: 16,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {productTitle}
+                    </div>
 
-                  <div
-                    style={{
-                      marginTop: 8,
-                      ...helperText(),
-                      fontSize: 13,
-                      color: "#D7E3F1",
-                    }}
-                  >
-                    {firstTruthy(product?.description, "No product description was shared.")}
-                  </div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        ...helperText(),
+                        fontSize: 13,
+                        color: "#D7E3F1",
+                      }}
+                    >
+                      {firstTruthy(product?.description, "No product description was shared.")}
+                    </div>
 
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 15,
-                    }}
-                  >
-                    {productPriceText(product)}
+                    <div
+                      style={{
+                        marginTop: 10,
+                        color: "#F8FBFF",
+                        fontWeight: 900,
+                        fontSize: 15,
+                      }}
+                    >
+                      {productPriceText(product)}
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </section>

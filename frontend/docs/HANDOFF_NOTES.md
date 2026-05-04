@@ -97,6 +97,7 @@
   - System tap-target repair: `src/index.css` no longer applies `transform: translateZ(0)` to every button. It now hard-resets transforms/containment on anchors, buttons, role-buttons, summaries, and submit/button inputs so older page-local tap-layer hacks cannot keep causing mobile hit-area drift.
   - Shop Gallery upload/audio feedback repair: `src/pages/ShopAssetsPage.tsx` now leaves a persistent selected-block success/failure message after save instead of closing the form and relying on a short toast. `src/pages/ShopGalleryPage.tsx` remounts product videos when a card opens so the opened player does not inherit the closed muted preview state, and its open detail copy points users to the top `Sound on` control. `src/components/SpotlightMediaFrame.tsx` moved `Sound on` above native video controls and only marks audio unlocked after `play()` succeeds.
   - Free Spotlight video audio standardization: `src/components/SpotlightMediaFrame.tsx` now shows a reversible `Sound on` / `Sound off` toggle even when the surface starts as a muted motion preview. Free Spotlight display surfaces in Community Home, Dashboard, Community Marketplace Spotlight, Shop Control preview, and the public shop mini spotlight now pass the shared audio toggle for videos.
+  - Vault private video display correction: backend Vault access already returns product `video_url`, and `src/lib/api.ts` now preserves it in `VaultShopAccessProduct`. `src/pages/ShopAccessPage.tsx` now renders private Vault product media through the shared `SpotlightMediaFrame`, so private video offers show muted motion first and expose the same reversible `Sound on` / `Sound off` control.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -130,6 +131,7 @@
   - `npm run build` passed again on 2026-05-04 after the global interactive-control transform reset.
   - `npm run build` passed again on 2026-05-04 after the Shop Gallery upload/audio feedback repair.
   - `npm run build` passed again on 2026-05-04 after the Free Spotlight reversible video-audio toggle pass.
+  - `npm run build` passed again on 2026-05-04 after the Vault private video display correction.
 
 - Remaining risk:
   - Frontend build confirms the upload/publish code compiles. Actual picture/video display still depends on the backend process using the same `GMFN_UPLOADS_DIR` for upload saving and `/uploads` static serving.

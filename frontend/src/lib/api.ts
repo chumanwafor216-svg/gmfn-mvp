@@ -3396,6 +3396,7 @@ export type VaultShopAccessProduct = {
   price?: string | null;
   currency?: string | null;
   image_url?: string | null;
+  video_url?: string | null;
 };
 
 export type VaultShopAccessView = {
@@ -3613,6 +3614,12 @@ function normalizeVaultAccessProduct(raw: any): VaultShopAccessProduct {
       src?.photo_url,
       src?.thumbnail_url,
       src?.cover_image_url
+    ),
+    video_url: vaultFirstTruthy(
+      src?.video_url,
+      src?.media_video_url,
+      src?.clip_url,
+      src?.story_video_url
     ),
   };
 }
