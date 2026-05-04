@@ -1,5 +1,13 @@
 # Handoff Notes
 
+## 2026-05-04 Vault Sort Code Provision
+
+- Owner feedback: after the regional cleanup, the Vault payment instruction still did not show a visible provision for sort code.
+- Updated `src/pages/VaultControlPage.tsx` so the payment detail card always includes `Sort code / bank code`.
+- The field resolves from configured settlement values in this order: `sort_code`, `bank_code`, `branch_code`, `ifsc_code`, then `mobile_money_number`.
+- If none of those real values exist, it shows the pilot rail's not-configured message instead of disappearing or inventing a fake code.
+- Updated `docs/VAULT_CONTROL_FREEZE.md` to make this a frozen rule.
+
 ## 2026-05-04 Vault Quote Confirmation
 
 - Owner feedback: the Vault slot selector showed a price preview, but the system still felt too quiet. A user could choose 3, 5, or 6 slots without a clear agreement moment before the payment code was generated.

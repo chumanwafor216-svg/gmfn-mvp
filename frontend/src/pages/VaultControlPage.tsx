@@ -877,6 +877,13 @@ export default function VaultControlPage() {
     settlementValue(vaultSettlement, "branch_code"),
     settlementValue(vaultSettlement, "swift_bic")
   );
+  const vaultPaymentSortOrBankCode = firstTruthy(
+    settlementValue(vaultSettlement, "sort_code"),
+    settlementValue(vaultSettlement, "bank_code"),
+    settlementValue(vaultSettlement, "branch_code"),
+    settlementValue(vaultSettlement, "ifsc_code"),
+    settlementValue(vaultSettlement, "mobile_money_number")
+  );
   const vaultPaymentTransferLines = [
     paymentLine("Rail", settlementValue(vaultSettlement, "rail_name")),
     paymentLine("Payment networks", settlementListValue(vaultSettlement, "payment_networks")),
@@ -885,6 +892,7 @@ export default function VaultControlPage() {
     paymentLine("Account number", settlementValue(vaultSettlement, "account_number")),
     paymentLine("Country", settlementValue(vaultSettlement, "country")),
     paymentLine("Region profile", vaultPaymentRegionLabel),
+    paymentLine("Sort code / bank code", vaultPaymentSortOrBankCode || settlementMissingText),
     vaultPaymentUsesUkSortCode ? paymentLine("UK sort code", settlementValue(vaultSettlement, "sort_code") || settlementMissingText) : "",
     vaultPaymentUsesUsRouting ? paymentLine("US routing number", settlementValue(vaultSettlement, "routing_number") || settlementMissingText) : "",
     paymentLine("ACH routing", settlementValue(vaultSettlement, "ach_routing_number")),
