@@ -291,18 +291,18 @@ def ensure_loan_repayment_expected_payment(
 def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
     """
     Agreed MVP pricing:
-    - 1 Vault slot for one year = 1.00 GBP
-    - 6 Vault slots for one year = 5.00 GBP
+    - 1-5 Vault slots for one year = 1.00 GBP per slot
+    - 6 Vault slots for one year = 5.00 GBP bundle
     """
     qty = _positive_int(quantity_total, name="quantity_total")
 
-    if qty == 1:
-        return Decimal("1.00")
+    if 1 <= qty <= 5:
+        return Decimal("1.00") * Decimal(qty)
     if qty == 6:
         return Decimal("5.00")
 
     raise ValueError(
-        "Vault MVP pricing is currently defined for 1 slot or 6-slot annual bundle only."
+        "Vault MVP pricing currently supports 1 to 6 slots only."
     )
 
 

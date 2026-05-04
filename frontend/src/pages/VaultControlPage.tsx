@@ -81,6 +81,16 @@ type ExpectedPaymentRecord = {
   quantity_total?: number | string | null;
 };
 
+type SettlementRecord = {
+  rail_name?: string | null;
+  bank_name?: string | null;
+  account_name?: string | null;
+  account_number?: string | null;
+  sort_code?: string | null;
+  country?: string | null;
+  support_note?: string | null;
+};
+
 const VAULT_SLOT_LIMIT = 6;
 const VAULT_SLOT_STORAGE_PREFIX = "gmfn.vaultControl.slotMap.v1";
 
@@ -268,6 +278,21 @@ function paymentQuantity(payment?: ExpectedPaymentRecord | null): number {
   );
 }
 
+function settlementValue(settlement: SettlementRecord | null, key: keyof SettlementRecord): string {
+  return firstTruthy(settlement?.[key]);
+}
+
+function paymentLine(label: string, value: unknown): string {
+  const text = firstTruthy(value);
+  return text ? `${label}: ${text}` : "";
+}
+
+function vaultPaymentStatusLabel(payment?: ExpectedPaymentRecord | null): string {
+  if (!payment) return "Not started";
+  if (isConfirmedPayment(payment)) return "Confirmed";
+  return firstTruthy(payment.status, "Awaiting transfer");
+}
+
 function isConfirmedPayment(payment?: ExpectedPaymentRecord | null): boolean {
   const status = safeStr(payment?.status).toLowerCase();
   return Boolean(payment?.confirmed_at) || status === "confirmed" || status === "matched";
@@ -324,7 +349,10 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const root = apiBase();
-  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  let cleanPath = path.startsWith("/") ? path : `/${path}`;
+  if (root.endsWith("/api") && cleanPath.startsWith("/api/")) {
+    cleanPath = cleanPath.slice(4);
+  }
   const url = `${root}${cleanPath}`;
   const res = await fetch(url, {
     ...init,
@@ -459,6 +487,8 @@ export default function VaultControlPage() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [vaultLinks, setVaultLinks] = useState<VaultLinkItem[]>([]);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
+  const [vaultInstruction, setVaultInstruction] = useState<ExpectedPaymentRecord | null>(null);
+  const [vaultSettlement, setVaultSettlement] = useState<SettlementRecord | null>(null);
   const [vaultSlotMap, setVaultSlotMap] = useState<Record<string, number>>({});
   const [identityBlocked, setIdentityBlocked] = useState(false);
   const [creatingPayment, setCreatingPayment] = useState(false);
@@ -508,11 +538,13 @@ export default function VaultControlPage() {
   const loadPage = useCallback(async () => {
     setLoading(true);
     try {
-      const [meRes, riskRes] = await Promise.all([
+      const [meRes, riskRes, instructionConfigRes] = await Promise.all([
         getMe().catch(() => null),
         getMyIdentityRisk().catch(() => null),
+        apiJson<any>("/api/payment-instructions/my").catch(() => null),
       ]);
       setMe(meRes || null);
+      setVaultSettlement((instructionConfigRes?.settlement || null) as SettlementRecord | null);
       const continuity = (riskRes as any)?.continuity || {};
       const status = safeStr(continuity?.status).toLowerCase();
       setIdentityBlocked(status === "reverify_required" || status === "protected_lock");
@@ -610,6 +642,33 @@ export default function VaultControlPage() {
   const publicShopLink = firstTruthy(shop?.gmfn_id, me?.gmfn_id)
     ? publicFrontendUrl(`/shop/${encodeURIComponent(firstTruthy(shop?.gmfn_id, me?.gmfn_id))}`)
     : "";
+  const activeVaultPayment = vaultInstruction || latestVaultPayment;
+  const activeVaultPaymentReference = firstTruthy(
+    activeVaultPayment?.reference_display,
+    (activeVaultPayment as any)?.reference
+  );
+  const activeVaultPaymentAmount = firstTruthy(activeVaultPayment?.amount);
+  const activeVaultPaymentCurrency = firstTruthy(activeVaultPayment?.currency, "GBP");
+  const vaultPaymentTransferLines = [
+    paymentLine("Rail", settlementValue(vaultSettlement, "rail_name")),
+    paymentLine("Bank", settlementValue(vaultSettlement, "bank_name")),
+    paymentLine("Account name", settlementValue(vaultSettlement, "account_name")),
+    paymentLine("Account number", settlementValue(vaultSettlement, "account_number")),
+    paymentLine("Sort code", settlementValue(vaultSettlement, "sort_code")),
+    paymentLine("Country", settlementValue(vaultSettlement, "country")),
+    paymentLine("Amount", activeVaultPaymentAmount ? `${activeVaultPaymentCurrency} ${activeVaultPaymentAmount}` : ""),
+    paymentLine("Reference", activeVaultPaymentReference),
+  ].filter(Boolean);
+
+  function copyVaultPaymentInstruction() {
+    const text = vaultPaymentTransferLines.join("\n");
+    if (navigator?.clipboard?.writeText && text) {
+      void navigator.clipboard.writeText(text);
+      showNotice("success", "Vault bank transfer instruction copied.");
+      return;
+    }
+    showNotice("info", "Copy is not available in this browser. Use the payment details shown here.");
+  }
 
   function resetProductForm() {
     setEditingProductId(null);
@@ -751,12 +810,14 @@ export default function VaultControlPage() {
           currency: "GBP",
         }),
       });
+      setVaultInstruction(result as ExpectedPaymentRecord);
+      setVaultSettlement((result?.settlement || vaultSettlement || null) as SettlementRecord | null);
       await loadPage();
       const reference = firstTruthy(result?.reference_display, result?.reference);
       showNotice(
         "success",
         reference
-          ? `Vault payment reference ready: ${reference}`
+          ? `Vault bank transfer instruction is ready. Use reference ${reference}.`
           : `Vault payment request created for ${quantityTotal} slot${quantityTotal === 1 ? "" : "s"}.`
       );
       if (navigator?.clipboard?.writeText && reference) {
@@ -1032,7 +1093,10 @@ export default function VaultControlPage() {
       <section style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>Activate private blocks</div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 780 }}>
-          Pay for the number of Vault blocks you want to use. Public Shop Gallery keeps 12 free blocks; Vault opens up to 6 private paid blocks.
+          Pay for the number of Vault blocks you want to use. The current rail is bank transfer with a matching reference. Card payment is not connected in this pilot yet.
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
+          Pricing: 1-5 slots are GBP 1 each. 6 slots use the GBP 5 bundle.
         </div>
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "180px minmax(0, 1fr)", gap: 12 }}>
           <div>
@@ -1055,20 +1119,77 @@ export default function VaultControlPage() {
               disabled={identityBlocked || creatingPayment || !shop?.id}
               style={brandActionButton("primary", identityBlocked || creatingPayment || !shop?.id)}
             >
-              {identityBlocked ? "Review identity first" : creatingPayment ? "Preparing payment..." : "Create Vault payment"}
+              {identityBlocked ? "Review identity first" : creatingPayment ? "Preparing bank instruction..." : "Continue to bank transfer"}
             </button>
           </div>
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={badge(isConfirmedPayment(latestVaultPayment))}>
-            Payment: {firstTruthy(latestVaultPayment?.status, confirmedVaultSlots ? "Confirmed" : "Not started")}
+          <span style={badge(isConfirmedPayment(activeVaultPayment))}>
+            Payment: {vaultPaymentStatusLabel(activeVaultPayment)}
           </span>
-          {latestVaultPayment ? (
+          {activeVaultPayment ? (
             <span style={badge(false)}>
-              Ref: {firstTruthy(latestVaultPayment.reference_display, "Awaiting reference")}
+              Ref: {firstTruthy(activeVaultPaymentReference, "Awaiting reference")}
             </span>
           ) : null}
         </div>
+        {activeVaultPayment ? (
+          <div style={{ marginTop: 14, ...innerCard("#FCFEFF") }}>
+            <div style={sectionLabel()}>Bank transfer instruction</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Transfer the exact amount into the account below and use the exact reference. The Vault slots open after the bank payment is matched and confirmed.
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {vaultPaymentTransferLines.map((line) => {
+                const [label, ...rest] = line.split(":");
+                const value = rest.join(":").trim();
+                return (
+                  <div key={line} style={innerCard("#FFFFFF")}>
+                    <div style={sectionLabel()}>{label}</div>
+                    <div style={{ marginTop: 6, color: gmfnBrand.colors.ink, fontWeight: 950, overflowWrap: "anywhere" }}>
+                      {value}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {settlementValue(vaultSettlement, "support_note") ? (
+              <div style={{ marginTop: 10, ...helperText() }}>
+                {settlementValue(vaultSettlement, "support_note")}
+              </div>
+            ) : null}
+            <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={copyVaultPaymentInstruction}
+                style={brandActionButton("secondary", vaultPaymentTransferLines.length === 0)}
+                disabled={vaultPaymentTransferLines.length === 0}
+              >
+                Copy payment details
+              </button>
+              <button
+                type="button"
+                {...buttonGuardProps()}
+                onClick={() => void loadPage()}
+                style={brandActionButton("soft")}
+              >
+                Check payment status
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ marginTop: 14, ...noticeCard("info") }}>
+            Select the number of slots, then tap Continue to bank transfer to generate the exact amount, account, and reference.
+          </div>
+        )}
       </section>
 
       <section style={pageCard("#FFFFFF")}>
