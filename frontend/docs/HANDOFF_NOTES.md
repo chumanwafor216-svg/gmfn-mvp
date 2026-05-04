@@ -1,5 +1,16 @@
 # Handoff Notes
 
+## 2026-05-04 Vault Block-Scoped Link Controls
+
+- Owner product direction: Vault links should sit inside the exact Vault block they open, not float as a general Vault link.
+- Auditor check: backend link creation already requires `product_id` and derives/stores `block_id`, so the frontend should keep product-scoped creation instead of inventing a new general link path.
+- Updated `src/pages/VaultControlPage.tsx`:
+  - selected block panel now includes `Private link for this block`.
+  - link status, offer id, block tag, created/expiry details, copy, open, extend, revoke, and create/fresh-link actions now live inside the selected block.
+  - create-link action still sends the selected private offer `product_id`; backend derives the block scope.
+  - lower `Access links` became `Access link history`, so it records existing links without competing as the main link creation surface.
+- Updated `docs/VAULT_CONTROL_FREEZE.md` to freeze block-panel link controls as the primary owner experience.
+
 ## 2026-05-04 Vault Inner Block Room
 
 - Owner product direction: Vault should have a fixed inner page/room inside `/app/vault-control`, like Shop Gallery blocks, but private and closed.

@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   createVaultShopAccessLink,
@@ -622,6 +621,24 @@ function vaultLinkUrl(link: VaultLinkItem | null | undefined): string {
   return raw ? publicFrontendUrl(raw) : "";
 }
 
+function vaultLinkStatus(link: VaultLinkItem | null | undefined): string {
+  return firstTruthy(link?.status, "active").toLowerCase();
+}
+
+function isUsableVaultLink(link: VaultLinkItem | null | undefined): boolean {
+  return vaultLinkStatus(link) === "active";
+}
+
+function vaultLinkMatchesProduct(link: VaultLinkItem, product: ProductRecord | null | undefined): boolean {
+  if (!product) return false;
+  const productId = firstTruthy(link.product_id);
+  const blockId = firstTruthy((link as any).block_id);
+  return Boolean(
+    (productId && safeStr(product.id) === productId) ||
+    (blockId && safeStr(product.vault_block_id) === blockId)
+  );
+}
+
 export default function VaultControlPage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
   const [isCompact, setIsCompact] = useState(() =>
@@ -807,11 +824,19 @@ export default function VaultControlPage() {
   }, [selectedSlot]);
   const selectedSeatIsActive = selectedSlot <= confirmedVaultSlots;
   const selectedProduct = vaultInnerSlots[selectedSlot - 1] || null;
+  const selectedBlockLinks = selectedProduct
+    ? vaultLinks.filter((link) => vaultLinkMatchesProduct(link, selectedProduct))
+    : [];
+  const selectedBlockPrimaryLink =
+    selectedBlockLinks.find((link) => isUsableVaultLink(link)) || selectedBlockLinks[0] || null;
+  const selectedBlockLinkUrl = vaultLinkUrl(selectedBlockPrimaryLink);
+  const selectedBlockLinkStatus = selectedBlockPrimaryLink
+    ? firstTruthy(selectedBlockPrimaryLink.status, "active")
+    : "No link";
+  const selectedBlockLinkedAt = firstTruthy(selectedBlockPrimaryLink?.created_at);
+  const selectedBlockLinkExpiresAt = firstTruthy(selectedBlockPrimaryLink?.expires_at);
   const shopImageUrl = resolveAssetSrc(shop?.image_url);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
-  const publicShopLink = firstTruthy(shop?.gmfn_id, me?.gmfn_id)
-    ? publicFrontendUrl(`/shop/${encodeURIComponent(firstTruthy(shop?.gmfn_id, me?.gmfn_id))}`)
-    : "";
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
   const vaultPaymentDueDays = Math.max(
     1,
@@ -1691,6 +1716,98 @@ export default function VaultControlPage() {
                     </button>
                   )}
                 </div>
+                <div style={{ marginTop: 14, ...innerCard("#FFFFFF") }}>
+                  <div style={sectionLabel()}>Private link for this block</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    This link is attached to Block #{selectedSlot}. It opens only this private offer, with the shop identity and this block's picture/video/details already carried into the viewer page.
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(Boolean(selectedBlockPrimaryLink))}>
+                      {selectedBlockPrimaryLink ? selectedBlockLinkStatus : "No link"}
+                    </span>
+                    <span style={badge(Boolean(selectedProduct))}>
+                      {selectedProduct ? `Offer #${selectedProduct.id}` : "No offer yet"}
+                    </span>
+                    {selectedProduct?.vault_block_id ? (
+                      <span style={badge(true)}>Block tag #{selectedProduct.vault_block_id}</span>
+                    ) : null}
+                  </div>
+                  {selectedBlockPrimaryLink ? (
+                    <div style={{ marginTop: 8, ...helperText() }}>
+                      {selectedBlockLinkedAt ? `Created: ${safeDateTime(selectedBlockLinkedAt)}. ` : ""}
+                      Expires: {safeDateTime(selectedBlockLinkExpiresAt) || "No expiry returned yet"}.
+                    </div>
+                  ) : null}
+                  <div style={{ marginTop: 12, ...actionGrid(isCompact, 150) }}>
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => {
+                        if (identityBlocked) {
+                          showNotice("info", "Complete identity review before sharing private Vault links.");
+                          return;
+                        }
+                        if (!selectedSeatIsActive) {
+                          showNotice("info", `Vault block #${selectedSlot} is locked. Activate it before creating a private link.`);
+                          return;
+                        }
+                        if (!selectedProduct) {
+                          showNotice("info", `Add a private offer to block #${selectedSlot} before creating its link.`);
+                          return;
+                        }
+                        void createViewingLink();
+                      }}
+                      style={brandActionButton("primary", creatingLink)}
+                    >
+                      {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "Create fresh link" : "Create block link"}
+                    </button>
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => {
+                        if (navigator?.clipboard?.writeText && selectedBlockLinkUrl) {
+                          void navigator.clipboard.writeText(selectedBlockLinkUrl);
+                          showNotice("success", `Vault block #${selectedSlot} link copied.`);
+                          return;
+                        }
+                        showNotice("info", "Create this block link before copying it.");
+                      }}
+                      disabled={!selectedBlockLinkUrl}
+                      style={brandActionButton("soft", !selectedBlockLinkUrl)}
+                    >
+                      Copy block link
+                    </button>
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => {
+                        if (selectedBlockLinkUrl) window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer");
+                      }}
+                      disabled={!selectedBlockLinkUrl}
+                      style={brandActionButton("secondary", !selectedBlockLinkUrl)}
+                    >
+                      Open private view
+                    </button>
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")}
+                      disabled={!selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id)}
+                      style={brandActionButton("secondary", !selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id))}
+                    >
+                      Extend link
+                    </button>
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")}
+                      disabled={!selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"}
+                      style={brandActionButton("secondary", !selectedBlockPrimaryLink || busyLinkId === firstTruthy(selectedBlockPrimaryLink?.id) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}
+                    >
+                      Revoke link
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
       </section>
@@ -1763,37 +1880,20 @@ export default function VaultControlPage() {
       ) : null}
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Access links</div>
+        <div style={sectionLabel()}>Access link history</div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 780 }}>
-          A Vault block is private until you create and share a link. The link opens only the selected block, and it can expire, be extended, or be revoked.
-        </div>
-        <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
-          <button
-            type="button"
-            {...buttonGuardProps()}
-            onClick={() => void createViewingLink()}
-            disabled={identityBlocked || creatingLink || vaultProducts.length === 0}
-            style={brandActionButton("primary", identityBlocked || creatingLink || vaultProducts.length === 0)}
-          >
-            {identityBlocked ? "Review identity first" : creatingLink ? "Creating link..." : vaultProducts.length === 0 ? "Add private offer first" : selectedProduct ? `Create link for block #${selectedSlot}` : "Choose block to share"}
-          </button>
-          {publicShopLink ? (
-            <OriginLink to={publicShopLink} style={brandActionButton("secondary")}>
-              Open public shop
-            </OriginLink>
-          ) : null}
+          This is the audit trail of Vault links already created. Create, copy, extend, or revoke the main link from the selected block above so the action stays attached to the right private offer.
         </div>
         <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
           {vaultLinks.length === 0 ? (
             <div style={helperText()}>No Vault link yet.</div>
           ) : (
             vaultLinks.map((link) => {
-              const url = vaultLinkUrl(link);
               const id = firstTruthy(link.id);
               const productId = firstTruthy(link.product_id);
               const blockId = firstTruthy((link as any).block_id);
               const linkedSlot =
-                slots.findIndex((item) => {
+                vaultInnerSlots.findIndex((item) => {
                   if (!item) return false;
                   return (
                     (productId && safeStr(item.id) === productId) ||
@@ -1809,12 +1909,21 @@ export default function VaultControlPage() {
                     <span style={badge(false)}>{Number(link.views_used || 0)} / {Number(link.max_views || 0) || "unlimited"} views</span>
                   </div>
                   <div style={{ marginTop: 8, ...helperText() }}>Expires: {firstTruthy(link.expires_at, "No expiry")}</div>
-                  <div style={{ marginTop: 10, ...actionGrid(isCompact, 150) }}>
-                    <button type="button" {...buttonGuardProps()} onClick={() => { if (navigator?.clipboard?.writeText && url) void navigator.clipboard.writeText(url); showNotice("success", "Vault link copied."); }} disabled={!url} style={brandActionButton("soft", !url)}>Copy link</button>
-                    <button type="button" {...buttonGuardProps()} onClick={() => { if (url) window.open(url, "_blank", "noopener,noreferrer"); }} disabled={!url} style={brandActionButton("secondary", !url)}>Open link</button>
-                    <button type="button" {...buttonGuardProps()} onClick={() => void extendLink(link)} disabled={busyLinkId === id} style={brandActionButton("secondary", busyLinkId === id)}>Extend {vaultLinkDefaultHours} hours</button>
-                    <button type="button" {...buttonGuardProps()} onClick={() => void revokeLink(link)} disabled={busyLinkId === id || firstTruthy(link.status).toLowerCase() === "revoked"} style={brandActionButton("secondary", busyLinkId === id || firstTruthy(link.status).toLowerCase() === "revoked")}>Revoke</button>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    {linkedSlot
+                      ? "Select that block above to copy, open, extend, or revoke this link."
+                      : "Legacy shop-scope link. Replace it from a specific Vault block when possible."}
                   </div>
+                  {linkedSlot ? (
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => setSelectedSlot(linkedSlot)}
+                      style={{ ...brandActionButton("soft"), marginTop: 10 }}
+                    >
+                      Select block #{linkedSlot}
+                    </button>
+                  ) : null}
                 </div>
               );
             })
