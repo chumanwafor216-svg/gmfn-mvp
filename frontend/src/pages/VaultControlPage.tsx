@@ -160,6 +160,11 @@ function vaultSlotPaymentAmount(slotCount: unknown): number {
   return slots === VAULT_SLOT_LIMIT ? 5 : slots;
 }
 
+function vaultPaymentQuoteKey(slotCount: unknown): string {
+  const slots = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(slotCount || 1)));
+  return `${slots}:${vaultSlotPaymentAmount(slots)}:GBP`;
+}
+
 function formatMoney(amount: unknown, currency = "GBP"): string {
   const n = Number(amount);
   if (!Number.isFinite(n)) {
@@ -639,6 +644,7 @@ export default function VaultControlPage() {
   const [creatingLink, setCreatingLink] = useState(false);
   const [busyLinkId, setBusyLinkId] = useState<string>("");
   const [paymentSlots, setPaymentSlots] = useState(1);
+  const [confirmedPaymentQuoteKey, setConfirmedPaymentQuoteKey] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(1);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState<number | null>(null);
@@ -820,6 +826,9 @@ export default function VaultControlPage() {
   const selectedVaultSlotCount = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(paymentSlots || 1)));
   const selectedVaultPaymentAmount = vaultSlotPaymentAmount(selectedVaultSlotCount);
   const selectedVaultPaymentLabel = formatMoney(selectedVaultPaymentAmount, "GBP");
+  const selectedVaultQuoteKey = vaultPaymentQuoteKey(selectedVaultSlotCount);
+  const paymentQuoteConfirmed = confirmedPaymentQuoteKey === selectedVaultQuoteKey;
+  const selectedVaultAgreementText = `${selectedVaultSlotCount} slot${selectedVaultSlotCount === 1 ? "" : "s"} = ${selectedVaultPaymentLabel}`;
   const selectedVaultBundleText =
     selectedVaultSlotCount === VAULT_SLOT_LIMIT
       ? "This uses the 6-slot bundle, so the total stays at GBP 5."
@@ -827,6 +836,32 @@ export default function VaultControlPage() {
         ? `You can also choose 6 slots for GBP 5 instead of ${selectedVaultPaymentLabel}.`
         : "The 6-slot bundle is available for GBP 5 when you need the full private rack.";
   const settlementMissingText = settlementValue(vaultSettlement, "missing_field_text") || "Not configured for this pilot rail yet.";
+  const vaultPaymentRegionCode = settlementValue(vaultSettlement, "region_code").toLowerCase();
+  const vaultPaymentCountryCode = settlementValue(vaultSettlement, "country").toUpperCase();
+  const vaultPaymentUsesUkSortCode =
+    vaultPaymentRegionCode === "uk" || ["GB", "UK", "IM", "JE", "GG"].includes(vaultPaymentCountryCode);
+  const vaultPaymentUsesUsRouting =
+    vaultPaymentRegionCode === "united_states" || ["US", "USA"].includes(vaultPaymentCountryCode);
+  const vaultPaymentUsesIban =
+    vaultPaymentRegionCode === "europe_mena" ||
+    ["AE", "BH", "DE", "EG", "ES", "FR", "GB", "IE", "IT", "NL", "QA", "SA", "TR", "UK"].includes(vaultPaymentCountryCode) ||
+    Boolean(settlementValue(vaultSettlement, "iban"));
+  const vaultPaymentUsesAfricaLocalCode =
+    vaultPaymentRegionCode === "africa" ||
+    ["GH", "KE", "NG", "RW", "UG", "ZA"].includes(vaultPaymentCountryCode) ||
+    Boolean(firstTruthy(
+      settlementValue(vaultSettlement, "bank_code"),
+      settlementValue(vaultSettlement, "branch_code"),
+      settlementValue(vaultSettlement, "mobile_money_number")
+    ));
+  const vaultPaymentUsesAsiaLocalCode =
+    vaultPaymentRegionCode === "asia" ||
+    ["BD", "CN", "HK", "ID", "IN", "JP", "MY", "PH", "PK", "SG", "TH", "VN"].includes(vaultPaymentCountryCode) ||
+    Boolean(firstTruthy(
+      settlementValue(vaultSettlement, "ifsc_code"),
+      settlementValue(vaultSettlement, "bank_code"),
+      settlementValue(vaultSettlement, "branch_code")
+    ));
   const vaultPaymentRegionLabel = firstTruthy(
     settlementValue(vaultSettlement, "region_code").replace(/_/g, " "),
     settlementValue(vaultSettlement, "country")
@@ -850,14 +885,16 @@ export default function VaultControlPage() {
     paymentLine("Account number", settlementValue(vaultSettlement, "account_number")),
     paymentLine("Country", settlementValue(vaultSettlement, "country")),
     paymentLine("Region profile", vaultPaymentRegionLabel),
-    paymentLine("UK sort code", settlementValue(vaultSettlement, "sort_code") || settlementMissingText),
-    paymentLine("US routing number", settlementValue(vaultSettlement, "routing_number") || settlementMissingText),
+    vaultPaymentUsesUkSortCode ? paymentLine("UK sort code", settlementValue(vaultSettlement, "sort_code") || settlementMissingText) : "",
+    vaultPaymentUsesUsRouting ? paymentLine("US routing number", settlementValue(vaultSettlement, "routing_number") || settlementMissingText) : "",
     paymentLine("ACH routing", settlementValue(vaultSettlement, "ach_routing_number")),
     paymentLine("Wire routing", settlementValue(vaultSettlement, "wire_routing_number")),
-    paymentLine("IBAN", settlementValue(vaultSettlement, "iban") || settlementMissingText),
-    paymentLine("SWIFT/BIC", settlementValue(vaultSettlement, "swift_bic") || settlementMissingText),
-    paymentLine("Africa bank/mobile code", vaultPaymentAfricaIdentifier || settlementMissingText),
-    paymentLine("Asia local code", vaultPaymentAsiaIdentifier || settlementMissingText),
+    vaultPaymentUsesIban ? paymentLine("IBAN", settlementValue(vaultSettlement, "iban") || settlementMissingText) : "",
+    vaultPaymentUsesIban || settlementValue(vaultSettlement, "swift_bic")
+      ? paymentLine("SWIFT/BIC", settlementValue(vaultSettlement, "swift_bic") || settlementMissingText)
+      : "",
+    vaultPaymentUsesAfricaLocalCode ? paymentLine("Africa bank/mobile code", vaultPaymentAfricaIdentifier || settlementMissingText) : "",
+    vaultPaymentUsesAsiaLocalCode ? paymentLine("Asia local code", vaultPaymentAsiaIdentifier || settlementMissingText) : "",
     paymentLine("Branch name", settlementValue(vaultSettlement, "branch_name")),
     paymentLine("Amount", activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : ""),
     paymentLine("Payment code", activeVaultPaymentReference),
@@ -1004,6 +1041,14 @@ export default function VaultControlPage() {
       return;
     }
     const safeQuantity = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(quantityTotal || 1)));
+    const quoteKey = vaultPaymentQuoteKey(safeQuantity);
+    if (confirmedPaymentQuoteKey !== quoteKey) {
+      showNotice(
+        "info",
+        `Confirm the Vault quote first: ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} = ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
+      );
+      return;
+    }
     setCreatingPayment(true);
     try {
       const result = await apiJson<any>("/api/payment-instructions/vault", {
@@ -1326,7 +1371,10 @@ export default function VaultControlPage() {
                     role="radio"
                     aria-checked={selected}
                     {...buttonGuardProps()}
-                    onClick={() => setPaymentSlots(slot)}
+                    onClick={() => {
+                      setPaymentSlots(slot);
+                      setConfirmedPaymentQuoteKey("");
+                    }}
                     style={slotChoiceButton(selected)}
                   >
                     <span>{slot}</span>
@@ -1347,8 +1395,29 @@ export default function VaultControlPage() {
               {selectedVaultBundleText}
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Tap Generate payment code next. GSN will then show the account details, regional bank identifiers, and a unique code to use in the transfer, so the system knows this payment is for Vault.
+              Confirm this quote first. GSN will generate the payment code against this exact slot count and amount, then the bank rail can cross-check the code and amount before Vault opens.
             </div>
+            <div style={{ marginTop: 10, ...noticeCard(paymentQuoteConfirmed ? "success" : "info") }}>
+              {paymentQuoteConfirmed
+                ? `Agreed: ${selectedVaultAgreementText}. The payment code will be created for this exact quote.`
+                : `Review: ${selectedVaultAgreementText}. Agree to this quote before generating the payment code.`}
+            </div>
+            <button
+              type="button"
+              {...buttonGuardProps()}
+              onClick={() => {
+                setConfirmedPaymentQuoteKey(selectedVaultQuoteKey);
+                showNotice("success", `Vault quote confirmed: ${selectedVaultAgreementText}.`);
+              }}
+              style={{
+                ...brandActionButton(paymentQuoteConfirmed ? "secondary" : "primary"),
+                marginTop: 10,
+                minHeight: 56,
+                width: "100%",
+              }}
+            >
+              {paymentQuoteConfirmed ? "Quote confirmed" : `Agree: ${selectedVaultAgreementText}`}
+            </button>
             <div style={{ marginTop: 8, ...helperText(), fontWeight: 800 }}>
               Payment instructions expire {vaultPaymentDueDays} days after generation unless the bank rail returns a different due time.
             </div>
@@ -1362,7 +1431,13 @@ export default function VaultControlPage() {
             <button
               type="button"
               {...buttonGuardProps()}
-              onClick={() => void createVaultInstruction(paymentSlots)}
+              onClick={() => {
+                if (!paymentQuoteConfirmed) {
+                  showNotice("info", `Confirm this Vault quote first: ${selectedVaultAgreementText}.`);
+                  return;
+                }
+                void createVaultInstruction(paymentSlots);
+              }}
               disabled={creatingPayment || !shop?.id}
               style={{
                 ...brandActionButton("primary", creatingPayment || !shop?.id),
@@ -1373,7 +1448,7 @@ export default function VaultControlPage() {
                 touchAction: "manipulation",
               }}
             >
-              {creatingPayment ? "Generating payment code..." : "Generate payment code"}
+              {creatingPayment ? "Generating payment code..." : paymentQuoteConfirmed ? "Generate payment code" : "Confirm quote first"}
             </button>
           </div>
         </div>

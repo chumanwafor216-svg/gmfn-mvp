@@ -32,17 +32,18 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 12. Vault payment starts on the existing bank-transfer rail. Card payment is not connected in this pilot unless a real processor integration is added.
 13. The Vault payment surface must show the exact amount, settlement account details, and matching reference after the owner creates the instruction.
 14. Slot selection must not be silent. Before a payment code is generated, the page must immediately show the chosen slot count, exact price, the 6-slot bundle option, and the fact that the bank-transfer code/reference is required for reconciliation.
-15. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
-16. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
-17. Default private link expiry is 72 hours.
-18. Vault slot activation duration is 30 days by default.
-19. `/app/vault-control` must read backend Vault block status from the shop Vault status contract when available.
-20. Saving a private Vault offer must send the selected `vault_slot_number`.
-21. New Vault links must carry both the selected product scope and backend block scope.
-22. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
-23. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
-24. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must account for UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail rather than disappearing from the screen.
-25. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
+15. Payment code generation must be quote-gated: the owner must explicitly agree to the visible slot count and GBP amount first. Changing the selected slot count clears that agreement, and the frontend must refuse to create a payment code until the currently visible quote is confirmed.
+16. After generation, the bank-transfer surface must call the reference a payment code in user-facing copy, show expiry/due information, and explain that the exact code is what connects the transfer to Vault.
+17. New Vault access links must target one selected private block/offer. Legacy links without a product/block scope are not the future standard.
+18. Default private link expiry is 72 hours.
+19. Vault slot activation duration is 30 days by default.
+20. `/app/vault-control` must read backend Vault block status from the shop Vault status contract when available.
+21. Saving a private Vault offer must send the selected `vault_slot_number`.
+22. New Vault links must carry both the selected product scope and backend block scope.
+23. Phone slot activation controls must use stable large tap tiles for slots 1-6. Do not reintroduce a native dropdown for this payment-critical control.
+24. Identity continuity review must not hide or rename the Vault payment-code button. The button should remain `Generate payment code`; any identity warning belongs in a separate explanation block. Private sharing/link actions may still be limited by identity review.
+25. Vault bank-transfer details must expose regional settlement identifiers instead of silently hiding them. The payment panel must account for UK sort code, US routing, IBAN and SWIFT/BIC for Europe, Egypt, MENA and international wires, plus local bank, branch, IFSC or mobile-money identifiers where configured. Missing critical regional identifiers must display as not configured for the pilot rail when that identifier is required by the configured region; irrelevant regional identifiers should not distract the owner.
+26. Vault-private product save/update must attach or archive the selected backend block inside the same transaction as the product change. Do not commit the product first and attach the Vault block afterward.
 
 ## Do Not Reintroduce
 
@@ -72,14 +73,15 @@ The fuller MVP product law is recorded in `docs/VAULT_MVP_STANDARD.md`.
 2. Confirm the hero uses the main shop image/name and says Vault.
 3. Create a Vault payment request for 1-6 slots.
 4. Before generating the instruction, select 3 slots and confirm the page says 3 slots equals GBP 3 and offers the 6-slot GBP 5 bundle.
-5. Generate the payment code.
-6. Confirm the screen shows bank transfer account details, amount, the exact payment code, and expiry/due information.
-7. After confirmation, confirm only the paid slot count appears.
-8. Add a private picture block.
-9. Add a private video block.
-10. Create a Vault access link.
-11. Open `/vault/:token` and confirm only private Vault products are shown.
-12. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
+5. Confirm the visible quote. Changing the slot count must clear the confirmation.
+6. Generate the payment code.
+7. Confirm the screen shows bank transfer account details, amount, the exact payment code, and expiry/due information.
+8. After confirmation, confirm only the paid slot count appears.
+9. Add a private picture block.
+10. Add a private video block.
+11. Create a Vault access link.
+12. Open `/vault/:token` and confirm only private Vault products are shown.
+13. For video, confirm muted motion first, then `Sound on`, then `Sound off`.
 
 ## Automated Check
 

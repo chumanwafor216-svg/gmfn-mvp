@@ -29,14 +29,15 @@ The public shop remains normal. Vault adds paid private blocks that are hidden f
 2. The page shows the main shop hero and clearly labels the private layer as Vault.
 3. Owner chooses 1-6 slots.
 4. The page immediately shows the selected slot count and exact price.
-5. Owner generates a payment code.
-6. The payment instruction shows amount, bank details, exact payment code/reference, and expiry.
-7. Owner pays by bank transfer using the exact code.
-8. Bank reconciliation confirms exact reference plus exact amount.
-9. The purchased Vault slots unlock.
-10. Owner adds one private image/video offer to each active block.
-11. Owner creates a private link for the selected block.
-12. Viewer opens only that block through the private link.
+5. Owner explicitly agrees to that quote before any payment code is generated.
+6. Owner generates a payment code for the agreed slot count and amount.
+7. The payment instruction shows amount, bank details, exact payment code/reference, and expiry.
+8. Owner pays by bank transfer using the exact code.
+9. Bank reconciliation confirms exact reference plus exact amount.
+10. The purchased Vault slots unlock.
+11. Owner adds one private image/video offer to each active block.
+12. Owner creates a private link for the selected block.
+13. Viewer opens only that block through the private link.
 
 ## Viewer Flow
 

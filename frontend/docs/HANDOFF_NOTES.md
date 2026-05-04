@@ -1,5 +1,17 @@
 # Handoff Notes
 
+## 2026-05-04 Vault Quote Confirmation
+
+- Owner feedback: the Vault slot selector showed a price preview, but the system still felt too quiet. A user could choose 3, 5, or 6 slots without a clear agreement moment before the payment code was generated.
+- Updated `src/pages/VaultControlPage.tsx`:
+  - slot selection now clears any prior quote confirmation.
+  - the payment preview now shows an explicit `Agree: X slots = GBP Y` confirmation step.
+  - `Generate payment code` refuses to call the backend until the currently visible slot/amount quote is confirmed.
+  - the backend request still sends only `quantity_total`; backend pricing remains the source of truth for the amount.
+  - the bank-transfer detail list now shows regional identifiers according to the configured settlement profile, so irrelevant missing sort-code/routing/IBAN fields do not distract owners. Required-but-missing identifiers still show as not configured.
+- Updated `docs/VAULT_CONTROL_FREEZE.md` and `docs/VAULT_MVP_STANDARD.md` so future assistants preserve the quote-gated payment rule.
+- Truth: no real sort code was invented here. The real sort code must come from the backend settlement config/environment; the UI will show it when configured.
+
 ## 2026-05-04 Vault Payment Regional Identifiers
 
 - Owner phone feedback: the Vault payment panel showed account name/account number but no sort code, routing, IBAN/SWIFT, or local regional identifiers.
