@@ -10,9 +10,12 @@ import PageTopNav from "../components/PageTopNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { navigateWithOrigin } from "../lib/nav";
 import {
+  createMarketplaceBroadcast,
+  createMarketplaceShop,
   getMarketplaceBroadcasts,
   getMarketplaceShopByGmfnId,
   getMe,
+  getMyGuarantorEarnings,
   getMyTrustSlip,
   getPoolMeSummary,
   getSelectedClanId,
@@ -20,6 +23,8 @@ import {
   listMyClans,
   safeCopy,
   selectClan,
+  uploadMarketplaceImageFile,
+  uploadMarketplaceVideoFile,
 } from "../lib/api";
 import {
   buildInviteBundle,
@@ -31,11 +36,17 @@ import {
   roleLabel,
 } from "../lib/firstCircle";
 import {
+  SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MAX_VIDEO_BYTES,
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
   SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
 } from "../lib/spotlightPilot";
+import {
+  prepareSpotlightImageFile,
+  prepareSpotlightVideoFile,
+} from "../lib/spotlightMediaPrep";
 import {
   actionTapGuardProps,
   brandStableTapTarget,
@@ -88,6 +99,11 @@ type ClanItem = {
 };
 
 type NoticeTone = "success" | "error";
+type SpotlightFeedbackTone = "success" | "error" | "info";
+type SpotlightFeedbackState = {
+  tone: SpotlightFeedbackTone;
+  text: string;
+} | null;
 type CollapseKey =
   | "tools"
   | "circle"
@@ -105,7 +121,7 @@ type ActiveCommunitySpotlight = {
   createdAt: string;
 };
 
-const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v4";
+const COMMUNITY_HOME_COLLAPSE_KEY = "gmfn.communityHome.sections.v5";
 const COMMUNITY_BRAND = {
   ink: "#F8FBFF",
   navy: "#081E32",
@@ -118,8 +134,120 @@ const COMMUNITY_BRAND = {
   border: "rgba(123,161,204,0.18)",
 };
 
+const SPOTLIGHT_ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const SPOTLIGHT_ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm", "video/quicktime"];
+const SPOTLIGHT_IMAGE_TYPE_ALIASES: Record<string, string> = {
+  "image/jpg": "image/jpeg",
+  "image/pjpeg": "image/jpeg",
+  "image/x-png": "image/png",
+};
+const SPOTLIGHT_VIDEO_TYPE_ALIASES: Record<string, string> = {
+  "video/mov": "video/quicktime",
+};
+const SPOTLIGHT_GENERIC_IMAGE_TYPES = [
+  "",
+  "application/octet-stream",
+  "binary/octet-stream",
+];
+const SPOTLIGHT_GENERIC_VIDEO_TYPES = [
+  "",
+  "application/octet-stream",
+  "binary/octet-stream",
+];
+const SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+const SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov"];
+const SPOTLIGHT_ALLOWED_IMAGE_LABEL = "JPG, PNG, or WebP";
+const SPOTLIGHT_ALLOWED_VIDEO_LABEL = "MP4, WebM, or MOV";
+
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function formatFileSize(bytes: number): string {
+  const size = Number(bytes || 0);
+  if (!Number.isFinite(size) || size <= 0) return "0 KB";
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(size / 1024))} KB`;
+}
+
+function spotlightMediaExtension(filename: string): string {
+  const raw = safeStr(filename).toLowerCase();
+  const dot = raw.lastIndexOf(".");
+  return dot >= 0 ? raw.slice(dot) : "";
+}
+
+function normalizeSpotlightImageType(contentType: string): string {
+  const raw = safeStr(contentType).toLowerCase().split(";")[0]?.trim() || "";
+  return SPOTLIGHT_IMAGE_TYPE_ALIASES[raw] || raw;
+}
+
+function normalizeSpotlightVideoType(contentType: string): string {
+  const raw = safeStr(contentType).toLowerCase().split(";")[0]?.trim() || "";
+  return SPOTLIGHT_VIDEO_TYPE_ALIASES[raw] || raw;
+}
+
+function validateSpotlightImageFile(
+  file: File | null | undefined,
+  enforceSize = true
+): string {
+  if (!file) return "";
+
+  const contentType = normalizeSpotlightImageType(file.type);
+  const ext = spotlightMediaExtension(file.name);
+  const hasAcceptedType = SPOTLIGHT_ALLOWED_IMAGE_TYPES.includes(contentType);
+  const hasAcceptedExtension = SPOTLIGHT_ALLOWED_IMAGE_EXTENSIONS.includes(ext);
+  const hasGenericType = SPOTLIGHT_GENERIC_IMAGE_TYPES.includes(contentType);
+
+  if (!hasAcceptedType && !(hasGenericType && hasAcceptedExtension)) {
+    return `Use a ${SPOTLIGHT_ALLOWED_IMAGE_LABEL} image. Other formats are not accepted yet.`;
+  }
+
+  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_IMAGE_BYTES) {
+    return `Image is ${formatFileSize(
+      file.size
+    )}. Spotlight images must be 10 MB or smaller.`;
+  }
+
+  return "";
+}
+
+function validateSpotlightVideoFile(
+  file: File | null | undefined,
+  enforceSize = true
+): string {
+  if (!file) return "";
+
+  const contentType = normalizeSpotlightVideoType(file.type);
+  const ext = spotlightMediaExtension(file.name);
+  const hasAcceptedType = SPOTLIGHT_ALLOWED_VIDEO_TYPES.includes(contentType);
+  const hasAcceptedExtension = SPOTLIGHT_ALLOWED_VIDEO_EXTENSIONS.includes(ext);
+  const hasGenericType = SPOTLIGHT_GENERIC_VIDEO_TYPES.includes(contentType);
+
+  if (!hasAcceptedType && !(hasGenericType && hasAcceptedExtension)) {
+    return `Use a ${SPOTLIGHT_ALLOWED_VIDEO_LABEL} video. Other formats are not accepted yet.`;
+  }
+
+  if (enforceSize && Number(file.size || 0) > SPOTLIGHT_MAX_VIDEO_BYTES) {
+    return `Video is ${formatFileSize(
+      file.size
+    )}. Spotlight videos must be 15 MB or smaller.`;
+  }
+
+  return "";
+}
+
+function uploadedMediaUrl(res: any, key: "image" | "video"): string {
+  const directKey = key === "image" ? "image_url" : "video_url";
+  return firstTruthy(
+    res?.[directKey],
+    res?.url,
+    res?.file_url,
+    res?.path,
+    res?.item?.[directKey],
+    res?.item?.url,
+    res?.data?.[directKey],
+    res?.data?.url
+  );
 }
 
 function toBackendAssetUrl(path: string): string {
@@ -228,6 +356,25 @@ function communityShellStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
+function normalizePostedCommunitySpotlight(
+  row: any,
+  fallback?: {
+    imageUrl?: string | null;
+    videoUrl?: string | null;
+    message?: string | null;
+  }
+): ActiveCommunitySpotlight | null {
+  if (!row && !fallback) return null;
+
+  return normalizeActiveCommunitySpotlight({
+    ...(row || {}),
+    message: firstTruthy(row?.message, fallback?.message, "Live spotlight is active."),
+    image_url: firstTruthy(row?.image_url, fallback?.imageUrl),
+    video_url: firstTruthy(row?.video_url, fallback?.videoUrl),
+    created_at: firstTruthy(row?.created_at, new Date().toISOString()),
+  });
+}
+
 function communityAuraStyle(isCompact: boolean): React.CSSProperties {
   return {
     position: "absolute",
@@ -261,30 +408,6 @@ function communityContentStyle(isCompact: boolean): React.CSSProperties {
     zIndex: 1,
     display: "grid",
     gap: isCompact ? 10 : 18,
-  };
-}
-
-function communityTopHeaderStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    display: "grid",
-    gridTemplateColumns: "auto minmax(0, 1fr) auto",
-    alignItems: "center",
-    gap: isCompact ? 10 : 16,
-    padding: isCompact ? "8px 0 4px" : "10px 2px 6px",
-  };
-}
-
-function communityHeaderButtonStyle(): React.CSSProperties {
-  return {
-    ...actionBtn("secondary"),
-    minHeight: 46,
-    padding: "10px 14px",
-    borderRadius: 16,
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FBFE 100%)",
-    border: "1px solid rgba(16,37,59,0.12)",
-    color: "#07172C",
-    boxShadow:
-      "0 8px 18px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.94)",
   };
 }
 
@@ -464,7 +587,7 @@ function actionBtn(
   const stableActionLayer: React.CSSProperties = {
     ...brandStableTapTarget(),
     position: "relative",
-    zIndex: 20,
+    zIndex: 60,
   };
 
   if (kind === "primary") {
@@ -636,14 +759,18 @@ function collapseButtonRow(): React.CSSProperties {
   };
 }
 
-function communityQuickActionButton(primary = false): React.CSSProperties {
+function communityQuickActionButton(
+  primary = false,
+  isCompact = false
+): React.CSSProperties {
   return {
     ...actionBtn("secondary"),
-    minHeight: 108,
+    width: "100%",
+    minHeight: isCompact ? 104 : 108,
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
-    padding: "12px 8px",
+    padding: isCompact ? "12px 12px" : "12px 8px",
     textAlign: "center",
     flexDirection: "column",
     background: primary
@@ -653,6 +780,7 @@ function communityQuickActionButton(primary = false): React.CSSProperties {
     border: primary
       ? "1px solid rgba(13,95,168,0.16)"
       : "1px solid rgba(16,37,59,0.10)",
+    overflow: "hidden",
   };
 }
 
@@ -700,6 +828,10 @@ function communityToolRowStyle(): React.CSSProperties {
     color: "#07172C",
     cursor: "pointer",
     textAlign: "left",
+    isolation: "isolate",
+    pointerEvents: "auto",
+    appearance: "none",
+    WebkitAppearance: "none",
     boxShadow:
       "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
@@ -719,6 +851,21 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 
 function getSummaryTotal(payload: any, key: string, fallback = "0.00"): string {
   return firstTruthy(payload?.totals?.[key], payload?.summary?.totals?.[key], fallback);
+}
+
+function getSummaryAny(payload: any, keys: string[], fallback = ""): string {
+  for (const key of keys) {
+    const found = firstTruthy(
+      payload?.[key],
+      payload?.totals?.[key],
+      payload?.summary?.[key],
+      payload?.summary?.totals?.[key],
+      payload?.finance?.[key],
+      payload?.money?.[key]
+    );
+    if (found) return found;
+  }
+  return fallback;
 }
 
 function getTrustSummaryValue(payload: any, key: string, fallback = ""): string {
@@ -743,6 +890,12 @@ function formatGlobalAmount(value: any): string {
   if (!Number.isFinite(amount)) return "0";
 
   return Math.round(amount).toLocaleString();
+}
+
+function formatSignedGlobalAmount(value: any): string {
+  const amount = moneyNumber(value);
+  const sign = amount < 0 ? "-" : "";
+  return `${sign}${formatGlobalAmount(Math.abs(amount))}`;
 }
 
 function countRows(rows: any[]): number {
@@ -786,7 +939,7 @@ function defaultCollapseState(): CollapseState {
   return {
     tools: true,
     circle: true,
-    spotlight: true,
+    spotlight: false,
     communities: false,
   };
 }
@@ -817,6 +970,7 @@ export default function CommunityHomePage() {
   const [poolSummary, setPoolSummary] = useState<any>(null);
   const [trustSlipSummary, setTrustSlipSummary] = useState<any>(null);
   const [marketplaceRequestRows, setMarketplaceRequestRows] = useState<any[]>([]);
+  const [guarantorEarningRows, setGuarantorEarningRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
 
@@ -839,6 +993,28 @@ export default function CommunityHomePage() {
   const [activeCommunitySpotlightSyncIssue, setActiveCommunitySpotlightSyncIssue] =
     useState("");
   const activeCommunitySpotlightsRef = useRef<ActiveCommunitySpotlight[]>([]);
+  const [freeSpotlightMessage, setFreeSpotlightMessage] = useState("");
+  const [freeSpotlightImageFile, setFreeSpotlightImageFile] =
+    useState<File | null>(null);
+  const [freeSpotlightVideoFile, setFreeSpotlightVideoFile] =
+    useState<File | null>(null);
+  const [freeSpotlightImagePreviewUrl, setFreeSpotlightImagePreviewUrl] =
+    useState("");
+  const [freeSpotlightVideoPreviewUrl, setFreeSpotlightVideoPreviewUrl] =
+    useState("");
+  const [freeSpotlightVideoDurationSeconds, setFreeSpotlightVideoDurationSeconds] =
+    useState<number | null>(null);
+  const [freeSpotlightImageInputKey, setFreeSpotlightImageInputKey] =
+    useState(0);
+  const [freeSpotlightVideoInputKey, setFreeSpotlightVideoInputKey] =
+    useState(0);
+  const [preparingFreeSpotlightImage, setPreparingFreeSpotlightImage] =
+    useState(false);
+  const [preparingFreeSpotlightVideo, setPreparingFreeSpotlightVideo] =
+    useState(false);
+  const [publishingFreeSpotlight, setPublishingFreeSpotlight] = useState(false);
+  const [freeSpotlightFeedback, setFreeSpotlightFeedback] =
+    useState<SpotlightFeedbackState>(null);
 
   const [firstCircleDraft, setFirstCircleDraft] = useState(() =>
     loadFirstCircleDraft()
@@ -933,6 +1109,28 @@ export default function CommunityHomePage() {
   }, [cancelCommunityReveal]);
 
   useEffect(() => {
+    if (!freeSpotlightImageFile) {
+      setFreeSpotlightImagePreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(freeSpotlightImageFile);
+    setFreeSpotlightImagePreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [freeSpotlightImageFile]);
+
+  useEffect(() => {
+    if (!freeSpotlightVideoFile) {
+      setFreeSpotlightVideoPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(freeSpotlightVideoFile);
+    setFreeSpotlightVideoPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [freeSpotlightVideoFile]);
+
+  useEffect(() => {
     if (!notice) return;
 
     const timer = window.setTimeout(() => {
@@ -1020,11 +1218,12 @@ export default function CommunityHomePage() {
       setPoolSummary(null);
       setTrustSlipSummary(null);
       setMarketplaceRequestRows([]);
+      setGuarantorEarningRows([]);
       return;
     }
 
     (async () => {
-      const [summaryRes, trustSlipRes, requestsRes] = await Promise.all([
+      const [summaryRes, trustSlipRes, requestsRes, guarantorEarningsRes] = await Promise.all([
         getPoolMeSummary().catch((err) => ({
           __failed: String(
             err?.message || err || "Your full finance summary is not ready yet."
@@ -1037,6 +1236,7 @@ export default function CommunityHomePage() {
           clan_id: null,
           limit: 200,
         }).catch(() => []),
+        getMyGuarantorEarnings(100).catch(() => ({ items: [] })),
       ]);
 
       if (!alive) return;
@@ -1046,6 +1246,13 @@ export default function CommunityHomePage() {
       );
       setTrustSlipSummary(trustSlipRes || null);
       setMarketplaceRequestRows(Array.isArray(requestsRes) ? requestsRes : []);
+      setGuarantorEarningRows(
+        Array.isArray((guarantorEarningsRes as any)?.items)
+          ? (guarantorEarningsRes as any).items
+          : Array.isArray(guarantorEarningsRes)
+            ? guarantorEarningsRes
+            : []
+      );
     })();
 
     return () => {
@@ -1092,6 +1299,63 @@ export default function CommunityHomePage() {
     "guarantee_locked_as_guarantor",
     "0.00"
   );
+  const explicitMoneyPosition = getSummaryAny(poolSummary, [
+    "net_position",
+    "net_balance",
+    "net_pool_position",
+    "account_position",
+    "money_position",
+    "available_balance",
+  ]);
+  const visibleOwingTotal = getSummaryAny(
+    poolSummary,
+    [
+      "amount_owed",
+      "total_owed",
+      "outstanding_balance",
+      "active_loan_balance",
+      "loan_balance",
+      "borrowing_outstanding",
+      "current_debt",
+      "debt_balance",
+    ],
+    "0.00"
+  );
+  const netMoneyPosition =
+    explicitMoneyPosition !== ""
+      ? moneyNumber(explicitMoneyPosition)
+      : moneyNumber(cumulativePoolBalance) - moneyNumber(visibleOwingTotal);
+  const moneyPositionLabel = netMoneyPosition < 0 ? "Owing" : "Positive";
+  const moneyPositionDetail =
+    netMoneyPosition < 0
+      ? `${formatGlobalAmount(Math.abs(netMoneyPosition))} visible obligation`
+      : `${formatSignedGlobalAmount(netMoneyPosition)} net visible record`;
+  const guarantorRecordCount =
+    Number(
+      getSummaryAny(
+        poolSummary,
+        [
+          "guarantor_record_count",
+          "guarantor_records_count",
+          "guarantee_count",
+          "guarantor_count",
+          "guarantees_count",
+        ],
+        ""
+      )
+    ) || countRows(guarantorEarningRows);
+  const guarantorEarnedTotal = guarantorEarningRows.reduce((sum, row) => {
+    const amount = firstTruthy(
+      row?.payable_amount,
+      row?.earned_payable,
+      row?.total_payable,
+      row?.share_amount,
+      row?.earned_amount,
+      row?.amount,
+      row?.guarantor_share
+    );
+    return sum + moneyNumber(amount);
+  }, 0);
   const trustScore = trustScoreDisplay(
     getTrustSummaryValue(
       trustSlipSummary,
@@ -1398,36 +1662,13 @@ export default function CommunityHomePage() {
           };
         }
 
-        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
-          clan_id: selectedClanId,
-          header_clan_id: selectedClanId,
-        }).catch(() => null);
-        const resolvedShop =
-          (Array.isArray((shopRes as any)?.items)
-            ? (shopRes as any).items?.[0]
-            : null) ||
-          (shopRes as any)?.shop ||
-          shopRes;
-        const shopId = Number((resolvedShop as any)?.id || 0);
-
-        if (!shopId) {
-          return {
-            title: "Set up your shop first",
-            detail: `Spotlight comes from your shop in ${selectedClanName || "the selected community"}. First prepare the shop details. After that, GSN will lead you back into the spotlight upload and publish steps.`,
-            firstStep: "Open shop setup for this community.",
-            continueLabel: "Open shop setup",
-            continueTone: "primary",
-            payload: { nextStep: "prepare-shop-first" },
-          };
-        }
-
         return {
-          title: "Your shop is ready for spotlight",
-          detail: `GSN has confirmed the shop for ${selectedClanName || "the selected community"}. It can now open the spotlight portal and lead you through upload, preview, and publish.`,
-          firstStep: "Open the guided spotlight portal.",
-          continueLabel: "Open spotlight portal",
+          title: "Free spotlight is ready",
+          detail: `GSN will open the free spotlight publisher for ${selectedClanName || "the selected community"}. If your shop record is missing, GSN will create or confirm it before publishing.`,
+          firstStep: "Open the free spotlight publisher.",
+          continueLabel: "Open free spotlight",
           continueTone: "primary",
-          payload: { nextStep: "open-spotlight" },
+          payload: { nextStep: "open-free-publisher" },
         };
       }
       case "spotlight-paid": {
@@ -1679,6 +1920,302 @@ export default function CommunityHomePage() {
     }
   }
 
+  function clearFreeSpotlightDraft() {
+    setFreeSpotlightMessage("");
+    setFreeSpotlightImageFile(null);
+    setFreeSpotlightVideoFile(null);
+    setFreeSpotlightVideoDurationSeconds(null);
+    setFreeSpotlightImageInputKey((prev) => prev + 1);
+    setFreeSpotlightVideoInputKey((prev) => prev + 1);
+  }
+
+  async function handleFreeSpotlightImagePicked(file: File | null) {
+    if (!file) return;
+
+    const typeIssue = validateSpotlightImageFile(file, false);
+    if (typeIssue) {
+      setFreeSpotlightFeedback({ tone: "error", text: typeIssue });
+      return;
+    }
+
+    setPreparingFreeSpotlightImage(true);
+    setFreeSpotlightFeedback({
+      tone: "info",
+      text: "Preparing picture for spotlight upload...",
+    });
+
+    try {
+      const prepared = await prepareSpotlightImageFile(file, {
+        maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+      });
+      const sizeIssue = validateSpotlightImageFile(prepared.file, true);
+      if (sizeIssue) throw new Error(sizeIssue);
+
+      setFreeSpotlightImageFile(prepared.file);
+      setFreeSpotlightFeedback({
+        tone: "success",
+        text:
+          prepared.message ||
+          `Picture ready: ${prepared.file.name} (${formatFileSize(
+            prepared.file.size
+          )}).`,
+      });
+    } catch (err: any) {
+      setFreeSpotlightImageFile(null);
+      setFreeSpotlightFeedback({
+        tone: "error",
+        text:
+          safeStr(err?.message) ||
+          `Picture could not be prepared. Use ${SPOTLIGHT_ALLOWED_IMAGE_LABEL}, under 10 MB.`,
+      });
+    } finally {
+      setPreparingFreeSpotlightImage(false);
+    }
+  }
+
+  async function handleFreeSpotlightVideoPicked(file: File | null) {
+    if (!file) return;
+
+    const typeIssue = validateSpotlightVideoFile(file, false);
+    if (typeIssue) {
+      setFreeSpotlightFeedback({ tone: "error", text: typeIssue });
+      return;
+    }
+
+    setPreparingFreeSpotlightVideo(true);
+    setFreeSpotlightFeedback({
+      tone: "info",
+      text: `Preparing short video. GSN keeps spotlight clips to ${SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS} seconds.`,
+    });
+
+    try {
+      const prepared = await prepareSpotlightVideoFile(file, {
+        maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
+        maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+      });
+      const sizeIssue = validateSpotlightVideoFile(prepared.file, true);
+      if (sizeIssue) throw new Error(sizeIssue);
+
+      setFreeSpotlightVideoFile(prepared.file);
+      setFreeSpotlightVideoDurationSeconds(
+        Number(prepared.durationSeconds || 0) || null
+      );
+      setFreeSpotlightFeedback({
+        tone: "success",
+        text:
+          prepared.message ||
+          `Short video ready: ${prepared.file.name} (${formatFileSize(
+            prepared.file.size
+          )}).`,
+      });
+    } catch (err: any) {
+      const fallbackIssue = validateSpotlightVideoFile(file, true);
+      if (!fallbackIssue && Number(file.size || 0) <= SPOTLIGHT_MAX_VIDEO_BYTES) {
+        setFreeSpotlightVideoFile(file);
+        setFreeSpotlightVideoDurationSeconds(null);
+        setFreeSpotlightFeedback({
+          tone: "info",
+          text:
+            "The browser could not trim this video automatically, so GSN will upload the original pilot clip. Keep it short.",
+        });
+      } else {
+        setFreeSpotlightVideoFile(null);
+        setFreeSpotlightVideoDurationSeconds(null);
+        setFreeSpotlightFeedback({
+          tone: "error",
+          text:
+            safeStr(err?.message) ||
+            fallbackIssue ||
+            `Video could not be prepared. Use ${SPOTLIGHT_ALLOWED_VIDEO_LABEL}, under 15 MB.`,
+        });
+      }
+    } finally {
+      setPreparingFreeSpotlightVideo(false);
+    }
+  }
+
+  async function ensureFreeSpotlightShopId(): Promise<number> {
+    if (!selectedClanId) {
+      throw new Error("Choose a community before publishing a spotlight.");
+    }
+
+    const gmfnId = safeStr(memberGlobalId);
+    if (!gmfnId || gmfnId === "Awaiting issue") {
+      throw new Error("Your GSN ID is still loading. Wait a moment, then try again.");
+    }
+
+    const resolveShopId = (res: any) => {
+      const resolvedShop =
+        (Array.isArray(res?.items) ? res.items?.[0] : null) ||
+        res?.shop ||
+        res?.item ||
+        res?.data ||
+        res;
+      return Number(resolvedShop?.id || resolvedShop?.shop_id || 0);
+    };
+
+    const existingShopId = resolveShopId(
+      await getMarketplaceShopByGmfnId(gmfnId, {
+        clan_id: selectedClanId,
+        header_clan_id: selectedClanId,
+      }).catch(() => null)
+    );
+
+    if (existingShopId > 0) return existingShopId;
+
+    const createdShopId = resolveShopId(
+      await createMarketplaceShop({
+        clan_id: selectedClanId,
+        name: `${resolveMemberName(me)} Shop`,
+        description: `Owner spotlight shop for ${selectedClanName || "this community"}.`,
+      }).catch(async () =>
+        getMarketplaceShopByGmfnId(gmfnId, {
+          clan_id: selectedClanId,
+          header_clan_id: selectedClanId,
+        }).catch(() => null)
+      )
+    );
+
+    if (createdShopId > 0) return createdShopId;
+
+    throw new Error(
+      "GSN could not confirm the shop record for this spotlight yet. Open Shop Control once, then try again."
+    );
+  }
+
+  async function handlePublishFreeSpotlight(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
+    consumeCommunityButtonEvent(event);
+
+    if (publishingFreeSpotlight) {
+      setFreeSpotlightFeedback({
+        tone: "info",
+        text: "Spotlight publish is already running. Wait for it to finish.",
+      });
+      return;
+    }
+
+    if (preparingFreeSpotlightImage || preparingFreeSpotlightVideo) {
+      setFreeSpotlightFeedback({
+        tone: "info",
+        text: "Media is still being prepared. Try publish again in a moment.",
+      });
+      return;
+    }
+
+    if (!selectedClanId) {
+      setFreeSpotlightFeedback({
+        tone: "error",
+        text: "Choose a community before publishing a spotlight.",
+      });
+      return;
+    }
+
+    const message = safeStr(freeSpotlightMessage);
+    if (!message && !freeSpotlightImageFile && !freeSpotlightVideoFile) {
+      setFreeSpotlightFeedback({
+        tone: "error",
+        text: "Add a short message, picture, or video before publishing.",
+      });
+      return;
+    }
+
+    const imageIssue = validateSpotlightImageFile(freeSpotlightImageFile, true);
+    if (imageIssue) {
+      setFreeSpotlightFeedback({ tone: "error", text: imageIssue });
+      return;
+    }
+
+    const videoIssue = validateSpotlightVideoFile(freeSpotlightVideoFile, true);
+    if (videoIssue) {
+      setFreeSpotlightFeedback({ tone: "error", text: videoIssue });
+      return;
+    }
+
+    setPublishingFreeSpotlight(true);
+    setFreeSpotlightFeedback({
+      tone: "info",
+      text: "Publishing the free community spotlight...",
+    });
+
+    try {
+      const shopId = await ensureFreeSpotlightShopId();
+      let imageUrl = "";
+      let videoUrl = "";
+
+      if (freeSpotlightImageFile) {
+        const uploadRes = await uploadMarketplaceImageFile(
+          freeSpotlightImageFile,
+          selectedClanId
+        );
+        imageUrl = uploadedMediaUrl(uploadRes, "image");
+        if (!imageUrl) {
+          throw new Error("Picture uploaded, but the backend did not return a picture URL.");
+        }
+      }
+
+      if (freeSpotlightVideoFile) {
+        const uploadRes = await uploadMarketplaceVideoFile(
+          freeSpotlightVideoFile,
+          freeSpotlightVideoDurationSeconds || undefined,
+          selectedClanId
+        );
+        videoUrl = uploadedMediaUrl(uploadRes, "video");
+        if (!videoUrl) {
+          throw new Error("Video uploaded, but the backend did not return a video URL.");
+        }
+      }
+
+      const createRes = await createMarketplaceBroadcast({
+        clan_id: selectedClanId,
+        shop_id: shopId,
+        message: message || "Community spotlight update",
+        image_url: imageUrl || null,
+        video_url: videoUrl || null,
+        priority_mode: "free",
+        visibility_scope: "direct_communities",
+      });
+
+      const postedSpotlight = normalizePostedCommunitySpotlight(
+        (createRes as any)?.item ||
+          (Array.isArray((createRes as any)?.items)
+            ? (createRes as any).items?.[0]
+            : null),
+        {
+          imageUrl,
+          videoUrl,
+          message: message || "Community spotlight update",
+        }
+      );
+
+      clearFreeSpotlightDraft();
+      setCollapsed((prev) => ({ ...prev, spotlight: false }));
+      if (postedSpotlight) {
+        setActiveCommunitySpotlight(postedSpotlight);
+        setActiveCommunitySpotlights((prev) => [
+          postedSpotlight,
+          ...prev.filter((item) => item.id !== postedSpotlight.id),
+        ]);
+        setActiveCommunitySpotlightTotal((prev) => Math.max(1, prev));
+        setActiveCommunitySpotlightSyncIssue("");
+      }
+      setFreeSpotlightFeedback({
+        tone: "success",
+        text: "Free spotlight is live. It will show on Community Home and Dashboard.",
+      });
+      showNotice("success", "Free spotlight is live on this community.");
+      await refreshActiveCommunitySpotlight(selectedClanId);
+    } catch (err: any) {
+      setFreeSpotlightFeedback({
+        tone: "error",
+        text: safeStr(err?.message) || "Spotlight could not be published right now.",
+      });
+    } finally {
+      setPublishingFreeSpotlight(false);
+    }
+  }
+
   useEffect(() => {
     if (activeCommunitySpotlights.length === 0) {
       setActiveCommunitySpotlight(null);
@@ -1809,14 +2346,6 @@ export default function CommunityHomePage() {
     navigateWithOrigin(navigate, `/app/shop-control${hash}`, location);
   }
 
-  function openCommunitySpotlightWorkspace(
-    event: React.SyntheticEvent<HTMLElement> | undefined
-  ) {
-    consumeCommunityButtonEvent(event);
-    setGuidedActionFamilyFocus(null);
-    navigateWithOrigin(navigate, "/app/shop-control#shop-control-spotlight", location);
-  }
-
   async function handleSelectCommunity(clan: ClanItem, openAfter = false) {
     const clanId = getClanId(clan);
     if (!clanId) {
@@ -1930,11 +2459,12 @@ function communityButtonGuardProps(): Pick<
           );
           break;
         }
-        if (nextStep === "prepare-shop-first") {
-          openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
-          break;
-        }
-        openCommunitySpotlightWorkspace(event);
+        openCommunityHomeSection(
+          event,
+          "community-home-spotlight-gears",
+          "spotlight",
+          true
+        );
         break;
       case "spotlight-paid":
         if (nextStep === "cancel") {
@@ -2257,51 +2787,6 @@ function communityButtonGuardProps(): Pick<
       <CommunityShellLayers isCompact={isCompact} />
       <div style={communityContentStyle(isCompact)}>
       {!spotlightGuidanceSuspendedView ? (
-        <header style={communityTopHeaderStyle(isCompact)}>
-          <button
-            type="button"
-            {...communityButtonGuardProps()}
-            onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
-            style={communityHeaderButtonStyle()}
-          >
-            ☰ Menu
-          </button>
-          <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                color: "#617085",
-                fontSize: isCompact ? 11.5 : 13,
-                fontWeight: 900,
-                letterSpacing: 2,
-                lineHeight: 1.1,
-                textTransform: "uppercase",
-              }}
-            >
-              Main Movement
-            </div>
-            <div
-              style={{
-                marginTop: 4,
-                color: "#07172C",
-                fontSize: isCompact ? 24 : 32,
-                fontWeight: 950,
-                lineHeight: 1.05,
-              }}
-            >
-              Community Home
-            </div>
-          </div>
-          <button
-            type="button"
-            {...communityButtonGuardProps()}
-            onClick={(event) => openCommunityRoute(event, "/app/shop-control")}
-            style={communityHeaderButtonStyle()}
-          >
-            🛠 Tools
-          </button>
-        </header>
-      ) : null}
-      {!spotlightGuidanceSuspendedView ? (
       <section style={communityHeroStyle(isCompact)}>
         <div
           style={{
@@ -2436,8 +2921,7 @@ function communityButtonGuardProps(): Pick<
                     border: "1px solid rgba(226,192,106,0.24)",
                   }}
                 >
-                  {communityCountFromSummary}{" "}
-                  {communityCountFromSummary === 1 ? "community" : "communities"}
+                  Live overview
                 </span>
               </div>
 
@@ -2451,8 +2935,25 @@ function communityButtonGuardProps(): Pick<
               >
                 {[
                   {
+                    symbol: "🏘️",
+                    title: "Communities",
+                    value: String(communityCountFromSummary),
+                    detail:
+                      communityCountFromSummary === 1
+                        ? "1 visible community"
+                        : "Visible communities",
+                    tone: "#1F5D9F",
+                  },
+                  {
+                    symbol: "💱",
+                    title: "Money Position",
+                    value: moneyPositionLabel,
+                    detail: moneyPositionDetail,
+                    tone: netMoneyPosition < 0 ? "#B42318" : "#2E8A58",
+                  },
+                  {
                     symbol: "🌐",
-                    title: "Dues & Contributions",
+                    title: "Dues",
                     value: formatGlobalAmount(cumulativePoolBalance),
                     detail:
                       moneyNumber(cumulativeGuaranteeLocked) > 0
@@ -2462,14 +2963,34 @@ function communityButtonGuardProps(): Pick<
                   },
                   {
                     symbol: "🤝",
-                    title: "Support Requests",
+                    title: "Support",
                     value: `${activeSupportCount} active`,
                     detail: "People asking for support",
                     tone: "#2E8A58",
                   },
                   {
                     symbol: "🛒",
-                    title: "Trusted Trade",
+                    title: "Guarantees",
+                    value: String(guarantorRecordCount),
+                    detail:
+                      guarantorRecordCount === 1
+                        ? "1 guarantor record"
+                        : "Guarantor records",
+                    tone: "#6F4C00",
+                  },
+                  {
+                    symbol: "💷",
+                    title: "Earned",
+                    value: formatGlobalAmount(guarantorEarnedTotal),
+                    detail:
+                      guarantorEarnedTotal > 0
+                        ? "From guaranteeing others"
+                        : "No earning record yet",
+                    tone: "#2E8A58",
+                  },
+                  {
+                    symbol: "ðŸ›’",
+                    title: "Trade",
                     value: `${trustedTradeCount} completed`,
                     detail:
                       countRows(marketplaceRequestRows) > 0
@@ -2479,7 +3000,7 @@ function communityButtonGuardProps(): Pick<
                   },
                   {
                     symbol: "🛡️",
-                    title: "Trust Score",
+                    title: "Trust",
                     value: trustScore,
                     detail: trustBand,
                     tone: "#A27518",
@@ -2489,7 +3010,7 @@ function communityButtonGuardProps(): Pick<
                     key={item.title}
                     style={{
                       ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
-                      minHeight: isCompact ? 136 : 150,
+                      minHeight: isCompact ? 118 : 142,
                       display: "grid",
                       justifyItems: "center",
                       alignContent: "start",
@@ -2501,15 +3022,15 @@ function communityButtonGuardProps(): Pick<
                     <span
                       aria-hidden="true"
                       style={{
-                        width: isCompact ? 42 : 50,
-                        height: isCompact ? 42 : 50,
+                        width: isCompact ? 38 : 50,
+                        height: isCompact ? 38 : 50,
                         borderRadius: 999,
                         display: "inline-flex",
                         alignItems: "center",
                         justifyContent: "center",
                         background: `linear-gradient(180deg, ${item.tone} 0%, #08233A 100%)`,
                         color: "#FFFFFF",
-                        fontSize: isCompact ? 22 : 26,
+                        fontSize: isCompact ? 20 : 26,
                         fontWeight: 950,
                         lineHeight: 1,
                         boxShadow:
@@ -2521,7 +3042,7 @@ function communityButtonGuardProps(): Pick<
                     <span
                       style={{
                         color: "#07172C",
-                        fontSize: isCompact ? 12.5 : 14,
+                        fontSize: isCompact ? 13.5 : 14,
                         fontWeight: 950,
                         lineHeight: 1.2,
                       }}
@@ -2531,7 +3052,7 @@ function communityButtonGuardProps(): Pick<
                     <span
                       style={{
                         color: item.tone,
-                        fontSize: isCompact ? 18 : 22,
+                        fontSize: isCompact ? 16 : 22,
                         fontWeight: 950,
                         lineHeight: 1.12,
                         wordBreak: "break-word",
@@ -2542,7 +3063,7 @@ function communityButtonGuardProps(): Pick<
                     <span
                       style={{
                         color: "#5F7287",
-                        fontSize: isCompact ? 11.5 : 12.5,
+                        fontSize: isCompact ? 10.5 : 12.5,
                         fontWeight: 760,
                         lineHeight: 1.35,
                       }}
@@ -2640,45 +3161,50 @@ function communityButtonGuardProps(): Pick<
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "repeat(5, minmax(0, 1fr))"
+                  ? "repeat(2, minmax(0, 1fr))"
                   : "repeat(5, minmax(0, 1fr))",
                 gap: isCompact ? 8 : 12,
+                alignItems: "stretch",
               }}
             >
               {[
                 {
                   id: "choose-community",
                   icon: "👥",
-                  title: "Choose\ncommunity",
+                  title: "Choose community",
                   primary: true,
                 },
                 {
                   id: "marketplace",
                   icon: "🛍️",
-                  title: "Enter\nmarketplace",
+                  title: "Enter marketplace",
                 },
                 {
                   id: "create-community",
                   icon: "➕",
-                  title: "Create\ncommunity",
+                  title: "Create community",
                 },
                 {
                   id: "join-community",
                   icon: "🤝",
-                  title: "Join\ncommunity",
+                  title: "Join community",
                 },
                 {
                   id: "circle",
                   icon: "🌟",
-                  title: "Grow\ncircle",
+                  title: "Grow circle",
                 },
-              ].map((item) => (
+              ].map((item, index) => (
                 <button
                   key={item.id}
                   type="button"
                   {...communityButtonGuardProps()}
                   onClick={(event) => openCommunityNextAction(event, item.id)}
-                  style={communityQuickActionButton(Boolean(item.primary))}
+                  style={{
+                    ...communityQuickActionButton(Boolean(item.primary), isCompact),
+                    gridColumn:
+                      isCompact && index === 4 ? "1 / -1" : undefined,
+                  }}
                 >
                   <span style={communityActionIcon(Boolean(item.primary))}>
                     {item.icon}
@@ -2687,10 +3213,12 @@ function communityButtonGuardProps(): Pick<
                     <span
                       style={{
                         display: "block",
-                        fontSize: isCompact ? 11.5 : 14,
+                        fontSize: isCompact ? 13.5 : 14,
                         fontWeight: 940,
-                        lineHeight: 1.15,
-                        whiteSpace: "pre-line",
+                        lineHeight: isCompact ? 1.18 : 1.15,
+                        whiteSpace: "normal",
+                        wordBreak: "normal",
+                        overflowWrap: "break-word",
                       }}
                     >
                       {item.title}
@@ -2905,7 +3433,12 @@ function communityButtonGuardProps(): Pick<
               detail:
                 "Publish the normal community spotlight lane",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, "/app/shop-control#shop-control-spotlight"),
+                openCommunityHomeSection(
+                  event,
+                  "community-home-spotlight-gears",
+                  "spotlight",
+                  true
+                ),
             },
             {
               icon: "💳",
@@ -2931,7 +3464,11 @@ function communityButtonGuardProps(): Pick<
               title: "Owner Spotlight Status",
               detail: `${activeCommunitySpotlightTotal || activeCommunitySpotlights.length} live / 0 queued`,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunitySpotlightWorkspace(event),
+                openCommunityHomeSection(
+                  event,
+                  "community-home-spotlight-gears",
+                  "spotlight"
+                ),
             },
           ].map((item, index) => (
             <button
@@ -3305,7 +3842,7 @@ function communityButtonGuardProps(): Pick<
 
       <section
         id="community-home-spotlight-gears"
-        style={{ ...communityBlockCard("summary"), order: 80, display: "none" }}
+        style={{ ...communityBlockCard("summary"), order: 80 }}
       >
         <div>
           <div style={collapseHeaderText("center")}>
@@ -3441,7 +3978,7 @@ function communityButtonGuardProps(): Pick<
                   <div
                     style={{
                       marginTop: 10,
-                      color: "#F8FBFF",
+                      color: "#07172C",
                       fontSize: 16,
                       fontWeight: 900,
                       lineHeight: 1.4,
@@ -3511,17 +4048,17 @@ function communityButtonGuardProps(): Pick<
                 boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
               }}
             >
-              <div style={sectionLabel()}>Spotlight tools live in Shop Control</div>
+              <div style={sectionLabel()}>Free spotlight publisher</div>
               <div
                 style={{
                   marginTop: 10,
-                  color: "#F8FBFF",
+                  color: "#07172C",
                   fontSize: 18,
                   fontWeight: 900,
                   lineHeight: 1.35,
                 }}
               >
-                {communitySpotlightNextAction.title}
+                Publish the normal community spotlight here
               </div>
               <div
                 style={{
@@ -3531,21 +4068,263 @@ function communityButtonGuardProps(): Pick<
                   lineHeight: 1.75,
                 }}
               >
-                {communitySpotlightNextAction.detail}
+                Add a short message, picture, or video. GSN will create or
+                confirm your shop record, publish the free spotlight, then
+                refresh this status card.
+              </div>
+
+              <label
+                style={{
+                  display: "grid",
+                  gap: 7,
+                  marginTop: 14,
+                  color: "#0B2D4A",
+                  fontSize: 13,
+                  fontWeight: 900,
+                }}
+              >
+                Spotlight message
+                <textarea
+                  value={freeSpotlightMessage}
+                  onChange={(event) => setFreeSpotlightMessage(event.target.value)}
+                  maxLength={220}
+                  placeholder="Write the one thing people should see first."
+                  style={{
+                    minHeight: 92,
+                    resize: "vertical",
+                    borderRadius: 14,
+                    border: "1px solid rgba(16,37,59,0.14)",
+                    background: "#FFFFFF",
+                    color: "#07172C",
+                    padding: "12px 13px",
+                    fontSize: 14,
+                    fontWeight: 750,
+                    lineHeight: 1.45,
+                    outline: "none",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)",
+                  }}
+                />
+              </label>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    borderRadius: 14,
+                    border: "1px solid rgba(123,161,204,0.16)",
+                    background:
+                      "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
+                    padding: 12,
+                    boxShadow:
+                      "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+                  }}
+                >
+                  <span
+                    style={{
+                      color:
+                        preparingFreeSpotlightImage || publishingFreeSpotlight
+                          ? "#94A3B8"
+                          : "#0B2D4A",
+                      fontSize: 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {preparingFreeSpotlightImage
+                      ? "Preparing picture..."
+                      : freeSpotlightImageFile
+                      ? "Replace picture"
+                      : "Pick picture"}
+                  </span>
+                  <input
+                    key={freeSpotlightImageInputKey}
+                    type="file"
+                    accept="image/*,.jpg,.jpeg,.png,.webp"
+                    disabled={preparingFreeSpotlightImage || publishingFreeSpotlight}
+                    aria-label="Pick spotlight picture"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      void handleFreeSpotlightImagePicked(file);
+                    }}
+                    style={{
+                      width: "100%",
+                      minHeight: 42,
+                      boxSizing: "border-box",
+                      borderRadius: 12,
+                      border: "1px solid rgba(16,37,59,0.14)",
+                      background: "#FFFFFF",
+                      color: "#07172C",
+                      padding: "9px 10px",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor:
+                        preparingFreeSpotlightImage || publishingFreeSpotlight
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 8,
+                    borderRadius: 14,
+                    border: "1px solid rgba(123,161,204,0.16)",
+                    background:
+                      "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
+                    padding: 12,
+                    boxShadow:
+                      "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+                  }}
+                >
+                  <span
+                    style={{
+                      color:
+                        preparingFreeSpotlightVideo || publishingFreeSpotlight
+                          ? "#94A3B8"
+                          : "#0B2D4A",
+                      fontSize: 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {preparingFreeSpotlightVideo
+                      ? "Preparing video..."
+                      : freeSpotlightVideoFile
+                      ? "Replace short video"
+                      : "Pick short video"}
+                  </span>
+                  <input
+                    key={freeSpotlightVideoInputKey}
+                    type="file"
+                    accept="video/*,.mp4,.webm,.mov"
+                    disabled={preparingFreeSpotlightVideo || publishingFreeSpotlight}
+                    aria-label="Pick spotlight short video"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] || null;
+                      void handleFreeSpotlightVideoPicked(file);
+                    }}
+                    style={{
+                      width: "100%",
+                      minHeight: 42,
+                      boxSizing: "border-box",
+                      borderRadius: 12,
+                      border: "1px solid rgba(16,37,59,0.14)",
+                      background: "#FFFFFF",
+                      color: "#07172C",
+                      padding: "9px 10px",
+                      fontSize: 13,
+                      fontWeight: 800,
+                      cursor:
+                        preparingFreeSpotlightVideo || publishingFreeSpotlight
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                }}
+              >
+                <span style={badge(Boolean(freeSpotlightImageFile))}>
+                  {freeSpotlightImageFile
+                    ? `Picture: ${formatFileSize(freeSpotlightImageFile.size)}`
+                    : "Picture optional"}
+                </span>
+                <span style={badge(Boolean(freeSpotlightVideoFile))}>
+                  {freeSpotlightVideoFile
+                    ? `Video: ${formatFileSize(freeSpotlightVideoFile.size)}`
+                    : `Video optional, ${SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}s max`}
+                </span>
               </div>
               <div
                 style={{
-                  marginTop: 14,
+                  marginTop: 8,
                   color: "#5F7287",
-                  fontSize: 13,
-                  lineHeight: 1.75,
+                  fontSize: 12.5,
+                  fontWeight: 750,
+                  lineHeight: 1.55,
                 }}
               >
-                This keeps Community Home clean: it shows the owner-side
-                spotlight status here, Shop Control prepares the picture, short
-                video, products, Vault, and paid choices, and Marketplace
-                carries that spotlight inside the selected community.
+                These are native browser file controls. If the chooser does not
+                open, refresh this page once so the newest picker code is loaded.
               </div>
+
+              {freeSpotlightImagePreviewUrl || freeSpotlightVideoPreviewUrl ? (
+                <div style={{ marginTop: 12 }}>
+                  <div style={sectionLabel()}>Draft preview</div>
+                  <div style={{ marginTop: 10 }}>
+                    <SpotlightMediaFrame
+                      imageUrl={freeSpotlightImagePreviewUrl}
+                      videoUrl={freeSpotlightVideoPreviewUrl}
+                      videoPoster={freeSpotlightImagePreviewUrl}
+                      alt="Draft community spotlight"
+                      frameStyle={{
+                        minHeight: 220,
+                        height: 220,
+                        borderRadius: 16,
+                        border: "1px solid rgba(212,175,55,0.14)",
+                      }}
+                      mediaStyle={{
+                        width: "100%",
+                        height: "100%",
+                      }}
+                      showVideoControls={Boolean(freeSpotlightVideoPreviewUrl)}
+                      autoPlayVideo={Boolean(freeSpotlightVideoPreviewUrl)}
+                      mutedVideo={Boolean(freeSpotlightVideoPreviewUrl)}
+                      loopVideo={Boolean(freeSpotlightVideoPreviewUrl)}
+                      maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                    />
+                  </div>
+                </div>
+              ) : null}
+
+              {freeSpotlightFeedback ? (
+                <div
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 14,
+                    border:
+                      freeSpotlightFeedback.tone === "error"
+                        ? "1px solid rgba(138,28,28,0.18)"
+                        : freeSpotlightFeedback.tone === "success"
+                        ? "1px solid rgba(22,101,52,0.18)"
+                        : "1px solid rgba(13,95,168,0.18)",
+                    background:
+                      freeSpotlightFeedback.tone === "error"
+                        ? "#FFF5F5"
+                        : freeSpotlightFeedback.tone === "success"
+                        ? "#F0FDF4"
+                        : "#F4F9FF",
+                    color:
+                      freeSpotlightFeedback.tone === "error"
+                        ? "#8A1C1C"
+                        : freeSpotlightFeedback.tone === "success"
+                        ? "#166534"
+                        : "#0B2D4A",
+                    padding: "10px 12px",
+                    fontSize: 13,
+                    fontWeight: 800,
+                    lineHeight: 1.55,
+                  }}
+                >
+                  {freeSpotlightFeedback.text}
+                </div>
+              ) : null}
+
               <div
                 style={{
                   marginTop: 16,
@@ -3557,36 +4336,18 @@ function communityButtonGuardProps(): Pick<
                 <button
                   type="button"
                   {...communityButtonGuardProps()}
-                  onClick={(event) => openCommunitySpotlightWorkspace(event)}
-                  style={actionBtn("primary")}
+                  aria-disabled={publishingFreeSpotlight}
+                  onClick={(event) => void handlePublishFreeSpotlight(event)}
+                  style={actionBtn(
+                    "primary",
+                    publishingFreeSpotlight
+                  )}
                 >
-                  Open Owner Spotlight Here
-                </button>
-                <button
-                  type="button"
-                  {...communityButtonGuardProps()}
-                  onClick={(event) =>
-                    openCommunityRoute(
-                      event,
-                      "/app/shop-control#shop-control-spotlight"
-                    )
-                  }
-                  style={actionBtn("secondary")}
-                >
-                  Open Full Spotlight Publisher
-                </button>
-                <button
-                  type="button"
-                  {...communityButtonGuardProps()}
-                  onClick={(event) =>
-                    openCommunityRoute(
-                      event,
-                      "/app/shop-control#shop-control-paid-spotlight"
-                    )
-                  }
-                  style={actionBtn("secondary")}
-                >
-                  Open Paid Spotlight
+                  {publishingFreeSpotlight
+                    ? "Publishing..."
+                    : preparingFreeSpotlightImage || preparingFreeSpotlightVideo
+                    ? "Publish after media is ready"
+                    : "Publish free spotlight"}
                 </button>
               </div>
             </div>

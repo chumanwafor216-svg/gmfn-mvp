@@ -591,6 +591,22 @@ export default function App() {
         <Route path="open-demand" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
 
         <Route path="shop-control" element={<ShopControlPage />} />
+        <Route
+          path="shop-gallery-control"
+          element={<PreserveRedirect to="/app/shop-control#shop-control-gallery-tools" />}
+        />
+        <Route
+          path="vault-control"
+          element={<PreserveRedirect to="/app/shop-control#shop-control-vault" />}
+        />
+        <Route
+          path="free-spotlight"
+          element={<PreserveRedirect to="/app/shop-control#shop-control-spotlight" />}
+        />
+        <Route
+          path="paid-spotlight"
+          element={<PreserveRedirect to="/app/shop-control#shop-control-paid-spotlight" />}
+        />
         <Route path="shop-assets" element={<ShopAssetsPage />} />
         <Route path="shop-assets-page" element={<PreserveRedirect to={APP_ROUTES.SHOP_ASSETS} />} />
         <Route path="shop-manager" element={<PreserveRedirect to="/app/shop-control" />} />

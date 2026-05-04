@@ -808,6 +808,7 @@ function groupCard(): React.CSSProperties {
 
 function groupHeader(active = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     width: "100%",
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
@@ -826,15 +827,6 @@ function groupHeader(active = false): React.CSSProperties {
     gap: 12,
     cursor: "pointer",
     textAlign: "left",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    outlineOffset: 4,
   };
 }
 
@@ -850,6 +842,7 @@ function groupHint(): React.CSSProperties {
 
 function navItem(active = false, disabled = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -867,14 +860,6 @@ function navItem(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.06)",
     pointerEvents: disabled ? "none" : "auto",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    outlineOffset: 4,
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -898,7 +883,7 @@ function mobileTopBar(): React.CSSProperties {
     top: 0,
     zIndex: 20,
     display: "grid",
-    gridTemplateColumns: "58px minmax(0, 1fr) 58px",
+    gridTemplateColumns: "minmax(82px, auto) minmax(0, 1fr) minmax(82px, auto)",
     alignItems: "center",
     gap: 8,
     padding: "10px 12px",
@@ -910,6 +895,7 @@ function mobileTopBar(): React.CSSProperties {
 
 function mobileIconButton(): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     width: "100%",
     minHeight: 38,
     borderRadius: 12,
@@ -919,17 +905,6 @@ function mobileIconButton(): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     cursor: "pointer",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    appearance: "none",
-    WebkitAppearance: "none",
-    outlineOffset: 4,
   };
 }
 
@@ -1005,6 +980,7 @@ function drawerHeader(): React.CSSProperties {
 
 function overlayCloseButton(dark = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     width: 34,
     height: 34,
     borderRadius: 11,
@@ -1015,17 +991,6 @@ function overlayCloseButton(dark = false): React.CSSProperties {
     color: dark ? "#FFFFFF" : "#0B1F33",
     fontSize: 18,
     cursor: "pointer",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    appearance: "none",
-    WebkitAppearance: "none",
-    outlineOffset: 4,
   };
 }
 
@@ -1042,6 +1007,7 @@ function drawerSectionTitle(): React.CSSProperties {
 
 function drawerLink(active = false, disabled = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1059,14 +1025,6 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.08)",
     pointerEvents: disabled ? "none" : "auto",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    outlineOffset: 4,
     opacity: disabled ? 0.7 : 1,
     overflowWrap: "anywhere",
   };
@@ -1114,6 +1072,7 @@ function actionsTitle(): React.CSSProperties {
 
 function actionsLink(active = false, disabled = false): React.CSSProperties {
   return {
+    ...brandStableTapTarget(),
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1131,14 +1090,6 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(11,99,209,0.14)"
       : "1px solid rgba(11,31,51,0.08)",
     pointerEvents: disabled ? "none" : "auto",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    transform: "translateZ(0)",
-    outlineOffset: 4,
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -1717,7 +1668,7 @@ export default function AppLayout() {
               aria-label="Open navigation"
               style={mobileIconButton()}
             >
-              Menu
+              ☰ Menu
             </button>
 
             <div style={mobileTopMeta()}>
@@ -1732,7 +1683,7 @@ export default function AppLayout() {
               aria-label="Open page actions"
               style={mobileIconButton()}
             >
-              Tools
+              🛠 Tools
             </button>
           </header>
 

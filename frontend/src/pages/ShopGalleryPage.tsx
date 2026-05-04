@@ -10,11 +10,16 @@ import {
   safeCopy,
 } from "../lib/api";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
+import {
+  actionTapGuardProps,
+  brandStableTapTarget,
+} from "../styles/gmfnBrand";
 
 type ShopProfile = {
   id?: number;
@@ -416,15 +421,19 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     src?.summary
   );
 
+  const productId = positiveNumber(src?.id) || undefined;
+  const cachedMedia = productId ? getCachedShopProductMedia(productId) : null;
   const imageUrl = resolveImageSrc(
     src?.image_url ||
       src?.thumbnail_url ||
       src?.photo_url ||
-      src?.cover_image_url
+      src?.cover_image_url ||
+      cachedMedia?.image_url
   );
+  const videoUrl = resolveImageSrc(src?.video_url || cachedMedia?.video_url);
 
   return {
-    id: positiveNumber(src?.id) || undefined,
+    id: productId,
     slotNumber,
     name,
     description,
@@ -434,7 +443,7 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     ),
     currency: firstMeaningful(src?.currency, src?.currency_code, "NGN") || "NGN",
     imageUrl,
-    videoUrl: resolveImageSrc(src?.video_url),
+    videoUrl,
     visibilityMode:
       firstMeaningful(src?.visibility_mode, "community_visible") ||
       "community_visible",
@@ -533,32 +542,16 @@ function badge(primary = false): React.CSSProperties {
 }
 
 const stableTapTarget: React.CSSProperties = {
-  position: "relative",
+  ...brandStableTapTarget(),
   zIndex: 10,
-  isolation: "isolate",
-  WebkitTapHighlightColor: "transparent",
-  touchAction: "manipulation",
-  userSelect: "none",
-  transform: "translateZ(0)",
-  pointerEvents: "auto",
-  appearance: "none",
-  WebkitAppearance: "none",
-  boxSizing: "border-box",
-  outlineOffset: 4,
+  flexShrink: 0,
 };
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
   "onPointerDown" | "onMouseDown"
 > {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
+  return actionTapGuardProps();
 }
 
 function navLinkButton(primary = false): React.CSSProperties {
@@ -1004,52 +997,22 @@ export default function ShopGalleryPage() {
   }, [openProductId, products]);
 
   const visibleProducts = useMemo(
-    () => {
-      const productsWithUsableMedia = products.filter((product) => {
-        const imageUrl = safeStr(product.imageUrl);
-        const videoUrl = safeStr(product.videoUrl);
-        const imageBroken = Boolean(imageUrl && brokenProductMediaUrls[imageUrl]);
-        const videoBroken = Boolean(videoUrl && brokenProductMediaUrls[videoUrl]);
-
-        if (videoUrl && !videoBroken) return true;
-        if (imageUrl && !imageBroken) return true;
-        return false;
-      });
-      const displayableProducts =
-        productsWithUsableMedia.length > 0
-          ? productsWithUsableMedia
-          : products.filter((product) => {
-              const imageUrl = safeStr(product.imageUrl);
-              const videoUrl = safeStr(product.videoUrl);
-              const imageBroken = Boolean(imageUrl && brokenProductMediaUrls[imageUrl]);
-              const videoBroken = Boolean(videoUrl && brokenProductMediaUrls[videoUrl]);
-
-              if (videoUrl && videoBroken) return false;
-              if (imageUrl && imageBroken) return false;
-              return true;
-            });
-
-      return showAllProducts
-        ? displayableProducts
-        : displayableProducts.slice(0, GALLERY_SLOTS_TOTAL);
-    },
-    [brokenProductMediaUrls, products, showAllProducts]
+    () => (showAllProducts ? products : products.slice(0, GALLERY_SLOTS_TOTAL)),
+    [products, showAllProducts]
   );
-  const usableProductCount =
-    products.filter((product) => {
+  const mediaPreparingProductCount = products.filter((product) => {
       const imageUrl = safeStr(product.imageUrl);
       const videoUrl = safeStr(product.videoUrl);
       const imageBroken = Boolean(imageUrl && brokenProductMediaUrls[imageUrl]);
       const videoBroken = Boolean(videoUrl && brokenProductMediaUrls[videoUrl]);
-      if (videoUrl && !videoBroken) return true;
-      if (imageUrl && !imageBroken) return true;
-      return false;
-    }).length || visibleProducts.length;
-  const brokenProductMediaCount = products.length - usableProductCount;
-  const overflowProductCount = Math.max(0, usableProductCount - GALLERY_SLOTS_TOTAL);
+      if (videoUrl && !videoBroken) return false;
+      if (imageUrl && !imageBroken) return false;
+      return true;
+    }).length;
+  const overflowProductCount = Math.max(0, products.length - GALLERY_SLOTS_TOTAL);
   const hiddenProductCount = showAllProducts
     ? 0
-    : Math.max(0, usableProductCount - visibleProducts.length);
+    : Math.max(0, products.length - visibleProducts.length);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -2502,16 +2465,16 @@ export default function ShopGalleryPage() {
               🛍️ Public items
             </div>
             <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
-              These are the items anyone can browse or share. Vault offers stay private.
+              These are the public picture and video blocks anyone can browse or share.
             </div>
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>
               {showAllProducts && overflowProductCount > 0
-                ? `All ${usableProductCount} items showing`
+                ? `All ${products.length} items showing`
                 : hiddenProductCount > 0
-                ? `${visibleProducts.length} of ${usableProductCount} items showing`
+                ? `${visibleProducts.length} of ${products.length} items showing`
                 : `${visibleProducts.length} public items live`}
             </span>
             <span style={badge(false)}>
@@ -2521,9 +2484,9 @@ export default function ShopGalleryPage() {
                 ? `${hiddenProductCount} more loaded`
                 : `Up to ${GALLERY_SLOTS_TOTAL} public slots`}
             </span>
-            {brokenProductMediaCount > 0 ? (
+            {mediaPreparingProductCount > 0 ? (
               <span style={badge(false)}>
-                {brokenProductMediaCount} old picture link hidden
+                {mediaPreparingProductCount} media preparing
               </span>
             ) : null}
             {overflowProductCount > 0 ? (
@@ -2735,22 +2698,24 @@ export default function ShopGalleryPage() {
                     {hasVideoStory ? "Item video" : "Item picture"}
                     </div>
                     {hasVideoStory ? (
-                      <video
-                        src={productVideoUrl}
-                        poster={productImageUrl || undefined}
-                        controls
-                        playsInline
-                        preload="metadata"
-                        onError={() => {
-                          if (!productVideoUrl) return;
-                          setBrokenProductMediaUrls((current) => ({
-                            ...current,
-                            [productVideoUrl]: true,
-                          }));
-                        }}
-                        style={{
+                      <SpotlightMediaFrame
+                        key={`${productOpenId}-${isProductOpen ? "open-sound" : "closed-muted"}`}
+                        imageUrl={productImageUrl}
+                        videoUrl={productVideoUrl}
+                        videoPoster={productImageUrl}
+                        alt={displayTitle}
+                        contentPadding={0}
+                        showVideoControls={isProductOpen}
+                        autoPlayVideo={!isProductOpen}
+                        mutedVideo={!isProductOpen}
+                        loopVideo={!isProductOpen}
+                        showAudioUnlock={hasVideoStory && isProductOpen}
+                        audioUnlockLabel="Sound on"
+                        maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
+                        frameStyle={{
                           width: "100%",
                           height: "100%",
+                          minHeight: "100%",
                           borderRadius: 18,
                           border: isCompact
                             ? "1px solid rgba(13,95,168,0.16)"
@@ -2758,10 +2723,14 @@ export default function ShopGalleryPage() {
                           boxShadow: isCompact
                             ? "0 16px 34px rgba(8,38,67,0.12)"
                             : undefined,
+                          background: "#0B1F33",
+                        }}
+                        mediaStyle={{
+                          width: "100%",
+                          height: "100%",
                           objectFit: "cover",
                           objectPosition: isCompact ? "center top" : "center",
                           display: "block",
-                          background: "#0B1F33",
                         }}
                       />
                     ) : productImageUrl ? (
@@ -2981,7 +2950,9 @@ export default function ShopGalleryPage() {
                             lineHeight: 1.55,
                           }}
                         >
-                          {itemDetailText}
+                          {hasVideoStory
+                            ? `${itemDetailText} This block is a video. Tap Sound on at the top of the video to hear its audio.`
+                            : itemDetailText}
                         </div>
                         <div
                           style={{

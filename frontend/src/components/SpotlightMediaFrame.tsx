@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 type SpotlightMediaFrameProps = {
   imageUrl?: string | null;
@@ -15,6 +15,8 @@ type SpotlightMediaFrameProps = {
   mutedVideo?: boolean;
   loopVideo?: boolean;
   maxVideoSeconds?: number | null;
+  showAudioUnlock?: boolean;
+  audioUnlockLabel?: string;
 };
 
 function safeStr(value: unknown): string {
@@ -40,17 +42,39 @@ export default function SpotlightMediaFrame(
   const [imageIndex, setImageIndex] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     setImageIndex(0);
     setVideoFailed(false);
     setImageFailed(false);
+    setAudioUnlocked(false);
   }, [imageCandidateKey, props.videoUrl]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const shouldMute = props.mutedVideo ?? false;
+    video.muted = shouldMute;
+    video.defaultMuted = shouldMute;
+    if (!shouldMute) {
+      video.volume = 1;
+    }
+    setAudioUnlocked(false);
+  }, [props.mutedVideo, props.videoUrl]);
 
   const imageSrc = imageCandidates[imageIndex] || "";
   const videoSrc = safeStr(props.videoUrl);
   const backdropSrc = safeStr(props.videoPoster) || imageSrc;
   const maxVideoSeconds = Number(props.maxVideoSeconds || 0);
+  const shouldShowAudioUnlock =
+    Boolean(videoSrc) &&
+    Boolean(props.showAudioUnlock) &&
+    Boolean(props.showVideoControls ?? true) &&
+    !(props.mutedVideo ?? false) &&
+    !audioUnlocked;
 
   const frameStyle: React.CSSProperties = {
     position: "relative",
@@ -141,12 +165,57 @@ export default function SpotlightMediaFrame(
       </div>
     ) : null;
 
+  const audioUnlockButton = shouldShowAudioUnlock ? (
+    <button
+      type="button"
+      onClick={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const video = videoRef.current;
+        if (!video) return;
+
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 1;
+        void video
+          .play()
+          .then(() => setAudioUnlocked(true))
+          .catch(() => {
+            setAudioUnlocked(false);
+          });
+      }}
+      style={{
+        position: "absolute",
+        right: 14,
+        top: 14,
+        zIndex: 4,
+        minHeight: 42,
+        padding: "10px 14px",
+        borderRadius: 999,
+        border: "1px solid rgba(255, 226, 160, 0.64)",
+        background:
+          "linear-gradient(180deg, rgba(255,244,204,0.98) 0%, rgba(244,196,83,0.94) 100%)",
+        color: "#071827",
+        fontSize: 13,
+        fontWeight: 900,
+        lineHeight: 1,
+        boxShadow: "0 14px 28px rgba(2, 12, 27, 0.28)",
+        cursor: "pointer",
+        touchAction: "manipulation",
+      }}
+      aria-label={props.audioUnlockLabel || "Turn video sound on"}
+    >
+      {props.audioUnlockLabel || "Sound on"}
+    </button>
+  ) : null;
+
   if (videoSrc && !videoFailed) {
     return (
       <div style={frameStyle}>
         {backdrop}
         <div style={foregroundStyle}>
           <video
+            ref={videoRef}
             src={videoSrc}
             poster={backdropSrc || undefined}
             controls={props.showVideoControls ?? true}
@@ -156,6 +225,28 @@ export default function SpotlightMediaFrame(
             playsInline
             preload="metadata"
             onError={() => setVideoFailed(true)}
+            onLoadedMetadata={(event) => {
+              const video = event.currentTarget;
+              const shouldMute = props.mutedVideo ?? false;
+              video.muted = shouldMute;
+              video.defaultMuted = shouldMute;
+              if (!shouldMute) {
+                video.volume = 1;
+              }
+              setAudioUnlocked(false);
+            }}
+            onPlay={(event) => {
+              const video = event.currentTarget;
+              if (!video.muted && video.volume > 0) {
+                setAudioUnlocked(true);
+              }
+            }}
+            onVolumeChange={(event) => {
+              const video = event.currentTarget;
+              if (!video.muted && video.volume > 0 && !video.paused) {
+                setAudioUnlocked(true);
+              }
+            }}
             onTimeUpdate={(event) => {
               if (!Number.isFinite(maxVideoSeconds) || maxVideoSeconds <= 0) {
                 return;
@@ -175,6 +266,7 @@ export default function SpotlightMediaFrame(
             style={mediaStyle}
           />
         </div>
+        {audioUnlockButton}
       </div>
     );
   }

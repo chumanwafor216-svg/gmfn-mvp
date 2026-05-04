@@ -147,10 +147,8 @@ export function brandStableTapTarget(): React.CSSProperties {
     WebkitTapHighlightColor: "transparent",
     touchAction: "manipulation",
     userSelect: "none",
-    transform: "translateZ(0)",
     backfaceVisibility: "hidden",
     outlineOffset: 4,
-    contain: "layout paint",
   };
 }
 
@@ -172,13 +170,25 @@ export function brandActionButton(
   kind: BrandActionKind = "secondary",
   disabled = false
 ): React.CSSProperties {
+  const stableButtonText: React.CSSProperties = {
+    minWidth: 0,
+    maxWidth: "100%",
+    alignContent: "center",
+    overflowWrap: "anywhere",
+    lineHeight: 1.18,
+    transitionProperty: "background, border-color, box-shadow, color, opacity",
+    transitionDuration: "120ms",
+    transitionTimingFunction: "ease-out",
+  };
+
   if (kind === "primary") {
     return {
       ...brandStableTapTarget(),
+      ...stableButtonText,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 42,
+      minHeight: 48,
       padding: "10px 14px",
       borderRadius: 14,
       border: disabled ? "1px solid rgba(159,173,190,0.34)" : "1px solid rgba(8,48,110,0.36)",
@@ -203,10 +213,11 @@ export function brandActionButton(
   if (kind === "soft") {
     return {
       ...brandStableTapTarget(),
+      ...stableButtonText,
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 38,
+      minHeight: 46,
       padding: "8px 12px",
       borderRadius: 12,
       border: `1px solid ${gmfnBrand.colors.lineStrong}`,
@@ -227,10 +238,11 @@ export function brandActionButton(
 
   return {
     ...brandStableTapTarget(),
+    ...stableButtonText,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 42,
+    minHeight: 46,
     padding: "10px 14px",
     borderRadius: 14,
     border: `1px solid ${gmfnBrand.colors.lineStrong}`,

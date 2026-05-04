@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -11,8 +12,24 @@ import {
   getMe,
   getSelectedClanId,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
+  uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
+import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
+import {
+  SPOTLIGHT_MAX_IMAGE_BYTES,
+  SPOTLIGHT_MAX_VIDEO_BYTES,
+  SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+} from "../lib/spotlightPilot";
+import {
+  prepareSpotlightImageFile,
+  prepareSpotlightVideoFile,
+} from "../lib/spotlightMediaPrep";
+import {
+  actionTapGuardProps,
+  brandStableTapTarget,
+} from "../styles/gmfnBrand";
 
 type ShopRecord = {
   id: number;
@@ -60,6 +77,10 @@ type CollapseState = {
   signboard: boolean;
   products: boolean;
   posted: boolean;
+};
+
+type ShopAssetsPageProps = {
+  embedded?: boolean;
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
@@ -141,32 +162,16 @@ function badge(primary = false): React.CSSProperties {
 }
 
 const stableTapTarget: React.CSSProperties = {
-  position: "relative",
+  ...brandStableTapTarget(),
   zIndex: 10,
-  isolation: "isolate",
-  pointerEvents: "auto",
-  WebkitTapHighlightColor: "transparent",
-  touchAction: "manipulation",
-  userSelect: "none",
-  appearance: "none",
-  WebkitAppearance: "none",
-  boxSizing: "border-box",
-  outlineOffset: 4,
-  transform: "translateZ(0)",
+  flexShrink: 0,
 };
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
   "onPointerDown" | "onMouseDown"
 > {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
+  return actionTapGuardProps();
 }
 
 function actionBtn(
@@ -241,6 +246,26 @@ function actionBtn(
     textAlign: "center",
     lineHeight: 1.2,
     opacity: disabled ? 0.86 : 1,
+  };
+}
+
+function ownerActionGrid(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(148px, 1fr))",
+    gap: isCompact ? 12 : 10,
+    alignItems: "stretch",
+  };
+}
+
+function ownerActionButton(
+  style: React.CSSProperties,
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    ...style,
+    width: "100%",
+    minHeight: isCompact ? 56 : style.minHeight ?? 48,
   };
 }
 
@@ -445,6 +470,29 @@ async function uploadMarketplaceImageFile(file: File): Promise<string> {
   );
 }
 
+async function uploadMarketplaceVideoFile(
+  file: File,
+  durationSeconds?: number | null
+): Promise<string> {
+  const data = await uploadMarketplaceVideoFileApi(file, durationSeconds ?? null);
+  const url =
+    firstTruthy(
+      data?.video_url,
+      data?.url,
+      data?.path,
+      data?.item?.video_url,
+      data?.item?.url,
+      data?.data?.video_url,
+      data?.data?.url
+    ) || "";
+
+  if (url) return url;
+
+  throw new Error(
+    "We could not prepare a video from that upload. Paste a video URL instead and continue."
+  );
+}
+
 function buildShopLink(gmfnId: string): string {
   if (!gmfnId) return "";
   return publicFrontendUrl(`/shop/${encodeURIComponent(gmfnId)}`);
@@ -512,23 +560,33 @@ function resolveAssetSrc(raw: unknown): string {
   return `${origin}${value.startsWith("/") ? value : `/${value}`}`;
 }
 
-export default function ShopAssetsPage() {
+export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
+  const embedded = Boolean(props.embedded);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
+  const productImagePrepJobRef = useRef(0);
+  const productVideoPrepJobRef = useRef(0);
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
-  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
-    normalizeCollapseState(
+  const [collapsed, setCollapsed] = useState<CollapseState>(() => {
+    if (embedded) {
+      return {
+        ...defaultCollapseState(),
+        posted: false,
+      };
+    }
+
+    return normalizeCollapseState(
       readLocalJSON<CollapseState>(
         SHOP_ASSETS_UI_STORAGE_KEY,
         defaultCollapseState()
       )
-    )
-  );
+    );
+  });
 
   const [me, setMe] = useState<any>(null);
   const [shop, setShop] = useState<ShopRecord | null>(null);
@@ -554,6 +612,23 @@ export default function ShopAssetsPage() {
   const [productImageUrlInput, setProductImageUrlInput] = useState("");
   const [productSelectedFile, setProductSelectedFile] = useState<File | null>(null);
   const [productPreviewUrl, setProductPreviewUrl] = useState("");
+  const [productVideoUrlInput, setProductVideoUrlInput] = useState("");
+  const [productSelectedVideoFile, setProductSelectedVideoFile] = useState<File | null>(null);
+  const [productVideoDurationSeconds, setProductVideoDurationSeconds] = useState<number | null>(null);
+  const [productVideoPreviewUrl, setProductVideoPreviewUrl] = useState("");
+  const [selectedPublicSlot, setSelectedPublicSlot] = useState(1);
+  const [productEditorOpen, setProductEditorOpen] = useState(false);
+  const [productFormNotice, setProductFormNotice] = useState<{
+    tone: NoticeTone;
+    text: string;
+  } | null>(null);
+  const [galleryActionNotice, setGalleryActionNotice] = useState<{
+    tone: NoticeTone;
+    text: string;
+    slotNumber: number;
+  } | null>(null);
+  const [preparingProductImage, setPreparingProductImage] = useState(false);
+  const [preparingProductVideo, setPreparingProductVideo] = useState(false);
   const [savingProduct, setSavingProduct] = useState(false);
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [restoringProductId, setRestoringProductId] = useState<number | null>(null);
@@ -579,18 +654,37 @@ export default function ShopAssetsPage() {
   }, [notice]);
 
   useEffect(() => {
+    if (embedded) return;
     writeLocalJSON(SHOP_ASSETS_UI_STORAGE_KEY, collapsed);
-  }, [collapsed]);
+  }, [collapsed, embedded]);
 
   useEffect(() => {
     return () => {
       if (shopPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(shopPreviewUrl);
       if (productPreviewUrl.startsWith("blob:")) URL.revokeObjectURL(productPreviewUrl);
+      if (productVideoPreviewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(productVideoPreviewUrl);
+      }
     };
-  }, [shopPreviewUrl, productPreviewUrl]);
+  }, [shopPreviewUrl, productPreviewUrl, productVideoPreviewUrl]);
+
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function showProductFormNotice(tone: NoticeTone, text: string) {
+    setProductFormNotice({ tone, text });
+    showNotice(tone, text);
+  }
+
+  function showGalleryActionNotice(
+    tone: NoticeTone,
+    text: string,
+    slotNumber = selectedPublicSlot
+  ) {
+    setGalleryActionNotice({ tone, text, slotNumber });
+    showNotice(tone, text);
   }
 
   function toggleSection(key: keyof CollapseState) {
@@ -600,10 +694,11 @@ export default function ShopAssetsPage() {
     }));
   }
 
-  const loadPage = useCallback(async () => {
+  const loadPage = useCallback(async (): Promise<ProductRecord[]> => {
     setLoading(true);
 
     try {
+      let loadedProducts: ProductRecord[] = [];
       const meRes = await getMe().catch(() => null);
       setMe(meRes || null);
 
@@ -611,7 +706,7 @@ export default function ShopAssetsPage() {
       if (!gmfnId) {
         setShop(null);
         setProducts([]);
-        return;
+        return [];
       }
 
       const shopRes = await apiJson<any>(
@@ -652,6 +747,8 @@ export default function ShopAssetsPage() {
       }
 
       setProducts(nextProducts);
+      loadedProducts = nextProducts;
+      return loadedProducts;
     } finally {
       setLoading(false);
     }
@@ -689,6 +786,13 @@ export default function ShopAssetsPage() {
     [products]
   );
 
+  const publicGallerySlots = useMemo(
+    () => Array.from({ length: 12 }, (_, index) => publicProducts[index] || null),
+    [publicProducts]
+  );
+
+  const selectedPublicProduct = publicGallerySlots[selectedPublicSlot - 1] || null;
+
   function copyText(text: string, successMessage: string) {
     if (!text) {
       showNotice("error", "Nothing to copy yet.");
@@ -716,18 +820,115 @@ export default function ShopAssetsPage() {
     }
   }
 
-  function setProductPreviewFromFile(file: File | null) {
-    setProductSelectedFile(file);
+  async function setProductPreviewFromFile(file: File | null) {
+    productImagePrepJobRef.current += 1;
+    const prepJob = productImagePrepJobRef.current;
+    setProductFormNotice(null);
+    setPreparingProductImage(false);
 
     if (productPreviewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(productPreviewUrl);
     }
 
-    if (file) {
-      const next = URL.createObjectURL(file);
-      setProductPreviewUrl(next);
-    } else {
+    if (!file) {
+      setProductSelectedFile(null);
       setProductPreviewUrl(firstTruthy(productImageUrlInput));
+      return;
+    }
+
+    try {
+      setPreparingProductImage(true);
+      const prepared = await prepareSpotlightImageFile(file, {
+        maxBytes: SPOTLIGHT_MAX_IMAGE_BYTES,
+      });
+
+      if (productImagePrepJobRef.current !== prepJob) return;
+
+      setProductSelectedFile(prepared.file);
+      const next = URL.createObjectURL(prepared.file);
+      setProductPreviewUrl(next);
+      showProductFormNotice(
+        "info",
+        prepared.message ||
+          `${safeStr(prepared.file.name) || "Selected picture"} is ready for this gallery block.`
+      );
+    } catch (err: any) {
+      if (productImagePrepJobRef.current !== prepJob) return;
+      setProductSelectedFile(null);
+      setProductPreviewUrl(firstTruthy(productImageUrlInput));
+      showProductFormNotice(
+        "error",
+        safeStr(err?.message) || "This picture could not be prepared for the shop gallery."
+      );
+    } finally {
+      if (productImagePrepJobRef.current === prepJob) {
+        setPreparingProductImage(false);
+      }
+    }
+  }
+
+  async function setProductVideoPreviewFromFile(file: File | null) {
+    productVideoPrepJobRef.current += 1;
+    const prepJob = productVideoPrepJobRef.current;
+    setProductFormNotice(null);
+    setPreparingProductVideo(false);
+
+    if (productVideoPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(productVideoPreviewUrl);
+    }
+
+    if (!file) {
+      setProductSelectedVideoFile(null);
+      setProductVideoDurationSeconds(null);
+      setProductVideoPreviewUrl(firstTruthy(productVideoUrlInput));
+      return;
+    }
+
+    try {
+      setPreparingProductVideo(true);
+      const prepared = await prepareSpotlightVideoFile(file, {
+        maxBytes: SPOTLIGHT_MAX_VIDEO_BYTES,
+        maxDurationSeconds: SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+      });
+
+      if (productVideoPrepJobRef.current !== prepJob) return;
+
+      setProductSelectedVideoFile(prepared.file);
+      setProductVideoDurationSeconds(prepared.durationSeconds ?? null);
+      const next = URL.createObjectURL(prepared.file);
+      setProductVideoPreviewUrl(next);
+      let coverMessage = "";
+
+      if (!safeStr(productImageUrlInput) && !safeStr(productPreviewUrl)) {
+        const cover = await createShopGalleryCoverFromVideo(prepared.file);
+        if (productVideoPrepJobRef.current === prepJob) {
+          setProductSelectedFile(cover.file);
+          const coverPreview = URL.createObjectURL(cover.file);
+          setProductPreviewUrl(coverPreview);
+          coverMessage = ` ${cover.message}`;
+        }
+      }
+
+      showProductFormNotice(
+        "info",
+        prepared.message
+          ? `${prepared.message.replace("spotlight-ready", "shop-gallery-ready")}${coverMessage}`
+          : `${safeStr(prepared.file.name) || "Selected video"} is ready for this gallery block.${coverMessage}`
+      );
+    } catch (err: any) {
+      if (productVideoPrepJobRef.current !== prepJob) return;
+      setProductSelectedVideoFile(null);
+      setProductVideoDurationSeconds(null);
+      setProductVideoPreviewUrl(firstTruthy(productVideoUrlInput));
+      showProductFormNotice(
+        "error",
+        safeStr(err?.message) ||
+          "This phone could not prepare that video for the shop gallery."
+      );
+    } finally {
+      if (productVideoPrepJobRef.current === prepJob) {
+        setPreparingProductVideo(false);
+      }
     }
   }
 
@@ -793,11 +994,20 @@ export default function ShopAssetsPage() {
     setProductVisibility("community_visible");
     setProductImageUrlInput("");
     setProductSelectedFile(null);
+    setProductVideoUrlInput("");
+    setProductSelectedVideoFile(null);
+    setProductVideoDurationSeconds(null);
 
     if (productPreviewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(productPreviewUrl);
     }
     setProductPreviewUrl("");
+
+    if (productVideoPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(productVideoPreviewUrl);
+    }
+    setProductVideoPreviewUrl("");
+    setProductFormNotice(null);
   }
 
   function startEditProduct(item: ProductRecord) {
@@ -810,42 +1020,123 @@ export default function ShopAssetsPage() {
     setProductVisibility(firstTruthy(item?.visibility_mode, "community_visible"));
     setProductImageUrlInput(firstTruthy(item?.image_url));
     setProductSelectedFile(null);
+    setProductVideoUrlInput(firstTruthy(item?.video_url));
+    setProductSelectedVideoFile(null);
+    setProductVideoDurationSeconds(null);
 
     if (productPreviewUrl.startsWith("blob:")) {
       URL.revokeObjectURL(productPreviewUrl);
     }
     setProductPreviewUrl(firstTruthy(item?.image_url));
+
+    if (productVideoPreviewUrl.startsWith("blob:")) {
+      URL.revokeObjectURL(productVideoPreviewUrl);
+    }
+    setProductVideoPreviewUrl(firstTruthy(item?.video_url));
+  }
+
+  function openAddForPublicSlot(slotNumber: number) {
+    setSelectedPublicSlot(slotNumber);
+    setGalleryActionNotice(null);
+    resetProductForm();
+    setProductFormNotice(null);
+    setProductVisibility("community_visible");
+    setProductEditorOpen(true);
+    setCollapsed((prev) => ({ ...prev, products: false }));
+  }
+
+  function openEditForPublicSlot(item: ProductRecord, slotNumber: number) {
+    setSelectedPublicSlot(slotNumber);
+    setGalleryActionNotice(null);
+    startEditProduct(item);
+    setProductFormNotice(null);
+    setProductEditorOpen(true);
+    setCollapsed((prev) => ({ ...prev, products: false }));
+  }
+
+  function closeProductEditor() {
+    resetProductForm();
+    setProductEditorOpen(false);
   }
 
   async function submitProduct() {
+    if (preparingProductImage || preparingProductVideo) {
+      showProductFormNotice(
+        "info",
+        "Please wait while GSN prepares the selected media, then tap Post again."
+      );
+      return;
+    }
+
     if (!shop?.id) {
-      showNotice("error", "Shop record is not ready.");
+      showProductFormNotice("error", "Shop record is not ready.");
       return;
     }
 
     if (!safeStr(productName)) {
-      showNotice("error", "Add the product title first.");
+      showProductFormNotice("error", "Add the product title first.");
       return;
     }
 
     if (!safeStr(productPrice)) {
-      showNotice("error", "Add the product price first.");
+      showProductFormNotice("error", "Add the product price first.");
+      return;
+    }
+
+    const targetVisibility = safeStr(productVisibility || "community_visible");
+    const editingProduct = editingProductId
+      ? products.find((item) => Number(item.id) === Number(editingProductId))
+      : null;
+    const editingAlreadyPublic =
+      editingProduct?.is_active !== false &&
+      firstTruthy(editingProduct?.visibility_mode, "community_visible") ===
+        "community_visible";
+
+    if (
+      targetVisibility === "community_visible" &&
+      !editingAlreadyPublic &&
+      publicProducts.length >= 12
+    ) {
+      showProductFormNotice(
+        "error",
+        "The public shop gallery already has 12 live blocks. Edit or remove one before adding another."
+      );
       return;
     }
 
     setSavingProduct(true);
 
     try {
+      const wasEditingProduct = Boolean(editingProductId);
       let nextImageUrl = safeStr(productImageUrlInput) || null;
+      let nextVideoUrl = safeStr(productVideoUrlInput) || null;
 
       if (productSelectedFile) {
         nextImageUrl = await uploadMarketplaceImageFile(productSelectedFile);
       }
 
+      if (productSelectedVideoFile) {
+        nextVideoUrl = await uploadMarketplaceVideoFile(
+          productSelectedVideoFile,
+          productVideoDurationSeconds
+        );
+      }
+
       if (!nextImageUrl) {
-        showNotice("error", "Add a product picture first.");
-        setSavingProduct(false);
-        return;
+        if (productSelectedVideoFile) {
+          const cover = await createShopGalleryCoverFromVideo(productSelectedVideoFile);
+          nextImageUrl = await uploadMarketplaceImageFile(cover.file);
+          showProductFormNotice("info", cover.message);
+        } else if (nextVideoUrl) {
+          nextImageUrl = nextVideoUrl;
+        } else {
+          showProductFormNotice(
+            "error",
+            `Block #${selectedPublicSlot} needs a picture or a video before it can be posted.`
+          );
+          setSavingProduct(false);
+          return;
+        }
       }
 
       const body = {
@@ -856,7 +1147,8 @@ export default function ShopAssetsPage() {
         price: safeStr(productPrice),
         currency: safeStr(productCurrency || "NGN"),
         image_url: nextImageUrl,
-        visibility_mode: safeStr(productVisibility || "community_visible"),
+        video_url: nextVideoUrl,
+        visibility_mode: targetVisibility,
       };
 
       const path = editingProductId
@@ -865,16 +1157,72 @@ export default function ShopAssetsPage() {
 
       const method = editingProductId ? "PATCH" : "POST";
 
-      await apiJson<any>(path, {
+      const saveRes = await apiJson<any>(path, {
         method,
         body: JSON.stringify(body),
       });
 
-      await loadPage();
+      const savedId = Number(
+        saveRes?.item?.id ||
+          saveRes?.product?.id ||
+          saveRes?.data?.id ||
+          saveRes?.id ||
+          editingProductId ||
+          0
+      );
+      const refreshedProducts = await loadPage();
+      let hydratedProducts = refreshedProducts;
+      if (savedId > 0 && (nextImageUrl || nextVideoUrl)) {
+        rememberShopProductMedia(savedId, {
+          image_url: nextImageUrl,
+          video_url: nextVideoUrl,
+        });
+        hydratedProducts = refreshedProducts.map((item) =>
+          Number(item?.id) === savedId
+            ? {
+                ...item,
+                image_url: firstTruthy(item?.image_url, nextImageUrl),
+                video_url: firstTruthy(item?.video_url, nextVideoUrl),
+              }
+            : item
+        );
+        setProducts(hydratedProducts);
+      }
+      if (targetVisibility === "community_visible") {
+        const savedIndex =
+          savedId > 0
+            ? hydratedProducts.findIndex(
+                (item) =>
+                  Number(item?.id) === savedId &&
+                  item?.is_active !== false &&
+                  firstTruthy(item?.visibility_mode, "community_visible") ===
+                    "community_visible"
+              )
+            : -1;
+        const savedSlotNumber = savedIndex >= 0 ? savedIndex + 1 : 1;
+        setSelectedPublicSlot(savedSlotNumber);
+        showGalleryActionNotice(
+          "success",
+          nextVideoUrl
+            ? `Block #${savedSlotNumber} saved with video. Open the public shop, open the item, then tap Sound on to hear the audio.`
+            : `Block #${savedSlotNumber} saved with picture. It is now visible in the public shop gallery.`,
+          savedSlotNumber
+        );
+      } else {
+        showGalleryActionNotice(
+          "success",
+          wasEditingProduct ? "Private item updated." : "Private item posted.",
+          selectedPublicSlot
+        );
+      }
       resetProductForm();
-      showNotice("success", editingProductId ? "Product updated." : "Product posted.");
+      setProductEditorOpen(false);
     } catch (err: any) {
-      showNotice("error", safeStr(err?.message) || "Product could not be saved.");
+      const message =
+        safeStr(err?.message) ||
+        "Product could not be saved. Check the picture, video format, and file size.";
+      showProductFormNotice("error", message);
+      showGalleryActionNotice("error", message, selectedPublicSlot);
     } finally {
       setSavingProduct(false);
     }
@@ -889,7 +1237,7 @@ export default function ShopAssetsPage() {
       });
       await loadPage();
       if (editingProductId === productId) {
-        resetProductForm();
+        closeProductEditor();
       }
       showNotice("success", "Product removed.");
     } catch (err: any) {
@@ -918,16 +1266,18 @@ export default function ShopAssetsPage() {
 
   if (loading) {
     return (
-      <div style={{ maxWidth: 1180, margin: "0 auto", display: "grid", gap: 18 }}>
-        <PageTopNav
-          sectionLabel="Shop Control"
-          title="Pictures & Products"
-          subtitle="Loading shop picture and product lanes..."
-          homeTo="/app/dashboard"
-          homeLabel="Dashboard"
-          backTo="/app/shop-control"
-          backLabel="Shop Control"
-        />
+      <div style={{ maxWidth: embedded ? "none" : 1180, margin: "0 auto", display: "grid", gap: 18 }}>
+        {!embedded ? (
+          <PageTopNav
+            sectionLabel="Shop Control"
+            title="Pictures & Products"
+            subtitle="Loading shop picture and product lanes..."
+            homeTo="/app/dashboard"
+            homeLabel="Dashboard"
+            backTo="/app/shop-control"
+            backLabel="Shop Control"
+          />
+        ) : null}
         <section style={pageCard()}>
           <div style={helperText()}>Loading shop assets...</div>
         </section>
@@ -938,25 +1288,29 @@ export default function ShopAssetsPage() {
   return (
     <div
       style={{
-        maxWidth: 1180,
+        maxWidth: embedded ? "none" : 1180,
         margin: "0 auto",
-        paddingBottom: 40,
+        paddingBottom: embedded ? 0 : 40,
         display: "grid",
         gap: 18,
       }}
     >
-      <PageTopNav
-        sectionLabel="Shop Control"
-        title="Pictures & Products"
-        subtitle="Prepare the public shop face, then add public products or private Vault offers."
-        homeTo="/app/dashboard"
-        homeLabel="Dashboard"
-        backTo="/app/shop-control"
-        backLabel="Shop Control"
-      />
+      {!embedded ? (
+        <PageTopNav
+          sectionLabel="Shop Control"
+          title="Pictures & Products"
+          subtitle="Prepare the public shop face, then add public products or private Vault offers."
+          homeTo="/app/dashboard"
+          homeLabel="Dashboard"
+          backTo="/app/shop-control"
+          backLabel="Shop Control"
+        />
+      ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      {!embedded ? (
+        <>
       <section
         style={pageCard(
           "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
@@ -1013,12 +1367,13 @@ export default function ShopAssetsPage() {
             <div
               style={{
                 marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
+                ...ownerActionGrid(isCompact),
               }}
             >
-              <OriginLink to="/app/shop-control" style={actionBtn("secondary")}>
+              <OriginLink
+                to="/app/shop-control"
+                style={ownerActionButton(actionBtn("secondary"), isCompact)}
+              >
                 Back to Shop Control
               </OriginLink>
 
@@ -1030,7 +1385,7 @@ export default function ShopAssetsPage() {
                     window.open(shopLink, "_blank", "noopener,noreferrer");
                   }
                 }}
-                style={actionBtn("primary", !shopLink)}
+                style={ownerActionButton(actionBtn("primary", !shopLink), isCompact)}
                 disabled={!shopLink}
               >
                 Open public shop
@@ -1040,7 +1395,7 @@ export default function ShopAssetsPage() {
                 type="button"
                 {...buttonGuardProps()}
                 onClick={() => copyText(shopLink, "Shop gallery link copied.")}
-                style={actionBtn("secondary", !shopLink)}
+                style={ownerActionButton(actionBtn("secondary", !shopLink), isCompact)}
                 disabled={!shopLink}
               >
                 Copy public link
@@ -1179,6 +1534,8 @@ export default function ShopAssetsPage() {
           </div>
         ) : null}
       </section>
+        </>
+      ) : null}
 
       <section style={pageCard("#FFFFFF")}>
         <div
@@ -1369,13 +1726,16 @@ export default function ShopAssetsPage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={ownerActionGrid(isCompact)}>
                   <button
                     type="button"
                     {...buttonGuardProps()}
                     onClick={() => void saveShopSignboard()}
                     disabled={savingShop || uploadingShopImage}
-                    style={actionBtn("primary", savingShop || uploadingShopImage)}
+                    style={ownerActionButton(
+                      actionBtn("primary", savingShop || uploadingShopImage),
+                      isCompact
+                    )}
                   >
                     {savingShop ? "Saving..." : uploadingShopImage ? "Uploading..." : "Save picture"}
                   </button>
@@ -1391,7 +1751,7 @@ export default function ShopAssetsPage() {
                       setShopPreviewUrl(firstTruthy(shop?.image_url));
                       setShopImageUrlInput(firstTruthy(shop?.image_url));
                     }}
-                    style={actionBtn("secondary")}
+                    style={ownerActionButton(actionBtn("secondary"), isCompact)}
                   >
                     Reset preview
                   </button>
@@ -1406,9 +1766,12 @@ export default function ShopAssetsPage() {
                       })
                     }
                     disabled={savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)}
-                    style={actionBtn(
-                      "secondary",
-                      savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)
+                    style={ownerActionButton(
+                      actionBtn(
+                        "secondary",
+                        savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)
+                      ),
+                      isCompact
                     )}
                   >
                     Remove picture
@@ -1421,6 +1784,330 @@ export default function ShopAssetsPage() {
         ) : null}
       </section>
 
+      {embedded ? (
+        <section style={pageCard("#FFFFFF")}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: "center",
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <div style={sectionLabel()}>Public gallery block control</div>
+              <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+                Choose one numbered block. Confirm the picture or video, then edit,
+                hide, copy, or add only that block.
+              </div>
+            </div>
+
+            <span style={badge(publicProducts.length > 0)}>
+              {publicProducts.length} / 12 live blocks
+            </span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "repeat(3, minmax(0, 1fr))"
+                : "repeat(6, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {publicGallerySlots.map((item, index) => {
+              const slotNumber = index + 1;
+              const isSelected = selectedPublicSlot === slotNumber;
+              const itemImage = resolveAssetSrc(item?.image_url);
+              const itemVideo = resolveAssetSrc(item?.video_url);
+              const itemName = firstTruthy(item?.name, `Block #${slotNumber}`);
+
+              return (
+                <button
+                  key={slotNumber}
+                  type="button"
+                  {...buttonGuardProps()}
+                  onClick={() => setSelectedPublicSlot(slotNumber)}
+                  style={{
+                    ...stableTapTarget,
+                    minHeight: 104,
+                    borderRadius: 18,
+                    padding: 8,
+                    border: isSelected
+                      ? "2px solid rgba(212,175,55,0.92)"
+                      : "1px solid rgba(20,52,83,0.16)",
+                    background: item
+                      ? "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"
+                      : "linear-gradient(180deg, #F8FBFF 0%, #EDF5FF 100%)",
+                    boxShadow: isSelected
+                      ? "0 16px 30px rgba(212,175,55,0.18)"
+                      : "0 10px 24px rgba(7,20,36,0.08)",
+                    color: "#0B1F33",
+                    textAlign: "left",
+                    display: "grid",
+                    gap: 6,
+                  }}
+                  aria-label={`Select gallery block ${slotNumber}`}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                  >
+                    <span style={{ fontWeight: 950, fontSize: 13 }}>#{slotNumber}</span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 900,
+                        color: item ? "#168447" : "#64748B",
+                      }}
+                    >
+                      {item ? "Live" : "Empty"}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      height: 48,
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      background: item
+                        ? "linear-gradient(180deg, #0A1625 0%, #193A58 100%)"
+                        : "rgba(122,152,195,0.10)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      border: "1px solid rgba(20,52,83,0.12)",
+                    }}
+                  >
+                    {itemVideo ? (
+                      <video
+                        src={itemVideo}
+                        poster={itemImage || undefined}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    ) : itemImage ? (
+                      <img
+                        src={itemImage}
+                        alt={itemName}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    ) : (
+                      <span style={{ color: "#4E6680", fontWeight: 900 }}>Add</span>
+                    )}
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 900,
+                      color: "#31506D",
+                      lineHeight: 1.25,
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical",
+                    }}
+                  >
+                    {item ? itemName : "Ready for item"}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "280px minmax(0, 1fr)",
+              gap: 14,
+              alignItems: "stretch",
+            }}
+          >
+            <div
+              style={{
+                borderRadius: 24,
+                overflow: "hidden",
+                minHeight: 190,
+                background:
+                  "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)",
+                border: "1px solid rgba(212,175,55,0.18)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {selectedPublicProduct?.video_url ? (
+                <video
+                  src={resolveAssetSrc(selectedPublicProduct.video_url)}
+                  poster={resolveAssetSrc(selectedPublicProduct.image_url) || undefined}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                    background: "#0B1F33",
+                  }}
+                />
+              ) : selectedPublicProduct?.image_url ? (
+                <img
+                  src={resolveAssetSrc(selectedPublicProduct.image_url)}
+                  alt={firstTruthy(selectedPublicProduct.name, `Block #${selectedPublicSlot}`)}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div style={{ color: "#D7E3F1", fontWeight: 900 }}>
+                  Block #{selectedPublicSlot} is empty
+                </div>
+              )}
+            </div>
+
+            <div style={innerCard("#FCFEFF")}>
+              <div style={sectionLabel()}>Selected block</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#0B1F33",
+                  fontWeight: 950,
+                  fontSize: isCompact ? 24 : 28,
+                  lineHeight: 1.12,
+                }}
+              >
+                Block #{selectedPublicSlot}
+              </div>
+
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(Boolean(selectedPublicProduct))}>
+                  {selectedPublicProduct ? "Live public item" : "Empty block"}
+                </span>
+                <span style={badge(false)}>Public gallery</span>
+                {selectedPublicProduct?.video_url ? <span style={badge(false)}>Video</span> : null}
+              </div>
+
+              {galleryActionNotice?.slotNumber === selectedPublicSlot ? (
+                <div style={{ marginTop: 12, ...noticeCard(galleryActionNotice.tone) }}>
+                  {galleryActionNotice.text}
+                </div>
+              ) : null}
+
+              <div style={{ marginTop: 12, ...helperText(), maxWidth: 620 }}>
+                {selectedPublicProduct
+                  ? firstTruthy(
+                      stripProductLabel(firstTruthy(selectedPublicProduct.description)),
+                      firstTruthy(selectedPublicProduct.name, "This block has no description yet.")
+                    )
+                  : "Add a public item here. You can use a picture or a short video; if you choose video only, GSN creates the cover automatically."}
+              </div>
+
+              {selectedPublicProduct ? (
+                <div
+                  style={{
+                    marginTop: 12,
+                    color: "#0B1F33",
+                    fontWeight: 900,
+                    fontSize: 16,
+                  }}
+                >
+                  {firstTruthy(selectedPublicProduct.name, "Public item")}{" "}
+                  {firstTruthy(selectedPublicProduct.price, "0")}{" "}
+                  {firstTruthy(selectedPublicProduct.currency, "NGN")}
+                </div>
+              ) : null}
+
+              <div
+                style={{
+                  marginTop: 14,
+                  ...ownerActionGrid(isCompact),
+                }}
+              >
+                {selectedPublicProduct ? (
+                  <>
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => openEditForPublicSlot(selectedPublicProduct, selectedPublicSlot)}
+                      style={ownerActionButton(actionBtn("primary"), isCompact)}
+                    >
+                      Edit block #{selectedPublicSlot}
+                    </button>
+
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() => void deleteProduct(Number(selectedPublicProduct.id))}
+                      disabled={deletingProductId === Number(selectedPublicProduct.id)}
+                      style={ownerActionButton(
+                        actionBtn(
+                          "secondary",
+                          deletingProductId === Number(selectedPublicProduct.id)
+                        ),
+                        isCompact
+                      )}
+                    >
+                      {deletingProductId === Number(selectedPublicProduct.id)
+                        ? "Hiding..."
+                        : "Hide block"}
+                    </button>
+
+                    <button
+                      type="button"
+                      {...buttonGuardProps()}
+                      onClick={() =>
+                        copyText(
+                          buildProductDeepLink(gmfnId, Number(selectedPublicProduct.id)),
+                          "Block link copied."
+                        )
+                      }
+                      style={ownerActionButton(actionBtn("soft"), isCompact)}
+                    >
+                      Copy link
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    {...buttonGuardProps()}
+                    onClick={() => openAddForPublicSlot(selectedPublicSlot)}
+                    style={ownerActionButton(actionBtn("primary"), isCompact)}
+                  >
+                    Add item to block #{selectedPublicSlot}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {(!embedded || productEditorOpen) ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1432,23 +2119,33 @@ export default function ShopAssetsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>🛍️ Products and Vault offers</div>
+            <div style={sectionLabel()}>
+              {embedded ? "Shop gallery item" : "Products and Vault offers"}
+            </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Add one item at a time. Choose public gallery or private Vault before saving.
+              {embedded
+                ? "Add or update one public gallery block at a time."
+                : "Add one item at a time. Choose public gallery or private Vault before saving."}
             </div>
           </div>
 
           <button
             type="button"
             {...buttonGuardProps()}
-            onClick={() => toggleSection("products")}
+            onClick={() => {
+              if (embedded) {
+                closeProductEditor();
+              } else {
+                toggleSection("products");
+              }
+            }}
             style={collapseToggle()}
           >
-            {collapsed.products ? "Open" : "Collapse"}
+            {embedded ? "Close form" : collapsed.products ? "Open" : "Collapse"}
           </button>
         </div>
 
-        {!collapsed.products ? (
+        {(!collapsed.products || embedded) ? (
         <div
           style={{
             marginTop: 14,
@@ -1460,30 +2157,68 @@ export default function ShopAssetsPage() {
         >
           <div style={innerCard("#FCFEFF")}>
             <div style={sectionLabel()}>
-              {editingProductId ? `Edit item #${editingProductId}` : "Add item"}
+              {embedded
+                ? editingProductId
+                  ? `Edit block #${selectedPublicSlot}`
+                  : `Add block #${selectedPublicSlot}`
+                : editingProductId
+                ? `Edit item #${editingProductId}`
+                : "Add item"}
             </div>
 
             <div style={{ marginTop: 10, ...helperText() }}>
-              Add a picture, name, price, and choose where the item belongs.
+              Add a picture or short video, name, price, and choose where the item belongs.
             </div>
+
+            {productFormNotice ? (
+              <div style={{ marginTop: 12, ...noticeCard(productFormNotice.tone) }}>
+                {productFormNotice.text}
+              </div>
+            ) : null}
 
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setProductPreviewFromFile(e.target.files?.[0] || null)}
+                onChange={(e) => void setProductPreviewFromFile(e.target.files?.[0] || null)}
                 style={inputStyle()}
               />
 
               <input
                 value={productImageUrlInput}
                 onChange={(e) => {
+                  setProductFormNotice(null);
                   setProductImageUrlInput(e.target.value);
                   if (!productSelectedFile) {
                     setProductPreviewUrl(e.target.value);
                   }
                 }}
                 placeholder="Or paste item image URL"
+                style={inputStyle()}
+              />
+
+              <input
+                type="file"
+                accept="video/*,.mp4,.webm,.mov"
+                onChange={(e) => void setProductVideoPreviewFromFile(e.target.files?.[0] || null)}
+                style={inputStyle()}
+              />
+
+              <div style={{ ...helperText(), fontSize: 13 }}>
+                If the picture or video is too heavy, GSN prepares a lighter version before upload.
+                Video-only blocks get an automatic cover frame.
+              </div>
+
+              <input
+                value={productVideoUrlInput}
+                onChange={(e) => {
+                  setProductFormNotice(null);
+                  setProductVideoUrlInput(e.target.value);
+                  if (!productSelectedVideoFile) {
+                    setProductVideoPreviewUrl(e.target.value);
+                  }
+                }}
+                placeholder="Or paste item video URL"
                 style={inputStyle()}
               />
 
@@ -1534,6 +2269,7 @@ export default function ShopAssetsPage() {
                   />
                 </div>
 
+                {!embedded ? (
                 <div>
                   <div style={sectionLabel()}>Where should it appear?</div>
                   <select
@@ -1546,6 +2282,8 @@ export default function ShopAssetsPage() {
                   </select>
                 </div>
 
+                ) : null}
+
                 <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
                   <div style={sectionLabel()}>Short description</div>
                   <textarea
@@ -1557,15 +2295,27 @@ export default function ShopAssetsPage() {
                 </div>
               </div>
 
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div
+                style={{
+                  ...ownerActionGrid(isCompact),
+                }}
+              >
                 <button
                   type="button"
                   {...buttonGuardProps()}
                   onClick={() => void submitProduct()}
                   disabled={savingProduct}
-                  style={actionBtn("primary", savingProduct)}
+                  style={ownerActionButton(
+                    actionBtn(
+                      "primary",
+                      savingProduct || preparingProductImage || preparingProductVideo
+                    ),
+                    isCompact
+                  )}
                 >
-                  {savingProduct
+                  {preparingProductImage || preparingProductVideo
+                    ? "Preparing media..."
+                    : savingProduct
                     ? editingProductId
                       ? "Updating..."
                       : "Posting..."
@@ -1577,17 +2327,17 @@ export default function ShopAssetsPage() {
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={resetProductForm}
-                  style={actionBtn("secondary")}
+                  onClick={embedded ? closeProductEditor : resetProductForm}
+                  style={ownerActionButton(actionBtn("secondary"), isCompact)}
                 >
-                  Clear form
+                  {embedded ? "Close form" : "Clear form"}
                 </button>
 
                   <button
                     type="button"
                     {...buttonGuardProps()}
                     onClick={() => copyText(shopLink, "Shop gallery link copied.")}
-                    style={actionBtn("soft", !shopLink)}
+                    style={ownerActionButton(actionBtn("soft", !shopLink), isCompact)}
                     disabled={!shopLink}
                   >
                   Copy shop link
@@ -1645,10 +2395,33 @@ export default function ShopAssetsPage() {
                   />
                 ) : (
                   <div style={{ color: "#D7E3F1", fontWeight: 800 }}>
-                    🖼️ Item preview
+                    Item preview
                   </div>
                 )}
               </div>
+
+              {safeStr(productVideoPreviewUrl || productVideoUrlInput) ? (
+                <div style={{ marginTop: 10 }}>
+                  <SpotlightMediaFrame
+                    imageUrl={resolveAssetSrc(productPreviewUrl)}
+                    videoUrl={resolveAssetSrc(productVideoPreviewUrl || productVideoUrlInput)}
+                    videoPoster={resolveAssetSrc(productPreviewUrl)}
+                    alt={firstTruthy(productName, "Item video preview")}
+                    frameStyle={{
+                      height: 180,
+                      minHeight: 180,
+                      borderRadius: 18,
+                      border: "1px solid rgba(212,175,55,0.12)",
+                    }}
+                    mediaStyle={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                    showVideoControls
+                  />
+                </div>
+              ) : null}
 
               <div style={{ padding: 14, color: "#F8FBFF" }}>
                 <div
@@ -1672,6 +2445,10 @@ export default function ShopAssetsPage() {
                       ? "🔐 Private Vault"
                       : "🛍️ Public gallery"}
                   </span>
+
+                  {safeStr(productVideoPreviewUrl || productVideoUrlInput) ? (
+                    <span style={badge(false)}>Video attached</span>
+                  ) : null}
                 </div>
 
                 <div
@@ -1712,7 +2489,9 @@ export default function ShopAssetsPage() {
         </div>
         ) : null}
       </section>
+      ) : null}
 
+      {!embedded ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1761,6 +2540,7 @@ export default function ShopAssetsPage() {
               const isHidden = item?.is_active === false;
               const itemName = firstTruthy(item?.name, "Product");
               const itemImage = resolveAssetSrc(item?.image_url);
+              const itemVideo = resolveAssetSrc(item?.video_url);
               const isBusy =
                 deletingProductId === Number(item.id) ||
                 restoringProductId === Number(item.id);
@@ -1799,7 +2579,22 @@ export default function ShopAssetsPage() {
                       border: "1px solid rgba(212,175,55,0.12)",
                     }}
                   >
-                    {itemImage ? (
+                    {itemVideo ? (
+                      <video
+                        src={itemVideo}
+                        poster={itemImage || undefined}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                          background: "#0B1F33",
+                        }}
+                      />
+                    ) : itemImage ? (
                       <img
                         src={itemImage}
                         alt={itemName}
@@ -1831,6 +2626,7 @@ export default function ShopAssetsPage() {
                       {isHidden ? "Hidden - can restore" : "Live"}
                     </span>
                     {label ? <span style={badge(false)}>Tag: {label}</span> : null}
+                    {itemVideo ? <span style={badge(false)}>Video</span> : null}
                     <span
                       style={{
                         ...badge(false),
@@ -1878,12 +2674,20 @@ export default function ShopAssetsPage() {
                     {firstTruthy(item?.price, "0")} {firstTruthy(item?.currency, "NGN")}
                   </div>
 
-                  <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      ...ownerActionGrid(isCompact),
+                    }}
+                  >
                     <button
                       type="button"
                       {...buttonGuardProps()}
                       onClick={() => startEditProduct(item)}
-                      style={actionBtn(isHidden ? "secondary" : "primary")}
+                      style={ownerActionButton(
+                        actionBtn(isHidden ? "secondary" : "primary"),
+                        isCompact
+                      )}
                     >
                       Edit
                     </button>
@@ -1894,7 +2698,7 @@ export default function ShopAssetsPage() {
                         {...buttonGuardProps()}
                         onClick={() => void restoreProduct(Number(item.id))}
                         disabled={isBusy}
-                        style={actionBtn("primary", isBusy)}
+                        style={ownerActionButton(actionBtn("primary", isBusy), isCompact)}
                       >
                         {restoringProductId === Number(item.id) ? "Restoring..." : "Restore"}
                       </button>
@@ -1904,7 +2708,7 @@ export default function ShopAssetsPage() {
                         {...buttonGuardProps()}
                         onClick={() => void deleteProduct(Number(item.id))}
                         disabled={isBusy}
-                        style={actionBtn("secondary", isBusy)}
+                        style={ownerActionButton(actionBtn("secondary", isBusy), isCompact)}
                       >
                         {deletingProductId === Number(item.id) ? "Removing..." : "Delete"}
                       </button>
@@ -1914,7 +2718,10 @@ export default function ShopAssetsPage() {
                         type="button"
                         {...buttonGuardProps()}
                         onClick={() => copyText(productLink, "Item link copied.")}
-                        style={actionBtn("soft", !productLink || isHidden)}
+                        style={ownerActionButton(
+                          actionBtn("soft", !productLink || isHidden),
+                          isCompact
+                        )}
                       disabled={!productLink || isHidden}
                     >
                       Copy link
@@ -1927,6 +2734,7 @@ export default function ShopAssetsPage() {
         </div>
         ) : null}
       </section>
+      ) : null}
     </div>
   );
 }

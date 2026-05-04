@@ -217,6 +217,9 @@ async function createSpotlightReadyClip(
 
   try {
     const video = await waitForVideoMetadata(objectUrl);
+    video.muted = false;
+    video.defaultMuted = false;
+    video.volume = 1;
     const stream = getVideoCaptureStream(video);
 
     if (!stream) {
@@ -360,15 +363,14 @@ export async function prepareSpotlightVideoFile(
       Math.max(0, Number(video.duration || 0)).toFixed(2)
     );
 
-    if (
-      Number(file.size || 0) <= maxBytes &&
-      durationSeconds > 0 &&
-      durationSeconds <= maxDurationSeconds
-    ) {
+    if (Number(file.size || 0) <= maxBytes && durationSeconds > 0) {
       return {
         file,
-        message: null,
-        durationSeconds,
+        message:
+          durationSeconds > maxDurationSeconds
+            ? `We kept your original video so the sound stays intact. GSN will play it as a ${maxDurationSeconds}-second public clip.`
+            : null,
+        durationSeconds: Math.min(durationSeconds, maxDurationSeconds),
       };
     }
   } finally {

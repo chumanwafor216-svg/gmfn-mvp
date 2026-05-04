@@ -2331,6 +2331,8 @@ export async function createMarketplaceBroadcast(payload: {
   image_url?: string | null;
   video_url?: string | null;
   expires_at?: string | null;
+  priority_mode?: string | null;
+  visibility_scope?: string | null;
 }): Promise<any> {
   const effectiveClanId =
     payload?.clan_id === undefined ? getSelectedClanId() : payload?.clan_id;
@@ -2341,6 +2343,8 @@ export async function createMarketplaceBroadcast(payload: {
   const imageUrl = String(payload?.image_url || "").trim();
   const videoUrl = String(payload?.video_url || "").trim();
   const expiresAt = normalizeApiDateTime(payload?.expires_at);
+  const priorityMode = String(payload?.priority_mode || "").trim();
+  const visibilityScope = String(payload?.visibility_scope || "").trim();
 
   if (!message && !imageUrl && !videoUrl) {
     throw new Error("message, image_url, or video_url is required");
@@ -2360,6 +2364,14 @@ export async function createMarketplaceBroadcast(payload: {
 
   if (expiresAt) {
     baseBody.expires_at = expiresAt;
+  }
+
+  if (priorityMode) {
+    baseBody.priority_mode = priorityMode;
+  }
+
+  if (visibilityScope) {
+    baseBody.visibility_scope = visibilityScope;
   }
 
   if (shopId > 0) {

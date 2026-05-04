@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
+import ShopAssetsPage from "./ShopAssetsPage";
 import {
   createMarketplaceShop,
   getMe,
@@ -126,9 +127,34 @@ type NoticeTone = "success" | "error" | "info";
 type SpotlightFeedbackState = { tone: NoticeTone; text: string } | null;
 type SpotlightFlowStep = "setup" | "upload" | "preview";
 type SpotlightMediaChoice = "image" | "video" | "both";
+type ShopControlLayerKey =
+  | "overview"
+  | "products"
+  | "spotlight"
+  | "shop-details"
+  | "paid-tools"
+  | "vault"
+  | "summary";
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+function shopControlLayerForTarget(targetId: string): ShopControlLayerKey {
+  const normalized = safeStr(targetId).replace(/^#/, "").toLowerCase();
+  if (normalized.includes("overview")) return "overview";
+  if (normalized.includes("products")) return "products";
+  if (normalized.includes("spotlight")) return "spotlight";
+  if (normalized.includes("picture") || normalized.includes("gallery") || normalized.includes("face")) {
+    return "overview";
+  }
+  if (normalized.includes("details")) return "shop-details";
+  if (normalized.includes("vault")) return "vault";
+  if (normalized.includes("unlock") || normalized.includes("paid") || normalized.includes("subscription")) {
+    return "paid-tools";
+  }
+  if (normalized.includes("summary")) return "summary";
+  return "overview";
 }
 
 const SPOTLIGHT_ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -496,21 +522,6 @@ function fullButton(style: React.CSSProperties): React.CSSProperties {
   };
 }
 
-function readinessPill(ready: boolean): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: ready
-      ? "1px solid rgba(217,172,51,0.30)"
-      : "1px solid rgba(13,95,168,0.14)",
-    background: ready
-      ? "linear-gradient(180deg, #FFF9D8 0%, #EFD16B 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #EAF4FF 100%)",
-    padding: "10px 11px",
-    boxShadow:
-      "0 10px 20px rgba(7,24,39,0.08), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(8,40,72,0.05)",
-  };
-}
-
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -664,6 +675,8 @@ export default function ShopControlPage() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [spotlights, setSpotlights] = useState<BroadcastRecord[]>([]);
   const [vaultLinks, setVaultLinks] = useState<VaultLinkRecord[]>([]);
+  const [activeOwnerLayer, setActiveOwnerLayer] =
+    useState<ShopControlLayerKey>("overview");
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [trustSlipFeature, setTrustSlipFeature] = useState<TrustSlipFeatureSummary | null>(
@@ -685,7 +698,6 @@ export default function ShopControlPage() {
   const [telegramHandle, setTelegramHandle] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [savingShop, setSavingShop] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
 
   const [spotlightMessage, setSpotlightMessage] = useState("");
   const [spotlightImageUrl, setSpotlightImageUrl] = useState("");
@@ -718,6 +730,14 @@ export default function ShopControlPage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
   const effectiveShopClanId = Number(shop?.clan_id || selectedClanId || 0);
+  const shopHeroShortcuts = [
+    { label: "Dashboard", icon: "\u{1F4CA}", to: "/app/dashboard" },
+    { label: "Marketplace", icon: "\u{1F6CD}\uFE0F", to: "/app/marketplace" },
+    { label: "Shop gallery", icon: "\u{1F5BC}\uFE0F", to: "/app/shop-control#shop-control-gallery-tools" },
+    { label: "Free spotlight", icon: "\u2B50", to: "/app/free-spotlight" },
+    { label: "Subscription spotlight", icon: "\u{1F4B3}", to: "/app/paid-spotlight" },
+    { label: "Vault", icon: "\u{1F510}", to: "/app/vault-control" },
+  ];
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1026,7 +1046,9 @@ export default function ShopControlPage() {
 
     if (!targetId) return;
     if (targetId === "summary") targetId = "shop-control-summary";
-    if (targetId === "picture-gallery") targetId = "shop-control-picture-gallery";
+    if (targetId === "picture-gallery") targetId = "shop-control-gallery-tools";
+    if (targetId === "gallery-tools") targetId = "shop-control-gallery-tools";
+    if (targetId === "products") targetId = "shop-control-gallery-tools";
     if (targetId === "spotlight") targetId = "shop-control-spotlight";
     if (targetId === "paid-spotlight") targetId = "shop-control-paid-spotlight";
     if (targetId === "vault") targetId = "shop-control-vault";
@@ -1045,6 +1067,10 @@ export default function ShopControlPage() {
       setSpotlightFlowStep(shop?.id ? "upload" : "setup");
       setSpotlightOpen(true);
       targetId = "shop-control-spotlight";
+    }
+
+    if (targetId !== "shop-control-spotlight") {
+      setActiveOwnerLayer(shopControlLayerForTarget(targetId));
     }
 
     cancelPendingControlReveal();
@@ -1254,32 +1280,6 @@ export default function ShopControlPage() {
     };
   }, [activePaidSpotlights.length, canStartPaidSpotlight, latestSpotlightPayment]);
 
-  const shopReadiness = useMemo(
-    () => [
-      {
-        label: "Shop face",
-        value: safeStr(imageUrlInput) ? "Ready" : "Needs picture",
-        ready: Boolean(safeStr(imageUrlInput)),
-      },
-      {
-        label: "Products",
-        value: `${publicProducts.length} / 12`,
-        ready: publicProducts.length > 0,
-      },
-      {
-        label: "Public link",
-        value: publicShopLink ? "Ready" : "Waiting",
-        ready: Boolean(publicShopLink),
-      },
-      {
-        label: "Spotlight",
-        value: activeSpotlights.length ? `${activeSpotlights.length} live` : "Not live",
-        ready: activeSpotlights.length > 0,
-      },
-    ],
-    [activeSpotlights.length, imageUrlInput, publicProducts.length, publicShopLink]
-  );
-
   const recommendedShopMove = useMemo(() => {
     if (!safeStr(imageUrlInput)) {
       return {
@@ -1299,22 +1299,13 @@ export default function ShopControlPage() {
       };
     }
 
-    if (activeSpotlights.length === 0) {
-      return {
-        title: "Publish a spotlight when ready",
-        detail:
-          "The shop is presentable. Spotlight can now help people notice it from the dashboard.",
-        kind: "spotlight" as const,
-      };
-    }
-
     return {
-      title: "Shop is ready to monitor",
+      title: "Shop setup is ready",
       detail:
-        "Keep products current, watch the live spotlight, and open Vault only for private offers.",
+        "Keep the public picture, shop details, and product list current.",
       kind: "monitor" as const,
     };
-  }, [activeSpotlights.length, imageUrlInput, publicProducts.length]);
+  }, [imageUrlInput, publicProducts.length]);
 
   useEffect(() => {
     if (spotlightPriorityMode === "paid" && !canStartPaidSpotlight) {
@@ -1468,6 +1459,7 @@ export default function ShopControlPage() {
   }
 
   function openShopControlSection(targetId: string) {
+    setActiveOwnerLayer(shopControlLayerForTarget(targetId));
     cancelPendingControlReveal();
     revealControlTarget(targetId);
   }
@@ -1679,40 +1671,6 @@ export default function ShopControlPage() {
     }
   }
 
-  async function handleFilePicked(file: File | null) {
-    if (!file) return;
-
-    setUploadingImage(true);
-    try {
-      const uploaded = await uploadMarketplaceImageFile(file, effectiveShopClanId || null);
-      const uploadedUrl =
-        firstTruthy(
-          uploaded?.image_url,
-          uploaded?.url,
-          uploaded?.path,
-          uploaded?.item?.image_url,
-          uploaded?.item?.url,
-          uploaded?.data?.image_url,
-          uploaded?.data?.url
-        ) || "";
-      if (!uploadedUrl) {
-        throw new Error(
-          "We could not prepare an image from that upload. Paste an image URL instead and continue."
-        );
-      }
-      setImageUrlInput(uploadedUrl);
-      await saveShopDetails({ image_url: uploadedUrl });
-      showNotice("success", "Shop picture uploaded.");
-    } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Shop picture upload failed."
-      );
-    } finally {
-      setUploadingImage(false);
-    }
-  }
-
   async function handleSpotlightImagePicked(file: File | null) {
     spotlightImagePrepJobRef.current += 1;
     const prepJob = spotlightImagePrepJobRef.current;
@@ -1748,7 +1706,7 @@ export default function ShopControlPage() {
 
       setSpotlightImageFile(prepared.file);
       setSpotlightPublishFeedback(null);
-      if (spotlightMediaChoice === "image") {
+      if (spotlightMediaChoice === "image" || spotlightMediaChoice === "both") {
         setSpotlightFlowStep("preview");
       }
       if (prepared.message) {
@@ -1810,7 +1768,7 @@ export default function ShopControlPage() {
       setSpotlightVideoFile(prepared.file);
       setSpotlightVideoDurationSeconds(prepared.durationSeconds ?? null);
       setSpotlightPublishFeedback(null);
-      if (spotlightMediaChoice === "video") {
+      if (spotlightMediaChoice === "video" || spotlightMediaChoice === "both") {
         setSpotlightFlowStep("preview");
       }
       if (prepared.message) {
@@ -1855,13 +1813,35 @@ export default function ShopControlPage() {
   }
 
   async function handleCreateSpotlight() {
+    if (creatingSpotlight) {
+      setSpotlightPublishFeedback({
+        tone: "info",
+        text: "Spotlight publish is already running. Wait for it to finish.",
+      });
+      return;
+    }
+
+    if (shopActionsLocked && spotlightPriorityMode === "paid") {
+      const lockMessage =
+        "Identity review is blocking paid spotlight right now. Open the identity review first, then return here to publish.";
+      setSpotlightPublishFeedback({ tone: "error", text: lockMessage });
+      showNotice("error", lockMessage);
+      return;
+    }
+
     if (!shop?.id) {
-      showNotice("error", "Shop record is not available.");
+      const missingShopMessage =
+        "Shop record is not available. Tap Continue in the spotlight setup so GSN can prepare the shop record first.";
+      setSpotlightPublishFeedback({ tone: "error", text: missingShopMessage });
+      showNotice("error", missingShopMessage);
       return;
     }
 
     if (preparingSpotlightImage || preparingSpotlightVideo) {
-      showNotice("error", "Please wait while the app prepares your spotlight media.");
+      const preparingMessage =
+        "Please wait while the app prepares your spotlight media, then tap Publish again.";
+      setSpotlightPublishFeedback({ tone: "info", text: preparingMessage });
+      showNotice("error", preparingMessage);
       return;
     }
 
@@ -1870,18 +1850,23 @@ export default function ShopControlPage() {
     const manualVideoUrl = safeStr(spotlightVideoUrl);
 
     if (!message && !manualImageUrl && !manualVideoUrl && !spotlightImageFile && !spotlightVideoFile) {
-      showNotice("error", "Add a spotlight message, image, or short video first.");
+      const emptyMessage =
+        "Add a spotlight message, picture, or short video first, then tap Publish.";
+      setSpotlightPublishFeedback({ tone: "error", text: emptyMessage });
+      showNotice("error", emptyMessage);
       return;
     }
 
     const imageValidationIssue = validateSpotlightImageFile(spotlightImageFile);
     if (imageValidationIssue) {
+      setSpotlightPublishFeedback({ tone: "error", text: imageValidationIssue });
       showNotice("error", imageValidationIssue);
       return;
     }
 
     const videoValidationIssue = validateSpotlightVideoFile(spotlightVideoFile);
     if (videoValidationIssue) {
+      setSpotlightPublishFeedback({ tone: "error", text: videoValidationIssue });
       showNotice("error", videoValidationIssue);
       return;
     }
@@ -1939,7 +1924,7 @@ export default function ShopControlPage() {
         }
       }
 
-      await apiJson<any>("/api/marketplace/broadcasts", {
+      const createRes = await apiJson<any>("/api/marketplace/broadcasts", {
         method: "POST",
         body: JSON.stringify({
           clan_id: effectiveShopClanId,
@@ -1952,11 +1937,37 @@ export default function ShopControlPage() {
         }),
       });
 
+      const createdSpotlight =
+        (createRes as any)?.item ||
+        (Array.isArray((createRes as any)?.items)
+          ? (createRes as any).items?.[0]
+          : null);
+      const optimisticSpotlight = {
+        ...(createdSpotlight || {}),
+        id: Number(createdSpotlight?.id || Date.now()),
+        clan_id: Number(createdSpotlight?.clan_id || effectiveShopClanId || 0),
+        shop_id: Number(createdSpotlight?.shop_id || shop.id || 0),
+        message: firstTruthy(createdSpotlight?.message, message, "Spotlight update"),
+        image_url: firstTruthy(createdSpotlight?.image_url, imageUrl),
+        video_url: firstTruthy(createdSpotlight?.video_url, videoUrl),
+        priority_mode: firstTruthy(createdSpotlight?.priority_mode, spotlightPriorityMode),
+        visibility_scope: firstTruthy(
+          createdSpotlight?.visibility_scope,
+          "direct_communities"
+        ),
+        created_at: firstTruthy(createdSpotlight?.created_at, new Date().toISOString()),
+        source_shop_name: firstTruthy(createdSpotlight?.source_shop_name, shop.name),
+      };
+
       const successMessage =
         `${spotlightPriorityMode === "paid" ? "Paid" : "Free"} spotlight published` +
         `${videoUrl ? " with short video." : "."}`;
 
       clearSpotlightDraft();
+      setSpotlights((prev) => [
+        optimisticSpotlight,
+        ...prev.filter((item) => Number(item?.id || 0) !== Number(optimisticSpotlight.id)),
+      ]);
       setSpotlightPublishFeedback({
         tone: "success",
         text: successMessage,
@@ -2332,7 +2343,7 @@ export default function ShopControlPage() {
                     key={spotlightImageInputKey}
                     type="file"
                     accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
-                    disabled={shopActionsLocked}
+                    disabled={preparingSpotlightImage || creatingSpotlight}
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null;
                       void handleSpotlightImagePicked(file);
@@ -2359,7 +2370,7 @@ export default function ShopControlPage() {
                     key={spotlightVideoInputKey}
                     type="file"
                     accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
-                    disabled={shopActionsLocked}
+                    disabled={preparingSpotlightVideo || creatingSpotlight}
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null;
                       void handleSpotlightVideoPicked(file);
@@ -2399,7 +2410,6 @@ export default function ShopControlPage() {
                 {...buttonGuardProps()}
                 onClick={() => setSpotlightFlowStep("preview")}
                 disabled={
-                  shopActionsLocked ||
                   preparingSpotlightImage ||
                   preparingSpotlightVideo ||
                   !spotlightCanContinueToPreview
@@ -2407,8 +2417,7 @@ export default function ShopControlPage() {
                 style={fullButton(
                   actionBtn(
                     "primary",
-                    shopActionsLocked ||
-                      preparingSpotlightImage ||
+                    preparingSpotlightImage ||
                       preparingSpotlightVideo ||
                       !spotlightCanContinueToPreview
                   )
@@ -2504,26 +2513,16 @@ export default function ShopControlPage() {
                 onClick={() => {
                   void handleCreateSpotlight();
                 }}
-                disabled={
-                  shopActionsLocked ||
-                  creatingSpotlight ||
-                  preparingSpotlightImage ||
-                  preparingSpotlightVideo ||
-                  !spotlightHasChosenMedia
-                }
+                aria-disabled={creatingSpotlight}
                 style={fullButton(
                   actionBtn(
                     "primary",
-                    shopActionsLocked ||
-                      creatingSpotlight ||
-                      preparingSpotlightImage ||
-                      preparingSpotlightVideo ||
-                      !spotlightHasChosenMedia
+                    creatingSpotlight
                   )
                 )}
               >
-                {shopActionsLocked
-                  ? "Review Identity First"
+                {shopActionsLocked && spotlightPriorityMode === "paid"
+                  ? "Publish after identity review"
                   : creatingSpotlight
                   ? "Publishing..."
                   : "🚀 Publish spotlight"}
@@ -2583,9 +2582,9 @@ export default function ShopControlPage() {
   return (
     <div style={institutionalBlueRailShell(isCompact)}>
       <PageTopNav
-        sectionLabel="Owner Shop Control"
-        title="Shop Owner Control"
-        subtitle="Use only the few tools you need here: shop details, products, public shop face, spotlight, and Vault."
+        sectionLabel="Focused Task"
+        title="Shop Control"
+        subtitle=""
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/marketplace"
@@ -2594,6 +2593,7 @@ export default function ShopControlPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      {activeOwnerLayer === "overview" || activeOwnerLayer === "products" ? (
       <section
         id="shop-control-summary"
         style={pageCard(
@@ -2603,13 +2603,13 @@ export default function ShopControlPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 320px",
+            gridTemplateColumns: "1fr",
             gap: 16,
             alignItems: "start",
           }}
         >
           <div>
-            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner page</div>
+            <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner shop control</div>
 
             <div
               style={{
@@ -2618,6 +2618,7 @@ export default function ShopControlPage() {
                 fontWeight: 900,
                 fontSize: isCompact ? 28 : 34,
                 lineHeight: 1.1,
+                textTransform: "uppercase",
               }}
             >
               {firstTruthy(shop?.name, "My Shop")}
@@ -2631,183 +2632,59 @@ export default function ShopControlPage() {
                 color: "#D7E3F1",
               }}
             >
-              Start with the basics. Keep the shop face clear, manage products,
-              open spotlight only when ready, and use Vault only for private
-              access.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(3, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              <div
-                style={{
-                  ...statTile(),
-                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,244,255,0.96) 100%)",
-                }}
-              >
-                <div style={sectionLabel()}>Community</div>
-                <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.3 }}>
-                  {communityName}
-                </div>
-              </div>
-              <div
-                style={{
-                  ...statTile(),
-                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,244,255,0.96) 100%)",
-                }}
-              >
-                <div style={sectionLabel()}>GSN ID</div>
-                <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.3, wordBreak: "break-word" }}>
-                  {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "Pending")}
-                </div>
-              </div>
-              <div
-                style={{
-                  ...statTile(),
-                  background: "linear-gradient(180deg, rgba(255,249,216,0.98) 0%, rgba(234,244,255,0.94) 100%)",
-                }}
-              >
-                <div style={sectionLabel()}>What is ready</div>
-                <div style={{ marginTop: 6, color: "#0B1F33", fontSize: 14, fontWeight: 900, lineHeight: 1.4 }}>
-                  {publicProducts.length} public, {vaultProducts.length} private, {activeSpotlights.length} spotlight
-                </div>
-              </div>
+              Use only the shop setup tools here: public shop face, products,
+              and shop details.
             </div>
 
             <div
               style={{
                 marginTop: 16,
-                ...controlGrid(isCompact, 150),
-              }}
-            >
-              <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("primary"))}>
-                Manage Products
-              </OriginLink>
-
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => openPublicShopFace()}
-                style={fullButton(actionBtn("secondary", !publicShopLink))}
-                disabled={!publicShopLink}
-              >
-                Open Public Shop
-              </button>
-
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
-                style={fullButton(actionBtn("secondary", !publicShopLink))}
-                disabled={!publicShopLink}
-              >
-                Copy Public Link
-              </button>
-
-              <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("soft"))}>
-                Open TrustSlip
-              </OriginLink>
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...softCard("rgba(255,255,255,0.96)"),
-              border: "1px solid rgba(212,175,55,0.14)",
-              boxShadow: "0 14px 30px rgba(2,12,27,0.14)",
-            }}
-          >
-            <div style={sectionLabel()}>Next best move</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 18,
-                lineHeight: 1.35,
-              }}
-            >
-              {recommendedShopMove.title}
-            </div>
-
-            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              {recommendedShopMove.detail}
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
                 display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gridTemplateColumns: isCompact
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(6, minmax(0, 1fr))",
                 gap: 8,
               }}
+              aria-label="Shop control shortcuts"
             >
-              {shopReadiness.map((item) => (
-                <div key={item.label} style={readinessPill(item.ready)}>
-                  <div style={{ ...sectionLabel(), fontSize: 10, letterSpacing: 1.2 }}>
-                    {item.label}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 5,
-                      color: item.ready ? "#6F4C00" : "#0B1F33",
-                      fontSize: 13,
-                      fontWeight: 900,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {item.value}
-                  </div>
-                </div>
+              {shopHeroShortcuts.map((item) => (
+                <OriginLink
+                  key={item.label}
+                  to={item.to}
+                  style={{
+                    ...fullButton(actionBtn("soft")),
+                    minHeight: 44,
+                    padding: "8px 9px",
+                    border: "1px solid rgba(246,215,122,0.28)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.05) 100%)",
+                    color: "#F8FBFF",
+                    boxShadow:
+                      "0 8px 18px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
+                    gap: 6,
+                  }}
+                >
+                  <span aria-hidden="true">{item.icon}</span>
+                  <span>{item.label}</span>
+                </OriginLink>
               ))}
             </div>
-
-            <div style={{ marginTop: 14, ...controlGrid(isCompact, 132) }}>
-              {recommendedShopMove.kind === "picture" ? (
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => openShopControlSection("shop-control-picture-gallery")}
-                  style={fullButton(actionBtn("primary"))}
-                >
-                  Open Picture Tools
-                </button>
-              ) : recommendedShopMove.kind === "products" ? (
-                <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("primary"))}>
-                  Add Products
-                </OriginLink>
-              ) : recommendedShopMove.kind === "spotlight" ? (
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={(event) => openSpotlightTools(event, "free")}
-                  style={fullButton(actionBtn("primary"))}
-                >
-                  Open Free Spotlight
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => openPublicShopFace()}
-                  style={fullButton(actionBtn("primary", !publicShopLink))}
-                  disabled={!publicShopLink}
-                >
-                  Open Public Shop Face
-                </button>
-              )}
-
-            </div>
           </div>
+
         </div>
       </section>
+      ) : null}
 
+      {activeOwnerLayer === "overview" ||
+      activeOwnerLayer === "products" ? (
+        <section
+          id="shop-control-gallery-tools"
+          style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)")}
+        >
+          <ShopAssetsPage embedded />
+        </section>
+      ) : null}
+      {activeOwnerLayer === "paid-tools" ? (
       <section
         id="shop-control-unlocks"
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 55%, #EAF4FF 78%, #FFF7D8 100%)")}
@@ -3127,293 +3004,13 @@ export default function ShopControlPage() {
           </div>
         </div>
       </section>
+      ) : null}
 
+      {activeOwnerLayer === "shop-details" ? (
       <section
-        id="shop-control-picture-gallery"
-        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 55%, #EAF3FF 100%)")}
+        id="shop-control-details"
+        style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 72%, #FFF7D8 100%)")}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "72px minmax(0, 1fr)",
-            gap: 14,
-            alignItems: "center",
-          }}
-        >
-          <div
-            aria-hidden="true"
-            style={{
-              width: 64,
-              height: 64,
-              borderRadius: 22,
-              display: "grid",
-              placeItems: "center",
-              background: "linear-gradient(180deg, #102D4C 0%, #061827 100%)",
-              color: "#F8D876",
-              fontSize: 30,
-              boxShadow:
-                "0 18px 34px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
-            }}
-          >
-            🖼️
-          </div>
-
-          <div>
-            <div style={sectionLabel()}>Public shop face</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#07172C",
-                fontSize: isCompact ? 23 : 28,
-                fontWeight: 950,
-                lineHeight: 1.08,
-              }}
-            >
-              What people see first.
-            </div>
-            <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-              Keep one clear picture, then open or share the public shop link.
-            </div>
-          </div>
-        </div>
-
-        <div style={{ marginTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={badge(Boolean(safeStr(imageUrlInput)))}>
-            🖼️ Picture: {safeStr(imageUrlInput) ? "Ready" : "Needed"}
-          </span>
-          <span style={badge(Boolean(publicShopLink))}>
-            🔗 Public link: {publicShopLink ? "Ready" : "Waiting"}
-          </span>
-          <span style={badge(publicProducts.length > 0)}>
-            🛍️ Products: {publicProducts.length}
-          </span>
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(260px, 0.9fr) minmax(0, 1.1fr)",
-            gap: 18,
-            alignItems: "start",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                width: "100%",
-                minHeight: 240,
-                borderRadius: 28,
-                border: "1px solid rgba(212,175,55,0.16)",
-                background:
-                  "linear-gradient(180deg, #0A1625 0%, #11263B 56%, #193A58 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "hidden",
-                padding: 10,
-                boxShadow:
-                  "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.04)",
-              }}
-            >
-              <div
-                style={{
-                  width: "100%",
-                  minHeight: 220,
-                  borderRadius: 22,
-                  border: "1px solid rgba(212,175,55,0.14)",
-                  overflow: "hidden",
-                  background:
-                    "linear-gradient(180deg, #11263B 0%, #193A58 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  position: "relative",
-                }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 14,
-                    right: 14,
-                    zIndex: 2,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    minHeight: 30,
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    background: "rgba(7,16,28,0.72)",
-                    border: "1px solid rgba(212,175,55,0.22)",
-                    color: "#F6D77A",
-                    fontSize: 11,
-                    fontWeight: 900,
-                    letterSpacing: 0.24,
-                    textTransform: "uppercase",
-                    backdropFilter: "blur(8px)",
-                  }}
-                >
-                  Public preview
-                </div>
-                {safeStr(imageUrlInput) ? (
-                  <img
-                    src={imageUrlInput}
-                    alt={firstTruthy(shop?.name, "Shop")}
-                    style={{
-                      width: "100%",
-                      height: 240,
-                      borderRadius: 16,
-                      border: "1px solid rgba(212,175,55,0.14)",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      padding: 18,
-                      textAlign: "center",
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.35,
-                    }}
-                  >
-                    <div>🖼️ Add your shop picture</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#D7E3F1",
-                        fontSize: 13,
-                        lineHeight: 1.7,
-                        maxWidth: 220,
-                      }}
-                    >
-                      This is the picture people see before they open the shop.
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => openPublicShopFace()}
-                style={fullButton(actionBtn("primary", !publicShopLink))}
-                disabled={!publicShopLink}
-              >
-                Open public shop
-              </button>
-
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
-                style={fullButton(actionBtn("secondary", !publicShopLink))}
-                disabled={!publicShopLink}
-              >
-                Copy public link
-              </button>
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gap: 14 }}>
-            <div
-              style={{
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                border: "1px solid rgba(212,175,55,0.12)",
-                boxShadow: "0 16px 34px rgba(2,12,27,0.10)",
-              }}
-            >
-              <div style={sectionLabel()}>🖼️ Picture control</div>
-
-              <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 18, fontWeight: 950 }}>
-                Add one strong public image.
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Use a clear product, shop, or service picture. This is the first trust signal people see.
-              </div>
-
-              <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={shopActionsLocked}
-                  onChange={(e) => void handleFilePicked(e.target.files?.[0] || null)}
-                  style={inputStyle()}
-                />
-
-                <div style={{ display: "grid", gap: 8 }}>
-                  <div style={sectionLabel()}>Or paste image link</div>
-                  <input
-                    value={imageUrlInput}
-                    onChange={(e) => setImageUrlInput(e.target.value)}
-                    placeholder="Paste image link"
-                    style={inputStyle()}
-                  />
-                </div>
-
-                <div style={controlGrid(isCompact, 132)}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() => void saveShopDetails({ image_url: imageUrlInput })}
-                    disabled={shopActionsLocked || savingShop || uploadingImage}
-                    style={fullButton(actionBtn("primary", shopActionsLocked || savingShop || uploadingImage))}
-                  >
-                    {shopActionsLocked
-                      ? "Review Identity First"
-                      : savingShop
-                      ? "Saving..."
-                      : uploadingImage
-                      ? "Uploading..."
-                      : "Save Picture"}
-                  </button>
-
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() =>
-                      void saveShopDetails({
-                        clear_image: true,
-                        image_url: null,
-                      })
-                    }
-                    disabled={
-                      shopActionsLocked || savingShop || uploadingImage || !safeStr(imageUrlInput)
-                    }
-                    style={fullButton(actionBtn(
-                      "secondary",
-                      shopActionsLocked || savingShop || uploadingImage || !safeStr(imageUrlInput)
-                    ))}
-                  >
-                    Remove Picture
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-              <div style={sectionLabel()}>🛍️ Products</div>
-              <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 18, fontWeight: 950 }}>
-                {publicProducts.length} public item{publicProducts.length === 1 ? "" : "s"}
-              </div>
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Add public products here. Private offers belong inside Vault.
-              </div>
-
-              <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
-                <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
-                  Manage products
-                </OriginLink>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section style={pageCard("linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 72%, #FFF7D8 100%)")}>
         <div style={sectionLabel()}>Shop details</div>
 
         <div
@@ -3481,8 +3078,13 @@ export default function ShopControlPage() {
           </OriginLink>
         </div>
       </section>
+      ) : null}
 
-      <section style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}>
+      {activeOwnerLayer === "summary" ? (
+      <section
+        id="shop-control-counts"
+        style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
+      >
         <div style={sectionLabel()}>Shop summary</div>
 
         <div
@@ -3550,363 +3152,9 @@ export default function ShopControlPage() {
           </div>
         </div>
       </section>
-
-      {spotlightOpen ? (
-        <section
-          id="shop-control-spotlight"
-          style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 82%, #FFF7D8 100%)")}
-        >
-          <div style={sectionLabel()}>
-            {spotlightPriorityMode === "paid" ? "Paid spotlight publisher" : "Free spotlight publisher"}
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-              ...helperText(),
-              maxWidth: 860,
-            }}
-          >
-            Keep everything here in one place: choose the media, check the preview, then publish from this same section.
-          </div>
-
-          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-            <div
-              style={{
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)"),
-                border: "1px solid rgba(11,31,51,0.08)",
-              }}
-            >
-              <div style={sectionLabel()}>Current live spotlight</div>
-              {currentActiveSpotlight ? (
-                <>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#0B1F33",
-                      fontWeight: 900,
-                      fontSize: 16,
-                      lineHeight: 1.4,
-                    }}
-                  >
-                    {firstTruthy(currentActiveSpotlight?.message, "Spotlight is active.")}
-                  </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>
-                      {firstTruthy(currentActiveSpotlight?.priority_mode, "free")}
-                    </span>
-                    <span style={badge(false)}>
-                      Scope: {firstTruthy(currentActiveSpotlight?.visibility_scope, "direct_communities")}
-                    </span>
-                    {safeStr(currentActiveSpotlight?.video_url) ? (
-                      <span style={badge(false)}>Short video live</span>
-                    ) : null}
-                    <span style={badge(false)}>
-                      {safeStr(currentActiveSpotlight?.expires_at)
-                        ? `Expires: ${safeDateTime(currentActiveSpotlight?.expires_at) || safeStr(currentActiveSpotlight?.expires_at)}`
-                        : "No expiry set"}
-                    </span>
-                  </div>
-                  {safeStr(currentActiveSpotlight?.image_url || currentActiveSpotlight?.video_url) ? (
-                    <div style={{ marginTop: 12 }}>
-                      <SpotlightMediaFrame
-                        imageUrl={resolveSpotlightAssetUrl(
-                          safeStr(currentActiveSpotlight?.image_url)
-                        )}
-                        videoUrl={resolveSpotlightAssetUrl(
-                          safeStr(currentActiveSpotlight?.video_url)
-                        )}
-                        videoPoster={resolveSpotlightAssetUrl(
-                          safeStr(currentActiveSpotlight?.image_url)
-                        )}
-                        alt={firstTruthy(currentActiveSpotlight?.message, "Live spotlight")}
-                        frameStyle={{
-                          minHeight: 220,
-                          height: 220,
-                          borderRadius: 16,
-                        }}
-                        mediaStyle={{
-                          width: "100%",
-                          height: "100%",
-                        }}
-                        showVideoControls={false}
-                        autoPlayVideo={Boolean(safeStr(currentActiveSpotlight?.video_url))}
-                        mutedVideo={Boolean(safeStr(currentActiveSpotlight?.video_url))}
-                        loopVideo={Boolean(safeStr(currentActiveSpotlight?.video_url))}
-                        maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-                      />
-                    </div>
-                  ) : null}
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    This live community spotlight stays visible until it expires or is replaced.
-                  </div>
-                  <div style={{ marginTop: 12, ...controlGrid(isCompact, 132) }}>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => openPublicShopFace()}
-                      style={fullButton(actionBtn("secondary", !publicShopLink))}
-                      disabled={!publicShopLink}
-                    >
-                      Open public shop face
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => copyText(publicShopLink, "Shop gallery link copied.")}
-                      style={fullButton(actionBtn("soft", !publicShopLink))}
-                      disabled={!publicShopLink}
-                    >
-                      Copy public shop link
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ marginTop: 10, ...helperText() }}>
-                    No live community spotlight is active for this shop right now.
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Publish a free spotlight now, or start a paid spotlight after payment confirmation.
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={badge(true)}>
-                {spotlightPriorityMode === "paid" ? "Paid priority spotlight" : "Free community spotlight"}
-              </span>
-              {spotlightPriorityMode === "paid" ? (
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => setSpotlightPriorityMode("free")}
-                  style={actionBtn("secondary")}
-                >
-                  Switch back to free
-                </button>
-              ) : canStartPaidSpotlight ? (
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => setSpotlightPriorityMode("paid")}
-                  style={actionBtn("secondary")}
-                >
-                  Use paid spotlight instead
-                </button>
-              ) : null}
-            </div>
-
-            <div style={{ ...helperText(), fontSize: 13 }}>
-              {spotlightPriorityMode === "paid"
-                ? "This publish will use your confirmed paid spotlight. Add the message and media here, preview it here, then publish from this same panel."
-                : "Choose a picture, a short video, or both. GSN previews the draft here first, then you publish from this same panel."}
-            </div>
-
-            {spotlightPublishFeedback ? (
-              <div style={noticeCard(spotlightPublishFeedback.tone)}>
-                {spotlightPublishFeedback.text}
-              </div>
-            ) : null}
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.15fr) minmax(280px, 360px)",
-                gap: 14,
-                alignItems: "start",
-              }}
-            >
-              <div style={{ display: "grid", gap: 12 }}>
-                <textarea
-                  value={spotlightMessage}
-                  onChange={(e) => setSpotlightMessage(e.target.value)}
-                  placeholder="Spotlight message"
-                  style={textAreaStyle()}
-                />
-
-                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-                  <div style={sectionLabel()}>Choose spotlight picture</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Pick the picture people should first notice.
-                  </div>
-                  <input
-                    key={spotlightImageInputKey}
-                    type="file"
-                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
-                    disabled={shopActionsLocked}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      void handleSpotlightImagePicked(file);
-                    }}
-                    style={{ ...inputStyle(), marginTop: 10 }}
-                  />
-                  {spotlightImageFile ? (
-                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                      Selected image: {safeStr(spotlightImageFile.name) || "image"} |{" "}
-                      {formatFileSize(spotlightImageFile.size)} |{" "}
-                      {safeStr(spotlightImageFile.type) || "unknown type"}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-                  <div style={sectionLabel()}>Choose short spotlight video</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Add a short video when you want motion. The picture remains the cover.
-                  </div>
-                  <input
-                    key={spotlightVideoInputKey}
-                    type="file"
-                    accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
-                    disabled={shopActionsLocked}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0] || null;
-                      void handleSpotlightVideoPicked(file);
-                    }}
-                    style={{ ...inputStyle(), marginTop: 10 }}
-                  />
-                  {spotlightVideoFile ? (
-                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                      Selected video: {safeStr(spotlightVideoFile.name) || "video"} |{" "}
-                      {formatFileSize(spotlightVideoFile.size)} |{" "}
-                      {safeStr(spotlightVideoFile.type) || "unknown type"}
-                      {spotlightVideoDurationSeconds != null
-                        ? ` | ${spotlightVideoDurationSeconds.toFixed(1)}s`
-                        : ""}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-
-              <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
-                <div style={sectionLabel()}>Draft preview</div>
-                <div style={{ marginTop: 10 }}>
-                  {spotlightImagePreviewUrl || spotlightVideoPreviewUrl ? (
-                    <SpotlightMediaFrame
-                      imageUrl={spotlightImagePreviewUrl}
-                      videoUrl={spotlightVideoPreviewUrl}
-                      videoPoster={spotlightImagePreviewUrl}
-                      alt="Draft spotlight preview"
-                      frameStyle={{
-                        minHeight: 220,
-                        height: 220,
-                        borderRadius: 16,
-                      }}
-                      mediaStyle={{
-                        width: "100%",
-                        height: "100%",
-                      }}
-                      autoPlayVideo={Boolean(spotlightVideoPreviewUrl)}
-                      mutedVideo={Boolean(spotlightVideoPreviewUrl)}
-                      loopVideo={Boolean(spotlightVideoPreviewUrl)}
-                      maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        minHeight: 220,
-                        borderRadius: 16,
-                        border: "1px solid rgba(13,95,168,0.12)",
-                        background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-                        display: "grid",
-                        placeItems: "center",
-                        textAlign: "center",
-                        padding: 16,
-                      }}
-                    >
-                      <div>
-                        <div style={{ color: "#0B1F33", fontSize: 16, fontWeight: 900 }}>
-                          Draft preview appears here
-                        </div>
-                        <div style={{ marginTop: 8, ...helperText(), fontSize: 13, maxWidth: 220 }}>
-                          Choose the picture or short video first, then check it here before you publish.
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                  {spotlightMessage
-                    ? `Message ready: ${spotlightMessage}`
-                    : "You can publish with media only, or add a short message too."}
-                </div>
-              </div>
-            </div>
-
-            <div style={controlGrid(isCompact, 150)}>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void handleCreateSpotlight()}
-                disabled={
-                  shopActionsLocked ||
-                  creatingSpotlight ||
-                  preparingSpotlightImage ||
-                  preparingSpotlightVideo
-                }
-                style={fullButton(actionBtn(
-                  "primary",
-                  shopActionsLocked ||
-                    creatingSpotlight ||
-                    preparingSpotlightImage ||
-                    preparingSpotlightVideo
-                ))}
-              >
-                {shopActionsLocked
-                  ? "Review Identity First"
-                  : creatingSpotlight
-                  ? "Publishing..."
-                  : preparingSpotlightImage || preparingSpotlightVideo
-                  ? "Preparing media..."
-                  : "Publish Spotlight"}
-              </button>
-
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={collapseSpotlightTools}
-                style={fullButton(actionBtn("secondary"))}
-              >
-                Collapse Spotlight
-              </button>
-            </div>
-
-            {activeSpotlights.length > 0 ? (
-              <div style={{ marginTop: 8, display: "grid", gap: 10 }}>
-                {activeSpotlights.slice(0, 4).map((item) => (
-                  <div key={item.id} style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
-                    <div
-                      style={{
-                        color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 15,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {firstTruthy(item?.message, "Spotlight")}
-                    </div>
-
-                    <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <span style={badge(false)}>
-                        {firstTruthy(item?.priority_mode, "free")}
-                      </span>
-                      <span style={badge(false)}>
-                        {firstTruthy(item?.visibility_scope, "direct_communities")}
-                      </span>
-                      {safeStr(item?.video_url) ? (
-                        <span style={badge(false)}>Short video</span>
-                      ) : null}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </section>
       ) : null}
 
+      {activeOwnerLayer === "vault" ? (
       <section
         id="shop-control-vault"
         style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 55%, #EAF3FF 100%)")}
@@ -4148,9 +3396,8 @@ export default function ShopControlPage() {
           </div>
         </div>
       </section>
+      ) : null}
     </div>
   );
 }
-
-
 

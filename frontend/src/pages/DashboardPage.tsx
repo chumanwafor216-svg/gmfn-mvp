@@ -270,7 +270,7 @@ type FocusCommitmentSummary = {
   disciplineLine: string;
 };
 
-const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v5";
+const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v6";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v2";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
@@ -1135,7 +1135,19 @@ function buildResolvedSpotlightCandidates(src: string): string[] {
   const raw = safeStr(src);
   if (!raw) return [];
 
-  return [...new Set([resolveSpotlightAssetUrl(raw), raw].filter(Boolean))];
+  const candidates = [resolveSpotlightAssetUrl(raw), raw];
+
+  if (
+    raw.startsWith("/") &&
+    !raw.startsWith("//") &&
+    typeof window !== "undefined" &&
+    window.location
+  ) {
+    candidates.push(`${window.location.origin}${raw}`);
+    candidates.push(`${window.location.origin.replace(/:\d+$/, ":8012")}${raw}`);
+  }
+
+  return [...new Set(candidates.filter(Boolean))];
 }
 
 function getStoredCommunitySpotlightImage(clanId: number): string {
@@ -1970,7 +1982,7 @@ function spotlightMarketplaceTo(item: SpotlightItem | null): string {
 
 function defaultDashboardUIState(): DashboardUIState {
   return {
-    spotlightMinimized: true,
+    spotlightMinimized: false,
     routesExpanded: false,
     appsExpanded: false,
     inboxExpanded: false,

@@ -58,7 +58,11 @@ html, body {
   position: relative;
   z-index: 1;
   isolation: isolate;
-  transform: translateZ(0);
+}
+
+:where(a, button, [role="button"], summary, input[type="button"], input[type="submit"], .gmfn-btn) {
+  transform: none !important;
+  contain: none !important;
 }
 
 :where(button, [role="button"], .gmfn-btn) > :where(span, div, strong, small, b, i, svg) {
