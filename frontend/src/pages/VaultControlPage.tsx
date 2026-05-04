@@ -64,6 +64,7 @@ type ProductRecord = {
   video_url?: string | null;
   visibility_mode?: string | null;
   is_active?: boolean;
+  created_at?: string | null;
 };
 
 type ExpectedPaymentRecord = {
@@ -81,6 +82,7 @@ type ExpectedPaymentRecord = {
 };
 
 const VAULT_SLOT_LIMIT = 6;
+const VAULT_SLOT_STORAGE_PREFIX = "gmfn.vaultControl.slotMap.v1";
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -106,6 +108,144 @@ function rowsOf<T = any>(input: any): T[] {
 function numberLike(value: unknown, fallback = 0): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : fallback;
+}
+
+function vaultSlotStorageKey(shopId: unknown): string {
+  return `${VAULT_SLOT_STORAGE_PREFIX}.${safeStr(shopId) || "unknown"}`;
+}
+
+function readVaultSlotMap(shopId: unknown): Record<string, number> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(vaultSlotStorageKey(shopId));
+    const parsed = raw ? JSON.parse(raw) : {};
+    if (!parsed || typeof parsed !== "object") return {};
+    const next: Record<string, number> = {};
+    Object.entries(parsed).forEach(([id, slot]) => {
+      const safeId = safeStr(id);
+      const safeSlot = Number(slot);
+      if (safeId && Number.isInteger(safeSlot) && safeSlot >= 1 && safeSlot <= VAULT_SLOT_LIMIT) {
+        next[safeId] = safeSlot;
+      }
+    });
+    return next;
+  } catch {
+    return {};
+  }
+}
+
+function writeVaultSlotMap(shopId: unknown, map: Record<string, number>): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(vaultSlotStorageKey(shopId), JSON.stringify(map));
+  } catch {
+    // Slot memory is a frontend stabilizer only; backend data still saves without it.
+  }
+}
+
+function productSortValue(item: ProductRecord): number {
+  const created = Date.parse(safeStr(item.created_at));
+  if (Number.isFinite(created)) return created;
+  return Number(item.id || 0);
+}
+
+function orderedVaultProducts(items: ProductRecord[]): ProductRecord[] {
+  return [...items].sort((a, b) => {
+    const byCreated = productSortValue(a) - productSortValue(b);
+    if (byCreated !== 0) return byCreated;
+    return Number(a.id || 0) - Number(b.id || 0);
+  });
+}
+
+function normalizeVaultSlotMap(
+  shopId: unknown,
+  items: ProductRecord[],
+  slotCount: number
+): Record<string, number> {
+  const safeSlotCount = Math.min(VAULT_SLOT_LIMIT, Math.max(0, Number(slotCount || 0)));
+  const liveIds = new Set(items.map((item) => safeStr(item.id)).filter(Boolean));
+  const previous = readVaultSlotMap(shopId);
+  const next: Record<string, number> = {};
+  const used = new Set<number>();
+
+  orderedVaultProducts(items).forEach((item) => {
+    const id = safeStr(item.id);
+    const slot = previous[id];
+    if (!id || !liveIds.has(id)) return;
+    if (slot >= 1 && slot <= safeSlotCount && !used.has(slot)) {
+      next[id] = slot;
+      used.add(slot);
+    }
+  });
+
+  orderedVaultProducts(items).forEach((item) => {
+    const id = safeStr(item.id);
+    if (!id || next[id]) return;
+    for (let slot = 1; slot <= safeSlotCount; slot += 1) {
+      if (!used.has(slot)) {
+        next[id] = slot;
+        used.add(slot);
+        break;
+      }
+    }
+  });
+
+  writeVaultSlotMap(shopId, next);
+  return next;
+}
+
+function rememberVaultProductSlot(
+  shopId: unknown,
+  productId: unknown,
+  slotNumber: number
+): Record<string, number> {
+  const id = safeStr(productId);
+  const safeSlot = Math.min(VAULT_SLOT_LIMIT, Math.max(1, Number(slotNumber || 1)));
+  const next = readVaultSlotMap(shopId);
+  Object.keys(next).forEach((key) => {
+    if (next[key] === safeSlot) delete next[key];
+  });
+  if (id) next[id] = safeSlot;
+  writeVaultSlotMap(shopId, next);
+  return next;
+}
+
+function forgetVaultProductSlot(shopId: unknown, productId: unknown): Record<string, number> {
+  const id = safeStr(productId);
+  const next = readVaultSlotMap(shopId);
+  if (id) delete next[id];
+  writeVaultSlotMap(shopId, next);
+  return next;
+}
+
+function buildVaultSlots(
+  items: ProductRecord[],
+  slotCount: number,
+  slotMap: Record<string, number>
+): Array<ProductRecord | null> {
+  const safeSlotCount = Math.min(VAULT_SLOT_LIMIT, Math.max(0, Number(slotCount || 0)));
+  const next = Array.from({ length: safeSlotCount }, () => null as ProductRecord | null);
+  const placed = new Set<string>();
+
+  orderedVaultProducts(items).forEach((item) => {
+    const id = safeStr(item.id);
+    const slot = slotMap[id];
+    if (!id || slot < 1 || slot > safeSlotCount || next[slot - 1]) return;
+    next[slot - 1] = item;
+    placed.add(id);
+  });
+
+  orderedVaultProducts(items).forEach((item) => {
+    const id = safeStr(item.id);
+    if (!id || placed.has(id)) return;
+    const emptyIndex = next.findIndex((slot) => slot === null);
+    if (emptyIndex >= 0) {
+      next[emptyIndex] = item;
+      placed.add(id);
+    }
+  });
+
+  return next;
 }
 
 function paymentMeta(payment?: ExpectedPaymentRecord | null): any {
@@ -319,6 +459,7 @@ export default function VaultControlPage() {
   const [products, setProducts] = useState<ProductRecord[]>([]);
   const [vaultLinks, setVaultLinks] = useState<VaultLinkItem[]>([]);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
+  const [vaultSlotMap, setVaultSlotMap] = useState<Record<string, number>>({});
   const [identityBlocked, setIdentityBlocked] = useState(false);
   const [creatingPayment, setCreatingPayment] = useState(false);
   const [creatingLink, setCreatingLink] = useState(false);
@@ -450,9 +591,18 @@ export default function VaultControlPage() {
   }, [vaultPayments, vaultProducts.length]);
 
   const latestVaultPayment = vaultPayments[0] || null;
+  useEffect(() => {
+    if (!shop?.id || confirmedVaultSlots <= 0) {
+      setVaultSlotMap({});
+      return;
+    }
+
+    setVaultSlotMap(normalizeVaultSlotMap(shop.id, vaultProducts, confirmedVaultSlots));
+  }, [shop?.id, vaultProducts, confirmedVaultSlots]);
+
   const slots = useMemo(
-    () => Array.from({ length: Math.max(confirmedVaultSlots, 0) }, (_, index) => vaultProducts[index] || null),
-    [confirmedVaultSlots, vaultProducts]
+    () => buildVaultSlots(vaultProducts, confirmedVaultSlots, vaultSlotMap),
+    [confirmedVaultSlots, vaultProducts, vaultSlotMap]
   );
   const selectedProduct = slots[selectedSlot - 1] || null;
   const shopImageUrl = resolveAssetSrc(shop?.image_url);
@@ -702,6 +852,9 @@ export default function VaultControlPage() {
           image_url: nextImageUrl || undefined,
           video_url: nextVideoUrl || undefined,
         });
+        setVaultSlotMap(
+          rememberVaultProductSlot(shop.id, savedId, selectedSlot)
+        );
       }
       await loadPage();
       resetProductForm();
@@ -723,6 +876,9 @@ export default function VaultControlPage() {
         method: "PATCH",
         body: JSON.stringify({ is_active: false, status: "inactive" }),
       });
+      if (shop?.id) {
+        setVaultSlotMap(forgetVaultProductSlot(shop.id, item.id));
+      }
       await loadPage();
       showNotice("success", "Vault block hidden.");
     } catch (err: any) {
@@ -1083,7 +1239,7 @@ export default function VaultControlPage() {
                     {...buttonGuardProps()}
                     onClick={() => void submitProduct()}
                     disabled={savingProduct}
-                    style={brandActionButton("primary", savingProduct || preparingImage || preparingVideo)}
+                    style={brandActionButton("primary", savingProduct)}
                   >
                     {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "Save Vault block"}
                   </button>

@@ -99,6 +99,7 @@
   - Free Spotlight video audio standardization: `src/components/SpotlightMediaFrame.tsx` now shows a reversible `Sound on` / `Sound off` toggle even when the surface starts as a muted motion preview. Free Spotlight display surfaces in Community Home, Dashboard, Community Marketplace Spotlight, Shop Control preview, and the public shop mini spotlight now pass the shared audio toggle for videos.
   - Vault private video display correction: backend Vault access already returns product `video_url`, and `src/lib/api.ts` now preserves it in `VaultShopAccessProduct`. `src/pages/ShopAccessPage.tsx` now renders private Vault product media through the shared `SpotlightMediaFrame`, so private video offers show muted motion first and expose the same reversible `Sound on` / `Sound off` control.
   - Vault Control focus pass: `/app/vault-control` is now a real focused owner route in `src/pages/VaultControlPage.tsx`, not a redirect into mixed Shop Control. It inherits the main shop signboard, labels the private layer as Vault, lets owners request 1-6 paid Vault slots, shows only confirmed paid private blocks, saves picture/video private offers as `vault_private`, and creates/extends/revokes Vault access links. Community Home and the old community shop panel now route Vault actions directly to `/app/vault-control`. Backend payment instruction validation now accepts Vault quantities 1 through 6 instead of only 1 or 6. `docs/VAULT_CONTROL_FREEZE.md` records the lane rules.
+  - Vault Control button audit/focus repair: `src/layout/AppLayout.tsx` now treats `/app/vault-control` as a focused task route, so mobile Vault work no longer keeps the general bottom rail active around payment and slot controls. `src/pages/VaultControlPage.tsx` now keeps a local product-id-to-slot map so a private offer stays attached to the block the owner selected instead of drifting with newest-first backend ordering. The Vault save button no longer looks disabled while media preparation is still clickable/explainable. `docs/VAULT_CONTROL_FREEZE.md` records the remaining backend truth: a permanent cross-device Vault slot order still needs a backend `vault_slot_number` contract.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -134,6 +135,7 @@
   - `npm run build` passed again on 2026-05-04 after the Free Spotlight reversible video-audio toggle pass.
   - `npm run build` passed again on 2026-05-04 after the Vault private video display correction.
   - `npm run build` passed again on 2026-05-04 after the focused Vault Control owner route.
+  - `npm run build` passed again on 2026-05-04 after the Vault Control mobile focus/button and local slot-memory repair.
   - `python -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py` passed on 2026-05-04 after allowing Vault slot quantities 1 through 6.
 
 - Remaining risk:

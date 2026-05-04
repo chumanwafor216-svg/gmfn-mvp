@@ -310,6 +310,20 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     };
   }
 
+  if (pathname === "/app/vault-control") {
+    return {
+      title: "Vault Control",
+      hint:
+        "Task focus is active. Finish the private Vault setup first, then return to the wider workspace.",
+      actions: [
+        makeShopControlItem(),
+        makeCommunityItem(),
+        makeMarketplaceItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
   if (
     pathname === "/app/loans" ||
     pathname === "/app/loan-readiness" ||
@@ -389,6 +403,13 @@ function getSpecialRouteMeta(
     return {
       section: "Focused task",
       page: "Shop Control",
+    };
+  }
+
+  if (pathname === "/app/vault-control") {
+    return {
+      section: "Focused task",
+      page: "Vault Control",
     };
   }
 
@@ -563,6 +584,15 @@ function getPageActions(
       makeCommunityItem(),
       makeMarketplaceItem(),
       makeShopGalleryItem(myShopGalleryTo),
+      makeDashboardItem(),
+    ]);
+  }
+
+  if (pathname === "/app/vault-control") {
+    return uniqueNavItems([
+      makeShopControlItem(),
+      makeCommunityItem(),
+      makeMarketplaceItem(),
       makeDashboardItem(),
     ]);
   }

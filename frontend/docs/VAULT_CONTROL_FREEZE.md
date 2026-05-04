@@ -25,6 +25,8 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 7. Vault products are not public gallery products.
 8. A visitor can only see Vault products through an active owner-created Vault link.
 9. Vault video surfaces use the shared muted-preview plus reversible `Sound on` / `Sound off` media rule.
+10. Vault must run as a focused task route on mobile. The general bottom rail should not compete with Vault payment, slot, editor, or link buttons.
+11. Vault owner controls keep a local product-id-to-slot map so the block the owner selected does not drift just because the backend returns products newest-first.
 
 ## Do Not Reintroduce
 
@@ -39,6 +41,7 @@ The public Shop Gallery keeps 12 free public blocks. Vault opens paid private bl
 - The current backend Vault cap is 6 private slots.
 - Vault link creation requires at least one active private Vault product and an active Vault entitlement.
 - Payment confirmation is still driven by the bank/expected-payment reconciliation process.
+- Marketplace products do not yet have a backend `vault_slot_number` field. The frontend stabilizes slot display in the current browser with local slot memory, but a permanent cross-device slot order requires a backend field and API contract.
 
 ## Manual Check
 
