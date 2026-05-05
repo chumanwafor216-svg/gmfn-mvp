@@ -1,5 +1,20 @@
 # Handoff Notes
 
+## 2026-05-05 Next Lane: Subscription Spotlight
+
+- Owner instruction: after finishing a lane, commit and push so Render can pick up the deployed frontend/backend state when the remote allows it.
+- Truth: the previous network push attempt was blocked by the execution safety reviewer, so future assistants must attempt the push when explicitly asked, but must report honestly if the environment blocks it.
+- Frozen lane status:
+  - Free Spotlight is treated as done/frozen under `docs/FREE_SPOTLIGHT_FREEZE.md`.
+  - Vault is treated as done/frozen under `docs/VAULT_CONTROL_FREEZE.md` and `docs/VAULT_MVP_STANDARD.md`.
+- Next lane: Subscription Spotlight / Paid Spotlight.
+- Owner intent for Subscription Spotlight:
+  - The user should not be dumped into Shop Control or a mixed tools page.
+  - Community Home or the relevant owner home entry should route directly into the focused Subscription Spotlight page.
+  - The payment conversation should follow the Vault pattern: choose package, show exact amount, confirm the visible quote, generate a payment code, show bank-transfer details, reconcile payment, then open the paid spotlight capacity.
+  - Media should follow the system media law from `docs/MEDIA_PREP_PROTOCOL.md`: accept picture/video, prepare oversized media, explain what changed, and use the shared muted motion plus `Sound on` / `Sound off` behavior.
+  - The lane must stay separate from Free Spotlight, Vault, and normal Shop Gallery.
+
 ## 2026-05-05 Vault Institutional Tightening Pass
 
 - Owner direction: polish the pages worked on yesterday to a stronger institutional standard, but read the repo law first and avoid inventing new UX.
