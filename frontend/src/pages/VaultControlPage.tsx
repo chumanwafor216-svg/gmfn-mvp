@@ -1625,7 +1625,7 @@ export default function VaultControlPage() {
       >
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 330px", gap: 28, alignItems: "center" }}>
           <div>
-            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>VAULT CONTROL</div>
+            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>🏦 VAULT CONTROL</div>
             <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: isCompact ? 30 : 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase", textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
               {shopName}
             </h1>
@@ -1633,9 +1633,9 @@ export default function VaultControlPage() {
               Same shop signboard. Private paid blocks. Access only through a link you create.
             </div>
             <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <span style={vaultHeroBadge(true)}>Vault</span>
-              <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} paid slots</span>
-              <span style={vaultHeroBadge(false)}>One block at a time</span>
+              <span style={vaultHeroBadge(true)}>🏦 Vault</span>
+              <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>✅ {confirmedVaultSlots} / {VAULT_SLOT_LIMIT} paid slots</span>
+              <span style={vaultHeroBadge(false)}>🎯 One block at a time</span>
             </div>
           </div>
           <div style={vaultGlassFrame()}>
@@ -1686,12 +1686,12 @@ export default function VaultControlPage() {
                 "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(246,250,254,0.84))",
             }}
           >
-            <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div>
+            <div style={stepTitle()}><span style={stepBadge()}>1</span>💳 Activate private blocks</div>
             <div style={{ marginTop: 12, color: gmfnBrand.colors.inkSoft, fontSize: 16, lineHeight: 1.55 }}>
               Choose the number of Vault blocks you want. Paid blocks are private positions.
             </div>
             <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
-              <div style={{ ...sectionLabel(), color: "#8A640E" }}>Pricing rule</div>
+              <div style={{ ...sectionLabel(), color: "#8A640E" }}>🏷️ Pricing rule</div>
               <div style={{ marginTop: 6, fontWeight: 900, lineHeight: 1.45 }}>
                 1-5 slots are GBP 1 each. The full 6-slot private track is GBP 5.
               </div>
@@ -1726,12 +1726,12 @@ export default function VaultControlPage() {
                 "radial-gradient(circle at 90% 0%, rgba(12,79,168,0.09), transparent 32%), linear-gradient(180deg, rgba(250,253,255,0.96), rgba(239,246,253,0.94))",
             }}
           >
-            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.accent }}>Payment preview</div>
+            <div style={{ ...sectionLabel(), color: gmfnBrand.colors.accent }}>💳 Payment preview</div>
             <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
               {selectedVaultSlotCount} slot{selectedVaultSlotCount === 1 ? "" : "s"} selected = {selectedVaultPaymentLabel}
             </div>
             <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
-              <div style={{ ...sectionLabel(), color: "#8A640E" }}>Best value check</div>
+              <div style={{ ...sectionLabel(), color: "#8A640E" }}>💡 Best value check</div>
               <div style={{ marginTop: 6, fontWeight: 820, lineHeight: 1.55 }}>{selectedVaultBundleText}</div>
             </div>
             <div style={{ marginTop: 14, ...helperText() }}>
@@ -1746,7 +1746,7 @@ export default function VaultControlPage() {
               }}
               style={{ ...brandActionButton("primary"), marginTop: 18, minHeight: 62, width: "100%" }}
             >
-              Agree: {selectedVaultAgreementText}
+              ✅ Agree: {selectedVaultAgreementText}
             </button>
             {!activeVaultPayment ? (
               <button
@@ -1762,7 +1762,7 @@ export default function VaultControlPage() {
                 disabled={creatingPayment || !shop?.id}
                 style={{ ...brandActionButton("secondary", creatingPayment || !shop?.id), marginTop: 10, minHeight: 54, width: "100%" }}
               >
-                {creatingPayment ? "Generating payment code..." : "Generate payment code"}
+                {creatingPayment ? "Generating payment code..." : "🔐 Generate payment code"}
               </button>
             ) : null}
             <div style={{ marginTop: 14, ...helperText(), fontWeight: 800 }}>
@@ -1781,7 +1781,7 @@ export default function VaultControlPage() {
         {panelHeader(
           "payment",
           2,
-          "Payment code and bank transfer",
+          "🏦 Payment code and bank transfer",
           activeVaultPayment
             ? `${activeVaultPaymentReference || "Payment code ready"} - ${activeVaultPaymentAmount ? formatMoney(activeVaultPaymentAmount, activeVaultPaymentCurrency) : "amount shown inside"}`
             : "Generate the payment code after agreeing to the quote."
@@ -1806,10 +1806,10 @@ export default function VaultControlPage() {
             </div>
             <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
               <button type="button" {...buttonGuardProps()} onClick={copyVaultPaymentInstruction} style={brandActionButton("secondary", vaultPaymentTransferLines.length === 0)} disabled={vaultPaymentTransferLines.length === 0}>
-                Copy payment details
+                📋 Copy payment details
               </button>
               <button type="button" {...buttonGuardProps()} onClick={() => void loadPage()} style={brandActionButton("soft")}>
-                Check payment status
+                🔎 Check payment status
               </button>
             </div>
           </>
@@ -1824,15 +1824,15 @@ export default function VaultControlPage() {
         {panelHeader(
           "blocks",
           3,
-          "Private Vault blocks",
+          "🧱 Private Vault blocks",
           `${confirmedVaultSlots} / ${VAULT_SLOT_LIMIT} paid slots. Block #${selectedSlot} is selected.`
         )}
         {openVaultPanels.blocks ? (
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 16 }}>
             <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
-          <div style={stepTitle()}><span style={stepBadge()}>3</span>Choose a block</div>
+          <div style={stepTitle()}><span style={stepBadge()}>3</span>🧱 Choose a block</div>
           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Paid position</span><span style={badge(false)}>Locked</span><span style={badge(false)}>Empty</span>
+            <span style={badge(true)}>✅ Paid position</span><span style={badge(false)}>🔒 Locked</span><span style={badge(false)}>○ Empty</span>
           </div>
           {confirmedVaultSlots <= 0 ? (
             <div style={{ marginTop: 14, ...noticeCard("info") }}>
@@ -1865,7 +1865,7 @@ export default function VaultControlPage() {
                   }}
                 >
                   <span>Block #{slotNumber}</span>
-                  <span style={{ fontSize: 12, fontWeight: 900, opacity: 0.9 }}>{!active ? "Locked" : item ? "Private content" : "Empty"}</span>
+                  <span style={{ fontSize: 12, fontWeight: 900, opacity: 0.9 }}>{!active ? "🔒 Locked" : item ? "🔐 Private content" : "○ Empty"}</span>
                 </button>
               );
             })}
@@ -1873,7 +1873,7 @@ export default function VaultControlPage() {
         </div>
 
         <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
-          <div style={stepTitle()}><span style={stepBadge()}>4</span>Selected private block</div>
+          <div style={stepTitle()}><span style={stepBadge()}>4</span>🔐 Selected private block</div>
           <div style={{ marginTop: 14, borderRadius: 18, overflow: "hidden", minHeight: 160, background: gmfnBrand.gradients.hero }}>
             {selectedProduct ? (
               <SpotlightMediaFrame
@@ -1895,23 +1895,23 @@ export default function VaultControlPage() {
           </div>
           <div style={{ marginTop: 14, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>Block #{selectedSlot}</div>
           <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(selectedSeatIsActive)}>{selectedSeatIsActive ? "Paid position" : "Locked"}</span>
-            <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? "In use" : "Empty"}</span>
-            <span style={badge(false)}>Private Vault</span>
+            <span style={badge(selectedSeatIsActive)}>{selectedSeatIsActive ? "✅ Paid position" : "🔒 Locked"}</span>
+            <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? "🔐 In use" : "○ Empty"}</span>
+            <span style={badge(false)}>🏦 Private Vault</span>
           </div>
           <div style={{ marginTop: 12, ...helperText() }}>
             {selectedProduct ? firstTruthy(selectedProduct.description, "This private block has no note yet.") : selectedSeatIsActive ? "Add the private content for this block. Use a picture, a short video, or both." : "Pay for this block before adding private content."}
           </div>
           <div style={{ marginTop: 14 }}>
             {!selectedSeatIsActive ? (
-              <button type="button" {...buttonGuardProps()} onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)} style={brandActionButton("secondary")}>Locked until paid</button>
+              <button type="button" {...buttonGuardProps()} onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)} style={brandActionButton("secondary")}>🔒 Locked until paid</button>
             ) : selectedProduct ? (
               <div style={actionGrid(isCompact, 160)}>
-                <button type="button" {...buttonGuardProps()} onClick={() => startEdit(selectedProduct, selectedSlot)} style={brandActionButton("primary")}>Edit block #{selectedSlot}</button>
-                <button type="button" {...buttonGuardProps()} onClick={() => void hideProduct(selectedProduct)} disabled={savingProduct} style={brandActionButton("secondary", savingProduct)}>Hide block</button>
+                <button type="button" {...buttonGuardProps()} onClick={() => startEdit(selectedProduct, selectedSlot)} style={brandActionButton("primary")}>✏️ Edit block #{selectedSlot}</button>
+                <button type="button" {...buttonGuardProps()} onClick={() => void hideProduct(selectedProduct)} disabled={savingProduct} style={brandActionButton("secondary", savingProduct)}>🙈 Hide block</button>
               </div>
             ) : (
-              <button type="button" {...buttonGuardProps()} onClick={() => startAdd(selectedSlot)} style={{ ...brandActionButton("primary"), width: "100%" }}>Add private offer</button>
+              <button type="button" {...buttonGuardProps()} onClick={() => startAdd(selectedSlot)} style={{ ...brandActionButton("primary"), width: "100%" }}>➕ Add private offer</button>
             )}
           </div>
         </div>
@@ -1923,7 +1923,7 @@ export default function VaultControlPage() {
         {panelHeader(
           "link",
           5,
-          "Private block link",
+          "🔗 Private block link",
           selectedBlockPrimaryLink ? `${selectedBlockLinkStatus}. Block #${selectedSlot} link is available.` : `No link yet for Block #${selectedSlot}.`
         )}
         {openVaultPanels.link ? (
@@ -1932,9 +1932,9 @@ export default function VaultControlPage() {
           Share Block #{selectedSlot} only. The viewer sees this offer, your shop identity, and the link expiry. No other Vault block opens from this link.
         </div>
         <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <span style={badge(Boolean(selectedBlockPrimaryLink))}>{selectedBlockPrimaryLink ? selectedBlockLinkStatus : "No link"}</span>
-          <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? `Offer #${selectedProduct.id}` : "No offer yet"}</span>
-          {selectedProduct?.vault_block_id ? <span style={badge(true)}>Block tag #{selectedProduct.vault_block_id}</span> : null}
+          <span style={badge(Boolean(selectedBlockPrimaryLink))}>{selectedBlockPrimaryLink ? `🔗 ${selectedBlockLinkStatus}` : "🔗 No link"}</span>
+          <span style={badge(Boolean(selectedProduct))}>{selectedProduct ? `🏷️ Offer #${selectedProduct.id}` : "🏷️ No offer yet"}</span>
+          {selectedProduct?.vault_block_id ? <span style={badge(true)}>🧱 Block tag #{selectedProduct.vault_block_id}</span> : null}
         </div>
         {selectedBlockPrimaryLink ? (
           <div style={{ marginTop: 8, ...helperText() }}>
@@ -1962,12 +1962,12 @@ export default function VaultControlPage() {
             }}
             style={{ ...brandActionButton("primary", creatingLink), gridColumn: isCompact ? "auto" : "1 / -1" }}
           >
-            {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "Replace block link" : "Create block link"}
+            {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "🔁 Replace block link" : "🔗 Create block link"}
           </button>
-          <button type="button" {...buttonGuardProps()} onClick={() => { if (navigator?.clipboard?.writeText && selectedBlockLinkUrl) { void navigator.clipboard.writeText(selectedBlockLinkUrl); showNotice("success", `Vault block #${selectedSlot} link copied.`); return; } showNotice("info", "Create this block link before copying it."); }} style={brandActionButton("soft")}>Copy block link</button>
-          <button type="button" {...buttonGuardProps()} onClick={() => { if (selectedBlockLinkUrl) { window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer"); return; } showNotice("info", "Create this block link before opening the private view."); }} style={brandActionButton("secondary")}>Open private view</button>
-          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}>Extend link</button>
-          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}>Revoke link</button>
+          <button type="button" {...buttonGuardProps()} onClick={() => { if (navigator?.clipboard?.writeText && selectedBlockLinkUrl) { void navigator.clipboard.writeText(selectedBlockLinkUrl); showNotice("success", `Vault block #${selectedSlot} link copied.`); return; } showNotice("info", "Create this block link before copying it."); }} style={brandActionButton("soft")}>📋 Copy block link</button>
+          <button type="button" {...buttonGuardProps()} onClick={() => { if (selectedBlockLinkUrl) { window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer"); return; } showNotice("info", "Create this block link before opening the private view."); }} style={brandActionButton("secondary")}>👁️ Open private view</button>
+          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}>⏳ Extend link</button>
+          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}>🛑 Revoke link</button>
         </div>
         </>
         ) : null}
@@ -1984,10 +1984,10 @@ export default function VaultControlPage() {
             "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
-        {panelHeader("flow", 0, "Your 3-step flow", "Open this only when you want the short Vault process reminder.", true)}
+        {panelHeader("flow", 0, "🧭 Your 3-step flow", "Open this only when you want the short Vault process reminder.", true)}
         {openVaultPanels.flow ? (
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr 1fr", gap: 12, color: "#FFFFFF" }}>
-          {["Activate slots|Choose and pay for your Vault slots.", "Add private offer|Add your content to the paid block.", "Create block link|Share the link privately. Access is by link only."].map((entry, index) => {
+          {["💳 Activate slots|Choose and pay for your Vault slots.", "➕ Add private offer|Add your content to the paid block.", "🔗 Create block link|Share the link privately. Access is by link only."].map((entry, index) => {
             const [title, text] = entry.split("|");
             return (
               <div key={title} style={{ display: "grid", gridTemplateColumns: "36px minmax(0,1fr)", gap: 10, alignItems: "start" }}>
@@ -2003,7 +2003,7 @@ export default function VaultControlPage() {
       {editorOpen ? (
         <section style={vaultLightPanel()}>
           <div style={sectionLabel()}>
-            {editingProductId ? `Edit Vault block #${selectedSlot}` : `Add Vault block #${selectedSlot}`}
+            {editingProductId ? `✏️ Edit Vault block #${selectedSlot}` : `➕ Add Vault block #${selectedSlot}`}
           </div>
           <div style={{ marginTop: 8, ...helperText() }}>
             Add one private offer at a time. Picture or video is accepted; oversized media is prepared before upload.
@@ -2028,7 +2028,7 @@ export default function VaultControlPage() {
                     disabled={savingProduct}
                     style={brandActionButton("primary", savingProduct)}
                   >
-                    {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "Save Vault block"}
+                    {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "💾 Save Vault block"}
                   </button>
                   <button
                     type="button"
@@ -2042,7 +2042,7 @@ export default function VaultControlPage() {
               </div>
             </div>
             <div style={{ ...innerCard("linear-gradient(145deg, #071424 0%, #0D2640 48%, #173A5C 100%)"), border: "1px solid rgba(243,208,106,0.20)" }}>
-              <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold }}>Preview</div>
+              <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold }}>👀 Preview</div>
               <div style={{ marginTop: 12, borderRadius: 18, overflow: "hidden", minHeight: 220, background: "#061827" }}>
                 {firstTruthy(videoPreviewUrl, videoUrlInput) ? (
                   <SpotlightMediaFrame

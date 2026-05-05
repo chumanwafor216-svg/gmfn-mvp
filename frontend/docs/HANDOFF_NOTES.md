@@ -283,6 +283,7 @@
   - Subscription Spotlight backend truth: `/marketplace/shops/{shop_id}/spotlight-status` exposes remaining paid credits and active paid spotlight count from backend entitlements/broadcasts. Paid publish consumes one credit and refuses a second active paid spotlight for the same shop even while the general spotlight capacity pilot override remains enabled.
   - Subscription Spotlight payment history: owners now read their own expected payments through `/payment-instructions/my/expected`, so pending bank-transfer instructions can survive a page refresh without using the admin-only `/bank/expected` endpoint. Spotlight payment amount mismatches now return HTTP 400 instead of an uncaught backend error.
   - `docs/SUBSCRIPTION_SPOTLIGHT_FREEZE.md` records the frozen paid spotlight lane rules and the auditor-found stale-path repairs.
+  - Focused paid-lane emoji pass: `/app/vault-control` and `/app/shop-control/subscription-spotlight` now use small explanatory emojis on payment, block, link, media, preview, and publish labels. The pass was intentionally limited to guidance points and did not change backend logic, route ownership, or button mechanics.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -344,6 +345,7 @@
   - `npm run build` passed on 2026-05-05 after the Subscription Spotlight focused lane and line-audit repairs.
   - `python -B -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py ..\gmfn_backend\app\api\routes\marketplace.py` passed on 2026-05-05 after the Subscription Spotlight backend audit repairs.
   - `python -m pytest -q ..\gmfn_backend\tests\test_marketplace_public_shop.py ..\gmfn_backend\tests\test_reconciliation_integrity.py --basetemp pytest-tmp-spotlight-subscription` passed outside the sandbox on 2026-05-05: 9 passed.
+  - `npm run build` passed on 2026-05-05 after the focused paid-lane emoji pass.
   - Local dev SQLite DB was backed up to `gmfn_backend/gmfn.db.backup_before_vault_domain_20260504_163112`, then upgraded with Alembic using `GMFN_DEV_MODE=1`; current revision is `20260504_add_vault_domain_tables (head)`.
   - Dev DB schema check confirmed `vault_orders`, `vault_blocks`, `vault_private_offers`, `vault_access_logs`, and `vault_access_links.product_id` / `vault_access_links.block_id`.
   - Backend health responded at `http://127.0.0.1:8012/health`.
