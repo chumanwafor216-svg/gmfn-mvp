@@ -101,6 +101,12 @@ type SpotlightConfigRecord = {
   payment_beneficiary_scope?: string | null;
 };
 
+type SpotlightStatusRecord = {
+  available_paid_credits?: number | string | null;
+  active_paid_spotlights?: number | string | null;
+  can_publish_paid_spotlight?: boolean | null;
+};
+
 const SPOTLIGHT_CREDIT_LIMIT = 6;
 const PAYMENT_DUE_DAYS = 7;
 
@@ -365,6 +371,7 @@ export default function SubscriptionSpotlightPage() {
   const [spotlightConfig, setSpotlightConfig] = useState<SpotlightConfigRecord | null>(null);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [spotlights, setSpotlights] = useState<BroadcastRecord[]>([]);
+  const [spotlightStatus, setSpotlightStatus] = useState<SpotlightStatusRecord | null>(null);
   const [createdInstruction, setCreatedInstruction] = useState<ExpectedPaymentRecord | null>(null);
   const [selectedCredits, setSelectedCredits] = useState(1);
   const [confirmedQuoteKey, setConfirmedQuoteKey] = useState("");
@@ -446,6 +453,7 @@ export default function SubscriptionSpotlightPage() {
         setShop(null);
         setExpectedPayments([]);
         setSpotlights([]);
+        setSpotlightStatus(null);
         return;
       }
 
@@ -459,20 +467,23 @@ export default function SubscriptionSpotlightPage() {
       if (!shopItem?.id) {
         setExpectedPayments([]);
         setSpotlights([]);
+        setSpotlightStatus(null);
         return;
       }
 
       const clanId = Number(shopItem.clan_id || shopRes?.clan_id || selectedClanId || 0);
       const expectedPath =
-        `/api/bank/expected?clan_id=${clanId}&limit=100` +
-        (Number(meRes?.id || 0) > 0 ? `&user_id=${Number(meRes.id)}` : "");
+        `/api/payment-instructions/my/expected?clan_id=${clanId}` +
+        "&expected_type=spotlight_subscription&limit=100";
 
-      const [expectedRes, broadcastsRes] = await Promise.all([
+      const [expectedRes, broadcastsRes, spotlightStatusRes] = await Promise.all([
         apiJson<any>(expectedPath).catch(() => []),
         apiJson<any>(`/api/marketplace/broadcasts?clan_id=${clanId}&limit=40`).catch(() => ({ items: [] })),
+        apiJson<any>(`/api/marketplace/shops/${shopItem.id}/spotlight-status`).catch(() => null),
       ]);
 
       setExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
+      setSpotlightStatus((spotlightStatusRes || null) as SpotlightStatusRecord | null);
       setSpotlights(
         rowsOf<BroadcastRecord>(broadcastsRes).filter(
           (item) => Number(item?.shop_id || 0) === Number(shopItem.id)
@@ -530,7 +541,11 @@ export default function SubscriptionSpotlightPage() {
         .reduce((total, item) => total + paymentQuantity(item), 0),
     [spotlightPayments]
   );
-  const usableCredits = Math.max(0, confirmedCreditCount - activePaidSpotlights.length);
+  const statusReadyCredits = Number(spotlightStatus?.available_paid_credits);
+  const usableCredits =
+    Number.isFinite(statusReadyCredits) && statusReadyCredits >= 0
+      ? statusReadyCredits
+      : Math.max(0, confirmedCreditCount - activePaidSpotlights.length);
   const selectedAmount = spotlightCreditAmount(selectedCredits);
   const selectedLabel = formatMoney(selectedAmount, "GBP");
   const currentQuoteKey = quoteKey(selectedCredits);
@@ -593,7 +608,12 @@ export default function SubscriptionSpotlightPage() {
     paymentLine("Expires", safeDateTime(activePaymentDueAt) || `${paymentDueDays} days after generation`),
   ].filter(Boolean);
 
-  const canPublishPaid = Boolean(shop?.id) && usableCredits > 0 && activePaidSpotlights.length === 0;
+  const activePaidCount = Number(spotlightStatus?.active_paid_spotlights);
+  const effectiveActivePaidCount =
+    Number.isFinite(activePaidCount) && activePaidCount >= 0
+      ? activePaidCount
+      : activePaidSpotlights.length;
+  const canPublishPaid = Boolean(shop?.id) && usableCredits > 0 && effectiveActivePaidCount === 0;
   const hasDraft = Boolean(firstTruthy(message) || imageFile || videoFile);
 
   async function createPaymentInstruction() {
@@ -811,7 +831,7 @@ export default function SubscriptionSpotlightPage() {
             <div style={{ marginTop: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
               <span style={heroBadge(true)}>Subscription Spotlight</span>
               <span style={heroBadge(usableCredits > 0)}>{usableCredits} ready credit{usableCredits === 1 ? "" : "s"}</span>
-              <span style={heroBadge(activePaidSpotlights.length > 0)}>Live paid: {activePaidSpotlights.length}</span>
+              <span style={heroBadge(effectiveActivePaidCount > 0)}>Live paid: {effectiveActivePaidCount}</span>
               <span style={heroBadge(false)}>One paid run at a time</span>
             </div>
           </div>
@@ -959,7 +979,7 @@ export default function SubscriptionSpotlightPage() {
         <div style={sectionTitle()}>3. Publish Subscription Spotlight</div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <span style={brandBadge(usableCredits > 0)}>{usableCredits} ready credit{usableCredits === 1 ? "" : "s"}</span>
-          <span style={brandBadge(activePaidSpotlights.length > 0)}>Live paid: {activePaidSpotlights.length}</span>
+          <span style={brandBadge(effectiveActivePaidCount > 0)}>Live paid: {effectiveActivePaidCount}</span>
           <span style={brandBadge(canPublishPaid)}>Publisher: {canPublishPaid ? "Open" : "Waiting"}</span>
         </div>
         {activePaidSpotlights.length > 0 ? (

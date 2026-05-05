@@ -24,6 +24,7 @@ from app.db.models import (
 )
 from app.services.feature_entitlements_service import (
     consume_feature_units,
+    get_active_feature_quantity,
     has_active_feature,
 )
 from app.services.trust_events_services import log_trust_event
@@ -2019,6 +2020,52 @@ def list_marketplace_product_reposts(
     }
 
 
+@router.get("/shops/{shop_id}/spotlight-status")
+def get_shop_spotlight_status(
+    shop_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(shop_id))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=404, detail="Shop not found")
+    if not _shop_owner_can_manage(current_user=current_user, shop=shop):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the shop owner can view paid spotlight status",
+        )
+
+    now = _now_utc()
+    available_paid_credits = get_active_feature_quantity(
+        db,
+        owner_user_id=int(current_user.id),
+        feature_code=FEATURE_SPOTLIGHT_PRIORITY,
+        shop_id=int(shop.id),
+    )
+    active_paid_spotlights = _count_active_paid_spotlights_for_shop(
+        db=db,
+        shop_id=int(shop.id),
+        now=now,
+    )
+
+    return {
+        "ok": True,
+        "shop_id": int(shop.id),
+        "feature_code": FEATURE_SPOTLIGHT_PRIORITY,
+        "available_paid_credits": int(available_paid_credits),
+        "active_paid_spotlights": int(active_paid_spotlights),
+        "can_publish_paid_spotlight": bool(
+            available_paid_credits > 0 and active_paid_spotlights <= 0
+        ),
+        "payment_context": "spotlight_subscription",
+        "priority_mode": SPOTLIGHT_PAID,
+    }
+
+
 @router.get("/broadcasts")
 def list_marketplace_broadcasts(
     clan_id: Optional[int] = Query(default=None),
@@ -2187,17 +2234,16 @@ def create_marketplace_broadcast(
                 detail="No active paid spotlight entitlement found for this shop.",
             )
 
-        if not _spotlight_capacity_pilot_override_active(current_time):
-            active_paid_count = _count_active_paid_spotlights_for_shop(
-                db=db,
-                shop_id=int(shop.id),
-                now=current_time,
+        active_paid_count = _count_active_paid_spotlights_for_shop(
+            db=db,
+            shop_id=int(shop.id),
+            now=current_time,
+        )
+        if active_paid_count > 0:
+            raise HTTPException(
+                status_code=400,
+                detail="A paid spotlight is already active for this shop. Wait for it to end before starting another one.",
             )
-            if active_paid_count > 0:
-                raise HTTPException(
-                    status_code=400,
-                    detail="A paid spotlight is already active for this shop. Wait for it to end before starting another one.",
-                )
     elif not _spotlight_capacity_pilot_override_active(current_time):
         for clan_id in target_clan_ids:
             active_count = _count_active_spotlights_for_clan(

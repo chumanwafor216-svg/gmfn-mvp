@@ -1,9 +1,10 @@
 ﻿from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -20,6 +21,7 @@ from app.services.payment_instruction_service import (
     create_spotlight_subscription_instruction,
     create_vault_subscription_instruction,
 )
+from app.services.expected_payments_service import list_expected_payments
 from app.services.settlement_config_service import get_settlement_config
 from app.services.vault_access_service import DEFAULT_LINK_EXPIRY_HOURS
 from app.services.vault_domain_service import (
@@ -36,6 +38,31 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return int(value)
     except Exception:
         return default
+
+
+def _iso(dt: Optional[datetime]) -> Optional[str]:
+    return dt.isoformat() if dt else None
+
+
+def _expected_payment_out(row: Any) -> Dict[str, Any]:
+    return {
+        "id": int(row.id),
+        "clan_id": int(row.clan_id),
+        "user_id": int(row.user_id),
+        "expected_type": row.expected_type,
+        "amount": str(row.amount),
+        "currency": row.currency,
+        "paid_amount": str(row.paid_amount),
+        "remaining_amount": str(row.remaining_amount),
+        "due_at": _iso(row.due_at),
+        "reference_display": row.reference_display,
+        "reference_normalized": row.reference_normalized,
+        "status": row.status,
+        "status_reason": row.status_reason,
+        "bank_event_id": row.bank_event_id,
+        "trust_event_id": row.trust_event_id,
+        "created_at": _iso(row.created_at),
+    }
 
 
 def _require_shop_owner(
@@ -224,19 +251,44 @@ def create_spotlight_payment_instruction(
         current_user=current_user,
     )
 
-    out = create_spotlight_subscription_instruction(
-        db,
-        clan_id=int(payload.clan_id),
-        owner_user_id=int(current_user.id),
-        shop_id=int(payload.shop_id),
-        amount=payload.amount,
-        quantity_total=int(payload.quantity_total),
-        currency=payload.currency,
-        visibility_scope=payload.visibility_scope,
-    )
+    try:
+        out = create_spotlight_subscription_instruction(
+            db,
+            clan_id=int(payload.clan_id),
+            owner_user_id=int(current_user.id),
+            shop_id=int(payload.shop_id),
+            amount=payload.amount,
+            quantity_total=int(payload.quantity_total),
+            currency=payload.currency,
+            visibility_scope=payload.visibility_scope,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     out["settlement"] = get_settlement_config()
     out["instruction_type"] = "spotlight_subscription"
     return out
+
+
+@router.get("/my/expected")
+def my_expected_payments(
+    clan_id: int = Query(..., ge=1),
+    expected_type: Optional[str] = Query(default=None),
+    status: Optional[str] = Query(default=None),
+    currency: Optional[str] = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=200),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    rows = list_expected_payments(
+        db,
+        clan_id=int(clan_id),
+        user_id=int(current_user.id),
+        expected_type=expected_type,
+        status=status,
+        currency=currency,
+        limit=int(limit),
+    )
+    return {"items": [_expected_payment_out(x) for x in rows], "total": len(rows)}
 
 
 @router.get("/my")

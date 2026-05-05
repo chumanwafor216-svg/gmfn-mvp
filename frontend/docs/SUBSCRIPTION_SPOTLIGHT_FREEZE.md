@@ -37,9 +37,11 @@ It is not Free Spotlight, not Vault, and not the general Shop Control page. The 
 9. Payment goes to the platform/GSN settlement account, not community money.
 10. Confirmed paid spotlight entitlements grant paid spotlight credits.
 11. Publishing a paid spotlight consumes one unused paid spotlight credit.
-12. A paid spotlight cannot silently fall back to Free Spotlight.
-13. Media must follow `docs/MEDIA_PREP_PROTOCOL.md`: picture/video accepted, oversized media prepared, and video uses muted motion first plus a reversible `Sound on` / `Sound off` control.
-14. Buttons must follow `docs/CONTROL_SURFACE_PROTOCOL.md`: stable tap targets, no mobile hit-area drift, and blocked states explain the next action.
+12. The owner page must read backend spotlight status for remaining paid credits. It must not guess remaining credits only from old confirmed payments.
+13. A paid spotlight cannot silently fall back to Free Spotlight.
+14. A shop cannot run two active paid spotlights at once, even during the spotlight capacity pilot override.
+15. Media must follow `docs/MEDIA_PREP_PROTOCOL.md`: picture/video accepted, oversized media prepared, and video uses muted motion first plus a reversible `Sound on` / `Sound off` control.
+16. Buttons must follow `docs/CONTROL_SURFACE_PROTOCOL.md`: stable tap targets, no mobile hit-area drift, and blocked states explain the next action.
 
 ## Do Not Reintroduce
 
@@ -49,21 +51,22 @@ It is not Free Spotlight, not Vault, and not the general Shop Control page. The 
 - Do not replace the quote-agreement step with a vague `Continue`.
 - Do not route Community Home paid spotlight back to `/app/shop-control#shop-control-paid-spotlight`.
 - Do not switch the paid publisher back to free mode when payment is not confirmed. Show the payment blocker instead.
+- Do not restore the old mixed Shop Control `Pay spotlight` card. Shop Control may link to the focused lane, but it must not generate paid spotlight payment instructions itself.
 
 ## Remaining Backend Truth
 
 - The current paid spotlight credit duration still follows the existing feature entitlement cycle logic.
 - Bank reconciliation remains the existing expected-payment rail.
 - Card payment is not connected for this MVP.
-- The current capacity pilot override may still affect active spotlight capacity, but paid publishing now also requires an unused paid spotlight credit.
+- Payment-instruction history for owners must come from `/payment-instructions/my/expected`, not the admin-only bank console endpoint.
 
 ## Verification
 
 Automated checks run on 2026-05-05:
 
 - `npm run build` passed.
-- `python -B -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py ..\gmfn_backend\app\services\payment_instruction_service.py ..\gmfn_backend\app\services\expected_payments_service.py ..\gmfn_backend\app\api\routes\marketplace.py` passed.
-- `python -m pytest -q ..\gmfn_backend\tests\test_marketplace_public_shop.py ..\gmfn_backend\tests\test_reconciliation_integrity.py --basetemp pytest-tmp-spotlight-subscription` passed outside the sandbox: 8 passed.
+- `python -B -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py ..\gmfn_backend\app\api\routes\marketplace.py` passed.
+- `python -m pytest -q ..\gmfn_backend\tests\test_marketplace_public_shop.py ..\gmfn_backend\tests\test_reconciliation_integrity.py --basetemp pytest-tmp-spotlight-subscription` passed outside the sandbox: 9 passed.
 
 Manual check:
 

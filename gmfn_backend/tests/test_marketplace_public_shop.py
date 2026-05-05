@@ -441,6 +441,12 @@ def test_paid_spotlight_requires_unused_subscription_credit(
             },
         )
 
+    status_before = client.get("/marketplace/shops/1/spotlight-status")
+    assert status_before.status_code == 200, status_before.text
+    assert status_before.json()["available_paid_credits"] == 1
+    assert status_before.json()["active_paid_spotlights"] == 0
+    assert status_before.json()["can_publish_paid_spotlight"] is True
+
     published = client.post(
         "/marketplace/broadcasts",
         json={
@@ -453,6 +459,12 @@ def test_paid_spotlight_requires_unused_subscription_credit(
     )
     assert published.status_code == 200, published.text
     assert published.json()["item"]["priority_mode"] == "paid"
+
+    status_after = client.get("/marketplace/shops/1/spotlight-status")
+    assert status_after.status_code == 200, status_after.text
+    assert status_after.json()["available_paid_credits"] == 0
+    assert status_after.json()["active_paid_spotlights"] == 1
+    assert status_after.json()["can_publish_paid_spotlight"] is False
 
     second = client.post(
         "/marketplace/broadcasts",
@@ -488,3 +500,100 @@ def test_paid_spotlight_requires_unused_subscription_credit(
 
     assert int(entitlement[0]) == 1
     assert int(usage_count) == 1
+
+
+def test_paid_spotlight_blocks_second_active_run_even_with_unused_credit(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-PAIDCAP'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'PAIDCAP1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'CHUMA INTERNATIONAL SHOP', 'All kinds of goods', 1
+                )
+                """
+            )
+        )
+        now = datetime.now(timezone.utc)
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    2, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-CAP'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    first = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Paid spotlight",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert first.status_code == 200, first.text
+
+    second = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Second paid spotlight",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert second.status_code == 400, second.text
+    assert "already active" in second.json()["detail"]
+
+    status_after = client.get("/marketplace/shops/1/spotlight-status")
+    assert status_after.status_code == 200, status_after.text
+    assert status_after.json()["available_paid_credits"] == 1
+    assert status_after.json()["active_paid_spotlights"] == 1
+    assert status_after.json()["can_publish_paid_spotlight"] is False

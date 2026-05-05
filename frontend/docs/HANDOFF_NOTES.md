@@ -19,6 +19,7 @@
   - `payment_instructions.SpotlightInstructionIn` accepts 1-6 credits and does not require the frontend to send an amount.
   - `/payment-instructions/my` now exposes `spotlight_config`.
   - paid marketplace broadcast creation now consumes one `spotlight_priority` feature credit, so a confirmed entitlement is not reusable forever.
+  - `/marketplace/shops/{shop_id}/spotlight-status` exposes backend remaining paid credits so the frontend does not guess from old confirmed payments after a credit has been consumed.
 - Added `docs/SUBSCRIPTION_SPOTLIGHT_FREEZE.md` to record the lane rule and prevent future assistants from dumping the user into mixed Shop Control.
 - Verification:
   - `npm run build` passed.
@@ -277,6 +278,11 @@
   - Vault documentation correction: `docs/VAULT_MVP_STANDARD.md` and `docs/VAULT_CONTROL_FREEZE.md` now record backend blocks/orders as the implementation truth instead of saying permanent block order still needs a backend contract.
   - Vault phone slot-control repair: `/app/vault-control` no longer uses a native dropdown for `Slots to activate`. The payment slot selector is now six large stable tap tiles, and the `Generate payment code` button is taller/full-width so the visible phone tap target matches the real click area.
   - Vault payment-code visibility repair: identity continuity review no longer hides or renames the payment-code button. The button stays `Generate payment code` and remains usable for the bank-transfer rail; identity review is explained separately and may still limit private access-link sharing.
+  - Subscription Spotlight focused lane: `/app/shop-control/subscription-spotlight` is now the only paid spotlight owner workflow. It owns the 1-6 credit selector, quote agreement, bank-transfer payment code, backend credit status, and paid publisher. `/app/paid-spotlight`, Community Home, and Shop Control shortcut entries route there.
+  - Subscription Spotlight line-audit repair: the old mixed Shop Control paid spotlight hash now redirects to `/app/shop-control/subscription-spotlight`, the old Shop Control `Pay spotlight` action was removed, and the mixed Free Spotlight composer no longer lets paid publishing fall back into the free lane.
+  - Subscription Spotlight backend truth: `/marketplace/shops/{shop_id}/spotlight-status` exposes remaining paid credits and active paid spotlight count from backend entitlements/broadcasts. Paid publish consumes one credit and refuses a second active paid spotlight for the same shop even while the general spotlight capacity pilot override remains enabled.
+  - Subscription Spotlight payment history: owners now read their own expected payments through `/payment-instructions/my/expected`, so pending bank-transfer instructions can survive a page refresh without using the admin-only `/bank/expected` endpoint. Spotlight payment amount mismatches now return HTTP 400 instead of an uncaught backend error.
+  - `docs/SUBSCRIPTION_SPOTLIGHT_FREEZE.md` records the frozen paid spotlight lane rules and the auditor-found stale-path repairs.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -335,6 +341,9 @@
   - `npm run build` passed again on 2026-05-04 after the Vault phone slot-control repair.
   - `npm exec -- eslint src/pages/VaultControlPage.tsx` passed on 2026-05-04 after the Vault payment-code visibility repair.
   - `npm run build` passed again on 2026-05-04 after the Vault payment-code visibility repair.
+  - `npm run build` passed on 2026-05-05 after the Subscription Spotlight focused lane and line-audit repairs.
+  - `python -B -m py_compile ..\gmfn_backend\app\api\routes\payment_instructions.py ..\gmfn_backend\app\api\routes\marketplace.py` passed on 2026-05-05 after the Subscription Spotlight backend audit repairs.
+  - `python -m pytest -q ..\gmfn_backend\tests\test_marketplace_public_shop.py ..\gmfn_backend\tests\test_reconciliation_integrity.py --basetemp pytest-tmp-spotlight-subscription` passed outside the sandbox on 2026-05-05: 9 passed.
   - Local dev SQLite DB was backed up to `gmfn_backend/gmfn.db.backup_before_vault_domain_20260504_163112`, then upgraded with Alembic using `GMFN_DEV_MODE=1`; current revision is `20260504_add_vault_domain_tables (head)`.
   - Dev DB schema check confirmed `vault_orders`, `vault_blocks`, `vault_private_offers`, `vault_access_logs`, and `vault_access_links.product_id` / `vault_access_links.block_id`.
   - Backend health responded at `http://127.0.0.1:8012/health`.

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
@@ -655,6 +655,7 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
 
 export default function ShopControlPage() {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -691,8 +692,6 @@ export default function ShopControlPage() {
   );
   const [creatingMerchantVerifyInstruction, setCreatingMerchantVerifyInstruction] =
     useState(false);
-  const [creatingSpotlightInstruction, setCreatingSpotlightInstruction] = useState(false);
-
   const [shopName, setShopName] = useState("");
   const [shopDescription, setShopDescription] = useState("");
   const [whatsApp, setWhatsApp] = useState("");
@@ -915,8 +914,7 @@ export default function ShopControlPage() {
 
       if (shopItem?.id) {
         const expectedPaymentsPath =
-          `/api/bank/expected?clan_id=${shopContextClanId || 0}&limit=100` +
-          (Number(meRes?.id || 0) > 0 ? `&user_id=${Number(meRes?.id)}` : "");
+          `/api/payment-instructions/my/expected?clan_id=${shopContextClanId || 0}&limit=100`;
 
         const [broadcastsRes, vaultLinksRes, privateProductsRes, expectedRes, trustSlipRes] =
           await Promise.all([
@@ -1057,17 +1055,15 @@ export default function ShopControlPage() {
 
     lastAutoScrolledHashRef.current = targetId;
 
+    if (targetId === "shop-control-paid-spotlight") {
+      navigate("/app/shop-control/subscription-spotlight", { replace: true });
+      return;
+    }
+
     if (targetId === "shop-control-spotlight") {
       setSpotlightPriorityMode("free");
       setSpotlightFlowStep(shop?.id ? "upload" : "setup");
       setSpotlightOpen(true);
-    }
-
-    if (targetId === "shop-control-paid-spotlight") {
-      setSpotlightPriorityMode("paid");
-      setSpotlightFlowStep(shop?.id ? "upload" : "setup");
-      setSpotlightOpen(true);
-      targetId = "shop-control-spotlight";
     }
 
     if (targetId !== "shop-control-spotlight") {
@@ -1076,7 +1072,7 @@ export default function ShopControlPage() {
 
     cancelPendingControlReveal();
     revealControlTarget(targetId);
-  }, [cancelPendingControlReveal, loading, location.hash, location.search, revealControlTarget, shop?.id]);
+  }, [cancelPendingControlReveal, loading, location.hash, location.search, navigate, revealControlTarget, shop?.id]);
 
   const publicProducts = useMemo(
     () =>
@@ -1308,12 +1304,6 @@ export default function ShopControlPage() {
     };
   }, [imageUrlInput, publicProducts.length]);
 
-  useEffect(() => {
-    if (spotlightPriorityMode === "paid" && !canStartPaidSpotlight) {
-      setSpotlightPriorityMode("free");
-    }
-  }, [canStartPaidSpotlight, spotlightPriorityMode]);
-
   function copyText(text: string, successMessage: string) {
     if (!text) {
       showNotice("error", "Nothing to copy yet.");
@@ -1426,6 +1416,12 @@ export default function ShopControlPage() {
     event?: React.SyntheticEvent<HTMLElement>,
     mode: "free" | "paid" = "free"
   ) {
+    if (mode === "paid") {
+      event?.stopPropagation();
+      navigate("/app/shop-control/subscription-spotlight");
+      return;
+    }
+
     setSpotlightPublishFeedback(null);
     setSpotlightFlowStep(shop?.id ? "upload" : "setup");
     setSpotlightMediaChoice("image");
@@ -1536,42 +1532,6 @@ export default function ShopControlPage() {
       );
     } finally {
       setCreatingMerchantVerifyInstruction(false);
-    }
-  }
-
-  async function createSpotlightInstruction() {
-    if (!shop?.id) {
-      showNotice("error", "Shop record is not available.");
-      return;
-    }
-
-    setCreatingSpotlightInstruction(true);
-    try {
-      const result = await apiJson<any>("/api/payment-instructions/spotlight", {
-        method: "POST",
-        body: JSON.stringify({
-          clan_id: Number(shop?.clan_id || selectedClanId || 0),
-          shop_id: Number(shop.id),
-          amount: "1.00",
-          quantity_total: 1,
-          currency: "GBP",
-          visibility_scope: "direct_communities",
-        }),
-      });
-
-      await loadPage();
-      copyText(
-        firstTruthy(result?.reference_display, result?.reference),
-        "Spotlight payment reference copied."
-      );
-      showNotice("success", "Paid spotlight payment request created.");
-    } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Paid spotlight payment request could not be created."
-      );
-    } finally {
-      setCreatingSpotlightInstruction(false);
     }
   }
 
@@ -2277,25 +2237,18 @@ export default function ShopControlPage() {
                   Spotlight Subscription
                 </div>
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
-                  Paid priority after confirmation.
+                  Paid priority opens on its own focused page.
                 </div>
                 <button
                   type="button"
                   {...buttonGuardProps()}
-                  onClick={() => {
-                    if (canStartPaidSpotlight) {
-                      setSpotlightPriorityMode("paid");
-                    }
-                  }}
-                  disabled={!canStartPaidSpotlight}
-                  style={{ ...fullButton(actionBtn("secondary", !canStartPaidSpotlight)), marginTop: 12 }}
+                  onClick={() => navigate("/app/shop-control/subscription-spotlight")}
+                  style={{ ...fullButton(actionBtn("secondary")), marginTop: 12 }}
                 >
-                  Use paid lane
+                  Open paid lane
                 </button>
                 <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                  {canStartPaidSpotlight
-                    ? "Subscription is ready."
-                    : "Start or confirm payment first."}
+                  Payment and paid publishing are kept separate from Free Spotlight.
                 </div>
               </div>
             </div>
@@ -2919,7 +2872,7 @@ export default function ShopControlPage() {
               Paid priority, kept separate.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Start payment here. After confirmation, open the paid publisher.
+              Payment, bank instructions, credits, and the paid publisher now live on the focused Subscription Spotlight page.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(activePaidSpotlights.length > 0)}>
@@ -2977,31 +2930,31 @@ export default function ShopControlPage() {
                   lineHeight: 1.35,
                 }}
               >
-                {spotlightNextAction.title}
+                Subscription Spotlight is separate from Free Spotlight.
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                {spotlightNextAction.detail}
+                Open the focused lane so a paid spotlight never falls back into the free composer.
               </div>
             </div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => void createSpotlightInstruction()}
-                disabled={shopActionsLocked || creatingSpotlightInstruction}
-                style={fullButton(actionBtn("primary", shopActionsLocked || creatingSpotlightInstruction))}
+                onClick={() => navigate("/app/shop-control/subscription-spotlight")}
+                disabled={shopActionsLocked}
+                style={fullButton(actionBtn("primary", shopActionsLocked))}
               >
                 {paidToolActionLabel({
                   locked: shopActionsLocked,
-                  busy: creatingSpotlightInstruction,
-                  idle: "Pay spotlight",
-                  busyText: "Preparing...",
+                  busy: false,
+                  idle: "Open Subscription Spotlight",
+                  busyText: "Opening...",
                 })}
               </button>
               <button
                 type="button"
                 {...buttonGuardProps()}
-                onClick={() => openSpotlightTools(undefined, "paid")}
+                onClick={() => navigate("/app/shop-control/subscription-spotlight")}
                 style={fullButton(actionBtn("secondary"))}
               >
                 Open paid publisher
