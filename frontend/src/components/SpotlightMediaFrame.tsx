@@ -17,6 +17,7 @@ type SpotlightMediaFrameProps = {
   maxVideoSeconds?: number | null;
   showAudioUnlock?: boolean;
   audioUnlockLabel?: string;
+  audioUnlockStyle?: React.CSSProperties;
 };
 
 function safeStr(value: unknown): string {
@@ -43,13 +44,16 @@ export default function SpotlightMediaFrame(
   const [videoFailed, setVideoFailed] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [audioError, setAudioError] = useState("");
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const lastAudioToggleRef = useRef(0);
 
   useEffect(() => {
     setImageIndex(0);
     setVideoFailed(false);
     setImageFailed(false);
     setAudioUnlocked(false);
+    setAudioError("");
   }, [imageCandidateKey, props.videoUrl]);
 
   useEffect(() => {
@@ -63,6 +67,7 @@ export default function SpotlightMediaFrame(
       video.volume = 1;
     }
     setAudioUnlocked(false);
+    setAudioError("");
   }, [props.mutedVideo, props.videoUrl]);
 
   const imageSrc = imageCandidates[imageIndex] || "";
@@ -72,6 +77,51 @@ export default function SpotlightMediaFrame(
   const shouldShowAudioUnlock =
     Boolean(videoSrc) &&
     Boolean(props.showAudioUnlock);
+
+  function stopMediaControlEvent(event?: React.SyntheticEvent) {
+    event?.preventDefault();
+    event?.stopPropagation();
+  }
+
+  function toggleAudio(event?: React.SyntheticEvent) {
+    stopMediaControlEvent(event);
+
+    const now = Date.now();
+    if (now - lastAudioToggleRef.current < 320) return;
+    lastAudioToggleRef.current = now;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (audioUnlocked) {
+      video.muted = true;
+      video.defaultMuted = true;
+      video.volume = 0;
+      setAudioUnlocked(false);
+      setAudioError("");
+      return;
+    }
+
+    video.muted = false;
+    video.defaultMuted = false;
+    video.volume = 1;
+    setAudioError("");
+    void video
+      .play()
+      .then(() => {
+        video.muted = false;
+        video.defaultMuted = false;
+        video.volume = 1;
+        setAudioUnlocked(true);
+        setAudioError("");
+      })
+      .catch(() => {
+        video.muted = true;
+        video.defaultMuted = true;
+        setAudioUnlocked(false);
+        setAudioError("Tap play, then Sound on");
+      });
+  }
 
   const frameStyle: React.CSSProperties = {
     position: "relative",
@@ -165,29 +215,14 @@ export default function SpotlightMediaFrame(
   const audioUnlockButton = shouldShowAudioUnlock ? (
     <button
       type="button"
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const video = videoRef.current;
-        if (!video) return;
-
-        if (audioUnlocked) {
-          video.muted = true;
-          video.defaultMuted = true;
-          video.volume = 0;
-          setAudioUnlocked(false);
-          return;
-        }
-
-        video.muted = false;
-        video.defaultMuted = false;
-        video.volume = 1;
-        void video
-          .play()
-          .then(() => setAudioUnlocked(true))
-          .catch(() => {
-            setAudioUnlocked(false);
-          });
+      data-media-control="true"
+      onPointerDown={toggleAudio}
+      onMouseDown={stopMediaControlEvent}
+      onPointerUp={stopMediaControlEvent}
+      onClick={stopMediaControlEvent}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        toggleAudio(event);
       }}
       style={{
         position: "absolute",
@@ -207,6 +242,7 @@ export default function SpotlightMediaFrame(
         boxShadow: "0 14px 28px rgba(2, 12, 27, 0.28)",
         cursor: "pointer",
         touchAction: "manipulation",
+        ...props.audioUnlockStyle,
       }}
       aria-label={
         audioUnlocked
@@ -214,7 +250,9 @@ export default function SpotlightMediaFrame(
           : props.audioUnlockLabel || "Turn video sound on"
       }
     >
-      {audioUnlocked ? "Sound off" : props.audioUnlockLabel || "Sound on"}
+      {audioUnlocked
+        ? "Sound off"
+        : audioError || props.audioUnlockLabel || "Sound on"}
     </button>
   ) : null;
 
@@ -224,6 +262,7 @@ export default function SpotlightMediaFrame(
         {backdrop}
         <div style={foregroundStyle}>
           <video
+            data-media-control="true"
             ref={videoRef}
             src={videoSrc}
             poster={backdropSrc || undefined}

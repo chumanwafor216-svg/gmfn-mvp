@@ -1,5 +1,98 @@
 # Handoff Notes
 
+## 2026-05-05 Shop Diaries Full-Media Card Trial
+
+- Owner direction: product pictures in the public Shop Gallery were too small and visually demoted. Try full-picture product blocks where product information and `Open` / `Share` actions sit on the image.
+- Updated `src/pages/ShopGalleryPage.tsx` only inside the public `Shop Diaries` card rendering:
+  - each product card is now a full-media card instead of image-left/text-right.
+  - product name, buyer cue, price, `Open`, and `Share` sit on a protected dark gradient at the bottom of the media.
+  - video cards still use the shared `SpotlightMediaFrame` so muted motion and opened audio behavior remain available.
+- Follow-up phone correction:
+  - closed two-column cards now use smaller stable action pills so the buttons do not crowd across neighbouring cards.
+  - tapping a product card expands it across the Shop Diaries shelf for a larger picture/video view; tapping again collapses it.
+  - expanded cards give the product text and `Open` / `Share` controls more room while preserving the same public route and media logic.
+- Second phone correction:
+  - increased the real gap between the two phone columns so neighbouring cards no longer visually overlap at the center seam.
+  - added stricter `box-sizing` and card isolation so each product card owns its own media, overlay, and button area.
+  - changed the closed-card action row to a bounded internal grid; `Open` and `Share` can shrink inside the card but cannot spill sideways.
+- Third phone correction:
+  - removed `contain` from the interactive product card after checking `CONTROL_SURFACE_PROTOCOL.md`; it can cause phone hit-test drift on buttons.
+  - changed the public Spotlight wording from a shop-specific frame to a community billboard frame: shops in the marketplace can highlight items there.
+  - made the shared `SpotlightMediaFrame` accept a caller-provided `audioUnlockStyle`, then used a smaller `Sound on` pill in the public billboard and opened product video cards so the audio control does not block the video.
+- Fourth media correction:
+  - changed opened 12-block Shop Diaries videos to mount muted first, then rely on the explicit `Sound on` action to unmute and play. This matches the media protocol and avoids mobile browsers treating the opened video as an untrusted unmuted autoplay attempt.
+  - strengthened the shared audio button so it stops pointer/mouse events before the parent card can swallow them, toggles on pointer-up with click fallback, and shows `Tap play, then Sound on` instead of failing silently if the browser blocks playback.
+- Fifth media correction:
+  - 12-block Shop Diaries videos now expose the `Sound on` action on the closed public card as well as the opened card. `Open` remains only the expand/product-information action; listening is handled by the separate video audio control.
+- Sixth tap-ownership correction:
+  - the shared media frame now marks its audio button and video element as media controls, and the public product card ignores taps coming from those controls. This prevents `Sound on` or native video controls from bubbling into the parent card and collapsing the product block.
+- Seventh interaction correction:
+  - removed the whole-card open/collapse behavior from Shop Diaries cards. Only the visible `Open` / `Close` button can expand or collapse a block now; `Sound on` owns only audio. This removes the last competing parent tap surface on phone.
+- Final polish correction:
+  - the shared video `Sound on` control now toggles on the earliest pointer tap instead of waiting for a later click, so mobile browsers receive the unmute/play request inside the user gesture.
+  - the public Vault strip/ad no longer uses a plain `V` mark. It now uses a vault-door style visual so the buyer sees a private Vault, not an unexplained letter.
+- Devil's advocate note: this gives products more visual importance, but readability depends on the bottom gradient. If phone testing shows text fighting with busy images, strengthen the gradient before changing the layout again.
+
+## 2026-05-05 Marketplace Colour System Application
+
+- Owner direction: apply the same fixed GSN colour discipline to Marketplace; no page-local random colour invention.
+- Updated `src/pages/MarketplacePage.tsx` so the Marketplace route now mounts inside `gsn-page theme-marketplace`.
+- Central Marketplace visual helpers now draw from shared token/theme values for shell background, profile surfaces, cards, OS hero, operating tiles, rows, and action buttons.
+- Product truth remains unchanged: Marketplace is selected-community scoped and should show selected-community **Trust**, not cross-community CCI.
+- Devil's advocate truth: this is a controlled theming pass, not a full deletion of every historical inline colour inside the large Marketplace file. The main visible page system now follows the global theme; future lane edits should keep reducing any remaining hardcoded colour islands instead of adding new ones.
+
+## 2026-05-05 GSN Colour System Standard
+
+- Owner direction: stop random colours page-by-page. Use one global GSN colour language, with controlled domain themes so pages can have different moods without becoming visually unrelated.
+- Added `src/styles/tokens.css`:
+  - core GSN navy, blue, gold, white/off-white, surface, border, text, success, danger, and warning tokens.
+  - domain theme classes: `theme-app`, `theme-entry`, `theme-community`, `theme-shop-control`, `theme-public-shop`, `theme-vault`, and `theme-marketplace`.
+  - shared classes for page shells, heroes, cards, buttons, pills, inputs, and grids.
+- Added `src/styles/public-shop.css` for the outsider-facing Shop Gallery structure:
+  - public shop shell, signboard, meta pills, three-cell status strip, three-button action row, Spotlight advert, Private Vault advert, and Shop Diaries grid/card classes.
+  - Important correction: the owner's approved phone reference keeps the public status strip, Repost/Share/Copy row, and Shop Diaries as compact rows/grids on mobile, so this stylesheet does not collapse those surfaces into one-column stacks.
+- Added `src/theme/gsnTheme.js` for JS consumers that need the same approved token values.
+- Wired the public Shop Gallery route `/shop/:gmfnId` to `public-shop-shell theme-public-shop` and the new public-shop structural classes while preserving the already-working public media/audio logic.
+- Rule for future work: do not invent hardcoded random colours inside components. New screens should use a page theme class plus shared button/card/pill/form styles unless there is an explicitly recorded exception.
+
+## 2026-05-05 Shop Gallery Public Viewer Phone Tightening
+
+- Owner feedback: the first public Shop Gallery remodel had the right lane order but did not yet match the approved phone reference. On phone, the trust strip stacked vertically, `Repost / Share / Copy` became full-width rows, Spotlight and Vault were too tall, and `Open / Share` inside product cards collapsed into letter-by-letter buttons.
+- Updated `src/pages/ShopGalleryPage.tsx`:
+  - the public trust/contact strip now stays as one three-cell white strip on phone.
+  - `Repost shop`, `Share shop`, and `Copy link` now stay in one stable three-button row.
+  - Spotlight and Private Vault are compact horizontal adverts with text/actions on one side and a media/visual frame on the other.
+  - `Shop Diaries` header keeps the `12/12` counter beside the heading area instead of dropping into a loose line.
+  - product cards keep `Open` and `Share` as stable horizontal pill buttons on phone, preventing the vertical-letter button failure seen in testing.
+  - follow-up correction after phone screenshot: reduced signboard depth, tightened the trust strip, shortened mobile Vault action copy so it no longer clips, and compressed product cards so the public shelf wastes less vertical space.
+  - second follow-up correction after comparing with the approved image again: product cards now use a 40/60 image-to-copy split instead of a near half-and-half split, the trust strip uses icon-left/text-right cells like the reference, and the Spotlight/Vault media panels have more room so the page no longer feels cramped.
+- Verification: `npm exec -- eslint src/pages/ShopGalleryPage.tsx`, `npm run build`, and `git diff --check` passed.
+
+## 2026-05-05 Shop Gallery Public Viewer Remodel
+
+- Owner supplied a new approved public Shop Gallery reference: one clean shop signboard, a short trust/contact strip, three public share actions, one Spotlight advert, one Private Vault advert, and compact `Shop Diaries` product blocks.
+- Updated `src/pages/ShopGalleryPage.tsx` public route `/shop/:gmfnId` to follow that structure:
+  - deep navy/gold shop signboard with shop name, description, GSN id, and selected community/marketplace context.
+  - public strip now names public blocks, Vault-by-link, and owner contact without dumping owner tools into the buyer view.
+  - action row exposes `Repost shop`, `Share shop`, and `Copy link`.
+  - Spotlight and Private Vault are now compact adverts above the public shelf, not mixed management controls.
+  - `Shop Diaries` renders the public shelf as compact browse/share cards while preserving the shared video/audio behavior when a product is opened.
+- Backend/global shelf rule remains unchanged: one public product follows the owner into all communities where the owner belongs; Vault-private products remain excluded from the public shelf.
+- Verification: `npm run build` passed after the remodel.
+
+## 2026-05-05 Shop Gallery Global Shelf Rule
+
+- Owner decision: a product uploaded once into Shop Gallery must appear automatically across all communities where the shop owner is an active member.
+- Backend truth before this change: the shop was canonical by owner, but product reads were still partly origin-community/repost scoped.
+- Backend update:
+  - `gmfn_backend/app/api/routes/marketplace.py` now treats `community_visible` products as the owner's global public shelf for read paths.
+  - `/marketplace/products?clan_id=...` returns public products from shops whose owners belong to the selected community, even when the product was originally created from another owner community.
+  - `/marketplace/shops/by-gmfn/{gmfn_id}?clan_id=...` returns the owner's public shelf once the shop is visible in the selected community.
+  - `/marketplace/public/shop/{gmfn_id}` no longer narrows public products by `clan_id`; the link opens the same public shelf while still using `clan_id` only for community context and spotlight filtering.
+  - `vault_private` products remain excluded from normal Shop Gallery and ordinary marketplace distribution.
+- Test coverage added in `gmfn_backend/tests/test_marketplace_public_shop.py` for the cross-community public shelf and Vault exclusion rule.
+- Product wording: Shop Gallery = public to the owner's communities and shareable outside by public shop link. Vault = private by block-scoped Vault link.
+
 ## 2026-05-05 Marketplace Trust Scope Correction
 
 - Owner correction: Marketplace belongs to one selected community, so it must show **Trust** for that community, not cross-community CCI.

@@ -1214,15 +1214,15 @@ function safeDateTime(x: any): string {
 
 function marketplaceSurface(bg: string): string {
   if (bg === "#FFFFFF") {
-    return "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.13) 0%, rgba(11,99,209,0.00) 38%), radial-gradient(circle at 90% 8%, rgba(243,208,106,0.09) 0%, rgba(243,208,106,0.00) 30%), radial-gradient(circle at 16% 100%, rgba(34,82,120,0.06) 0%, rgba(34,82,120,0.00) 24%), linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(236,245,252,0.97) 54%, rgba(220,233,244,0.95) 100%)";
+    return "radial-gradient(circle at 10% 0%, rgba(33,163,101,0.10) 0%, rgba(33,163,101,0.00) 38%), radial-gradient(circle at 90% 8%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0.00) 30%), radial-gradient(circle at 16% 100%, rgba(31,115,224,0.07) 0%, rgba(31,115,224,0.00) 24%), linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 54%, var(--gsn-surface-blue) 100%)";
   }
 
   if (bg === "#FCFEFF") {
-    return "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.1) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 84% 8%, rgba(243,208,106,0.06) 0%, rgba(243,208,106,0.00) 24%), linear-gradient(180deg, rgba(252,254,255,0.99) 0%, rgba(234,243,251,0.95) 100%)";
+    return "radial-gradient(circle at 12% 0%, rgba(33,163,101,0.08) 0%, rgba(33,163,101,0.00) 34%), radial-gradient(circle at 84% 8%, rgba(214,170,69,0.08) 0%, rgba(214,170,69,0.00) 24%), linear-gradient(180deg, var(--gsn-off-white) 0%, var(--gsn-blue-50) 100%)";
   }
 
   if (bg === "#F8FBFF") {
-    return "radial-gradient(circle at 88% 6%, rgba(243,208,106,0.09) 0%, rgba(243,208,106,0.00) 28%), radial-gradient(circle at 14% 12%, rgba(11,99,209,0.08) 0%, rgba(11,99,209,0.00) 26%), linear-gradient(180deg, rgba(248,251,255,0.99) 0%, rgba(228,239,249,0.95) 100%)";
+    return "radial-gradient(circle at 88% 6%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0.00) 28%), radial-gradient(circle at 14% 12%, rgba(33,163,101,0.08) 0%, rgba(33,163,101,0.00) 26%), linear-gradient(180deg, var(--gsn-blue-50) 0%, var(--gsn-surface-blue) 100%)";
   }
 
   return bg;
@@ -1230,19 +1230,18 @@ function marketplaceSurface(bg: string): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
-    border: "1px solid rgba(16,37,59,0.2)",
+    borderRadius: "var(--radius-lg)",
+    border: "1px solid var(--gsn-border)",
     background: marketplaceSurface(bg),
     padding: 18,
-    boxShadow:
-      "0 22px 44px rgba(10,24,49,0.13), inset 0 1px 0 rgba(255,255,255,0.88)",
+    boxShadow: "var(--shadow-card)",
     backdropFilter: "blur(8px)",
     overflow: "hidden",
   };
 }
 
 function marketplaceProfileBackground(): string {
-  return "radial-gradient(circle at 8% 0%, rgba(11,99,209,0.22) 0%, rgba(11,99,209,0.00) 34%), radial-gradient(circle at 90% 10%, rgba(243,208,106,0.14) 0%, rgba(243,208,106,0.00) 30%), radial-gradient(circle at 84% 18%, rgba(34,82,120,0.11) 0%, rgba(34,82,120,0.00) 28%), linear-gradient(180deg, rgba(247,251,255,0.99) 0%, rgba(225,236,246,0.98) 54%, rgba(212,226,239,0.97) 100%)";
+  return "radial-gradient(circle at 8% 0%, rgba(33,163,101,0.16) 0%, rgba(33,163,101,0.00) 34%), radial-gradient(circle at 90% 10%, rgba(214,170,69,0.14) 0%, rgba(214,170,69,0.00) 30%), radial-gradient(circle at 84% 18%, rgba(31,115,224,0.10) 0%, rgba(31,115,224,0.00) 28%), linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 54%, var(--gsn-surface-blue) 100%)";
 }
 
 function marketplaceProfileCardStyle(isCompact: boolean): React.CSSProperties {
@@ -1267,12 +1266,12 @@ function marketplaceProfileScrimStyle(): React.CSSProperties {
 function marketplaceProfileStatStyle(): React.CSSProperties {
   return {
     borderRadius: 15,
-    border: "1px solid rgba(16,37,59,0.18)",
+    border: "1px solid var(--gsn-border)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(234,242,249,0.95) 100%)",
+      "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
     padding: 13,
     minHeight: 82,
-    boxShadow: "0 12px 24px rgba(10,24,49,0.08)",
+    boxShadow: "var(--shadow-soft)",
   };
 }
 
@@ -1468,13 +1467,12 @@ function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
     paddingBottom: isCompact ? 26 : 40,
     display: "grid",
     gap: isCompact ? 13 : 17,
-    borderRadius: isCompact ? 22 : 32,
-    border: "1px solid rgba(16,37,59,0.18)",
+    borderRadius: isCompact ? "var(--radius-lg)" : "var(--radius-xl)",
+    border: "1px solid var(--gsn-border-strong)",
     isolation: "isolate",
     background:
-      "radial-gradient(circle at 10% 0%, rgba(11,99,209,0.22) 0%, rgba(11,99,209,0.00) 32%), radial-gradient(circle at 88% 7%, rgba(244,114,182,0.1) 0%, rgba(244,114,182,0.00) 24%), radial-gradient(circle at 12% 48%, rgba(11,99,209,0.13) 0%, rgba(11,99,209,0.00) 30%), radial-gradient(circle at 90% 58%, rgba(243,208,106,0.1) 0%, rgba(243,208,106,0.00) 26%), radial-gradient(circle at 18% 92%, rgba(34,82,120,0.12) 0%, rgba(34,82,120,0.00) 24%), linear-gradient(180deg, #EEF5FC 0%, #DCE8F4 42%, #E8F1F9 100%)",
-    boxShadow:
-      "0 28px 60px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82)",
+      "radial-gradient(circle at 10% 0%, rgba(33,163,101,0.18) 0%, rgba(33,163,101,0.00) 32%), radial-gradient(circle at 90% 10%, rgba(214,170,69,0.13) 0%, rgba(214,170,69,0.00) 28%), radial-gradient(circle at 12% 48%, rgba(31,115,224,0.10) 0%, rgba(31,115,224,0.00) 30%), var(--page-bg)",
+    boxShadow: "var(--shadow-card)",
     overflow: "hidden",
   };
 }
@@ -1487,7 +1485,7 @@ function marketplaceAuraStyle(isCompact: boolean): React.CSSProperties {
     pointerEvents: "none",
     opacity: isCompact ? 0.62 : 0.56,
     background:
-      "radial-gradient(circle at 16% 14%, rgba(11,99,209,0.13) 0%, rgba(11,99,209,0.00) 30%), radial-gradient(circle at 76% 20%, rgba(244,114,182,0.07) 0%, rgba(244,114,182,0.00) 26%), radial-gradient(circle at 58% 8%, rgba(243,208,106,0.065) 0%, rgba(243,208,106,0.00) 22%), radial-gradient(circle at 18% 46%, rgba(11,99,209,0.09) 0%, rgba(11,99,209,0.00) 30%), radial-gradient(circle at 84% 62%, rgba(243,208,106,0.055) 0%, rgba(243,208,106,0.00) 26%), radial-gradient(circle at 22% 86%, rgba(244,114,182,0.05) 0%, rgba(244,114,182,0.00) 24%)",
+      "radial-gradient(circle at 16% 14%, rgba(33,163,101,0.12) 0%, rgba(33,163,101,0.00) 30%), radial-gradient(circle at 76% 20%, rgba(214,170,69,0.08) 0%, rgba(214,170,69,0.00) 26%), radial-gradient(circle at 58% 8%, rgba(31,115,224,0.07) 0%, rgba(31,115,224,0.00) 22%), radial-gradient(circle at 18% 46%, rgba(33,163,101,0.08) 0%, rgba(33,163,101,0.00) 30%), radial-gradient(circle at 84% 62%, rgba(214,170,69,0.06) 0%, rgba(214,170,69,0.00) 26%)",
     transform: "translate3d(0,0,0)",
     animation: "marketplaceAuraShift 22s ease-in-out infinite alternate",
     willChange: "transform, opacity",
@@ -1566,21 +1564,22 @@ function MarketplaceShell({
   isCompact: boolean;
 }) {
   return (
-    <div style={marketplaceShellStyle(isCompact)}>
-      <MarketplaceShellLayers isCompact={isCompact} />
-      <div style={marketplaceContentStyle(isCompact)}>{children}</div>
-    </div>
+    <main className="gsn-page theme-marketplace">
+      <div style={marketplaceShellStyle(isCompact)}>
+        <MarketplaceShellLayers isCompact={isCompact} />
+        <div style={marketplaceContentStyle(isCompact)}>{children}</div>
+      </div>
+    </main>
   );
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     borderRadius: 17,
-    border: "1px solid rgba(16,37,59,0.26)",
+    border: "1px solid var(--gsn-border)",
     background: marketplaceSurface(bg),
     padding: 15,
-    boxShadow:
-      "0 18px 32px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
+    boxShadow: "var(--shadow-soft)",
     backdropFilter: "blur(6px)",
   };
 }
@@ -1588,11 +1587,10 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 15,
-    border: "1px solid rgba(16,37,59,0.26)",
+    border: "1px solid var(--gsn-border)",
     background: marketplaceSurface(bg),
     padding: 13,
-    boxShadow:
-      "0 16px 30px rgba(10,24,49,0.1), inset 0 1px 0 rgba(255,255,255,0.86)",
+    boxShadow: "var(--shadow-soft)",
     backdropFilter: "blur(5px)",
   };
 }
@@ -1678,11 +1676,11 @@ function actionBtn(
       minHeight: 44,
       padding: "10px 15px",
       borderRadius: 14,
-      border: "1px solid rgba(16,37,59,0.34)",
-    background: disabled
-        ? "#E2E8F0"
-        : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(219,232,245,0.97) 54%, rgba(191,209,224,0.96) 100%)",
-      color: disabled ? "#64748B" : "#0D253B",
+      border: "1px solid rgba(255,255,255,0.18)",
+      background: disabled
+        ? "linear-gradient(180deg, var(--gsn-border) 0%, var(--gsn-border-strong) 100%)"
+        : "linear-gradient(180deg, var(--primary-accent) 0%, #0b5f43 100%)",
+      color: disabled ? "var(--gsn-text-muted)" : "var(--gsn-text-inverse)",
       fontWeight: 900,
       fontSize: 13,
       lineHeight: 1.15,
@@ -1692,7 +1690,7 @@ function actionBtn(
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 14px 24px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(16,37,59,0.08)",
+        "0 14px 24px rgba(22,130,84,0.22), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -2px 0 rgba(3,16,31,0.16)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
@@ -1717,10 +1715,10 @@ function actionBtn(
       minHeight: 40,
       padding: "8px 13px",
       borderRadius: 13,
-      border: "1px solid rgba(16,37,59,0.22)",
+      border: "1px solid var(--gsn-border)",
       background:
-        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(231,240,247,0.96) 58%, rgba(212,224,236,0.95) 100%)",
-      color: disabled ? "#94A3B8" : "#213D56",
+        "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 58%, var(--gsn-surface-blue) 100%)",
+      color: disabled ? "var(--gsn-text-muted)" : "var(--gsn-text-soft)",
       fontWeight: 900,
       fontSize: 12,
       lineHeight: 1.15,
@@ -1730,7 +1728,7 @@ function actionBtn(
       whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "0 12px 20px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.84), inset 0 -2px 0 rgba(16,37,59,0.06)",
+        "var(--shadow-soft)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
@@ -1754,10 +1752,10 @@ function actionBtn(
     minHeight: 44,
     padding: "10px 15px",
     borderRadius: 14,
-    border: "1px solid rgba(16,37,59,0.26)",
+    border: "1px solid var(--gsn-border)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(233,241,248,0.96) 56%, rgba(209,222,235,0.95) 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
+      "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 56%, var(--gsn-surface-blue) 100%)",
+    color: disabled ? "var(--gsn-text-muted)" : "var(--gsn-text-main)",
     fontWeight: 900,
     fontSize: 13,
     lineHeight: 1.15,
@@ -1767,7 +1765,7 @@ function actionBtn(
     whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
     boxShadow:
-      "0 12px 22px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.84), inset 0 -2px 0 rgba(16,37,59,0.06)",
+      "var(--shadow-soft)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -1975,13 +1973,11 @@ function marketplaceOsSectionStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
   return {
     borderRadius: isCompact ? 22 : 26,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background:
-      "radial-gradient(circle at 15% 0%, rgba(28,94,181,0.58) 0%, rgba(28,94,181,0.00) 34%), radial-gradient(circle at 85% 20%, rgba(244,198,80,0.2) 0%, rgba(244,198,80,0.00) 28%), linear-gradient(145deg, #06172A 0%, #08264B 54%, #041323 100%)",
+    border: "1px solid var(--hero-border)",
+    background: "var(--hero-bg)",
     padding: isCompact ? 18 : 24,
-    color: "#F8FBFF",
-    boxShadow:
-      "0 24px 42px rgba(2,8,20,0.28), inset 0 1px 0 rgba(255,255,255,0.18)",
+    color: "var(--gsn-text-inverse)",
+    boxShadow: "var(--shadow-heavy)",
     overflow: "hidden",
   };
 }
@@ -1991,17 +1987,16 @@ function marketplaceOsTileStyle(): React.CSSProperties {
     width: "100%",
     minHeight: 154,
     borderRadius: 20,
-    border: "1px solid rgba(16,37,59,0.12)",
+    border: "1px solid var(--gsn-border)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(244,248,252,0.98) 100%)",
+      "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
     padding: 14,
     display: "grid",
     gap: 9,
     alignContent: "start",
-    color: "#0B1F33",
+    color: "var(--gsn-text-main)",
     textAlign: "center",
-    boxShadow:
-      "0 16px 30px rgba(10,24,49,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+    boxShadow: "var(--shadow-soft)",
     cursor: "pointer",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
@@ -2034,18 +2029,17 @@ function marketplaceOsRowStyle(): React.CSSProperties {
     width: "100%",
     minHeight: 78,
     borderRadius: 16,
-    border: "1px solid rgba(16,37,59,0.11)",
+    border: "1px solid var(--gsn-border)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(244,248,252,0.98) 100%)",
+      "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
     padding: 12,
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr) auto",
     gap: 12,
     alignItems: "center",
-    color: "#0B1F33",
+    color: "var(--gsn-text-main)",
     textAlign: "left",
-    boxShadow:
-      "0 14px 24px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+    boxShadow: "var(--shadow-soft)",
     cursor: "pointer",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",

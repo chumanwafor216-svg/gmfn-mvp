@@ -874,18 +874,6 @@ def get_marketplace_shop_by_gmfn_id(
         for p in product_rows
         if _safe_str(getattr(p, "visibility_mode", None), VISIBILITY_COMMUNITY)
         == VISIBILITY_COMMUNITY
-        and (
-            int(p.clan_id) == int(resolved_clan_id)
-            or (
-                db.query(MarketplaceProductRepost)
-                .filter(
-                    MarketplaceProductRepost.original_product_id == int(p.id),
-                    MarketplaceProductRepost.target_clan_id == int(resolved_clan_id),
-                )
-                .first()
-                is not None
-            )
-        )
     ]
 
     return {
@@ -924,10 +912,6 @@ def get_public_marketplace_shop_by_gmfn_id(
         .filter(MarketplaceProduct.is_active.is_(True))
         .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
     )
-    if requested_clan_id > 0:
-        product_query = product_query.filter(
-            MarketplaceProduct.clan_id == int(requested_clan_id)
-        )
 
     product_rows = (
         product_query.order_by(
@@ -1288,41 +1272,17 @@ def list_marketplace_products(
             "include_private_manage": True,
         }
 
-    direct_products = (
-        db.query(MarketplaceProduct)
-        .filter(MarketplaceProduct.clan_id == resolved_clan_id)
-        .all()
+    q = db.query(MarketplaceProduct).filter(
+        MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY
     )
 
-    reposted_products: list[MarketplaceProduct] = []
-    if include_reposted:
-        repost_rows = (
-            db.query(MarketplaceProductRepost)
-            .filter(MarketplaceProductRepost.target_clan_id == resolved_clan_id)
-            .order_by(
-                MarketplaceProductRepost.created_at.desc(),
-                MarketplaceProductRepost.id.desc(),
-            )
-            .all()
-        )
-        repost_product_ids = [int(x.original_product_id) for x in repost_rows]
-        if repost_product_ids:
-            reposted_products = (
-                db.query(MarketplaceProduct)
-                .filter(MarketplaceProduct.id.in_(repost_product_ids))
-                .all()
-            )
-
-    merged: Dict[int, MarketplaceProduct] = {}
-    for p in direct_products:
-        merged[int(p.id)] = p
-    for p in reposted_products:
-        merged[int(p.id)] = p
-
-    items = list(merged.values())
+    if only_active:
+        q = q.filter(MarketplaceProduct.is_active.is_(True))
 
     if shop_id and int(shop_id) > 0:
-        items = [x for x in items if int(x.shop_id) == int(shop_id)]
+        q = q.filter(MarketplaceProduct.shop_id == int(shop_id))
+
+    items = q.all()
 
     visible_items: list[MarketplaceProduct] = []
     for item in items:
@@ -1339,9 +1299,6 @@ def list_marketplace_products(
         if not _shop_is_visible_in_clan(db, shop=shop, clan_id=resolved_clan_id):
             continue
         visible_items.append(item)
-
-    if only_active:
-        visible_items = [x for x in visible_items if bool(x.is_active)]
 
     visible_items.sort(
         key=lambda x: (

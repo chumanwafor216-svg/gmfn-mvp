@@ -4,6 +4,8 @@ import { BrowserRouter } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 
 import App from "./App";
+import "./styles/tokens.css";
+import "./styles/public-shop.css";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

@@ -1,0 +1,416 @@
+:root {
+  /* =========================
+     GSN / PRESENT BRAND CORE
+     ========================= */
+
+  --gsn-navy-950: #03101f;
+  --gsn-navy-900: #061827;
+  --gsn-navy-850: #08213a;
+  --gsn-navy-800: #0a2a48;
+  --gsn-navy-700: #0e3a63;
+
+  --gsn-blue-700: #0b4eb3;
+  --gsn-blue-600: #135fd1;
+  --gsn-blue-500: #1f73e0;
+  --gsn-blue-100: #eaf3ff;
+  --gsn-blue-50: #f4f8ff;
+
+  --gsn-gold-700: #8f6b19;
+  --gsn-gold-600: #b98925;
+  --gsn-gold-500: #d6aa45;
+  --gsn-gold-300: #f2cf77;
+  --gsn-gold-100: #fff4cc;
+
+  --gsn-white: #ffffff;
+  --gsn-off-white: #f9fbff;
+  --gsn-surface: #f2f7fc;
+  --gsn-surface-blue: #eaf2fa;
+  --gsn-border: #d8e3ee;
+  --gsn-border-strong: #b8c9dc;
+
+  --gsn-text-main: #07172c;
+  --gsn-text-soft: #46566d;
+  --gsn-text-muted: #6f7f92;
+  --gsn-text-inverse: #ffffff;
+
+  --gsn-success: #21a365;
+  --gsn-success-soft: #e9f8ef;
+
+  --gsn-danger: #c83a3a;
+  --gsn-danger-soft: #fff0f0;
+
+  --gsn-warning: #d99a1e;
+  --gsn-warning-soft: #fff6db;
+
+  /* =========================
+     SHADOWS
+     ========================= */
+
+  --shadow-soft: 0 8px 24px rgba(3, 16, 31, 0.08);
+  --shadow-card: 0 12px 32px rgba(3, 16, 31, 0.12);
+  --shadow-heavy: 0 24px 60px rgba(3, 16, 31, 0.25);
+
+  /* =========================
+     RADIUS
+     ========================= */
+
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-2xl: 42px;
+  --radius-pill: 999px;
+
+  /* =========================
+     SPACING
+     ========================= */
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+
+  /* =========================
+     TYPOGRAPHY
+     ========================= */
+
+  --font-main: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 26px;
+  --text-2xl: 34px;
+  --text-3xl: 44px;
+}
+
+/* =========================================================
+   PAGE / DOMAIN THEMES
+   ========================================================= */
+
+.theme-app {
+  --page-bg:
+    linear-gradient(180deg, #f5f8fc 0%, #eaf2fa 100%);
+
+  --hero-bg:
+    radial-gradient(circle at top right, rgba(242, 207, 119, 0.18), transparent 30%),
+    linear-gradient(135deg, #061827 0%, #0a2a48 60%, #03101f 100%);
+
+  --hero-border: rgba(242, 207, 119, 0.35);
+  --primary-accent: var(--gsn-blue-600);
+  --secondary-accent: var(--gsn-gold-500);
+}
+
+.theme-entry {
+  --page-bg:
+    radial-gradient(circle at top, rgba(31, 115, 224, 0.18), transparent 34%),
+    linear-gradient(180deg, #03101f 0%, #061827 60%, #020912 100%);
+
+  --hero-bg:
+    radial-gradient(circle at center, rgba(242, 207, 119, 0.20), transparent 45%),
+    linear-gradient(180deg, #08213a 0%, #03101f 100%);
+
+  --hero-border: rgba(242, 207, 119, 0.65);
+  --primary-accent: var(--gsn-gold-500);
+  --secondary-accent: var(--gsn-blue-500);
+  --page-text: var(--gsn-text-inverse);
+}
+
+.theme-community {
+  --page-bg:
+    linear-gradient(180deg, #f7fbff 0%, #eaf2fa 100%);
+
+  --hero-bg:
+    radial-gradient(circle at top right, rgba(242, 207, 119, 0.18), transparent 35%),
+    linear-gradient(135deg, #061827 0%, #0b2d4a 70%, #03101f 100%);
+
+  --hero-border: rgba(214, 170, 69, 0.45);
+  --primary-accent: var(--gsn-blue-600);
+  --secondary-accent: var(--gsn-gold-500);
+}
+
+.theme-shop-control {
+  --page-bg:
+    linear-gradient(180deg, #f8fbff 0%, #eaf2fa 100%);
+
+  --hero-bg:
+    radial-gradient(circle at top right, rgba(214, 170, 69, 0.18), transparent 35%),
+    linear-gradient(135deg, #03101f 0%, #0a2a48 68%, #061827 100%);
+
+  --hero-border: rgba(242, 207, 119, 0.50);
+  --primary-accent: var(--gsn-blue-600);
+  --secondary-accent: var(--gsn-gold-500);
+}
+
+.theme-public-shop {
+  --page-bg:
+    radial-gradient(circle at top, rgba(31, 115, 224, 0.18), transparent 34%),
+    linear-gradient(180deg, #03101f 0%, #061827 58%, #02111f 100%);
+
+  --hero-bg:
+    radial-gradient(circle at top right, rgba(242, 207, 119, 0.22), transparent 35%),
+    linear-gradient(135deg, #003b8f 0%, #061827 65%, #03101f 100%);
+
+  --hero-border: rgba(242, 207, 119, 0.78);
+  --primary-accent: var(--gsn-blue-600);
+  --secondary-accent: var(--gsn-gold-500);
+  --page-text: var(--gsn-text-inverse);
+}
+
+.theme-vault {
+  --page-bg:
+    linear-gradient(180deg, #f8fbff 0%, #e9f1fa 100%);
+
+  --hero-bg:
+    radial-gradient(circle at top right, rgba(31, 115, 224, 0.20), transparent 35%),
+    linear-gradient(135deg, #03101f 0%, #0b2d4a 68%, #0a1b30 100%);
+
+  --hero-border: rgba(31, 115, 224, 0.45);
+  --primary-accent: var(--gsn-blue-600);
+  --secondary-accent: var(--gsn-gold-500);
+}
+
+.theme-marketplace {
+  --page-bg:
+    linear-gradient(180deg, #f8fbff 0%, #eef7f2 100%);
+
+  --hero-bg:
+    radial-gradient(circle at top right, rgba(33, 163, 101, 0.20), transparent 35%),
+    linear-gradient(135deg, #061827 0%, #083c34 70%, #03101f 100%);
+
+  --hero-border: rgba(33, 163, 101, 0.40);
+  --primary-accent: #168254;
+  --secondary-accent: var(--gsn-gold-500);
+}
+
+/* =========================================================
+   GLOBAL PAGE SHELL
+   ========================================================= */
+
+.gsn-page {
+  min-height: 100vh;
+  background: var(--page-bg);
+  font-family: var(--font-main);
+  color: var(--gsn-text-main);
+}
+
+.gsn-page-dark {
+  color: var(--gsn-text-inverse);
+}
+
+.gsn-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(216, 227, 238, 0.85);
+  padding: 14px 18px;
+}
+
+.gsn-content {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  padding: 18px;
+}
+
+/* =========================================================
+   HERO / SIGNBOARD CARDS
+   ========================================================= */
+
+.gsn-hero {
+  background: var(--hero-bg);
+  border: 1px solid var(--hero-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  color: var(--gsn-text-inverse);
+  padding: 28px;
+  overflow: hidden;
+}
+
+.gsn-hero-title {
+  font-size: clamp(32px, 6vw, 54px);
+  line-height: 0.98;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.gsn-hero-label {
+  color: var(--gsn-gold-300);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-weight: 800;
+  font-size: var(--text-sm);
+  margin-bottom: 10px;
+}
+
+.gsn-hero-subtitle {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: var(--text-md);
+  line-height: 1.45;
+  max-width: 560px;
+}
+
+/* =========================================================
+   CARDS
+   ========================================================= */
+
+.gsn-card {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--gsn-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+}
+
+.gsn-card-soft {
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  border: 1px solid var(--gsn-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+}
+
+.gsn-dark-card {
+  background: linear-gradient(180deg, #061827 0%, #0a2a48 100%);
+  border: 1px solid rgba(242, 207, 119, 0.35);
+  border-radius: var(--radius-lg);
+  color: var(--gsn-text-inverse);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.gsn-button {
+  min-height: 54px;
+  border: none;
+  border-radius: var(--radius-pill);
+  padding: 0 24px;
+  font-weight: 800;
+  font-size: var(--text-md);
+  cursor: pointer;
+}
+
+.gsn-button-primary {
+  background: linear-gradient(180deg, var(--gsn-blue-500) 0%, var(--gsn-blue-700) 100%);
+  color: white;
+  box-shadow: 0 8px 18px rgba(19, 95, 209, 0.26);
+}
+
+.gsn-button-gold {
+  background: linear-gradient(180deg, #ffe28a 0%, var(--gsn-gold-500) 65%, #b78321 100%);
+  color: #07172c;
+  box-shadow: 0 8px 18px rgba(214, 170, 69, 0.35);
+}
+
+.gsn-button-light {
+  background: linear-gradient(180deg, #ffffff 0%, #f2f6fb 100%);
+  color: var(--gsn-text-main);
+  border: 1px solid var(--gsn-border);
+  box-shadow: var(--shadow-soft);
+}
+
+/* =========================================================
+   PILLS / STATUS
+   ========================================================= */
+
+.gsn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-pill);
+  font-weight: 800;
+  font-size: var(--text-sm);
+  border: 1px solid var(--gsn-border);
+  background: #ffffff;
+  color: var(--gsn-text-main);
+}
+
+.gsn-pill-gold {
+  background: linear-gradient(180deg, #fff8d8 0%, #f2cf77 100%);
+  color: #725112;
+  border-color: rgba(214, 170, 69, 0.45);
+}
+
+.gsn-pill-blue {
+  background: #eaf3ff;
+  color: var(--gsn-blue-700);
+  border-color: rgba(31, 115, 224, 0.22);
+}
+
+.gsn-pill-success {
+  background: var(--gsn-success-soft);
+  color: var(--gsn-success);
+  border-color: rgba(33, 163, 101, 0.25);
+}
+
+.gsn-pill-danger {
+  background: var(--gsn-danger-soft);
+  color: var(--gsn-danger);
+  border-color: rgba(200, 58, 58, 0.25);
+}
+
+/* =========================================================
+   FORM FIELDS
+   ========================================================= */
+
+.gsn-input {
+  width: 100%;
+  min-height: 54px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--gsn-border);
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+  color: var(--gsn-text-main);
+  padding: 0 16px;
+  font-size: var(--text-md);
+  outline: none;
+}
+
+.gsn-input:focus {
+  border-color: var(--gsn-blue-500);
+  box-shadow: 0 0 0 4px rgba(31, 115, 224, 0.12);
+}
+
+/* =========================================================
+   GRID HELPERS
+   ========================================================= */
+
+.gsn-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.gsn-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.gsn-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 720px) {
+  .gsn-grid-3,
+  .gsn-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gsn-hero {
+    padding: 22px;
+  }
+}

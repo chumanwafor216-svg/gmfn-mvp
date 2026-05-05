@@ -212,6 +212,101 @@ def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_pat
     assert body["primary_broadcast"]["image_url"] is None
 
 
+def test_shop_gallery_products_follow_owner_across_membership_communities(
+    client,
+    monkeypatch,
+    override_current_user_user,
+    tmp_path,
+):
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
+    _ensure_marketplace_tables()
+
+    product_image_url = _write_upload(tmp_path, "marketplace/images/global-product.jpg")
+    vault_image_url = _write_upload(tmp_path, "marketplace/images/private-product.jpg")
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'global-shop@example.com', 'hashed', 'Global Shop Owner', 'user', 'GMFN-U-GLOBALSHOP'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Origin clan', 'Origin Marketplace', 'GLOBALSHOP1'),
+                    (2, 'Second clan', 'Second Marketplace', 'GLOBALSHOP2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'GLOBAL OWNER SHOP', 'One owner shelf', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active
+                ) VALUES
+                    (
+                        1, 1, 1, 1, 'Origin Public Product', 'Visible in every owner community',
+                        '1000', 'NGN', :product_image_url, 'community_visible', 1
+                    ),
+                    (
+                        2, 1, 1, 1, 'Private Vault Product', 'Must stay private',
+                        '9000', 'NGN', :vault_image_url, 'vault_private', 1
+                    )
+                """
+            ),
+            {
+                "product_image_url": product_image_url,
+                "vault_image_url": vault_image_url,
+            },
+        )
+
+    community_feed = client.get("/marketplace/products?clan_id=2")
+    assert community_feed.status_code == 200, community_feed.text
+    community_names = [item["name"] for item in community_feed.json()["items"]]
+    assert "Origin Public Product" in community_names
+    assert "Private Vault Product" not in community_names
+
+    owner_shop = client.get("/marketplace/shops/by-gmfn/GMFN-U-GLOBALSHOP?clan_id=2")
+    assert owner_shop.status_code == 200, owner_shop.text
+    owner_shop_names = [item["name"] for item in owner_shop.json()["products"]]
+    assert owner_shop_names == ["Origin Public Product"]
+
+    public_shop = client.get("/marketplace/public/shop/GMFN-U-GLOBALSHOP?clan_id=2")
+    assert public_shop.status_code == 200, public_shop.text
+    public_names = [item["name"] for item in public_shop.json()["products"]]
+    assert public_names == ["Origin Public Product"]
+
+
 def test_shop_spotlight_publish_targets_only_the_shop_community(
     client,
     override_current_user_user,

@@ -1,0 +1,235 @@
+.public-shop-shell {
+  min-height: 100vh;
+  background: var(--page-bg);
+  color: white;
+  font-family: var(--font-main);
+}
+
+.public-shop-inner {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: 20px 18px 46px;
+}
+
+.public-shop-stack {
+  display: grid;
+  gap: 18px;
+}
+
+.public-shop-signboard {
+  background: var(--hero-bg);
+  border: 2px solid var(--hero-border);
+  border-radius: 34px;
+  padding: 30px 24px;
+  text-align: center;
+  box-shadow: var(--shadow-heavy);
+  overflow: hidden;
+}
+
+.public-shop-title {
+  color: white;
+  font-size: clamp(34px, 7vw, 60px);
+  line-height: 0.98;
+  font-weight: 950;
+  letter-spacing: 0;
+  margin: 12px 0;
+  text-transform: uppercase;
+}
+
+.public-shop-note {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 18px;
+  line-height: 1.45;
+}
+
+.public-shop-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.public-shop-meta-pill {
+  border-radius: var(--radius-pill);
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: white;
+  font-weight: 800;
+}
+
+.public-shop-status-strip {
+  margin-top: 0;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--gsn-text-main);
+  border-radius: 24px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.public-shop-status-item {
+  min-width: 0;
+  padding: 14px;
+  text-align: center;
+  border-right: 1px solid var(--gsn-border);
+}
+
+.public-shop-status-item:last-child {
+  border-right: none;
+}
+
+.public-shop-action-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.public-shop-section {
+  border-radius: 28px;
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.public-shop-spotlight {
+  background:
+    radial-gradient(circle at top right, rgba(242, 207, 119, 0.22), transparent 35%),
+    linear-gradient(135deg, var(--gsn-blue-700) 0%, var(--gsn-navy-900) 72%);
+  border: 1px solid rgba(242, 207, 119, 0.55);
+}
+
+.public-shop-vault-ad {
+  background:
+    radial-gradient(circle at right, rgba(242, 207, 119, 0.30), transparent 38%),
+    linear-gradient(135deg, #fffdf6 0%, #fff4d6 100%);
+  color: var(--gsn-text-main);
+  border: 1px solid rgba(214, 170, 69, 0.40);
+}
+
+.shop-diaries-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: white;
+}
+
+.shop-diaries-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.shop-diary-card {
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid var(--gsn-border);
+  border-radius: 16px;
+  overflow: hidden;
+  color: var(--gsn-text-main);
+}
+
+.shop-diary-card img {
+  width: 100%;
+  aspect-ratio: 1.15 / 1;
+  object-fit: cover;
+  background: #dce7f3;
+}
+
+.shop-diary-body {
+  padding: 12px;
+}
+
+.shop-diary-title {
+  font-weight: 900;
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+
+.shop-diary-subtitle {
+  font-size: 13px;
+  color: var(--gsn-text-muted);
+  margin: 0 0 8px;
+}
+
+.shop-diary-price {
+  color: var(--gsn-blue-700);
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.shop-diary-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.shop-diary-actions button {
+  flex: 1;
+  min-height: 34px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--gsn-border);
+  background: #fff;
+  font-weight: 800;
+  color: var(--gsn-blue-700);
+}
+
+@media (max-width: 520px) {
+  .public-shop-inner {
+    padding: 12px 10px 42px;
+  }
+
+  .public-shop-stack {
+    gap: 12px;
+  }
+
+  .public-shop-signboard {
+    border-radius: 22px;
+    padding: 14px 13px 13px;
+  }
+
+  .public-shop-title {
+    font-size: clamp(24px, 7.6vw, 34px);
+  }
+
+  .public-shop-note {
+    font-size: 14px;
+  }
+
+  .public-shop-meta-row {
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .public-shop-meta-pill {
+    padding: 6px 9px;
+    font-size: 12px;
+  }
+
+  .public-shop-status-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-radius: 18px;
+  }
+
+  .public-shop-status-item {
+    padding: 10px 8px;
+  }
+
+  .public-shop-action-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .public-shop-section {
+    border-radius: 22px;
+    padding: 14px;
+  }
+
+  .shop-diaries-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+}
