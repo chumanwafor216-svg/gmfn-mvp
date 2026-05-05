@@ -9,6 +9,16 @@
   - Removed the lock/key symbol from that Community Home entry and replaced it with a neutral `V` marker to avoid culturally ambiguous lock imagery.
 - Truth: the named UX docs in `AGENTS.md` (`docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`) are not present in this frontend repo, so this polish used the available Vault/control freeze docs plus the existing Community Home structure.
 
+## 2026-05-05 Vault Visual Quality Reassessment
+
+- Owner feedback: the Vault page still looked too much like text on paper, the background felt faint, and some dark-hero text/pills lacked enough contrast.
+- Updated `src/pages/VaultControlPage.tsx` without changing the frozen Vault business flow:
+  - added a stronger institutional page wash, raised light panels, and darker blue/gold hero treatment.
+  - replaced hero badges with dark-safe Vault pills so text remains readable on the deep navy background.
+  - strengthened the private Vault visual frame, hero title contrast, and supporting text contrast.
+  - upgraded activation, payment, block-room, link, editor, and reminder sections from plain white blocks to raised institutional panels.
+- Frozen behavior remains unchanged: `/app/vault-control`, quote-gated payment, bank-transfer instruction, six fixed private positions, selected-block offer editor, and block-scoped link controls remain the same.
+
 ## 2026-05-04 Entry Recovery Trap Repair
 
 - Tester complaint: a user could begin Create Community, leave before finishing/activation, then later be blocked by saved details while sign-in still said the account was not active.

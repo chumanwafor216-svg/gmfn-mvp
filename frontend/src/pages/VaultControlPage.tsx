@@ -537,6 +537,72 @@ function pageCard(bg?: string): React.CSSProperties {
   };
 }
 
+function vaultPageShell(isCompact: boolean): React.CSSProperties {
+  return {
+    maxWidth: 1120,
+    margin: "0 auto",
+    display: "grid",
+    gap: isCompact ? 14 : 18,
+    padding: isCompact ? "0 0 36px" : "4px 0 42px",
+    background:
+      "radial-gradient(circle at 7% 0%, rgba(201,154,39,0.16), transparent 28%), radial-gradient(circle at 92% 6%, rgba(37,83,126,0.18), transparent 28%)",
+    borderRadius: 28,
+  };
+}
+
+function vaultLightPanel(): React.CSSProperties {
+  return {
+    ...pageCard(
+      "linear-gradient(145deg, rgba(255,255,255,0.998) 0%, rgba(244,249,253,0.992) 54%, rgba(232,241,249,0.985) 100%)"
+    ),
+    border: "1px solid rgba(23,58,92,0.16)",
+    boxShadow:
+      "0 24px 56px rgba(7,20,36,0.105), 0 5px 14px rgba(7,20,36,0.055), inset 0 1px 0 rgba(255,255,255,0.92)",
+  };
+}
+
+function vaultHeroBadge(primary = false): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 34,
+    borderRadius: 999,
+    padding: "7px 12px",
+    border: primary
+      ? "1px solid rgba(243,208,106,0.56)"
+      : "1px solid rgba(226,236,247,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, rgba(243,208,106,0.22), rgba(201,154,39,0.11))"
+      : "linear-gradient(180deg, rgba(255,255,255,0.13), rgba(255,255,255,0.055))",
+    color: primary ? "#FFE69A" : "#F4F8FC",
+    fontSize: 12,
+    fontWeight: 950,
+    lineHeight: 1.15,
+    boxShadow: primary
+      ? "0 10px 22px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.12)"
+      : "inset 0 1px 0 rgba(255,255,255,0.10)",
+  };
+}
+
+function vaultGlassFrame(): React.CSSProperties {
+  return {
+    minHeight: 230,
+    borderRadius: 24,
+    overflow: "hidden",
+    background:
+      "linear-gradient(145deg, rgba(51,86,125,0.74) 0%, rgba(14,37,65,0.96) 56%, rgba(5,17,31,0.99) 100%)",
+    border: "1px solid rgba(243,208,106,0.24)",
+    position: "relative",
+    display: "grid",
+    placeItems: "center",
+    padding: 20,
+    boxSizing: "border-box",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -18px 34px rgba(0,0,0,0.24), 0 20px 42px rgba(0,0,0,0.22)",
+  };
+}
+
 function innerCard(bg?: string): React.CSSProperties {
   return brandInnerCard(bg);
 }
@@ -1092,7 +1158,8 @@ export default function VaultControlPage() {
     panel: VaultPanelKey,
     step: number,
     title: string,
-    summary: string
+    summary: string,
+    dark = false
   ) {
     const open = openVaultPanels[panel];
     return (
@@ -1117,10 +1184,42 @@ export default function VaultControlPage() {
         }}
       >
         <span style={{ minWidth: 0 }}>
-          <span style={stepTitle()}>{step > 0 ? <span style={stepBadge()}>{step}</span> : null}{title}</span>
-          <span style={{ display: "block", marginTop: 8, ...helperText(), fontWeight: 800 }}>{summary}</span>
+          <span
+            style={{
+              ...stepTitle(),
+              color: dark ? "#FFFFFF" : gmfnBrand.colors.accent,
+            }}
+          >
+            {step > 0 ? <span style={stepBadge()}>{step}</span> : null}{title}
+          </span>
+          <span
+            style={{
+              display: "block",
+              marginTop: 8,
+              ...helperText(),
+              color: dark ? "rgba(226,236,247,0.84)" : gmfnBrand.colors.muted,
+              fontWeight: 800,
+            }}
+          >
+            {summary}
+          </span>
         </span>
-        <span style={{ ...brandActionButton("soft"), width: 116, minHeight: 44, padding: "10px 12px" }}>
+        <span
+          style={{
+            ...brandActionButton("soft"),
+            width: 116,
+            minHeight: 44,
+            padding: "10px 12px",
+            ...(dark
+              ? {
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.07))",
+                  border: "1px solid rgba(243,208,106,0.28)",
+                  color: "#F8FBFF",
+                }
+              : {}),
+          }}
+        >
           {open ? "Collapse" : "Open"}
         </span>
       </button>
@@ -1497,38 +1596,55 @@ export default function VaultControlPage() {
   }
 
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gap: 16, paddingBottom: 36 }}>
+    <div style={vaultPageShell(isCompact)}>
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section style={{ ...pageCard(gmfnBrand.gradients.hero), padding: isCompact ? 20 : 26 }}>
+      <section
+        style={{
+          ...pageCard(
+            "radial-gradient(circle at 83% 12%, rgba(74,121,165,0.28), transparent 30%), linear-gradient(150deg, #06111F 0%, #082039 45%, #123E65 100%)"
+          ),
+          padding: isCompact ? 22 : 30,
+          border: "1px solid rgba(243,208,106,0.22)",
+          boxShadow:
+            "0 30px 70px rgba(2,12,27,0.32), inset 0 1px 0 rgba(255,255,255,0.08)",
+        }}
+      >
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 330px", gap: 28, alignItems: "center" }}>
           <div>
             <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold, fontSize: 14 }}>VAULT CONTROL</div>
-            <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: isCompact ? 28 : 34, lineHeight: 1.08, fontWeight: 950, textTransform: "uppercase" }}>
+            <h1 style={{ margin: "18px 0 0", color: "#FFFFFF", fontSize: isCompact ? 30 : 38, lineHeight: 1.04, fontWeight: 950, textTransform: "uppercase", textShadow: "0 2px 18px rgba(0,0,0,0.28)" }}>
               {shopName}
             </h1>
-            <div style={{ marginTop: 12, color: gmfnBrand.colors.darkMuted, fontSize: 16, lineHeight: 1.55, maxWidth: 560 }}>
+            <div style={{ marginTop: 14, color: "#E8F1FA", fontSize: isCompact ? 16 : 18, lineHeight: 1.55, maxWidth: 600, fontWeight: 760 }}>
               Same shop signboard. Private paid blocks. Access only through a link you create.
             </div>
             <div style={{ marginTop: 22, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Vault</span>
-              <span style={badge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} paid slots</span>
-              <span style={badge(false)}>One block at a time</span>
+              <span style={vaultHeroBadge(true)}>Vault</span>
+              <span style={vaultHeroBadge(confirmedVaultSlots > 0)}>{confirmedVaultSlots} / {VAULT_SLOT_LIMIT} paid slots</span>
+              <span style={vaultHeroBadge(false)}>One block at a time</span>
             </div>
           </div>
-          <div style={{ minHeight: 230, borderRadius: 22, overflow: "hidden", background: "linear-gradient(145deg, rgba(88,123,166,0.50) 0%, rgba(13,32,56,0.94) 62%, rgba(5,17,31,0.98) 100%)", border: "1px solid rgba(255,255,255,0.16)", position: "relative", display: "grid", placeItems: "center", padding: 20, boxSizing: "border-box" }}>
+          <div style={vaultGlassFrame()}>
             <VaultDoorVisual />
             <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(circle at 50% 20%, rgba(255,255,255,0.14), transparent 34%), linear-gradient(180deg, transparent 0%, rgba(8,27,45,0.52) 100%)" }} />
             <div style={{ position: "absolute", left: 22, right: 22, bottom: 22, color: "#FFFFFF", fontWeight: 950, fontSize: 24, textAlign: "center" }}>
-              <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 24 }}>Private Vault</div>
+              <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 24, textShadow: "0 2px 14px rgba(0,0,0,0.42)" }}>Private Vault</div>
             </div>
           </div>
         </div>
       </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), padding: 0, overflow: "hidden" }}>
+      <section style={{ ...vaultLightPanel(), padding: 0, overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr" }}>
-          <div style={{ padding: 22, borderRight: isCompact ? "none" : `1px solid ${gmfnBrand.colors.line}` }}>
+          <div
+            style={{
+              padding: isCompact ? 20 : 24,
+              borderRight: isCompact ? "none" : "1px solid rgba(23,58,92,0.12)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.72), rgba(246,250,254,0.84))",
+            }}
+          >
             <div style={stepTitle()}><span style={stepBadge()}>1</span>Activate private blocks</div>
             <div style={{ marginTop: 12, color: gmfnBrand.colors.inkSoft, fontSize: 16, lineHeight: 1.55 }}>
               Choose the number of Vault blocks you want. Paid blocks are private positions.
@@ -1559,7 +1675,13 @@ export default function VaultControlPage() {
               })}
             </div>
           </div>
-          <div style={{ padding: 22 }}>
+          <div
+            style={{
+              padding: isCompact ? 20 : 24,
+              background:
+                "radial-gradient(circle at 90% 0%, rgba(12,79,168,0.09), transparent 32%), linear-gradient(180deg, rgba(250,253,255,0.96), rgba(239,246,253,0.94))",
+            }}
+          >
             <div style={{ ...sectionLabel(), color: gmfnBrand.colors.accent }}>Payment preview</div>
             <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
               {selectedVaultSlotCount} slot{selectedVaultSlotCount === 1 ? "" : "s"} selected = {selectedVaultPaymentLabel}
@@ -1608,7 +1730,7 @@ export default function VaultControlPage() {
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={vaultLightPanel()}>
         {panelHeader(
           "payment",
           2,
@@ -1621,7 +1743,7 @@ export default function VaultControlPage() {
           <>
             <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 14 }}>
               {[vaultPaymentTransferLines.slice(0, Math.ceil(vaultPaymentTransferLines.length / 2)), vaultPaymentTransferLines.slice(Math.ceil(vaultPaymentTransferLines.length / 2))].map((group, groupIndex) => (
-                <div key={groupIndex} style={{ border: `1px solid ${gmfnBrand.colors.line}`, borderRadius: 18, overflow: "hidden", background: "#FFFFFF" }}>
+                <div key={groupIndex} style={{ border: "1px solid rgba(23,58,92,0.14)", borderRadius: 18, overflow: "hidden", background: "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)" }}>
                   {group.map((line) => {
                     const [label, ...rest] = line.split(":");
                     const value = rest.join(":").trim();
@@ -1651,7 +1773,7 @@ export default function VaultControlPage() {
         ) : null}
       </section>
 
-      <section id="vault-private-block-room" style={pageCard("#FFFFFF")}>
+      <section id="vault-private-block-room" style={vaultLightPanel()}>
         {panelHeader(
           "blocks",
           3,
@@ -1660,7 +1782,7 @@ export default function VaultControlPage() {
         )}
         {openVaultPanels.blocks ? (
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 16 }}>
-            <div style={innerCard("#FCFEFF")}>
+            <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
           <div style={stepTitle()}><span style={stepBadge()}>3</span>Choose a block</div>
           <div style={{ display: "none" }}>
             <span>● Paid position</span><span>● Locked</span><span>○ Empty</span>
@@ -1697,7 +1819,7 @@ export default function VaultControlPage() {
           </div>
         </div>
 
-        <div style={innerCard("#FCFEFF")}>
+        <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
           <div style={stepTitle()}><span style={stepBadge()}>4</span>Selected private block</div>
           <div style={{ marginTop: 14, borderRadius: 18, overflow: "hidden", minHeight: 160, background: gmfnBrand.gradients.hero }}>
             {selectedProduct ? (
@@ -1744,7 +1866,7 @@ export default function VaultControlPage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={vaultLightPanel()}>
         {panelHeader(
           "link",
           5,
@@ -1798,8 +1920,18 @@ export default function VaultControlPage() {
         ) : null}
       </section>
 
-      <section style={{ ...pageCard(gmfnBrand.gradients.hero), padding: isCompact ? 18 : 22 }}>
-        {panelHeader("flow", 0, "Your 3-step flow", "Open this only when you want the short Vault process reminder.")}
+      <section
+        style={{
+          ...pageCard(
+            "linear-gradient(135deg, #06111F 0%, #0C2A49 58%, #15456F 100%)"
+          ),
+          padding: isCompact ? 18 : 22,
+          border: "1px solid rgba(243,208,106,0.22)",
+          boxShadow:
+            "0 22px 48px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.08)",
+        }}
+      >
+        {panelHeader("flow", 0, "Your 3-step flow", "Open this only when you want the short Vault process reminder.", true)}
         {openVaultPanels.flow ? (
         <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr 1fr", gap: 12, color: "#FFFFFF" }}>
           {["Activate slots|Choose and pay for your Vault slots.", "Add private offer|Add your content to the paid block.", "Create block link|Share the link privately. Access is by link only."].map((entry, index) => {
@@ -1816,7 +1948,7 @@ export default function VaultControlPage() {
       </section>
 
       {editorOpen ? (
-        <section style={pageCard("#FFFFFF")}>
+        <section style={vaultLightPanel()}>
           <div style={sectionLabel()}>
             {editingProductId ? `Edit Vault block #${selectedSlot}` : `Add Vault block #${selectedSlot}`}
           </div>
@@ -1825,7 +1957,7 @@ export default function VaultControlPage() {
           </div>
           {formNotice ? <div style={{ marginTop: 12, ...noticeCard(formNotice.tone) }}>{formNotice.text}</div> : null}
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0,1fr) 320px", gap: 14 }}>
-            <div style={innerCard("#FCFEFF")}>
+            <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
               <div style={{ display: "grid", gap: 12 }}>
                 <input type="file" accept="image/*" onChange={(event) => void prepareImage(event.target.files?.[0] || null)} style={inputStyle()} />
                 <input value={imageUrlInput} onChange={(event) => { setImageUrlInput(event.target.value); if (!selectedImageFile) setImagePreviewUrl(event.target.value); }} placeholder="Or paste image link" style={inputStyle()} />
@@ -1856,7 +1988,7 @@ export default function VaultControlPage() {
                 </div>
               </div>
             </div>
-            <div style={innerCard(gmfnBrand.gradients.hero)}>
+            <div style={{ ...innerCard("linear-gradient(145deg, #071424 0%, #0D2640 48%, #173A5C 100%)"), border: "1px solid rgba(243,208,106,0.20)" }}>
               <div style={{ ...sectionLabel(), color: gmfnBrand.colors.gold }}>Preview</div>
               <div style={{ marginTop: 12, borderRadius: 18, overflow: "hidden", minHeight: 220, background: "#061827" }}>
                 {firstTruthy(videoPreviewUrl, videoUrlInput) ? (
