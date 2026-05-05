@@ -542,10 +542,10 @@ function vaultPageShell(isCompact: boolean): React.CSSProperties {
     maxWidth: 1120,
     margin: "0 auto",
     display: "grid",
-    gap: isCompact ? 14 : 18,
+    gap: isCompact ? 12 : 16,
     padding: isCompact ? "0 0 36px" : "4px 0 42px",
     background:
-      "radial-gradient(circle at 7% 0%, rgba(201,154,39,0.16), transparent 28%), radial-gradient(circle at 92% 6%, rgba(37,83,126,0.18), transparent 28%)",
+      "radial-gradient(circle at 7% 0%, rgba(201,154,39,0.12), transparent 28%), radial-gradient(circle at 92% 6%, rgba(12,79,168,0.16), transparent 30%), linear-gradient(180deg, rgba(246,250,253,0.0), rgba(226,236,247,0.18))",
     borderRadius: 28,
   };
 }
@@ -557,7 +557,7 @@ function vaultLightPanel(): React.CSSProperties {
     ),
     border: "1px solid rgba(23,58,92,0.16)",
     boxShadow:
-      "0 24px 56px rgba(7,20,36,0.105), 0 5px 14px rgba(7,20,36,0.055), inset 0 1px 0 rgba(255,255,255,0.92)",
+      "0 22px 48px rgba(7,20,36,0.095), 0 5px 14px rgba(7,20,36,0.055), inset 0 3px 0 rgba(201,154,39,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
@@ -587,19 +587,31 @@ function vaultHeroBadge(primary = false): React.CSSProperties {
 
 function vaultGlassFrame(): React.CSSProperties {
   return {
-    minHeight: 230,
+    minHeight: 236,
     borderRadius: 24,
     overflow: "hidden",
     background:
-      "linear-gradient(145deg, rgba(51,86,125,0.74) 0%, rgba(14,37,65,0.96) 56%, rgba(5,17,31,0.99) 100%)",
-    border: "1px solid rgba(243,208,106,0.24)",
+      "linear-gradient(145deg, rgba(43,76,112,0.80) 0%, rgba(13,32,56,0.97) 56%, rgba(5,17,31,0.99) 100%)",
+    border: "1px solid rgba(243,208,106,0.30)",
     position: "relative",
     display: "grid",
     placeItems: "center",
     padding: 20,
     boxSizing: "border-box",
     boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -18px 34px rgba(0,0,0,0.24), 0 20px 42px rgba(0,0,0,0.22)",
+      "inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -18px 34px rgba(0,0,0,0.26), 0 20px 42px rgba(0,0,0,0.24)",
+  };
+}
+
+function vaultDisciplineCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(201,154,39,0.26)",
+    background:
+      "linear-gradient(180deg, rgba(255,249,232,0.98) 0%, rgba(255,253,245,0.96) 100%)",
+    color: gmfnBrand.colors.ink,
+    padding: 14,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -1048,6 +1060,7 @@ export default function VaultControlPage() {
   const selectedBlockLinkedAt = firstTruthy(selectedBlockPrimaryLink?.created_at);
   const selectedBlockLinkExpiresAt = firstTruthy(selectedBlockPrimaryLink?.expires_at);
   const shopName = firstTruthy(shop?.name, me?.display_name, me?.gmfn_id, "Your shop");
+  const shopHeroImageUrl = resolveAssetSrc(shop?.image_url);
   const activeVaultPayment = vaultInstruction || latestVaultPayment;
   const vaultPaymentDueDays = Math.max(
     1,
@@ -1607,7 +1620,7 @@ export default function VaultControlPage() {
           padding: isCompact ? 22 : 30,
           border: "1px solid rgba(243,208,106,0.22)",
           boxShadow:
-            "0 30px 70px rgba(2,12,27,0.32), inset 0 1px 0 rgba(255,255,255,0.08)",
+            "0 28px 62px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
       >
         <div style={{ display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 330px", gap: 28, alignItems: "center" }}>
@@ -1626,9 +1639,37 @@ export default function VaultControlPage() {
             </div>
           </div>
           <div style={vaultGlassFrame()}>
+            {shopHeroImageUrl ? (
+              <img
+                src={shopHeroImageUrl}
+                alt=""
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  opacity: 0.28,
+                  filter: "saturate(0.85) contrast(1.08)",
+                }}
+              />
+            ) : null}
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(120deg, rgba(5,17,31,0.72), rgba(9,27,46,0.34) 45%, rgba(5,17,31,0.80))",
+              }}
+            />
             <VaultDoorVisual />
             <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "radial-gradient(circle at 50% 20%, rgba(255,255,255,0.14), transparent 34%), linear-gradient(180deg, transparent 0%, rgba(8,27,45,0.52) 100%)" }} />
             <div style={{ position: "absolute", left: 22, right: 22, bottom: 22, color: "#FFFFFF", fontWeight: 950, fontSize: 24, textAlign: "center" }}>
+              <div style={{ color: "#F3D06A", fontSize: 11, fontWeight: 950, letterSpacing: 1.2, textTransform: "uppercase" }}>
+                Shop signboard protected
+              </div>
               <div style={{ color: "#FFFFFF", fontWeight: 950, fontSize: 24, textShadow: "0 2px 14px rgba(0,0,0,0.42)" }}>Private Vault</div>
             </div>
           </div>
@@ -1649,8 +1690,11 @@ export default function VaultControlPage() {
             <div style={{ marginTop: 12, color: gmfnBrand.colors.inkSoft, fontSize: 16, lineHeight: 1.55 }}>
               Choose the number of Vault blocks you want. Paid blocks are private positions.
             </div>
-            <div style={{ marginTop: 14, ...noticeCard("info"), background: "#FFF9E8", color: gmfnBrand.colors.ink }}>
-              Pricing: 1-5 slots are GBP 1 each. 6 slots use the GBP 5 bundle.
+            <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
+              <div style={{ ...sectionLabel(), color: "#8A640E" }}>Pricing rule</div>
+              <div style={{ marginTop: 6, fontWeight: 900, lineHeight: 1.45 }}>
+                1-5 slots are GBP 1 each. The full 6-slot private track is GBP 5.
+              </div>
             </div>
             <div role="radiogroup" aria-label="Slots to activate" style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
               {[1, 2, 3, 4, 5, 6].map((slot) => {
@@ -1686,7 +1730,10 @@ export default function VaultControlPage() {
             <div style={{ marginTop: 16, color: gmfnBrand.colors.ink, fontSize: 24, fontWeight: 950 }}>
               {selectedVaultSlotCount} slot{selectedVaultSlotCount === 1 ? "" : "s"} selected = {selectedVaultPaymentLabel}
             </div>
-            <div style={{ marginTop: 14, ...helperText() }}>{selectedVaultBundleText}</div>
+            <div style={{ marginTop: 14, ...vaultDisciplineCard() }}>
+              <div style={{ ...sectionLabel(), color: "#8A640E" }}>Best value check</div>
+              <div style={{ marginTop: 6, fontWeight: 820, lineHeight: 1.55 }}>{selectedVaultBundleText}</div>
+            </div>
             <div style={{ marginTop: 14, ...helperText() }}>
               Confirm this quote first. GSN will generate the payment code against this exact slot count and amount, then the bank rail can cross-check the code and amount before Vault opens.
             </div>
@@ -1784,9 +1831,6 @@ export default function VaultControlPage() {
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr", gap: 16 }}>
             <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
           <div style={stepTitle()}><span style={stepBadge()}>3</span>Choose a block</div>
-          <div style={{ display: "none" }}>
-            <span>● Paid position</span><span>● Locked</span><span>○ Empty</span>
-          </div>
           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(true)}>Paid position</span><span style={badge(false)}>Locked</span><span style={badge(false)}>Empty</span>
           </div>
@@ -1809,7 +1853,16 @@ export default function VaultControlPage() {
                     setSelectedSlot(slotNumber);
                     if (!active) showNotice("info", `Vault block #${slotNumber} is locked. Activate paid slots before adding content there.`);
                   }}
-                  style={{ ...slotChoiceButton(selected), minHeight: 96, opacity: active ? 1 : 0.82 }}
+                  style={{
+                    ...slotChoiceButton(selected),
+                    minHeight: 96,
+                    opacity: active ? 1 : 0.82,
+                    border: selected
+                      ? "1px solid rgba(8,48,110,0.46)"
+                      : active
+                        ? "1px solid rgba(12,79,168,0.22)"
+                        : "1px solid rgba(9,27,46,0.12)",
+                  }}
                 >
                   <span>Block #{slotNumber}</span>
                   <span style={{ fontSize: 12, fontWeight: 900, opacity: 0.9 }}>{!active ? "Locked" : item ? "Private content" : "Empty"}</span>

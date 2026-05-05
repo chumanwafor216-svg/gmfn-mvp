@@ -1,5 +1,20 @@
 # Handoff Notes
 
+## 2026-05-05 Vault Institutional Tightening Pass
+
+- Owner direction: polish the pages worked on yesterday to a stronger institutional standard, but read the repo law first and avoid inventing new UX.
+- Truth: the UX docs named in `AGENTS.md` (`docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`) are still not present in this frontend repo. This pass used the available protocol/freeze docs and the approved Vault screenshot structure.
+- Updated `src/pages/VaultControlPage.tsx` without changing the frozen Vault workflow:
+  - tightened the page rhythm and reduced excessive paper-like spacing.
+  - strengthened the navy/gold institutional surface treatment while keeping text readable.
+  - made the right-side Vault visual inherit the shop image when present, with a protected signboard overlay instead of a culturally ambiguous lock/key symbol.
+  - converted pricing and bundle explanation into clearer controlled decision cards.
+  - strengthened selected/active/locked block borders so the six Vault positions read as a deliberate private room, not loose paper buttons.
+  - removed a hidden leftover block legend from the owner page markup.
+- Updated `src/pages/CommunityHomePage.tsx`:
+  - tightened the `Private Vault` owner-action row with a stronger dark/gold treatment, clearer one-link-at-a-time copy, and a neutral `VAULT` mark.
+- Frozen behavior remains unchanged: `/app/vault-control`, quote-gated payment code generation, bank-transfer instruction, fixed six-position block room, selected-block private offer editor, block-scoped links, and shared video audio behavior remain the same.
+
 ## 2026-05-05 Community Home Vault Entry Polish
 
 - Owner direction: polish the Vault entry inside Community Home without reopening the frozen `/app/vault-control` workflow.

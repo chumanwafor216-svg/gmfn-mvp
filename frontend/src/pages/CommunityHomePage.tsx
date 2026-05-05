@@ -3407,11 +3407,11 @@ function communityButtonGuardProps(): Pick<
                 openCommunityShopControl(event),
             },
             {
-              icon: "V",
+              icon: "VAULT",
               id: "vault-control",
               title: "Private Vault",
               detail:
-                "Paid private blocks and links under your shop",
+                "Paid private blocks, one link at a time",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityRoute(event, "/app/vault-control"),
             },
@@ -3475,11 +3475,11 @@ function communityButtonGuardProps(): Pick<
                 borderTop: index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
                 background:
                   item.id === "vault-control"
-                    ? "linear-gradient(135deg, #071424 0%, #0C2C4C 58%, #174B78 100%)"
+                    ? "linear-gradient(135deg, #06111F 0%, #0A223C 52%, #123F66 100%)"
                     : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
                 boxShadow:
                   item.id === "vault-control"
-                    ? "inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 28px rgba(5,18,32,0.14)"
+                    ? "inset 0 1px 0 rgba(255,255,255,0.08), inset 4px 0 0 rgba(201,154,39,0.86), 0 12px 28px rgba(5,18,32,0.14)"
                     : "none",
               }}
             >
@@ -3488,13 +3488,16 @@ function communityButtonGuardProps(): Pick<
                   ...communityActionIcon(item.id === "vault-control"),
                   background:
                     item.id === "vault-control"
-                      ? "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)"
+                      ? "linear-gradient(180deg, rgba(243,208,106,0.20) 0%, rgba(255,255,255,0.06) 100%)"
                       : "linear-gradient(180deg, #EAF3FF 0%, #F5FAFF 100%)",
                   border:
                     item.id === "vault-control"
                       ? "1px solid rgba(243,208,106,0.30)"
                       : "1px solid rgba(13,95,168,0.10)",
                   color: item.id === "vault-control" ? "#F3D06A" : "#135A94",
+                  fontSize: item.id === "vault-control" ? 9 : 22,
+                  fontWeight: item.id === "vault-control" ? 950 : 800,
+                  letterSpacing: item.id === "vault-control" ? 0.7 : 0,
                 }}
               >
                 {item.icon}
