@@ -1,5 +1,14 @@
 # Handoff Notes
 
+## 2026-05-05 Community Home Vault Entry Polish
+
+- Owner direction: polish the Vault entry inside Community Home without reopening the frozen `/app/vault-control` workflow.
+- Updated `src/pages/CommunityHomePage.tsx`:
+  - Community Home Vault copy now matches the frozen product truth: Vault is a private paid block layer under the owner shop, not a separate community shop.
+  - The owner-action row now labels the entry as `Private Vault`, uses a dark/gold treatment, and routes directly to `/app/vault-control`.
+  - Removed the lock/key symbol from that Community Home entry and replaced it with a neutral `V` marker to avoid culturally ambiguous lock imagery.
+- Truth: the named UX docs in `AGENTS.md` (`docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`) are not present in this frontend repo, so this polish used the available Vault/control freeze docs plus the existing Community Home structure.
+
 ## 2026-05-04 Entry Recovery Trap Repair
 
 - Tester complaint: a user could begin Create Community, leave before finishing/activation, then later be blocked by saved details while sign-in still said the account was not active.

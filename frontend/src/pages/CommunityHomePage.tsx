@@ -1490,23 +1490,6 @@ export default function CommunityHomePage() {
     return getSuggestedRelationshipsForRole(firstCircleDraft.memberRole);
   }, [firstCircleDraft.memberRole]);
 
-  const communitySpotlightNextAction = useMemo(() => {
-    if (activeCommunitySpotlight) {
-      return {
-        title: "Live spotlight is already visible",
-        detail: activeCommunitySpotlight.expiresAt
-          ? "Open Shop Control only when you want to replace or update the current live item."
-          : "Open Shop Control only when you are ready to replace this standing spotlight.",
-      };
-    }
-
-    return {
-      title: "Open Shop Control when you are ready",
-      detail:
-        "Spotlight publishing belongs inside Shop Control so your shop picture, products, Vault, and visibility stay in one clean place.",
-    };
-  }, [activeCommunitySpotlight]);
-
   const spotlightHandleItems = useMemo<NextActionGuideItem[]>(
     () => [
       {
@@ -1530,7 +1513,7 @@ export default function CommunityHomePage() {
         id: "spotlight-vault",
         label: "Vault",
         detail:
-          "Open the private shop lane for selected people and permission-based access.",
+          "Open private paid blocks under your owner shop and share them by link.",
         technical: "Vault",
         keywords: ["vault", "private offers", "private gallery"],
       },
@@ -1732,10 +1715,10 @@ export default function CommunityHomePage() {
       case "spotlight-vault": {
         if (!selectedClanId || !selectedClan) {
           return {
-            title: "Choose the community before Vault",
+            title: "Choose your active community first",
             detail:
-              "Vault belongs to one community at a time. First choose the community, then GSN will open the private shop lane for that one.",
-            firstStep: "Choose the target community.",
+              "Vault belongs under your owner shop, but Community Home still needs an active community context before it can hand you into the private shop lane.",
+            firstStep: "Choose the community context you are working from.",
             continueLabel: "Choose community",
             continueTone: "primary",
             payload: { nextStep: "choose-community" },
@@ -1770,8 +1753,9 @@ export default function CommunityHomePage() {
         if (!shopId) {
           return {
             title: "Set up your shop before Vault",
-            detail: `Vault belongs to your shop in ${selectedClanName || "the selected community"}. First prepare the shop details, then GSN will open the private offers lane.`,
-            firstStep: "Open shop setup for this community.",
+            detail:
+              "Vault uses the same owner shop signboard as Shop Gallery. First prepare the public shop face, then GSN can open the private paid blocks.",
+            firstStep: "Open shop setup for your owner shop.",
             continueLabel: "Open shop setup",
             continueTone: "primary",
             payload: { nextStep: "prepare-shop-first" },
@@ -1780,7 +1764,8 @@ export default function CommunityHomePage() {
 
         return {
           title: "Your shop is ready for Vault",
-          detail: `GSN has confirmed the shop for ${selectedClanName || "the selected community"}. It can now open the Vault lane for private offers and access links.`,
+          detail:
+            "GSN has confirmed your owner shop. It can now open Vault for private paid offers, expiring links, and controlled access.",
           firstStep: "Open the Vault lane.",
           continueLabel: "Open Vault",
           continueTone: "primary",
@@ -3405,6 +3390,7 @@ function communityButtonGuardProps(): Pick<
           {[
             {
               icon: "🛡️",
+              id: "owner-actions",
               title: "Owner Actions",
               detail:
                 "Open owner-side tools and permissions",
@@ -3413,6 +3399,7 @@ function communityButtonGuardProps(): Pick<
             },
             {
               icon: "🏪",
+              id: "shop-control",
               title: "Owner Shop Control",
               detail:
                 "Manage shop face, products, and public links",
@@ -3420,15 +3407,17 @@ function communityButtonGuardProps(): Pick<
                 openCommunityShopControl(event),
             },
             {
-              icon: "🔐",
-              title: "Vault Control",
+              icon: "V",
+              id: "vault-control",
+              title: "Private Vault",
               detail:
-                "Manage paid private access and vault links",
+                "Paid private blocks and links under your shop",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityRoute(event, "/app/vault-control"),
             },
             {
               icon: "🌟",
+              id: "free-spotlight",
               title: "Free Spotlight",
               detail:
                 "Publish the normal community spotlight lane",
@@ -3442,6 +3431,7 @@ function communityButtonGuardProps(): Pick<
             },
             {
               icon: "💳",
+              id: "spotlight-subscription",
               title: "Spotlight Subscription",
               detail:
                 "Control the paid priority spotlight lane",
@@ -3453,6 +3443,7 @@ function communityButtonGuardProps(): Pick<
             },
             {
               icon: "🤝",
+              id: "trusted-circle",
               title: "Grow Your Trusted Circle",
               detail:
                 "Invite trusted real-life people",
@@ -3461,6 +3452,7 @@ function communityButtonGuardProps(): Pick<
             },
             {
               icon: "📡",
+              id: "spotlight-status",
               title: "Owner Spotlight Status",
               detail: `${activeCommunitySpotlightTotal || activeCommunitySpotlights.length} live / 0 queued`,
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
@@ -3481,15 +3473,38 @@ function communityButtonGuardProps(): Pick<
                 borderRadius: 0,
                 border: "0",
                 borderTop: index === 0 ? "0" : "1px solid rgba(16,37,59,0.08)",
-                boxShadow: "none",
+                background:
+                  item.id === "vault-control"
+                    ? "linear-gradient(135deg, #071424 0%, #0C2C4C 58%, #174B78 100%)"
+                    : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
+                boxShadow:
+                  item.id === "vault-control"
+                    ? "inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 28px rgba(5,18,32,0.14)"
+                    : "none",
               }}
             >
-              <span style={communityActionIcon(false)}>{item.icon}</span>
+              <span
+                style={{
+                  ...communityActionIcon(item.id === "vault-control"),
+                  background:
+                    item.id === "vault-control"
+                      ? "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.06) 100%)"
+                      : "linear-gradient(180deg, #EAF3FF 0%, #F5FAFF 100%)",
+                  border:
+                    item.id === "vault-control"
+                      ? "1px solid rgba(243,208,106,0.30)"
+                      : "1px solid rgba(13,95,168,0.10)",
+                  color: item.id === "vault-control" ? "#F3D06A" : "#135A94",
+                }}
+              >
+                {item.icon}
+              </span>
               <span style={{ minWidth: 0 }}>
                 <span
                   style={{
                     display: "block",
-                    color: "#07172C",
+                    color:
+                      item.id === "vault-control" ? "#F8FBFF" : "#07172C",
                     fontSize: isCompact ? 15 : 16,
                     fontWeight: 940,
                     lineHeight: 1.18,
@@ -3501,7 +3516,10 @@ function communityButtonGuardProps(): Pick<
                   style={{
                     display: "block",
                     marginTop: 4,
-                    color: "#617085",
+                    color:
+                      item.id === "vault-control"
+                        ? "rgba(226,236,247,0.82)"
+                        : "#617085",
                     fontSize: isCompact ? 12.2 : 13,
                     fontWeight: 720,
                     lineHeight: 1.35,
@@ -3510,7 +3528,16 @@ function communityButtonGuardProps(): Pick<
                   {item.detail}
                 </span>
               </span>
-              <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  color:
+                    item.id === "vault-control"
+                      ? "rgba(243,208,106,0.90)"
+                      : "#1E5D91",
+                  fontSize: 24,
+                }}
+              >
                 ›
               </span>
             </button>
