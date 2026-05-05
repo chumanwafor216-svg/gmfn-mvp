@@ -993,8 +993,15 @@ export async function voteJoinRequest(
    LOANS / POOL
    ========================= */
 
-export async function listMyLoans(): Promise<any> {
-  return httpJson("/loans", "GET");
+export async function listMyLoans(options?: {
+  clan_id?: number | null;
+}): Promise<any> {
+  const requestOptions =
+    options && Object.prototype.hasOwnProperty.call(options, "clan_id")
+      ? { header_clan_id: options.clan_id ?? null }
+      : undefined;
+
+  return httpJson("/loans", "GET", undefined, requestOptions);
 }
 
 export async function getLoan(loanId: number): Promise<any> {
@@ -1605,6 +1612,24 @@ export async function updateWithdrawalDestination(payload: {
 
 export async function getTrustScoreExplained(): Promise<any> {
   return httpJson("/trust/score/explained", "GET");
+}
+
+export async function getClanTrustScoreExplained(params?: {
+  clan_id?: number | null;
+  limit?: number;
+  include_global_events?: boolean;
+}): Promise<any> {
+  return httpJson(
+    `/trust/score/explained-clan${buildQuery({
+      limit: params?.limit || 25,
+      include_global_events: params?.include_global_events ? true : undefined,
+    })}`,
+    "GET",
+    undefined,
+    params && Object.prototype.hasOwnProperty.call(params, "clan_id")
+      ? { header_clan_id: params.clan_id ?? null }
+      : undefined
+  );
 }
 
 export async function getMyTrustSlip(): Promise<any> {

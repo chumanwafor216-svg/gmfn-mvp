@@ -14,6 +14,7 @@ import {
   createClanInvite,
   createLoanRequest,
   getAccessToken,
+  getClanTrustScoreExplained,
   getClanInviteLink,
   getCurrentClan,
   getLoanGuarantorSuggestions,
@@ -66,12 +67,10 @@ type CommunityRow = {
   logo_url?: string | null;
   trust_band?: string | null;
   trust_class?: string | null;
+  trust_score?: string | null;
   community_trust_band?: string | null;
+  community_trust_score?: string | null;
   reputation_band?: string | null;
-  community_cci_score?: string | null;
-  community_cci_band?: string | null;
-  cci_score?: string | null;
-  cci_band?: string | null;
   community_finance_health?: string | null;
   finance_health?: string | null;
   finance_band?: string | null;
@@ -298,13 +297,13 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     keywords: ["trust", "score", "passport"],
   },
   {
-    id: "cci",
-    label: "Check ID or CCI",
+    id: "identity",
+    label: "Check identity",
     detail: "Open identity and continuity checks.",
-    technical: "CCI",
+    technical: "Identity",
     to: "/app/identity",
     tone: "soft",
-    keywords: ["cci", "id", "identity", "continuity"],
+    keywords: ["id", "identity", "continuity"],
     visible: false,
   },
   {
@@ -928,38 +927,59 @@ function communityTrustLabel(row: CommunityRow | null | undefined): string {
   );
 }
 
-function communityCciLabel(row: CommunityRow | null | undefined): string {
+function marketplaceTrustLabel(
+  row: CommunityRow | null | undefined,
+  trust: any
+): string {
   const band = firstTruthy(
-    row?.community_cci_band,
-    row?.community_standing?.community_cci_band,
-    row?.community_standing?.cci_band,
-    row?.community?.community_cci_band,
-    row?.community?.cci_band,
-    row?.marketplace?.community_cci_band,
-    row?.marketplace?.cci_band,
-    row?.clan?.community_cci_band,
-    row?.clan?.cci_band,
-    row?.meta?.community_cci_band,
-    row?.meta?.cci_band,
-    row?.cci_band
+    trust?.band,
+    trust?.trust_band,
+    row?.community_trust_band,
+    row?.trust_band,
+    row?.trust_class,
+    row?.reputation_band,
+    row?.community?.community_trust_band,
+    row?.community?.trust_band,
+    row?.marketplace?.community_trust_band,
+    row?.marketplace?.trust_band,
+    row?.clan?.community_trust_band,
+    row?.clan?.trust_band,
+    row?.community_standing?.community_trust_band,
+    row?.community_standing?.trust_band
   );
   const score = firstTruthy(
-    row?.community_cci_score,
-    row?.community_standing?.community_cci_score,
-    row?.community_standing?.cci_score,
-    row?.community?.community_cci_score,
-    row?.community?.cci_score,
-    row?.marketplace?.community_cci_score,
-    row?.marketplace?.cci_score,
-    row?.clan?.community_cci_score,
-    row?.clan?.cci_score,
-    row?.meta?.community_cci_score,
-    row?.meta?.cci_score,
-    row?.cci_score
+    trust?.score,
+    trust?.trust_score,
+    row?.community_trust_score,
+    row?.trust_score,
+    row?.community?.community_trust_score,
+    row?.community?.trust_score,
+    row?.marketplace?.community_trust_score,
+    row?.marketplace?.trust_score,
+    row?.clan?.community_trust_score,
+    row?.clan?.trust_score,
+    row?.community_standing?.community_trust_score,
+    row?.community_standing?.trust_score
   );
 
   if (band && score) return `${band} / ${score}`;
-  return band || score || "Community CCI preparing";
+  return band || score || "Trust preparing";
+}
+
+function marketplaceTrustEventCount(trust: any): string {
+  const counts =
+    trust?.counts && typeof trust.counts === "object" ? trust.counts : {};
+  const countTotal = Object.values(counts).reduce<number>((sum, value) => {
+    const n = Number(value || 0);
+    return Number.isFinite(n) && n > 0 ? sum + n : sum;
+  }, 0);
+
+  if (countTotal > 0) return `${countTotal} trust events`;
+
+  const lastEvents = Array.isArray(trust?.last_events)
+    ? trust.last_events.length
+    : 0;
+  return lastEvents > 0 ? `${lastEvents} recent events` : "No trust events yet";
 }
 
 function communityFinanceLabel(row: CommunityRow | null | undefined): string {
@@ -1969,7 +1989,7 @@ function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsTileStyle(): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 164,
+    minHeight: 154,
     borderRadius: 20,
     border: "1px solid rgba(16,37,59,0.12)",
     background:
@@ -2012,12 +2032,12 @@ function marketplaceOsIconStyle(bg: string): React.CSSProperties {
 function marketplaceOsRowStyle(): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 86,
-    borderRadius: 18,
+    minHeight: 78,
+    borderRadius: 16,
     border: "1px solid rgba(16,37,59,0.11)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(244,248,252,0.98) 100%)",
-    padding: 13,
+    padding: 12,
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr) auto",
     gap: 12,
@@ -2038,15 +2058,15 @@ function marketplaceOsRowStyle(): React.CSSProperties {
 
 function marketplaceOsRowIconStyle(bg: string): React.CSSProperties {
   return {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     background: bg,
     color: "#FFFFFF",
-    fontSize: 25,
+    fontSize: 22,
     boxShadow:
       "0 12px 22px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.2)",
   };
@@ -2177,7 +2197,7 @@ function communityPictureStorageKey(communityId: number): string {
 }
 
 function communitySectionsStorageKey(communityId: number): string {
-  return `gmfn.marketplace.sections.v3.${communityId}`;
+  return `gmfn.marketplace.sections.v4.${communityId}`;
 }
 
 function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
@@ -2335,6 +2355,7 @@ export default function MarketplacePage() {
   const [members, setMembers] = useState<ClanMember[]>([]);
   const [shops, setShops] = useState<MarketplaceShop[]>([]);
   const [poolInfo, setPoolInfo] = useState<any>(null);
+  const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
@@ -2682,7 +2703,7 @@ function marketplaceButtonGuardProps(): Pick<
         positiveNumber(resolvedCommunity?.id || resolvedCommunity?.clan_id) ||
         selectedClanId;
 
-      const [membersRes, shopsRes, poolRes, inviteRes, loansRes] =
+      const [membersRes, shopsRes, poolRes, inviteRes, loansRes, trustRes] =
         await Promise.all([
           currentCommunityId
             ? listClanMembers(currentCommunityId).catch(() => ({ items: [] }))
@@ -2694,11 +2715,23 @@ function marketplaceButtonGuardProps(): Pick<
                 limit: 200,
               }).catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] }),
-          getPoolMe("NGN", 20).catch(() => null),
+          currentCommunityId
+            ? getPoolMe("NGN", 20, { clan_id: currentCommunityId }).catch(
+                () => null
+              )
+            : Promise.resolve(null),
           currentCommunityId
             ? getClanInviteLink(currentCommunityId).catch(() => null)
             : Promise.resolve(null),
-          listMyLoans().catch(() => []),
+          currentCommunityId
+            ? listMyLoans({ clan_id: currentCommunityId }).catch(() => [])
+            : Promise.resolve([]),
+          currentCommunityId
+            ? getClanTrustScoreExplained({
+                clan_id: currentCommunityId,
+                limit: 8,
+              }).catch(() => null)
+            : Promise.resolve(null),
         ]);
 
             const memberRows = rowsOf<ClanMember>(membersRes);
@@ -2723,6 +2756,7 @@ function marketplaceButtonGuardProps(): Pick<
       setMembers(memberRows);
       setShops(shopRows);
       setPoolInfo(poolRes);
+      setMarketplaceTrust(trustRes || null);
       setInviteLink(getInviteUrl(inviteRes));
       setLoans(filteredLoans);
     } finally {
@@ -2997,6 +3031,20 @@ function marketplaceButtonGuardProps(): Pick<
     shops.length > 0 ? `${shops.length} visible shops` : "Open shop";
   const marketplaceMemberLabel =
     memberRows.length > 0 ? `${memberRows.length} visible members` : "Members";
+  const marketplaceTrustDisplay = marketplaceTrustLabel(
+    selectedCommunity,
+    marketplaceTrust
+  );
+  const marketplaceTrustEvidenceLabel =
+    marketplaceTrustEventCount(marketplaceTrust);
+  const marketplaceTrustPositiveLabel = firstTruthy(
+    marketplaceTrust?.positives,
+    "0"
+  );
+  const marketplaceTrustNegativeLabel = firstTruthy(
+    marketplaceTrust?.negatives,
+    "0"
+  );
 
   function openMarketplaceSection(
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -3610,7 +3658,7 @@ function marketplaceButtonGuardProps(): Pick<
                   👥 {marketplaceMemberLabel}
                 </span>
                 <span style={{ ...badgeStyle(true), color: "#12324F" }}>
-                  🛡️ {communityTrustLabel(selectedCommunity)}
+                  🛡️ {marketplaceTrustDisplay}
                 </span>
               </div>
             </div>
@@ -3714,7 +3762,11 @@ function marketplaceButtonGuardProps(): Pick<
               type="button"
               {...marketplacePointerGuardProps()}
               onClick={(event) =>
-                openMarketplaceRoute(event, myShopTo || "/app/shop-control")
+                openMarketplaceSection(
+                  event,
+                  "members",
+                  "marketplace-members-shops"
+                )
               }
               style={marketplaceOsTileStyle()}
             >
@@ -3740,7 +3792,7 @@ function marketplaceButtonGuardProps(): Pick<
                 {marketplaceTradeLabel}
               </span>
               <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
-                Buy, sell, request
+                Members and visible shops
               </span>
             </button>
 
@@ -3760,7 +3812,7 @@ function marketplaceButtonGuardProps(): Pick<
                 🛡️
               </span>
               <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
-                Trust Score
+                Trust
               </span>
               <span
                 style={{
@@ -3770,17 +3822,17 @@ function marketplaceButtonGuardProps(): Pick<
                   lineHeight: 1.15,
                 }}
               >
-                {communityTrustLabel(selectedCommunity)}
+                {marketplaceTrustDisplay}
               </span>
               <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
-                Identity and records
+                This community only
               </span>
             </button>
           </div>
 
           {profileDetailsOpen ? (
             <div style={{ marginTop: 12, ...innerCard("#FFFFFF") }}>
-              <div style={sectionLabel()}>Trust passport for this marketplace</div>
+              <div style={sectionLabel()}>Your Trust in this marketplace</div>
               <div
                 style={{
                   marginTop: 10,
@@ -3792,10 +3844,12 @@ function marketplaceButtonGuardProps(): Pick<
                 }}
               >
                 {[
-                  ["🪪 Marketplace ID", communityIdentity(selectedCommunity)],
-                  ["🛡️ Group trust", communityTrustLabel(selectedCommunity)],
-                  ["🔗 Group CCI", communityCciLabel(selectedCommunity)],
-                  ["💷 Finance", communityFinanceLabel(selectedCommunity)],
+                  ["Marketplace ID", communityIdentity(selectedCommunity)],
+                  ["Trust", marketplaceTrustDisplay],
+                  ["Trust events", marketplaceTrustEvidenceLabel],
+                  ["Positive trust", marketplaceTrustPositiveLabel],
+                  ["Negative trust", marketplaceTrustNegativeLabel],
+                  ["Finance", communityFinanceLabel(selectedCommunity)],
                 ].map(([label, value]) => (
                   <div key={label} style={marketplaceProfileStatStyle()}>
                     <div style={sectionLabel()}>{label}</div>
@@ -3820,7 +3874,21 @@ function marketplaceButtonGuardProps(): Pick<
           <div
             style={{
               marginTop: 14,
+              color: "#5F7287",
+              fontSize: 12,
+              fontWeight: 950,
+              letterSpacing: 1.6,
+              textTransform: "uppercase",
+            }}
+          >
+            Operating lanes
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
               display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
               gap: 10,
             }}
           >
@@ -3835,16 +3903,16 @@ function marketplaceButtonGuardProps(): Pick<
               <span
                 aria-hidden="true"
                 style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)"
+                  "linear-gradient(180deg, #1177CC 0%, #05365F 100%)"
                 )}
               >
-                📅
+                💷
               </span>
               <span style={{ minWidth: 0 }}>
                 <span
                   style={{ display: "block", fontSize: 18, fontWeight: 950 }}
                 >
-                  Dues Calendar
+                  Money In / Money Out
                 </span>
                 <span
                   style={{
@@ -3856,19 +3924,47 @@ function marketplaceButtonGuardProps(): Pick<
                     lineHeight: 1.35,
                   }}
                 >
-                  Track pay-in cycles and shared pool readiness.
+                  Pay into this community or start a guided withdrawal.
                 </span>
-                <span style={marketplaceOsProgressStyle("#1C9A50", 0.7)}>
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      display: "block",
-                      width: "var(--marketplace-progress-fill)",
-                      height: "100%",
-                      borderRadius: 999,
-                      background: "var(--marketplace-progress-color)",
-                    }}
-                  />
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                ›
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceRoute(event, "/app/payment-rails")
+              }
+              style={marketplaceOsRowStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsRowIconStyle(
+                  "linear-gradient(180deg, #C9952F 0%, #6D470B 100%)"
+                )}
+              >
+                🏦
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
+                >
+                  Banking Rails
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#4A6178",
+                    fontSize: 13,
+                    fontWeight: 750,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Review payment rails, bank transfer routes, and settlement setup.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -3900,7 +3996,7 @@ function marketplaceButtonGuardProps(): Pick<
                 <span
                   style={{ display: "block", fontSize: 18, fontWeight: 950 }}
                 >
-                  Support Cases
+                  Loan Process
                 </span>
                 <span
                   style={{
@@ -3912,7 +4008,7 @@ function marketplaceButtonGuardProps(): Pick<
                     lineHeight: 1.35,
                   }}
                 >
-                  Start help, borrowing, guarantor, or repayment work.
+                  Start support, check readiness, choose guarantors, and continue the loan workbench.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -4173,6 +4269,7 @@ function marketplaceButtonGuardProps(): Pick<
         </div>
       </section>
 
+      {sectionsOpen.money ? (
       <section
         id="marketplace-money-routes"
         style={{ ...pageCard("#FFFFFF"), order: 8 }}
@@ -4451,7 +4548,9 @@ function marketplaceButtonGuardProps(): Pick<
           </div>
         ) : null}
       </section>
+      ) : null}
 
+      {sectionsOpen.tools ? (
       <section
         id="marketplace-owned-links"
         style={{ ...pageCard("#FFFFFF"), order: 4 }}
@@ -4604,7 +4703,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                     >
                       Copy WhatsApp Message
                     </button>
@@ -4621,7 +4719,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                     >
                       Open Join Link
                     </button>
@@ -4648,7 +4745,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                     >
                       Send WhatsApp
                     </button>
@@ -4706,7 +4802,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Copy Create Message
                     </button>
@@ -4726,7 +4821,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Open Create Link
                     </button>
@@ -4753,7 +4847,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Send WhatsApp
                     </button>
@@ -4799,7 +4892,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Copy Marketplace Link
                     </button>
@@ -4819,7 +4911,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Open Marketplace Face
                     </button>
@@ -4861,7 +4952,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicShopViewLink,
                         isCompact
                       )}
-                      disabled={!publicShopViewLink}
                     >
                       Copy Shop Link
                     </button>
@@ -4881,7 +4971,6 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicShopViewLink,
                         isCompact
                       )}
-                      disabled={!publicShopViewLink}
                     >
                       Open Shop Face
                     </button>
@@ -4895,7 +4984,7 @@ function marketplaceButtonGuardProps(): Pick<
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(false)}>Private Vault access is conditional</span>
-                    <span style={badge(false)}>Vote-style access stays controlled</span>
+                    <span style={badge(false)}>Vault-style access stays controlled</span>
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     {myShopTo ? (
@@ -4934,7 +5023,9 @@ function marketplaceButtonGuardProps(): Pick<
           </div>
         ) : null}
       </section>
+      ) : null}
 
+      {sectionsOpen.members ? (
       <section
         id="marketplace-members-shops"
         style={{ ...pageCard("#FFFFFF"), order: 3 }}
@@ -5125,62 +5216,9 @@ function marketplaceButtonGuardProps(): Pick<
           </div>
         ) : null}
       </section>
+      ) : null}
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 5 }}>
-        <div style={sectionLabel()}>Demand Box</div>
-
-        <div
-          style={{
-            marginTop: 8,
-            ...helperText(),
-            maxWidth: 860,
-          }}
-        >
-          Open demand work from this marketplace when a community need must be
-          answered.
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr auto",
-            gap: 12,
-            alignItems: "center",
-          }}
-        >
-          <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>Current context</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 16,
-                lineHeight: 1.4,
-              }}
-            >
-              {communityName(selectedCommunity)}
-            </div>
-            <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(false)}>
-                Community ID: {communityIdentity(selectedCommunity)}
-              </span>
-              <span style={badge(false)}>Member: {memberName}</span>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            {...marketplacePointerGuardProps()}
-            onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
-            style={actionBtn("primary")}
-          >
-            Open Demand Box
-          </button>
-        </div>
-      </section>
-
+      {sectionsOpen.support ? (
       <section
         id="marketplace-loans-support"
         ref={supportSectionRef}
@@ -5739,8 +5777,7 @@ function marketplaceButtonGuardProps(): Pick<
           </div>
         ) : null}
       </section>
+      ) : null}
     </MarketplaceShell>
   );
 }
-
-

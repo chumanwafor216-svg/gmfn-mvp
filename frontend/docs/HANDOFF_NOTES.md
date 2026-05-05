@@ -1,5 +1,24 @@
 # Handoff Notes
 
+## 2026-05-05 Marketplace Trust Scope Correction
+
+- Owner correction: Marketplace belongs to one selected community, so it must show **Trust** for that community, not cross-community CCI.
+- Follow-up audit correction: the simplified Marketplace surface must not hide real operating lanes behind vague labels. The old page still contained Money In, Money Out, bank rail, withdrawal rail, finance, loan readiness, loan suggestions, loan workbench, members, links, demand, and support logic; the remodel now names the missing money and loan doors on the first surface.
+- Backend truth: `/trust/score/explained-clan` is the correct Marketplace trust endpoint because it is scoped by `X-Clan-Id`. `/trust/score/explained` is not the right source for Marketplace because it is not the selected-community reading.
+- Frontend update:
+  - `src/lib/api.ts` now exposes `getClanTrustScoreExplained`.
+  - `src/pages/MarketplacePage.tsx` loads the clan-scoped trust explanation for the active community and uses it in the Marketplace hero and trust block.
+  - Marketplace no longer displays CCI wording or the old `Group CCI` detail row. The expanded panel now shows the current user's Trust inside the selected marketplace, trust event count, positive trust, negative trust, Marketplace ID, and Finance.
+  - The visible Marketplace rows now include Dues & Contributions, Money In / Money Out, Banking Rails, Loan Process, Member Ledger, Demand Box, and Records & Links.
+  - Banking Rails opens `/app/payment-rails`; Money In / Money Out opens the local money detail lane; Loan Process opens the support/loan lane where readiness, suggestions, workbench, and full loans remain available.
+  - Polish/tightening pass: the repeated Dues row was removed because the top Dues & Contributions tile already owns that lane. The remaining operating rows now sit under an `Operating lanes` label, use a tighter two-column desktop grid, and keep the direct doors for Money In / Money Out, Banking Rails, Loan Process, Member Ledger, Demand Box, and Records & Links.
+  - The old detailed money, links, members, and support cards now render only after their lane is opened from the simplified Marketplace surface.
+  - Marketplace section storage was bumped to `gmfn.marketplace.sections.v4.*` so old expanded browser state does not reopen the previous clutter by default.
+  - Trusted Trade now opens the selected-community members/shops lane instead of routing directly to the owner's personal shop page.
+  - Recoverable blocked link actions in the expanded links lane stay clickable and explain the missing link instead of becoming dead disabled controls.
+  - `getPoolMe` and `listMyLoans` are called with the active community id so the Marketplace page does not rely on stale selected-clan storage for those clan-scoped backend routes.
+- Product rule: Community Home / Trust Passport / global identity may use CCI. Marketplace must use selected-community Trust only.
+
 ## 2026-05-05 Subscription Spotlight Focused Lane
 
 - Owner direction: complete Subscription Spotlight like Vault, but keep it as a focused subpage under Shop Control rather than a general page outside the shop lane.
