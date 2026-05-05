@@ -1944,6 +1944,143 @@ function intentChoiceStyle(
   };
 }
 
+function marketplaceOsSectionStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...pageCard("#FFFFFF"),
+    order: 2,
+    padding: isCompact ? 14 : 18,
+  };
+}
+
+function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    borderRadius: isCompact ? 22 : 26,
+    border: "1px solid rgba(255,255,255,0.18)",
+    background:
+      "radial-gradient(circle at 15% 0%, rgba(28,94,181,0.58) 0%, rgba(28,94,181,0.00) 34%), radial-gradient(circle at 85% 20%, rgba(244,198,80,0.2) 0%, rgba(244,198,80,0.00) 28%), linear-gradient(145deg, #06172A 0%, #08264B 54%, #041323 100%)",
+    padding: isCompact ? 18 : 24,
+    color: "#F8FBFF",
+    boxShadow:
+      "0 24px 42px rgba(2,8,20,0.28), inset 0 1px 0 rgba(255,255,255,0.18)",
+    overflow: "hidden",
+  };
+}
+
+function marketplaceOsTileStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 164,
+    borderRadius: 20,
+    border: "1px solid rgba(16,37,59,0.12)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(244,248,252,0.98) 100%)",
+    padding: 14,
+    display: "grid",
+    gap: 9,
+    alignContent: "start",
+    color: "#0B1F33",
+    textAlign: "center",
+    boxShadow:
+      "0 16px 30px rgba(10,24,49,0.1), inset 0 1px 0 rgba(255,255,255,0.9)",
+    cursor: "pointer",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
+    boxSizing: "border-box",
+  };
+}
+
+function marketplaceOsIconStyle(bg: string): React.CSSProperties {
+  return {
+    width: 62,
+    height: 62,
+    borderRadius: 19,
+    margin: "0 auto",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: bg,
+    color: "#FFFFFF",
+    fontSize: 30,
+    boxShadow:
+      "0 14px 26px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.22)",
+  };
+}
+
+function marketplaceOsRowStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 86,
+    borderRadius: 18,
+    border: "1px solid rgba(16,37,59,0.11)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(244,248,252,0.98) 100%)",
+    padding: 13,
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    gap: 12,
+    alignItems: "center",
+    color: "#0B1F33",
+    textAlign: "left",
+    boxShadow:
+      "0 14px 24px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+    cursor: "pointer",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
+    boxSizing: "border-box",
+  };
+}
+
+function marketplaceOsRowIconStyle(bg: string): React.CSSProperties {
+  return {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: bg,
+    color: "#FFFFFF",
+    fontSize: 25,
+    boxShadow:
+      "0 12px 22px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.2)",
+  };
+}
+
+function marketplaceOsProgressStyle(
+  color = "#1C9A50",
+  fill = 0.72
+): React.CSSProperties {
+  return {
+    display: "block",
+    width: "100%",
+    height: 8,
+    borderRadius: 999,
+    overflow: "hidden",
+    background: "#DCE7F0",
+    boxShadow: "inset 0 1px 2px rgba(10,24,49,0.08)",
+    ["--marketplace-progress-fill" as any]: `${Math.max(
+      0.12,
+      Math.min(1, fill)
+    ) * 100}%`,
+    ["--marketplace-progress-color" as any]: color,
+  };
+}
+
+function marketplaceOsArrowStyle(): React.CSSProperties {
+  return {
+    color: "#173750",
+    fontSize: 28,
+    fontWeight: 900,
+    lineHeight: 1,
+  };
+}
+
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -2850,6 +2987,27 @@ function marketplaceButtonGuardProps(): Pick<
     }).length;
   }, [loans]);
 
+  const marketplacePoolLabel =
+    visiblePoolAmount === "—"
+      ? "Pool pending"
+      : `${visiblePoolAmount} ${visiblePoolCurrency}`;
+  const marketplaceSupportLabel =
+    activeLoanCount > 0 ? `${activeLoanCount} active` : "Open support";
+  const marketplaceTradeLabel =
+    shops.length > 0 ? `${shops.length} visible shops` : "Open shop";
+  const marketplaceMemberLabel =
+    memberRows.length > 0 ? `${memberRows.length} visible members` : "Members";
+
+  function openMarketplaceSection(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    key: keyof SectionState,
+    sectionId: string
+  ) {
+    consumeMarketplaceButtonEvent(event);
+    setSectionsOpen((prev) => ({ ...prev, [key]: true }));
+    window.requestAnimationFrame(() => scrollToMarketplaceSection(sectionId));
+  }
+
   async function handleUploadCommunityPicture(file: File | null) {
     if (!file) return;
 
@@ -3372,186 +3530,50 @@ function marketplaceButtonGuardProps(): Pick<
     <MarketplaceShell isCompact={isCompact}>
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <DomainIntroToggle
-        title="How Marketplace works inside one community"
-        body={MARKETPLACE_HELP_BODY}
-        bullets={MARKETPLACE_HELP_BULLETS}
-        note={MARKETPLACE_HELP_NOTE}
-        tone="blue"
-        style={{ order: 0 }}
-      />
-
-      <section style={marketplaceProfileCardStyle(isCompact)}>
-        <div aria-hidden="true" style={marketplaceProfileScrimStyle()} />
-
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            display: "grid",
-            gap: isCompact ? 14 : 18,
-          }}
-        >
+      <section style={marketplaceOsSectionStyle(isCompact)}>
+        <div style={marketplaceOsHeaderStyle(isCompact)}>
           <div
             style={{
-              ...sectionLabel(),
-              color: "#315873",
-              textAlign: "center",
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr)",
+              gap: 18,
+              alignItems: "center",
             }}
           >
-            Marketplace identity
-          </div>
-
-          <SystemPictureFrame
-            outerStyle={marketplacePictureFrameOuterStyle(isCompact)}
-            innerStyle={marketplacePictureFrameInnerStyle(isCompact)}
-          >
-            {hasCommunityPicture ? (
-              <AuthResolvedImage
-                candidates={communityImageCandidates}
-                alt={communityName(selectedCommunity)}
-                clanId={activeCommunityId}
-                refreshSeed={communityPictureRefreshSeed}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  minHeight: isCompact ? 258 : 380,
-                  objectFit: "cover",
-                  objectPosition: "center 18%",
-                  display: "block",
-                }}
-                fallback={
-                  <div style={marketplacePicturePlaceholderStyle(isCompact)}>
-                    <GSNBrandMark
-                      width={isCompact ? 60 : 76}
-                      height={isCompact ? 72 : 92}
-                    />
-                    <div
-                      style={{
-                        fontSize: isCompact ? 28 : 46,
-                        fontWeight: 950,
-                        letterSpacing: 2,
-                      }}
-                    >
-                      {communityInitials(selectedCommunity)}
-                    </div>
-                  </div>
-                }
-              />
-            ) : (
-              <div style={marketplacePicturePlaceholderStyle(isCompact)}>
-                <GSNBrandMark
-                  width={isCompact ? 64 : 82}
-                  height={isCompact ? 78 : 100}
-                />
-                <div
-                  style={{
-                    fontSize: isCompact ? 30 : 52,
-                    fontWeight: 950,
-                    letterSpacing: 2,
-                  }}
-                >
-                  {communityInitials(selectedCommunity)}
-                </div>
-              </div>
-            )}
-
-            <div aria-hidden="true" style={marketplaceBillboardScrimStyle()} />
-
-            <button
-              type="button"
-              {...marketplacePointerGuardProps()}
-              onClick={togglePictureTools}
-              aria-expanded={pictureToolsOpen}
-              style={marketplacePictureHandleStyle(
-                "right",
-                uploadingCommunityPicture || removingCommunityPicture
-              )}
-              disabled={uploadingCommunityPicture || removingCommunityPicture}
+            <div
+              style={{
+                width: isCompact ? 76 : 92,
+                height: isCompact ? 92 : 112,
+                display: "grid",
+                placeItems: "center",
+              }}
             >
-              {uploadingCommunityPicture || removingCommunityPicture
-                ? "Working..."
-                : "Picture"}
-            </button>
+              <GSNBrandMark
+                width={isCompact ? 62 : 76}
+                height={isCompact ? 76 : 94}
+              />
+            </div>
 
-            {pictureToolsOpen ? (
-              <div
-                {...marketplacePointerGuardProps()}
-                style={marketplacePictureToolsPanelStyle(isCompact)}
-              >
-                <label
-                  {...marketplacePointerGuardProps()}
-                  style={marketplacePictureToolButtonStyle(
-                    uploadingCommunityPicture
-                  )}
-                >
-                  {uploadingCommunityPicture
-                    ? "Updating..."
-                    : hasCommunityPicture
-                      ? "Change picture"
-                      : "Add picture"}
-                  <input
-                    key={communityPictureFileInputKey}
-                    type="file"
-                    accept="image/*"
-                    disabled={uploadingCommunityPicture}
-                    onChange={(event) =>
-                      void handleUploadCommunityPicture(
-                        event.target.files?.[0] || null
-                      )
-                    }
-                    style={{ display: "none" }}
-                  />
-                </label>
-
-                {hasCommunityPicture ? (
-                  <button
-                    type="button"
-                    {...marketplaceButtonGuardProps()}
-                    onClick={(event) => {
-                      runMarketplaceAction(event, () => {
-                        void handleRemoveCommunityPicture();
-                      });
-                    }}
-                    disabled={removingCommunityPicture}
-                    style={marketplacePictureToolButtonStyle(
-                      removingCommunityPicture
-                    )}
-                  >
-                    {removingCommunityPicture ? "Removing..." : "Remove picture"}
-                  </button>
-                ) : null}
-
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={togglePictureTools}
-                  style={marketplacePictureToolButtonStyle()}
-                >
-                  Close
-                </button>
-              </div>
-            ) : null}
-
-            <div style={marketplaceBillboardTextStyle(isCompact)}>
+            <div style={{ minWidth: 0 }}>
               <div
                 style={{
                   fontSize: 11,
-                  fontWeight: 900,
-                  letterSpacing: 1.8,
+                  fontWeight: 950,
+                  letterSpacing: 2.4,
+                  color: "#F3D06A",
                   textTransform: "uppercase",
-                  color: "rgba(248,251,255,0.82)",
                 }}
               >
-                Official marketplace
+                GSN Marketplace
               </div>
 
               <div
                 style={{
-                  fontSize: isCompact ? 24 : 48,
+                  marginTop: 8,
+                  color: "#FFFFFF",
+                  fontSize: isCompact ? 30 : 46,
                   fontWeight: 950,
                   lineHeight: 1.02,
-                  maxWidth: 760,
                   overflowWrap: "anywhere",
                   wordBreak: "break-word",
                 }}
@@ -3561,118 +3583,230 @@ function marketplaceButtonGuardProps(): Pick<
 
               <div
                 style={{
-                  fontSize: isCompact ? 13 : 15,
-                  lineHeight: 1.55,
-                  fontWeight: 700,
-                  color: "rgba(248,251,255,0.86)",
-                  maxWidth: 800,
-                  maxHeight: isCompact ? 34 : 50,
-                  overflow: "hidden",
+                  marginTop: 10,
+                  maxWidth: 760,
+                  color: "rgba(248,251,255,0.84)",
+                  fontSize: isCompact ? 14 : 17,
+                  lineHeight: 1.5,
+                  fontWeight: 750,
                 }}
               >
-                {communityDescription(selectedCommunity)}
+                Trade, support, dues, members, and records in one trusted
+                community place.
               </div>
 
               <div
                 style={{
+                  marginTop: 16,
                   display: "flex",
                   gap: 8,
                   flexWrap: "wrap",
-                  alignItems: "center",
                 }}
               >
-                {[
-                  `ID: ${communityIdentity(selectedCommunity)}`,
-                ].map((item) => (
-                  <span
-                    key={item}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      minHeight: 28,
-                      borderRadius: 999,
-                      padding: "6px 10px",
-                      border: "1px solid rgba(255,255,255,0.22)",
-                      background: "rgba(248,251,255,0.16)",
-                      color: "#F8FBFF",
-                      fontSize: 11,
-                      fontWeight: 900,
-                      backdropFilter: "blur(10px)",
-                      maxWidth: "100%",
-                      overflowWrap: "anywhere",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {item}
-                  </span>
-                ))}
+                <span style={{ ...badgeStyle(true), color: "#12324F" }}>
+                  🛍️ {marketplaceTradeLabel}
+                </span>
+                <span style={{ ...badgeStyle(true), color: "#12324F" }}>
+                  👥 {marketplaceMemberLabel}
+                </span>
+                <span style={{ ...badgeStyle(true), color: "#12324F" }}>
+                  🛡️ {communityTrustLabel(selectedCommunity)}
+                </span>
               </div>
-
-              <button
-                type="button"
-                {...marketplacePointerGuardProps()}
-                onClick={toggleProfileDetails}
-                aria-expanded={profileDetailsOpen}
-                style={marketplaceDetailsToggleStyle(isCompact)}
-              >
-                {profileDetailsOpen ? "Close details" : "Open details"}
-              </button>
             </div>
-          </SystemPictureFrame>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            borderRadius: 24,
+            border: "1px solid rgba(16,37,59,0.1)",
+            background:
+              "linear-gradient(180deg, rgba(238,246,252,0.98) 0%, rgba(222,235,247,0.96) 100%)",
+            padding: isCompact ? 12 : 16,
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.84), 0 18px 34px rgba(10,24,49,0.08)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(4, minmax(0, 1fr))",
+              gap: isCompact ? 10 : 12,
+            }}
+          >
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceSection(event, "money", "marketplace-money-routes")
+              }
+              style={marketplaceOsTileStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsIconStyle(
+                  "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)"
+                )}
+              >
+                💳
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+                Dues & Contributions
+              </span>
+              <span
+                style={{
+                  color: "#0B63D1",
+                  fontSize: 20,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                {marketplacePoolLabel}
+              </span>
+              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+                Shared money position
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceSection(
+                  event,
+                  "support",
+                  "marketplace-loans-support"
+                )
+              }
+              style={marketplaceOsTileStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsIconStyle(
+                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)"
+                )}
+              >
+                🤝
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+                Support Requests
+              </span>
+              <span
+                style={{
+                  color: "#18864A",
+                  fontSize: 20,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                {marketplaceSupportLabel}
+              </span>
+              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+                Help, loans, guarantors
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceRoute(event, myShopTo || "/app/shop-control")
+              }
+              style={marketplaceOsTileStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsIconStyle(
+                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)"
+                )}
+              >
+                🛒
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+                Trusted Trade
+              </span>
+              <span
+                style={{
+                  color: "#4338CA",
+                  fontSize: 20,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                {marketplaceTradeLabel}
+              </span>
+              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+                Buy, sell, request
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={toggleProfileDetails}
+              aria-expanded={profileDetailsOpen}
+              style={marketplaceOsTileStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsIconStyle(
+                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+                )}
+              >
+                🛡️
+              </span>
+              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+                Trust Score
+              </span>
+              <span
+                style={{
+                  color: "#A16A08",
+                  fontSize: 20,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                {communityTrustLabel(selectedCommunity)}
+              </span>
+              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+                Identity and records
+              </span>
+            </button>
+          </div>
 
           {profileDetailsOpen ? (
-            <div style={marketplaceIdentityPanelStyle(isCompact)}>
+            <div style={{ marginTop: 12, ...innerCard("#FFFFFF") }}>
+              <div style={sectionLabel()}>Trust passport for this marketplace</div>
               <div
                 style={{
+                  marginTop: 10,
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "repeat(2, minmax(0, 1fr))"
+                    ? "1fr"
                     : "repeat(4, minmax(0, 1fr))",
-                  gap: 8,
+                  gap: 10,
                 }}
               >
                 {[
-                  ["Marketplace ID", communityIdentity(selectedCommunity)],
-                  ["Group trust", communityTrustLabel(selectedCommunity)],
-                  ["Group CCI", communityCciLabel(selectedCommunity)],
-                  ["Group finance", communityFinanceLabel(selectedCommunity)],
-                  ["Local pool", `${visiblePoolAmount} ${visiblePoolCurrency}`],
-                  [
-                    "Money In",
-                    communitySettlementReady ? "Ready" : "Awaiting issue",
-                  ],
-                  ["Money Out", payoutReady ? "Ready" : "Awaiting issue"],
-                  ["Role here", communityRole(selectedCommunity) || "Member"],
+                  ["🪪 Marketplace ID", communityIdentity(selectedCommunity)],
+                  ["🛡️ Group trust", communityTrustLabel(selectedCommunity)],
+                  ["🔗 Group CCI", communityCciLabel(selectedCommunity)],
+                  ["💷 Finance", communityFinanceLabel(selectedCommunity)],
                 ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    style={{
-                      ...marketplaceProfileStatStyle(),
-                      minHeight: 64,
-                      padding: 10,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "#315873",
-                        fontWeight: 900,
-                        letterSpacing: 0.24,
-                        textTransform: "uppercase",
-                        textAlign: "center",
-                      }}
-                    >
-                      {label}
-                    </div>
+                  <div key={label} style={marketplaceProfileStatStyle()}>
+                    <div style={sectionLabel()}>{label}</div>
                     <div
                       style={{
                         marginTop: 6,
                         color: "#0B1F33",
-                        fontWeight: 900,
-                        fontSize: 13,
+                        fontWeight: 950,
+                        fontSize: 15,
                         lineHeight: 1.25,
-                        wordBreak: "break-word",
-                        textAlign: "center",
+                        overflowWrap: "anywhere",
                       }}
                     >
                       {value}
@@ -3680,171 +3814,369 @@ function marketplaceButtonGuardProps(): Pick<
                   </div>
                 ))}
               </div>
-
-              <button
-                type="button"
-                {...marketplacePointerGuardProps()}
-                onClick={toggleProfileDetails}
-                aria-expanded={profileDetailsOpen}
-                style={{
-                  ...marketplaceDetailsToggleStyle(isCompact),
-                  marginTop: 12,
-                }}
-              >
-                Close details
-              </button>
             </div>
           ) : null}
-        </div>
-      </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 2 }}>
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div style={sectionLabel()}>Marketplace actions</div>
+              marginTop: 14,
+              display: "grid",
+              gap: 10,
+            }}
+          >
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceSection(event, "money", "marketplace-money-routes")
+              }
+              style={marketplaceOsRowStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsRowIconStyle(
+                  "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)"
+                )}
+              >
+                📅
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
+                >
+                  Dues Calendar
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#4A6178",
+                    fontSize: 13,
+                    fontWeight: 750,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Track pay-in cycles and shared pool readiness.
+                </span>
+                <span style={marketplaceOsProgressStyle("#1C9A50", 0.7)}>
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      display: "block",
+                      width: "var(--marketplace-progress-fill)",
+                      height: "100%",
+                      borderRadius: 999,
+                      background: "var(--marketplace-progress-color)",
+                    }}
+                  />
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                ›
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceSection(
+                  event,
+                  "support",
+                  "marketplace-loans-support"
+                )
+              }
+              style={marketplaceOsRowStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsRowIconStyle(
+                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)"
+                )}
+              >
+                💚
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
+                >
+                  Support Cases
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#4A6178",
+                    fontSize: 13,
+                    fontWeight: 750,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Start help, borrowing, guarantor, or repayment work.
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                ›
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceSection(
+                  event,
+                  "members",
+                  "marketplace-members-shops"
+                )
+              }
+              style={marketplaceOsRowStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsRowIconStyle(
+                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)"
+                )}
+              >
+                📋
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
+                >
+                  Member Ledger
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#4A6178",
+                    fontSize: 13,
+                    fontWeight: 750,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  See visible members, GSN IDs, and connected shops.
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                ›
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
+              style={marketplaceOsRowStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsRowIconStyle(
+                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+                )}
+              >
+                📣
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
+                >
+                  Demand Box
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#4A6178",
+                    fontSize: 13,
+                    fontWeight: 750,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Open requests and community needs when demand appears.
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                ›
+              </span>
+            </button>
+
+            <button
+              type="button"
+              {...marketplacePointerGuardProps()}
+              onClick={(event) =>
+                openMarketplaceSection(event, "tools", "marketplace-owned-links")
+              }
+              style={marketplaceOsRowStyle()}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsRowIconStyle(
+                  "linear-gradient(180deg, #158BA0 0%, #075064 100%)"
+                )}
+              >
+                🗂️
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
+                >
+                  Records & Links
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#4A6178",
+                    fontSize: 13,
+                    fontWeight: 750,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Join links, public faces, and controlled outward links.
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                ›
+              </span>
+            </button>
+          </div>
 
           <button
             type="button"
             {...marketplaceButtonGuardProps()}
             onClick={toggleIntentGuide}
             aria-expanded={intentGuideOpen}
-            style={actionBtn("soft")}
+            style={{
+              ...marketplaceOsRowStyle(),
+              marginTop: 14,
+              minHeight: 78,
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(238,244,250,0.98) 100%)",
+            }}
           >
-            {intentGuideOpen ? "Collapse" : "Open"}
-          </button>
-        </div>
-
-        {intentGuideOpen ? (
-          <div style={intentGuideCardStyle()}>
-            <div
-              style={{
-                ...helperText(),
-                marginBottom: 12,
-              }}
+            <span
+              aria-hidden="true"
+              style={marketplaceOsRowIconStyle(
+                "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)"
+              )}
             >
-              Say the job you want to do inside this one marketplace, like
-              loan, deposit, withdraw, shop, invite, or trust. GSN will point
-              you to the closest working place.
-            </div>
-
-            <form
-              onSubmit={handleIntentSubmit}
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "minmax(0, 1fr) auto",
-                gap: 10,
-                alignItems: "center",
-              }}
-            >
-              <input
-                value={intentQuery}
-                onChange={(event) => setIntentQuery(event.target.value)}
-                placeholder="Try: loan, deposit, withdraw, shop, invite in this community..."
-                aria-label="Type what you want to do next"
+              ✨
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ display: "block", fontSize: 18, fontWeight: 950 }}>
+                {intentGuideOpen ? "Hide extra marketplace tools" : "Open extra marketplace tools"}
+              </span>
+              <span
                 style={{
-                  ...inputStyle(),
-                  fontWeight: 800,
+                  display: "block",
+                  marginTop: 4,
+                  color: "#4A6178",
+                  fontSize: 13,
+                  fontWeight: 750,
+                  lineHeight: 1.35,
                 }}
-              />
-
-              <button
-                type="submit"
-                {...marketplacePointerGuardProps()}
-                style={actionBtn("primary")}
               >
-                {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
-              </button>
-            </form>
+                Use this only when the four main blocks are not enough.
+              </span>
+            </span>
+            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+              {intentGuideOpen ? "⌃" : "›"}
+            </span>
+          </button>
 
-            <div
-              style={{
-                marginTop: 10,
-                ...helperText(),
-                fontSize: 13,
-              }}
-            >
-              {matchedIntent
-                ? `Best match: ${matchedIntent.label} - ${matchedIntent.technical}.`
-                : "If you already know the app words, use the smaller technical label on each card."}
-            </div>
+          {intentGuideOpen ? (
+            <div style={intentGuideCardStyle()}>
+              <div style={{ ...helperText(), marginBottom: 12 }}>
+                Say the job you want to do inside this one marketplace, like
+                loan, deposit, withdraw, shop, invite, or trust. GSN will point
+                you to the closest working place.
+              </div>
 
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(4, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              {marketplaceIntentItems
-                .filter((item) => item.visible !== false)
-                .map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    {...marketplacePointerGuardProps()}
-                    onClick={(event) => openMarketplaceIntent(event, item)}
-                    style={intentChoiceStyle(item.tone)}
-                  >
-                    <span
-                      style={{
-                        color: "#0B1F33",
-                        fontSize: 15,
-                        fontWeight: 950,
-                        lineHeight: 1.2,
-                      }}
+              <form
+                onSubmit={handleIntentSubmit}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "minmax(0, 1fr) auto",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                <input
+                  value={intentQuery}
+                  onChange={(event) => setIntentQuery(event.target.value)}
+                  placeholder="Try: loan, deposit, withdraw, shop, invite..."
+                  aria-label="Type what you want to do next"
+                  style={{
+                    ...inputStyle(),
+                    fontWeight: 800,
+                  }}
+                />
+
+                <button
+                  type="submit"
+                  {...marketplacePointerGuardProps()}
+                  style={actionBtn("primary")}
+                >
+                  {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
+                </button>
+              </form>
+
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {marketplaceIntentItems
+                  .filter((item) => item.visible !== false)
+                  .map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      {...marketplacePointerGuardProps()}
+                      onClick={(event) => openMarketplaceIntent(event, item)}
+                      style={intentChoiceStyle(item.tone)}
                     >
-                      {item.label}
-                    </span>
-                    <span
-                      style={{
-                        color: "#52677C",
-                        fontSize: 12,
-                        fontWeight: 800,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {item.detail}
-                    </span>
-                    <span
-                      style={{
-                        color: "#1D4ED8",
-                        fontSize: 11,
-                        fontWeight: 950,
-                        letterSpacing: 0.18,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {item.technical}
-                    </span>
-                  </button>
-                ))}
+                      <span
+                        style={{
+                          color: "#0B1F33",
+                          fontSize: 15,
+                          fontWeight: 950,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                      <span
+                        style={{
+                          color: "#52677C",
+                          fontSize: 12,
+                          fontWeight: 800,
+                          lineHeight: 1.35,
+                        }}
+                      >
+                        {item.detail}
+                      </span>
+                    </button>
+                  ))}
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </section>
 
-      <ExplainToggle
-        label="What this screen does"
-        what="Marketplace is where one selected community becomes active. Read the current community identity, open Shop, check money readiness, and continue into the next trade or support route."
-        why="It keeps one community in focus so users can see who is visible, what is ready, and when a money or support route should take over."
-        next="Read the community identity first, then move into Shop, money, members, or support depending on what you need to do in this community."
-        tone="blue"
-        style={{ order: 9 }}
-      />
-
-      <section style={{ ...pageCard("#FFFFFF"), order: 8 }}>
+      <section
+        id="marketplace-money-routes"
+        style={{ ...pageCard("#FFFFFF"), order: 8 }}
+      >
         <div
           style={{
             display: "flex",
@@ -4603,7 +4935,10 @@ function marketplaceButtonGuardProps(): Pick<
         ) : null}
       </section>
 
-      <section style={{ ...pageCard("#FFFFFF"), order: 3 }}>
+      <section
+        id="marketplace-members-shops"
+        style={{ ...pageCard("#FFFFFF"), order: 3 }}
+      >
         <div
           style={{
             display: "flex",
