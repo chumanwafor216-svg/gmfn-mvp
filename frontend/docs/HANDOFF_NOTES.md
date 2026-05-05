@@ -1,5 +1,31 @@
 # Handoff Notes
 
+## 2026-05-05 Subscription Spotlight Focused Lane
+
+- Owner direction: complete Subscription Spotlight like Vault, but keep it as a focused subpage under Shop Control rather than a general page outside the shop lane.
+- New focused owner route: `/app/shop-control/subscription-spotlight`.
+- Shortcut route `/app/paid-spotlight` now routes into the focused Subscription Spotlight page instead of the old mixed Shop Control hash section.
+- Community Home paid/subscription spotlight entries and the community shop panel now route directly into the focused Subscription Spotlight page.
+- Added `src/pages/SubscriptionSpotlightPage.tsx`:
+  - shop-context hero,
+  - 1-6 paid spotlight credit selector,
+  - live payment preview,
+  - explicit `Agree: X credits = GBP Y` quote gate,
+  - bank-transfer instruction card with regional sort-code/bank-code provision,
+  - payment status refresh/copy controls,
+  - paid-only media publisher using the shared Spotlight media preparation and audio toggle pattern.
+- Backend standardization:
+  - `payment_instruction_service.create_spotlight_subscription_instruction` now computes Subscription Spotlight pricing server-side instead of trusting the frontend amount.
+  - `payment_instructions.SpotlightInstructionIn` accepts 1-6 credits and does not require the frontend to send an amount.
+  - `/payment-instructions/my` now exposes `spotlight_config`.
+  - paid marketplace broadcast creation now consumes one `spotlight_priority` feature credit, so a confirmed entitlement is not reusable forever.
+- Added `docs/SUBSCRIPTION_SPOTLIGHT_FREEZE.md` to record the lane rule and prevent future assistants from dumping the user into mixed Shop Control.
+- Verification:
+  - `npm run build` passed.
+  - Backend py_compile passed for payment instruction, expected payment, and marketplace route changes.
+  - `python -m pytest -q ..\gmfn_backend\tests\test_marketplace_public_shop.py ..\gmfn_backend\tests\test_reconciliation_integrity.py --basetemp pytest-tmp-spotlight-subscription` passed outside the sandbox: 8 passed.
+- Truth: the UX docs named in `AGENTS.md` are still missing from this repo, so this implementation used available protocol/freeze docs plus the Vault pattern as the approved structure.
+
 ## 2026-05-05 Next Lane: Subscription Spotlight
 
 - Owner instruction: after finishing a lane, commit and push so Render can pick up the deployed frontend/backend state when the remote allows it.

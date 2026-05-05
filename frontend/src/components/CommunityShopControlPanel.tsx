@@ -839,7 +839,7 @@ export default function CommunityShopControlPanel({
                 <button
                   type="button"
                   {...panelButtonGuardProps()}
-                  onClick={() => openPanelRoute("/app/shop-control?section=paid-spotlight")}
+                  onClick={() => openPanelRoute("/app/shop-control/subscription-spotlight")}
                   style={actionBtn("secondary")}
                 >
                   Paid Spotlight

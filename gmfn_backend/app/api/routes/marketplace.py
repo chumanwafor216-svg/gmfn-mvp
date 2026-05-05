@@ -22,7 +22,10 @@ from app.db.models import (
     MarketplaceShop,
     User,
 )
-from app.services.feature_entitlements_service import has_active_feature
+from app.services.feature_entitlements_service import (
+    consume_feature_units,
+    has_active_feature,
+)
 from app.services.trust_events_services import log_trust_event
 from app.services.vault_domain_service import (
     archive_vault_offer_for_product,
@@ -2230,6 +2233,29 @@ def create_marketplace_broadcast(
         )
         db.add(item)
         created_items.append(item)
+
+    if priority_mode == SPOTLIGHT_PAID:
+        db.flush()
+        primary_for_usage = next(
+            (x for x in created_items if int(x.clan_id) == int(resolved_clan_id)),
+            created_items[0],
+        )
+        usage = consume_feature_units(
+            db,
+            owner_user_id=int(current_user.id),
+            feature_code=FEATURE_SPOTLIGHT_PRIORITY,
+            units=1,
+            shop_id=int(shop.id),
+            reference_key=f"marketplace.broadcast:{int(primary_for_usage.id)}",
+            note="Subscription Spotlight publish",
+            commit=False,
+        )
+        if not bool(usage.get("ok")):
+            db.rollback()
+            raise HTTPException(
+                status_code=403,
+                detail="No unused paid spotlight credit is available for this shop.",
+            )
 
     db.commit()
 

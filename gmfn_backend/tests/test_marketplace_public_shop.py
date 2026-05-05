@@ -7,6 +7,8 @@ from sqlalchemy import text
 
 from app.db.database import engine
 from app.db.models import (
+    FeatureEntitlement,
+    FeatureUsageEvent,
     MarketplaceBroadcast,
     MarketplaceProduct,
     MarketplaceProductRepost,
@@ -19,6 +21,8 @@ def _ensure_marketplace_tables() -> None:
     MarketplaceProduct.__table__.create(bind=engine, checkfirst=True)
     MarketplaceBroadcast.__table__.create(bind=engine, checkfirst=True)
     MarketplaceProductRepost.__table__.create(bind=engine, checkfirst=True)
+    FeatureEntitlement.__table__.create(bind=engine, checkfirst=True)
+    FeatureUsageEvent.__table__.create(bind=engine, checkfirst=True)
 
 
 def _write_upload(root: Path, relative_path: str, content: bytes = b"ok") -> str:
@@ -356,3 +360,131 @@ def test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop(
 
     assert body["ok"] is True
     assert body["propagated_clan_ids"] == [1]
+
+
+def test_paid_spotlight_requires_unused_subscription_credit(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-PAIDSPOT'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'PAIDSPOT1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'CHUMA INTERNATIONAL SHOP', 'All kinds of goods', 1
+                )
+                """
+            )
+        )
+
+    blocked = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Paid spotlight",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert blocked.status_code == 403, blocked.text
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    1, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-TEST'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
+
+    published = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Paid spotlight",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert published.status_code == 200, published.text
+    assert published.json()["item"]["priority_mode"] == "paid"
+
+    second = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "message": "Second paid spotlight",
+            "priority_mode": "paid",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert second.status_code == 403, second.text
+
+    with engine.begin() as conn:
+        entitlement = conn.execute(
+            text(
+                """
+                SELECT quantity_used
+                FROM feature_entitlements
+                WHERE id = 1
+                """
+            )
+        ).fetchone()
+        usage_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM feature_usage_events
+                WHERE feature_code = 'spotlight_priority'
+                """
+            )
+        ).scalar_one()
+
+    assert int(entitlement[0]) == 1
+    assert int(usage_count) == 1

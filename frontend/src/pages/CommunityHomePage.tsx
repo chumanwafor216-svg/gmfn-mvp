@@ -2468,7 +2468,7 @@ function communityButtonGuardProps(): Pick<
           openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
           break;
         }
-        openCommunityRoute(event, "/app/shop-control#shop-control-paid-spotlight");
+        openCommunityRoute(event, "/app/shop-control/subscription-spotlight");
         break;
       case "spotlight-vault":
         if (nextStep === "cancel") {
@@ -3438,7 +3438,7 @@ function communityButtonGuardProps(): Pick<
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityRoute(
                   event,
-                  "/app/shop-control#shop-control-paid-spotlight"
+                  "/app/shop-control/subscription-spotlight"
                 ),
             },
             {

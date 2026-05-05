@@ -95,6 +95,9 @@ const RevenueAllocationPage = React.lazy(
 const ShopControlPage = React.lazy(() => import("./pages/ShopControlPage"));
 const ShopAssetsPage = React.lazy(() => import("./pages/ShopAssetsPage"));
 const VaultControlPage = React.lazy(() => import("./pages/VaultControlPage"));
+const SubscriptionSpotlightPage = React.lazy(
+  () => import("./pages/SubscriptionSpotlightPage")
+);
 const ShopAccessPage = React.lazy(() => import("./pages/ShopAccessPage"));
 const BuildFirstCirclePage = React.lazy(
   () => import("./pages/BuildFirstCirclePage")
@@ -593,6 +596,10 @@ export default function App() {
 
         <Route path="shop-control" element={<ShopControlPage />} />
         <Route
+          path="shop-control/subscription-spotlight"
+          element={<SubscriptionSpotlightPage />}
+        />
+        <Route
           path="shop-gallery-control"
           element={<PreserveRedirect to="/app/shop-control#shop-control-gallery-tools" />}
         />
@@ -606,7 +613,7 @@ export default function App() {
         />
         <Route
           path="paid-spotlight"
-          element={<PreserveRedirect to="/app/shop-control#shop-control-paid-spotlight" />}
+          element={<PreserveRedirect to="/app/shop-control/subscription-spotlight" />}
         />
         <Route path="shop-assets" element={<ShopAssetsPage />} />
         <Route path="shop-assets-page" element={<PreserveRedirect to={APP_ROUTES.SHOP_ASSETS} />} />

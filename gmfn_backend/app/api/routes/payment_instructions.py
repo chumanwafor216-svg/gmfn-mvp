@@ -91,8 +91,8 @@ class MerchantVerifyInstructionIn(BaseModel):
 class SpotlightInstructionIn(BaseModel):
     clan_id: int
     shop_id: int
-    amount: Decimal = Field(..., gt=Decimal("0"))
-    quantity_total: int = Field(default=1, ge=1)
+    amount: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
+    quantity_total: int = Field(default=1, ge=1, le=6)
     currency: str = "GBP"
     visibility_scope: str = "direct_communities"
 
@@ -265,5 +265,15 @@ def my_instruction_config(
             "payment_method": "bank_transfer",
             "payment_beneficiary_scope": "platform",
             "billing_cycle": VAULT_DEFAULT_BILLING_CYCLE,
+        },
+        "spotlight_config": {
+            "max_credits": 6,
+            "unit_price_gbp": "1.00",
+            "bundle_credit_count": 6,
+            "bundle_price_gbp": "5.00",
+            "payment_instruction_expiry_days": PAYMENT_DUE_WINDOW_DAYS,
+            "payment_method": "bank_transfer",
+            "payment_beneficiary_scope": "platform",
+            "billing_cycle": "annual",
         },
     }

@@ -81,6 +81,24 @@ def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
     )
 
 
+def calc_spotlight_subscription_amount(quantity_total: int) -> Decimal:
+    """
+    Current pilot pricing mirrors the simple Vault conversation:
+    - 1-5 paid spotlight credits = 1.00 GBP per credit
+    - 6 paid spotlight credits = 5.00 GBP bundle
+    """
+    qty = _positive_int(quantity_total, name="quantity_total")
+
+    if 1 <= qty <= 5:
+        return Decimal("1.00") * Decimal(qty)
+    if qty == 6:
+        return Decimal("5.00")
+
+    raise ValueError(
+        "Subscription Spotlight pricing currently supports 1 to 6 credits only."
+    )
+
+
 def build_vault_subscription_reference(
     *,
     owner_user_id: int,
@@ -421,18 +439,24 @@ def create_spotlight_subscription_instruction(
     clan_id: int,
     owner_user_id: int,
     shop_id: int,
-    amount: Decimal,
+    amount: Optional[Decimal] = None,
     quantity_total: int = 1,
     currency: str = "GBP",
     billing_cycle: str = ANNUAL_BILLING_CYCLE,
     due_at: Optional[datetime] = None,
     visibility_scope: str = "direct_communities",
 ) -> Dict[str, Any]:
-    resolved_amount = _d(amount)
-    if resolved_amount <= Decimal("0.00"):
-        raise ValueError("amount must be > 0")
-
     qty = _positive_int(quantity_total, name="quantity_total")
+    if qty > 6:
+        raise ValueError(
+            "Subscription Spotlight currently supports 1 to 6 credits only."
+        )
+
+    resolved_amount = calc_spotlight_subscription_amount(qty)
+    if amount is not None and _d(amount) != resolved_amount:
+        raise ValueError(
+            "amount does not match Subscription Spotlight pricing for this credit count"
+        )
 
     reference_display = build_spotlight_subscription_reference(
         owner_user_id=int(owner_user_id),

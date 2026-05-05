@@ -324,6 +324,20 @@ function getTaskModeMeta(pathname: string): TaskModeMeta | null {
     };
   }
 
+  if (pathname === "/app/shop-control/subscription-spotlight") {
+    return {
+      title: "Subscription Spotlight",
+      hint:
+        "Task focus is active. Finish the paid spotlight payment or publish step first.",
+      actions: [
+        makeShopControlItem(),
+        makeCommunityItem(),
+        makeMarketplaceItem(),
+        makeDashboardItem(),
+      ],
+    };
+  }
+
   if (
     pathname === "/app/loans" ||
     pathname === "/app/loan-readiness" ||
@@ -410,6 +424,13 @@ function getSpecialRouteMeta(
     return {
       section: "Focused task",
       page: "Vault Control",
+    };
+  }
+
+  if (pathname === "/app/shop-control/subscription-spotlight") {
+    return {
+      section: "Focused task",
+      page: "Subscription Spotlight",
     };
   }
 
@@ -589,6 +610,15 @@ function getPageActions(
   }
 
   if (pathname === "/app/vault-control") {
+    return uniqueNavItems([
+      makeShopControlItem(),
+      makeCommunityItem(),
+      makeMarketplaceItem(),
+      makeDashboardItem(),
+    ]);
+  }
+
+  if (pathname === "/app/shop-control/subscription-spotlight") {
     return uniqueNavItems([
       makeShopControlItem(),
       makeCommunityItem(),

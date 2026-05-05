@@ -736,7 +736,7 @@ export default function ShopControlPage() {
     { label: "Marketplace", icon: "\u{1F6CD}\uFE0F", to: "/app/marketplace" },
     { label: "Shop gallery", icon: "\u{1F5BC}\uFE0F", to: "/app/shop-control#shop-control-gallery-tools" },
     { label: "Free spotlight", icon: "\u2B50", to: "/app/free-spotlight" },
-    { label: "Subscription spotlight", icon: "\u{1F4B3}", to: "/app/paid-spotlight" },
+    { label: "Subscription spotlight", icon: "\u{1F4B3}", to: "/app/shop-control/subscription-spotlight" },
     { label: "Vault", icon: "\u{1F510}", to: "/app/vault-control" },
   ];
 
