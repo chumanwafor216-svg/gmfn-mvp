@@ -1,5 +1,50 @@
 # Handoff Notes
 
+## 2026-05-05 Finance Overview Translation Remodel
+
+- Owner approved moving `/app/finance` toward the simpler Finance Overview reference frame: a calm top surface for non-technical users, with the existing finance truth preserved underneath.
+- Updated `src/pages/FinancePage.tsx`:
+  - first visible surface now reads as `Finance overview` with the approved message: `Your community finances. Clear. Secure. Together.`
+  - hero metrics now translate existing backend-visible truth into four simple blocks: communities, total visible balance, this-month inflow, and trust score.
+  - hero still carries the route truth through compact pills for community, GSN ID, community ID, pool reference, and member role.
+  - added simple action tiles for `Record Transaction`, `View Reports`, `Bank Accounts`, and `Export Data`.
+  - added `Cash flow summary`, `Recent transactions`, and `Finance health` cards before the detailed sections.
+  - detailed balances, reconciliation, borrower/support exposure, guarantor earnings, and event ledger sections remain in the file as drill-down surfaces instead of being deleted.
+  - expected payments now use the member-facing `/payment-instructions/my/expected` path instead of the admin bank expected-payment endpoint.
+  - pool and loan reads now pass the selected community id so the visible finance truth stays scoped to the active community context.
+- Devil's advocate truth:
+  - `Cash flow summary` is currently built from visible pool events only. It is not yet a full bank-statement cashflow engine.
+  - `Export Data` currently opens the visible ledger area first; a real export route/file workflow is not implemented here.
+  - Finance now decongests the surface, but `FinancePage.tsx` remains large. Future work should extract reusable Finance cards before adding more JSX.
+- Verification: `npm exec -- eslint src\pages\FinancePage.tsx` passed, and `npm run build` passed.
+- Protocol note: the UX docs named in `AGENTS.md` (`docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`) are still missing from this frontend repo, so this pass used the available protocol files, handoff notes, backend/frontend inspection, and the owner's screenshot as the operative UX reference.
+
+## 2026-05-05 Finance File Reference Frame Modelling
+
+- Owner supplied a locked Finance reference frame and asked `/app/finance` to be modelled to that structure.
+- Updated `src/pages/FinancePage.tsx`:
+  - the first visible surface is now a dark `Finance File` card, not a white wrapper with old generic shells around it.
+  - the hero keeps only the proof-trail message plus compact pills for communities, GSN ID, trust band, and trust score.
+  - added the reference hierarchy: `Next best actions`, `Finance summary`, positive/attention signals, selected community finance unit, lower finance context cards, and the final Loans & Support note.
+  - the selected community unit now shows the four reference fields only: community, community ID, pool ref, and available money. Deeper effective/reserved/pending/payment detail remains behind the `View all` / `Open` drill-downs instead of being dumped on the first surface.
+  - fixed the loading-state text contrast so Finance does not show pale text on a white card.
+- Verification: `npm exec -- eslint src/pages/FinancePage.tsx`, `git diff --check`, and `npm run build` passed.
+- Truth/devil's advocate: the old detailed finance tables still exist as hidden drill-down sections. That preserves route truth and avoids deleting backend-connected evidence, but this file is now large. Future Finance work should extract reusable cards instead of adding more inline JSX.
+- Protocol truth: `docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, and `docs/UX_ACCEPTANCE_CHECKLIST.md` are still missing from this frontend repo, so this pass used the available protocol files and the owner's screenshot as the operative UX reference.
+
+## 2026-05-05 Finance Page Phone Tightening
+
+- Owner supplied phone screenshots showing `/app/finance` still had the old generic `How Finance Helps You` and `What do you want to do next?` shells exposed before the real finance record. They looked unfinished because each collapsed to a single vague `Open` button.
+- Updated `src/pages/FinancePage.tsx`:
+  - removed the generic explainer and generic next-action guide from the first visible Finance surface.
+  - made the main surface read as `Finance File`, using the existing finance truth rather than a separate invented page.
+  - added a compact `Next best actions` card with direct doors to Trust Passport, readiness, payment review, and Loans & Support.
+  - bumped local section storage from `gmfn.finance.sections.v1` to `gmfn.finance.sections.v2` so old expanded phone state does not reopen previous clutter by default.
+  - collapsed deeper finance tables by default and made helper/empty-state text readable on the light institutional background.
+  - replaced the selected-community finance unit's wide phone-clipping table with compact cards for community, pool ref, available/effective money, reserved money, pending in/out, and expected payments.
+- Verification: `npm exec -- eslint src/pages/FinancePage.tsx`, `git diff --check`, and `npm run build` passed.
+- Truth: the UX docs named in `AGENTS.md` (`docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`) are still missing from this frontend repo, so this pass used the available project protocol, freeze policy, handoff notes, and the owner's screenshots as the available reference.
+
 ## 2026-05-05 Shop Diaries Full-Media Card Trial
 
 - Owner direction: product pictures in the public Shop Gallery were too small and visually demoted. Try full-picture product blocks where product information and `Open` / `Share` actions sit on the image.

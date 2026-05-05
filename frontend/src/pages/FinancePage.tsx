@@ -1,9 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DomainIntroToggle from "../components/DomainIntroToggle";
-import NextActionGuide, {
-  type NextActionGuideItem,
-} from "../components/NextActionGuide";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
@@ -15,7 +11,6 @@ import {
 import {
   institutionalInnerCard,
   institutionalPageCard,
-  institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 
@@ -123,7 +118,7 @@ type CrossCommunityPoolSummary = {
   items?: CrossCommunityPoolItem[];
 };
 
-const FINANCE_UI_STORAGE_KEY = "gmfn.finance.sections.v1";
+const FINANCE_UI_STORAGE_KEY = "gmfn.finance.sections.v3";
 
 const FINAL_LOAN_STATUSES = new Set([
   "approved",
@@ -168,6 +163,48 @@ function parseMoneyNumber(value: any): number {
 
 function fmtMoney(value: any): string {
   return parseMoneyNumber(value).toFixed(2);
+}
+
+function fmtFinanceAmount(value: any, currency = "NGN"): string {
+  const amount = parseMoneyNumber(value);
+  const code = safeStr(currency || "NGN").toUpperCase();
+  const pretty = amount.toLocaleString(undefined, {
+    minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  });
+
+  if (code === "NGN") return `N${pretty}`;
+  if (code === "GBP") return `GBP ${pretty}`;
+  if (code === "USD") return `USD ${pretty}`;
+  if (code === "EUR") return `EUR ${pretty}`;
+  return `${pretty} ${code}`;
+}
+
+function poolEventDirection(row: PoolEvent): "in" | "out" | "neutral" {
+  const haystack = `${safeStr(row.eventType)} ${safeStr(row.note)}`.toLowerCase();
+
+  if (
+    haystack.includes("withdraw") ||
+    haystack.includes("outflow") ||
+    haystack.includes("debit") ||
+    haystack.includes("repay") ||
+    haystack.includes("payment out")
+  ) {
+    return "out";
+  }
+
+  if (
+    haystack.includes("deposit") ||
+    haystack.includes("inflow") ||
+    haystack.includes("credit") ||
+    haystack.includes("contribution") ||
+    haystack.includes("paid in") ||
+    haystack.includes("payment in")
+  ) {
+    return "in";
+  }
+
+  return "neutral";
 }
 
 function rowsOf<T = any>(input: any): T[] {
@@ -447,10 +484,6 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return institutionalPageCard(bg);
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
-  return institutionalSoftCard(bg);
-}
-
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return institutionalInnerCard(bg);
 }
@@ -458,7 +491,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#9CB4CF",
+    color: "#42617D",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -473,11 +506,16 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 30,
     borderRadius: 999,
     padding: "6px 10px",
-    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
-    color: primary ? "#CFE3FF" : "#E6EEF8",
+    background: primary
+      ? "linear-gradient(180deg, #EAF3FF 0%, #D9EAFE 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F3F7FC 100%)",
+    color: primary ? "#0B4EA2" : "#243B53",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
+    border: primary
+      ? "1px solid rgba(31,115,224,0.22)"
+      : "1px solid rgba(9,27,46,0.10)",
   };
 }
 
@@ -493,7 +531,6 @@ function tapSafeButtonBase(): React.CSSProperties {
     appearance: "none",
     WebkitAppearance: "none",
     isolation: "isolate",
-    transform: "translateZ(0)",
     outlineOffset: 4,
     lineHeight: 1.2,
   };
@@ -611,7 +648,7 @@ function stopFinanceTap(event: React.SyntheticEvent<HTMLElement>) {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#C8D8EA",
+    color: "#425E78",
     fontSize: 14,
     lineHeight: 1.75,
   };
@@ -664,7 +701,7 @@ function tableCell(strong = false): React.CSSProperties {
 
 function emptyRecord(text: string) {
   return (
-    <div style={{ ...helperText(), color: "rgba(230,238,248,0.76)" }}>
+    <div style={{ ...helperText(), color: "#5D7389" }}>
       {text}
     </div>
   );
@@ -692,10 +729,10 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    overview: false,
-    borrower: false,
-    events: false,
-    reconciliation: false,
+    overview: true,
+    borrower: true,
+    events: true,
+    reconciliation: true,
   };
 }
 
@@ -730,30 +767,6 @@ function communityRole(currentClan: any): string {
       currentClan?.participant_role
     ) || ""
   );
-}
-
-function toneStyles(kind: "calm" | "watch" | "pressure") {
-  if (kind === "pressure") {
-    return {
-      bg: "#FFF5F5",
-      border: "1px solid rgba(239,68,68,0.16)",
-      text: "#991B1B",
-    };
-  }
-
-  if (kind === "watch") {
-    return {
-      bg: "#FFFBEF",
-      border: "1px solid rgba(245,158,11,0.16)",
-      text: "#92400E",
-    };
-  }
-
-  return {
-    bg: "#F3FBF5",
-    border: "1px solid rgba(34,197,94,0.16)",
-    text: "#166534",
-  };
 }
 
 export default function FinancePage() {
@@ -860,12 +873,12 @@ export default function FinancePage() {
 
         const loansPromise =
           typeof (api as any).listMyLoans === "function"
-            ? (api as any).listMyLoans().catch(() => [])
+            ? (api as any).listMyLoans({ clan_id: selectedClanId }).catch(() => [])
             : Promise.resolve([]);
 
         const poolPromise =
           typeof (api as any).getPoolMe === "function"
-            ? (api as any).getPoolMe("NGN", 20).catch(() => null)
+            ? (api as any).getPoolMe("NGN", 20, { clan_id: selectedClanId }).catch(() => null)
             : Promise.resolve(null);
 
         const crossPoolPromise =
@@ -930,11 +943,12 @@ export default function FinancePage() {
             fetchJson("/analytics/clan-liquidity", selectedClanId).catch(
               () => null
             ),
-            typeof (api as any).listExpectedPayments === "function"
-              ? (api as any)
-                  .listExpectedPayments({ clan_id: selectedClanId, limit: 100 })
-                  .catch(() => ({ items: [] }))
-              : Promise.resolve({ items: [] }),
+            fetchJson(
+              `/payment-instructions/my/expected?clan_id=${encodeURIComponent(
+                String(selectedClanId)
+              )}&limit=100`,
+              selectedClanId
+            ).catch(() => ({ items: [] })),
           ]);
 
           if (!alive) return;
@@ -982,18 +996,6 @@ export default function FinancePage() {
       alive = false;
     };
   }, [selectedClanId]);
-
-  const memberName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Member"
-    );
-  }, [me]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -1107,7 +1109,6 @@ export default function FinancePage() {
     me?.trust_band,
     "Not ready"
   );
-  const trustPackId = firstTruthy(trustWhy?.pack_id);
   const repaymentProofCount = countTrustEvents(trustCounts, [
     "loan_fully_repaid",
     "loan_repaid",
@@ -1307,6 +1308,52 @@ export default function FinancePage() {
     pendingReconciliationCount,
   ]);
 
+  const visibleMonthEvents = useMemo(() => {
+    const now = new Date();
+    return poolEvents.filter((row) => {
+      const raw = firstTruthy(row.createdAt, row.confirmedAt);
+      if (!raw) return false;
+      const date = new Date(raw);
+      if (!Number.isFinite(date.getTime())) return false;
+      return (
+        date.getFullYear() === now.getFullYear() &&
+        date.getMonth() === now.getMonth()
+      );
+    });
+  }, [poolEvents]);
+
+  const visibleMonthInflow = useMemo(
+    () =>
+      visibleMonthEvents
+        .filter((row) => poolEventDirection(row) === "in")
+        .reduce((sum, row) => sum + parseMoneyNumber(row.amount), 0),
+    [visibleMonthEvents]
+  );
+
+  const visibleMonthOutflow = useMemo(
+    () =>
+      visibleMonthEvents
+        .filter((row) => poolEventDirection(row) === "out")
+        .reduce((sum, row) => sum + parseMoneyNumber(row.amount), 0),
+    [visibleMonthEvents]
+  );
+
+  const visibleMonthInflowCount = useMemo(
+    () => visibleMonthEvents.filter((row) => poolEventDirection(row) === "in").length,
+    [visibleMonthEvents]
+  );
+
+  const visibleMonthOutflowCount = useMemo(
+    () => visibleMonthEvents.filter((row) => poolEventDirection(row) === "out").length,
+    [visibleMonthEvents]
+  );
+
+  const visibleMonthNet = visibleMonthInflow - visibleMonthOutflow;
+  const visibleMonthNetLabel =
+    visibleMonthNet >= 0
+      ? `+${fmtFinanceAmount(visibleMonthNet, crossCurrency)}`
+      : `-${fmtFinanceAmount(Math.abs(visibleMonthNet), crossCurrency)}`;
+
   const financeFileReading = useMemo(() => {
     const hasHardPressure =
       borrowerRemainingTotal > 0 ||
@@ -1353,131 +1400,6 @@ export default function FinancePage() {
     pendingReconciliationCount,
   ]);
 
-  const financeFileTone = toneStyles(financeFileReading.tone);
-
-  const financeNextActionItems = useMemo<NextActionGuideItem[]>(
-    () => [
-      {
-        id: "finance-summary",
-        label: "Check my money record",
-        detail: "Open the main Finance summary on this page.",
-        technical: "Finance summary",
-        keywords: ["summary", "balance", "record", "available", "locked", "pool"],
-        tone: "primary",
-      },
-      {
-        id: "money-in",
-        label: "Add money",
-        detail: "Open pool pay-in instructions.",
-        technical: "Money In",
-        to: "/app/payment/pool",
-        keywords: ["deposit", "pay in", "add money", "money in", "pool"],
-      },
-      {
-        id: "money-out",
-        label: "Take money out",
-        detail: "Open withdrawal guidance and payout checks.",
-        technical: "Money Out",
-        to: "/app/withdrawal-instructions",
-        keywords: ["withdraw", "withdrawal", "cash out", "payout", "take money"],
-      },
-      {
-        id: "support",
-        label: "Open Loans & Support",
-        detail: "Open the live Loans & Support workspace for this community.",
-        technical: "Loans & Support",
-        to: "/app/loans",
-        keywords: ["loan", "borrow", "lend", "support", "guarantor", "repay"],
-      },
-      {
-        id: "payment-rails",
-        label: "Open Payment Rails",
-        detail: "Review inbound and outbound money route options.",
-        technical: "Payment rails",
-        to: "/app/payment-rails",
-        keywords: ["rail", "payment route", "bank", "transfer", "route"],
-      },
-      {
-        id: "payout-details",
-        label: "Open Payout Details",
-        detail: "Check where withdrawals should be sent.",
-        technical: "Payout details",
-        to: "/app/payout-details",
-        keywords: ["account", "bank account", "payout details", "destination"],
-      },
-      {
-        id: "reconciliation",
-        label: "Open Payment Reconciliation",
-        detail: `${pendingReconciliationCount} payment item${
-          pendingReconciliationCount === 1 ? "" : "s"
-        } may need matching or confirmation.`,
-        technical: "Payment reconciliation",
-        keywords: ["expected", "match", "matched", "reference", "reconciliation"],
-        tone: pendingReconciliationCount > 0 ? "primary" : "soft",
-      },
-      {
-        id: "readiness",
-        label: "Open Loan Readiness",
-        detail: "Review whether the live support path looks ready to continue.",
-        technical: "Loan readiness",
-        to: "/app/loan-readiness",
-        keywords: ["ready", "readiness", "eligible", "clean", "trust"],
-      },
-      {
-        id: "trust-passport",
-        label: "Open Trust Passport",
-        detail: "See the trust evidence behind repayment and support behaviour.",
-        technical: "Trust Passport",
-        to: "/app/trust",
-        keywords: ["trust", "passport", "evidence", "score", "record"],
-      },
-      {
-        id: "spotlight",
-        label: "Open spotlight guide",
-        detail:
-          "Go to the guided spotlight family for free spotlight, subscription spotlight, Vault, or shop setup.",
-        technical: "Guided spotlight",
-        to: "/app/community?guide=spotlight",
-        keywords: [
-          "spotlight",
-          "free spotlight",
-          "subscription spotlight",
-          "vault",
-          "shop setup",
-        ],
-        tone: "soft",
-      },
-      {
-        id: "marketplace",
-        label: "Return to Marketplace",
-        detail: "Go back to the selected community workspace.",
-        technical: "Marketplace",
-        to: "/app/marketplace",
-        keywords: ["market", "community", "workspace"],
-        tone: "soft",
-      },
-      {
-        id: "notifications",
-        label: "Open Action Inbox",
-        detail: "Open the action queue when someone needs a response.",
-        technical: "Notifications",
-        to: "/app/notifications",
-        keywords: ["notice", "notification", "inbox", "waiting", "queue"],
-        tone: "soft",
-      },
-      {
-        id: "focus",
-        label: "Open Focus Commitments",
-        detail: "Open the Dashboard focus section for a savings, repayment, or support promise.",
-        technical: "Dashboard focus commitments",
-        to: "/app/dashboard#focus-commitments",
-        keywords: ["promise", "commitment", "focus", "plan", "repayment plan"],
-        tone: "soft",
-      },
-    ],
-    [pendingReconciliationCount]
-  );
-
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
@@ -1513,22 +1435,6 @@ export default function FinancePage() {
     target.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function handleFinanceNextAction(item: NextActionGuideItem) {
-    switch (item.id) {
-      case "finance-summary":
-        setCollapsed((prev) => ({ ...prev, overview: false }));
-        revealFinanceSection("finance-summary");
-        break;
-      case "reconciliation":
-        setCollapsed((prev) => ({ ...prev, reconciliation: false }));
-        revealFinanceSection("finance-reconciliation");
-        break;
-      default:
-        if (item.to) openFinanceRoute(item.to);
-        break;
-    }
-  }
-
   if (loading) {
     return (
       <div
@@ -1551,7 +1457,7 @@ export default function FinancePage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
+          <div style={{ color: "#425E78", fontWeight: 800, lineHeight: 1.8 }}>
             Loading finance record...
           </div>
         </section>
@@ -1579,91 +1485,56 @@ export default function FinancePage() {
         backLabel="Marketplace"
       />
 
-      <DomainIntroToggle
-        title="How Finance Helps You"
-        body="Finance is not here to judge trust by how much money someone already has. It helps a member build visible reliability from how they behave around money: borrowing honestly, repaying properly, supporting others responsibly, and avoiding pressure across too many communities. Finance keeps the wider record. Loans & Support handles the live workflow inside one community."
-        bullets={[
-          "A member without formal bank history can still build proof through small completed repayments, confirmed payments, and responsible support.",
-          "If the member belongs to five communities, Finance keeps one GSN finance file with each community shown as its own simple finance unit.",
-          "Each community unit can show what came in, what was borrowed, what was repaid, what is still due, and whether the status is Helping, Watch, or Pressure.",
-          "Good behaviour in one community can strengthen the wider trust story, while missed payments, defaults, or heavy locked support become early warning signals.",
-          "Finance shows what happened with money. Trust Passport explains what that behaviour means. Trust Events record the proof that changes the trust story.",
-        ]}
-        note="Golden rule: trust is earned when finance promises are completed, not when money merely moves."
-        tone="blue"
-      />
-
-      <NextActionGuide
-        storageKey="gmfn.finance.nextActionGuide.v1"
-        compact={isCompact}
-        items={financeNextActionItems}
-        onSelect={handleFinanceNextAction}
-        intro="Type a finance task such as deposit, withdraw, loan, payout, support, expected payment, or bank route. GSN points to the closest money path."
-      />
-
       <section
         id="finance-file"
-        style={pageCard(
-          "linear-gradient(145deg, #F8FBFF 0%, #FFFFFF 34%, #EEF6FF 72%, #FFF7EF 100%)"
-        )}
+        style={{
+          borderRadius: 28,
+          padding: isCompact ? 18 : 24,
+          border: "1px solid rgba(214,170,69,0.32)",
+          background:
+            "radial-gradient(circle at 88% 18%, rgba(214,170,69,0.20), transparent 24%), linear-gradient(145deg, #07172C 0%, #092642 62%, #03101F 100%)",
+          boxShadow: "0 24px 52px rgba(7,23,44,0.18)",
+          color: "#F8FBFF",
+          position: "relative",
+          overflow: "hidden",
+        }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) minmax(320px, 0.9fr)",
-            gap: 16,
-            alignItems: "stretch",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0,1fr) 120px",
+            gap: 18,
+            alignItems: "start",
           }}
         >
-          <div
-            style={{
-              borderRadius: 24,
-              padding: isCompact ? 18 : 22,
-              border: "1px solid rgba(15,23,42,0.12)",
-              background:
-                "radial-gradient(circle at 14% 18%, rgba(219,39,119,0.20), transparent 28%), radial-gradient(circle at 90% 8%, rgba(245,158,11,0.24), transparent 26%), linear-gradient(145deg, #0B1F33 0%, #133A5A 54%, #1F5C86 100%)",
-              boxShadow: "0 24px 48px rgba(11,31,51,0.16)",
-              color: "#F8FBFF",
-            }}
-          >
-            <div
+          <div>
+            <div style={{ ...sectionLabel(), color: "#F2CF77" }}>
+              Finance overview
+            </div>
+            <h1
               style={{
-                color: "#FDE68A",
-                fontSize: 12,
+                margin: "12px 0 0",
+                fontSize: isCompact ? 31 : 44,
+                lineHeight: 1.04,
                 fontWeight: 950,
-                letterSpacing: 2.4,
-                textTransform: "uppercase",
+                letterSpacing: -0.5,
+                maxWidth: 620,
               }}
             >
-              GSN finance file
-            </div>
-
-            <div
+              Your community finances. Clear. Secure. Together.
+            </h1>
+            <p
               style={{
-                marginTop: 10,
-                fontSize: isCompact ? 30 : 38,
-                fontWeight: 950,
-                lineHeight: 1.05,
-              }}
-            >
-              Wider finance file
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
+                margin: "14px 0 0",
                 color: "#D8E7F5",
-                fontSize: 15,
-                lineHeight: 1.75,
-                maxWidth: 760,
+                fontSize: isCompact ? 15 : 17,
+                lineHeight: 1.65,
+                maxWidth: 560,
               }}
             >
-              Wider finance view for {memberName}. The same GSN ID is read
-              across communities, with each local finance unit kept separate so
-              GSN can see whether money behaviour is helping, needs watching,
-              or creating pressure.
-            </div>
-
+              Track visible money records across your communities, keep payment
+              evidence clear, and manage community finance safely.
+            </p>
             <div
               style={{
                 marginTop: 16,
@@ -1674,20 +1545,20 @@ export default function FinancePage() {
             >
               <span
                 style={{
-                  ...badge(true),
-                  color: "#FFFFFF",
-                  background: "rgba(255,255,255,0.16)",
+                  ...badge(false),
+                  color: "#F8FBFF",
+                  background: "rgba(255,255,255,0.12)",
                   border: "1px solid rgba(255,255,255,0.14)",
                 }}
               >
-                Communities: {crossCommunitiesCount}
+                {communityLabel}
               </span>
               <span
                 style={{
                   ...badge(false),
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.14)",
                 }}
               >
                 GSN ID: {gmfnId}
@@ -1697,200 +1568,246 @@ export default function FinancePage() {
                   ...badge(false),
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.14)",
                 }}
               >
-                Trust band: {trustBand}
+                Community ID: {publicCommunityCode}
               </span>
+              {poolReference ? (
+                <span
+                  style={{
+                    ...badge(false),
+                    color: "#F8FBFF",
+                    background: "rgba(255,255,255,0.12)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                  }}
+                >
+                  Pool ref: {poolReference}
+                </span>
+              ) : null}
               <span
                 style={{
                   ...badge(false),
                   color: "#F8FBFF",
                   background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.14)",
                 }}
               >
-                Trust score: {trustScore}
+                Role: {memberRole}
               </span>
             </div>
           </div>
 
           <div
+            aria-hidden="true"
             style={{
-              ...softCard(financeFileTone.bg),
-              border: financeFileTone.border,
-              display: "grid",
-              gap: 12,
-              alignContent: "start",
+              justifySelf: isCompact ? "start" : "end",
+              width: isCompact ? 84 : 108,
+              height: isCompact ? 84 : 108,
+              borderRadius: 28,
+              border: "2px solid rgba(214,170,69,0.62)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#F2CF77",
+              fontSize: isCompact ? 34 : 44,
+              fontWeight: 950,
+              boxShadow: "inset 0 0 28px rgba(214,170,69,0.10)",
             }}
           >
-            <div style={sectionLabel()}>Record status</div>
-            <div
-              style={{
-                color: financeFileTone.text,
-                fontSize: 23,
-                fontWeight: 950,
-                lineHeight: 1.18,
-              }}
-            >
-              {financeFileReading.title}
-            </div>
-            <div style={{ ...helperText(), color: "#F8FBFF" }}>
-              {financeFileReading.detail}
-            </div>
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-                marginTop: 2,
-              }}
-            >
-              <OriginLink to="/app/trust" style={actionBtn("secondary")}>
-                Open Trust Passport
-              </OriginLink>
-              <OriginLink to="/app/loan-readiness" style={actionBtn("soft")}>
-                Check readiness
-              </OriginLink>
-            </div>
+            GSN
           </div>
         </div>
 
         <div
           style={{
-            marginTop: 16,
+            marginTop: 22,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "0.95fr 1fr 1fr",
+            gridTemplateColumns: isCompact
+              ? "repeat(2, minmax(0, 1fr))"
+              : "repeat(4, minmax(0, 1fr))",
             gap: 12,
           }}
         >
-          <div style={innerCard("rgba(255,255,255,0.82)")}>
-            <div style={sectionLabel()}>Cross-community totals</div>
-            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              <div style={helperText()}>
-                Effective available:{" "}
-                <strong>
-                  {fmtMoney(crossEffectiveAvailable)} {crossCurrency}
-                </strong>
+          {[
+            {
+              mark: "CO",
+              label: "Communities",
+              value: String(crossCommunitiesCount),
+              note: "Active",
+            },
+            {
+              mark: "TB",
+              label: "Total visible balance",
+              value: fmtFinanceAmount(crossMembershipPool, crossCurrency),
+              note: `Held: ${fmtFinanceAmount(crossReservedPool, crossCurrency)}`,
+            },
+            {
+              mark: "MI",
+              label: "This month inflow",
+              value: fmtFinanceAmount(visibleMonthInflow, crossCurrency),
+              note: "Visible this month",
+            },
+            {
+              mark: "TR",
+              label: "Trust score",
+              value: safeStr(trustScore || "0"),
+              note: safeStr(trustBand || "Not ready"),
+            },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                minHeight: 124,
+                borderRadius: 18,
+                padding: isCompact ? 12 : 16,
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.06)",
+                display: "grid",
+                alignContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <div
+                style={{
+                  color: "#D6AA45",
+                  fontSize: 11,
+                  fontWeight: 950,
+                  letterSpacing: 0.7,
+                  textTransform: "uppercase",
+                }}
+              >
+                {item.mark} {item.label}
               </div>
-              <div style={helperText()}>
-                Membership pool total:{" "}
-                <strong>
-                  {fmtMoney(crossMembershipPool)} {crossCurrency}
-                </strong>
+              <div
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: isCompact ? 21 : 24,
+                  fontWeight: 950,
+                  lineHeight: 1.1,
+                  overflowWrap: "anywhere",
+                }}
+              >
+                {item.value}
               </div>
-              <div style={helperText()}>
-                Reserved / locked:{" "}
-                <strong>
-                  {fmtMoney(crossReservedPool)} {crossCurrency}
-                </strong>
-              </div>
-              <div style={helperText()}>
-                Guarantee locked as supporter:{" "}
-                <strong>
-                  {fmtMoney(crossLockedGuarantees)} {crossCurrency}
-                </strong>
-              </div>
-              <div style={helperText()}>
-                Earned guarantor value:{" "}
-                <strong>
-                  {fmtMoney(guarantorEarningsTotal)} {crossCurrency}
-                </strong>
+              <div style={{ color: "#D8E7F5", fontSize: 13, fontWeight: 800 }}>
+                {item.note}
               </div>
             </div>
-          </div>
-
-          <div style={innerCard("#F7FBF8")}>
-            <div style={sectionLabel()}>Positive signals</div>
-            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              {financeHelps.map((item, index) => (
-                <div key={`finance-help-${index}`} style={helperText()}>
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={innerCard("#FFFDF7")}>
-            <div style={sectionLabel()}>Attention signals</div>
-            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              {financeWatchItems.map((item, index) => (
-                <div key={`finance-watch-${index}`} style={helperText()}>
-                  {item}
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
+      </section>
 
-        {crossCommunityItems.length > 0 ? (
-          <div style={{ marginTop: 16 }}>
-            <div style={sectionLabel()}>Community finance units</div>
-            <div style={{ marginTop: 10, ...tableWrap() }}>
-              <table style={financeTable()}>
-                <thead>
-                  <tr>
-                    <th style={tableHeadCell()}>Community</th>
-                    <th style={tableHeadCell()}>Community ID</th>
-                    <th style={tableHeadCell()}>Pool ref</th>
-                    <th style={tableHeadCell()}>Effective</th>
-                    <th style={tableHeadCell()}>Reserved</th>
-                    <th style={tableHeadCell()}>Pending in</th>
-                    <th style={tableHeadCell()}>Pending out</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {crossCommunityItems.slice(0, 8).map((item, index) => {
-                    const label =
-                      firstTruthy(item.marketplace_name, item.clan_name) ||
-                      `Community ${item.clan_id || index + 1}`;
-                    const itemCurrency = safeStr(item.currency || crossCurrency);
-
-                    return (
-                      <tr key={`${item.clan_id || index}`}>
-                        <td style={tableCell(true)}>{label}</td>
-                        <td style={tableCell()}>{safeStr(item.community_code || "-")}</td>
-                        <td style={tableCell()}>{safeStr(item.reference || "-")}</td>
-                        <td style={tableCell(true)}>
-                          {fmtMoney(item.effective_available)} {itemCurrency}
-                        </td>
-                        <td style={tableCell()}>
-                          {fmtMoney(item.reserved_pool)} {itemCurrency}
-                        </td>
-                        <td style={tableCell()}>
-                          {fmtMoney(item.pending_deposits)} {itemCurrency}
-                        </td>
-                        <td style={tableCell()}>
-                          {fmtMoney(item.pending_withdrawals)} {itemCurrency}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : null}
-
-        {trustPackId || guarantorEarningsItems.length > 0 ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            {trustPackId ? (
-              <span style={badge(false)}>Trust pack: {trustPackId}</span>
-            ) : null}
-            {guarantorEarningsItems.length > 0 ? (
-              <span style={badge(false)}>
-                Earnings rows: {guarantorEarningsItems.length}
+      <section style={pageCard("#FFFFFF")}>
+        <div style={sectionLabel()}>What do you want to do?</div>
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "repeat(2, minmax(0, 1fr))"
+              : "repeat(4, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          {[
+            {
+              id: "money-in",
+              mark: "IN",
+              label: "Record Transaction",
+              detail: "Create a real pay-in instruction.",
+              action: () => openFinanceRoute("/app/payment/pool"),
+              color: "#135FD1",
+            },
+            {
+              id: "reports",
+              mark: "RP",
+              label: "View Reports",
+              detail: "Open balances, exposure, and reconciliation.",
+              action: () => {
+                setCollapsed((prev) => ({ ...prev, overview: false }));
+                revealFinanceSection("finance-summary");
+              },
+              color: "#21A365",
+            },
+            {
+              id: "bank-accounts",
+              mark: "BA",
+              label: "Bank Accounts",
+              detail: "Open payment rails and payout routes.",
+              action: () => openFinanceRoute("/app/payment-rails"),
+              color: "#D6AA45",
+            },
+            {
+              id: "export-data",
+              mark: "EX",
+              label: "Export Data",
+              detail: "Open the visible ledger first.",
+              action: () => {
+                setCollapsed((prev) => ({ ...prev, events: false }));
+                revealFinanceSection("finance-events");
+              },
+              color: "#5B3BC4",
+            },
+          ].map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onPointerDown={stopFinanceTap}
+              onMouseDown={stopFinanceTap}
+              onTouchStart={stopFinanceTap}
+              onClick={item.action}
+              style={{
+                ...tapSafeButtonBase(),
+                minHeight: isCompact ? 132 : 152,
+                borderRadius: 20,
+                border: "1px solid rgba(12,41,71,0.10)",
+                background: "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
+                boxShadow: "0 12px 28px rgba(7,23,44,0.08)",
+                color: "#07172C",
+                display: "grid",
+                gap: 10,
+                justifyItems: "center",
+                alignContent: "center",
+                padding: isCompact ? 12 : 16,
+                textAlign: "center",
+                cursor: "pointer",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 54,
+                  height: 54,
+                  borderRadius: 18,
+                  background: item.color,
+                  color: "#FFFFFF",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 14,
+                  fontWeight: 950,
+                  boxShadow: "0 10px 22px rgba(7,23,44,0.12)",
+                }}
+              >
+                {item.mark}
               </span>
-            ) : null}
-          </div>
-        ) : null}
+              <span style={{ fontSize: 15, fontWeight: 950, lineHeight: 1.18 }}>
+                {item.label}
+              </span>
+              <span
+                style={{
+                  color: "#52697F",
+                  fontSize: 12,
+                  fontWeight: 750,
+                  lineHeight: 1.35,
+                }}
+              >
+                {item.detail}
+              </span>
+            </button>
+          ))}
+        </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -1903,60 +1820,305 @@ export default function FinancePage() {
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Selected community finance unit</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Current community pool file and local operating context.
-            </div>
-          </div>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <span style={badge(true)}>Community ID: {publicCommunityCode}</span>
-            <span style={badge(false)}>GSN ID: {gmfnId}</span>
-            {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-          </div>
+          <div style={sectionLabel()}>Cash flow summary</div>
+          <span style={badge(false)}>This month, visible record</span>
         </div>
 
-        <div style={{ marginTop: 14, ...tableWrap() }}>
-          <table style={financeTable()}>
-            <thead>
-              <tr>
-                <th style={tableHeadCell()}>Community</th>
-                <th style={tableHeadCell()}>Pool ref</th>
-                <th style={tableHeadCell()}>Available</th>
-                <th style={tableHeadCell()}>Effective</th>
-                <th style={tableHeadCell()}>Reserved</th>
-                <th style={tableHeadCell()}>Pending in</th>
-                <th style={tableHeadCell()}>Pending out</th>
-                <th style={tableHeadCell()}>Expected payments</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td style={tableCell(true)}>{communityLabel}</td>
-                <td style={tableCell()}>{poolReference || "Awaiting reference"}</td>
-                <td style={tableCell(true)}>
-                  {poolAmount} {poolCurrency}
-                </td>
-                <td style={tableCell(true)}>
-                  {effectiveAvailable} {poolCurrency}
-                </td>
-                <td style={tableCell()}>
-                  {reservedPool} {poolCurrency}
-                </td>
-                <td style={tableCell()}>
-                  {pendingDeposits} {poolCurrency}
-                </td>
-                <td style={tableCell()}>
-                  {pendingWithdrawals} {poolCurrency}
-                </td>
-                <td style={tableCell()}>{activeExpectedPayments.length}</td>
-              </tr>
-            </tbody>
-          </table>
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 0,
+            border: "1px solid rgba(12,41,71,0.08)",
+            borderRadius: 20,
+            overflow: "hidden",
+            background: "#FFFFFF",
+          }}
+        >
+          {[
+            {
+              label: "Total inflow",
+              value: fmtFinanceAmount(visibleMonthInflow, crossCurrency),
+              note: `${visibleMonthInflowCount} visible event${
+                visibleMonthInflowCount === 1 ? "" : "s"
+              }`,
+              color: "#168254",
+            },
+            {
+              label: "Total outflow",
+              value: fmtFinanceAmount(visibleMonthOutflow, crossCurrency),
+              note: `${visibleMonthOutflowCount} visible event${
+                visibleMonthOutflowCount === 1 ? "" : "s"
+              }`,
+              color: "#C83A3A",
+            },
+            {
+              label: "Net visible flow",
+              value: visibleMonthNetLabel,
+              note: "From visible pool activity",
+              color: visibleMonthNet >= 0 ? "#168254" : "#C83A3A",
+            },
+          ].map((item, index) => (
+            <div
+              key={item.label}
+              style={{
+                padding: isCompact ? 16 : 18,
+                borderRight:
+                  !isCompact && index < 2
+                    ? "1px solid rgba(12,41,71,0.08)"
+                    : "none",
+                borderBottom:
+                  isCompact && index < 2
+                    ? "1px solid rgba(12,41,71,0.08)"
+                    : "none",
+              }}
+            >
+              <div style={{ color: item.color, fontSize: 14, fontWeight: 950 }}>
+                {item.label}
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#07172C",
+                  fontSize: 24,
+                  fontWeight: 950,
+                  lineHeight: 1.1,
+                }}
+              >
+                {item.value}
+              </div>
+              <div style={{ marginTop: 5, color: "#52697F", fontSize: 13, fontWeight: 800 }}>
+                {item.note}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
-      <section id="finance-summary" style={pageCard("#FFFFFF")}>
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={sectionLabel()}>Recent transactions</div>
+          <button
+            type="button"
+            onPointerDown={stopFinanceTap}
+            onMouseDown={stopFinanceTap}
+            onTouchStart={stopFinanceTap}
+            onClick={() => {
+              setCollapsed((prev) => ({ ...prev, events: false }));
+              revealFinanceSection("finance-events");
+            }}
+            style={{
+              ...tapSafeButtonBase(),
+              border: "none",
+              background: "transparent",
+              color: "#135FD1",
+              fontSize: 14,
+              fontWeight: 950,
+              cursor: "pointer",
+            }}
+          >
+            View all
+          </button>
+        </div>
+
+        <div style={{ marginTop: 12, display: "grid" }}>
+          {poolEvents.length === 0 ? (
+            emptyRecord("No recent finance event is visible yet.")
+          ) : (
+            poolEvents.slice(0, 3).map((row, index) => {
+              const direction = poolEventDirection(row);
+              const isOut = direction === "out";
+              const amountColor = direction === "neutral" ? "#07172C" : isOut ? "#C83A3A" : "#168254";
+              const amountPrefix = direction === "neutral" ? "" : isOut ? "-" : "+";
+
+              return (
+                <div
+                  key={`${row.id || index}`}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "44px minmax(0, 1fr) auto",
+                    gap: 12,
+                    alignItems: "center",
+                    padding: "13px 0",
+                    borderBottom:
+                      index < Math.min(poolEvents.length, 3) - 1
+                        ? "1px solid rgba(12,41,71,0.08)"
+                        : "none",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 999,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#FFFFFF",
+                      background: isOut ? "#C83A3A" : "#21A365",
+                      fontSize: 18,
+                      fontWeight: 950,
+                    }}
+                  >
+                    {isOut ? "-" : "+"}
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        color: "#07172C",
+                        fontSize: 16,
+                        fontWeight: 950,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {safeStr(row.eventType || "Finance event")}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 3,
+                        color: "#52697F",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {safeStr(row.note || row.reference || communityLabel)}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ color: amountColor, fontSize: 15, fontWeight: 950 }}>
+                      {amountPrefix}
+                      {fmtFinanceAmount(row.amount || "0", row.currency || poolCurrency)}
+                    </div>
+                    <div style={{ marginTop: 3, color: "#6F7F92", fontSize: 12, fontWeight: 750 }}>
+                      {row.createdAt ? safeDateTime(row.createdAt) : "Visible record"}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      <section
+        style={{
+          ...pageCard("linear-gradient(145deg, #07172C 0%, #092642 70%, #03101F 100%)"),
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "76px minmax(0,1fr) auto",
+          gap: 16,
+          alignItems: "center",
+          color: "#F8FBFF",
+          border: "1px solid rgba(214,170,69,0.30)",
+        }}
+      >
+        <div
+          aria-hidden="true"
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 20,
+            border: "2px solid rgba(214,170,69,0.62)",
+            color: "#F2CF77",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 950,
+            fontSize: 22,
+          }}
+        >
+          GSN
+        </div>
+        <div>
+          <div style={{ ...sectionLabel(), color: "#F2CF77" }}>Finance health</div>
+          <div style={{ marginTop: 6, fontSize: 20, fontWeight: 950 }}>
+            {financeFileReading.title}
+          </div>
+          <div style={{ marginTop: 6, color: "#D8E7F5", fontSize: 14, lineHeight: 1.6 }}>
+            {financeFileReading.detail}
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                borderRadius: 14,
+                padding: "10px 12px",
+                background: "rgba(33,163,101,0.12)",
+                border: "1px solid rgba(33,163,101,0.22)",
+                color: "#E9F8EF",
+                fontSize: 12,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              Positive: {financeHelps[0]}
+            </div>
+            <div
+              style={{
+                borderRadius: 14,
+                padding: "10px 12px",
+                background: "rgba(242,207,119,0.12)",
+                border: "1px solid rgba(242,207,119,0.26)",
+                color: "#FFF4CC",
+                fontSize: 12,
+                fontWeight: 850,
+                lineHeight: 1.45,
+              }}
+            >
+              Watch: {financeWatchItems[0]}
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onPointerDown={stopFinanceTap}
+          onMouseDown={stopFinanceTap}
+          onTouchStart={stopFinanceTap}
+          onClick={() => {
+            setCollapsed((prev) => ({
+              ...prev,
+              overview: false,
+              reconciliation: false,
+              borrower: false,
+            }));
+            revealFinanceSection("finance-summary");
+          }}
+          style={{
+            ...actionBtn("primary"),
+            background:
+              "linear-gradient(180deg, #FFE28A 0%, #D6AA45 70%, #B78321 100%)",
+            color: "#07172C",
+            minWidth: isCompact ? "100%" : 210,
+          }}
+        >
+          View Finance Health
+        </button>
+      </section>
+
+      <section
+        id="finance-summary"
+        style={collapsed.overview ? { display: "none" } : pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
@@ -2022,7 +2184,10 @@ export default function FinancePage() {
         ) : null}
       </section>
 
-      <section id="finance-reconciliation" style={pageCard("#FFFFFF")}>
+      <section
+        id="finance-reconciliation"
+        style={collapsed.reconciliation ? { display: "none" } : pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
@@ -2123,7 +2288,7 @@ export default function FinancePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={collapsed.borrower ? { display: "none" } : pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -2333,7 +2498,10 @@ export default function FinancePage() {
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section
+        id="finance-events"
+        style={collapsed.events ? { display: "none" } : pageCard("#FFFFFF")}
+      >
         <div
           style={{
             display: "flex",
