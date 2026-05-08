@@ -20239,7 +20239,7 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
   - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
 - Remaining risk:
-  - This is a route-local guard against hash/section hijacking. A final browser walkthrough should still click `Create / Refresh`, `Copy Join Link`, `Copy Message`, `Email Link`, `Open Join Link`, and `Send WhatsApp` on the deployed page.
+  - Superseded by the later Marketplace join-link polish below: the route-local guard remains useful, but copy/share actions must not rewrite the page hash because that can feel like a bounce.
 
 ### System-level outward-link button audit (2026-05-08)
 
@@ -20473,3 +20473,20 @@ GSN-branded invite composer and invite-entry continuity.
   - `git diff --check` passed.
 - Remaining risk:
   - `LoanSuggestionsPage`, `LoanSummaryPage`, repayment, revenue allocation, payment rails, payout details, and wider trust/admin pages still need their own domain passes. This pass focused on the active support hub and its immediate neighboring routes.
+
+### Marketplace join-link button polish (2026-05-08)
+
+- Owner reported that Marketplace "Copy Join Link" still felt wrong: duplicated open/share controls in the join-link lane, and clicking copy could appear to bounce into another Marketplace block such as Demand or Loans/Support.
+- Updated `frontend/src/pages/MarketplacePage.tsx` only.
+- Behavior:
+  - "Copy Join Link" is now the first/primary action in the "Join this community" card.
+  - removed the duplicate full-width "Open secure join page" anchor and the extra "Open Join Link" button from that same lane.
+  - kept separate secondary actions for refreshing the join link, copying the invite message, emailing the join link, and WhatsApp sharing.
+  - copy/email/WhatsApp/open helpers no longer rewrite the page hash to `#marketplace-owned-links`; this avoids the visible jump/bounce while the user is already inside the owned-links section.
+  - Marketplace action buttons now use stronger pointer/mouse/touch capture guards and higher local z-index so taps are less likely to leak into neighboring route rows or section launchers.
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
+- Remaining risk:
+  - A live browser walkthrough should still click the exact owner-reported path: open Marketplace, expand Marketplace and entry links, refresh/create the community join link if needed, then click `Copy Join Link`, `Copy Invite Message`, `Email Join Link`, and `WhatsApp` to confirm none of them jumps into Demand, Loans/Support, or another route.

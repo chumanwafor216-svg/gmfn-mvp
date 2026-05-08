@@ -1177,34 +1177,6 @@ function compactStatusPillStyle(primary = false): React.CSSProperties {
   };
 }
 
-function highlightedExternalLinkStyle(): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    minHeight: 54,
-    marginTop: 10,
-    borderRadius: 14,
-    border: "1px solid rgba(11,99,209,0.3)",
-    background:
-      "linear-gradient(180deg, rgba(239,246,255,0.99) 0%, rgba(210,228,250,0.93) 100%)",
-    color: "#0B63D1",
-    fontWeight: 900,
-    fontSize: 13,
-    lineHeight: 1.55,
-    padding: "10px 12px",
-    textDecoration: "none",
-    textAlign: "center",
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
-    boxShadow:
-      "0 12px 22px rgba(11,99,209,0.12), inset 0 1px 0 rgba(255,255,255,0.88)",
-    cursor: "pointer",
-    touchAction: "manipulation",
-  };
-}
-
 function actionBtn(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
@@ -1477,6 +1449,9 @@ function marketplaceInlineActionsStyle(
 ): React.CSSProperties {
   return {
     marginTop: 12,
+    position: "relative",
+    isolation: "isolate",
+    zIndex: 4,
     display: "grid",
     gridTemplateColumns: isCompact
       ? "1fr"
@@ -1496,7 +1471,12 @@ function marketplaceInlineActionStyle(
   return {
     ...actionBtn(kind, disabled),
     width: "100%",
-    minHeight: 48,
+    minHeight: 54,
+    position: "relative",
+    isolation: "isolate",
+    zIndex: 5,
+    pointerEvents: "auto",
+    touchAction: "manipulation",
   };
 }
 
@@ -1898,7 +1878,9 @@ export default function MarketplacePage() {
   function consumeMarketplacePointerEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
-    event?.stopPropagation();
+    if (!event) return;
+    event.stopPropagation();
+    (event.nativeEvent as Event | undefined)?.stopImmediatePropagation?.();
   }
 
   function consumeMarketplaceButtonEvent(
@@ -1907,6 +1889,7 @@ export default function MarketplacePage() {
     if (!event) return;
     event.preventDefault();
     event.stopPropagation();
+    (event.nativeEvent as Event | undefined)?.stopImmediatePropagation?.();
   }
 
   function runMarketplaceAction(
@@ -1917,44 +1900,45 @@ export default function MarketplacePage() {
     action();
   }
 
-  function replaceMarketplaceSectionHash(sectionId: string) {
-    const nextHash = `#${sectionId}`;
-    if (location.hash === nextHash) return;
-
-    navigate(
-      {
-        pathname: location.pathname,
-        search: location.search,
-        hash: nextHash,
-      },
-      { replace: true, preventScrollReset: true }
-    );
+  function marketplacePointerGuardProps(): Pick<
+    React.HTMLAttributes<HTMLElement>,
+    | "onPointerDownCapture"
+    | "onPointerDown"
+    | "onMouseDownCapture"
+    | "onMouseDown"
+    | "onTouchStartCapture"
+    | "onTouchStart"
+    | "onClick"
+  > {
+    return {
+      onPointerDownCapture: consumeMarketplacePointerEvent,
+      onPointerDown: consumeMarketplacePointerEvent,
+      onMouseDownCapture: consumeMarketplacePointerEvent,
+      onMouseDown: consumeMarketplacePointerEvent,
+      onTouchStartCapture: consumeMarketplacePointerEvent,
+      onTouchStart: consumeMarketplacePointerEvent,
+      onClick: consumeMarketplacePointerEvent,
+    };
   }
 
-  function pinMarketplaceOwnedLinksSection() {
-    setSectionsOpen((prev) => (prev.tools ? prev : { ...prev, tools: true }));
-    replaceMarketplaceSectionHash("marketplace-owned-links");
+  function marketplaceButtonGuardProps(): Pick<
+    React.HTMLAttributes<HTMLElement>,
+    | "onPointerDownCapture"
+    | "onPointerDown"
+    | "onMouseDownCapture"
+    | "onMouseDown"
+    | "onTouchStartCapture"
+    | "onTouchStart"
+  > {
+    return {
+      onPointerDownCapture: consumeMarketplacePointerEvent,
+      onPointerDown: consumeMarketplacePointerEvent,
+      onMouseDownCapture: consumeMarketplacePointerEvent,
+      onMouseDown: consumeMarketplacePointerEvent,
+      onTouchStartCapture: consumeMarketplacePointerEvent,
+      onTouchStart: consumeMarketplacePointerEvent,
+    };
   }
-
-function marketplacePointerGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: consumeMarketplacePointerEvent,
-    onMouseDown: consumeMarketplacePointerEvent,
-  };
-}
-
-function marketplaceButtonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: consumeMarketplacePointerEvent,
-    onMouseDown: consumeMarketplacePointerEvent,
-  };
-}
 
   function toggleProfileDetails(
     event?: React.SyntheticEvent<HTMLElement>
@@ -2507,8 +2491,6 @@ function marketplaceButtonGuardProps(): Pick<
   }
 
   async function handleCreateInviteLink() {
-    pinMarketplaceOwnedLinksSection();
-
     if (!activeCommunityId) {
       showNotice("error", "Select a community first.");
       return;
@@ -2545,26 +2527,11 @@ function marketplaceButtonGuardProps(): Pick<
     }
   }
 
-  function handleOpenJoinLink() {
-    pinMarketplaceOwnedLinksSection();
-
-    if (!inviteLink) {
-      showNotice("error", "Join invite link is not ready yet.");
-      return;
-    }
-
-    if (typeof window !== "undefined") {
-      window.open(inviteLink, "_blank", "noopener,noreferrer");
-    }
-  }
-
   function copyMarketplaceLink(
     url: string,
     successText: string,
     missingText: string
   ) {
-    pinMarketplaceOwnedLinksSection();
-
     if (!url) {
       showNotice("error", missingText);
       return;
@@ -2580,8 +2547,6 @@ function marketplaceButtonGuardProps(): Pick<
     successText: string,
     missingText: string
   ) {
-    pinMarketplaceOwnedLinksSection();
-
     if (!url || !safeStr(message)) {
       showNotice("error", missingText);
       return;
@@ -2597,8 +2562,6 @@ function marketplaceButtonGuardProps(): Pick<
     url: string,
     missingText: string
   ) {
-    pinMarketplaceOwnedLinksSection();
-
     if (!url || !safeStr(body)) {
       showNotice("error", missingText);
       return;
@@ -2612,8 +2575,6 @@ function marketplaceButtonGuardProps(): Pick<
   }
 
   function openMarketplaceExternalLink(url: string, missingText: string) {
-    pinMarketplaceOwnedLinksSection();
-
     if (!url) {
       showNotice("error", missingText);
       return;
@@ -4035,16 +3996,7 @@ function marketplaceButtonGuardProps(): Pick<
                   </div>
                   {inviteLink ? (
                     <>
-                      <a
-                        href={inviteLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        {...marketplacePointerGuardProps()}
-                        style={highlightedExternalLinkStyle()}
-                      >
-                        Open secure join page
-                      </a>
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                      <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
                         {maskedInviteLinkLabel || "Secure GSN join link"}
                       </div>
                     </>
@@ -4074,23 +4026,6 @@ function marketplaceButtonGuardProps(): Pick<
                       {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
-                          void handleCreateInviteLink();
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "primary",
-                        creatingInviteLink,
-                        isCompact
-                      )}
-                      disabled={creatingInviteLink}
-                    >
-                      {creatingInviteLink ? "Refreshing..." : "Create / Refresh"}
-                    </button>
-                    <button
-                      type="button"
-                      {...marketplaceButtonGuardProps()}
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
                             inviteLink,
                             "Join link copied.",
@@ -4099,7 +4034,7 @@ function marketplaceButtonGuardProps(): Pick<
                         });
                       }}
                       style={marketplaceInlineActionStyle(
-                        "secondary",
+                        "primary",
                         !inviteLink,
                         isCompact
                       )}
@@ -4108,12 +4043,29 @@ function marketplaceButtonGuardProps(): Pick<
                       Copy Join Link
                     </button>
                     <button
-                        type="button"
-                        {...marketplaceButtonGuardProps()}
-                        onClick={(event) => {
-                          runMarketplaceAction(event, () => {
-                            copyMarketplaceMessage(
-                              joinWhatsappMessage,
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          void handleCreateInviteLink();
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        creatingInviteLink,
+                        isCompact
+                      )}
+                      disabled={creatingInviteLink}
+                    >
+                      {creatingInviteLink ? "Refreshing..." : "Refresh Join Link"}
+                    </button>
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          copyMarketplaceMessage(
+                            joinWhatsappMessage,
                             inviteLink,
                             "Join message copied.",
                             "Join invite link is not ready yet."
@@ -4127,7 +4079,7 @@ function marketplaceButtonGuardProps(): Pick<
                       )}
                       disabled={!inviteLink}
                     >
-                      Copy Message
+                      Copy Invite Message
                     </button>
                     <button
                       type="button"
@@ -4149,31 +4101,13 @@ function marketplaceButtonGuardProps(): Pick<
                       )}
                       disabled={!inviteLink}
                     >
-                      Email Link
+                      Email Join Link
                     </button>
                     <button
                       type="button"
                       {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
-                          handleOpenJoinLink();
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !inviteLink,
-                        isCompact
-                      )}
-                      disabled={!inviteLink}
-                    >
-                      Open Join Link
-                    </button>
-                    <button
-                      type="button"
-                      {...marketplaceButtonGuardProps()}
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          pinMarketplaceOwnedLinksSection();
                           if (!inviteLink) {
                             showNotice("error", "Join invite link is not ready yet.");
                             return;
@@ -4194,7 +4128,7 @@ function marketplaceButtonGuardProps(): Pick<
                       )}
                       disabled={!inviteLink}
                     >
-                      Send WhatsApp
+                      WhatsApp
                     </button>
                   </div>
                 </div>
@@ -4321,7 +4255,6 @@ function marketplaceButtonGuardProps(): Pick<
                       {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
-                          pinMarketplaceOwnedLinksSection();
                           if (!publicCreateEntryLink) {
                             showNotice("error", "Create entry link is not ready yet.");
                             return;
