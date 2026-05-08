@@ -1455,7 +1455,7 @@ function marketplaceInlineActionsStyle(
     display: "grid",
     gridTemplateColumns: isCompact
       ? "1fr"
-      : "repeat(auto-fit, minmax(148px, 1fr))",
+      : "repeat(auto-fit, minmax(168px, 1fr))",
     gap: 10,
     alignItems: "stretch",
   };
@@ -4462,21 +4462,7 @@ export default function MarketplacePage() {
                     <span style={badge(false)}>Vault-style access stays controlled</span>
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    {myShopTo ? (
-                      <button
-                        type="button"
-                        {...marketplacePointerGuardProps()}
-                        onClick={(event) => openMarketplaceRoute(event, myShopTo)}
-                        style={marketplaceInlineActionStyle(
-                          "secondary",
-                          false,
-                          isCompact
-                        )}
-                    >
-                      Open Public Shop Face
-                    </button>
-                  ) : null}
-                  <button
+                    <button
                       type="button"
                       {...marketplacePointerGuardProps()}
                       onClick={(event) =>

@@ -20490,3 +20490,17 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
 - Remaining risk:
   - A live browser walkthrough should still click the exact owner-reported path: open Marketplace, expand Marketplace and entry links, refresh/create the community join link if needed, then click `Copy Join Link`, `Copy Invite Message`, `Email Join Link`, and `WhatsApp` to confirm none of them jumps into Demand, Loans/Support, or another route.
+
+### Marketplace owned-link duplicate follow-up (2026-05-08)
+
+- Continued the Marketplace-owned link audit after the join-link lane was committed.
+- Updated `frontend/src/pages/MarketplacePage.tsx` only.
+- Behavior:
+  - removed the repeated `Open Public Shop Face` button from the "Private and controlled outward links" card because the "Public shop face" card directly above already owns shop copy/email/open actions.
+  - widened Marketplace-owned action grid columns from 148px to 168px so link buttons have more stable room for labels like `Email Join Link` and `Copy Marketplace Link`.
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
+- Remaining risk:
+  - No automated browser runner exists in the current frontend package. A real deployed click-through is still needed for the owner-reported Marketplace path.
