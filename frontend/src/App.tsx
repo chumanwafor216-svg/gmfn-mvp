@@ -21,7 +21,6 @@ const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
 const MarketplaceWorkspacePage = React.lazy(
   () => import("./pages/MarketplaceWorkspacePage")
 );
-const ClansPage = React.lazy(() => import("./pages/ClansPage"));
 const CommunityHomePage = React.lazy(() => import("./pages/CommunityHomePage"));
 const LoansPage = React.lazy(() => import("./pages/LoansPage"));
 const MarketplacePage = React.lazy(() => import("./pages/MarketplacePage"));
@@ -134,6 +133,7 @@ const APP_ROUTES = {
   TRUST_SLIP: "/app/trust-slip",
   CCI: "/app/identity",
   NOTIFICATIONS: "/app/notifications",
+  PROFILE: "/app/my-gmfn-and-i",
   GUIDE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   SHOP_ME: "/app/shop-control",
@@ -309,6 +309,7 @@ export default function App() {
       <Route path="/notifications" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
       <Route path="/action-inbox" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
       <Route path="/inbox" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
+      <Route path="/profile" element={<PreserveRedirect to={APP_ROUTES.PROFILE} />} />
 
       <Route path="/finance" element={<PreserveRedirect to={APP_ROUTES.FINANCE} />} />
       <Route path="/finances" element={<PreserveRedirect to={APP_ROUTES.FINANCE} />} />
@@ -493,7 +494,7 @@ export default function App() {
           element={<PreserveRedirect to={APP_ROUTES.DASHBOARD} />}
         />
 
-        <Route path="clans" element={<ClansPage />} />
+        <Route path="clans" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
         <Route path="create-community" element={<Navigate to="/create" replace />} />
         <Route path="new-community" element={<Navigate to="/create" replace />} />
 
@@ -664,6 +665,7 @@ export default function App() {
         />
         <Route path="inbox" element={<PreserveRedirect to={APP_ROUTES.NOTIFICATIONS} />} />
 
+        <Route path="profile" element={<PreserveRedirect to={APP_ROUTES.PROFILE} />} />
         <Route path="my-gmfn-and-i" element={<MyGMFNAndIPage />} />
         <Route
           path="my-gmfn-and-i/settings"

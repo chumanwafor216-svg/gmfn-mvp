@@ -288,8 +288,8 @@ def _dev_mode() -> bool:
 
 
 def _entry_otp_preview_enabled() -> bool:
-    configured = str(os.getenv("GMFN_ENTRY_PHONE_DELIVERY") or "preview").strip().lower()
-    return _dev_mode() or configured in {"", "preview", "pilot", "manual"}
+    configured = str(os.getenv("GMFN_ENTRY_PHONE_DELIVERY") or "").strip().lower()
+    return _dev_mode() or configured in {"preview", "pilot", "manual"}
 
 
 def _entry_phone_session_minutes(*, preview_enabled: bool) -> int:

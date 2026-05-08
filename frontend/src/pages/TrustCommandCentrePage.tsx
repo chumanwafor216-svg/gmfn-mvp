@@ -98,17 +98,17 @@ const PILOT_DATA_CARDS = [
   {
     title: "Coverage to capture",
     detail:
-      "Country, timezone, device type, browser, screen size, role, and current community should all be visible when interpreting pilot results.",
+      "Country, timezone, device type, browser, screen size, role, and current community should all be visible when interpreting validation results.",
   },
   {
     title: "Events to capture",
     detail:
-      "Route visited, action taken, success or failure, time to next step, and the exact error state should be logged for every key pilot journey.",
+      "Route visited, action taken, success or failure, time to next step, and the exact error state should be logged for every key verification journey.",
   },
   {
-    title: "Pilot structure",
+    title: "Rollout structure",
     detail:
-      "Use a small multi-country pilot first with ordinary users, clan admins, and platform admins before opening the wider test group.",
+      "Use a small multi-country verification group first with ordinary users, clan admins, and platform admins before opening the wider test group.",
   },
 ];
 
@@ -1124,8 +1124,8 @@ export default function TrustCommandCentrePage() {
 
     if (pilotOverall && pilotOverall !== "pilot_near_ready") {
       return {
-        title: "Review pilot readiness gaps",
-        detail: "Pilot readiness is not yet in the near-ready state. Check the readiness breakdown before relying on downstream admin pages.",
+        title: "Review readiness gaps",
+        detail: "Readiness is not yet in the near-ready state. Check the readiness breakdown before relying on downstream admin pages.",
         to: "/app/command-center/system-operations",
         cta: "Review readiness",
       };
@@ -1248,19 +1248,19 @@ export default function TrustCommandCentrePage() {
         key: "analyticsReady",
         label: "Analytics and error logging ready",
         detail:
-          "Key pilot routes and failures can be measured instead of relying only on chat feedback.",
+          "Key verification routes and failures can be measured instead of relying only on chat feedback.",
       },
       {
         key: "supportChannelReady",
-        label: "Pilot support channel ready",
+        label: "Support channel ready",
         detail:
           "Testers know where to report friction, screenshots, and failed assumptions.",
       },
       {
         key: "dailyReviewReady",
-        label: "Daily pilot review ready",
+        label: "Daily readiness review ready",
         detail:
-          "The team is prepared to review pilot data frequently instead of waiting until the end.",
+          "The team is prepared to review readiness data frequently instead of waiting until the end.",
       },
     ] as const;
 
@@ -1403,7 +1403,7 @@ export default function TrustCommandCentrePage() {
 
         <ExplainToggle
           label="What this executive reading does"
-          what="This section gathers system health, protocol stage, pilot readiness, liquidity, and exposure pressure into one calmer admin reading."
+          what="This section gathers system health, protocol stage, operational readiness, liquidity, and exposure pressure into one calmer admin reading."
           why="It exposes backend truth that already exists so you do not have to open several admin routes just to work out the current operating state."
           next="Read the cards first, then follow the next-action lane into the one admin route that matches the strongest current issue."
           tone="light"
@@ -1515,7 +1515,7 @@ export default function TrustCommandCentrePage() {
                 </div>
 
                 <div style={statTile()}>
-                  <div style={sectionLabel()}>Pilot readiness</div>
+                  <div style={sectionLabel()}>Operational readiness</div>
                   <div
                     style={{
                       marginTop: 8,
@@ -1588,9 +1588,9 @@ export default function TrustCommandCentrePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Pilot validation</div>
+            <div style={sectionLabel()}>Readiness validation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the worldwide pilot assumptions and the data you need visible from the admin landing page.
+              Keep worldwide verification assumptions and the data you need visible from the admin landing page.
             </div>
           </div>
 
@@ -1605,10 +1605,10 @@ export default function TrustCommandCentrePage() {
         </div>
 
         <ExplainToggle
-          label="What this pilot section does"
-          what="This section turns pilot readiness into an admin operating view by combining the backend readiness checks with the assumptions and data that matter during a worldwide pilot."
-          why="It keeps the pilot from becoming only anecdotal feedback and helps admins review whether the product is being tested with enough structure to learn from it."
-          next="Read the current readiness first, then use the assumption cards and data checklist to guide what should be measured during the pilot."
+          label="What this validation section does"
+          what="This section turns readiness checks into an admin operating view by combining backend readiness with the assumptions and data that matter during a worldwide verification window."
+          why="It keeps validation from becoming only anecdotal feedback and helps admins review whether the product is being checked with enough structure to learn from it."
+          next="Read the current readiness first, then use the assumption cards and data checklist to guide what should be measured during verification."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -1623,9 +1623,9 @@ export default function TrustCommandCentrePage() {
               }}
             >
               <div style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Pilot worksheet</div>
+                <div style={sectionLabel()}>Validation worksheet</div>
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Fill this in as your working pilot brief. It stays saved in this browser so you can keep updating it as the pilot evolves.
+                  Fill this in as your working validation brief. It stays saved in this browser so you can keep updating it as verification evolves.
                 </div>
 
                 <div
@@ -1637,11 +1637,11 @@ export default function TrustCommandCentrePage() {
                   }}
                 >
                   <div>
-                    <div style={sectionLabel()}>Pilot name</div>
+                    <div style={sectionLabel()}>Validation name</div>
                     <input
                       value={pilotWorksheet.pilotName}
                       onChange={(e) => updatePilotField("pilotName", e.target.value)}
-                      placeholder="Example: April global pilot"
+                      placeholder="Example: April global verification"
                       style={{ marginTop: 8, ...inputField(false) }}
                     />
                   </div>
@@ -1701,7 +1701,7 @@ export default function TrustCommandCentrePage() {
                     <textarea
                       value={pilotWorksheet.successSignals}
                       onChange={(e) => updatePilotField("successSignals", e.target.value)}
-                      placeholder="What will tell you the pilot assumptions are holding up?"
+                      placeholder="What will tell you the verification assumptions are holding up?"
                       style={{ marginTop: 8, ...inputField(true) }}
                     />
                   </div>
@@ -1722,7 +1722,7 @@ export default function TrustCommandCentrePage() {
                   <textarea
                     value={pilotWorksheet.notes}
                     onChange={(e) => updatePilotField("notes", e.target.value)}
-                    placeholder="Use this for recruiting notes, rollout decisions, and daily pilot observations."
+                    placeholder="Use this for recruiting notes, rollout decisions, and daily verification observations."
                     style={{ marginTop: 8, ...inputField(true), minHeight: 150 }}
                   />
                 </div>
@@ -1800,7 +1800,7 @@ export default function TrustCommandCentrePage() {
               </div>
 
               <div style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Pilot question</div>
+                <div style={sectionLabel()}>Validation question</div>
                 <div
                   style={{
                     marginTop: 10,
@@ -1813,7 +1813,7 @@ export default function TrustCommandCentrePage() {
                   Are people in different places understanding the right route and finishing the right action without help?
                 </div>
                 <div style={{ marginTop: 10, ...helperText() }}>
-                  Treat the pilot as assumption validation, not only bug hunting. The strongest signal is whether users and admins understand what to do next from each route.
+                  Treat this as assumption validation, not only bug hunting. The strongest signal is whether users and admins understand what to do next from each route.
                 </div>
               </div>
             </div>
@@ -1849,7 +1849,7 @@ export default function TrustCommandCentrePage() {
               }}
             >
               <div style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Pilot data checklist</div>
+                <div style={sectionLabel()}>Validation data checklist</div>
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   {PILOT_DATA_CARDS.map((card) => (
                     <div key={card.title}>
@@ -2011,7 +2011,7 @@ export default function TrustCommandCentrePage() {
                 {systemOk ? "Healthy operations view" : "Operational review needed"}
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Protocol: {protocolStage.replace(/_/g, " ")} • Pilot:{" "}
+                Protocol: {protocolStage.replace(/_/g, " ")} • Readiness:{" "}
                 {pilotOverall.replace(/_/g, " ")}
               </div>
             </div>

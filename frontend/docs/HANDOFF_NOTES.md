@@ -767,3 +767,31 @@
 - Remaining risk:
   - Frontend build confirms the upload/publish code compiles. Actual picture/video display still depends on the backend process using the same `GMFN_UPLOADS_DIR` for upload saving and `/uploads` static serving.
   - Dedicated Vault migration has been exercised against the local dev SQLite database only; production/staging still needs the normal deployment migration path.
+
+### University readiness hardening follow-up (2026-05-08)
+
+- Owner request continued: make one more readiness push before university verification, focusing on unfinished visible surfaces and risky temporary backend defaults.
+- Updated `../gmfn_backend/app/api/routes/entry.py`:
+  - entry-phone OTP preview is no longer the silent default.
+  - preview now requires `GMFN_DEV_MODE=1` or `GMFN_ENTRY_PHONE_DELIVERY=preview|pilot|manual`.
+  - production default returns `delivery_mode: pending-sms` and no `otp_preview`.
+- Updated `../gmfn_backend/tests/test_entry_create.py`:
+  - added a regression test for the no-preview production default.
+- Updated `../gmfn_backend/app/api/routes/marketplace.py`:
+  - removed the hardcoded always-on expired spotlight capacity override.
+  - override is now opt-in via `GMFN_SPOTLIGHT_CAPACITY_OVERRIDE=1` and still date-limited by the old 2026-04-24 expiry.
+- Updated `src/App.tsx`:
+  - routed `/profile` and `/app/profile` to the current polished `My GMFN and I` surface.
+  - redirected legacy `/app/clans` to `/app/community`.
+- Updated `src/pages/TrustCommandCentrePage.tsx`:
+  - changed visible "pilot" wording in the validation area to readiness/verification language.
+  - internal API names and backend readiness contracts were not renamed.
+- Verification:
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
+  - `python -m pytest gmfn_backend\tests\test_entry_create.py` passed: 18 passed.
+  - `python -m pytest gmfn_backend\tests\test_marketplace_requests.py gmfn_backend\tests\test_marketplace_public_shop.py` passed outside the sandbox: 10 passed.
+  - `python -m pytest gmfn_backend\tests` passed outside the sandbox: 106 passed, 14 warnings.
+- Remaining risk:
+  - If Render does not have real SMS delivery configured, the create-entry phone verification flow now needs live SMS delivery or an explicit preview/manual env setting before university testers use self-service signup.
+  - True 100% readiness still requires a live Render-domain walkthrough.

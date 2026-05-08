@@ -55,10 +55,11 @@ FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 
 # Temporary pilot override requested during live testing on 2026-04-23.
-# It bypasses spotlight capacity caps so video playback, Vault, and
-# paid-subscription surfaces can be tested without waiting for existing
-# spotlights to expire. Remove after 2026-04-24 UTC.
-SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED = True
+# It is now opt-in and date-limited so expired demo support cannot silently
+# bypass spotlight capacity rules in production.
+SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED = str(
+    os.getenv("GMFN_SPOTLIGHT_CAPACITY_OVERRIDE") or ""
+).strip().lower() in {"1", "true", "yes", "on"}
 SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 4, 24, 23, 59, 59, tzinfo=timezone.utc)
 
 SHOP_IMAGE_ATTRS = (
@@ -76,8 +77,8 @@ def _now_utc() -> datetime:
 
 
 def _spotlight_capacity_pilot_override_active(now: Optional[datetime] = None) -> bool:
-    if SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED:
-        return True
+    if not SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED:
+        return False
     current_time = now or _now_utc()
     return current_time <= SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL
 

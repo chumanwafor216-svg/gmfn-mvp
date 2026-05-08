@@ -13,6 +13,24 @@ def _parse_api_datetime(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def test_entry_phone_default_does_not_expose_otp_preview(client, monkeypatch):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Production Tester",
+            "phone_e164": "+2348011111010",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    assert start_body["delivery_mode"] == "pending-sms"
+    assert start_body["otp_preview"] is None
+
+
 def test_entry_phone_preview_session_lasts_one_day_for_pilot_onboarding(client):
     os.environ["GMFN_DEV_MODE"] = "1"
     os.environ.pop("GMFN_ENTRY_PHONE_SESSION_MINUTES", None)
