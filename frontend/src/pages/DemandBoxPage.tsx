@@ -16,6 +16,7 @@ import {
   listMyClans,
   listMarketplaceRequests,
   selectClan,
+  setSelectedClanId as persistSelectedClanId,
   updateMarketplaceRequestStatus,
 } from "../lib/api";
 
@@ -46,6 +47,11 @@ type NoticeTone = "success" | "error";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function positiveNumber(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
 function firstTruthy(...values: any[]): string {
@@ -439,8 +445,16 @@ function isMineRow(row: DemandRow, me: any): boolean {
 
 export default function DemandBoxPage() {
   const location = useLocation();
+  const routeSelectedClanId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("clan_id") ||
+        query.get("community") ||
+        query.get("community_id")
+    );
+  }, [location.search]);
   const [selectedClanId, setSelectedClanIdState] = useState<number>(() =>
-    Number(getSelectedClanId() || 0)
+    routeSelectedClanId || Number(getSelectedClanId() || 0)
   );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -476,6 +490,12 @@ export default function DemandBoxPage() {
   const [createCommunityConfirmed, setCreateCommunityConfirmed] =
     useState(false);
   const demandCreateRevealRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (routeSelectedClanId <= 0) return;
+    persistSelectedClanId(routeSelectedClanId);
+    setSelectedClanIdState(routeSelectedClanId);
+  }, [routeSelectedClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

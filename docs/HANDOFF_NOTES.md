@@ -20343,3 +20343,27 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after sandbox Vite/esbuild hit the known `spawn EPERM`.
 - Remaining risk:
   - This does not create a new unauthenticated public community-data API. It prevents the public face from breaking while preserving private backend boundaries.
+
+### Marketplace context-carrying link cleanup (2026-05-08)
+
+- Continued owner-requested Marketplace cleanup after the public-face soft-fail fix.
+- Confirmed context leak:
+  - Marketplace/public-community shop links opened `/shop/:gmfnId` without the active marketplace/community id.
+  - the public community access desk also returned users to plain `/app/marketplace` and `/app/demand-box`, which could land on stale selected-community context.
+  - backend public shop lookup already supports `clan_id`, so the frontend was leaving useful route context unused.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - public shop face links now include `clan_id=<activeCommunityId>`.
+  - member-row shop links now include the active marketplace `clan_id`.
+  - internal Marketplace launchers now preserve active `clan_id` on app/shop route handoffs.
+- Updated `frontend/src/pages/MarketplaceWorkspacePage.tsx`:
+  - `Open Marketplace`, `Open Demand Box`, and member `Shop Gallery` handoffs now carry the current community id.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - public shop gallery now reads `clan_id`, `community`, or `community_id` from the URL and passes it to the public shop API.
+- Updated `frontend/src/pages/DemandBoxPage.tsx` and `frontend/src/pages/FinancePage.tsx`:
+  - both pages now honor `clan_id`, `community`, or `community_id` in the URL and persist that selected community context.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/ShopGalleryPage.tsx src/pages/DemandBoxPage.tsx src/pages/FinancePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox limitation.
+- Remaining risk:
+  - Several non-Marketplace legacy route tiles still point to plain `/app/marketplace`; this pass fixed the Marketplace-owned and Marketplace-adjacent context paths most likely to affect the pilot.

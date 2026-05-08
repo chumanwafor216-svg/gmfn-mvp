@@ -772,7 +772,16 @@ function communityRole(currentClan: any): string {
 export default function FinancePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const routeSelectedClanId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("clan_id") ||
+        query.get("community") ||
+        query.get("community_id")
+    );
+  }, [location.search]);
+  const selectedClanId =
+    routeSelectedClanId || Number((api as any).getSelectedClanId?.() || 0);
   const financeRevealRef = useRef<number | null>(null);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -806,6 +815,11 @@ export default function FinancePage() {
     useState<CrossCommunityPoolSummary | null>(null);
   const [trustWhy, setTrustWhy] = useState<any>(null);
   const [guarantorEarnings, setGuarantorEarnings] = useState<any>(null);
+
+  useEffect(() => {
+    if (routeSelectedClanId <= 0) return;
+    (api as any).setSelectedClanId?.(routeSelectedClanId);
+  }, [routeSelectedClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

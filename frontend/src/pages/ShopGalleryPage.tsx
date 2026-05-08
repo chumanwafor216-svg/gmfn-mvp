@@ -688,6 +688,14 @@ export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const routeClanId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("clan_id") ||
+        query.get("community") ||
+        query.get("community_id")
+    );
+  }, [location.search]);
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -750,6 +758,7 @@ export default function ShopGalleryPage() {
 
         const publicShopRes = cleanedGmfnId
           ? await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
+              clan_id: routeClanId || undefined,
               product_limit: 100,
               broadcast_limit: 24,
             }).catch(() => null)
@@ -847,7 +856,7 @@ export default function ShopGalleryPage() {
     return () => {
       alive = false;
     };
-  }, [gmfnId]);
+  }, [gmfnId, routeClanId]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);

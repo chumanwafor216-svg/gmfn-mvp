@@ -29,6 +29,22 @@ function safeNum(x: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const target = safeStr(path);
+  const selectedId = safeNum(clanId);
+  if (!target || selectedId <= 0) return target;
+  const [pathAndSearch, hash = ""] = target.split("#");
+  const [pathname, search = ""] = pathAndSearch.split("?");
+  const query = new URLSearchParams(search);
+  if (!query.has("clan_id") && !query.has("community")) {
+    query.set("clan_id", String(selectedId));
+  }
+  const nextSearch = query.toString();
+  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
+    hash ? `#${hash}` : ""
+  }`;
+}
+
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -530,6 +546,12 @@ export default function MarketplaceWorkspacePage() {
   const communityHomeLink = useMemo(() => {
     return activeClanId ? `/app/community/${activeClanId}` : "/app/community";
   }, [activeClanId]);
+  const marketplaceLink = useMemo(() => {
+    return withClanQuery("/app/marketplace", activeClanId);
+  }, [activeClanId]);
+  const demandBoxLink = useMemo(() => {
+    return withClanQuery("/app/demand-box", activeClanId);
+  }, [activeClanId]);
 
   const memberRows = useMemo(() => {
     return members.map((member: any, idx: number) => {
@@ -626,7 +648,11 @@ export default function MarketplaceWorkspacePage() {
       setMsg("This member does not yet have a visible shop identity.");
       return;
     }
-    navigateWithOrigin(navigate, `/shop/${encodeURIComponent(gmfnId)}`, location);
+    navigateWithOrigin(
+      navigate,
+      withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, activeClanId),
+      location
+    );
   }
 
   return (
@@ -795,7 +821,7 @@ export default function MarketplaceWorkspacePage() {
               <OriginLink to={communityHomeLink} style={btn(false)}>
                 Open Community Home
               </OriginLink>
-              <OriginLink to="/app/marketplace" style={btn(false)}>
+              <OriginLink to={marketplaceLink} style={btn(false)}>
                 Open Marketplace
               </OriginLink>
               <OriginLink to="/app/community" style={btn(false)}>
@@ -1021,10 +1047,10 @@ export default function MarketplaceWorkspacePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <OriginLink to="/app/demand-box" style={btn(false)}>
+                <OriginLink to={demandBoxLink} style={btn(false)}>
                   Open Demand Box
                 </OriginLink>
-                <OriginLink to="/app/marketplace" style={btn(false)}>
+                <OriginLink to={marketplaceLink} style={btn(false)}>
                   Open Marketplace
                 </OriginLink>
                 <OriginLink to={communityHomeLink} style={btn(false)}>

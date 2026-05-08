@@ -410,6 +410,22 @@ function getRowId(row: any): number {
   return positiveNumber(row?.id || row?.clan_id || row?.community_id);
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const target = safeStr(path);
+  const selectedId = positiveNumber(clanId);
+  if (!target || !selectedId) return target;
+  const [pathAndSearch, hash = ""] = target.split("#");
+  const [pathname, search = ""] = pathAndSearch.split("?");
+  const query = new URLSearchParams(search);
+  if (!query.has("clan_id") && !query.has("community")) {
+    query.set("clan_id", String(selectedId));
+  }
+  const nextSearch = query.toString();
+  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
+    hash ? `#${hash}` : ""
+  }`;
+}
+
 function buildSelectedCommunity(
   currentClan: any,
   clanRows: any[],
@@ -1784,11 +1800,16 @@ export default function MarketplacePage() {
   }, [location.search]);
   const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
+
+  const activeCommunityId = useMemo(() => {
+    return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
+  }, [selectedCommunity]);
+
   const myShopTo = useMemo(() => {
     return currentGmfnId
-      ? `/shop/${encodeURIComponent(currentGmfnId)}`
+      ? withClanQuery(`/shop/${encodeURIComponent(currentGmfnId)}`, activeCommunityId)
       : "";
-  }, [currentGmfnId]);
+  }, [currentGmfnId, activeCommunityId]);
 
   useEffect(() => {
     if (routeSelectedClanId > 0) {
@@ -1808,10 +1829,6 @@ export default function MarketplacePage() {
     return marketplaceIntentItems.find((item) => item.id === match.id) || match;
   }, [intentQuery, marketplaceIntentItems]);
 
-  const activeCommunityId = useMemo(() => {
-    return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
-  }, [selectedCommunity]);
-
   const publicCommunityWorkspaceLink = useMemo(() => {
     if (!activeCommunityId) return "";
     return publicFrontendUrl(`/community/${encodeURIComponent(String(activeCommunityId))}`);
@@ -1823,8 +1840,10 @@ export default function MarketplacePage() {
 
   const publicShopViewLink = useMemo(() => {
     if (!currentGmfnId) return "";
-    return publicFrontendUrl(`/shop/${encodeURIComponent(currentGmfnId)}`);
-  }, [currentGmfnId]);
+    return publicFrontendUrl(
+      withClanQuery(`/shop/${encodeURIComponent(currentGmfnId)}`, activeCommunityId)
+    );
+  }, [currentGmfnId, activeCommunityId]);
 
   const controlledMarketplaceLinkNote = useMemo(() => {
     if (!selectedCommunity) {
@@ -1949,12 +1968,19 @@ function marketplaceButtonGuardProps(): Pick<
     to: string
   ) {
     consumeMarketplaceButtonEvent(event);
-    navigateWithOrigin(navigate, to, location);
+    const target = to.startsWith("/app/") || to.startsWith("/shop/")
+      ? withClanQuery(to, activeCommunityId)
+      : to;
+    navigateWithOrigin(navigate, target, location);
   }
 
   function openFinance(event?: React.SyntheticEvent<HTMLElement>) {
     consumeMarketplaceButtonEvent(event);
-    navigateWithOrigin(navigate, "/app/finance", location);
+    navigateWithOrigin(
+      navigate,
+      withClanQuery("/app/finance", activeCommunityId),
+      location
+    );
   }
 
   function toggleIntentGuide(event?: React.SyntheticEvent<HTMLElement>) {
@@ -2427,13 +2453,16 @@ function marketplaceButtonGuardProps(): Pick<
         shopName: shop
           ? firstTruthy(shop?.name, "Shop available")
           : "Shop not visible yet",
-        shopTo: shop && gmfn ? `/shop/${encodeURIComponent(gmfn)}` : "",
+        shopTo:
+          shop && gmfn
+            ? withClanQuery(`/shop/${encodeURIComponent(gmfn)}`, activeCommunityId)
+            : "",
       };
     });
 
     rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
-  }, [members, shops]);
+  }, [activeCommunityId, members, shops]);
 
   const activeLoanCount = useMemo(() => {
     return loans.filter((item) => {
