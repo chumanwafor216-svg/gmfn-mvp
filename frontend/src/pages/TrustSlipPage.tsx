@@ -2000,9 +2000,7 @@ export default function TrustSlipPage() {
                 Executive summary PDF
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Keep the executive summary visible here. Place the file in{" "}
-                <strong style={{ color: "#0B1F33" }}>/public/gmfn-executive-summary.pdf</strong>{" "}
-                so the button can open it.
+                Keep the executive summary visible here so reviewers can open the current institutional summary when needed.
               </div>
 
               <div
@@ -2019,7 +2017,7 @@ export default function TrustSlipPage() {
                   rel="noreferrer"
                   style={actionBtn("secondary")}
                 >
-                  Open PDF
+                  Open Executive Summary
                 </a>
 
                 <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("soft")}>

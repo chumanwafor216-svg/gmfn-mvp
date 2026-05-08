@@ -134,10 +134,10 @@ export default function TrustLeaderboardPage() {
               Open Trust
             </OriginLink>
             <OriginLink to="/app/trust-slip" style={actionBtn()}>
-              Open TrustSlip
+              Open Trust Slip
             </OriginLink>
-            <OriginLink to="/app/open-trust" style={actionBtn()}>
-              Open Open Trust
+            <OriginLink to="/app/open-trust-reading" style={actionBtn()}>
+              Open Trust Reading
             </OriginLink>
           </div>
           <div style={{ marginTop: 16, ...helperText(), color: "#991B1B" }}>

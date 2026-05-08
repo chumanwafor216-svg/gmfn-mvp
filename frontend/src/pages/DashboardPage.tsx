@@ -512,8 +512,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 44,
+    padding: "10px 14px",
     borderRadius: 13,
     border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
     background: disabled
@@ -543,8 +543,8 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
+    minHeight: 44,
+    padding: "10px 14px",
     borderRadius: 13,
     border: `1px solid ${DASHBOARD_BRAND.cardBorderStrong}`,
     background: disabled
@@ -573,8 +573,8 @@ function subtleBtn(disabled = false): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 34,
-    padding: "6px 10px",
+    minHeight: 40,
+    padding: "8px 12px",
     borderRadius: 11,
     border: `1px solid ${DASHBOARD_BRAND.cardBorder}`,
     background: disabled
@@ -1609,8 +1609,8 @@ function getCciState(me: any): ReadingState {
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "CCI is being prepared",
-    whyText: "A fuller cross-community reading will appear when available.",
+    statusText: "No CCI reading yet",
+    whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
   };
 }
 
@@ -1777,9 +1777,9 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "Your Open Trust is being prepared",
+    statusText: "No Open Trust reading yet",
     whyText:
-      "Your Open Trust reflects your standing in the community you are using now and will appear here when available.",
+      "Your Open Trust reflects your standing in the community you are using now. Select or use a community first, then this reading will appear here.",
   };
 }
 
@@ -5362,8 +5362,8 @@ export default function DashboardPage() {
     : 13.5;
   const dashboardPhoneButton: React.CSSProperties = isPhone
     ? {
-        minHeight: 34,
-        padding: "6px 10px",
+        minHeight: 40,
+        padding: "8px 12px",
         borderRadius: 11,
         fontSize: 12,
       }
@@ -9689,7 +9689,7 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: 34,
+                  minHeight: 40,
                   padding: "8px 12px",
                   fontSize: 12.5,
                   background: "rgba(255,255,255,0.94)",

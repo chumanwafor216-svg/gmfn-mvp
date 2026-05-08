@@ -504,7 +504,7 @@ export default function MarketplaceWorkspacePage() {
   }, [inviteInfo]);
 
   const guideUrl = useMemo(() => {
-    return publicFrontendUrl("/GMFN_FINAL_WHITE.pdf");
+    return publicFrontendUrl("/guide");
   }, []);
 
   const pendingCount = useMemo(() => {

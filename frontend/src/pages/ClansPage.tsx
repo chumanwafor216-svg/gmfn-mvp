@@ -263,11 +263,11 @@ function extractMembers(community: any): any[] {
 }
 
 function buildGuideUrl(): string {
-  return publicFrontendUrl("/app/my-gmfn-and-i");
+  return publicFrontendUrl("/guide");
 }
 
 function buildGuideFallbackUrl(): string {
-  return publicFrontendUrl("/GMFN_FINAL_WHITE.pdf");
+  return publicFrontendUrl("/guide");
 }
 
 function buildInviteState(

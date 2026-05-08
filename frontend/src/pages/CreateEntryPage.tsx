@@ -445,7 +445,7 @@ function bankVerificationHelpText(result: EntryVerificationResult): string {
 
   if (status === "unavailable") {
     return (
-      "Your bank or wallet details have been recorded. The live bank-check provider is not connected for this pilot region yet, so GSN keeps this as reviewable evidence instead of blocking you."
+      "Your bank or wallet details have been recorded. Automated bank checking is not available for this region yet, so GSN keeps this as reviewable evidence instead of blocking you."
     );
   }
 
@@ -628,7 +628,7 @@ export default function CreateEntryPage() {
       : "Bank and wallet details";
   const verificationBlockHelp =
     step === "verify"
-      ? "Confirm this phone only if the app asks for a live SMS code. In pilot testing, GSN should usually finish this check automatically and open the bank or wallet fields."
+      ? "Confirm this phone only if the app asks for an SMS code. When automatic confirmation is available, GSN will finish this check and open the bank or wallet fields."
       : step === "bank"
         ? "Add the account or wallet where trusted support, repayment records, and future payment references should point."
         : "After your first details are accepted, this block records the bank or wallet destination for trusted support, repayments, and future payout references.";
@@ -1045,7 +1045,7 @@ export default function CreateEntryPage() {
         autoConfirmed: true,
         message:
           safeStr(confirmed?.confirmation_message) ||
-          "Pilot phone check completed. Add your bank or wallet details now.",
+          "Phone check completed. Add your bank or wallet details now.",
       };
     }
 
@@ -1231,7 +1231,7 @@ export default function CreateEntryPage() {
 
     if (!refreshed.autoConfirmed || !refreshed.verificationId) {
       throw new Error(
-        "Your pilot phone proof has timed out. Please start this entry step afresh so GSN can link the phone to your name again."
+        "Your phone proof has timed out. Please start this entry step afresh so GSN can link the phone to your name again."
       );
     }
 
@@ -1255,12 +1255,12 @@ export default function CreateEntryPage() {
           const saved = await saveBankDetailsForVerification(refreshedVerificationId);
           finishBankStep(saved.out, saved.bankVerification);
           setSuccess(
-            "Your pilot phone proof had timed out, so GSN refreshed it and saved your bank or wallet details."
+            "Your phone proof had timed out, so GSN refreshed it and saved your bank or wallet details."
           );
         } catch (retryErr: any) {
           setError(
             retryErr?.message ||
-              "Your pilot phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
+              "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
       } else {
@@ -1306,7 +1306,7 @@ export default function CreateEntryPage() {
     if (nextStep === "activate-membership" || issuedGmfnId || requestId) {
       if (!issuedGmfnId && !requestId) {
         throw new Error(
-          "GSN created the community but did not return the activation reference. Please retry this step or ask the community helper to check the intake monitor."
+          "GSN created the community but did not return the activation reference. Please retry this step or ask the community helper to review the intake record."
         );
       }
 
@@ -1368,7 +1368,7 @@ export default function CreateEntryPage() {
 
           setError(
             retryErr?.message ||
-              "Your pilot phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
+              "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
       } else if (isCompletedAccountError(err)) {
@@ -1379,7 +1379,7 @@ export default function CreateEntryPage() {
 
         setExistingMemberOpen(true);
         setError(
-          "This phone or email already has a completed GSN account. Use Already a member to sign in with the email and password you entered. If that does not work, ask the person helping you to check the pilot intake monitor."
+          "This phone or email already has a completed GSN account. Use Already a member to sign in with the email and password you entered. If that does not work, ask the person helping you to review the intake record."
         );
       } else {
         setError(err?.message || "Founder entry could not be completed.");
@@ -2150,7 +2150,7 @@ export default function CreateEntryPage() {
 
                     {otpPreview ? (
                       <div style={softCard("#FFFBEB")}>
-                        <div style={sectionLabel()}>Pilot code preview</div>
+                        <div style={sectionLabel()}>Verification code preview</div>
                         <div
                           style={{
                             marginTop: 10,
@@ -2171,8 +2171,7 @@ export default function CreateEntryPage() {
                             fontWeight: 800,
                           }}
                         >
-                          This appears during pilot testing because no live SMS
-                          sender is connected yet.
+                          Use this code only if the app has not delivered an SMS code yet.
                         </div>
                       </div>
                     ) : otpDeliveryMode === "pending-sms" ? (
@@ -2187,9 +2186,7 @@ export default function CreateEntryPage() {
                             fontWeight: 800,
                           }}
                         >
-                          A live SMS sender is expected to deliver this code.
-                          If no code arrives during testing, the phone delivery
-                          setting needs to be switched back to pilot preview.
+                          An SMS sender is expected to deliver this code. If no code arrives, use the verification support path before continuing.
                         </div>
                       </div>
                     ) : null}

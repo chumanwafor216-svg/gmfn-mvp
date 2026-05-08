@@ -321,7 +321,7 @@ export default function AdminTrustEventsPage() {
           <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
             <OriginLink to="/app/command-center/trust-analytics" style={actionBtn("primary")}>Open Trust Analytics</OriginLink>
             <OriginLink to="/app/command-center/trust-graph" style={actionBtn("secondary")}>Open Trust Graph</OriginLink>
-            <OriginLink to="/app/identity" style={actionBtn("secondary")}>Open Identity Risk</OriginLink>
+            <OriginLink to="/app/command-center/identity-risk" style={actionBtn("secondary")}>Open Identity Risk</OriginLink>
             <OriginLink to="/app/command-center" style={actionBtn("soft")}>Back to Command Center</OriginLink>
           </div>
 

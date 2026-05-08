@@ -332,9 +332,9 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "Open Trust is being prepared",
+    statusText: "No Open Trust reading yet",
     whyText:
-      "Open Trust reflects your standing in your current community and will appear here when available.",
+      "Open Trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
   };
 }
 

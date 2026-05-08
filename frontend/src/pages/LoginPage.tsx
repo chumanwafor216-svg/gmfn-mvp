@@ -900,7 +900,7 @@ export default function LoginPage() {
                 {...buttonGuardProps()}
                 style={primaryBtn(busy)}
               >
-                {busy ? "Continuing..." : "Continue"}
+                {busy ? "Signing in..." : "Sign in to GSN"}
               </button>
             </div>
 

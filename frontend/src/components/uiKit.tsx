@@ -125,7 +125,7 @@ export function Banner(props: {
 
   const map = {
     not_found: { k: "warn" as const, title: "Not available", defaultText: "This feature is not available in this build." },
-    coming_soon: { k: "info" as const, title: "Coming soon", defaultText: "This section is being prepared." },
+    coming_soon: { k: "info" as const, title: "Not ready yet", defaultText: "This section is not ready yet." },
     admin_only: { k: "warn" as const, title: "Admin only", defaultText: "You need admin access to view this." },
     blocked: { k: "error" as const, title: "Blocked", defaultText: "Action blocked. Please check permissions or status." },
   }[kind];

@@ -238,8 +238,8 @@ function getCciState(me: any): ReadingState {
     classText: "Pending",
     scoreText: "-",
     tone: "neutral",
-    statusText: "CCI is being prepared",
-    whyText: "A fuller cross-community reading will appear when available.",
+    statusText: "No CCI reading yet",
+    whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
   };
 }
 

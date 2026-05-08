@@ -1,5 +1,35 @@
 # Handoff Notes
 
+## 2026-05-08 Post-Push Inner-Page Polish Audit
+
+- Continued after commit `3a83c05` was pushed to `origin/feature/vault-shops`.
+- Scope stayed presentation-only:
+  - no route changes
+  - no business-logic changes
+  - no page restructuring
+- Confirmed:
+  - `feature/vault-shops` was published to GitHub and aligned with origin before this follow-up pass.
+  - public/protected inner routes are declared in `src/App.tsx`; dev helper pages found on disk are not wired as published router pages.
+  - no `onTouchStart`, `onTouchEnd`, or `onTouchMove` button hacks were found in `src/components`, `src/pages`, `src/layout`, or `src/styles`.
+  - live-source mojibake scan with `_freeze_points` excluded returned no matches.
+- Polished:
+  - `src/pages/VaultControlPage.tsx` now uses plain text for the Vault Control block/payment/link controls instead of emoji-prefixed labels and badges.
+  - `/invite-composer-preview` now redirects to `/cover` instead of exposing an unregistered public prototype screen with fake defaults and a dead CTA.
+  - public create-entry copy no longer exposes pilot/SMS-provider/intake-monitor wording to users.
+  - trust empty states now say `No CCI reading yet` / `No Open Trust reading yet` with a concrete next step instead of `being prepared`.
+  - login now says `Sign in to GSN` instead of a generic `Continue`.
+  - admin trust-events `Open Identity Risk` now targets the command-center identity-risk route.
+  - invite guide/package URLs now use the public `/guide` surface instead of protected or legacy PDF paths.
+  - paid spotlight/Vault payment setup fallback copy no longer says `pilot rail`.
+  - Trust Slip executive-summary copy no longer exposes `/public/...` implementation instructions.
+  - undersized local dashboard/marketplace/entry button helpers were raised modestly for steadier tap targets.
+- Verification:
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox after Vite/esbuild needed spawn permission.
+  - `git diff --check` passed with line-ending normalization warnings only.
+- Devil's advocate:
+  - this improves concrete inner-page polish risks after the deployment push. It does not resolve larger product decisions such as whether create completion should route straight to first-circle building or whether the old ProfilePage should be restored as `/app/profile`; those need owner/spec confirmation. Manual verification on the deployed Render URL is still the final proof.
+
 ## 2026-05-08 Button and CTA Audit Stabilization
 
 - Ran the requested two-auditor pass:

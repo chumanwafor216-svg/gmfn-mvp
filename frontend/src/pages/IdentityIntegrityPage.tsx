@@ -585,8 +585,8 @@ function getCciState(me: any): ReadingState {
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "CCI is being prepared",
-    whyText: "A fuller cross-community reading will appear when available.",
+    statusText: "No CCI reading yet",
+    whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
   };
 }
 
@@ -750,9 +750,9 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "Open Trust is being prepared",
+    statusText: "No Open Trust reading yet",
     whyText:
-      "Open Trust reflects your standing in your current community and will appear here when available.",
+      "Open Trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
   };
 }
 

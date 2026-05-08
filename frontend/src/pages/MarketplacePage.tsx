@@ -1208,8 +1208,8 @@ function actionBtn(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 40,
-      padding: "8px 13px",
+      minHeight: 44,
+      padding: "10px 14px",
       borderRadius: 13,
       border: "1px solid var(--gsn-border)",
       background:

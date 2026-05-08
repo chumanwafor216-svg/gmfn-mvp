@@ -559,7 +559,7 @@ export default function SubscriptionSpotlightPage() {
   const activePaymentCurrency = firstTruthy(latestPayment?.currency, "GBP");
   const activePaymentDueAt = firstTruthy(latestPayment?.due_at);
   const settlementMissingText =
-    settlementValue(settlement, "missing_field_text") || "Not configured for this pilot rail yet.";
+    settlementValue(settlement, "missing_field_text") || "Payment setup is not ready for this region yet.";
   const region = settlementValue(settlement, "region_code").toLowerCase();
   const country = settlementValue(settlement, "country").toUpperCase();
   const usesUkSort = region === "uk" || ["GB", "UK", "IM", "JE", "GG"].includes(country);
