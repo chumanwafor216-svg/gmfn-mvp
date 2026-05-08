@@ -494,13 +494,36 @@ async function uploadMarketplaceVideoFile(
   );
 }
 
-function buildShopLink(gmfnId: string): string {
-  if (!gmfnId) return "";
-  return publicFrontendUrl(`/shop/${encodeURIComponent(gmfnId)}`);
+function positiveNumber(value: unknown): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function buildProductDeepLink(gmfnId: string, productId: number): string {
-  const base = buildShopLink(gmfnId);
+function withClanQuery(path: string, clanId: number): string {
+  const safeClanId = positiveNumber(clanId);
+  if (!path || !safeClanId) return path;
+
+  const [baseWithQuery, hash = ""] = path.split("#");
+  const separator = baseWithQuery.includes("?") ? "&" : "?";
+  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
+    String(safeClanId)
+  )}`;
+  return hash ? `${next}#${hash}` : next;
+}
+
+function buildShopLink(gmfnId: string, clanId: number): string {
+  if (!gmfnId) return "";
+  return publicFrontendUrl(
+    withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, clanId)
+  );
+}
+
+function buildProductDeepLink(
+  gmfnId: string,
+  productId: number,
+  clanId: number
+): string {
+  const base = buildShopLink(gmfnId, clanId);
   if (!base || !productId) return "";
   return `${base}#product-${productId}`;
 }
@@ -760,7 +783,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }, [loadPage]);
 
   const gmfnId = useMemo(() => firstTruthy(shop?.gmfn_id, me?.gmfn_id), [shop, me]);
-  const shopLink = useMemo(() => buildShopLink(gmfnId), [gmfnId]);
+  const shopLink = useMemo(
+    () => buildShopLink(gmfnId, selectedClanId),
+    [gmfnId, selectedClanId]
+  );
 
   const publicProducts = useMemo(
     () =>
@@ -2081,7 +2107,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       {...buttonGuardProps()}
                       onClick={() =>
                         copyText(
-                          buildProductDeepLink(gmfnId, Number(selectedPublicProduct.id)),
+                          buildProductDeepLink(
+                            gmfnId,
+                            Number(selectedPublicProduct.id),
+                            selectedClanId
+                          ),
                           "Block link copied."
                         )
                       }
@@ -2535,7 +2565,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             products.map((item) => {
               const label = extractProductLabel(firstTruthy(item?.description));
               const cleanDescription = stripProductLabel(firstTruthy(item?.description));
-              const productLink = buildProductDeepLink(gmfnId, Number(item.id));
+              const productLink = buildProductDeepLink(
+                gmfnId,
+                Number(item.id),
+                selectedClanId
+              );
               const isHidden = item?.is_active === false;
               const itemName = firstTruthy(item?.name, "Product");
               const itemImage = resolveAssetSrc(item?.image_url);

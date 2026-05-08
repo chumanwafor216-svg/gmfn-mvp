@@ -21,6 +21,10 @@ type MarketplaceFeedItem = {
   video_url?: string | null;
   source_shop_name?: string | null;
   source_clan_name?: string | null;
+  source_clan_id?: number | string | null;
+  source_marketplace_id?: number | string | null;
+  clan_id?: number | string | null;
+  marketplace_id?: number | string | null;
   trust_band?: string | null;
   trust_score?: string | number | null;
   author_name?: string | null;
@@ -67,6 +71,23 @@ function formatWhen(value?: string | null): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleString();
+}
+
+function positiveNumber(value: unknown): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function withClanQuery(path: string, clanId: number): string {
+  const safeClanId = positiveNumber(clanId);
+  if (!path || !safeClanId) return path;
+
+  const [baseWithQuery, hash = ""] = path.split("#");
+  const separator = baseWithQuery.includes("?") ? "&" : "?";
+  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
+    String(safeClanId)
+  )}`;
+  return hash ? `${next}#${hash}` : next;
 }
 
 function apiOrigin(): string {
@@ -141,7 +162,7 @@ export default function CommunityMarketplaceSpotlight() {
   const feedRef = useRef<MarketplaceFeedItem[]>([]);
   const spotlightIndexRef = useRef(0);
 
-  const selectedClanId = getSelectedClanId();
+  const selectedClanId = positiveNumber(getSelectedClanId());
 
   async function loadSpotlight() {
     setErr("");
@@ -286,11 +307,17 @@ export default function CommunityMarketplaceSpotlight() {
         priceLine: "",
         metaLines: [] as string[],
         primaryLabel: "Open Marketplace",
-        primaryTo: "/app/marketplace",
+        primaryTo: withClanQuery("/app/marketplace", selectedClanId),
       };
     }
 
     const gmfnId = String(activeItem.feed?.author_gmfn_id || "").trim();
+    const sourceClanId = positiveNumber(
+      activeItem.feed?.source_clan_id ||
+        activeItem.feed?.clan_id ||
+        activeItem.feed?.source_marketplace_id ||
+        activeItem.feed?.marketplace_id
+    );
     return {
       kind: "broadcast" as const,
       title: activeItem.feed?.source_shop_name || "Community Spotlight",
@@ -307,9 +334,11 @@ export default function CommunityMarketplaceSpotlight() {
         `Posted: ${formatWhen(activeItem.feed?.created_at)}`,
       ],
       primaryLabel: gmfnId ? "Open seller shop" : "Open Marketplace",
-      primaryTo: gmfnId ? `/shop/${encodeURIComponent(gmfnId)}` : "/app/marketplace",
+      primaryTo: gmfnId
+        ? withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, sourceClanId)
+        : withClanQuery("/app/marketplace", sourceClanId || selectedClanId),
     };
-  }, [activeItem]);
+  }, [activeItem, selectedClanId]);
 
   useEffect(() => {
     if (spotlightItems.length <= 1) return;

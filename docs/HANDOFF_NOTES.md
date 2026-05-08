@@ -20378,3 +20378,30 @@ GSN-branded invite composer and invite-entry continuity.
   - `git diff --check` passed.
   - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
   - `npm run build` passed outside the sandbox.
+
+### Community/Home shop-link context cleanup (2026-05-08)
+
+- Continued the system-level Marketplace link audit after the Marketplace-owned and Shop Gallery passes.
+- Confirmed remaining context-sensitive handoffs:
+  - Community Home selected-community launchers still opened plain `/app/marketplace`.
+  - Community Home marketplace link desk still opened plain `/app/marketplace#marketplace-owned-links`.
+  - Community Shop Control public-shop and Marketplace buttons did not carry the selected community id.
+  - Dashboard/community spotlight shop handoffs and shop asset copied links could lose the source community context.
+  - Vault access "Open public shop face" could return to a plain shop route even when the Vault response includes a source shop/community payload.
+- Updated:
+  - `frontend/src/pages/CommunityHomePage.tsx`
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+  - `frontend/src/components/CommunityMarketplaceSpotlight.tsx`
+  - `frontend/src/pages/DashboardPage.tsx`
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+  - `frontend/src/pages/ShopAccessPage.tsx`
+- Behavior:
+  - selected Marketplace launches now carry `clan_id=<selectedCommunityId>`.
+  - public shop routes created from owner tools, shop assets, dashboard spotlight, community spotlight, and Vault access now carry the best available source `clan_id`.
+  - product deep links copied from Shop Assets keep the same shop/community context before the product anchor.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/components/CommunityMarketplaceSpotlight.tsx src/components/CommunityShopControlPanel.tsx src/pages/CommunityHomePage.tsx src/pages/DashboardPage.tsx src/pages/ShopAccessPage.tsx src/pages/ShopAssetsPage.tsx` passed.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
+- Remaining risk:
+  - Global nav and legacy admin/finance/loan shortcuts still include plain `/app/marketplace` links where no specific community row is being selected. They should not be blindly rewritten without tracing each route's ownership and selected-community assumptions.

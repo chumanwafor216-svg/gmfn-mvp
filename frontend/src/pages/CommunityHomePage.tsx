@@ -185,6 +185,18 @@ function getClanId(clan: ClanItem | null | undefined): number {
   return Number(clan?.id || clan?.clan_id || 0);
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const safeClanId = Number(clanId || 0);
+  if (!path || !Number.isFinite(safeClanId) || safeClanId <= 0) return path;
+
+  const [baseWithQuery, hash = ""] = path.split("#");
+  const separator = baseWithQuery.includes("?") ? "&" : "?";
+  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
+    String(safeClanId)
+  )}`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 function getClanName(clan: ClanItem | null | undefined): string {
   return firstTruthy(
     clan?.name,
@@ -1861,7 +1873,11 @@ export default function CommunityHomePage() {
       setSelectedClan(clan);
 
       if (openAfter) {
-        navigateWithOrigin(navigate, "/app/marketplace", location);
+        navigateWithOrigin(
+          navigate,
+          withClanQuery("/app/marketplace", clanId),
+          location
+        );
       } else {
         showNotice(
           "success",
@@ -2069,7 +2085,11 @@ function communityButtonGuardProps(): Pick<
 
     try {
       await selectClan(selectedClanId);
-      navigateWithOrigin(navigate, "/app/marketplace", location);
+      navigateWithOrigin(
+        navigate,
+        withClanQuery("/app/marketplace", selectedClanId),
+        location
+      );
     } catch (err: any) {
       showNotice(
         "error",
@@ -2116,7 +2136,10 @@ function communityButtonGuardProps(): Pick<
       await selectClan(selectedClanId);
       navigateWithOrigin(
         navigate,
-        "/app/marketplace#marketplace-owned-links",
+        withClanQuery(
+          "/app/marketplace#marketplace-owned-links",
+          selectedClanId
+        ),
         location
       );
     } catch (err: any) {

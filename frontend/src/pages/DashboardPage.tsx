@@ -977,6 +977,18 @@ function positiveNumber(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const safeClanId = positiveNumber(clanId);
+  if (!path || !safeClanId) return path;
+
+  const [baseWithQuery, hash = ""] = path.split("#");
+  const separator = baseWithQuery.includes("?") ? "&" : "?";
+  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
+    String(safeClanId)
+  )}`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 function dashboardAvatarStorageKeysForUser(user: any): string[] {
   const identityKeys = [
     user?.gmfn_id,
@@ -4884,7 +4896,16 @@ export default function DashboardPage() {
 
     navigateWithOrigin(
       navigate,
-      `/shop/${encodeURIComponent(spotlightGmfnId)}`,
+      withClanQuery(
+        `/shop/${encodeURIComponent(spotlightGmfnId)}`,
+        positiveNumber(
+          activeSpotlight?.source_clan_id ||
+            activeSpotlight?.clan_id ||
+            activeSpotlight?.source_marketplace_id ||
+            activeSpotlight?.marketplace_id ||
+            selectedClanId
+        )
+      ),
       location
     );
   }

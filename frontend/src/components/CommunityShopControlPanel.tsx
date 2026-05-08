@@ -54,6 +54,18 @@ function positiveNumber(value: any): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const safeClanId = positiveNumber(clanId);
+  if (!path || !safeClanId) return path;
+
+  const [baseWithQuery, hash = ""] = path.split("#");
+  const separator = baseWithQuery.includes("?") ? "&" : "?";
+  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
+    String(safeClanId)
+  )}`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input)) return input as T[];
   if (Array.isArray(input?.items)) return input.items as T[];
@@ -575,8 +587,10 @@ export default function CommunityShopControlPanel({
 
   const publicShopTo = useMemo(() => {
     const gmfnId = safeStr(shop?.gmfnId);
-    return gmfnId ? `/shop/${encodeURIComponent(gmfnId)}` : "";
-  }, [shop]);
+    return gmfnId
+      ? withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, selectedClanId)
+      : "";
+  }, [selectedClanId, shop]);
 
   const shopImageSrc = useMemo(() => {
     return safeStr(shop?.imageUrl);
@@ -788,7 +802,11 @@ export default function CommunityShopControlPanel({
                     <button
                       type="button"
                       {...panelButtonGuardProps()}
-                      onClick={() => openPanelRoute("/app/marketplace")}
+                      onClick={() =>
+                        openPanelRoute(
+                          withClanQuery("/app/marketplace", selectedClanId)
+                        )
+                      }
                       style={actionBtn("secondary")}
                     >
                       Open Community Marketplace
