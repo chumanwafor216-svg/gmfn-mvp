@@ -925,3 +925,25 @@
   - `src/components/ShareActions.tsx`
   - `src/lib/copy.ts`
 - Remaining raw clipboard/browser-copy calls are now limited to central fallback helpers (`src/lib/api.ts`, `src/lib/share.ts`) plus an old backup file that is not part of active UI imports.
+
+### Deep active-tree cleanup follow-up (2026-05-08)
+
+- Owner asked for a base-level front/back cleanup before the university pilot so stale artifacts do not create audit noise or pilot impediments.
+- Removed stale active-source artifacts that were not imported anywhere:
+  - `src/lib/api.BACKUP.before-cleanup.ts`
+  - `src/pages/confirmPending_.code-search`
+  - `../gmfn_backend/app/schemas/clans.py`
+- Removed the stray `txt` package from `../gmfn_backend/requirements-dev.txt`.
+- Consolidated `src/lib/share.ts` copy behavior onto the shared `safeCopy` fallback.
+- Confirmed after cleanup:
+  - no active references to the deleted frontend artifacts.
+  - no active references to `app.schemas.clans`.
+  - direct browser copy fallback is now centralized in `src/lib/api.ts`; share buttons call the share helper, which now delegates to `safeCopy`.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src` passed.
+  - `python -m compileall app` passed.
+  - `npm run build` passed outside the sandbox after sandbox Vite/esbuild hit `spawn EPERM`.
+  - `python -m pytest tests --basetemp .pytest_tmp` passed outside the sandbox: 106 passed, 14 warnings.
+- Note:
+  - The first backend test run inside the sandbox hit Windows temp-directory permission errors, not test assertions. The outside-sandbox rerun with explicit `--basetemp` passed.
