@@ -20225,3 +20225,18 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
 - Remaining risk:
   - Email buttons open `mailto:` through the user's installed/default mail client; if no mail client is configured, users should use the copy-link buttons.
+
+### Marketplace link buttons hash guard (2026-05-08)
+
+- Owner reported a live Marketplace fault: trying to copy the join link was falling back into the Loans and Support area.
+- Updated `frontend/src/pages/MarketplacePage.tsx` route-locally:
+  - Marketplace button click handling now calls `preventDefault()` as well as `stopPropagation()`.
+  - outward-link actions now pin the active hash/section to `#marketplace-owned-links` before copy, email, open, create/refresh, or WhatsApp send work starts.
+  - this prevents a stale `#marketplace-loans-support` route hash from reasserting itself while the user is working in the Marketplace link lane.
+  - no backend, OTP, payment, auth, schema, or link-generation logic changed.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
+- Remaining risk:
+  - This is a route-local guard against hash/section hijacking. A final browser walkthrough should still click `Create / Refresh`, `Copy Join Link`, `Copy Message`, `Email Link`, `Open Join Link`, and `Send WhatsApp` on the deployed page.

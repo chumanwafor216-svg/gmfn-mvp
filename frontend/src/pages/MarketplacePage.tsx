@@ -1849,6 +1849,7 @@ export default function MarketplacePage() {
     event?: React.SyntheticEvent<HTMLElement>
   ) {
     if (!event) return;
+    event.preventDefault();
     event.stopPropagation();
   }
 
@@ -1858,6 +1859,25 @@ export default function MarketplacePage() {
   ) {
     consumeMarketplaceButtonEvent(event);
     action();
+  }
+
+  function replaceMarketplaceSectionHash(sectionId: string) {
+    const nextHash = `#${sectionId}`;
+    if (location.hash === nextHash) return;
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: nextHash,
+      },
+      { replace: true, preventScrollReset: true }
+    );
+  }
+
+  function pinMarketplaceOwnedLinksSection() {
+    setSectionsOpen((prev) => (prev.tools ? prev : { ...prev, tools: true }));
+    replaceMarketplaceSectionHash("marketplace-owned-links");
   }
 
 function marketplacePointerGuardProps(): Pick<
@@ -2417,6 +2437,8 @@ function marketplaceButtonGuardProps(): Pick<
   }
 
   async function handleCreateInviteLink() {
+    pinMarketplaceOwnedLinksSection();
+
     if (!activeCommunityId) {
       showNotice("error", "Select a community first.");
       return;
@@ -2454,6 +2476,8 @@ function marketplaceButtonGuardProps(): Pick<
   }
 
   function handleOpenJoinLink() {
+    pinMarketplaceOwnedLinksSection();
+
     if (!inviteLink) {
       showNotice("error", "Join invite link is not ready yet.");
       return;
@@ -2469,6 +2493,8 @@ function marketplaceButtonGuardProps(): Pick<
     successText: string,
     missingText: string
   ) {
+    pinMarketplaceOwnedLinksSection();
+
     if (!url) {
       showNotice("error", missingText);
       return;
@@ -2484,6 +2510,8 @@ function marketplaceButtonGuardProps(): Pick<
     successText: string,
     missingText: string
   ) {
+    pinMarketplaceOwnedLinksSection();
+
     if (!url || !safeStr(message)) {
       showNotice("error", missingText);
       return;
@@ -2499,6 +2527,8 @@ function marketplaceButtonGuardProps(): Pick<
     url: string,
     missingText: string
   ) {
+    pinMarketplaceOwnedLinksSection();
+
     if (!url || !safeStr(body)) {
       showNotice("error", missingText);
       return;
@@ -2512,6 +2542,8 @@ function marketplaceButtonGuardProps(): Pick<
   }
 
   function openMarketplaceExternalLink(url: string, missingText: string) {
+    pinMarketplaceOwnedLinksSection();
+
     if (!url) {
       showNotice("error", missingText);
       return;
@@ -4071,6 +4103,7 @@ function marketplaceButtonGuardProps(): Pick<
                       {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
+                          pinMarketplaceOwnedLinksSection();
                           if (!inviteLink) {
                             showNotice("error", "Join invite link is not ready yet.");
                             return;
@@ -4218,6 +4251,7 @@ function marketplaceButtonGuardProps(): Pick<
                       {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
+                          pinMarketplaceOwnedLinksSection();
                           if (!publicCreateEntryLink) {
                             showNotice("error", "Create entry link is not ready yet.");
                             return;
