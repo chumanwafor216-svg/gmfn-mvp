@@ -891,7 +891,7 @@ export default function MyGMFNAndIPage() {
       } else {
         showNotice(
           "success",
-          "Settings saved on this device. They will stay available here while account sync is being prepared."
+          "Settings saved on this device."
         );
       }
     } catch (err: any) {

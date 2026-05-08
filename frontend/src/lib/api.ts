@@ -528,7 +528,7 @@ export async function getPublicGuide(): Promise<any> {
     return {
       title: "My GSN and I",
       detail:
-        "No public guide API endpoint is enabled yet. Render this guide from the frontend page content.",
+        "The guide is available from the app content.",
       sections: [],
     };
   }
@@ -2565,7 +2565,7 @@ export async function createMarketplaceReview(_payload: {
   void _payload;
   return {
     ok: false,
-    detail: "Marketplace review endpoint is not enabled in the backend yet.",
+    detail: "Marketplace reviews are not open for this item right now.",
   };
 }
 
@@ -3337,7 +3337,7 @@ export async function getTrustGraphByGmfnId(gmfnId: string): Promise<any> {
   }
 
   throw new Error(
-    "GMFN ID lookup is not available in this admin view yet. Use User ID search for now."
+    "Use User ID search for this admin view."
   );
 }
 

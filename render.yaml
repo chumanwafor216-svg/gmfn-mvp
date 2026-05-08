@@ -23,7 +23,7 @@ services:
       - key: GMFN_AUTO_CREATE_SCHEMA
         value: "0"
       - key: GMFN_ENABLE_RECONCILIATION_LOOP
-        value: "1"
+        value: "0"
       - key: GMFN_ACCESS_TOKEN_EXPIRE_MINUTES
         value: "60"
       - key: GMFN_UPLOADS_DIR

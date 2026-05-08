@@ -20158,3 +20158,29 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining risk:
   - If Render does not have real SMS delivery configured, the create-entry phone verification flow will now require either live SMS delivery or an explicit preview/manual env setting for verification sessions. This is safer for production, but it must be consciously configured before university testers use self-service signup.
   - True 100% readiness still requires a live Render walkthrough against the deployed domain, not only local build/tests.
+
+### University readiness audit follow-up (2026-05-08)
+
+- Owner request continued: run another push after the hardening commit, using frontend and backend auditors plus a local sweep.
+- Updated visible admin/frontend polish:
+  - `frontend/src/pages/SystemOperationsPage.tsx` now uses `entry support` / `applicant` language instead of visible pilot/tester wording on the active system-operations route.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx` now normalizes backend readiness status labels so `pilot_near_ready` cannot render as visible `pilot near ready`.
+  - `frontend/src/pages/AppearancePage.tsx` no longer says `pilot workflow`, and its settings shortcuts now use authenticated `/app/...` routes.
+  - `frontend/src/pages/MyGMFNAndIPage.tsx` no longer says account sync is being prepared after a local settings save.
+  - `frontend/src/pages/TrustGraphAdminPage.tsx` and the stale duplicate component copy now use protected/admin wording instead of visible `internal` copy.
+  - the active TrustGraph GMFN ID control now opens the current member TrustGraph instead of showing a dead `not connected yet` message.
+  - `frontend/src/lib/api.ts` fallback messages no longer expose `endpoint not enabled yet` wording.
+- Updated backend/deployment readiness:
+  - removed the stray `txt` dependency from `gmfn_backend/requirements.txt`.
+  - removed startup DDL for `users.profile_image_url` from `gmfn_backend/app/main.py`; that column is already owned by Alembic migration `20260427_add_user_profile_image_url`.
+  - disabled the reconciliation loop by default in `gmfn_backend/app/main.py` and set Render `GMFN_ENABLE_RECONCILIATION_LOOP` to `0` so the web service does not run background mutation unless explicitly enabled.
+  - `gmfn_backend/app/api/routes/public_config.py` now reports bank transfer / gateway / mobile-money support from configured readiness instead of hardcoding all three as supported.
+- Verification:
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox.
+  - `python -m py_compile gmfn_backend\app\main.py gmfn_backend\app\api\routes\public_config.py` passed.
+  - `python -m pytest gmfn_backend\tests` passed outside the sandbox: 106 passed, 14 warnings.
+- Remaining risk:
+  - OTP/SMS truth remains the main owner decision: Render needs real SMS delivery or a consciously configured manual/preview verification setting for university self-service create-entry testing.
+  - Settlement rails will now correctly advertise unsupported if real bank/mobile-money envs are not configured; that is safer, but the university walkthrough should know payment surfaces may show setup-not-ready until envs are filled.
+  - R2 object storage is still documented but active upload routes use the Render persistent disk path via `GMFN_UPLOADS_DIR`.

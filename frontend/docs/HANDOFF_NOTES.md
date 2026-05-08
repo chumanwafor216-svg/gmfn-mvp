@@ -795,3 +795,29 @@
 - Remaining risk:
   - If Render does not have real SMS delivery configured, the create-entry phone verification flow now needs live SMS delivery or an explicit preview/manual env setting before university testers use self-service signup.
   - True 100% readiness still requires a live Render-domain walkthrough.
+
+### University readiness audit follow-up (2026-05-08)
+
+- Owner request continued: another push after the hardening commit, using frontend/backend auditors plus local sweep.
+- Frontend/admin polish:
+  - `src/pages/SystemOperationsPage.tsx` now uses `entry support` / `applicant` language instead of visible pilot/tester wording.
+  - `src/pages/TrustCommandCentrePage.tsx` now normalizes readiness status labels so backend `pilot_near_ready` cannot display as visible `pilot near ready`.
+  - `src/pages/AppearancePage.tsx` no longer says `pilot workflow`, and settings shortcuts now route to authenticated `/app/...` pages.
+  - `src/pages/MyGMFNAndIPage.tsx` no longer says account sync is being prepared after local settings save.
+  - `src/pages/TrustGraphAdminPage.tsx` and the stale duplicate component copy now use protected/admin wording instead of visible `internal` copy.
+  - the active TrustGraph GMFN ID control now opens the current member TrustGraph instead of showing a dead `not connected yet` message.
+  - `src/lib/api.ts` fallback messages no longer expose `endpoint not enabled yet` wording.
+- Backend/deployment readiness:
+  - removed the stray `txt` dependency from `../gmfn_backend/requirements.txt`.
+  - removed startup DDL for `users.profile_image_url`; Alembic migration `20260427_add_user_profile_image_url` owns it.
+  - disabled the reconciliation loop by default and set Render `GMFN_ENABLE_RECONCILIATION_LOOP=0`.
+  - `/public/config` now reports payment support from configured readiness instead of hardcoding all rails as supported.
+- Verification:
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox.
+  - `python -m py_compile gmfn_backend\app\main.py gmfn_backend\app\api\routes\public_config.py` passed.
+  - `python -m pytest gmfn_backend\tests` passed outside the sandbox: 106 passed, 14 warnings.
+- Remaining risk:
+  - Render still needs real SMS delivery or a conscious manual/preview verification env setting before university testers use self-service create-entry.
+  - Payment surfaces may now correctly show setup-not-ready until real settlement envs are configured.
+  - R2 is still only documented/planned; active uploads currently use Render persistent disk through `GMFN_UPLOADS_DIR`.

@@ -98,7 +98,7 @@ export default function TrustGraphAdminPage() {
     <div style={{ padding: 18, maxWidth: 1200 }}>
       <PageHeader
         title="TrustGraph Command Centre"
-        subtitle="Internal cross-clan trust architecture, explainability, and CCI command view."
+        subtitle="Protected cross-community trust architecture, explainability, and CCI command view."
         right={
           <Button onClick={loadAll} disabled={loading || busy}>
             {loading ? "Loading..." : busy ? "Working..." : "Refresh"}
@@ -121,7 +121,7 @@ export default function TrustGraphAdminPage() {
           <div>
             <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Access posture</div>
             <div style={{ marginTop: 4, color: "#64748b", fontSize: 12 }}>
-              Admin/internal analysis only. TrustSlip remains the public-facing summary instrument.
+              Admin analysis view. TrustSlip remains the public-facing summary instrument.
             </div>
           </div>
 
@@ -135,7 +135,7 @@ export default function TrustGraphAdminPage() {
       <Card style={{ marginTop: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Lookup</div>
         <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
-          Search by internal user ID or permanent member identity.
+          Search by user ID or permanent member identity.
         </div>
 
         <div

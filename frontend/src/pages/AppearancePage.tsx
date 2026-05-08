@@ -63,7 +63,7 @@ export default function AppearancePage() {
       <PageTopNav
         sectionLabel="Settings"
         title="Settings"
-        subtitle="Manage your visual preferences and the financial identity details used in your pilot workflow."
+        subtitle="Manage your visual preferences and the financial identity details used across your workspace."
       />
 
       <div style={{ ...card(), marginTop: 18 }}>
@@ -75,10 +75,10 @@ export default function AppearancePage() {
           <Link to="/app/payout-details" style={linkBtn(true)}>
             Bank / Wallet Details
           </Link>
-          <Link to="/notifications" style={linkBtn(false)}>
+          <Link to="/app/notifications" style={linkBtn(false)}>
             Notifications
           </Link>
-          <Link to="/identity" style={linkBtn(false)}>
+          <Link to="/app/identity" style={linkBtn(false)}>
             Identity Integrity
           </Link>
         </div>

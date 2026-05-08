@@ -638,7 +638,7 @@ export default function SystemOperationsPage() {
 
   const pilotTriageMessage = useMemo(() => {
     if (!pilotIntake) {
-      return "When testers begin, this monitor will show who is still entering, who is ready to finish, and who needs admin help.";
+      return "When applicants begin, this monitor will show who is still entering, who is ready to finish, and who needs admin help.";
     }
 
     if (pilotIntakeSummary.needsAttention > 0) {
@@ -650,7 +650,7 @@ export default function SystemOperationsPage() {
     }
 
     if (pilotIntakeSummary.createAwaitingBank > 0) {
-      return "Some creators have phone proof ready and only need bank or wallet details recorded for the pilot.";
+      return "Some creators have phone proof ready and only need bank or wallet details recorded.";
     }
 
     if (pilotIntakeSummary.joinPending > 0) {
@@ -658,10 +658,10 @@ export default function SystemOperationsPage() {
     }
 
     if (pilotIntakeSummary.joinApproved > 0) {
-      return "Some join requests are approved. Confirm the tester received and opened the activation link.";
+      return "Some join requests are approved. Confirm the applicant received and opened the activation link.";
     }
 
-    return "No urgent pilot intake problem is visible now. Keep watching new create and join rows as testers continue.";
+    return "No urgent entry-support problem is visible now. Keep watching new create and join rows as applicants continue.";
   }, [pilotIntake, pilotIntakeSummary]);
 
   const operationalFocus = useMemo(() => {
@@ -669,8 +669,8 @@ export default function SystemOperationsPage() {
       return {
         detail:
           pilotIntakeSummary.needsAttention === 1
-            ? "One pilot intake record needs help. Check whether the tester should continue, sign in, or receive an activation link."
-            : `${pilotIntakeSummary.needsAttention} pilot intake records need help. Check whether testers should continue, sign in, or receive activation links.`,
+            ? "One entry-support record needs help. Check whether the applicant should continue, sign in, or receive an activation link."
+            : `${pilotIntakeSummary.needsAttention} entry-support records need help. Check whether applicants should continue, sign in, or receive activation links.`,
       };
     }
 
@@ -1188,9 +1188,9 @@ export default function SystemOperationsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Pilot intake monitor</div>
+            <div style={sectionLabel()}>Entry support monitor</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Follow public create-entry and join-request testers from the admin side while the pilot is live.
+              Follow public create-entry and join-request applicants from the admin side during verification.
             </div>
           </div>
 
@@ -1206,9 +1206,9 @@ export default function SystemOperationsPage() {
 
         <ExplainToggle
           label="What this monitor does"
-          what="This monitor shows whether testers are still at phone proof, bank or wallet details, community setup, completed account creation, or join-request activation."
-          why="It stops pilot testing from becoming guesswork. If someone says they are stuck, the admin can see the last known backend stage and the safest next action."
-          next="Look first at records needing help, then use the next-action text to decide whether the tester should continue, sign in, start again, or receive an activation link."
+          what="This monitor shows whether applicants are still at phone proof, bank or wallet details, community setup, completed account creation, or join-request activation."
+          why="It stops entry support from becoming guesswork. If someone says they are stuck, the admin can see the last known backend stage and the safest next action."
+          next="Look first at records needing help, then use the next-action text to decide whether the applicant should continue, sign in, start again, or receive an activation link."
           tone="light"
           style={{ marginTop: 14 }}
         />
@@ -1295,7 +1295,7 @@ export default function SystemOperationsPage() {
               }}
             >
               <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Create-entry testers</div>
+                <div style={sectionLabel()}>Create-entry applicants</div>
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   {pilotCreateRows.length === 0 ? (
                     <div style={helperText()}>
@@ -1335,7 +1335,7 @@ export default function SystemOperationsPage() {
                                   lineHeight: 1.35,
                                 }}
                               >
-                                {firstTruthy(row?.display_name, row?.user?.display_name, "Unnamed tester")}
+                                {firstTruthy(row?.display_name, row?.user?.display_name, "Unnamed applicant")}
                               </div>
                               <div style={{ marginTop: 4, ...helperText(), fontSize: 13 }}>
                                 {firstTruthy(row?.phone_e164, "No phone")} | {firstTruthy(row?.email, "No email")}
@@ -1362,7 +1362,7 @@ export default function SystemOperationsPage() {
                               lineHeight: 1.45,
                             }}
                           >
-                            {firstTruthy(row?.next_action, "Review this tester record.")}
+                            {firstTruthy(row?.next_action, "Review this applicant record.")}
                           </div>
 
                           <div
@@ -1401,7 +1401,7 @@ export default function SystemOperationsPage() {
               </div>
 
               <div style={innerCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Join-request testers</div>
+                <div style={sectionLabel()}>Join-request applicants</div>
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                   {pilotJoinRows.length === 0 ? (
                     <div style={helperText()}>

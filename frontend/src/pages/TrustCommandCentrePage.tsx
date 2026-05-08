@@ -536,6 +536,13 @@ function writeLocalJSON(key: string, value: any) {
   }
 }
 
+function readinessStatusLabel(value: any): string {
+  const status = safeStr(value || "unknown").toLowerCase();
+  if (status === "pilot_near_ready") return "near ready";
+  if (status.startsWith("pilot_")) return status.slice("pilot_".length).replace(/_/g, " ");
+  return status.replace(/_/g, " ");
+}
+
 function defaultPilotWorksheet(): PilotWorksheet {
   return {
     pilotName: "",
@@ -1525,7 +1532,7 @@ export default function TrustCommandCentrePage() {
                       lineHeight: 1.25,
                     }}
                   >
-                    {pilotOverall.replace(/_/g, " ")}
+                    {readinessStatusLabel(pilotOverall)}
                   </div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Ready: {Number(executiveReading.pilotReadiness?.ready_count || 0)} • Partial: {Number(executiveReading.pilotReadiness?.partial_count || 0)}
@@ -1790,7 +1797,7 @@ export default function TrustCommandCentrePage() {
                     lineHeight: 1.28,
                   }}
                 >
-                  {pilotOverall.replace(/_/g, " ")}
+                  {readinessStatusLabel(pilotOverall)}
                 </div>
                 <div style={{ marginTop: 10, ...helperText() }}>
                   Ready {Number(executiveReading.pilotReadiness?.ready_count || 0)} • Partial{" "}
@@ -2012,7 +2019,7 @@ export default function TrustCommandCentrePage() {
               </div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                 Protocol: {protocolStage.replace(/_/g, " ")} • Readiness:{" "}
-                {pilotOverall.replace(/_/g, " ")}
+                {readinessStatusLabel(pilotOverall)}
               </div>
             </div>
 

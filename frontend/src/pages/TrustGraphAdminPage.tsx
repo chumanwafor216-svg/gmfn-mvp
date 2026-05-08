@@ -78,7 +78,7 @@ export default function TrustGraphAdminPage() {
     <div style={{ padding: 18, maxWidth: 1200 }}>
       <PageHeader
         title="TrustGraph Command Centre"
-        subtitle="Internal cross-clan trust architecture, explainability, and CCI command view."
+        subtitle="Protected cross-community trust architecture, explainability, and CCI command view."
         right={
           <Button onClick={loadAll} disabled={loading || busy}>
             {loading ? "Loading..." : busy ? "Working..." : "Refresh"}
@@ -101,7 +101,7 @@ export default function TrustGraphAdminPage() {
           <div>
             <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Access posture</div>
             <div style={{ marginTop: 4, color: "#64748b", fontSize: 12 }}>
-              Admin/internal analysis only. TrustSlip remains the public-facing summary instrument.
+              Admin analysis view. TrustSlip remains the public-facing summary instrument.
             </div>
           </div>
 
@@ -115,7 +115,7 @@ export default function TrustGraphAdminPage() {
       <Card style={{ marginTop: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Lookup</div>
         <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
-          Search by internal user ID or permanent member identity.
+          Search by user ID or review the current member identity.
         </div>
 
         <div
@@ -163,12 +163,12 @@ export default function TrustGraphAdminPage() {
               background: "#fff",
             }}
           >
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>GMFN ID lookup</div>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>Current GMFN ID</div>
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input
-                value={queryGmfnId}
-                onChange={(e) => setQueryGmfnId(e.target.value)}
-                placeholder="e.g. GMFN-U-7K2F93QX"
+                value={safeStr(me?.gmfn_id || queryGmfnId)}
+                readOnly
+                placeholder="GMFN ID pending"
                 style={{
                   flex: 1,
                   minWidth: 180,
@@ -178,10 +178,10 @@ export default function TrustGraphAdminPage() {
                 }}
               />
               <Button
-                onClick={() => setErr("GMFN ID lookup is not connected yet. Use User ID search for this admin view.")}
+                onClick={loadAll}
                 disabled={busy}
               >
-                Use User ID search
+                Open my TrustGraph
               </Button>
             </div>
           </div>
