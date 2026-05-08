@@ -1,5 +1,39 @@
 # Handoff Notes
 
+## 2026-05-08 Frontend-to-Backend Wording Truth Pass
+
+- Continued after `f183b93` with another auditor-backed pass from frontend surfaces into backend-exposed messages.
+- Scope stayed polish/truth only:
+  - no schema changes
+  - no business-rule changes
+  - no create/join route contract changes
+- Cleaned user-visible/frontend wording:
+  - Payout Details no longer describes readiness as a `pilot flow`.
+  - Community Join Requests no longer labels admin-direct approval as `Pilot` in the visible UI.
+  - Shop Control fallback video notice no longer says `today's pilot`.
+  - Revenue Panel now uses `Calibration model` / `Calibration note` instead of visible pilot wording.
+  - Trust Command Centre section label changed from `Pilot notes` to `Validation notes`.
+  - Trust Graph admin no longer calls the not-wired GMFN-ID lookup path; it tells admins to use User ID search for now.
+  - settings save fallback no longer exposes `Backend settings save API is not wired`.
+  - onboarding verification cards no longer display raw provider keys such as `.stub`.
+  - shared PageTopNav/uiKit button defaults were raised modestly for steadier tap targets.
+- Cleaned backend-exposed wording:
+  - duplicate/create-entry recovery guidance now says `community helper`, not `pilot helper`.
+  - auth/CCI fallback reasons now say the reading is `not ready yet`, not `being prepared`.
+  - public settlement defaults now use `GSN Settlement Rail` / `GSN Settlement`, not pilot settlement labels.
+  - settlement account-number default now returns `To be assigned` instead of a fake zero account number.
+  - settlement missing-field fallback now says payment setup is not ready for the region.
+  - TrustSlip/evidence/courier/merchant/liquidity messages no longer expose pilot wording in returned payloads or public HTML.
+  - evidence metadata now advertises the active `/trust/me/evidence-pack.zip` route instead of dead PDF paths.
+  - backend public HTML courier/TrustSlip verification surfaces now use plain ASCII labels instead of emoji-style status text.
+- Verification:
+  - `npm exec -- eslint src` passed.
+  - targeted backend `python -m py_compile` over the edited route/service files passed.
+  - targeted scan for the known risky phrases now only reports an internal backend admin docstring, not live UI copy or response text.
+  - live-source mojibake scan with `_freeze_points` excluded returned no matches.
+- Devil's advocate:
+  - this reduces visible/internal-leak wording risk before university verification. It does not rename internal API route/function names that still contain `pilot` for compatibility, and it does not make product-flow decisions such as the create completion destination or ProfilePage routing.
+
 ## 2026-05-08 Post-Push Inner-Page Polish Audit
 
 - Continued after commit `3a83c05` was pushed to `origin/feature/vault-shops`.

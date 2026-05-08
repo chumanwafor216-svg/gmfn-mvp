@@ -2262,7 +2262,7 @@ def pilot_approve_join_request(
         "ok": True,
         "pilot_override": True,
         "approved_now": True,
-        "message": "Pilot override approved this join request.",
+        "message": "Admin review approved this join request.",
         "community_id": int(clan_id),
         "community_code": _community_code(clan_id),
         "approval_result": approval_result,

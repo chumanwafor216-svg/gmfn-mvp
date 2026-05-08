@@ -2089,7 +2089,7 @@ export default function CreateEntryPage() {
                   </div>
                   {safeStr(bankVerificationResult.provider_key) ? (
                     <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
-                      Provider: {safeStr(bankVerificationResult.provider_key)}
+                      Verification source: Review recorded
                     </div>
                   ) : null}
                 </div>
@@ -2114,7 +2114,7 @@ export default function CreateEntryPage() {
                   </div>
                   {safeStr(licenceVerificationResult.provider_key) ? (
                     <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
-                      Provider: {safeStr(licenceVerificationResult.provider_key)}
+                      Verification source: Review recorded
                     </div>
                   ) : null}
                 </div>

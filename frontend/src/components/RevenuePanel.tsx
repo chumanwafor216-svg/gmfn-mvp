@@ -81,7 +81,7 @@ export default function RevenuePanel({ amount, currency, mode = "pilot" }: Props
           </div>
         </div>
 
-        <span style={pill(mode === "prod" ? "gold" : "blue")}>{mode === "prod" ? "Production model" : "Pilot model"}</span>
+        <span style={pill(mode === "prod" ? "gold" : "blue")}>{mode === "prod" ? "Production model" : "Calibration model"}</span>
       </div>
 
       <div style={{ marginTop: 12, display: "grid", gap: 10, gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
@@ -114,7 +114,7 @@ export default function RevenuePanel({ amount, currency, mode = "pilot" }: Props
 
       <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>
         {mode === "pilot"
-          ? "Pilot note: rate is a calibration estimate while we validate behavior and the evidence trail."
+          ? "Calibration note: rate is an estimate while we validate behavior and the evidence trail."
           : "Production note: rate must match published policy."}
       </div>
     </div>

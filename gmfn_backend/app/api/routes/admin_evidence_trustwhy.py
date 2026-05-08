@@ -95,7 +95,7 @@ def admin_evidence_trustwhy_json(
         "links": {
             "admin_trust_why": f"/admin/trust/why/{int(user_id)}",
             "admin_trust_events_recent": "/admin/trust-events/recent",
-            "trust_evidence_pack_pdf": "/trust/me/evidence-pack.pdf",
+            "trust_evidence_pack_zip": "/trust/me/evidence-pack.zip",
         },
         "note": "Admin screenshot-ready trust explainability bundle.",
     }

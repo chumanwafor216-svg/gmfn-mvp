@@ -288,7 +288,7 @@ def recompute_trust_for_user(
 
     inactivity_decay_applied = False
     days_since_last: Optional[int] = None
-    latest_reason = "Trust status is being prepared"
+    latest_reason = "Trust status is not ready yet"
     latest_source = "Trust ledger"
 
     if last_full_repayment_at is not None:

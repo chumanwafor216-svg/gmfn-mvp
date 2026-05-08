@@ -34,9 +34,9 @@ RULES: dict[str, TrustDeltaRule] = {
     "identity.region_consistent": TrustDeltaRule("identity.region_consistent", Decimal("0.20"), "Phone and bank region signals aligned at onboarding", "positive"),
     "identity.region_mismatch_explained": TrustDeltaRule("identity.region_mismatch_explained", Decimal("0.00"), "Cross-region onboarding was explained and recorded for review", "neutral"),
 
-    # Negative events (admin-controlled in pilot)
-    "repayment.missed": TrustDeltaRule("repayment.missed", Decimal("-0.10"), "Borrower missed repayment (pilot/admin)", "negative"),
-    "repayment.late": TrustDeltaRule("repayment.late", Decimal("-0.05"), "Borrower repaid late (pilot/admin)", "negative"),
+    # Negative events (admin-controlled)
+    "repayment.missed": TrustDeltaRule("repayment.missed", Decimal("-0.10"), "Borrower missed repayment (admin-reviewed)", "negative"),
+    "repayment.late": TrustDeltaRule("repayment.late", Decimal("-0.05"), "Borrower repaid late (admin-reviewed)", "negative"),
 
     # Dispute/fraud markers (neutral by default; policy can tighten later)
     "dispute.opened": TrustDeltaRule("dispute.opened", Decimal("0.00"), "Dispute opened (marker)", "neutral"),

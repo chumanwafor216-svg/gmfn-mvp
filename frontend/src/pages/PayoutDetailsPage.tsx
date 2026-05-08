@@ -414,7 +414,7 @@ export default function PayoutDetailsPage() {
         title: "Complete the payout destination first",
         detail:
           "Approved withdrawals should wait until your payout destination is complete enough for the route to be understood.",
-        today: "Complete the payout fields and save them locally for this pilot build.",
+        today: "Complete the payout fields and save them for the withdrawal path.",
         tomorrow:
           "A clear payout destination reduces mistakes and delay when withdrawal begins.",
         ctaLabel: "Open Withdrawal Instructions",
@@ -425,7 +425,7 @@ export default function PayoutDetailsPage() {
     return {
       title: "Keep the payout destination ready for withdrawal",
       detail:
-        "Your payout destination is ready enough for the pilot flow. The next step is to use Withdrawal Instructions when the support route is approved.",
+        "Your payout destination is ready enough for the withdrawal flow. The next step is to use Withdrawal Instructions when the support route is approved.",
       today: "Review the details and keep them accurate before initiating withdrawal.",
       tomorrow:
         "A stable payout destination keeps the money path calmer and more traceable.",
@@ -819,7 +819,7 @@ export default function PayoutDetailsPage() {
               fontWeight: 1000,
             }}
           >
-            {isReady ? "Ready for pilot flow" : "Needs completion"}
+            {isReady ? "Ready for withdrawal flow" : "Needs completion"}
           </div>
 
           <div
@@ -830,7 +830,7 @@ export default function PayoutDetailsPage() {
             }}
           >
             {isReady
-              ? "The core payout fields are complete enough for the pilot withdrawal flow."
+              ? "The core payout fields are complete enough for the withdrawal flow."
               : "Complete all core payout fields before relying on the withdrawal path."}
           </div>
         </div>

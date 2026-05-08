@@ -85,5 +85,5 @@ def record_release(
         "user_id": uid,
         "goods_value": str(amount),
         "currency": currency,
-        "message": "Release recorded (pilot evidence).",
+        "message": "Release recorded as evidence.",
     }

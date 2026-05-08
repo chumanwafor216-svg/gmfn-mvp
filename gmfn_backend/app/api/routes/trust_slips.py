@@ -710,7 +710,7 @@ def verify_trust_slip_public(
         "lite_page": _lite_page_url(slip.code, visibility_level),
         "verified_at": _now_utc().isoformat(),
         "offline_note": "If network drops, screenshot this page. Use the code to re-verify later.",
-        "pilot_note": "GMFN is non-custodial in MVP. This verifies TrustSlip validity only.",
+        "verification_note": "GMFN is non-custodial. This verifies TrustSlip validity only.",
         "snapshot_version": snapshot.get("snapshot_version"),
         "snapshot_checksum": snapshot.get("snapshot_checksum") or getattr(slip, "snapshot_checksum", None),
         "is_current": bool(getattr(slip, "is_current", True)),
@@ -998,7 +998,7 @@ def trust_slip_verify_page(
       </div>
 
       <div class="row muted" style="margin-top:6px;">
-        Pilot note: GMFN is non-custodial in MVP. This page verifies TrustSlip validity only.
+        Evidence note: GMFN is non-custodial. This page verifies TrustSlip validity only.
       </div>
     </div>
   </body>

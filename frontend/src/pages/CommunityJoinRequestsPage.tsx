@@ -375,16 +375,16 @@ export default function CommunityJoinRequestsPage() {
 
       if (res?.approval_result?.gmfn_id) {
         setSuccess(
-          `Pilot approval completed successfully. GMFN ID issued: ${res.approval_result.gmfn_id}`
+          `Admin approval completed successfully. GMFN ID issued: ${res.approval_result.gmfn_id}`
         );
         setActivationPack(res.approval_result || null);
       } else {
-        setSuccess("Pilot approval completed.");
+        setSuccess("Admin approval completed.");
       }
 
       await load();
     } catch (err: any) {
-      setError(err?.message || "Pilot approval failed.");
+      setError(err?.message || "Admin approval failed.");
     } finally {
       setBusyId(null);
     }
@@ -821,7 +821,7 @@ export default function CommunityJoinRequestsPage() {
                         border: "1px solid rgba(201,161,54,0.24)",
                       }}
                     >
-                      <div style={sectionLabel()}>Pilot unblock</div>
+                      <div style={sectionLabel()}>Admin review option</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -830,9 +830,7 @@ export default function CommunityJoinRequestsPage() {
                           fontSize: 14,
                         }}
                       >
-                        If the second reviewer cannot be reached during pilot
-                        testing, an admin can approve this request directly so
-                        testing can continue.
+                        If the second reviewer cannot be reached, an admin can approve this request directly so the member journey can continue.
                       </div>
                     </div>
                   ) : null}
@@ -876,7 +874,7 @@ export default function CommunityJoinRequestsPage() {
                         disabled={isBusy}
                         style={actionBtn(false, isBusy)}
                       >
-                        {isBusy ? "Working..." : "Approve Now (Pilot)"}
+                        {isBusy ? "Working..." : "Approve now"}
                       </button>
                     ) : null}
                   </div>

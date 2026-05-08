@@ -82,9 +82,9 @@ def get_settlement_config() -> Dict[str, Any]:
 
     return {
         "rail_name": _s(os.getenv("GMFN_SETTLEMENT_RAIL_NAME"), "Bank Transfer"),
-        "bank_name": _s(os.getenv("GMFN_SETTLEMENT_BANK_NAME"), "Pilot Bank Rail"),
-        "account_name": _s(os.getenv("GMFN_SETTLEMENT_ACCOUNT_NAME"), "GMFN Pilot Settlement"),
-        "account_number": _s(os.getenv("GMFN_SETTLEMENT_ACCOUNT_NUMBER"), "0000000000"),
+        "bank_name": _s(os.getenv("GMFN_SETTLEMENT_BANK_NAME"), "GSN Settlement Rail"),
+        "account_name": _s(os.getenv("GMFN_SETTLEMENT_ACCOUNT_NAME"), "GSN Settlement"),
+        "account_number": _s(os.getenv("GMFN_SETTLEMENT_ACCOUNT_NUMBER"), "To be assigned"),
         "sort_code": _s(os.getenv("GMFN_SETTLEMENT_SORT_CODE"), ""),
         "routing_number": _s(os.getenv("GMFN_SETTLEMENT_ROUTING_NUMBER"), ""),
         "ach_routing_number": _s(os.getenv("GMFN_SETTLEMENT_ACH_ROUTING_NUMBER"), ""),
@@ -122,7 +122,7 @@ def get_settlement_config() -> Dict[str, Any]:
         },
         "missing_field_text": _s(
             os.getenv("GMFN_SETTLEMENT_MISSING_FIELD_TEXT"),
-            "Not configured for this pilot rail yet.",
+            "Payment setup is not ready for this region yet.",
         ),
         "support_note": _s(
             os.getenv("GMFN_SETTLEMENT_SUPPORT_NOTE"),

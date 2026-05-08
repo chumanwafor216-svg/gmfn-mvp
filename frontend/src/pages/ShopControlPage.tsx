@@ -1631,7 +1631,7 @@ export default function ShopControlPage() {
         }
         showNotice(
           "info",
-          "This phone could not trim the video automatically, so GSN will use the uploaded file for today's pilot and play it as a 10-second spotlight clip."
+          "This phone could not trim the video automatically, so GSN will use the uploaded file and play it as a 10-second spotlight clip."
         );
         return;
       }

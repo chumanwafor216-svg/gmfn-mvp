@@ -891,7 +891,7 @@ export default function MyGMFNAndIPage() {
       } else {
         showNotice(
           "success",
-          "Settings saved locally. Backend settings save API is not wired in this build yet."
+          "Settings saved on this device. They will stay available here while account sync is being prepared."
         );
       }
     } catch (err: any) {

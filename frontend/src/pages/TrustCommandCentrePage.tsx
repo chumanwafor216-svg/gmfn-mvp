@@ -1718,7 +1718,7 @@ export default function TrustCommandCentrePage() {
                 </div>
 
                 <div style={{ marginTop: 12 }}>
-                  <div style={sectionLabel()}>Pilot notes</div>
+                  <div style={sectionLabel()}>Validation notes</div>
                   <textarea
                     value={pilotWorksheet.notes}
                     onChange={(e) => updatePilotField("notes", e.target.value)}

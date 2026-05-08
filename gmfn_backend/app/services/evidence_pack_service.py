@@ -23,7 +23,7 @@ except Exception:
 
 
 PROTOCOL_VERSION = "gmfn-evidence-pack/v3"
-DEFAULT_FOOTER = "GMFN evidence export — non-custodial pilot record"
+DEFAULT_FOOTER = "GMFN evidence export - non-custodial support record"
 
 
 def _now_utc() -> datetime:
@@ -301,7 +301,7 @@ Files:
 - trustslip_snapshot.json
 - trust_timeline.pdf (if PDF builder available)
 
-Pilot note:
+Evidence note:
 GMFN MVP is non-custodial. TrustSlip is not a bank guarantee and does not auto-debit anyone.
 """
     files["README.txt"] = readme_text.encode("utf-8")

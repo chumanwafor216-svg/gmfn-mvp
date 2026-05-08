@@ -56,5 +56,5 @@ def clan_liquidity(
         "pledged_total": str(pledged_total),
         "locked_total": str(locked_total),
         "released_total": str(released_total),
-        "note": "Liquidity is informational in pilot. No custodial funds are held by GMFN.",
+        "note": "Liquidity is informational. No custodial funds are held by GMFN.",
     }

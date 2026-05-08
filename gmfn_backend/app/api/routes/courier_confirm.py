@@ -68,9 +68,9 @@ def courier_confirm_ui(token: str):
 <body>
   <div class="wrap">
     <div class="card">
-      <h2>🚚 Courier update</h2>
+      <h2>Courier update</h2>
       <div class="sub">
-        Please confirm the shipment status. This is a self-reported acknowledgment (pilot). Not a delivery guarantee.
+        Please confirm the shipment status. This is a self-reported acknowledgment, not a delivery guarantee.
       </div>
 
       <div class="grid">
@@ -78,9 +78,9 @@ def courier_confirm_ui(token: str):
         <input id="tracking" placeholder="Tracking / Waybill no (optional)" />
         <textarea id="note" rows="3" placeholder="Optional note (e.g. received at depot)"></textarea>
 
-        <button onclick="sendStage('received')">✓ Goods received</button>
-        <button onclick="sendStage('in_transit')">🚚 Now in transit</button>
-        <button onclick="sendStage('delivered')">📦 Delivered</button>
+        <button onclick="sendStage('received')">Goods received</button>
+        <button onclick="sendStage('in_transit')">Now in transit</button>
+        <button onclick="sendStage('delivered')">Delivered</button>
 
         <div class="note" id="msg"></div>
         <div class="note"><b>Disclaimer:</b> GMFN records trade events for transparency. GMFN does not guarantee courier performance.</div>
@@ -91,7 +91,7 @@ def courier_confirm_ui(token: str):
 <script>
 async function sendStage(stage) {{
   const msg = document.getElementById("msg");
-  msg.textContent = "Sending…";
+  msg.textContent = "Sending...";
   try {{
     const carrier_name = document.getElementById("carrier").value || null;
     const tracking_number = document.getElementById("tracking").value || null;

@@ -311,7 +311,7 @@ def _draw_trustslip_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any])
         c,
         y,
         "3. TrustSlip Portability Summary",
-        "Portable authorization snapshot intended for verification, evidence, and merchant confidence in pilot mode.",
+        "Portable authorization snapshot intended for verification, evidence, and merchant confidence.",
     )
 
     col_gap = 10 * mm

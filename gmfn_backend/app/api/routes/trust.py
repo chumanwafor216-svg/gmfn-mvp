@@ -127,11 +127,10 @@ def get_my_evidence_pack_meta(
         "generated_at": generated_at,
         "based_on_event_at": based_on_event_at.isoformat() if based_on_event_at else None,
         "endpoints": {
-            "trust_slip_evidence_pdf": "/trust-slips/me/evidence.pdf",
-            "trust_evidence_pack_pdf": "/trust/me/evidence-pack.pdf",
+            "trust_evidence_pack_zip": "/trust/me/evidence-pack.zip",
             "trust_timeline": "/trust/me/timeline?limit=50",
         },
-        "note": "Quote this Pack ID when speaking to a merchant or admin during the pilot.",
+        "note": "Quote this Pack ID when speaking to a merchant or admin.",
     }
 
 

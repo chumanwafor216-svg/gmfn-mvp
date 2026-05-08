@@ -3337,7 +3337,7 @@ export async function getTrustGraphByGmfnId(gmfnId: string): Promise<any> {
   }
 
   throw new Error(
-    "Trust graph lookup by GMFN ID is not wired in api.ts yet. Use user ID for now."
+    "GMFN ID lookup is not available in this admin view yet. Use User ID search for now."
   );
 }
 

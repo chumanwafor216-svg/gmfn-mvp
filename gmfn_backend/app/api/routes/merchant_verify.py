@@ -85,7 +85,7 @@ def verify_for_merchant(token: str, db: Session = Depends(get_db)) -> Dict[str, 
 
     used = is_token_used(db, jti=str(jti))
 
-    # Mark as "used" once someone verifies (pilot evidence). Actor is 0 (system).
+    # Mark as "used" once someone verifies. Actor is 0 (system).
     if not used and jti:
         mark_token_used(
             db,

@@ -300,7 +300,7 @@ def _build_cci_reason(
     pressures: list[str],
 ) -> str:
     if score is None:
-        return "Your community integrity reading is being prepared."
+        return "Your community integrity reading is not ready yet."
 
     if strengths and pressures:
         return (
@@ -389,7 +389,7 @@ def _extract_user_cci_payload(db: Session, user_id: int) -> dict[str, Any]:
         return {
             "cci_score": None,
             "cci_class": "Pending",
-            "cci_reason": "Your community integrity reading is being prepared.",
+            "cci_reason": "Your community integrity reading is not ready yet.",
             "cci_tone": "neutral",
         }
 

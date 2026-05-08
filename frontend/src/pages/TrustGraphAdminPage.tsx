@@ -3,7 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   getMe,
   getMyTrustGraph,
-  getTrustGraphByGmfnId,
   getTrustGraphByUserId,
   type TrustGraphNodeOut,
 } from "../lib/api";
@@ -64,26 +63,6 @@ export default function TrustGraphAdminPage() {
       const g = await getTrustGraphByUserId(n);
       setGraph(g);
       setQueryGmfnId(safeStr(g?.gmfn_id || ""));
-    } catch (e: any) {
-      setErr(String(e?.message || e));
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function searchByGmfnId() {
-    setErr(null);
-    const s = safeStr(queryGmfnId).trim();
-    if (!s) {
-      setErr("Enter a GMFN ID.");
-      return;
-    }
-
-    setBusy(true);
-    try {
-      const g = await getTrustGraphByGmfnId(s);
-      setGraph(g);
-      setQueryUserId(safeStr(g?.user_id || ""));
     } catch (e: any) {
       setErr(String(e?.message || e));
     } finally {
@@ -171,7 +150,7 @@ export default function TrustGraphAdminPage() {
                 }}
               />
               <Button onClick={searchByUserId} disabled={busy}>
-                Open
+                Search by User ID
               </Button>
             </div>
           </div>
@@ -184,7 +163,7 @@ export default function TrustGraphAdminPage() {
               background: "#fff",
             }}
           >
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>Search by GMFN ID</div>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>GMFN ID lookup</div>
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input
                 value={queryGmfnId}
@@ -198,8 +177,11 @@ export default function TrustGraphAdminPage() {
                   border: "1px solid rgba(11,31,51,0.14)",
                 }}
               />
-              <Button onClick={searchByGmfnId} disabled={busy}>
-                Open
+              <Button
+                onClick={() => setErr("GMFN ID lookup is not connected yet. Use User ID search for this admin view.")}
+                disabled={busy}
+              >
+                Use User ID search
               </Button>
             </div>
           </div>

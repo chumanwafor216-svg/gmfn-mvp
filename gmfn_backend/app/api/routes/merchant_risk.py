@@ -42,5 +42,5 @@ def merchant_risk_summary(
         "last_full_repayment_at": breakdown.get("last_full_repayment_at"),
         "standing_score": breakdown.get("standing_score"),
         "lifetime_trust": breakdown.get("lifetime_trust"),
-        "note": "Pilot risk summary. TrustSlip is not a bank guarantee; GMFN is non-custodial.",
+        "note": "Risk summary. TrustSlip is not a bank guarantee; GMFN is non-custodial.",
     }

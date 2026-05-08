@@ -77,7 +77,7 @@ def _qr_block(url: str) -> Drawing:
 
 def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Optional[Dict[str, Any]] = None) -> bytes:
     pack_id = (pack_meta or {}).get("pack_id") or "TP-UNKNOWN"
-    footer_text = (pack_meta or {}).get("footer") or "Confidential / Pilot Version"
+    footer_text = (pack_meta or {}).get("footer") or "Confidential / Evidence Record"
     qr_url = (pack_meta or {}).get("merchant_verify_ui_url") or f"{_public_frontend_base_url()}/trust-slips/ping"
 
     buffer = BytesIO()

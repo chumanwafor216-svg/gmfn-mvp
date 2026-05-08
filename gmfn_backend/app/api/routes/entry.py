@@ -169,10 +169,10 @@ def _entry_duplicate_identity_error(
                 "code": "entry_pending_admin_review",
                 "message": (
                     f"This {field_label} is already attached to a pending GSN identity. "
-                    "Ask the pilot helper to review the intake record before starting again."
+                    "Ask the community helper to review the intake record before starting again."
                 ),
                 "next_action": "admin_review",
-                "next_action_label": "Ask pilot helper to review",
+                "next_action_label": "Ask community helper to review",
                 "gmfn_id": gmfn_id or None,
             },
         )

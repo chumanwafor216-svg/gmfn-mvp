@@ -81,9 +81,7 @@ def evidence_pack_trustwhy_json(
         "links": {
             "trust_why_me": "/trust/me/why",
             "trust_score_explained": "/trust/score/explained",
-            "trust_evidence_pack_pdf": "/trust/me/evidence-pack.pdf",
-            "trust_slip_evidence_pdf": "/trust-slips/me/evidence.pdf",
+            "trust_evidence_pack_zip": "/trust/me/evidence-pack.zip",
         },
         "note": "Screenshot-ready: pack_id + based_on_event_at + checksum prove timeline integrity.",
     }
-    

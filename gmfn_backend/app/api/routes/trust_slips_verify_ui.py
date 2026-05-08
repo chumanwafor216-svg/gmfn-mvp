@@ -111,9 +111,9 @@ def verify_trust_slip_ui(token: str, db: Session = Depends(get_db)):
       <div class="row" style="justify-content:space-between;align-items:baseline">
         <div>
           <div style="font-size:22px;font-weight:1000">GMFN Verification</div>
-          <div class="muted">This is a community-backed integrity view (pilot). No auto-debit. Not a bank guarantee.</div>
+          <div class="muted">This is a community-backed integrity view. No auto-debit. Not a bank guarantee.</div>
         </div>
-        <div class="pill">Verified ✅</div>
+        <div class="pill">Verified</div>
       </div>
 
       <div class="row" style="margin-top:12px">

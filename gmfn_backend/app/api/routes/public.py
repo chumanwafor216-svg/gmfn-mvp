@@ -21,8 +21,8 @@ def get_public_config() -> Dict[str, Any]:
     return {
         "settlement": {
             "rail_name": _s("GMFN_SETTLEMENT_RAIL_NAME", "Bank Transfer"),
-            "bank_name": _s("GMFN_SETTLEMENT_BANK_NAME", "Pilot Bank Rail"),
-            "account_name": _s("GMFN_SETTLEMENT_ACCOUNT_NAME", "GMFN Pilot Settlement"),
+            "bank_name": _s("GMFN_SETTLEMENT_BANK_NAME", "GSN Settlement Rail"),
+            "account_name": _s("GMFN_SETTLEMENT_ACCOUNT_NAME", "GSN Settlement"),
             "account_number": _s("GMFN_SETTLEMENT_ACCOUNT_NUMBER", "To be assigned"),
             "sort_code": _s("GMFN_SETTLEMENT_SORT_CODE", ""),
             "country": _s("GMFN_SETTLEMENT_COUNTRY", ""),
@@ -35,6 +35,6 @@ def get_public_config() -> Dict[str, Any]:
             "signature_verification_enabled": bool(_s("GMFN_WEBHOOK_SECRET", "")),
         },
         "app": {
-            "mode": _s("GMFN_APP_MODE", "pilot"),
+            "mode": _s("GMFN_APP_MODE", "ready"),
         },
     }

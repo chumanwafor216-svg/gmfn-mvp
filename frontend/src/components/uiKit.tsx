@@ -39,6 +39,8 @@ export function Button(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
       className="gmfn-btn"
       style={{
         ...brandStableTapTarget(),
+        minHeight: 44,
+        padding: "10px 14px",
         ...(props.style || {}),
       }}
     />
