@@ -21,6 +21,7 @@ import {
   getMe,
   getPoolMe,
   getSelectedClanId,
+  setSelectedClanId,
   listClanMembers,
   listMyClans,
   listMyLoans,
@@ -409,34 +410,56 @@ function getRowId(row: any): number {
   return positiveNumber(row?.id || row?.clan_id || row?.community_id);
 }
 
-function buildSelectedCommunity(currentClan: any, clanRows: any[]): CommunityRow | null {
+function buildSelectedCommunity(
+  currentClan: any,
+  clanRows: any[],
+  preferredClanId = 0
+): CommunityRow | null {
+  const preferredId = positiveNumber(preferredClanId);
   const currentId = getRowId(currentClan);
+  const currentClanMatchesPreferred = !preferredId || currentId === preferredId;
+  const preferredRow =
+    preferredId > 0
+      ? clanRows.find((row: any) => getRowId(row) === preferredId) || null
+      : null;
   const matchedRow =
-    clanRows.find((row: any) => getRowId(row) === currentId) || null;
-  const firstRow = clanRows[0] || null;
+    preferredRow ||
+    (currentClanMatchesPreferred
+      ? clanRows.find((row: any) => getRowId(row) === currentId) || null
+      : null);
+  const firstRow = preferredId ? null : clanRows[0] || null;
+  const currentSource = currentClanMatchesPreferred ? currentClan : null;
 
   const merged = {
-    ...mergeFirstVisible(currentClan, matchedRow, firstRow),
+    ...mergeFirstVisible(currentSource, matchedRow, firstRow),
     community: mergeFirstVisible(
-      currentClan?.community,
+      currentSource?.community,
       matchedRow?.community,
       firstRow?.community
     ),
     profile: mergeFirstVisible(
-      currentClan?.profile,
+      currentSource?.profile,
       matchedRow?.profile,
       firstRow?.profile
     ),
     marketplace: mergeFirstVisible(
-      currentClan?.marketplace,
+      currentSource?.marketplace,
       matchedRow?.marketplace,
       firstRow?.marketplace
     ),
-    clan: mergeFirstVisible(currentClan?.clan, matchedRow?.clan, firstRow?.clan),
-    meta: mergeFirstVisible(currentClan?.meta, matchedRow?.meta, firstRow?.meta),
+    clan: mergeFirstVisible(currentSource?.clan, matchedRow?.clan, firstRow?.clan),
+    meta: mergeFirstVisible(currentSource?.meta, matchedRow?.meta, firstRow?.meta),
   };
 
-  return getRowId(merged) ? (merged as CommunityRow) : null;
+  if (getRowId(merged)) return merged as CommunityRow;
+
+  return preferredId
+    ? ({
+        id: preferredId,
+        clan_id: preferredId,
+        name: `Community ${preferredId}`,
+      } as CommunityRow)
+    : null;
 }
 
 function getMemberName(member: ClanMember): string {
@@ -1751,13 +1774,27 @@ export default function MarketplacePage() {
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
 
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routeSelectedClanId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("community") ||
+        query.get("clan_id") ||
+        query.get("community_id")
+    );
+  }, [location.search]);
+  const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
   const myShopTo = useMemo(() => {
     return currentGmfnId
       ? `/shop/${encodeURIComponent(currentGmfnId)}`
       : "";
   }, [currentGmfnId]);
+
+  useEffect(() => {
+    if (routeSelectedClanId > 0) {
+      setSelectedClanId(routeSelectedClanId);
+    }
+  }, [routeSelectedClanId]);
 
   const marketplaceIntentItems = useMemo(() => {
     return MARKETPLACE_INTENT_ITEMS.map((item) =>
@@ -2049,7 +2086,11 @@ function marketplaceButtonGuardProps(): Pick<
       ]);
 
       const clanRows = rowsOf<any>(clanListRes);
-      const resolvedCommunity = buildSelectedCommunity(currentClanRes, clanRows);
+      const resolvedCommunity = buildSelectedCommunity(
+        currentClanRes,
+        clanRows,
+        selectedClanId
+      );
       const currentCommunityId =
         positiveNumber(resolvedCommunity?.id || resolvedCommunity?.clan_id) ||
         selectedClanId;

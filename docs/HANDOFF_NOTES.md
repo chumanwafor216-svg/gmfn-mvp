@@ -20310,3 +20310,22 @@ GSN-branded invite composer and invite-entry continuity.
   - `python -m pytest tests --basetemp .pytest_tmp` passed outside the sandbox: 106 passed, 14 warnings.
 - Note:
   - The first backend test run inside the sandbox hit Windows temp-directory permission errors, not test assertions. The outside-sandbox rerun with explicit `--basetemp` passed.
+
+### Marketplace inner-route cleanup (2026-05-08)
+
+- Owner reported the Marketplace inner page still was not working after the button/link cleanup.
+- Confirmed route-level truth:
+  - `/app/marketplace/community/:clanId` was redirecting authenticated users out to public `/community/:clanId`.
+  - public `/community/:clanId` is the public/community face and depends on membership/admin-sensitive community APIs, so it can fail or feel wrong when used as the logged-in Marketplace inner page.
+- Updated `frontend/src/App.tsx`:
+  - the authenticated inner alias now redirects to `/app/marketplace?community=:clanId` instead of the public community face.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - Marketplace now reads `community`, `clan_id`, or `community_id` from the query string.
+  - a route-selected community id is persisted as the selected clan id.
+  - selected-community resolution now honors the requested id and avoids silently falling back to the first community when a specific Marketplace community was requested.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/App.tsx src/pages/MarketplacePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after sandbox Vite/esbuild hit the known `spawn EPERM`.
+- Remaining risk:
+  - The public `/community/:clanId` face still uses guarded community APIs; this change fixes the logged-in Marketplace inner route without redesigning the public face contract.

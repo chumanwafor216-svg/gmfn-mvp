@@ -268,7 +268,9 @@ function RedirectCommunityMarketplaceAlias() {
   return (
     <Navigate
       to={mergeTargetWithCurrent(
-        clanId ? `/community/${encodeURIComponent(clanId)}` : APP_ROUTES.MARKETPLACE,
+        clanId
+          ? `${APP_ROUTES.MARKETPLACE}?community=${encodeURIComponent(clanId)}`
+          : APP_ROUTES.MARKETPLACE,
         location.search,
         location.hash
       )}
