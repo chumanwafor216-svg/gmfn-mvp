@@ -20445,3 +20445,31 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining risks:
   - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept today’s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
   - Some global nav/legacy shortcuts remain intentionally context-agnostic where no concrete community row is being selected.
+
+### Borrowing/support route-context audit (2026-05-08)
+
+- Continued the domain-by-domain link audit into borrowing, support, guarantor, Money In, and Money Out surfaces.
+- Confirmed drift:
+  - support-domain pages already load community-scoped data from the selected clan id, but many route buttons still used plain app routes such as `/app/marketplace`, `/app/loan-readiness`, `/app/loan-workbench`, `/app/guarantor-inbox`, `/app/payment/pool`, and `/app/withdrawal-instructions`.
+  - this meant the route could visually say "current community" while the next clicked page depended on stale selected-community storage instead of explicit route context.
+- Added `frontend/src/lib/communityRouteContext.ts`:
+  - reads `community`, `clan_id`, or `community_id` from URL search.
+  - appends `community=<clanId>` to app routes while preserving existing query strings and hash anchors.
+- Updated support-domain pages to read route community context, persist it as the selected clan id, and carry it forward:
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/GuarantorInboxPage.tsx`
+  - `frontend/src/pages/GuarantorEarningsPage.tsx`
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+- Behavior:
+  - Loans & Support, readiness, workbench, guarantor queue, guarantor earnings, Money In, and Money Out route buttons now keep the selected community explicit.
+  - Marketplace support anchors now become `/app/marketplace?community=<id>#marketplace-loans-support` instead of relying on implicit selected-community state.
+  - Money In/Money Out related-route buttons now carry the current community id into Finance, Payment Rails, Payout Details, Loans, and Marketplace.
+- Verification:
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
+  - targeted `Select-String` scans found no remaining literal `to="/app/marketplace"`, `to="/app/loan..."`, `to="/app/guarantor..."`, `to="/app/payment..."`, `to="/app/withdrawal..."`, stale `ctaTo: "/app/..."`, or support-domain `backTo="/app/..."` patterns in the audited support files.
+  - `git diff --check` passed.
+- Remaining risk:
+  - `LoanSuggestionsPage`, `LoanSummaryPage`, repayment, revenue allocation, payment rails, payout details, and wider trust/admin pages still need their own domain passes. This pass focused on the active support hub and its immediate neighboring routes.

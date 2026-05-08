@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -15,6 +20,7 @@ import {
   getMe,
   getSelectedClanId,
   safeCopy,
+  setSelectedClanId,
 } from "../lib/api";
 
 type FilterKey = "pending" | "approved" | "declined" | "all";
@@ -534,7 +540,16 @@ function statusPill(status: string): React.CSSProperties {
 }
 
 export default function GuarantorInboxPage() {
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId = routeClanId || Number(getSelectedClanId() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -556,6 +571,12 @@ export default function GuarantorInboxPage() {
   const [approvedRows, setApprovedRows] = useState<InboxRow[]>([]);
   const [declinedRows, setDeclinedRows] = useState<InboxRow[]>([]);
   const [notice, setNotice] = useState<Notice | null>(null);
+
+  useEffect(() => {
+    if (routeClanId > 0) {
+      setSelectedClanId(routeClanId);
+    }
+  }, [routeClanId]);
   const [busyDecisionKey, setBusyDecisionKey] = useState("");
 
   const loadInbox = useCallback(async () => {
@@ -683,7 +704,7 @@ export default function GuarantorInboxPage() {
         detail:
           "Incoming guarantor requests make more sense when they stay tied to your current community.",
         ctaLabel: "Open Community Home",
-        ctaTo: "/app/community",
+        ctaTo: communityTo("/app/community"),
       };
     }
 
@@ -696,7 +717,7 @@ export default function GuarantorInboxPage() {
         detail:
           "This queue is only the intake page. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between routes.",
         ctaLabel: "Open Loan Workbench",
-        ctaTo: "/app/loan-workbench",
+        ctaTo: communityTo("/app/loan-workbench"),
       };
     }
 
@@ -706,7 +727,7 @@ export default function GuarantorInboxPage() {
         detail:
           "The next move is usually to continue the broader support flow rather than staying only in the queue.",
         ctaLabel: "Return to Loans & Support",
-        ctaTo: "/app/loans",
+        ctaTo: communityTo("/app/loans"),
       };
     }
 
@@ -715,9 +736,9 @@ export default function GuarantorInboxPage() {
       detail:
         "That means nothing is directly waiting on your guarantor response inside this current queue view.",
       ctaLabel: "Open Loans & Support",
-      ctaTo: "/app/loans",
+      ctaTo: communityTo("/app/loans"),
     };
-  }, [selectedClanId, counts.pending, counts.approved]);
+  }, [selectedClanId, communityTo, counts.pending, counts.approved]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -792,7 +813,7 @@ export default function GuarantorInboxPage() {
         subtitle="Review requests that need your guarantor response in your current community."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/loans"
+        backTo={communityTo("/app/loans")}
         backLabel="Loans & Support"
       />
 
@@ -1257,10 +1278,13 @@ export default function GuarantorInboxPage() {
                             </button>
                           </>
                         ) : null}
-                        <OriginLink to="/app/loan-workbench" style={secondaryBtn(false)}>
+                        <OriginLink
+                          to={communityTo("/app/loan-workbench")}
+                          style={secondaryBtn(false)}
+                        >
                           Open workbench
                         </OriginLink>
-                        <OriginLink to="/app/loans" style={secondaryBtn(false)}>
+                        <OriginLink to={communityTo("/app/loans")} style={secondaryBtn(false)}>
                           Loans & Support
                         </OriginLink>
                       </div>
@@ -1396,7 +1420,7 @@ export default function GuarantorInboxPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-workbench")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1412,7 +1436,7 @@ export default function GuarantorInboxPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1428,7 +1452,7 @@ export default function GuarantorInboxPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loans" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loans")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1444,7 +1468,7 @@ export default function GuarantorInboxPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/marketplace" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/marketplace")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",

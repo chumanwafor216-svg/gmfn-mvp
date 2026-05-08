@@ -6,6 +6,10 @@ import PageTopNav from "../components/PageTopNav";
 import { navigateWithOrigin } from "../lib/nav";
 import * as api from "../lib/api";
 import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
+import {
   getCommunityMoneySurface,
   loadCommunityWithdrawalRoute,
   requestPoolWithdrawal,
@@ -635,7 +639,16 @@ function communityImageSrc(currentClan: any): string {
 export default function WithdrawalInstructionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId =
+    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -673,6 +686,12 @@ export default function WithdrawalInstructionsPage() {
 
   const [amountInput, setAmountInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
+
+  useEffect(() => {
+    if (routeClanId > 0) {
+      (api as any).setSelectedClanId?.(routeClanId);
+    }
+  }, [routeClanId]);
   const [latestWithdrawalResult, setLatestWithdrawalResult] = useState<any | null>(
     null
   );
@@ -1182,7 +1201,7 @@ export default function WithdrawalInstructionsPage() {
 
     persistSupportHandoff();
 
-    navigateWithOrigin(navigate, "/app/loan-readiness", location);
+    navigateWithOrigin(navigate, communityTo("/app/loan-readiness"), location);
   }
 
   async function handleRefresh() {
@@ -1304,7 +1323,7 @@ export default function WithdrawalInstructionsPage() {
           subtitle="Loading the withdrawal flow..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/marketplace"
+          backTo={communityTo("/app/marketplace")}
           backLabel="Marketplace"
         />
 
@@ -1333,7 +1352,7 @@ export default function WithdrawalInstructionsPage() {
         subtitle="Money Out stays guided from beginning to outcome. The community rail stays fixed, the personal payout destination stays explicit, and support takes over only when the amount goes above the effective available position."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/marketplace"
+        backTo={communityTo("/app/marketplace")}
         backLabel="Marketplace"
       />
 
@@ -2223,7 +2242,7 @@ export default function WithdrawalInstructionsPage() {
                   Copy Community Rail
                 </button>
 
-                <OriginLink to="/app/finance" style={actionBtn("secondary")}>
+                <OriginLink to={communityTo("/app/finance")} style={actionBtn("secondary")}>
                   Open Finance
                 </OriginLink>
 
@@ -2406,25 +2425,25 @@ export default function WithdrawalInstructionsPage() {
 
                 {requiresSupport ? (
                   <>
-                      <OriginLink to="/app/loan-readiness" style={actionBtn("secondary")}>
+                      <OriginLink to={communityTo("/app/loan-readiness")} style={actionBtn("secondary")}>
                         Open Loan Readiness
                       </OriginLink>
 
-                      <OriginLink to="/app/loan-suggestions" style={actionBtn("secondary")}>
+                      <OriginLink to={communityTo("/app/loan-suggestions")} style={actionBtn("secondary")}>
                         Open Loan Suggestions
                       </OriginLink>
 
-                      <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
+                      <OriginLink to={communityTo("/app/loan-workbench")} style={actionBtn("secondary")}>
                         Open Loan Workbench
                       </OriginLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
                   <>
-                    <OriginLink to="/app/finance" style={actionBtn("secondary")}>
+                    <OriginLink to={communityTo("/app/finance")} style={actionBtn("secondary")}>
                       Open Finance
                     </OriginLink>
 
-                      <OriginLink to="/app/payout-details" style={actionBtn("secondary")}>
+                      <OriginLink to={communityTo("/app/payout-details")} style={actionBtn("secondary")}>
                         Open Payout Details
                       </OriginLink>
                   </>
@@ -2479,31 +2498,31 @@ export default function WithdrawalInstructionsPage() {
                 gap: 12,
               }}
             >
-                <OriginLink to="/app/finance" style={actionBtn("primary")}>
+                <OriginLink to={communityTo("/app/finance")} style={actionBtn("primary")}>
                   Open Finance
                 </OriginLink>
 
-                <OriginLink to="/app/payout-details" style={actionBtn("secondary")}>
+                <OriginLink to={communityTo("/app/payout-details")} style={actionBtn("secondary")}>
                   Open Payout Details
                 </OriginLink>
 
-                <OriginLink to="/app/payment-rails" style={actionBtn("secondary")}>
+                <OriginLink to={communityTo("/app/payment-rails")} style={actionBtn("secondary")}>
                   Open Payment Rails
                 </OriginLink>
 
-                <OriginLink to="/app/loan-readiness" style={actionBtn("secondary")}>
+                <OriginLink to={communityTo("/app/loan-readiness")} style={actionBtn("secondary")}>
                   Open Loan Readiness
                 </OriginLink>
 
-                <OriginLink to="/app/loan-workbench" style={actionBtn("secondary")}>
+                <OriginLink to={communityTo("/app/loan-workbench")} style={actionBtn("secondary")}>
                   Open Loan Workbench
                 </OriginLink>
 
-                <OriginLink to="/app/loans" style={actionBtn("secondary")}>
+                <OriginLink to={communityTo("/app/loans")} style={actionBtn("secondary")}>
                   Open Loans & Support
                 </OriginLink>
 
-              <OriginLink to="/app/marketplace" style={actionBtn("secondary")}>
+              <OriginLink to={communityTo("/app/marketplace")} style={actionBtn("secondary")}>
                 Marketplace
               </OriginLink>
 

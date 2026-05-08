@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -14,6 +19,7 @@ import {
   getMyGuarantorEarnings,
   getSelectedClanId,
   safeCopy,
+  setSelectedClanId,
 } from "../lib/api";
 
 type GuarantorEarningItem = {
@@ -462,7 +468,16 @@ function payableValue(row: GuarantorEarningItem): number {
 }
 
 export default function GuarantorEarningsPage() {
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId = routeClanId || Number(getSelectedClanId() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -481,6 +496,12 @@ export default function GuarantorEarningsPage() {
   const [items, setItems] = useState<GuarantorEarningItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+
+  useEffect(() => {
+    if (routeClanId > 0) {
+      setSelectedClanId(routeClanId);
+    }
+  }, [routeClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -642,7 +663,7 @@ export default function GuarantorEarningsPage() {
         tomorrow:
           "Your current community keeps support history and earnings easier to interpret.",
         ctaLabel: "Open Community Home",
-        ctaTo: "/app/community",
+        ctaTo: communityTo("/app/community"),
       };
     }
 
@@ -658,7 +679,7 @@ export default function GuarantorEarningsPage() {
         tomorrow:
           "Settled support creates clearer earnings and stronger visible contribution.",
         ctaLabel: "Return to Loans & Support",
-        ctaTo: "/app/loans",
+        ctaTo: communityTo("/app/loans"),
       };
     }
 
@@ -671,7 +692,7 @@ export default function GuarantorEarningsPage() {
         tomorrow:
           "Consistent guarantor support can strengthen both visible value and visible reputation over time.",
         ctaLabel: "Open Community Home",
-        ctaTo: "/app/community",
+        ctaTo: communityTo("/app/community"),
       };
     }
 
@@ -683,9 +704,9 @@ export default function GuarantorEarningsPage() {
       tomorrow:
         "Visible earnings usually come after responsible support behaviour has had time to settle.",
       ctaLabel: "Return to Loans & Support",
-      ctaTo: "/app/loans",
+      ctaTo: communityTo("/app/loans"),
     };
-  }, [selectedClanId, totals.pendingCount, totals.total]);
+  }, [selectedClanId, communityTo, totals.pendingCount, totals.total]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -722,7 +743,7 @@ export default function GuarantorEarningsPage() {
         subtitle="See pending and earned value from supporting successful community loans."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/loans"
+        backTo={communityTo("/app/loans")}
         backLabel="Loans & Support"
       />
 
@@ -1350,7 +1371,7 @@ export default function GuarantorEarningsPage() {
                   </div>
                 </OriginLink>
 
-                <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
+                <OriginLink to={communityTo("/app/loan-workbench")} style={routeTile(false)}>
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1366,7 +1387,7 @@ export default function GuarantorEarningsPage() {
                   </div>
                 </OriginLink>
 
-                <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
+                <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1382,7 +1403,7 @@ export default function GuarantorEarningsPage() {
                   </div>
                 </OriginLink>
 
-                <OriginLink to="/app/community" style={routeTile(false)}>
+                <OriginLink to={communityTo("/app/community")} style={routeTile(false)}>
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1398,7 +1419,7 @@ export default function GuarantorEarningsPage() {
                   </div>
                 </OriginLink>
 
-                <OriginLink to="/app/marketplace" style={routeTile(false)}>
+                <OriginLink to={communityTo("/app/marketplace")} style={routeTile(false)}>
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1414,7 +1435,10 @@ export default function GuarantorEarningsPage() {
                   </div>
                 </OriginLink>
 
-                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+                <OriginLink
+                  to={communityTo("/app/withdrawal-instructions")}
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",

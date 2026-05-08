@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import OriginLink from "../components/OriginLink";
 import * as api from "../lib/api";
+import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
 import {
   createPoolDepositInstruction,
   getCommunityMoneySurface,
@@ -546,7 +551,17 @@ function findMatchingDepositEvent(reference: string, recentEvents: any[]): any |
 }
 
 export default function PaymentInstructionsPage() {
-  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId =
+    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -588,6 +603,12 @@ export default function PaymentInstructionsPage() {
   const [paymentConfirmedAt, setPaymentConfirmedAt] = useState<string | null>(
     null
   );
+
+  useEffect(() => {
+    if (routeClanId > 0) {
+      (api as any).setSelectedClanId?.(routeClanId);
+    }
+  }, [routeClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1821,31 +1842,31 @@ export default function PaymentInstructionsPage() {
                 gap: 12,
               }}
             >
-              <OriginLink to={APP_TARGETS.FINANCE} style={actionBtn("primary")}>
+              <OriginLink to={communityTo(APP_TARGETS.FINANCE)} style={actionBtn("primary")}>
                 Finance
               </OriginLink>
 
-              <OriginLink to={APP_TARGETS.MONEY_OUT} style={actionBtn("secondary")}>
+              <OriginLink to={communityTo(APP_TARGETS.MONEY_OUT)} style={actionBtn("secondary")}>
                 Money Out
               </OriginLink>
 
-              <OriginLink to={APP_TARGETS.PAYMENT_RAILS} style={actionBtn("secondary")}>
+              <OriginLink to={communityTo(APP_TARGETS.PAYMENT_RAILS)} style={actionBtn("secondary")}>
                 Payment Rails
               </OriginLink>
 
-              <OriginLink to={APP_TARGETS.PAYOUT_DETAILS} style={actionBtn("secondary")}>
+              <OriginLink to={communityTo(APP_TARGETS.PAYOUT_DETAILS)} style={actionBtn("secondary")}>
                 Payout Details
               </OriginLink>
 
-              <OriginLink to={APP_TARGETS.LOANS} style={actionBtn("secondary")}>
+              <OriginLink to={communityTo(APP_TARGETS.LOANS)} style={actionBtn("secondary")}>
                 Loans
               </OriginLink>
 
-              <OriginLink to={APP_TARGETS.MARKETPLACE} style={actionBtn("secondary")}>
+              <OriginLink to={communityTo(APP_TARGETS.MARKETPLACE)} style={actionBtn("secondary")}>
                 Marketplace
               </OriginLink>
 
-              <OriginLink to={APP_TARGETS.COMMUNITY} style={actionBtn("secondary")}>
+              <OriginLink to={communityTo(APP_TARGETS.COMMUNITY)} style={actionBtn("secondary")}>
                 Community Home
               </OriginLink>
 

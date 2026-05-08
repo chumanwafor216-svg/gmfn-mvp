@@ -1,8 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -527,7 +532,17 @@ function communityImageSrc(currentClan: any): string {
 }
 
 export default function LoanReadinessPage() {
-  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId =
+    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -546,6 +561,12 @@ export default function LoanReadinessPage() {
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [guarantorInbox, setGuarantorInbox] = useState<GuarantorInboxRow[]>([]);
+
+  useEffect(() => {
+    if (routeClanId > 0) {
+      (api as any).setSelectedClanId?.(routeClanId);
+    }
+  }, [routeClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -882,7 +903,7 @@ export default function LoanReadinessPage() {
         title: "Choose the community first.",
         detail:
           "Support readiness is clearer once your current community is in place.",
-        ctaTo: "/app/community",
+        ctaTo: communityTo("/app/community"),
         ctaLabel: "Open Community Home",
       };
     }
@@ -892,7 +913,7 @@ export default function LoanReadinessPage() {
         title: "Start or continue the borrower-side support draft.",
         detail:
           "Money Out has already handed off into support continuation. Open the support start page and carry the withdrawal need forward.",
-        ctaTo: "/app/marketplace#marketplace-loans-support",
+        ctaTo: communityTo("/app/marketplace#marketplace-loans-support"),
         ctaLabel: "Open Support Start Page",
       };
     }
@@ -902,7 +923,7 @@ export default function LoanReadinessPage() {
         title: "Respond to waiting guarantor requests first.",
         detail:
           "Someone is waiting directly on your support decision. Clear that queue before creating new support pressure.",
-        ctaTo: "/app/guarantor-inbox",
+        ctaTo: communityTo("/app/guarantor-inbox"),
         ctaLabel: "Open Incoming Guarantor Requests",
       };
     }
@@ -912,7 +933,7 @@ export default function LoanReadinessPage() {
         title: "Continue into fit suggestions for the current borrower-side support item.",
         detail:
           "The borrower-side support item is already visible, so the next clean step is usually fit reading.",
-        ctaTo: "/app/loan-suggestions",
+        ctaTo: communityTo("/app/loan-suggestions"),
         ctaLabel: "Open Loan Suggestions",
       };
     }
@@ -922,7 +943,7 @@ export default function LoanReadinessPage() {
         title: "Review your guarantor-side commitments before expanding further.",
         detail:
           "Existing guarantor-side responsibility should remain visible before another support load is added.",
-        ctaTo: "/app/loans",
+        ctaTo: communityTo("/app/loans"),
         ctaLabel: "Open Loans & Support",
       };
     }
@@ -931,11 +952,12 @@ export default function LoanReadinessPage() {
       title: "You can begin the next support movement when ready.",
       detail:
         "No visible pressure is blocking the next step right now.",
-      ctaTo: "/app/marketplace#marketplace-loans-support",
+      ctaTo: communityTo("/app/marketplace#marketplace-loans-support"),
       ctaLabel: "Open Support Start Page",
     };
   }, [
     selectedClanId,
+    communityTo,
     cameFromWithdrawalSupport,
     activeBorrowerLoan,
     guarantorInbox.length,
@@ -988,7 +1010,7 @@ export default function LoanReadinessPage() {
           subtitle="Loading the support-readiness page..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/withdrawal-instructions"
+          backTo={communityTo("/app/withdrawal-instructions")}
           backLabel="Money Out"
         />
 
@@ -1017,7 +1039,7 @@ export default function LoanReadinessPage() {
         subtitle="Use this stage to see whether the next support move is clean enough to continue, especially after Money Out has already determined that support is needed."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/withdrawal-instructions"
+        backTo={communityTo("/app/withdrawal-instructions")}
         backLabel="Money Out"
       />
 
@@ -1665,7 +1687,7 @@ export default function LoanReadinessPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1681,7 +1703,7 @@ export default function LoanReadinessPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-workbench")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1715,7 +1737,10 @@ export default function LoanReadinessPage() {
             </OriginLink>
 
             {(!readinessSupportActive || !activeBorrowerLoan) ? (
-              <OriginLink to="/app/marketplace#marketplace-loans-support" style={routeTile(false)}>
+              <OriginLink
+                to={communityTo("/app/marketplace#marketplace-loans-support")}
+                style={routeTile(false)}
+              >
                 <div
                   style={{
                     color: "#F8FBFF",
@@ -1732,7 +1757,7 @@ export default function LoanReadinessPage() {
               </OriginLink>
             ) : null}
 
-            <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/guarantor-inbox")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1750,7 +1775,10 @@ export default function LoanReadinessPage() {
 
             {!readinessSupportActive ? (
               <>
-                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+                <OriginLink
+                  to={communityTo("/app/withdrawal-instructions")}
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",

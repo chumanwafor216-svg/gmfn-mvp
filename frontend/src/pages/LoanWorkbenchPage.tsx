@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -796,7 +801,17 @@ function readWithdrawalTask(clanId: number, gmfnId: string): PersistedWithdrawal
 }
 
 export default function LoanWorkbenchPage() {
-  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId =
+    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -826,6 +841,12 @@ export default function LoanWorkbenchPage() {
   const [guarantorRequests, setGuarantorRequests] = useState<LoanGuarantorRequest[]>(
     []
   );
+
+  useEffect(() => {
+    if (routeClanId > 0) {
+      (api as any).setSelectedClanId?.(routeClanId);
+    }
+  }, [routeClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1134,7 +1155,7 @@ export default function LoanWorkbenchPage() {
         title: "Choose the community first.",
         detail:
           "The workbench is clearer once your current community is in place.",
-        ctaTo: "/app/community",
+        ctaTo: communityTo("/app/community"),
         ctaLabel: "Open Community Home",
       };
     }
@@ -1144,7 +1165,7 @@ export default function LoanWorkbenchPage() {
         title: "Start or resume the borrower-side support draft from the Money Out handoff.",
         detail:
           "Money Out has already identified a support-backed need. Resume the support draft, then return to the deeper workbench.",
-        ctaTo: "/app/marketplace#marketplace-loans-support",
+        ctaTo: communityTo("/app/marketplace#marketplace-loans-support"),
         ctaLabel: "Open Support Start Page",
       };
     }
@@ -1163,10 +1184,10 @@ export default function LoanWorkbenchPage() {
       title: "Return to the broader support overview.",
       detail:
         "No active support item is visible for this workbench right now.",
-      ctaTo: "/app/loans",
+      ctaTo: communityTo("/app/loans"),
       ctaLabel: "Open Loans & Support",
     };
-  }, [selectedClanId, cameFromWithdrawalSupport, selectedLoanId]);
+  }, [selectedClanId, communityTo, cameFromWithdrawalSupport, selectedLoanId]);
 
   const workbenchSupportActive =
     cameFromWithdrawalSupport || Boolean(selectedLoanId);
@@ -1195,7 +1216,7 @@ export default function LoanWorkbenchPage() {
           subtitle="Loading the loan workbench..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/loan-suggestions"
+          backTo={communityTo("/app/loan-suggestions")}
           backLabel="Loan Suggestions"
         />
 
@@ -1224,7 +1245,7 @@ export default function LoanWorkbenchPage() {
         subtitle="Use workbench for the deeper support stage when the next move needs closer handling."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/loan-suggestions"
+        backTo={communityTo("/app/loan-suggestions")}
         backLabel="Loan Suggestions"
       />
 
@@ -2100,7 +2121,7 @@ export default function LoanWorkbenchPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-readiness")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -2116,7 +2137,7 @@ export default function LoanWorkbenchPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -2132,7 +2153,14 @@ export default function LoanWorkbenchPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to={selectedLoanId ? `/app/loan-summary/${selectedLoanId}` : "/app/loans"} style={routeTile(false)}>
+            <OriginLink
+              to={
+                selectedLoanId
+                  ? communityTo(`/app/loan-summary/${selectedLoanId}`)
+                  : communityTo("/app/loans")
+              }
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -2148,7 +2176,10 @@ export default function LoanWorkbenchPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to={selectedLoanId ? revenueRoute : "/app/loans"} style={routeTile(false)}>
+            <OriginLink
+              to={selectedLoanId ? communityTo(revenueRoute) : communityTo("/app/loans")}
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -2166,7 +2197,14 @@ export default function LoanWorkbenchPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to={selectedLoanId ? `/app/payment/loans/${selectedLoanId}` : "/app/finance"} style={routeTile(false)}>
+            <OriginLink
+              to={
+                selectedLoanId
+                  ? communityTo(`/app/payment/loans/${selectedLoanId}`)
+                  : communityTo("/app/finance")
+              }
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -2183,7 +2221,7 @@ export default function LoanWorkbenchPage() {
             </OriginLink>
 
             {!workbenchSupportActive ? (
-              <OriginLink to="/app/loans" style={routeTile(false)}>
+              <OriginLink to={communityTo("/app/loans")} style={routeTile(false)}>
                 <div
                   style={{
                     color: "#F8FBFF",

@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
 import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
@@ -408,7 +413,17 @@ function normalizeCollapseState(raw: any): CollapseState {
 }
 
 export default function LoansPage() {
-  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId =
+    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -427,6 +442,12 @@ export default function LoansPage() {
   const [loans, setLoans] = useState<LoanRow[]>([]);
   const [guarantorInbox, setGuarantorInbox] = useState<GuarantorInboxRow[]>([]);
   const [guidance, setGuidance] = useState<GuidanceSnapshot | null>(null);
+
+  useEffect(() => {
+    if (routeClanId > 0) {
+      (api as any).setSelectedClanId?.(routeClanId);
+    }
+  }, [routeClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -946,7 +967,10 @@ export default function LoansPage() {
             gap: 12,
           }}
         >
-          <OriginLink to="/app/marketplace#marketplace-loans-support" style={routeTile(true)}>
+          <OriginLink
+            to={communityTo("/app/marketplace#marketplace-loans-support")}
+            style={routeTile(true)}
+          >
             <span style={routeIconCircle(true)}>▶️</span>
             <div>
               <div style={routeTitleStyle()}>Start Support Request</div>
@@ -956,7 +980,7 @@ export default function LoansPage() {
             </div>
           </OriginLink>
 
-          <OriginLink to="/app/payment/pool" style={routeTile(false)}>
+          <OriginLink to={communityTo("/app/payment/pool")} style={routeTile(false)}>
             <span style={routeIconCircle(false)}>⬇️</span>
             <div>
               <div style={routeTitleStyle()}>Money In</div>
@@ -966,7 +990,10 @@ export default function LoansPage() {
             </div>
           </OriginLink>
 
-          <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+          <OriginLink
+            to={communityTo("/app/withdrawal-instructions")}
+            style={routeTile(false)}
+          >
             <span style={routeIconCircle(false)}>⬆️</span>
             <div>
               <div style={routeTitleStyle()}>Money Out</div>
@@ -976,7 +1003,7 @@ export default function LoansPage() {
             </div>
           </OriginLink>
 
-          <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
+          <OriginLink to={communityTo("/app/loan-readiness")} style={routeTile(false)}>
             <span style={routeIconCircle(false)}>🛡️</span>
             <div>
               <div style={routeTitleStyle()}>Loan Readiness</div>
@@ -986,7 +1013,7 @@ export default function LoansPage() {
             </div>
           </OriginLink>
 
-          <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
+          <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
             <span style={routeIconCircle(false)}>💡</span>
             <div>
               <div style={routeTitleStyle()}>Loan Suggestions</div>
@@ -996,7 +1023,7 @@ export default function LoansPage() {
             </div>
           </OriginLink>
 
-          <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
+          <OriginLink to={communityTo("/app/guarantor-inbox")} style={routeTile(false)}>
             <span style={routeIconCircle(false)}>👥</span>
             <div>
               <div style={routeTitleStyle()}>Incoming Guarantor Requests</div>
@@ -1016,7 +1043,7 @@ export default function LoansPage() {
             </div>
           </OriginLink>
 
-          <OriginLink to="/app/guarantor-earnings" style={routeTile(false)}>
+          <OriginLink to={communityTo("/app/guarantor-earnings")} style={routeTile(false)}>
             <span style={routeIconCircle(false)}>🏆</span>
             <div>
               <div style={routeTitleStyle()}>Guarantor Earnings</div>
@@ -1026,7 +1053,7 @@ export default function LoansPage() {
             </div>
           </OriginLink>
 
-          <OriginLink to="/app/marketplace" style={routeTile(false)}>
+          <OriginLink to={communityTo("/app/marketplace")} style={routeTile(false)}>
             <span style={routeIconCircle(false)}>🏪</span>
             <div>
               <div style={routeTitleStyle()}>Marketplace</div>
