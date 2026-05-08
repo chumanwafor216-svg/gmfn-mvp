@@ -1,5 +1,6 @@
 // src/components/ShareActions.tsx
 import React, { useMemo } from "react";
+import { safeCopy } from "../lib/api";
 
 /**
  * ShareActions — unified share block (Copy / WhatsApp)
@@ -47,43 +48,6 @@ function btnPrimaryStyle(): React.CSSProperties {
 
 function smallNoteStyle(): React.CSSProperties {
   return { marginTop: 6, color: "#64748b", fontSize: 12 };
-}
-
-function safeCopy(text: string) {
-  const t = (text || "").trim();
-  if (!t) return;
-
-  // Prefer modern clipboard API
-  if (navigator?.clipboard?.writeText) {
-    navigator.clipboard.writeText(t).catch(() => {
-      // fallback below
-      tryLegacyCopy(t);
-    });
-    return;
-  }
-
-  tryLegacyCopy(t);
-}
-
-// Deprecated but still works on some older devices/browsers
-function tryLegacyCopy(text: string) {
-  try {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.left = "-9999px";
-    textarea.style.top = "-9999px";
-    document.body.appendChild(textarea);
-    textarea.select();
-    try {
-      document.execCommand("copy");
-    } catch {
-      // ignore
-    }
-    textarea.remove();
-  } catch {
-    // ignore
-  }
 }
 
 function buildWhatsAppUrl(message: string) {

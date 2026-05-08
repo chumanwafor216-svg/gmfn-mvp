@@ -1089,11 +1089,7 @@ export default function LoanWorkbenchPage() {
       return;
     }
 
-    if (typeof (api as any).safeCopy === "function") {
-      (api as any).safeCopy(value);
-    } else if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(value);
-    }
+    api.safeCopy(value);
 
     setNotice({ tone: "success", text: successText });
   }

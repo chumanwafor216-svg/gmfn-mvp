@@ -6,6 +6,7 @@ import {
   getAdminIncompleteLoans,
   getCurrentClan,
   getSelectedClanId,
+  safeCopy,
 } from "../lib/api";
 
 function safeStr(x: any): string {
@@ -259,12 +260,8 @@ export default function AdminIncompleteLoansPage() {
 
   async function copyText(text: string, success: string, failure: string) {
     try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setNotice(success);
-      } else {
-        setNotice(failure);
-      }
+      safeCopy(text);
+      setNotice(success);
     } catch {
       setNotice(failure);
     }

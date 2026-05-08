@@ -448,14 +448,7 @@ function copyText(text: string) {
   const value = safeStr(text);
   if (!value) return;
 
-  if (typeof (api as any).safeCopy === "function") {
-    (api as any).safeCopy(value);
-    return;
-  }
-
-  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    void navigator.clipboard.writeText(value);
-  }
+  api.safeCopy(value);
 }
 
 function getCommunityName(currentClan: any, clanId: number): string {

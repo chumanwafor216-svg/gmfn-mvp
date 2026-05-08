@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { adminRecentTrustEvents } from "../lib/api";
+import { adminRecentTrustEvents, safeCopy } from "../lib/api";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -261,12 +261,8 @@ export default function AdminTrustEventsPage() {
     const payload = JSON.stringify(row, null, 2);
     const snapshot = buildEventSnapshot(row);
     try {
-      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(`${snapshot}` + "`n`n" + `${payload}`);
-        setNotice("Event snapshot copied.");
-      } else {
-        setNotice("Clipboard is not available here.");
-      }
+      safeCopy(`${snapshot}` + "`n`n" + `${payload}`);
+      setNotice("Event snapshot copied.");
     } catch {
       setNotice("Clipboard is not available here.");
     }

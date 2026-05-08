@@ -908,3 +908,20 @@
 - Remaining risk:
   - This pass hardens the known high-risk link/copy surfaces; it is not a visual redesign and does not change route contracts, backend logic, OTP, payments, auth, or schemas.
   - A deployed browser walkthrough is still needed for Marketplace links, Shop Control Vault links, Vault Control block links, Shop Assets product links, Subscription Spotlight payment copy, and Clans invite package copy/share.
+
+### Shared copy helper consolidation (2026-05-08)
+
+- Follow-up audit continued after the outward-link pass.
+- Updated page/component copy handlers to use the shared `safeCopy` path instead of local raw clipboard calls:
+  - `src/pages/PaymentInstructionsPage.tsx`
+  - `src/pages/WithdrawalInstructionsPage.tsx`
+  - `src/pages/LoanWorkbenchPage.tsx`
+  - `src/pages/TrustScorePage.tsx`
+  - `src/pages/TrustSlipPage.tsx`
+  - `src/pages/TrustTimelinePage.tsx`
+  - `src/pages/AdminIncompleteLoansPage.tsx`
+  - `src/pages/AdminTrustEventsPage.tsx`
+  - `src/components/PaymentInstructionsPanel.tsx`
+  - `src/components/ShareActions.tsx`
+  - `src/lib/copy.ts`
+- Remaining raw clipboard/browser-copy calls are now limited to central fallback helpers (`src/lib/api.ts`, `src/lib/share.ts`) plus an old backup file that is not part of active UI imports.

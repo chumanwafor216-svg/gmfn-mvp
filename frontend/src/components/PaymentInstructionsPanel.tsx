@@ -1,6 +1,6 @@
 // frontend/src/components/PaymentInstructionsPanel.tsx
 import React, { useMemo, useState } from "react";
-import { copy as C } from "../lib/copy";
+import { copy as C, copyText } from "../lib/copy";
 
 type Props = {
   loanId: number;
@@ -11,21 +11,6 @@ type Props = {
 
 function makeReference(loanId: number, borrowerUserId: number) {
   return `GMFN-LOAN-${loanId}-U-${borrowerUserId}`;
-}
-
-async function copyToClipboard(text: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand("copy");
-    ta.remove();
-    return true;
-  }
 }
 
 export default function PaymentInstructionsPanel({ loanId, borrowerUserId, currency, amount }: Props) {
@@ -66,8 +51,8 @@ export default function PaymentInstructionsPanel({ loanId, borrowerUserId, curre
         <button
           style={{ marginTop: 10, padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "white" }}
           onClick={async () => {
-            await copyToClipboard(reference);
-            setMsg("Reference copied ✅");
+            await copyText(reference);
+            setMsg("Reference copied.");
             window.setTimeout(() => setMsg(null), 1500);
           }}
         >

@@ -1006,19 +1006,8 @@ export default function TrustSlipPage() {
       return;
     }
 
-    if (typeof (api as any).safeCopy === "function") {
-      (api as any).safeCopy(value);
-      showNotice("success", successText);
-      return;
-    }
-
-    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-      void navigator.clipboard.writeText(value);
-      showNotice("success", successText);
-      return;
-    }
-
-    showNotice("error", "Copy is not supported in this browser.");
+    api.safeCopy(value);
+    showNotice("success", successText);
   }
 
   function handleGuideSelect(item: { to?: string }) {

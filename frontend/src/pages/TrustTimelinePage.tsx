@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { safeCopy as copyWithFallback } from "../lib/api";
 
 type TimelineItem = {
   event_type: string;
@@ -127,7 +128,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 function safeCopy(text: string) {
   if (!text) return;
-  navigator.clipboard?.writeText(text).catch(() => {});
+  copyWithFallback(text);
 }
 
 function fmtWhen(iso?: string | null): string {

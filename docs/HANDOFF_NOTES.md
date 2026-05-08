@@ -20271,3 +20271,20 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining risk:
   - This pass hardens the known high-risk link/copy surfaces; it is not a visual redesign and does not change route contracts, backend logic, OTP, payments, auth, or schemas.
   - A deployed browser walkthrough is still needed for Marketplace links, Shop Control Vault links, Vault Control block links, Shop Assets product links, Subscription Spotlight payment copy, and Clans invite package copy/share.
+
+### Shared copy helper consolidation (2026-05-08)
+
+- Follow-up audit continued after the outward-link pass.
+- Updated page/component copy handlers to use the shared `safeCopy` path instead of local raw clipboard calls:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - `frontend/src/pages/TrustScorePage.tsx`
+  - `frontend/src/pages/TrustSlipPage.tsx`
+  - `frontend/src/pages/TrustTimelinePage.tsx`
+  - `frontend/src/pages/AdminIncompleteLoansPage.tsx`
+  - `frontend/src/pages/AdminTrustEventsPage.tsx`
+  - `frontend/src/components/PaymentInstructionsPanel.tsx`
+  - `frontend/src/components/ShareActions.tsx`
+  - `frontend/src/lib/copy.ts`
+- Remaining raw clipboard/browser-copy calls are now limited to central fallback helpers (`frontend/src/lib/api.ts`, `frontend/src/lib/share.ts`) plus an old backup file that is not part of active UI imports.
