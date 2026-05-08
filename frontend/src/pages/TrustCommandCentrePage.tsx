@@ -1249,7 +1249,7 @@ export default function TrustCommandCentrePage() {
         key: "deploymentReady",
         label: "Public deployment ready",
         detail:
-          "Frontend, backend, and database are reachable for testers outside your local network.",
+          "Frontend, backend, and database are reachable for participants outside your local network.",
       },
       {
         key: "analyticsReady",
@@ -1261,7 +1261,7 @@ export default function TrustCommandCentrePage() {
         key: "supportChannelReady",
         label: "Support channel ready",
         detail:
-          "Testers know where to report friction, screenshots, and failed assumptions.",
+          "Participants know where to report friction, screenshots, and failed assumptions.",
       },
       {
         key: "dailyReviewReady",

@@ -20405,3 +20405,18 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
 - Remaining risk:
   - Global nav and legacy admin/finance/loan shortcuts still include plain `/app/marketplace` links where no specific community row is being selected. They should not be blindly rewritten without tracing each route's ownership and selected-community assumptions.
+
+### University-facing wording cleanup (2026-05-08)
+
+- Follow-up auditor review checked for visible "tester" language on active Marketplace/command-centre surfaces.
+- Updated:
+  - `frontend/src/pages/MarketplacePage.tsx`
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`
+- Behavior/copy:
+  - replaced active-surface "tester/testers" language with "participant/participants" so the university walkthrough reads as a real verification environment rather than a test harness.
+- Verification:
+  - `rg -n "tester|testers" frontend/src/pages/MarketplacePage.tsx frontend/src/pages/TrustCommandCentrePage.tsx` found no remaining matches.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/TrustCommandCentrePage.tsx` passed.
+  - `git diff --check` passed.
+- Remaining risk:
+  - Unrouted legacy/prototype pages still contain some "pilot/dev/disabled in this build" wording. They were not changed in this pass because they are not wired from `App.tsx`, and deleting or rewriting dormant surfaces should be handled separately.

@@ -3964,7 +3964,7 @@ function marketplaceButtonGuardProps(): Pick<
             <div style={sectionLabel()}>Marketplace and entry links</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Keep join, create, marketplace, shop, and controlled outward
-              links separated so testers know exactly which door they are
+              links separated so participants know exactly which door they are
               opening.
             </div>
           </div>
