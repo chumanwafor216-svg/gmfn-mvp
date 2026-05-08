@@ -845,3 +845,20 @@
 - Remaining risk:
   - OTP preview is controlled-pilot behavior, not production SMS.
   - A deployed Render-domain walkthrough is still needed to prove the Blueprint env changed on the live service.
+
+### Marketplace outward-link button audit (2026-05-08)
+
+- Owner request continued: Marketplace link buttons still felt uneven, and university contacts may need email/copy links instead of phone-number/WhatsApp sharing.
+- Updated `src/pages/MarketplacePage.tsx` route-locally:
+  - changed the Marketplace outward-link action rows from flex wrapping to a stable responsive grid so buttons fall into consistent rows on desktop and mobile.
+  - added explicit `Copy Join Link` and `Copy Create Link` buttons instead of requiring users to copy a WhatsApp-style message.
+  - added `Email Link` actions for join, create, public marketplace, and public shop links using the user's local email client.
+  - kept WhatsApp available, but no longer made it the only obvious send route.
+  - added real `disabled` attributes to public marketplace/shop buttons when their links are missing, instead of only styling them as disabled.
+  - kept all changes inside the Marketplace page; no backend, route contract, OTP, payment, auth, or schema logic changed.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
+- Remaining risk:
+  - Email buttons open `mailto:` through the user's installed/default mail client; if no mail client is configured, users should use the copy-link buttons.

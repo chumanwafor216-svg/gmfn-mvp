@@ -1412,32 +1412,52 @@ function buildGsnSharePreview(
   ].join("\n");
 }
 
+function buildGsnEmailSubject(
+  kind: "join" | "create" | "marketplace" | "shop",
+  communityName: string
+): string {
+  const cleanedCommunity = safeStr(communityName) || "this GSN community";
+
+  if (kind === "join") {
+    return `GSN community join link for ${cleanedCommunity}`;
+  }
+
+  if (kind === "create") {
+    return "GSN start a new community link";
+  }
+
+  if (kind === "marketplace") {
+    return `GSN marketplace link for ${cleanedCommunity}`;
+  }
+
+  return "GSN public shop link";
+}
+
 function marketplaceInlineActionsStyle(
   isCompact: boolean
 ): React.CSSProperties {
-  return isCompact
-    ? {
-        marginTop: 12,
-        display: "grid",
-        gridTemplateColumns: "1fr",
-        gap: 10,
-      }
-    : {
-        marginTop: 12,
-        display: "flex",
-        gap: 10,
-        flexWrap: "wrap",
-      };
+  return {
+    marginTop: 12,
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "1fr"
+      : "repeat(auto-fit, minmax(148px, 1fr))",
+    gap: 10,
+    alignItems: "stretch",
+  };
 }
 
 function marketplaceInlineActionStyle(
   kind: "primary" | "secondary" | "soft",
   disabled: boolean,
-  isCompact: boolean
+  _isCompact: boolean
 ): React.CSSProperties {
+  void _isCompact;
+
   return {
     ...actionBtn(kind, disabled),
-    width: isCompact ? "100%" : undefined,
+    width: "100%",
+    minHeight: 48,
   };
 }
 
@@ -2267,6 +2287,38 @@ function marketplaceButtonGuardProps(): Pick<
     });
   }, [memberName, activeCommunityName, maskedCreateEntryLabel]);
 
+  const joinEmailSubject = useMemo(() => {
+    return buildGsnEmailSubject("join", activeCommunityName);
+  }, [activeCommunityName]);
+
+  const createEmailSubject = useMemo(() => {
+    return buildGsnEmailSubject("create", activeCommunityName);
+  }, [activeCommunityName]);
+
+  const marketplaceEmailSubject = useMemo(() => {
+    return buildGsnEmailSubject("marketplace", activeCommunityName);
+  }, [activeCommunityName]);
+
+  const marketplaceEmailMessage = useMemo(() => {
+    return [
+      `Here is the public GSN marketplace face for ${activeCommunityName}.`,
+      "",
+      publicCommunityWorkspaceLink,
+    ].join("\n");
+  }, [activeCommunityName, publicCommunityWorkspaceLink]);
+
+  const shopEmailSubject = useMemo(() => {
+    return buildGsnEmailSubject("shop", activeCommunityName);
+  }, [activeCommunityName]);
+
+  const shopEmailMessage = useMemo(() => {
+    return [
+      "Here is the public GSN shop face.",
+      "",
+      publicShopViewLink,
+    ].join("\n");
+  }, [publicShopViewLink]);
+
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
   const visiblePoolAmount = safeStr(moneySurface?.poolAmount || poolAmount || "—");
@@ -2439,6 +2491,24 @@ function marketplaceButtonGuardProps(): Pick<
 
     safeCopy(message);
     showNotice("success", successText);
+  }
+
+  function openMarketplaceEmail(
+    subject: string,
+    body: string,
+    url: string,
+    missingText: string
+  ) {
+    if (!url || !safeStr(body)) {
+      showNotice("error", missingText);
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.location.href = `mailto:?subject=${encodeURIComponent(
+        subject
+      )}&body=${encodeURIComponent(body)}`;
+    }
   }
 
   function openMarketplaceExternalLink(url: string, missingText: string) {
@@ -3809,7 +3879,7 @@ function marketplaceButtonGuardProps(): Pick<
         {sectionsOpen.tools ? (
           <ExplainToggle
             label="What these links do"
-            what="This area separates the GSN create-entry link from the links that belong to the selected marketplace: the WhatsApp join link, the public marketplace face, the public shop face, and controlled private-access links."
+            what="This area separates the GSN create-entry link from the links that belong to the selected marketplace: the community join link, the public marketplace face, the public shop face, and controlled private-access links."
             why="Join and create should never feel like the same action. Marketplace-facing links should stay local to this community, while create entry should remain the one wider GSN starting door."
             next="Use join when someone should enter this exact community, create when someone should start a new community, the public marketplace face when someone should see this community outwardly, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
             tone="light"
@@ -3914,15 +3984,14 @@ function marketplaceButtonGuardProps(): Pick<
                     >
                       {creatingInviteLink ? "Refreshing..." : "Create / Refresh"}
                     </button>
-                      <button
-                        type="button"
-                        {...marketplaceButtonGuardProps()}
-                        onClick={(event) => {
-                          runMarketplaceAction(event, () => {
-                            copyMarketplaceMessage(
-                              joinWhatsappMessage,
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          copyMarketplaceLink(
                             inviteLink,
-                            "WhatsApp join message copied.",
+                            "Join link copied.",
                             "Join invite link is not ready yet."
                           );
                         });
@@ -3934,7 +4003,51 @@ function marketplaceButtonGuardProps(): Pick<
                       )}
                       disabled={!inviteLink}
                     >
-                      Copy WhatsApp Message
+                      Copy Join Link
+                    </button>
+                    <button
+                        type="button"
+                        {...marketplaceButtonGuardProps()}
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceMessage(
+                              joinWhatsappMessage,
+                            inviteLink,
+                            "Join message copied.",
+                            "Join invite link is not ready yet."
+                          );
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        !inviteLink,
+                        isCompact
+                      )}
+                      disabled={!inviteLink}
+                    >
+                      Copy Message
+                    </button>
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          openMarketplaceEmail(
+                            joinEmailSubject,
+                            joinWhatsappMessage,
+                            inviteLink,
+                            "Join invite link is not ready yet."
+                          );
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        !inviteLink,
+                        isCompact
+                      )}
+                      disabled={!inviteLink}
+                    >
+                      Email Link
                     </button>
                     <button
                       type="button"
@@ -4015,15 +4128,14 @@ function marketplaceButtonGuardProps(): Pick<
                     </div>
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                      <button
-                        type="button"
-                        {...marketplaceButtonGuardProps()}
-                        onClick={(event) => {
-                          runMarketplaceAction(event, () => {
-                            copyMarketplaceMessage(
-                              createWhatsappMessage,
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          copyMarketplaceLink(
                             publicCreateEntryLink,
-                            "WhatsApp create message copied.",
+                            "Create entry link copied.",
                             "Create entry link is not ready yet."
                           );
                         });
@@ -4035,7 +4147,51 @@ function marketplaceButtonGuardProps(): Pick<
                       )}
                       disabled={!publicCreateEntryLink}
                     >
-                      Copy Create Message
+                      Copy Create Link
+                    </button>
+                    <button
+                        type="button"
+                        {...marketplaceButtonGuardProps()}
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            copyMarketplaceMessage(
+                              createWhatsappMessage,
+                            publicCreateEntryLink,
+                            "Create message copied.",
+                            "Create entry link is not ready yet."
+                          );
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        !publicCreateEntryLink,
+                        isCompact
+                      )}
+                      disabled={!publicCreateEntryLink}
+                    >
+                      Copy Message
+                    </button>
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          openMarketplaceEmail(
+                            createEmailSubject,
+                            createWhatsappMessage,
+                            publicCreateEntryLink,
+                            "Create entry link is not ready yet."
+                          );
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        !publicCreateEntryLink,
+                        isCompact
+                      )}
+                      disabled={!publicCreateEntryLink}
+                    >
+                      Email Link
                     </button>
                     <button
                       type="button"
@@ -4109,7 +4265,7 @@ function marketplaceButtonGuardProps(): Pick<
                     </div>
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                      <button
+                    <button
                         type="button"
                         {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
@@ -4126,8 +4282,31 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
+                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Copy Marketplace Link
+                    </button>
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          openMarketplaceEmail(
+                            marketplaceEmailSubject,
+                            marketplaceEmailMessage,
+                            publicCommunityWorkspaceLink,
+                            "Public marketplace link is not ready yet."
+                          );
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        !publicCommunityWorkspaceLink,
+                        isCompact
+                      )}
+                      disabled={!publicCommunityWorkspaceLink}
+                    >
+                      Email Link
                     </button>
                     <button
                       type="button"
@@ -4145,6 +4324,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
+                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Open Marketplace Face
                     </button>
@@ -4169,7 +4349,7 @@ function marketplaceButtonGuardProps(): Pick<
                     </div>
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                      <button
+                    <button
                         type="button"
                         {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
@@ -4186,8 +4366,31 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicShopViewLink,
                         isCompact
                       )}
+                      disabled={!publicShopViewLink}
                     >
                       Copy Shop Link
+                    </button>
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          openMarketplaceEmail(
+                            shopEmailSubject,
+                            shopEmailMessage,
+                            publicShopViewLink,
+                            "Public shop link is not ready yet."
+                          );
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        !publicShopViewLink,
+                        isCompact
+                      )}
+                      disabled={!publicShopViewLink}
+                    >
+                      Email Link
                     </button>
                     <button
                       type="button"
@@ -4205,6 +4408,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicShopViewLink,
                         isCompact
                       )}
+                      disabled={!publicShopViewLink}
                     >
                       Open Shop Face
                     </button>
