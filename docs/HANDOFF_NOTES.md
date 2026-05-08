@@ -20262,6 +20262,10 @@ GSN-branded invite composer and invite-entry continuity.
   - `frontend/src/pages/ClansPage.tsx`
     - invite-package copy actions now use shared `safeCopy`.
     - WhatsApp invite share now opens with `noopener,noreferrer`.
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx`
+    - activation-message/link copy actions now use shared `safeCopy`.
+    - activation copy buttons are disabled until the matching message/link exists.
+    - external activation link opens with `noopener noreferrer`.
   - `frontend/src/components/CommunityShopControlPanel.tsx`
     - Copy Public Shop Link is now truly disabled until a public shop link exists.
 - Remaining risk:

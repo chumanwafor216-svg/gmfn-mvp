@@ -12,6 +12,7 @@ import {
 import {
   getCommunityJoinRequests,
   pilotApproveJoinRequest,
+  safeCopy,
   selectClan,
   voteOnJoinRequest,
 } from "../lib/api";
@@ -209,21 +210,7 @@ function copyText(text: string) {
   const safe = safeStr(text);
   if (!safe) return;
 
-  if (navigator?.clipboard?.writeText) {
-    navigator.clipboard.writeText(safe).catch(() => {});
-    return;
-  }
-
-  const area = document.createElement("textarea");
-  area.value = safe;
-  document.body.appendChild(area);
-  area.select();
-  try {
-    document.execCommand("copy");
-  } catch {
-    // ignore
-  }
-  document.body.removeChild(area);
+  safeCopy(safe);
 }
 
 function isExternalUrl(value: string): boolean {
@@ -670,7 +657,8 @@ export default function CommunityJoinRequestsPage() {
           >
               <button
                 type="button"
-                style={actionBtn(true)}
+                style={actionBtn(true, !safeStr(activationPack.activation_message || ""))}
+                disabled={!safeStr(activationPack.activation_message || "")}
                 onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
               >
                 Copy Activation Message
@@ -678,7 +666,8 @@ export default function CommunityJoinRequestsPage() {
 
               <button
                 type="button"
-                style={actionBtn(false)}
+                style={actionBtn(false, !safeStr(activationPack.activation_link || ""))}
+                disabled={!safeStr(activationPack.activation_link || "")}
                 onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
               >
                 Copy Activation Link
@@ -688,7 +677,7 @@ export default function CommunityJoinRequestsPage() {
               <a
                 href={safeStr(activationPack.activation_link || "")}
                 target={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "_blank" : undefined}
-                rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noreferrer" : undefined}
+                rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noopener noreferrer" : undefined}
                 style={actionBtn(false)}
                 onPointerDown={consumeActionEvent}
                 onMouseDown={consumeActionEvent}
