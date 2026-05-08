@@ -20367,3 +20367,14 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox limitation.
 - Remaining risk:
   - Several non-Marketplace legacy route tiles still point to plain `/app/marketplace`; this pass fixed the Marketplace-owned and Marketplace-adjacent context paths most likely to affect the pilot.
+
+### Shop Gallery mini-spotlight context cleanup (2026-05-08)
+
+- Residual scan after the Marketplace context-carrying commit found one remaining Marketplace-adjacent shop handoff inside the public Shop Gallery mini-spotlight.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - mini-spotlight `Shop` links now carry the source spotlight community as `clan_id` when available.
+  - this keeps the shop opened from a community spotlight tied back to the community that exposed it.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run build` passed outside the sandbox.

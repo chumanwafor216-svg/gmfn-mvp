@@ -98,6 +98,22 @@ function positiveNumber(value: any): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const target = safeStr(path);
+  const selectedId = positiveNumber(clanId);
+  if (!target || !selectedId) return target;
+  const [pathAndSearch, hash = ""] = target.split("#");
+  const [pathname, search = ""] = pathAndSearch.split("?");
+  const query = new URLSearchParams(search);
+  if (!query.has("clan_id") && !query.has("community")) {
+    query.set("clan_id", String(selectedId));
+  }
+  const nextSearch = query.toString();
+  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
+    hash ? `#${hash}` : ""
+  }`;
+}
+
 function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input)) return input as T[];
   if (Array.isArray(input?.items)) return input.items as T[];
@@ -1037,7 +1053,7 @@ export default function ShopGalleryPage() {
       Boolean(spotlightShopGmfnId) &&
       currentShopGmfnId === spotlightShopGmfnId.toUpperCase();
     const shopTo = spotlightShopGmfnId
-      ? `/shop/${encodeURIComponent(spotlightShopGmfnId)}`
+      ? withClanQuery(`/shop/${encodeURIComponent(spotlightShopGmfnId)}`, spotlightClanId)
       : "";
     const communityTo = spotlightClanId
       ? `/community/${encodeURIComponent(String(spotlightClanId))}`
