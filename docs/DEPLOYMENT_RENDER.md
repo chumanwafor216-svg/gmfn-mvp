@@ -101,10 +101,12 @@ Check these first:
 ## 7. Important deployment assumptions
 
 - production must run with `GMFN_DEV_MODE=0`
+- the university pilot can use `GMFN_ENTRY_PHONE_DELIVERY=preview` for controlled OTP verification without paid SMS delivery
+- live public SMS must remove the preview/manual OTP mode and configure a real SMS provider
 - production must set `DATABASE_URL`
 - production must set `GMFN_SECRET_KEY`
-- production should not rely on local ephemeral uploads
-- the current blueprint keeps the reconciliation loop in the main API service
+- uploads use the Render persistent disk through `GMFN_UPLOADS_DIR=/var/data/gmfn-uploads`
+- the API blueprint keeps `GMFN_ENABLE_RECONCILIATION_LOOP=0`; move reconciliation to a worker or cron before enabling background mutation again
 
 ## 8. When to change the blueprint
 

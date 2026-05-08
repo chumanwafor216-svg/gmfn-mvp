@@ -20184,3 +20184,27 @@ GSN-branded invite composer and invite-entry continuity.
   - OTP/SMS truth remains the main owner decision: Render needs real SMS delivery or a consciously configured manual/preview verification setting for university self-service create-entry testing.
   - Settlement rails will now correctly advertise unsupported if real bank/mobile-money envs are not configured; that is safer, but the university walkthrough should know payment surfaces may show setup-not-ready until envs are filled.
   - R2 object storage is still documented but active upload routes use the Render persistent disk path via `GMFN_UPLOADS_DIR`.
+
+### Controlled OTP and Marketplace link clarity (2026-05-08)
+
+- Owner decision: use OTP immediately for the university pilot without waiting for paid SMS delivery.
+- Updated `render.yaml`:
+  - set `GMFN_ENTRY_PHONE_DELIVERY=preview` for the API service while keeping `GMFN_DEV_MODE=0`.
+  - this lets controlled testers complete OTP verification with a preview/manual code path.
+  - this is not production SMS delivery; live public SMS still needs a provider and the preview/manual mode should be removed.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - clarified the outbound link lanes:
+    - `Join this community` is for someone requesting access to the selected marketplace/community.
+    - `Start a new community` is for a founder creating their own community and does not join them to the selected community.
+  - made the secure join target larger and easier to tap.
+  - disabled copy/open/send actions until the matching link exists.
+  - changed message labels to `Message to send` and cleaned masked link labels so broken separator characters do not show.
+- Updated `docs/DEPLOYMENT_RENDER.md`:
+  - recorded the OTP preview truth and the reconciliation-loop deployment default.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
+- Remaining risk:
+  - OTP preview is controlled-pilot behavior, not production SMS.
+  - A deployed Render-domain walkthrough is still needed to prove the Blueprint env changed on the live service.

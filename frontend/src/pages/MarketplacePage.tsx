@@ -1140,7 +1140,11 @@ function compactStatusPillStyle(primary = false): React.CSSProperties {
 
 function highlightedExternalLinkStyle(): React.CSSProperties {
   return {
-    display: "block",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "100%",
+    minHeight: 54,
     marginTop: 10,
     borderRadius: 14,
     border: "1px solid rgba(11,99,209,0.3)",
@@ -1151,12 +1155,14 @@ function highlightedExternalLinkStyle(): React.CSSProperties {
     fontSize: 13,
     lineHeight: 1.55,
     padding: "10px 12px",
-    textDecoration: "underline",
-    textUnderlineOffset: 3,
+    textDecoration: "none",
+    textAlign: "center",
     overflowWrap: "anywhere",
     wordBreak: "break-word",
     boxShadow:
       "0 12px 22px rgba(11,99,209,0.12), inset 0 1px 0 rgba(255,255,255,0.88)",
+    cursor: "pointer",
+    touchAction: "manipulation",
   };
 }
 
@@ -1317,6 +1323,10 @@ function buildMaskedLinkLabel(
   }
 
   return `Public shop face${code ? ` • ref ${code}` : ""}`;
+}
+
+function cleanMaskedLinkLabel(label: string): string {
+  return label.replace(/\s+[^ -~]+\s+/g, " - ");
 }
 
 function shareMessageCardStyle(): React.CSSProperties {
@@ -2194,27 +2204,35 @@ function marketplaceButtonGuardProps(): Pick<
   }, [selectedCommunity]);
 
   const maskedInviteLinkLabel = useMemo(() => {
-    return buildMaskedLinkLabel(inviteLink, "join", activeCommunityName);
+    return cleanMaskedLinkLabel(
+      buildMaskedLinkLabel(inviteLink, "join", activeCommunityName)
+    );
   }, [inviteLink, activeCommunityName]);
 
   const maskedCreateEntryLabel = useMemo(() => {
-    return buildMaskedLinkLabel(
-      publicCreateEntryLink,
-      "create",
-      activeCommunityName
+    return cleanMaskedLinkLabel(
+      buildMaskedLinkLabel(
+        publicCreateEntryLink,
+        "create",
+        activeCommunityName
+      )
     );
   }, [publicCreateEntryLink, activeCommunityName]);
 
   const maskedMarketplaceFaceLabel = useMemo(() => {
-    return buildMaskedLinkLabel(
-      publicCommunityWorkspaceLink,
-      "marketplace",
-      activeCommunityName
+    return cleanMaskedLinkLabel(
+      buildMaskedLinkLabel(
+        publicCommunityWorkspaceLink,
+        "marketplace",
+        activeCommunityName
+      )
     );
   }, [publicCommunityWorkspaceLink, activeCommunityName]);
 
   const maskedShopFaceLabel = useMemo(() => {
-    return buildMaskedLinkLabel(publicShopViewLink, "shop", activeCommunityName);
+    return cleanMaskedLinkLabel(
+      buildMaskedLinkLabel(publicShopViewLink, "shop", activeCommunityName)
+    );
   }, [publicShopViewLink, activeCommunityName]);
 
   const joinWhatsappMessage = useMemo(() => {
@@ -3831,36 +3849,41 @@ function marketplaceButtonGuardProps(): Pick<
                 }}
               >
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>WhatsApp join link</div>
+                  <div style={sectionLabel()}>Join this community</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Send this to someone who should ask to enter this exact
-                    marketplace/community.
+                    Send this only to someone who should request access to this
+                    selected marketplace/community.
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <span style={compactStatusPillStyle(Boolean(inviteLink))}>
                       {inviteLink
-                        ? "WhatsApp join link ready"
+                        ? "Community join link ready"
                         : "Join link not ready yet"}
                     </span>
                   </div>
                   {inviteLink ? (
-                    <a
-                      href={inviteLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      {...marketplacePointerGuardProps()}
-                      style={highlightedExternalLinkStyle()}
-                    >
-                      {maskedInviteLinkLabel || "Secure GSN join link"}
-                    </a>
+                    <>
+                      <a
+                        href={inviteLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        {...marketplacePointerGuardProps()}
+                        style={highlightedExternalLinkStyle()}
+                      >
+                        Open secure join page
+                      </a>
+                      <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
+                        {maskedInviteLinkLabel || "Secure GSN join link"}
+                      </div>
+                    </>
                   ) : (
                     <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                      Tap Create / Refresh to make the WhatsApp join link active.
+                      Create the join link first, then copy or open it from here.
                     </div>
                   )}
                   {inviteLink ? (
                     <div style={shareMessageCardStyle()}>
-                      <div style={sectionLabel()}>Message preview</div>
+                      <div style={sectionLabel()}>Message to send</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -3909,6 +3932,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !inviteLink,
                         isCompact
                       )}
+                      disabled={!inviteLink}
                     >
                       Copy WhatsApp Message
                     </button>
@@ -3925,6 +3949,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !inviteLink,
                         isCompact
                       )}
+                      disabled={!inviteLink}
                     >
                       Open Join Link
                     </button>
@@ -3951,6 +3976,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !inviteLink,
                         isCompact
                       )}
+                      disabled={!inviteLink}
                     >
                       Send WhatsApp
                     </button>
@@ -3958,11 +3984,10 @@ function marketplaceButtonGuardProps(): Pick<
                 </div>
 
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>GSN create link</div>
+                  <div style={sectionLabel()}>Start a new community</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    This is the wider GSN founder entry. It is not a join link
-                    and it does not enter this marketplace. Use it only when
-                    someone should start a new community of their own.
+                    Send this only when someone should create their own
+                    community. It will not join them to the selected community.
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <span style={compactStatusPillStyle(Boolean(publicCreateEntryLink))}>
@@ -3973,7 +3998,7 @@ function marketplaceButtonGuardProps(): Pick<
                   </div>
                   {publicCreateEntryLink ? (
                     <div style={shareMessageCardStyle()}>
-                      <div style={sectionLabel()}>Message preview</div>
+                      <div style={sectionLabel()}>Message to send</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -4008,6 +4033,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCreateEntryLink,
                         isCompact
                       )}
+                      disabled={!publicCreateEntryLink}
                     >
                       Copy Create Message
                     </button>
@@ -4027,6 +4053,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCreateEntryLink,
                         isCompact
                       )}
+                      disabled={!publicCreateEntryLink}
                     >
                       Open Create Link
                     </button>
@@ -4053,6 +4080,7 @@ function marketplaceButtonGuardProps(): Pick<
                         !publicCreateEntryLink,
                         isCompact
                       )}
+                      disabled={!publicCreateEntryLink}
                     >
                       Send WhatsApp
                     </button>

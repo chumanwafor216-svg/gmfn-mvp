@@ -821,3 +821,27 @@
   - Render still needs real SMS delivery or a conscious manual/preview verification env setting before university testers use self-service create-entry.
   - Payment surfaces may now correctly show setup-not-ready until real settlement envs are configured.
   - R2 is still only documented/planned; active uploads currently use Render persistent disk through `GMFN_UPLOADS_DIR`.
+
+### Controlled OTP and Marketplace link clarity (2026-05-08)
+
+- Owner decision: use OTP immediately for the university pilot without waiting for paid SMS delivery.
+- Updated `../render.yaml`:
+  - set `GMFN_ENTRY_PHONE_DELIVERY=preview` for the API service while keeping `GMFN_DEV_MODE=0`.
+  - this lets controlled testers complete OTP verification with a preview/manual code path.
+  - this is not production SMS delivery; live public SMS still needs a provider and the preview/manual mode should be removed.
+- Updated `src/pages/MarketplacePage.tsx`:
+  - clarified the outbound link lanes:
+    - `Join this community` is for someone requesting access to the selected marketplace/community.
+    - `Start a new community` is for a founder creating their own community and does not join them to the selected community.
+  - made the secure join target larger and easier to tap.
+  - disabled copy/open/send actions until the matching link exists.
+  - changed message labels to `Message to send` and cleaned masked link labels so broken separator characters do not show.
+- Updated `../docs/DEPLOYMENT_RENDER.md`:
+  - recorded the OTP preview truth and the reconciliation-loop deployment default.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
+- Remaining risk:
+  - OTP preview is controlled-pilot behavior, not production SMS.
+  - A deployed Render-domain walkthrough is still needed to prove the Blueprint env changed on the live service.
