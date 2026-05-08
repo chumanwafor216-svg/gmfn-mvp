@@ -7,6 +7,7 @@ import {
   getMe,
   getMyIdentityRisk,
   getSelectedClanId,
+  safeCopy,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
 } from "../lib/api";
@@ -639,9 +640,7 @@ export default function SubscriptionSpotlightPage() {
       });
       setCreatedInstruction(result as ExpectedPaymentRecord);
       const reference = firstTruthy(result?.reference_display, result?.reference);
-      if (navigator?.clipboard?.writeText && reference) {
-        void navigator.clipboard.writeText(reference);
-      }
+      if (reference) safeCopy(reference);
       await loadPage(true);
       showNotice("success", `Payment code generated for ${agreementText}. Use that exact code in the bank transfer.`);
     } catch (err: any) {
@@ -653,8 +652,8 @@ export default function SubscriptionSpotlightPage() {
 
   function copyPaymentDetails() {
     const text = paymentLines.join("\n");
-    if (navigator?.clipboard?.writeText && text) {
-      void navigator.clipboard.writeText(text);
+    if (text) {
+      safeCopy(text);
       showNotice("success", "Subscription Spotlight payment details copied.");
       return;
     }

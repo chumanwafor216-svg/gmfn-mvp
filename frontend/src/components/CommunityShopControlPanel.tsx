@@ -779,7 +779,8 @@ export default function CommunityShopControlPanel({
                         type="button"
                         {...panelButtonGuardProps()}
                         onClick={copyShopLink}
-                        style={actionBtn("secondary")}
+                        disabled={!publicShopTo}
+                        style={actionBtn("secondary", !publicShopTo)}
                       >
                         Copy Public Shop Link
                     </button>

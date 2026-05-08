@@ -20240,3 +20240,30 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after the sandbox blocked Vite/esbuild with `spawn EPERM`.
 - Remaining risk:
   - This is a route-local guard against hash/section hijacking. A final browser walkthrough should still click `Create / Refresh`, `Copy Join Link`, `Copy Message`, `Email Link`, `Open Join Link`, and `Send WhatsApp` on the deployed page.
+
+### System-level outward-link button audit (2026-05-08)
+
+- Owner clarified the Marketplace fix must not remain the only audited area; Vault, Spotlight, shop links, invite links, and shared button helpers needed a broader pass before university verification.
+- Confirmed shared-helper truth:
+  - `stopActionTap` / `actionTapGuardProps` are shared by real internal links through `OriginLink`.
+  - Do not globally add `preventDefault()` there, because that can break navigation across the app.
+  - Route-local hash pinning is safer for pages with section hashes and copy/open link actions.
+- Updated high-risk outward-link surfaces:
+  - `frontend/src/pages/ShopControlPage.tsx`
+    - Vault copy/open actions now pin the page hash to `#shop-control-vault` before copying or opening private Vault links.
+    - copy operations now use shared `safeCopy`.
+  - `frontend/src/pages/VaultControlPage.tsx`
+    - private block link copy/open buttons are disabled until a link exists.
+    - Vault payment references, transfer details, and private block links now use shared `safeCopy`.
+  - `frontend/src/pages/ShopAssetsPage.tsx`
+    - shop/product copy actions now use shared `safeCopy`.
+  - `frontend/src/pages/SubscriptionSpotlightPage.tsx`
+    - paid Spotlight payment reference/details now use shared `safeCopy`.
+  - `frontend/src/pages/ClansPage.tsx`
+    - invite-package copy actions now use shared `safeCopy`.
+    - WhatsApp invite share now opens with `noopener,noreferrer`.
+  - `frontend/src/components/CommunityShopControlPanel.tsx`
+    - Copy Public Shop Link is now truly disabled until a public shop link exists.
+- Remaining risk:
+  - This pass hardens the known high-risk link/copy surfaces; it is not a visual redesign and does not change route contracts, backend logic, OTP, payments, auth, or schemas.
+  - A deployed browser walkthrough is still needed for Marketplace links, Shop Control Vault links, Vault Control block links, Shop Assets product links, Subscription Spotlight payment copy, and Clans invite package copy/share.

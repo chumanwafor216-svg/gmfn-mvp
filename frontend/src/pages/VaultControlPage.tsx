@@ -11,6 +11,7 @@ import {
   getVaultShopStatus,
   listVaultShopAccessLinks,
   revokeVaultShopAccessLink,
+  safeCopy,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
   type VaultLinkItem,
@@ -1241,8 +1242,8 @@ export default function VaultControlPage() {
 
   function copyVaultPaymentInstruction() {
     const text = vaultPaymentTransferLines.join("\n");
-    if (navigator?.clipboard?.writeText && text) {
-      void navigator.clipboard.writeText(text);
+    if (text) {
+      safeCopy(text);
       showNotice("success", "Vault bank transfer instruction copied.");
       return;
     }
@@ -1409,9 +1410,7 @@ export default function VaultControlPage() {
           ? `Vault payment code is ready: ${reference}. Use that exact code in the bank transfer.`
           : `Vault payment request created for ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} at ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
       );
-      if (navigator?.clipboard?.writeText && reference) {
-        void navigator.clipboard.writeText(reference);
-      }
+      if (reference) safeCopy(reference);
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault payment request could not be created.");
     } finally {
@@ -1559,13 +1558,32 @@ export default function VaultControlPage() {
       });
       setVaultLinks((prev) => [link, ...prev]);
       const url = vaultLinkUrl(link);
-      if (navigator?.clipboard?.writeText && url) void navigator.clipboard.writeText(url);
+      if (url) safeCopy(url);
       showNotice("success", `Vault link for block #${selectedSlot} created and copied.`);
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault access link could not be created.");
     } finally {
       setCreatingLink(false);
     }
+  }
+
+  function copySelectedBlockLink() {
+    if (!selectedBlockLinkUrl) {
+      showNotice("info", "Create this block link before copying it.");
+      return;
+    }
+
+    safeCopy(selectedBlockLinkUrl);
+    showNotice("success", `Vault block #${selectedSlot} link copied.`);
+  }
+
+  function openSelectedBlockLink() {
+    if (!selectedBlockLinkUrl) {
+      showNotice("info", "Create this block link before opening the private view.");
+      return;
+    }
+
+    window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer");
   }
 
   async function extendLink(link: VaultLinkItem) {
@@ -1964,8 +1982,24 @@ export default function VaultControlPage() {
           >
             {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "Replace block link" : "Create block link"}
           </button>
-          <button type="button" {...buttonGuardProps()} onClick={() => { if (navigator?.clipboard?.writeText && selectedBlockLinkUrl) { void navigator.clipboard.writeText(selectedBlockLinkUrl); showNotice("success", `Vault block #${selectedSlot} link copied.`); return; } showNotice("info", "Create this block link before copying it."); }} style={brandActionButton("soft")}>Copy block link</button>
-          <button type="button" {...buttonGuardProps()} onClick={() => { if (selectedBlockLinkUrl) { window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer"); return; } showNotice("info", "Create this block link before opening the private view."); }} style={brandActionButton("secondary")}>Open private view</button>
+          <button
+            type="button"
+            {...buttonGuardProps()}
+            onClick={copySelectedBlockLink}
+            disabled={!selectedBlockLinkUrl}
+            style={brandActionButton("soft", !selectedBlockLinkUrl)}
+          >
+            Copy block link
+          </button>
+          <button
+            type="button"
+            {...buttonGuardProps()}
+            onClick={openSelectedBlockLink}
+            disabled={!selectedBlockLinkUrl}
+            style={brandActionButton("secondary", !selectedBlockLinkUrl)}
+          >
+            Open private view
+          </button>
           <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}>Extend link</button>
           <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}>Revoke link</button>
         </div>

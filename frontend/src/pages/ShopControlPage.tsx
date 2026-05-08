@@ -14,6 +14,7 @@ import {
   extendVaultShopAccessLink,
   listVaultShopAccessLinks,
   revokeVaultShopAccessLink,
+  safeCopy,
   uploadMarketplaceImageFile,
   uploadMarketplaceVideoFile,
 } from "../lib/api";
@@ -1204,15 +1205,29 @@ export default function ShopControlPage() {
       ? spotlightHasImage
       : spotlightHasVideo;
 
-  function copyText(text: string, successMessage: string) {
+  function pinShopControlLinkSection(sectionId?: string | null) {
+    const targetId = safeStr(sectionId);
+    if (!targetId) return;
+
+    lastAutoScrolledHashRef.current = targetId;
+    navigate(
+      {
+        pathname: location.pathname,
+        search: "",
+        hash: `#${targetId}`,
+      },
+      { replace: true, preventScrollReset: true }
+    );
+  }
+
+  function copyText(text: string, successMessage: string, sectionId?: string) {
     if (!text) {
       showNotice("error", "Nothing to copy yet.");
       return;
     }
 
-    if (navigator?.clipboard?.writeText) {
-      void navigator.clipboard.writeText(text);
-    }
+    pinShopControlLinkSection(sectionId);
+    safeCopy(text);
     showNotice("success", successMessage);
   }
 
@@ -1254,7 +1269,11 @@ export default function ShopControlPage() {
         watermark_enabled: true,
       });
       setVaultLinks((prev) => [link as VaultLinkRecord, ...prev]);
-      copyText(vaultLinkUrl(link as VaultLinkRecord), "Vault viewing link for one private offer created and copied.");
+      copyText(
+        vaultLinkUrl(link as VaultLinkRecord),
+        "Vault viewing link for one private offer created and copied.",
+        "shop-control-vault"
+      );
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault viewing link could not be created.");
     } finally {
@@ -1319,9 +1338,10 @@ export default function ShopControlPage() {
     setSpotlightFlowStep("upload");
   }
 
-  function openExternalLink(url?: string | null) {
+  function openExternalLink(url?: string | null, sectionId?: string) {
     const resolved = safeStr(url);
     if (!resolved) return;
+    pinShopControlLinkSection(sectionId);
     window.open(resolved, "_blank", "noopener,noreferrer");
   }
 
@@ -3162,7 +3182,7 @@ export default function ShopControlPage() {
                       type="button"
                       {...buttonGuardProps()}
                       onClick={() =>
-                        copyText(vaultLinkUrl(item), "Vault viewing link copied.")
+                        copyText(vaultLinkUrl(item), "Vault viewing link copied.", "shop-control-vault")
                       }
                       style={fullButton(actionBtn("soft", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
@@ -3172,7 +3192,7 @@ export default function ShopControlPage() {
                     <button
                       type="button"
                       {...buttonGuardProps()}
-                      onClick={() => openExternalLink(vaultLinkUrl(item))}
+                      onClick={() => openExternalLink(vaultLinkUrl(item), "shop-control-vault")}
                       style={fullButton(actionBtn("secondary", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
                     >

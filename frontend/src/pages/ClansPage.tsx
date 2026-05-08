@@ -11,6 +11,7 @@ import {
   getMe,
   getSelectedClanId,
   listMyClans,
+  safeCopy,
   selectClan,
 } from "../lib/api";
 
@@ -429,29 +430,20 @@ export default function ClansPage() {
     }
   }
 
-  async function copyText(value: string, tag: string) {
+  function copyText(value: string, tag: string) {
     const text = safeStr(value);
     if (!text) return;
 
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-        setCopied(tag);
-        window.setTimeout(() => setCopied(""), 1400);
-        return;
-      }
-    } catch {
-      // Clipboard may be unavailable on some phones/browsers; prompt fallback below.
-    }
-
-    window.prompt("Copy this text:", text);
+    safeCopy(text);
+    setCopied(tag);
+    window.setTimeout(() => setCopied(""), 1400);
   }
 
   function shareViaWhatsApp() {
     const text = safeStr(inviteState?.whatsappShareText || "");
     if (!text) return;
 
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener,noreferrer");
   }
 
   async function handleCreateCommunity(e: React.FormEvent) {

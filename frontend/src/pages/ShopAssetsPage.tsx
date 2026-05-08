@@ -11,6 +11,7 @@ import {
 import {
   getMe,
   getSelectedClanId,
+  safeCopy,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
@@ -799,9 +800,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       return;
     }
 
-    if (navigator?.clipboard?.writeText) {
-      void navigator.clipboard.writeText(text);
-    }
+    safeCopy(text);
     showNotice("success", successMessage);
   }
 
