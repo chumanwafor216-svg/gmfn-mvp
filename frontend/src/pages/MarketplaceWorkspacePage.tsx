@@ -414,7 +414,11 @@ export default function MarketplaceWorkspacePage() {
         if (inviteRes.status === "fulfilled") {
           setInviteInfo(inviteRes.value || null);
         } else {
-          throw new Error("Unable to load community access view.");
+          setInviteInfo({
+            clan_id: activeClanId,
+            community_id: activeClanId,
+          });
+          setPrivateBlocksLocked(true);
         }
 
         if (joinRes.status === "fulfilled") {
@@ -450,8 +454,9 @@ export default function MarketplaceWorkspacePage() {
     if (inviteInfo?.marketplace_name) return safeStr(inviteInfo.marketplace_name);
     if (inviteInfo?.clan_name) return safeStr(inviteInfo.clan_name);
     if (inviteInfo?.community_name) return safeStr(inviteInfo.community_name);
+    if (activeClanId > 0) return `Community ${activeClanId}`;
     return "Community";
-  }, [inviteInfo]);
+  }, [inviteInfo, activeClanId]);
 
   const communityIdentity = useMemo(() => {
     return safeStr(
@@ -1188,9 +1193,8 @@ export default function MarketplaceWorkspacePage() {
             Some private community blocks require sign-in
           </div>
           <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.8 }}>
-            Invite details are visible here, but full alerts and member mapping
-            may
-            require signed-in community access.
+            The public community face is open, but invite details, alerts, and
+            member mapping may require signed-in community access.
           </div>
         </div>
       ) : null}

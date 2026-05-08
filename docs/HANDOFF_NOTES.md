@@ -20329,3 +20329,17 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after sandbox Vite/esbuild hit the known `spawn EPERM`.
 - Remaining risk:
   - The public `/community/:clanId` face still uses guarded community APIs; this change fixes the logged-in Marketplace inner route without redesigning the public face contract.
+
+### Marketplace public-face soft-fail cleanup (2026-05-08)
+
+- Follow-up Marketplace route sweep found the public `/community/:clanId` face could still show a hard error when the invite-link request was blocked by private/admin access.
+- Updated `frontend/src/pages/MarketplaceWorkspacePage.tsx`:
+  - the page now falls back to a minimal public-safe community identity when protected invite data cannot load.
+  - private alerts and member mapping remain locked behind signed-in community access.
+  - the warning copy now tells the truth: the public community face is open, but invite details, alerts, and member mapping may require sign-in.
+- Verification:
+  - `git diff --check` passed.
+  - `npm exec -- eslint src/pages/MarketplaceWorkspacePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after sandbox Vite/esbuild hit the known `spawn EPERM`.
+- Remaining risk:
+  - This does not create a new unauthenticated public community-data API. It prevents the public face from breaking while preserving private backend boundaries.
