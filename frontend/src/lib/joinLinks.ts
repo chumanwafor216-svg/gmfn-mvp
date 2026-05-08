@@ -54,6 +54,18 @@ export function canonicalJoinInviteUrl(code: string): string {
   return `${publicFrontendOrigin()}/start/join/${encodeURIComponent(cleanCode)}`;
 }
 
+function searchParamsFromLink(rawLink: string): URLSearchParams {
+  const direct = safeText(rawLink);
+  if (!direct) return new URLSearchParams();
+
+  try {
+    const url = new URL(direct, publicFrontendOrigin());
+    return new URLSearchParams(url.search);
+  } catch {
+    return new URLSearchParams();
+  }
+}
+
 export function normalizedJoinInviteUrl(payload: any): string {
   const direct = firstTruthy(
     payload?.share_link,
@@ -73,7 +85,7 @@ export function normalizedJoinInviteUrl(payload: any): string {
     const base = canonicalJoinInviteUrl(code);
     if (!base) return "";
 
-    const params = new URLSearchParams();
+    const params = searchParamsFromLink(direct);
     params.set("invite", code);
 
     const communityCode = firstTruthy(payload?.community_code);

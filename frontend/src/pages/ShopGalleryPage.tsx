@@ -1086,8 +1086,8 @@ export default function ShopGalleryPage() {
   }, [miniSpotlight, effectiveShop]);
 
   const absoluteShopLink = useMemo(() => {
-    return publicFrontendUrl(location.pathname);
-  }, [location.pathname]);
+    return publicFrontendUrl(`${location.pathname}${location.search || ""}`);
+  }, [location.pathname, location.search]);
 
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
@@ -1170,7 +1170,9 @@ export default function ShopGalleryPage() {
 
   function shareProduct(product: ShopProduct) {
     const hash = product.id ? `#product-${product.id}` : "";
-    const productUrl = publicFrontendUrl(`${location.pathname}${hash}`);
+    const productUrl = publicFrontendUrl(
+      `${location.pathname}${location.search || ""}${hash}`
+    );
     const title = productDisplayTitle(product);
     const text = firstMeaningful(
       productBuyerCue(product, ""),

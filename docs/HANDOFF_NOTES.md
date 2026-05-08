@@ -20420,3 +20420,28 @@ GSN-branded invite composer and invite-entry continuity.
   - `git diff --check` passed.
 - Remaining risk:
   - Unrouted legacy/prototype pages still contain some "pilot/dev/disabled in this build" wording. They were not changed in this pass because they are not wired from `App.tsx`, and deleting or rewriting dormant surfaces should be handled separately.
+
+### System-level link audit cleanup (2026-05-08)
+
+- Continued the owner-requested root-to-surface link audit, with two read-only auditors splitting frontend link surfaces and backend link contracts.
+- Confirmed link-system truth:
+  - `/clans/{clan_id}/invite` and `/clans/{clan_id}/invite-link` are the richer current community join-link contract used by Marketplace surfaces.
+  - `/invites/*` still exists but returns a thinner `/start/join/:code` link and should not be treated as equivalent to the `/clans` join-request flow without a separate governance decision.
+  - public shop links rely on `clan_id`/`community` query context to show the shop inside the intended marketplace.
+- Updated frontend shared/link surfaces:
+  - `frontend/src/lib/joinLinks.ts` now preserves existing query params from backend-provided invite URLs before normalizing the join URL, so community/marketplace context is not flattened away.
+  - `frontend/src/pages/ShopGalleryPage.tsx` now copies/shares/reposts the current shop URL with `location.search`, preserving `?clan_id=...`; product share links preserve the same query before the product anchor.
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx` now builds the "public shop face" copy block from a selected member GMFN id when the backend invite payload does not supply a shop URL, and attaches the active community id.
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx` now sends reviewers back to `/app/marketplace?community=<clanId>` instead of a plain Marketplace route.
+  - `frontend/src/pages/ClansPage.tsx` now carries explicit community context into Marketplace, Demand Box, Shop Control, and Community Home handoffs.
+  - `frontend/src/layout/AppLayout.tsx` now appends current clan context to the app-shell "my shop" public shop route when available.
+- Updated backend contracts:
+  - `gmfn_backend/app/api/routes/marketplace.py` now validates public shop `clan_id` visibility and filters returned public products/broadcasts to the effective community context.
+  - `gmfn_backend/app/services/vault_access_service.py` now returns the same `/marketplace/vault-access/{token}` API view URL as the Vault access route response.
+- Verification:
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
+  - `python -m py_compile gmfn_backend\app\api\routes\marketplace.py gmfn_backend\app\services\vault_access_service.py` passed.
+  - targeted scans found no remaining plain `OriginLink to="/app/marketplace"`, no plain `navigateWithOrigin(navigate, "/app/marketplace")`, no `publicFrontendUrl(location.pathname)` shop-share pattern, and consistent Vault `api_view_url` values.
+- Remaining risks:
+  - The repo still contains two invite systems (`/invites` direct membership and `/clans` join requests). This pass kept today’s Marketplace/community join links on the richer `/clans` path, but merging or retiring `/invites` requires an explicit product/governance decision.
+  - Some global nav/legacy shortcuts remain intentionally context-agnostic where no concrete community row is being selected.

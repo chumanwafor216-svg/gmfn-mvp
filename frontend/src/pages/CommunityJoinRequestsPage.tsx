@@ -115,6 +115,18 @@ function stableTapStyle(): React.CSSProperties {
   };
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const safeClanId = Number(clanId || 0);
+  if (!path || !Number.isFinite(safeClanId) || safeClanId <= 0) return path;
+
+  const [baseWithQuery, hash = ""] = path.split("#");
+  const separator = baseWithQuery.includes("?") ? "&" : "?";
+  const next = `${baseWithQuery}${separator}community=${encodeURIComponent(
+    String(safeClanId)
+  )}`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 function consumeActionEvent(
   event:
     | React.MouseEvent<HTMLElement>
@@ -461,7 +473,10 @@ export default function CommunityJoinRequestsPage() {
             Community Home
           </button>
 
-          <OriginLink to="/app/marketplace" style={actionBtn(false)}>
+          <OriginLink
+            to={withClanQuery("/app/marketplace", clanNum)}
+            style={actionBtn(false)}
+          >
             Marketplace
           </OriginLink>
 

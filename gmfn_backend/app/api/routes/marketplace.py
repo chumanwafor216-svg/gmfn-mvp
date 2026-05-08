@@ -906,6 +906,26 @@ def get_public_marketplace_shop_by_gmfn_id(
         raise HTTPException(status_code=404, detail="Shop not found")
 
     requested_clan_id = _safe_int(clan_id, 0)
+    requested_clan = None
+    if requested_clan_id > 0:
+        if not _shop_is_visible_in_clan(db, shop=shop, clan_id=requested_clan_id):
+            raise HTTPException(
+                status_code=404,
+                detail="Shop is not visible in the selected community",
+            )
+        requested_clan = (
+            db.query(Clan)
+            .filter(Clan.id == int(requested_clan_id))
+            .first()
+        )
+
+    effective_clan_id = (
+        int(requested_clan_id)
+        if requested_clan_id > 0
+        else int(shop.clan_id)
+        if getattr(shop, "clan_id", None) is not None
+        else None
+    )
 
     product_query = (
         db.query(MarketplaceProduct)
@@ -913,6 +933,10 @@ def get_public_marketplace_shop_by_gmfn_id(
         .filter(MarketplaceProduct.is_active.is_(True))
         .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
     )
+    if effective_clan_id is not None:
+        product_query = product_query.filter(
+            MarketplaceProduct.clan_id == int(effective_clan_id)
+        )
 
     product_rows = (
         product_query.order_by(
@@ -932,9 +956,9 @@ def get_public_marketplace_shop_by_gmfn_id(
             | (MarketplaceBroadcast.expires_at > current_time)
         )
     )
-    if requested_clan_id > 0:
+    if effective_clan_id is not None:
         broadcast_query = broadcast_query.filter(
-            MarketplaceBroadcast.clan_id == int(requested_clan_id)
+            MarketplaceBroadcast.clan_id == int(effective_clan_id)
         )
 
     broadcast_rows = (
@@ -946,21 +970,6 @@ def get_public_marketplace_shop_by_gmfn_id(
         .all()
     )
 
-    requested_clan = None
-    if requested_clan_id > 0:
-        requested_clan = (
-            db.query(Clan)
-            .filter(Clan.id == int(requested_clan_id))
-            .first()
-        )
-
-    effective_clan_id = (
-        int(requested_clan_id)
-        if requested_clan_id > 0
-        else int(shop.clan_id)
-        if getattr(shop, "clan_id", None) is not None
-        else None
-    )
     effective_clan = requested_clan
     if effective_clan is None and effective_clan_id is not None:
         effective_clan = (

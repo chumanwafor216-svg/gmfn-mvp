@@ -485,6 +485,6 @@ def resolve_vault_access_view(
         "max_views": getattr(link, "max_views", None),
         "views_used": int(getattr(link, "views_used", 0) or 0),
         "last_opened_at": link.last_opened_at.isoformat() if getattr(link, "last_opened_at", None) else None,
-        "api_view_url": f"/vault-access/{link.token}",
+        "api_view_url": f"/marketplace/vault-access/{link.token}",
         "frontend_hint_path": f"/vault/{link.token}",
     }

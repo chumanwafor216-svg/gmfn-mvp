@@ -512,17 +512,39 @@ export default function MarketplaceWorkspacePage() {
     return safeStr(inviteInfo?.code || inviteInfo?.invite_code || "");
   }, [inviteInfo]);
 
-  const shopViewLink = useMemo(() => {
-    return publicFrontendUrl(
-      safeStr(
-        inviteInfo?.shop_view_url ||
-          inviteInfo?.shop_link ||
-          inviteInfo?.shop_profile_url ||
-          inviteInfo?.public_shop_url ||
-          ""
-      )
+  const selectedMemberGmfnId = useMemo(() => {
+    return safeStr(
+      selectedMember?.gmfn_id ||
+        selectedMember?.member_gmfn_id ||
+        selectedMember?.user?.gmfn_id
     );
-  }, [inviteInfo]);
+  }, [selectedMember]);
+
+  const selectedMemberName = useMemo(() => {
+    return safeStr(
+      selectedMember?.display_name ||
+        selectedMember?.full_name ||
+        selectedMember?.nickname ||
+        selectedMember?.email
+    );
+  }, [selectedMember]);
+
+  const shopViewLink = useMemo(() => {
+    const direct = safeStr(
+      inviteInfo?.shop_view_url ||
+        inviteInfo?.shop_link ||
+        inviteInfo?.shop_profile_url ||
+        inviteInfo?.public_shop_url ||
+        ""
+    );
+    if (direct) return publicFrontendUrl(direct);
+
+    return selectedMemberGmfnId
+      ? publicFrontendUrl(
+          withClanQuery(`/shop/${encodeURIComponent(selectedMemberGmfnId)}`, activeClanId)
+        )
+      : "";
+  }, [activeClanId, inviteInfo, selectedMemberGmfnId]);
 
   const guideUrl = useMemo(() => {
     return publicFrontendUrl("/guide");
@@ -629,7 +651,9 @@ export default function MarketplaceWorkspacePage() {
   function copyShopViewMessage() {
     const title = safeStr(communityName || "this community");
     const text = [
-      `Take a look at shops visible in ${title}.`,
+      selectedMemberName
+        ? `Take a look at ${selectedMemberName}'s public shop in ${title}.`
+        : `Take a look at shops visible in ${title}.`,
       shopViewLink || "(shop view link unavailable)",
       `Guide: ${guideUrl}`,
     ]
@@ -1071,7 +1095,8 @@ export default function MarketplaceWorkspacePage() {
                   lineHeight: 1.7,
                 }}
               >
-                Share the public shop-face link tied to this community context.
+                Select a member row below, then share that public shop-face
+                link with this community context attached.
               </div>
 
               <div

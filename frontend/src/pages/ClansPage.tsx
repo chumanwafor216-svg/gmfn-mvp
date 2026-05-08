@@ -271,6 +271,18 @@ function buildGuideFallbackUrl(): string {
   return publicFrontendUrl("/guide");
 }
 
+function withClanQuery(path: string, clanId: number): string {
+  const safeClanId = Number(clanId || 0);
+  if (!path || !Number.isFinite(safeClanId) || safeClanId <= 0) return path;
+
+  const [baseWithQuery, hash = ""] = path.split("#");
+  const separator = baseWithQuery.includes("?") ? "&" : "?";
+  const next = `${baseWithQuery}${separator}community=${encodeURIComponent(
+    String(safeClanId)
+  )}`;
+  return hash ? `${next}#${hash}` : next;
+}
+
 function buildInviteState(
   raw: any,
   senderName: string,
@@ -497,7 +509,7 @@ export default function ClansPage() {
   async function handleOpenMarketplace(clanId: number) {
     if (!clanId) return;
     await handleSelectCommunity(clanId);
-    navigateWithOrigin(navigate, "/app/marketplace", location);
+    navigateWithOrigin(navigate, withClanQuery("/app/marketplace", clanId), location);
   }
 
   return (
@@ -917,16 +929,32 @@ export default function ClansPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <OriginLink to="/app/community" style={btn(false)}>
+                  <OriginLink
+                    to={
+                      selectedCommunityId
+                        ? `/app/community/${encodeURIComponent(String(selectedCommunityId))}`
+                        : "/app/community"
+                    }
+                    style={btn(false)}
+                  >
                     Community Home
                   </OriginLink>
-                  <OriginLink to="/app/demand-box" style={btn(false)}>
+                  <OriginLink
+                    to={withClanQuery("/app/demand-box", selectedCommunityId)}
+                    style={btn(false)}
+                  >
                     Demand Box
                   </OriginLink>
-                  <OriginLink to="/app/shop-control" style={btn(false)}>
+                  <OriginLink
+                    to={withClanQuery("/app/shop-control", selectedCommunityId)}
+                    style={btn(false)}
+                  >
                     My Shop Tools
                   </OriginLink>
-                  <OriginLink to="/app/marketplace" style={btn(false)}>
+                  <OriginLink
+                    to={withClanQuery("/app/marketplace", selectedCommunityId)}
+                    style={btn(false)}
+                  >
                     Marketplace
                   </OriginLink>
                 </div>
