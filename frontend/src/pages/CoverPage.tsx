@@ -619,8 +619,6 @@ function buttonGuardProps() {
 
     onPointerDown: guardButtonPress,
 
-    onTouchStart: guardButtonPress,
-
     onMouseDown: guardButtonPress,
 
   };
@@ -1549,7 +1547,7 @@ export default function CoverPage() {
 
             >
 
-              {busy ? "Continuing..." : "Continue"}
+              {busy ? "Continuing..." : "Open Welcome"}
 
             </button>
 
@@ -1582,7 +1580,7 @@ export default function CoverPage() {
 
             >
 
-              Read My GSN and I
+              Read the full guide first
 
             </button>
             </div>

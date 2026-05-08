@@ -188,6 +188,19 @@
   --secondary-accent: var(--gsn-gold-500);
 }
 
+.theme-trust {
+  --page-bg:
+    linear-gradient(180deg, #f8fbff 0%, #eef4fb 100%);
+
+  --hero-bg:
+    radial-gradient(circle at top right, rgba(242, 207, 119, 0.24), transparent 34%),
+    linear-gradient(135deg, #03101f 0%, #08213a 66%, #061827 100%);
+
+  --hero-border: rgba(242, 207, 119, 0.48);
+  --primary-accent: var(--gsn-blue-600);
+  --secondary-accent: var(--gsn-gold-500);
+}
+
 /* =========================================================
    GLOBAL PAGE SHELL
    ========================================================= */

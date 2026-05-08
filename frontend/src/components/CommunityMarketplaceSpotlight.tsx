@@ -307,7 +307,7 @@ export default function CommunityMarketplaceSpotlight() {
         `Posted: ${formatWhen(activeItem.feed?.created_at)}`,
       ],
       primaryLabel: gmfnId ? "Open seller shop" : "Open Marketplace",
-      primaryTo: gmfnId ? `/app/shop/${encodeURIComponent(gmfnId)}` : "/app/marketplace",
+      primaryTo: gmfnId ? `/shop/${encodeURIComponent(gmfnId)}` : "/app/marketplace",
     };
   }, [activeItem]);
 

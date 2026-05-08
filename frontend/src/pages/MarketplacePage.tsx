@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
-import SystemPictureFrame from "../components/SystemPictureFrame";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
@@ -13,7 +12,6 @@ import {
   cancelLoanRequest,
   createClanInvite,
   createLoanRequest,
-  getAccessToken,
   getClanTrustScoreExplained,
   getClanInviteLink,
   getCurrentClan,
@@ -26,10 +24,7 @@ import {
   listClanMembers,
   listMyClans,
   listMyLoans,
-  removeCommunityProfileImage,
   safeCopy,
-  setCommunityProfileImage,
-  uploadCommunityProfileImageFile,
 } from "../lib/api";
 import {
   getCommunityMoneySurface,
@@ -186,51 +181,12 @@ type PersistedWithdrawalTask = {
   latestWithdrawalResult: any | null;
 };
 
-const IMAGE_FIELD_NAMES = [
-  "community_image_url",
-  "marketplace_image_url",
-  "cover_image_url",
-  "banner_url",
-  "profile_picture_url",
-  "profile_image_url",
-  "avatar_url",
-  "photo_url",
-  "image_url",
-  "community_logo_url",
-  "logo_url",
-  "picture_url",
-  "display_picture_url",
-  "icon_url",
-  "image",
-  "photo",
-  "banner",
-  "logo",
-  "avatar",
-  "picture",
-  "dp",
-];
-
 const DEFAULT_SECTION_STATE: SectionState = {
   money: false,
   tools: false,
   members: false,
   support: false,
 };
-
-const MARKETPLACE_HELP_BODY =
-  "Marketplace is the operating surface for one selected community. After Community Home helps me choose the group, this is where that one community's members, outward links, money lanes, demand, and shop visibility should work together.";
-
-const MARKETPLACE_HELP_BULLETS = [
-  "Community Home gathers my groups and owner position first. Marketplace keeps me inside the one community I have opened.",
-  "The links here belong to this marketplace only. If I invite someone, show the public marketplace face, or share my shop from here, the link should still return to this same community context.",
-  "The member and shop readings here are local. They tell me who is visible in this marketplace now, not across every community I belong to.",
-  "The money and support blocks here are the local operating surface. When I need the wider combined story, I continue into Finance or Loans.",
-  "Shop Control prepares the owner side of my one GSN shop from Community Home, but Marketplace shows how that same shop is exposed inside this selected community.",
-  "Demand, Spotlight, Vault, and outward links stay clearer when they remain tied to one community at a time.",
-];
-
-const MARKETPLACE_HELP_NOTE =
-  "Simple rule: Community Home chooses the community. Marketplace runs that one community.";
 
 const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
@@ -422,20 +378,6 @@ function positiveNumber(value: any): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function dedupeStrings(values: any[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-
-  for (const value of values) {
-    const text = safeStr(value);
-    if (!text || seen.has(text)) continue;
-    seen.add(text);
-    out.push(text);
-  }
-
-  return out;
-}
-
 function mergeFirstVisible(...rows: any[]): any {
   const out: any = {};
 
@@ -573,185 +515,6 @@ function getInviteUrl(payload: any): string {
   return normalizedJoinInviteUrl(payload);
 }
 
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function browserOrigin(): string {
-  try {
-    if (typeof window === "undefined") return "";
-    return String(window.location.origin || "").trim().replace(/\/+$/, "");
-  } catch {
-    return "";
-  }
-}
-
-function getMediaOrigins(): string[] {
-  const out: string[] = [];
-  const base = apiBase();
-  const webOrigin = browserOrigin();
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      out.push(`${u.protocol}//${u.host}`);
-    } catch {
-      // ignore
-    }
-  }
-
-  if (webOrigin) {
-    out.push(webOrigin);
-  }
-
-  return dedupeStrings(out);
-}
-
-function buildResolvedMediaCandidates(src: string): string[] {
-  const raw = safeStr(src);
-  if (!raw) return [];
-
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("blob:") ||
-    raw.startsWith("data:")
-  ) {
-    return [raw];
-  }
-
-  const origins = getMediaOrigins();
-  const trimmed = raw.replace(/^\/+/, "");
-  const out: string[] = [];
-
-  if (raw.startsWith("/")) {
-    for (const origin of origins) out.push(`${origin}${raw}`);
-  } else {
-    for (const origin of origins) out.push(`${origin}/${trimmed}`);
-  }
-
-  out.push(raw);
-  return dedupeStrings(out);
-}
-
-function looksLikeImageKey(key: string, parentKey = ""): boolean {
-  const rawKey = safeStr(key).toLowerCase();
-  const rawParent = safeStr(parentKey).toLowerCase();
-
-  if (!rawKey) return false;
-
-  if (rawKey === "url" && rawParent) {
-    return looksLikeImageKey(rawParent);
-  }
-
-  return IMAGE_FIELD_NAMES.some(
-    (token) =>
-      rawKey === token ||
-      rawKey.endsWith(`_${token}`) ||
-      rawKey.endsWith(`${token}_url`) ||
-      rawKey.includes(token)
-  );
-}
-
-function looksLikeImageValue(value: any): boolean {
-  const raw = safeStr(value).toLowerCase();
-  if (!raw) return false;
-
-  return (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("/") ||
-    /\.(png|jpe?g|webp|gif|bmp|svg|avif)(\?|#|$)/.test(raw) ||
-    raw.includes("/media/") ||
-    raw.includes("/images/") ||
-    raw.includes("/uploads/") ||
-    raw.includes("/files/") ||
-    raw.includes("/image/")
-  );
-}
-
-function getNestedImageCandidate(input: any): string {
-  const seen = new Set<any>();
-  const candidates: string[] = [];
-
-  function walk(value: any, depth: number, parentKey = "") {
-    if (value == null || depth > 6) return;
-
-    if (typeof value === "string") {
-      if (looksLikeImageKey(parentKey) && looksLikeImageValue(value)) {
-        candidates.push(value);
-      }
-      return;
-    }
-
-    if (typeof value !== "object") return;
-    if (seen.has(value)) return;
-    seen.add(value);
-
-    if (Array.isArray(value)) {
-      for (const item of value) walk(item, depth + 1, parentKey);
-      return;
-    }
-
-    for (const [key, child] of Object.entries(value)) {
-      if (typeof child === "string") {
-        if (
-          (looksLikeImageKey(key, parentKey) ||
-            (safeStr(key).toLowerCase() === "url" &&
-              looksLikeImageKey(parentKey))) &&
-          looksLikeImageValue(child)
-        ) {
-          candidates.push(child);
-        }
-      } else {
-        walk(child, depth + 1, key);
-      }
-    }
-  }
-
-  walk(input, 0);
-  return safeStr(candidates[0] || "");
-}
-
-function collectLikelyImageFields(row: any): string[] {
-  if (!row || typeof row !== "object") return [];
-
-  const values: string[] = [];
-  for (const field of IMAGE_FIELD_NAMES) {
-    const value = safeStr((row as any)?.[field]);
-    if (value) values.push(value);
-  }
-  return values;
-}
-
-function buildCommunityImageCandidates(
-  community: CommunityRow | null,
-  localUrl: string
-): string[] {
-  const rows = [
-    community,
-    community?.community,
-    community?.profile,
-    community?.marketplace,
-    community?.clan,
-    community?.meta,
-  ];
-
-  const raw = dedupeStrings([
-    safeStr(localUrl),
-    ...rows.flatMap((row) => collectLikelyImageFields(row)),
-    getNestedImageCandidate(community),
-  ]);
-
-  return dedupeStrings(raw.flatMap((item) => buildResolvedMediaCandidates(item)));
-}
-
 function communityName(row: CommunityRow | null | undefined): string {
   return (
     firstTruthy(
@@ -769,35 +532,6 @@ function communityName(row: CommunityRow | null | undefined): string {
     ) || "Selected community"
   );
 }
-function communityDescription(row: CommunityRow | null | undefined): string {
-  return (
-    firstTruthy(
-      row?.marketplace_description,
-      row?.marketplace?.marketplace_description,
-      row?.community?.marketplace_description,
-      row?.clan?.marketplace_description,
-      row?.description,
-      row?.community?.description,
-      row?.clan?.description,
-      "Marketplace home for your current community."
-    )
-  );
-}
-
-function communityInitials(row: CommunityRow | null | undefined): string {
-  const words = communityName(row)
-    .split(/\s+/)
-    .map((word) => word.replace(/[^A-Za-z0-9]/g, ""))
-    .filter(Boolean);
-
-  const initials = words
-    .slice(0, 3)
-    .map((word) => word[0]?.toUpperCase())
-    .join("");
-
-  return initials || "GSN";
-}
-
 function normalizeMarketplaceShopVisibility(raw: any): ShopVisibilityMode {
   const src = raw?.item || raw?.shop || raw || {};
 
@@ -906,27 +640,6 @@ function communityIdentity(row: CommunityRow | null | undefined): string {
   return raw ? displayGsnLabel(raw) : "Pending";
 }
 
-function communityTrustLabel(row: CommunityRow | null | undefined): string {
-  return (
-    firstTruthy(
-      row?.community_trust_band,
-      row?.trust_band,
-      row?.trust_class,
-      row?.reputation_band,
-      row?.status,
-      row?.community?.community_trust_band,
-      row?.community?.trust_band,
-      row?.marketplace?.community_trust_band,
-      row?.marketplace?.trust_band,
-      row?.clan?.community_trust_band,
-      row?.clan?.trust_band,
-      row?.community_standing?.community_trust_band,
-      row?.community_standing?.trust_band,
-      "Visible community"
-    )
-  );
-}
-
 function marketplaceTrustLabel(
   row: CommunityRow | null | undefined,
   trust: any
@@ -1002,21 +715,6 @@ function communityFinanceLabel(row: CommunityRow | null | undefined): string {
       row?.clan?.finance_band,
       "Marketplace finance preparing"
     )
-  );
-}
-
-function communityRole(row: CommunityRow | null | undefined): string {
-  return (
-    firstTruthy(
-      row?.role,
-      row?.member_role,
-      row?.membership_role,
-      row?.participant_role,
-      row?.community?.role,
-      row?.profile?.role,
-      row?.marketplace?.role,
-      row?.clan?.role
-    ) || ""
   );
 }
 
@@ -1244,25 +942,6 @@ function marketplaceProfileBackground(): string {
   return "radial-gradient(circle at 8% 0%, rgba(33,163,101,0.16) 0%, rgba(33,163,101,0.00) 34%), radial-gradient(circle at 90% 10%, rgba(214,170,69,0.14) 0%, rgba(214,170,69,0.00) 30%), radial-gradient(circle at 84% 18%, rgba(31,115,224,0.10) 0%, rgba(31,115,224,0.00) 28%), linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 54%, var(--gsn-surface-blue) 100%)";
 }
 
-function marketplaceProfileCardStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    ...pageCard(marketplaceProfileBackground()),
-    minHeight: isCompact ? 360 : 390,
-    order: 1,
-    position: "relative",
-  };
-}
-
-function marketplaceProfileScrimStyle(): React.CSSProperties {
-  return {
-    position: "absolute",
-    inset: 0,
-    zIndex: 0,
-    background:
-      "linear-gradient(110deg, rgba(248,252,255,0.97) 0%, rgba(233,243,250,0.92) 44%, rgba(210,224,237,0.9) 100%)",
-  };
-}
-
 function marketplaceProfileStatStyle(): React.CSSProperties {
   return {
     borderRadius: 15,
@@ -1272,189 +951,6 @@ function marketplaceProfileStatStyle(): React.CSSProperties {
     padding: 13,
     minHeight: 82,
     boxShadow: "var(--shadow-soft)",
-  };
-}
-
-function marketplacePictureFrameOuterStyle(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    width: "100%",
-    maxWidth: isCompact ? "100%" : 940,
-    margin: "0 auto",
-    padding: isCompact ? 7 : 8,
-    borderRadius: isCompact ? 24 : 28,
-    border: "1px solid rgba(16,37,59,0.28)",
-    background:
-      "linear-gradient(180deg, rgba(240,247,253,0.99) 0%, rgba(210,225,238,0.97) 48%, rgba(181,201,219,0.98) 100%)",
-    boxShadow:
-      "0 28px 48px rgba(10,24,49,0.2), inset 0 1px 0 rgba(255,255,255,0.92)",
-  };
-}
-
-function marketplacePictureFrameInnerStyle(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    minHeight: isCompact ? 258 : 380,
-    borderRadius: isCompact ? 18 : 22,
-    border: "1px solid rgba(16,37,59,0.22)",
-    background:
-      "radial-gradient(circle at 18% 10%, rgba(34,82,120,0.22) 0%, rgba(34,82,120,0.00) 42%), radial-gradient(circle at 86% 18%, rgba(157,89,123,0.1) 0%, rgba(157,89,123,0.00) 30%), linear-gradient(180deg, #F8FBFE 0%, #D3E3EE 100%)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow:
-      "inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -26px 44px rgba(10,24,49,0.16)",
-  };
-}
-
-function marketplacePicturePlaceholderStyle(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    width: "100%",
-    height: "100%",
-    minHeight: isCompact ? 258 : 380,
-    display: "grid",
-    placeItems: "center",
-    gap: isCompact ? 8 : 10,
-    padding: isCompact ? 18 : 22,
-    textAlign: "center",
-    color: "#12324F",
-    background:
-      "radial-gradient(circle at 50% 18%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0.00) 34%), linear-gradient(180deg, rgba(244,249,253,0.82) 0%, rgba(212,226,238,0.8) 100%)",
-  };
-}
-
-function marketplaceIdentityPanelStyle(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    borderRadius: isCompact ? 18 : 22,
-    border: "1px solid rgba(16,37,59,0.2)",
-    background:
-      "linear-gradient(180deg, rgba(252,254,255,0.99) 0%, rgba(235,243,249,0.96) 56%, rgba(221,232,241,0.95) 100%)",
-    padding: isCompact ? 12 : 16,
-    boxShadow:
-      "0 18px 34px rgba(10,24,49,0.1), inset 0 1px 0 rgba(255,255,255,0.96)",
-  };
-}
-
-function marketplacePictureHandleStyle(
-  side: "left" | "right" | "full",
-  disabled = false
-): React.CSSProperties {
-  return {
-    position: "absolute",
-    left: side === "right" ? "auto" : 12,
-    right: side === "left" ? "auto" : 12,
-    top: 12,
-    zIndex: 3,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 32,
-    minWidth: side === "full" ? undefined : 96,
-    maxWidth: side === "full" ? "calc(100% - 24px)" : "calc(50% - 16px)",
-    padding: "7px 11px",
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.82)",
-    background:
-      "linear-gradient(180deg, rgba(253,254,255,0.99) 0%, rgba(218,230,241,0.96) 100%)",
-    color: disabled ? "#94A3B8" : "#12324F",
-    boxShadow:
-      "0 14px 26px rgba(10,24,49,0.24), inset 0 1px 0 rgba(255,255,255,0.9)",
-    boxSizing: "border-box",
-    fontSize: 11,
-    fontWeight: 900,
-    lineHeight: 1.05,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "nowrap",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    opacity: disabled ? 0.78 : 1,
-    appearance: "none",
-  };
-}
-
-function marketplacePictureToolsPanelStyle(
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    position: "absolute",
-    top: 54,
-    right: 12,
-    zIndex: 4,
-    width: isCompact ? "min(214px, calc(100% - 24px))" : 224,
-    display: "grid",
-    gap: 7,
-    padding: 9,
-    borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.84)",
-    background:
-      "linear-gradient(180deg, rgba(252,254,255,0.99) 0%, rgba(216,229,241,0.97) 100%)",
-    boxShadow:
-      "0 22px 36px rgba(3,10,22,0.28), inset 0 1px 0 rgba(255,255,255,0.9)",
-  };
-}
-
-function marketplacePictureToolButtonStyle(
-  disabled = false
-): React.CSSProperties {
-  return {
-    ...actionBtn("soft", disabled),
-    width: "100%",
-    minHeight: 36,
-    padding: "8px 11px",
-    borderRadius: 12,
-    fontSize: 12,
-    justifyContent: "center",
-  };
-}
-
-function marketplaceBillboardScrimStyle(): React.CSSProperties {
-  return {
-    position: "absolute",
-    inset: 0,
-    zIndex: 1,
-    background:
-      "linear-gradient(180deg, rgba(4,18,36,0.16) 0%, rgba(4,18,36,0.04) 34%, rgba(4,18,36,0.76) 100%)",
-    pointerEvents: "none",
-  };
-}
-
-function marketplaceBillboardTextStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    position: "absolute",
-    left: isCompact ? 14 : 20,
-    right: isCompact ? 14 : 20,
-    bottom: isCompact ? 14 : 18,
-    zIndex: 2,
-    color: "#F8FBFF",
-    display: "grid",
-    gap: isCompact ? 8 : 10,
-    textShadow: "0 2px 14px rgba(3,10,22,0.44)",
-  };
-}
-
-function marketplaceDetailsToggleStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    ...actionBtn("soft"),
-    justifySelf: "center",
-    minHeight: 34,
-    minWidth: isCompact ? 132 : 150,
-    padding: "7px 13px",
-    borderRadius: 999,
-    fontSize: 12,
-    background:
-      "linear-gradient(180deg, rgba(250,253,255,0.96) 0%, rgba(219,230,240,0.94) 100%)",
-    border: "1px solid rgba(255,255,255,0.74)",
-    boxShadow:
-      "0 12px 20px rgba(10,24,49,0.17), inset 0 1px 0 rgba(255,255,255,0.8)",
   };
 }
 
@@ -2066,26 +1562,6 @@ function marketplaceOsRowIconStyle(bg: string): React.CSSProperties {
   };
 }
 
-function marketplaceOsProgressStyle(
-  color = "#1C9A50",
-  fill = 0.72
-): React.CSSProperties {
-  return {
-    display: "block",
-    width: "100%",
-    height: 8,
-    borderRadius: 999,
-    overflow: "hidden",
-    background: "#DCE7F0",
-    boxShadow: "inset 0 1px 2px rgba(10,24,49,0.08)",
-    ["--marketplace-progress-fill" as any]: `${Math.max(
-      0.12,
-      Math.min(1, fill)
-    ) * 100}%`,
-    ["--marketplace-progress-color" as any]: color,
-  };
-}
-
 function marketplaceOsArrowStyle(): React.CSSProperties {
   return {
     color: "#173750",
@@ -2139,33 +1615,6 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function readLocalString(key: string): string {
-  try {
-    if (typeof window === "undefined") return "";
-    return window.localStorage.getItem(key) || "";
-  } catch {
-    return "";
-  }
-}
-
-function writeLocalString(key: string, value: string) {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(key, value);
-  } catch {
-    // ignore
-  }
-}
-
-function removeLocal(key: string) {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.removeItem(key);
-  } catch {
-    // ignore
-  }
-}
-
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -2186,126 +1635,12 @@ function writeLocalJSON(key: string, value: any) {
   }
 }
 
-function communityPictureStorageKey(communityId: number): string {
-  return `gmfn.marketplace.communityPicture.${communityId}`;
-}
-
 function communitySectionsStorageKey(communityId: number): string {
   return `gmfn.marketplace.sections.v4.${communityId}`;
 }
 
 function withdrawalTaskStorageKey(clanId: number, gmfnId: string): string {
   return `${WITHDRAWAL_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}`;
-}
-
-function AuthResolvedImage(props: {
-  candidates: string[];
-  alt: string;
-  clanId?: number;
-  refreshSeed: number;
-  style: React.CSSProperties;
-  fallback: React.ReactNode;
-}) {
-  const [resolvedSrc, setResolvedSrc] = useState("");
-  const candidateKey = useMemo(
-    () => `${props.refreshSeed}::${props.candidates.join("|")}`,
-    [props.refreshSeed, props.candidates]
-  );
-
-  useEffect(() => {
-    let alive = true;
-    let objectUrl = "";
-
-    async function preloadDirect(url: string): Promise<boolean> {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(true);
-        img.onerror = () => resolve(false);
-        img.src = url;
-      });
-    }
-
-    async function run() {
-      setResolvedSrc("");
-
-      const token = getAccessToken();
-      const uniqueCandidates = dedupeStrings(props.candidates);
-
-      for (const candidate of uniqueCandidates) {
-        const url = safeStr(candidate);
-        if (!url) continue;
-
-        try {
-          const headers: Record<string, string> = {};
-          if (token) headers.Authorization = `Bearer ${token}`;
-          if (positiveNumber(props.clanId)) {
-            headers["X-Clan-Id"] = String(props.clanId);
-          }
-
-          const res = await fetch(url, {
-            method: "GET",
-            headers,
-            credentials: "include",
-            cache: "no-store",
-          });
-
-          if (res.ok) {
-            const contentType = String(
-              res.headers.get("content-type") || ""
-            ).toLowerCase();
-
-            if (
-              !contentType ||
-              contentType.startsWith("image/") ||
-              contentType.includes("application/octet-stream")
-            ) {
-              const blob = await res.blob();
-
-              if (blob && blob.size > 0) {
-                const nextObjectUrl = URL.createObjectURL(blob);
-
-                if (!alive) {
-                  URL.revokeObjectURL(nextObjectUrl);
-                  return;
-                }
-
-                if (objectUrl) URL.revokeObjectURL(objectUrl);
-                objectUrl = nextObjectUrl;
-                setResolvedSrc(nextObjectUrl);
-                return;
-              }
-            }
-          }
-        } catch {
-          // continue
-        }
-
-        try {
-          const ok = await preloadDirect(url);
-          if (ok) {
-            if (!alive) return;
-            setResolvedSrc(url);
-            return;
-          }
-        } catch {
-          // continue
-        }
-      }
-    }
-
-    void run();
-
-    return () => {
-      alive = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [candidateKey, props.clanId]);
-
-  if (resolvedSrc) {
-    return <img src={resolvedSrc} alt={props.alt} style={props.style} />;
-  }
-
-  return <>{props.fallback}</>;
 }
 
 function settlementSummary(settlement: CommunityMoneySettlement | null): string {
@@ -2357,16 +1692,6 @@ export default function MarketplacePage() {
     null
   );
 
-  const [communityPictureUrl, setCommunityPictureUrl] = useState("");
-  const [communityPictureFileInputKey, setCommunityPictureFileInputKey] =
-    useState(0);
-  const [communityPictureRefreshSeed, setCommunityPictureRefreshSeed] =
-    useState(0);
-  const [uploadingCommunityPicture, setUploadingCommunityPicture] =
-    useState(false);
-  const [removingCommunityPicture, setRemovingCommunityPicture] =
-    useState(false);
-
   const [loanAmount, setLoanAmount] = useState("");
   const [loanDurationDays, setLoanDurationDays] = useState("");
   const [loanPurpose, setLoanPurpose] = useState("");
@@ -2390,7 +1715,6 @@ export default function MarketplacePage() {
   const [sectionsOpen, setSectionsOpen] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
-  const [pictureToolsOpen, setPictureToolsOpen] = useState(false);
   const [intentQuery, setIntentQuery] = useState("");
   const [intentGuideOpen, setIntentGuideOpen] = useState(false);
 
@@ -2401,7 +1725,7 @@ export default function MarketplacePage() {
   const currentGmfnId = safeStr(me?.gmfn_id || "");
   const myShopTo = useMemo(() => {
     return currentGmfnId
-      ? `/app/shop/${encodeURIComponent(currentGmfnId)}`
+      ? `/shop/${encodeURIComponent(currentGmfnId)}`
       : "";
   }, [currentGmfnId]);
 
@@ -2508,22 +1832,20 @@ export default function MarketplacePage() {
 
 function marketplacePointerGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: consumeMarketplacePointerEvent,
-    onTouchStart: consumeMarketplacePointerEvent,
     onMouseDown: consumeMarketplacePointerEvent,
   };
 }
 
 function marketplaceButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: consumeMarketplacePointerEvent,
-    onTouchStart: consumeMarketplacePointerEvent,
     onMouseDown: consumeMarketplacePointerEvent,
   };
 }
@@ -2532,22 +1854,7 @@ function marketplaceButtonGuardProps(): Pick<
     event?: React.SyntheticEvent<HTMLElement>
   ) {
     consumeMarketplaceButtonEvent(event);
-    const nextOpen = !profileDetailsOpen;
-    setProfileDetailsOpen(nextOpen);
-    if (nextOpen) {
-      setPictureToolsOpen(false);
-    }
-  }
-
-  function togglePictureTools(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    consumeMarketplaceButtonEvent(event);
-    const nextOpen = !pictureToolsOpen;
-    setPictureToolsOpen(nextOpen);
-    if (nextOpen) {
-      setProfileDetailsOpen(false);
-    }
+    setProfileDetailsOpen((prev) => !prev);
   }
 
   function openMarketplaceRoute(
@@ -2681,7 +1988,7 @@ function marketplaceButtonGuardProps(): Pick<
     }
   }
 
-  async function loadPage() {
+  const loadPage = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -2756,11 +2063,11 @@ function marketplaceButtonGuardProps(): Pick<
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedClanId]);
 
   useEffect(() => {
     void loadPage();
-  }, [selectedClanId]);
+  }, [loadPage, selectedClanId]);
 
   useEffect(() => {
     let alive = true;
@@ -2790,20 +2097,15 @@ function marketplaceButtonGuardProps(): Pick<
 
   useEffect(() => {
     if (!activeCommunityId) {
-      setCommunityPictureUrl("");
       setSectionsOpen(DEFAULT_SECTION_STATE);
       return;
     }
 
-    const savedPicture = readLocalString(
-      communityPictureStorageKey(activeCommunityId)
-    );
     const savedSections = readLocalJSON<SectionState | null>(
       communitySectionsStorageKey(activeCommunityId),
       null
     );
 
-    setCommunityPictureUrl(savedPicture || "");
     setSectionsOpen(savedSections || DEFAULT_SECTION_STATE);
   }, [activeCommunityId]);
 
@@ -2966,12 +2268,6 @@ function marketplaceButtonGuardProps(): Pick<
       safeStr(moneySurface?.payoutDestination?.accountNumber)
   );
 
-  const communityImageCandidates = useMemo(() => {
-    return buildCommunityImageCandidates(selectedCommunity, communityPictureUrl);
-  }, [selectedCommunity, communityPictureUrl]);
-
-  const hasCommunityPicture = communityImageCandidates.length > 0;
-
   const suggestedSupporterMap = useMemo(() => {
     return new Map<string, SuggestedSupporter>(
       suggestedSupporters.map((item) => [item.key, item])
@@ -3000,7 +2296,7 @@ function marketplaceButtonGuardProps(): Pick<
         shopName: shop
           ? firstTruthy(shop?.name, "Shop available")
           : "Shop not visible yet",
-        shopTo: shop && gmfn ? `/app/shop/${encodeURIComponent(gmfn)}` : "",
+        shopTo: shop && gmfn ? `/shop/${encodeURIComponent(gmfn)}` : "",
       };
     });
 
@@ -3048,90 +2344,6 @@ function marketplaceButtonGuardProps(): Pick<
     consumeMarketplaceButtonEvent(event);
     setSectionsOpen((prev) => ({ ...prev, [key]: true }));
     window.requestAnimationFrame(() => scrollToMarketplaceSection(sectionId));
-  }
-
-  async function handleUploadCommunityPicture(file: File | null) {
-    if (!file) return;
-
-    if (!activeCommunityId) {
-      showNotice("error", "Select a community first.");
-      return;
-    }
-
-    setUploadingCommunityPicture(true);
-
-    try {
-      const uploadRes = await uploadCommunityProfileImageFile(file, activeCommunityId);
-      const imageUrl = firstTruthy(
-        uploadRes?.image_url,
-        uploadRes?.profile_image_url,
-        uploadRes?.community_image_url,
-        uploadRes?.url,
-        uploadRes?.file_url,
-        uploadRes?.path,
-        uploadRes?.item?.image_url,
-        uploadRes?.item?.url,
-        uploadRes?.data?.image_url,
-        uploadRes?.data?.url
-      );
-
-      if (!imageUrl) {
-        throw new Error(
-          "Upload completed, but the system did not return a usable image link."
-        );
-      }
-
-      try {
-        await (setCommunityProfileImage as any)({
-          clan_id: activeCommunityId,
-          image_url: imageUrl,
-        });
-      } catch {
-        await (setCommunityProfileImage as any)(activeCommunityId, imageUrl);
-      }
-
-      setCommunityPictureUrl(imageUrl);
-      writeLocalString(communityPictureStorageKey(activeCommunityId), imageUrl);
-      setCommunityPictureRefreshSeed((x) => x + 1);
-      await loadPage();
-      setPictureToolsOpen(false);
-      showNotice("success", "Community picture updated.");
-    } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Community picture upload failed."
-      );
-    } finally {
-      setUploadingCommunityPicture(false);
-      setCommunityPictureFileInputKey((x) => x + 1);
-    }
-  }
-
-  async function handleRemoveCommunityPicture() {
-    if (!activeCommunityId) {
-      showNotice("error", "Select a community first.");
-      return;
-    }
-
-    setRemovingCommunityPicture(true);
-
-    try {
-      await removeCommunityProfileImage(activeCommunityId);
-      setCommunityPictureUrl("");
-      removeLocal(communityPictureStorageKey(activeCommunityId));
-      setCommunityPictureRefreshSeed((x) => x + 1);
-      await loadPage();
-      setPictureToolsOpen(false);
-      showNotice("success", "Community picture removed.");
-    } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) || "Community picture could not be removed."
-      );
-    } finally {
-      setRemovingCommunityPicture(false);
-      setCommunityPictureFileInputKey((x) => x + 1);
-    }
   }
 
   async function handleCreateInviteLink() {

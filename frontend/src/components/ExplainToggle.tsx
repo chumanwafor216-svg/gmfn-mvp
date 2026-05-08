@@ -87,11 +87,12 @@ function toneStyles(tone: "light" | "blue" | "dark"): {
 }
 
 export default function ExplainToggle(props: ExplainToggleProps) {
+  const [open, setOpen] = useState(Boolean(props.defaultOpen));
+
   if (!EXPLAIN_TOGGLES_ENABLED) {
     return null;
   }
 
-  const [open, setOpen] = useState(Boolean(props.defaultOpen));
   const tone = toneStyles(props.tone || "light");
 
   return (

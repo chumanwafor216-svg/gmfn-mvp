@@ -1,6 +1,13 @@
 // src/components/ShareButtons.tsx
 import React, { useMemo, useState } from "react";
-import { ShareTarget, buildQrImageUrl, buildShareText, buildWhatsAppUrl, copyToClipboard, normalizeUrl } from "../lib/share";
+import {
+  buildQrImageUrl,
+  buildShareText,
+  buildWhatsAppUrl,
+  copyToClipboard,
+  normalizeUrl,
+  type ShareTarget,
+} from "../lib/share";
 
 type Props = {
   target: ShareTarget;
@@ -8,12 +15,16 @@ type Props = {
   small?: boolean;
 };
 
-export default function ShareButtons({ target, variant = "row", small = false }: Props) {
+export default function ShareButtons({
+  target,
+  variant = "row",
+  small = false,
+}: Props) {
   const [toast, setToast] = useState<string>("");
   const [qrOpen, setQrOpen] = useState(false);
 
   const url = useMemo(() => normalizeUrl(target.url), [target.url]);
-  const shareText = useMemo(() => buildShareText({ ...target, url }), [target.title, target.message, url]);
+  const shareText = useMemo(() => buildShareText({ ...target, url }), [target, url]);
   const qrImg = useMemo(() => buildQrImageUrl(url, 240), [url]);
 
   function btnStyle(primary = false): React.CSSProperties {
@@ -52,12 +63,12 @@ export default function ShareButtons({ target, variant = "row", small = false }:
 
   async function onCopyLink() {
     const ok = await copyToClipboard(url);
-    showToast(ok ? "Copied link ✅" : "Copy failed ❌");
+    showToast(ok ? "Copied link" : "Copy failed");
   }
 
   async function onCopyText() {
     const ok = await copyToClipboard(shareText);
-    showToast(ok ? "Copied WhatsApp text ✅" : "Copy failed ❌");
+    showToast(ok ? "Copied WhatsApp text" : "Copy failed");
   }
 
   function onWhatsApp() {
@@ -68,24 +79,48 @@ export default function ShareButtons({ target, variant = "row", small = false }:
     <div style={{ marginTop: 10 }}>
       <div style={wrapStyle()}>
         <button style={btnStyle(true)} onClick={onCopyLink} type="button">
-          🔗 Copy link
+          Copy link
         </button>
 
-        <button style={btnStyle(false)} onClick={onWhatsApp} type="button" title="Opens WhatsApp with a prefilled message">
-          💬 WhatsApp text
+        <button
+          style={btnStyle(false)}
+          onClick={onWhatsApp}
+          type="button"
+          title="Opens WhatsApp with a prefilled message"
+        >
+          WhatsApp text
         </button>
 
-        <button style={btnStyle(false)} onClick={onCopyText} type="button" title="Copies the WhatsApp text to clipboard">
-          📋 Copy text
+        <button
+          style={btnStyle(false)}
+          onClick={onCopyText}
+          type="button"
+          title="Copies the WhatsApp text to clipboard"
+        >
+          Copy text
         </button>
 
-        <button style={btnStyle(false)} onClick={() => setQrOpen(true)} type="button" title="Shows a QR code you can screenshot">
-          � QR
+        <button
+          style={btnStyle(false)}
+          onClick={() => setQrOpen(true)}
+          type="button"
+          title="Shows a QR code you can screenshot"
+        >
+          QR
         </button>
       </div>
 
       {toast ? (
-        <div style={{ marginTop: 10, fontSize: 13, color: "#0a7", fontWeight: 900 }}>{toast}</div>
+        <div
+          style={{
+            marginTop: 10,
+            fontSize: 13,
+            color: "#0a7",
+            fontWeight: 900,
+          }}
+        >
+          {toast}
+        </div>
       ) : null}
 
       {qrOpen ? (
@@ -116,26 +151,54 @@ export default function ShareButtons({ target, variant = "row", small = false }:
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-              <div style={{ fontWeight: 1000 }}>QR (screenshot & share)</div>
-              <button style={btnStyle(false)} onClick={() => setQrOpen(false)} type="button">
-                ✖ Close
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 10,
+              }}
+            >
+              <div style={{ fontWeight: 1000 }}>QR (screenshot and share)</div>
+              <button
+                style={btnStyle(false)}
+                onClick={() => setQrOpen(false)}
+                type="button"
+              >
+                Close
               </button>
             </div>
 
             <div style={{ marginTop: 12, fontSize: 13, color: "#334155" }}>
-              Tip for low-end devices: open this QR, screenshot it, and send via WhatsApp.
+              Tip for low-end devices: open this QR, screenshot it, and send via
+              WhatsApp.
             </div>
 
-            <div style={{ marginTop: 12, display: "flex", justifyContent: "center" }}>
+            <div
+              style={{ marginTop: 12, display: "flex", justifyContent: "center" }}
+            >
               <img
                 src={qrImg}
                 alt="QR code"
-                style={{ width: 240, height: 240, borderRadius: 12, border: "1px solid #e5e7eb" }}
+                style={{
+                  width: 240,
+                  height: 240,
+                  borderRadius: 12,
+                  border: "1px solid #e5e7eb",
+                }}
               />
             </div>
 
-            <div style={{ marginTop: 12, fontSize: 12, color: "#64748b", wordBreak: "break-all" }}>{url}</div>
+            <div
+              style={{
+                marginTop: 12,
+                fontSize: 12,
+                color: "#64748b",
+                wordBreak: "break-all",
+              }}
+            >
+              {url}
+            </div>
           </div>
         </div>
       ) : null}

@@ -150,11 +150,10 @@ function guardWorkspacePress(event: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardWorkspacePress,
-    onTouchStart: guardWorkspacePress,
     onMouseDown: guardWorkspacePress,
   };
 }
@@ -622,7 +621,7 @@ export default function MarketplaceWorkspacePage() {
       setMsg("This member does not yet have a visible shop identity.");
       return;
     }
-    navigateWithOrigin(navigate, `/app/shop/${encodeURIComponent(gmfnId)}`, location);
+    navigateWithOrigin(navigate, `/shop/${encodeURIComponent(gmfnId)}`, location);
   }
 
   return (

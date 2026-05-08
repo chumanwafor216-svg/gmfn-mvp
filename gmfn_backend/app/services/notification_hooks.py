@@ -18,7 +18,7 @@ def notify_guarantor_request(
         title="A guarantee request needs your attention",
         message="Someone is asking for your support. Reviewing early helps your community move forward.",
         action_url="/app/loans",
-        action_label="Open Finances",
+        action_label="Open Loans & Support",
     )
 
 
@@ -35,8 +35,8 @@ def notify_pool_deposit_confirmed(
         kind="pool.deposit_confirmed",
         title="Your deposit was confirmed",
         message=f"Your pool deposit of {amount} {currency} has been confirmed.",
-        action_url="/app/loans",
-        action_label="View Finances",
+        action_url="/app/finance",
+        action_label="Open Finance File",
     )
 
 

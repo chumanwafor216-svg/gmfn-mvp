@@ -269,23 +269,23 @@ function safeDateTime(x: any): string {
 
 function expectedPaymentState(item: ExpectedPaymentRecord): string {
   if (safeStr(item.confirmed_at)) return "Confirmed";
-  if (item.matched_bank_event_id) return "Matched";
-  if (safeStr(item.reference_display)) return "Awaiting reconciliation";
-  return "Awaiting issue";
+  if (item.matched_bank_event_id) return "Bank match started";
+  if (safeStr(item.reference_display)) return "Awaiting bank check";
+  return "Needs payment instruction";
 }
 
 function expectedPaymentNextAction(item: ExpectedPaymentRecord): string {
   const state = expectedPaymentState(item);
   if (state === "Confirmed") {
-    return "Use the unlocked route or feature that depends on this payment.";
+    return "You can use the service this payment unlocked.";
   }
-  if (state === "Matched") {
-    return "Reconciliation is in progress. Wait for confirmation to complete.";
+  if (state === "Bank match started") {
+    return "The bank match has started. Wait for final confirmation.";
   }
-  if (state === "Awaiting reconciliation") {
-    return "Pay with the exact reference, then wait for the bank match to appear.";
+  if (state === "Awaiting bank check") {
+    return "Pay with the exact reference so the system can confirm it.";
   }
-  return "Generate or refresh the payment instruction so the reference can be issued.";
+  return "Generate a fresh payment instruction if you still need to pay.";
 }
 
 function apiBase(): string {
@@ -624,21 +624,21 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
-    minWidth: 106,
-    padding: "10px 16px",
-    borderRadius: 14,
-    border: "1px solid rgba(121,149,190,0.20)",
+    minHeight: 50,
+    minWidth: 124,
+    padding: "11px 18px",
+    borderRadius: 999,
+    border: "1px solid rgba(31,115,224,0.20)",
     background:
-      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    color: "#E6EEF8",
+      "linear-gradient(180deg, #FFFFFF 0%, #F5F9FE 50%, #EAF3FF 100%)",
+    color: "#0B4EA2",
     fontWeight: 900,
     fontSize: 13.5,
     cursor: "pointer",
     textAlign: "center",
     whiteSpace: "normal",
     boxShadow:
-      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 10px 22px rgba(7,23,44,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -754,7 +754,7 @@ function communityPublicId(currentClan: any): string {
       currentClan?.community?.community_code,
       currentClan?.profile?.community_code,
       currentClan?.marketplace?.community_code
-    ) || "Awaiting issue"
+    ) || "Waiting for setup"
   );
 }
 
@@ -1017,7 +1017,7 @@ export default function FinancePage() {
   }, [currentClan]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(me?.gmfn_id, "Awaiting issue");
+    return firstTruthy(me?.gmfn_id, "Waiting for setup");
   }, [me]);
 
   const activeLoans = useMemo(() => loans.filter(isActiveLoan), [loans]);
@@ -1154,8 +1154,8 @@ export default function FinancePage() {
       (acc, item) => {
         const state = expectedPaymentState(item);
         if (state === "Confirmed") acc.confirmed += 1;
-        else if (state === "Matched") acc.matched += 1;
-        else if (state === "Awaiting reconciliation") acc.awaitingReconciliation += 1;
+        else if (state === "Bank match started") acc.matched += 1;
+        else if (state === "Awaiting bank check") acc.awaitingReconciliation += 1;
         else acc.awaitingIssue += 1;
         return acc;
       },
@@ -1186,15 +1186,15 @@ export default function FinancePage() {
 
     if (crossCommunitiesCount > 0) {
       rows.push(
-        `${crossCommunitiesCount} community finance unit${
-          crossCommunitiesCount === 1 ? "" : "s"
-        } visible under this GSN ID.`
+        `You have finance records in ${crossCommunitiesCount} communit${
+          crossCommunitiesCount === 1 ? "y" : "ies"
+        } under this GSN ID.`
       );
     }
 
     if (parseMoneyNumber(crossEffectiveAvailable) > 0) {
       rows.push(
-        `Effective available across communities: ${fmtMoney(
+        `Money available across your communities: ${fmtMoney(
           crossEffectiveAvailable
         )} ${crossCurrency}.`
       );
@@ -1202,17 +1202,17 @@ export default function FinancePage() {
 
     if (repaymentProofCount > 0) {
       rows.push(
-        `${repaymentProofCount} repayment proof event${
+        `${repaymentProofCount} repayment record${
           repaymentProofCount === 1 ? "" : "s"
-        } in the trust evidence record.`
+        } supporting your trust history.`
       );
     }
 
     if (supportProofCount > 0) {
       rows.push(
-        `${supportProofCount} guarantor support success event${
+        `${supportProofCount} successful support record${
           supportProofCount === 1 ? "" : "s"
-        } recorded.`
+        } in your name.`
       );
     }
 
@@ -1226,7 +1226,7 @@ export default function FinancePage() {
 
     if (rows.length === 0) {
       rows.push(
-        "Confirmed movement is still limited; positive finance signals will appear as records build."
+        "Your positive finance signals will grow as payments and support records are completed."
       );
     }
 
@@ -1245,31 +1245,31 @@ export default function FinancePage() {
 
     if (borrowerRemainingTotal > 0) {
       rows.push(
-        `Borrower-side remaining amount: ${fmtMoney(
+        `You still have ${fmtMoney(
           borrowerRemainingTotal
-        )} ${crossCurrency}.`
+        )} ${crossCurrency} showing on borrower records.`
       );
     }
 
     if (parseMoneyNumber(crossLockedGuarantees) > 0) {
       rows.push(
-        `Guarantee support locked across the file: ${fmtMoney(
+        `You have ${fmtMoney(
           crossLockedGuarantees
-        )} ${crossCurrency}.`
+        )} ${crossCurrency} still held for guarantee support.`
       );
     }
 
     if (pendingReconciliationCount > 0) {
       rows.push(
-        `${pendingReconciliationCount} expected payment${
+        `${pendingReconciliationCount} payment${
           pendingReconciliationCount === 1 ? "" : "s"
-        } awaiting matching or confirmation.`
+        } waiting for bank confirmation.`
       );
     }
 
     if (parseMoneyNumber(crossPendingWithdrawals) > 0) {
       rows.push(
-        `Withdrawals awaiting completion: ${fmtMoney(
+        `Money out still waiting: ${fmtMoney(
           crossPendingWithdrawals
         )} ${crossCurrency}.`
       );
@@ -1277,7 +1277,7 @@ export default function FinancePage() {
 
     if (parseMoneyNumber(crossPendingDeposits) > 0) {
       rows.push(
-        `Deposits awaiting completion: ${fmtMoney(
+        `Money in still waiting: ${fmtMoney(
           crossPendingDeposits
         )} ${crossCurrency}.`
       );
@@ -1287,13 +1287,13 @@ export default function FinancePage() {
       rows.push(
         `${financePressureEventCount} finance pressure event${
           financePressureEventCount === 1 ? "" : "s"
-        } in the trust evidence record.`
+        } needing attention.`
       );
     }
 
     if (rows.length === 0) {
       rows.push(
-        "No active cross-community pressure signal is standing out from visible records."
+        "Nothing urgent is standing out from your finance records right now."
       );
     }
 
@@ -1371,7 +1371,7 @@ export default function FinancePage() {
         tone: "pressure" as const,
         title: "Attention required.",
         detail:
-          "Borrower-side repayment, locked support, or both are creating visible pressure in this finance file.",
+          "A repayment or guarantee support item needs your attention.",
       };
     }
 
@@ -1380,15 +1380,15 @@ export default function FinancePage() {
         tone: "watch" as const,
         title: "Active follow-up needed.",
         detail:
-          "The record is not blocked, but pending payments, withdrawals, deposits, or trust-linked finance events need attention.",
+          "Some payments or support records are still waiting for completion.",
       };
     }
 
     return {
       tone: "calm" as const,
-      title: "No active finance pressure shown.",
+      title: "No urgent finance pressure shown.",
       detail:
-        "The current combined view is not showing active borrower pressure, heavy locked support, or waiting payment items.",
+        "Your current finance view is not showing overdue repayment pressure, heavy locked support, or waiting payment items.",
     };
   }, [
     borrowerRemainingTotal,
@@ -1478,7 +1478,7 @@ export default function FinancePage() {
       <PageTopNav
         sectionLabel="Finance"
         title="Finance"
-        subtitle="Finance turns money behaviour into a proof trail across communities."
+        subtitle="Finance turns money behaviour into a clear record across communities."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/marketplace"
@@ -1532,8 +1532,8 @@ export default function FinancePage() {
                 maxWidth: 560,
               }}
             >
-              Track visible money records across your communities, keep payment
-              evidence clear, and manage community finance safely.
+              See money coming in, money going out, payment checks, and support
+              records in one calm place.
             </p>
             <div
               style={{
@@ -1571,7 +1571,7 @@ export default function FinancePage() {
                   border: "1px solid rgba(255,255,255,0.14)",
                 }}
               >
-                Community ID: {publicCommunityCode}
+                Community code: {publicCommunityCode}
               </span>
               {poolReference ? (
                 <span
@@ -1582,7 +1582,7 @@ export default function FinancePage() {
                     border: "1px solid rgba(255,255,255,0.14)",
                   }}
                 >
-                  Pool ref: {poolReference}
+                  Money code: {poolReference}
                 </span>
               ) : null}
               <span
@@ -1593,7 +1593,7 @@ export default function FinancePage() {
                   border: "1px solid rgba(255,255,255,0.14)",
                 }}
               >
-                Role: {memberRole}
+                Your role: {memberRole}
               </span>
             </div>
           </div>
@@ -1631,25 +1631,25 @@ export default function FinancePage() {
         >
           {[
             {
-              mark: "CO",
+              mark: "🏘️",
               label: "Communities",
               value: String(crossCommunitiesCount),
               note: "Active",
             },
             {
-              mark: "TB",
-              label: "Total visible balance",
+              mark: "💼",
+              label: "Visible balance",
               value: fmtFinanceAmount(crossMembershipPool, crossCurrency),
-              note: `Held: ${fmtFinanceAmount(crossReservedPool, crossCurrency)}`,
+              note: `Set aside: ${fmtFinanceAmount(crossReservedPool, crossCurrency)}`,
             },
             {
-              mark: "MI",
-              label: "This month inflow",
+              mark: "💧",
+              label: "Money in this month",
               value: fmtFinanceAmount(visibleMonthInflow, crossCurrency),
-              note: "Visible this month",
+              note: "Paid in this month",
             },
             {
-              mark: "TR",
+              mark: "🛡️",
               label: "Trust score",
               value: safeStr(trustScore || "0"),
               note: safeStr(trustBand || "Not ready"),
@@ -1671,13 +1671,17 @@ export default function FinancePage() {
               <div
                 style={{
                   color: "#D6AA45",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
                   fontSize: 11,
                   fontWeight: 950,
-                  letterSpacing: 0.7,
                   textTransform: "uppercase",
                 }}
               >
-                {item.mark} {item.label}
+                <span style={{ fontSize: 17, lineHeight: 1 }}>{item.mark}</span>
+                <span>{item.label}</span>
               </div>
               <div
                 style={{
@@ -1699,7 +1703,7 @@ export default function FinancePage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>What do you want to do?</div>
+        <div style={sectionLabel()}>Choose what you need now</div>
         <div
           style={{
             marginTop: 16,
@@ -1713,17 +1717,17 @@ export default function FinancePage() {
           {[
             {
               id: "money-in",
-              mark: "IN",
-              label: "Record Transaction",
-              detail: "Create a real pay-in instruction.",
+              mark: "💳",
+              label: "Money In",
+              detail: "Create a payment instruction.",
               action: () => openFinanceRoute("/app/payment/pool"),
               color: "#135FD1",
             },
             {
               id: "reports",
-              mark: "RP",
+              mark: "📊",
               label: "View Reports",
-              detail: "Open balances, exposure, and reconciliation.",
+              detail: "See balances, support, and payment checks.",
               action: () => {
                 setCollapsed((prev) => ({ ...prev, overview: false }));
                 revealFinanceSection("finance-summary");
@@ -1732,17 +1736,17 @@ export default function FinancePage() {
             },
             {
               id: "bank-accounts",
-              mark: "BA",
-              label: "Bank Accounts",
-              detail: "Open payment rails and payout routes.",
+              mark: "🏦",
+              label: "Payment Rails",
+              detail: "See bank and transfer details.",
               action: () => openFinanceRoute("/app/payment-rails"),
               color: "#D6AA45",
             },
             {
               id: "export-data",
-              mark: "EX",
-              label: "Export Data",
-              detail: "Open the visible ledger first.",
+              mark: "📋",
+              label: "View Ledger",
+              detail: "See your money history.",
               action: () => {
                 setCollapsed((prev) => ({ ...prev, events: false }));
                 revealFinanceSection("finance-events");
@@ -1755,15 +1759,16 @@ export default function FinancePage() {
               type="button"
               onPointerDown={stopFinanceTap}
               onMouseDown={stopFinanceTap}
-              onTouchStart={stopFinanceTap}
               onClick={item.action}
               style={{
                 ...tapSafeButtonBase(),
-                minHeight: isCompact ? 132 : 152,
-                borderRadius: 20,
-                border: "1px solid rgba(12,41,71,0.10)",
-                background: "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
-                boxShadow: "0 12px 28px rgba(7,23,44,0.08)",
+                minHeight: isCompact ? 120 : 144,
+                borderRadius: 22,
+                border: "1px solid rgba(19, 95, 209, 0.14)",
+                background:
+                  "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EEF6FF 100%)",
+                boxShadow:
+                  "0 14px 30px rgba(7,23,44,0.09), inset 0 1px 0 rgba(255,255,255,0.85)",
                 color: "#07172C",
                 display: "grid",
                 gap: 10,
@@ -1779,13 +1784,13 @@ export default function FinancePage() {
                 style={{
                   width: 54,
                   height: 54,
-                  borderRadius: 18,
+                  borderRadius: 999,
                   background: item.color,
                   color: "#FFFFFF",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 14,
+                  fontSize: 24,
                   fontWeight: 950,
                   boxShadow: "0 10px 22px rgba(7,23,44,0.12)",
                 }}
@@ -1808,6 +1813,100 @@ export default function FinancePage() {
             </button>
           ))}
         </div>
+        <div
+          style={{
+            marginTop: 16,
+            padding: isCompact ? 12 : 14,
+            borderRadius: 22,
+            border: "1px solid rgba(19, 95, 209, 0.14)",
+            background: "linear-gradient(180deg, #F8FBFF 0%, #EEF6FF 100%)",
+            boxShadow: "0 12px 28px rgba(7, 23, 44, 0.06)",
+          }}
+        >
+          <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>🧭 More finance tools</div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {[
+              {
+                icon: "💸",
+                label: "Money Out",
+                detail: "Send or release money",
+                action: () => openFinanceRoute("/app/withdrawal-instructions"),
+              },
+              {
+                icon: "🧾",
+                label: "Payout Details",
+                detail: "Confirm payout information",
+                action: () => openFinanceRoute("/app/payout-details"),
+              },
+              {
+                icon: "✅",
+                label: "Loan Readiness",
+                detail: "Check if you can request support",
+                action: () => openFinanceRoute("/app/loan-readiness"),
+              },
+              {
+                icon: "🛡️",
+                label: "Trust Passport",
+                detail: "See your trust record",
+                action: () => openFinanceRoute("/app/trust"),
+              },
+            ].map((tool) => (
+              <button
+                key={tool.label}
+                type="button"
+                onPointerDown={stopFinanceTap}
+                onMouseDown={stopFinanceTap}
+                onClick={tool.action}
+                style={{
+                  ...tapSafeButtonBase(),
+                  minHeight: isCompact ? 82 : 76,
+                  padding: isCompact ? "12px 10px" : "12px",
+                  borderRadius: 20,
+                  border: "1px solid rgba(216, 227, 238, 0.95)",
+                  background:
+                    "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #F0F6FD 100%)",
+                  boxShadow: "0 10px 22px rgba(7, 23, 44, 0.07)",
+                  color: "#07172C",
+                  textAlign: "left",
+                  cursor: "pointer",
+                }}
+              >
+                <span
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    fontWeight: 950,
+                    fontSize: isCompact ? 13 : 14,
+                    lineHeight: 1.15,
+                  }}
+                >
+                  <span style={{ fontSize: 20, lineHeight: 1 }}>{tool.icon}</span>
+                  <span>{tool.label}</span>
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 5,
+                    color: "#52677D",
+                    fontWeight: 800,
+                    fontSize: isCompact ? 11 : 12,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  {tool.detail}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section style={pageCard("#FFFFFF")}>
@@ -1820,8 +1919,8 @@ export default function FinancePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>Cash flow summary</div>
-          <span style={badge(false)}>This month, visible record</span>
+          <div style={sectionLabel()}>💧 Visible Cash Flow</div>
+          <span style={badge(false)}>This month</span>
         </div>
 
         <div
@@ -1840,7 +1939,7 @@ export default function FinancePage() {
             {
               label: "Total inflow",
               value: fmtFinanceAmount(visibleMonthInflow, crossCurrency),
-              note: `${visibleMonthInflowCount} visible event${
+              note: `${visibleMonthInflowCount} recorded move${
                 visibleMonthInflowCount === 1 ? "" : "s"
               }`,
               color: "#168254",
@@ -1848,15 +1947,15 @@ export default function FinancePage() {
             {
               label: "Total outflow",
               value: fmtFinanceAmount(visibleMonthOutflow, crossCurrency),
-              note: `${visibleMonthOutflowCount} visible event${
+              note: `${visibleMonthOutflowCount} recorded move${
                 visibleMonthOutflowCount === 1 ? "" : "s"
               }`,
               color: "#C83A3A",
             },
             {
-              label: "Net visible flow",
+              label: "Net movement",
               value: visibleMonthNetLabel,
-              note: "From visible pool activity",
+              note: "From money activity we can show now",
               color: visibleMonthNet >= 0 ? "#168254" : "#C83A3A",
             },
           ].map((item, index) => (
@@ -1906,12 +2005,11 @@ export default function FinancePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>Recent transactions</div>
+          <div style={sectionLabel()}>🧾 Recent Finance Events</div>
           <button
             type="button"
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
-            onTouchStart={stopFinanceTap}
             onClick={() => {
               setCollapsed((prev) => ({ ...prev, events: false }));
               revealFinanceSection("finance-events");
@@ -1932,7 +2030,7 @@ export default function FinancePage() {
 
         <div style={{ marginTop: 12, display: "grid" }}>
           {poolEvents.length === 0 ? (
-            emptyRecord("No recent finance event is visible yet.")
+            emptyRecord("No recent money movement is showing yet.")
           ) : (
             poolEvents.slice(0, 3).map((row, index) => {
               const direction = poolEventDirection(row);
@@ -1970,7 +2068,7 @@ export default function FinancePage() {
                       fontWeight: 950,
                     }}
                   >
-                    {isOut ? "-" : "+"}
+                    {direction === "neutral" ? "•" : isOut ? "⬆️" : "⬇️"}
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div
@@ -2005,7 +2103,7 @@ export default function FinancePage() {
                       {fmtFinanceAmount(row.amount || "0", row.currency || poolCurrency)}
                     </div>
                     <div style={{ marginTop: 3, color: "#6F7F92", fontSize: 12, fontWeight: 750 }}>
-                      {row.createdAt ? safeDateTime(row.createdAt) : "Visible record"}
+                      {row.createdAt ? safeDateTime(row.createdAt) : "Recorded"}
                     </div>
                   </div>
                 </div>
@@ -2044,7 +2142,7 @@ export default function FinancePage() {
           GSN
         </div>
         <div>
-          <div style={{ ...sectionLabel(), color: "#F2CF77" }}>Finance health</div>
+          <div style={{ ...sectionLabel(), color: "#F2CF77" }}>🛡️ Finance Signals</div>
           <div style={{ marginTop: 6, fontSize: 20, fontWeight: 950 }}>
             {financeFileReading.title}
           </div>
@@ -2071,7 +2169,7 @@ export default function FinancePage() {
                 lineHeight: 1.45,
               }}
             >
-              Positive: {financeHelps[0]}
+              Working well: {financeHelps[0]}
             </div>
             <div
               style={{
@@ -2085,7 +2183,7 @@ export default function FinancePage() {
                 lineHeight: 1.45,
               }}
             >
-              Watch: {financeWatchItems[0]}
+              Check this: {financeWatchItems[0]}
             </div>
           </div>
         </div>
@@ -2093,7 +2191,6 @@ export default function FinancePage() {
           type="button"
           onPointerDown={stopFinanceTap}
           onMouseDown={stopFinanceTap}
-          onTouchStart={stopFinanceTap}
           onClick={() => {
             setCollapsed((prev) => ({
               ...prev,
@@ -2111,7 +2208,7 @@ export default function FinancePage() {
             minWidth: isCompact ? "100%" : 210,
           }}
         >
-          View Finance Health
+          View Finance Signals
         </button>
       </section>
 
@@ -2129,9 +2226,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Balances and exposure</div>
+            <div style={sectionLabel()}>Your money position</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Main figures from the selected community unit inside the wider finance file.
+              These are the deeper figures for this community.
             </div>
           </div>
 
@@ -2139,11 +2236,10 @@ export default function FinancePage() {
             type="button"
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
-            onTouchStart={stopFinanceTap}
             onClick={() => handleCollapseTap("overview")}
             style={collapseToggle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {collapsed.overview ? "Show details" : "Hide details"}
           </button>
         </div>
 
@@ -2152,25 +2248,25 @@ export default function FinancePage() {
             <table style={financeTable()}>
               <thead>
                 <tr>
-                  <th style={tableHeadCell()}>Record</th>
+                  <th style={tableHeadCell()}>Item</th>
                   <th style={tableHeadCell()}>Amount / count</th>
-                  <th style={tableHeadCell()}>Meaning</th>
+                  <th style={tableHeadCell()}>What it means</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  ["Pool balance", `${poolAmount} ${poolCurrency}`, "Selected-community pool balance."],
-                  ["Effective available", `${effectiveAvailable} ${poolCurrency}`, "Amount currently available after reservations."],
-                  ["Reserved / locked", `${reservedPool} ${poolCurrency}`, "Pool amount reserved or locked locally."],
-                  ["Pending deposits", `${pendingDeposits} ${poolCurrency}`, "Inbound money awaiting completion."],
-                  ["Pending withdrawals", `${pendingWithdrawals} ${poolCurrency}`, "Outbound money awaiting completion."],
-                  ["Borrower-side total", `${fmtMoney(borrowerRequestedTotal)} ${poolCurrency}`, "Active borrower-side amount shown."],
-                  ["Remaining to repay", `${fmtMoney(borrowerRemainingTotal)} ${poolCurrency}`, "Active borrower repayment pressure."],
-                  ["Guarantees locked", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support amount still locked for others."],
-                  ["Guarantees released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`, "Support amount already released."],
-                  ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0), "Open support commitments."],
-                  ["Historical guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0), "Past support commitments."],
-                  ["Recent finance events", String(poolEvents.length), "Pool-side events in the visible record."],
+                  ["Community balance", `${poolAmount} ${poolCurrency}`, "Money currently showing for this community."],
+                  ["Available now", `${effectiveAvailable} ${poolCurrency}`, "Money available after anything set aside."],
+                  ["Set aside", `${reservedPool} ${poolCurrency}`, "Money held for a reason, such as support or commitment."],
+                  ["Money in waiting", `${pendingDeposits} ${poolCurrency}`, "Incoming money not completed yet."],
+                  ["Money out waiting", `${pendingWithdrawals} ${poolCurrency}`, "Outgoing money not completed yet."],
+                  ["Borrowed support total", `${fmtMoney(borrowerRequestedTotal)} ${poolCurrency}`, "Support you requested that is still active."],
+                  ["Still to repay", `${fmtMoney(borrowerRemainingTotal)} ${poolCurrency}`, "Repayment amount still showing."],
+                  ["Guarantees held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed."],
+                  ["Guarantees released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`, "Support already released from past backing."],
+                  ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0), "People you are still backing now."],
+                  ["Past guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0), "People you backed before."],
+                  ["Money history rows", String(poolEvents.length), "Recent money movements we can show you."],
                 ].map(([label, value, meaning]) => (
                   <tr key={label}>
                     <td style={tableCell(true)}>{label}</td>
@@ -2198,9 +2294,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Expected payments and reconciliation</div>
+            <div style={sectionLabel()}>Payments waiting for confirmation</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This shows which payments are waiting, which are confirmed, and what to do next.
+              See which payments are waiting, which are confirmed, and what to do next.
             </div>
           </div>
 
@@ -2208,11 +2304,10 @@ export default function FinancePage() {
             type="button"
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
-            onTouchStart={stopFinanceTap}
             onClick={() => handleCollapseTap("reconciliation")}
             style={collapseToggle()}
           >
-            {collapsed.reconciliation ? "Open" : "Collapse"}
+            {collapsed.reconciliation ? "Show payments" : "Hide payments"}
           </button>
         </div>
 
@@ -2225,17 +2320,17 @@ export default function FinancePage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Active expected payments: {activeExpectedPayments.length}</span>
+              <span style={badge(true)}>Payments waiting: {activeExpectedPayments.length}</span>
               <span style={badge(false)}>Waiting for confirmation: {pendingReconciliationCount}</span>
               <span style={badge(false)}>Confirmed: {expectedPaymentStateCounts.confirmed}</span>
-              <span style={badge(false)}>Matched: {expectedPaymentStateCounts.matched}</span>
+              <span style={badge(false)}>Bank match started: {expectedPaymentStateCounts.matched}</span>
               <span style={badge(false)}>
-                Awaiting issue: {expectedPaymentStateCounts.awaitingIssue}
+                Needs new instruction: {expectedPaymentStateCounts.awaitingIssue}
               </span>
             </div>
 
             {activeExpectedPayments.length === 0 ? (
-              emptyRecord("No expected payment is waiting in the visible record.")
+              emptyRecord("No payment is waiting for confirmation right now.")
             ) : (
               <div style={tableWrap()}>
                 <table style={financeTable()}>
@@ -2244,9 +2339,9 @@ export default function FinancePage() {
                       <th style={tableHeadCell()}>Type</th>
                       <th style={tableHeadCell()}>Reference</th>
                       <th style={tableHeadCell()}>Amount</th>
-                      <th style={tableHeadCell()}>State</th>
+                      <th style={tableHeadCell()}>Payment check</th>
                       <th style={tableHeadCell()}>Status</th>
-                      <th style={tableHeadCell()}>Date / match</th>
+                      <th style={tableHeadCell()}>Date</th>
                       <th style={tableHeadCell()}>Next action</th>
                     </tr>
                   </thead>
@@ -2274,7 +2369,7 @@ export default function FinancePage() {
                             : item.due_at
                               ? `Due: ${safeDateTime(item.due_at)}`
                               : item.matched_bank_event_id
-                                ? `Bank event: ${safeStr(item.matched_bank_event_id)}`
+                                ? "Bank match started"
                                 : "-"}
                         </td>
                         <td style={tableCell()}>{expectedPaymentNextAction(item)}</td>
@@ -2299,9 +2394,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Support exposure in this community</div>
+            <div style={sectionLabel()}>Loans and support effect</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Finance shows the money effect here. Loans & Support handles the live workflow and decisions.
+              Finance shows the money effect. Loans & Support is where requests and decisions happen.
             </div>
           </div>
 
@@ -2309,35 +2404,34 @@ export default function FinancePage() {
             type="button"
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
-            onTouchStart={stopFinanceTap}
             onClick={() => handleCollapseTap("borrower")}
             style={collapseToggle()}
           >
-            {collapsed.borrower ? "Open" : "Collapse"}
+            {collapsed.borrower ? "Show support" : "Hide support"}
           </button>
         </div>
 
         {!collapsed.borrower ? (
           <div style={{ marginTop: 14, display: "grid", gap: 16 }}>
             <div>
-              <div style={sectionLabel()}>Borrower loan summaries</div>
+              <div style={sectionLabel()}>Support you requested</div>
               {borrowerLoans.length === 0 ? (
                 <div style={{ marginTop: 10 }}>
-                  {emptyRecord("No active borrower-side finance item is visible.")}
+                  {emptyRecord("No active support request is affecting your finance right now.")}
                 </div>
               ) : (
                 <div style={{ marginTop: 10, ...tableWrap() }}>
                   <table style={financeTable()}>
                     <thead>
                       <tr>
-                        <th style={tableHeadCell()}>Loan</th>
+                        <th style={tableHeadCell()}>Support item</th>
                         <th style={tableHeadCell()}>Status</th>
                         <th style={tableHeadCell()}>Amount</th>
                         <th style={tableHeadCell()}>Paid</th>
                         <th style={tableHeadCell()}>Remaining</th>
                         <th style={tableHeadCell()}>Service fee</th>
-                        <th style={tableHeadCell()}>Net disbursed</th>
-                        <th style={tableHeadCell()}>Guarantor pool</th>
+                        <th style={tableHeadCell()}>Money received</th>
+                        <th style={tableHeadCell()}>Backed amount</th>
                         <th style={tableHeadCell()}>Due / started</th>
                       </tr>
                     </thead>
@@ -2396,7 +2490,7 @@ export default function FinancePage() {
               }}
             >
               <div style={innerCard("#F8FBFF")}>
-                <div style={sectionLabel()}>Guarantor exposure</div>
+                <div style={sectionLabel()}>Support you backed</div>
                 <div style={{ marginTop: 10, ...tableWrap() }}>
                   <table style={{ ...financeTable(), minWidth: 520 }}>
                     <tbody>
@@ -2409,7 +2503,7 @@ export default function FinancePage() {
                           "Note",
                           safeStr(
                             guarantorExposure?.note ||
-                              "Guarantor exposure is visible for monitoring only."
+                              "This is for your information. It is not an automatic debit."
                           ),
                         ],
                       ].map(([label, value]) => (
@@ -2424,7 +2518,7 @@ export default function FinancePage() {
               </div>
 
               <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Community liquidity context</div>
+                <div style={sectionLabel()}>Community money context</div>
                 <div style={{ marginTop: 10, ...tableWrap() }}>
                   <table style={{ ...financeTable(), minWidth: 520 }}>
                     <tbody>
@@ -2438,7 +2532,7 @@ export default function FinancePage() {
                           "Note",
                           safeStr(
                             clanLiquidity?.note ||
-                              "Community liquidity context is visible for this selected community."
+                              "This shows the money context for this community."
                           ),
                         ],
                       ].map(([label, value]) => (
@@ -2454,10 +2548,10 @@ export default function FinancePage() {
             </div>
 
             <div>
-              <div style={sectionLabel()}>Guarantor earnings</div>
+              <div style={sectionLabel()}>Earnings from backing others</div>
               {guarantorEarningsItems.length === 0 ? (
                 <div style={{ marginTop: 10 }}>
-                  {emptyRecord("No guarantor earnings row is visible.")}
+                  {emptyRecord("No earnings from backing others are showing yet.")}
                 </div>
               ) : (
                 <div style={{ marginTop: 10, ...tableWrap() }}>
@@ -2465,8 +2559,8 @@ export default function FinancePage() {
                     <thead>
                       <tr>
                         <th style={tableHeadCell()}>Loan ID</th>
-                        <th style={tableHeadCell()}>Guarantor row</th>
-                        <th style={tableHeadCell()}>Weight amount</th>
+                        <th style={tableHeadCell()}>Support row</th>
+                        <th style={tableHeadCell()}>Support weight</th>
                         <th style={tableHeadCell()}>Potential share</th>
                         <th style={tableHeadCell()}>Status</th>
                         <th style={tableHeadCell()}>Currency</th>
@@ -2512,9 +2606,9 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Recent finance events</div>
+            <div style={sectionLabel()}>Recent money history</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Pool-side event ledger from the visible finance record.
+              These are the latest money movements we can show you.
             </div>
           </div>
 
@@ -2522,18 +2616,17 @@ export default function FinancePage() {
             type="button"
             onPointerDown={stopFinanceTap}
             onMouseDown={stopFinanceTap}
-            onTouchStart={stopFinanceTap}
             onClick={() => handleCollapseTap("events")}
             style={collapseToggle()}
           >
-            {collapsed.events ? "Open" : "Collapse"}
+            {collapsed.events ? "Show history" : "Hide history"}
           </button>
         </div>
 
         {!collapsed.events ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {poolEvents.length === 0 ? (
-              emptyRecord("No recent finance event is visible.")
+              emptyRecord("No recent money movement is showing yet.")
             ) : (
               <div style={tableWrap()}>
                 <table style={financeTable()}>
@@ -2551,7 +2644,7 @@ export default function FinancePage() {
                     {poolEvents.slice(0, 12).map((row, index) => (
                       <tr key={`${row.id || index}`}>
                         <td style={tableCell(true)}>
-                          {safeStr(row.eventType || "Pool event")}
+                          {safeStr(row.eventType || "Money event")}
                         </td>
                         <td style={tableCell(true)}>
                           {safeStr(row.amount || "-")} {safeStr(row.currency || poolCurrency)}

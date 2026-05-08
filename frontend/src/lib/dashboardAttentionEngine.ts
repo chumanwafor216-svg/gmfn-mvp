@@ -77,7 +77,6 @@ export function defaultDashboardAttentionStoredState(): DashboardAttentionStored
 export function normalizeDashboardAttentionStoredState(
   raw: unknown
 ): DashboardAttentionStoredState {
-  const base = defaultDashboardAttentionStoredState();
   const src = (raw ?? {}) as Partial<DashboardAttentionStoredState>;
 
   return {

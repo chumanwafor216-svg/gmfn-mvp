@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
@@ -343,7 +343,6 @@ function buttonGuardProps() {
   return {
     onPointerDown: guardButtonPress,
     onMouseDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
   };
 }
 
@@ -715,7 +714,7 @@ export default function WithdrawalInstructionsPage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  async function loadPage(showLoading = true) {
+  const loadPage = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
 
     try {
@@ -758,11 +757,11 @@ export default function WithdrawalInstructionsPage() {
     } finally {
       if (showLoading) setLoading(false);
     }
-  }
+  }, [selectedClanId]);
 
   useEffect(() => {
     void loadPage();
-  }, [selectedClanId]);
+  }, [loadPage, selectedClanId]);
 
   const memberName = useMemo(() => {
     return (
@@ -1824,7 +1823,7 @@ export default function WithdrawalInstructionsPage() {
                         : "",
                     ]
                       .filter(Boolean)
-                      .join(" � ") || "Open the support pages if you need more background before continuing."}
+                      .join(" | ") || "Open the support pages if you need more background before continuing."}
                   </div>
                 </div>
               </div>

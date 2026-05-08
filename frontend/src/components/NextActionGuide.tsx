@@ -258,10 +258,10 @@ function guideButtonStyle(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: soft ? 42 : 46,
+    minHeight: soft ? 48 : 54,
     minWidth: soft ? 96 : 112,
     maxWidth: "100%",
-    padding: soft ? "9px 13px" : "10px 14px",
+    padding: soft ? "10px 13px" : "12px 15px",
     borderRadius: primary ? 14 : 14,
     border: primary
       ? "1px solid rgba(16,37,59,0.18)"
@@ -486,12 +486,11 @@ export default function NextActionGuide({
     action: (event?: React.SyntheticEvent<HTMLElement>) => void
   ): Pick<
     React.ButtonHTMLAttributes<HTMLButtonElement>,
-    "onPointerDown" | "onMouseDown" | "onTouchStart" | "onClick"
+    "onPointerDown" | "onMouseDown" | "onClick"
   > {
     return {
       onPointerDown: (event) => stopGuideEvent(event),
       onMouseDown: (event) => stopGuideEvent(event),
-      onTouchStart: (event) => stopGuideEvent(event),
       onClick: (event) => runGuidePress(actionKey, event, () => action(event)),
     };
   }
@@ -500,7 +499,6 @@ export default function NextActionGuide({
     <section
       onPointerDown={stopGuideEvent}
       onMouseDown={stopGuideEvent}
-      onTouchStart={stopGuideEvent}
       style={cardStyle()}
     >
       <div style={headerStyle(compact)}>
@@ -581,7 +579,6 @@ export default function NextActionGuide({
               value={query}
               onPointerDown={(event) => stopGuideEvent(event)}
               onMouseDown={(event) => stopGuideEvent(event)}
-              onTouchStart={(event) => stopGuideEvent(event)}
               onChange={(event) => {
                 setQuery(event.target.value);
                 setNotice("");
@@ -596,7 +593,6 @@ export default function NextActionGuide({
               type="submit"
               onPointerDown={stopGuideEvent}
               onMouseDown={stopGuideEvent}
-              onTouchStart={stopGuideEvent}
               style={guideButtonStyle("primary")}
             >
               {matchedItem ? `Open ${matchedItem.label}` : "Find action"}

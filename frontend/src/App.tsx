@@ -497,8 +497,8 @@ export default function App() {
         />
 
         <Route path="clans" element={<ClansPage />} />
-        <Route path="create-community" element={<Navigate to="/app/clans" replace />} />
-        <Route path="new-community" element={<Navigate to="/app/clans" replace />} />
+        <Route path="create-community" element={<Navigate to="/create" replace />} />
+        <Route path="new-community" element={<Navigate to="/create" replace />} />
 
         <Route path="community" element={<CommunityHomePage />} />
         <Route path="community-home" element={<Navigate to={APP_ROUTES.COMMUNITY} replace />} />

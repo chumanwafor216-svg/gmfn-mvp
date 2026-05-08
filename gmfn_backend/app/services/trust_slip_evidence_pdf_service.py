@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from io import BytesIO
+import os
 from typing import Optional, Dict, Any
 
 from reportlab.graphics.barcode import qr
@@ -22,6 +23,16 @@ LEGACY_REPAYMENT_EVENTS = {
     "full_repayment",
     "loan_repayment_completed",
 }
+
+PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
+
+
+def _public_frontend_base_url() -> str:
+    for key in ("FRONTEND_BASE_URL", "GMFN_FRONTEND_BASE_URL", "PUBLIC_FRONTEND_URL"):
+        raw = str(os.getenv(key) or "").strip().rstrip("/")
+        if raw:
+            return raw
+    return PUBLIC_FRONTEND_ORIGIN
 
 
 def _find_latest_full_repayment_event(db: Session, user_id: int) -> Optional[TrustEvent]:
@@ -67,7 +78,7 @@ def _qr_block(url: str) -> Drawing:
 def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Optional[Dict[str, Any]] = None) -> bytes:
     pack_id = (pack_meta or {}).get("pack_id") or "TP-UNKNOWN"
     footer_text = (pack_meta or {}).get("footer") or "Confidential / Pilot Version"
-    qr_url = (pack_meta or {}).get("merchant_verify_ui_url") or "http://127.0.0.1:8000/trust-slips/ping"
+    qr_url = (pack_meta or {}).get("merchant_verify_ui_url") or f"{_public_frontend_base_url()}/trust-slips/ping"
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(

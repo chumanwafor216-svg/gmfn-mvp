@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -371,11 +371,10 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }
@@ -903,7 +902,7 @@ export default function LoanWorkbenchPage() {
   const supportGap = safeStr(withdrawalTask?.supportGap);
   const withdrawalNote = safeStr(withdrawalTask?.noteInput);
 
-  async function loadLoanList() {
+  const loadLoanList = useCallback(async () => {
     const [meRes, clanRes, loansRes] = await Promise.all([
       typeof (api as any).getMe === "function"
         ? (api as any).getMe().catch(() => null)
@@ -936,9 +935,9 @@ export default function LoanWorkbenchPage() {
     setLoans(filteredLoans);
 
     return filteredLoans;
-  }
+  }, [selectedClanId]);
 
-  async function loadLoanWorkbench(loanId: number) {
+  const loadLoanWorkbench = useCallback(async (loanId: number) => {
     if (!loanId) {
       setLoanDetail(null);
       setSuggestedGuarantors([]);
@@ -990,7 +989,7 @@ export default function LoanWorkbenchPage() {
     setLoanDetail(mergedDetail);
     setSuggestedGuarantors(normalizedSuggestions);
     setGuarantorRequests(normalizedRequests);
-  }
+  }, [selectedClanId]);
 
   useEffect(() => {
     let alive = true;
@@ -1039,7 +1038,7 @@ export default function LoanWorkbenchPage() {
     return () => {
       alive = false;
     };
-  }, [selectedClanId]);
+  }, [loadLoanList, loadLoanWorkbench, selectedClanId]);
 
   async function handleSelectLoan(loanId: number) {
     setSelectedLoanId(loanId);
@@ -1175,6 +1174,13 @@ export default function LoanWorkbenchPage() {
 
   const workbenchSupportActive =
     cameFromWithdrawalSupport || Boolean(selectedLoanId);
+  const currentClanRole = safeStr(communityRole(currentClan)).toLowerCase();
+  const canOpenCommandRevenue =
+    safeStr(firstTruthy(me?.role, me?.account_role, me?.user_role)).toLowerCase() ===
+      "admin" || currentClanRole === "admin";
+  const revenueRoute = canOpenCommandRevenue
+    ? "/app/command-center/revenue-allocation"
+    : "/app/finance";
 
   if (loading) {
     return (
@@ -2146,7 +2152,7 @@ export default function LoanWorkbenchPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to={selectedLoanId ? "/app/revenue-allocation" : "/app/loans"} style={routeTile(false)}>
+            <OriginLink to={selectedLoanId ? revenueRoute : "/app/loans"} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -2155,10 +2161,12 @@ export default function LoanWorkbenchPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Revenue Allocation
+                {canOpenCommandRevenue ? "Revenue Allocation" : "Finance File"}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Read fee and distribution logic when the finance breakdown matters.
+                {canOpenCommandRevenue
+                  ? "Read fee and distribution logic when the finance breakdown matters."
+                  : "Open the money record visible to you for this community."}
               </div>
             </OriginLink>
 

@@ -5,7 +5,7 @@ import {
   getMyTrustGraph,
   getTrustGraphByGmfnId,
   getTrustGraphByUserId,
-  TrustGraphNodeOut,
+  type TrustGraphNodeOut,
 } from "../lib/api";
 import TrustGraphSummaryCard from "../components/TrustGraphSummaryCard";
 import TrustGraphEdgeList from "../components/TrustGraphEdgeList";

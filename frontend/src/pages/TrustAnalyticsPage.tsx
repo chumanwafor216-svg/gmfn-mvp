@@ -279,12 +279,11 @@ function stopAnalyticsTap(event: React.SyntheticEvent<HTMLElement>) {
 
 function analyticsButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown" | "onTouchStart"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: stopAnalyticsTap,
     onMouseDown: stopAnalyticsTap,
-    onTouchStart: stopAnalyticsTap,
   };
 }
 

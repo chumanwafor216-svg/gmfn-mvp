@@ -215,7 +215,6 @@ function stopGraphTap(e: React.SyntheticEvent) {
 function graphButtonGuardProps() {
   return {
     onPointerDown: stopGraphTap,
-    onTouchStart: stopGraphTap,
     onMouseDown: stopGraphTap,
   };
 }

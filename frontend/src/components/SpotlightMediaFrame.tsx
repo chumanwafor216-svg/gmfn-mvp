@@ -216,10 +216,10 @@ export default function SpotlightMediaFrame(
     <button
       type="button"
       data-media-control="true"
-      onPointerDown={toggleAudio}
+      onPointerDown={stopMediaControlEvent}
       onMouseDown={stopMediaControlEvent}
       onPointerUp={stopMediaControlEvent}
-      onClick={stopMediaControlEvent}
+      onClick={toggleAudio}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;
         toggleAudio(event);

@@ -7,15 +7,15 @@ export default function LiquidityConsolePage(){
 
   const [rows,setRows] = useState<any[]>([])
 
-  async function load(){
-    if(!clanId) return
-    const res = await listBankCredits({ clan_id: clanId })
-    setRows(res || [])
-  }
-
   useEffect(()=>{
+    async function load(){
+      if(!clanId) return
+      const res = await listBankCredits({ clan_id: clanId })
+      setRows(res || [])
+    }
+
     load()
-  },[])
+  },[clanId])
 
   return (
     <div style={{maxWidth:1100,margin:"0 auto"}}>

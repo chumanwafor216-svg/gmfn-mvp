@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -414,11 +414,10 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }
@@ -833,7 +832,7 @@ export default function LoanSuggestionsPage() {
   const supportGap = safeStr(withdrawalTask?.supportGap);
   const withdrawalNote = safeStr(withdrawalTask?.noteInput);
 
-  async function loadSuggestionsForLoan(loanId: number) {
+  const loadSuggestionsForLoan = useCallback(async (loanId: number) => {
     if (!loanId || !selectedClanId) {
       setLoanSummary(null);
       setSuggestionRaw(null);
@@ -858,7 +857,7 @@ export default function LoanSuggestionsPage() {
     setLoanSummary(normalizeLoanSummary(summaryRes));
     setSuggestionRaw(suggestionsRes);
     setSuggestedSupporters(extractSuggestedSupporters(suggestionsRes));
-  }
+  }, [selectedClanId]);
 
   useEffect(() => {
     let alive = true;
@@ -882,7 +881,7 @@ export default function LoanSuggestionsPage() {
     return () => {
       alive = false;
     };
-  }, [activeBorrowerLoan?.id, selectedClanId]);
+  }, [activeBorrowerLoan?.id, loadSuggestionsForLoan, selectedClanId]);
 
   async function handleRefresh() {
     setRefreshing(true);

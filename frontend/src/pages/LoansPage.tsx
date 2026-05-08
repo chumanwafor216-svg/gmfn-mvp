@@ -1,11 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import ExplainToggle from "../components/ExplainToggle";
-import NextActionGuide, {
-  type NextActionGuideItem,
-} from "../components/NextActionGuide";
+import React, { useEffect, useMemo, useState } from "react";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import {
   buildGuidanceSnapshot,
@@ -17,7 +12,6 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
-import { navigateWithOrigin } from "../lib/nav";
 
 type LoanRow = {
   id?: number;
@@ -165,23 +159,6 @@ function isGuarantorLoan(row: LoanRow): boolean {
   return role === "guarantor" || role.includes("guarant");
 }
 
-function safeDateTime(x: any): string {
-  const raw = safeStr(x);
-  if (!raw) return "";
-  const d = new Date(raw);
-  if (!Number.isFinite(d.getTime())) return raw;
-  return d.toLocaleString();
-}
-
-function getLoanAmountText(row: LoanRow): string {
-  const amount = safeStr(row?.amount);
-  const currency = safeStr(row?.currency);
-
-  if (!amount && !currency) return "Amount pending";
-  if (amount && currency) return `${amount} ${currency}`;
-  return amount || currency || "Amount pending";
-}
-
 function getPoolAmountText(payload: any): string {
   const candidates = [
     payload?.available_balance,
@@ -213,14 +190,16 @@ function getPoolCurrency(payload: any): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   const base = institutionalPageCard(bg);
+  const isCustomSurface = safeStr(bg).includes("gradient(");
   return {
     ...base,
-    background:
-      bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
-        : bg,
-    border: "1px solid rgba(123,161,204,0.20)",
-    boxShadow: "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)",
+    background: isCustomSurface ? bg : base.background,
+    border: isCustomSurface
+      ? "1px solid rgba(242,207,119,0.26)"
+      : "1px solid rgba(216,227,238,0.92)",
+    boxShadow: isCustomSurface
+      ? "0 22px 48px rgba(2,6,23,0.22), 0 6px 14px rgba(15,23,42,0.05)"
+      : "0 18px 40px rgba(7,20,36,0.09), inset 0 1px 0 rgba(255,255,255,0.88)",
   };
 }
 
@@ -228,12 +207,9 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   const base = institutionalSoftCard(bg);
   return {
     ...base,
-    background:
-      bg === "#F8FBFF"
-        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
-        : bg,
-    border: "1px solid rgba(123,161,204,0.20)",
-    boxShadow: "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+    border: "1px solid rgba(216,227,238,0.92)",
+    boxShadow:
+      "0 14px 30px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
   };
 }
 
@@ -241,12 +217,9 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   const base = institutionalInnerCard(bg);
   return {
     ...base,
-    background:
-      bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
-        : bg,
-    border: "1px solid rgba(123,161,204,0.14)",
-    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+    border: "1px solid rgba(216,227,238,0.88)",
+    boxShadow:
+      "0 12px 26px rgba(7,20,36,0.07), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -254,12 +227,9 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   const base = institutionalStatTile(bg);
   return {
     ...base,
-    background:
-      bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
-        : bg,
-    border: "1px solid rgba(123,161,204,0.14)",
-    boxShadow: "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+    border: "1px solid rgba(216,227,238,0.88)",
+    boxShadow:
+      "0 12px 26px rgba(7,20,36,0.07), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -284,30 +254,31 @@ function stableTapStyle(): React.CSSProperties {
 function routeTile(primary = false): React.CSSProperties {
   return {
     ...stableTapStyle(),
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    minHeight: 104,
+    display: "grid",
+    gridTemplateColumns: "44px minmax(0, 1fr)",
+    alignItems: "center",
+    gap: 10,
+    minHeight: 88,
     minWidth: 0,
-    borderRadius: 18,
+    borderRadius: 20,
     border: primary
-      ? "1px solid rgba(29,95,212,0.24)"
-      : "1px solid rgba(88,116,148,0.18)",
+      ? "1px solid rgba(31,115,224,0.28)"
+      : "1px solid rgba(216,227,238,0.94)",
     background: primary
-      ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
-      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    padding: 16,
+      ? "linear-gradient(180deg, #eff6ff 0%, #dcecff 100%)"
+      : "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
+    padding: 12,
     textDecoration: "none",
     boxShadow: primary
-      ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
-      : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+      ? "0 16px 34px rgba(19,95,209,0.14), inset 0 1px 0 rgba(255,255,255,0.90)"
+      : "0 12px 28px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#9CB4CF",
+    color: "#456078",
     fontWeight: 900,
     letterSpacing: 0.35,
     textTransform: "uppercase",
@@ -322,11 +293,11 @@ function badge(primary = false): React.CSSProperties {
     minHeight: 32,
     borderRadius: 999,
     padding: "7px 12px",
-    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
+    background: primary ? "rgba(234,243,255,0.96)" : "rgba(244,248,255,0.94)",
     border: primary
-      ? "1px solid rgba(123,161,204,0.24)"
-      : "1px solid rgba(123,161,204,0.14)",
-    color: primary ? "#CFE3FF" : "#E6EEF8",
+      ? "1px solid rgba(31,115,224,0.24)"
+      : "1px solid rgba(184,201,220,0.92)",
+    color: primary ? "#0B4EB3" : "#0E3A63",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -339,30 +310,58 @@ function collapseToggle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
-    minWidth: 114,
-    padding: "9px 13px",
-    borderRadius: 12,
-    border: "1px solid rgba(121,149,190,0.20)",
+    minHeight: 48,
+    minWidth: 126,
+    padding: "10px 16px",
+    borderRadius: 999,
+    border: "1px solid rgba(184,201,220,0.92)",
     background:
-      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    color: "#E6EEF8",
-    fontWeight: 800,
+      "linear-gradient(180deg, #ffffff 0%, #eef6ff 100%)",
+    color: "#0B4EB3",
+    fontWeight: 900,
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     boxShadow:
-      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 10px 22px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#C8D8EA",
+    color: "#46566D",
     fontSize: 14.5,
     lineHeight: 1.75,
+  };
+}
+
+function routeIconCircle(primary = false): React.CSSProperties {
+  return {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: primary
+      ? "linear-gradient(180deg, #1F73E0 0%, #0B4EB3 100%)"
+      : "linear-gradient(180deg, #EEF6FF 0%, #E5EEF8 100%)",
+    color: primary ? "#FFFFFF" : "#0B4EB3",
+    fontSize: 24,
+    boxShadow: primary
+      ? "0 10px 20px rgba(19,95,209,0.22)"
+      : "inset 0 1px 0 rgba(255,255,255,0.95)",
+  };
+}
+
+function routeTitleStyle(): React.CSSProperties {
+  return {
+    color: "#07172C",
+    fontWeight: 950,
+    fontSize: 15.5,
+    lineHeight: 1.18,
   };
 }
 
@@ -409,10 +408,7 @@ function normalizeCollapseState(raw: any): CollapseState {
 }
 
 export default function LoansPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
-  const loansRevealRef = useRef<number | null>(null);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -426,7 +422,6 @@ export default function LoansPage() {
   );
 
   const [loading, setLoading] = useState(true);
-  const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [loans, setLoans] = useState<LoanRow[]>([]);
@@ -447,15 +442,6 @@ export default function LoansPage() {
   }, []);
 
   useEffect(() => {
-    return () => {
-      if (typeof window !== "undefined" && loansRevealRef.current !== null) {
-        window.cancelAnimationFrame(loansRevealRef.current);
-        loansRevealRef.current = null;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     writeLocalJSON(LOANS_UI_STORAGE_KEY, collapsed);
   }, [collapsed]);
 
@@ -466,10 +452,8 @@ export default function LoansPage() {
       setLoading(true);
 
       try {
-        const mePromise =
-          typeof (api as any).getMe === "function"
-            ? (api as any).getMe().catch(() => null)
-            : Promise.resolve(null);
+        const scopedClanOptions =
+          selectedClanId > 0 ? { clan_id: selectedClanId } : undefined;
 
         const clanPromise =
           typeof (api as any).getCurrentClan === "function"
@@ -478,12 +462,14 @@ export default function LoansPage() {
 
         const poolPromise =
           typeof (api as any).getPoolMe === "function"
-            ? (api as any).getPoolMe("NGN", 20).catch(() => null)
+            ? (api as any)
+                .getPoolMe("NGN", 20, scopedClanOptions)
+                .catch(() => null)
             : Promise.resolve(null);
 
         const loansPromise =
           typeof (api as any).listMyLoans === "function"
-            ? (api as any).listMyLoans().catch(() => [])
+            ? (api as any).listMyLoans(scopedClanOptions).catch(() => [])
             : Promise.resolve([]);
 
         const guarantorPromise =
@@ -497,9 +483,8 @@ export default function LoansPage() {
                 .catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] });
 
-        const [meRes, clanRes, poolRes, loansRes, guarantorRes, guidanceRes] =
+        const [clanRes, poolRes, loansRes, guarantorRes, guidanceRes] =
           await Promise.all([
-            mePromise,
             clanPromise,
             poolPromise,
             loansPromise,
@@ -522,7 +507,6 @@ export default function LoansPage() {
           normalizeGuarantorInboxRow(row, index)
         );
 
-        setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setPoolInfo(poolRes);
         setLoans(filteredLoans);
@@ -537,18 +521,6 @@ export default function LoansPage() {
       alive = false;
     };
   }, [selectedClanId]);
-
-  const memberName = useMemo(() => {
-    return (
-      firstTruthy(
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Member"
-    );
-  }, [me]);
 
   const communityLabel = useMemo(() => {
     return (
@@ -622,224 +594,17 @@ export default function LoansPage() {
     }
 
     return {
-      title: "Your support activity is currently calm",
+      title: "Your support activity is calm right now.",
       detail:
         "No urgent borrower-side or guarantor-side support pressure is currently shown.",
     };
   }, [guarantorInbox, borrowerLoans, guarantorLoans, guidance]);
-
-  const supportFlowActive =
-    guarantorInbox.length > 0 || borrowerLoans.length > 0 || guarantorLoans.length > 0;
-
-  const loansNextActionItems = useMemo<NextActionGuideItem[]>(
-    () => [
-      {
-        id: "support-summary",
-        label: "Check support summary",
-        detail: `See ${activeLoans.length} active support item${activeLoans.length === 1 ? "" : "s"} and ${guarantorInbox.length} waiting guarantor request${guarantorInbox.length === 1 ? "" : "s"}.`,
-        technical: "Loans & Support summary",
-        keywords: ["summary", "support", "loan", "borrow", "lend"],
-        tone: "primary",
-      },
-      {
-        id: "start-support",
-        label: "Start support request",
-        detail:
-          "Begin or continue the borrower-side request from the selected Marketplace.",
-        technical: "Marketplace support path",
-        to: "/app/marketplace#marketplace-loans-support",
-        keywords: ["borrow", "loan", "request", "support", "start"],
-        tone: supportFlowActive ? "secondary" : "primary",
-      },
-      {
-        id: "current-focus",
-        label: "Show what needs attention",
-        detail: supportFocus.title,
-        technical: "Current support focus",
-        keywords: ["attention", "waiting", "focus", "urgent", "next"],
-        tone: supportFlowActive ? "primary" : "secondary",
-      },
-      {
-        id: "borrower-flow",
-        label: "My borrowing side",
-        detail: `Open borrower-side support items. Current count: ${borrowerLoans.length}.`,
-        technical: "Borrower-side support flow",
-        keywords: ["borrower", "borrow", "my loan", "my support"],
-        tone: borrowerLoans.length > 0 ? "primary" : "secondary",
-      },
-      {
-        id: "guarantor-queue",
-        label: "Guarantee for someone",
-        detail: `Open guarantor requests and guarantor-side items. Waiting requests: ${guarantorInbox.length}.`,
-        technical: "Guarantor-side queue",
-        keywords: ["guarantor", "guarantee", "pledge", "someone waiting"],
-        tone: guarantorInbox.length > 0 ? "primary" : "secondary",
-      },
-      {
-        id: "guarantor-inbox",
-        label: "Open guarantor inbox",
-        detail: "Use this when someone is waiting for your guarantor decision.",
-        technical: "Incoming guarantor requests",
-        to: "/app/guarantor-inbox",
-        keywords: ["inbox", "guarantor inbox", "decision", "approve"],
-        tone: guarantorInbox.length > 0 ? "primary" : "secondary",
-      },
-      {
-        id: "readiness",
-        label: "Open Loan Readiness",
-        detail:
-          "Check whether the support flow looks ready enough for the next step.",
-        technical: "Loan readiness",
-        to: "/app/loan-readiness",
-        keywords: ["readiness", "ready", "check", "qualify"],
-      },
-      {
-        id: "suggestions",
-        label: "Open Loan Suggestions",
-        detail:
-          "Open suggested next steps around the active support or loan flow.",
-        technical: "Loan suggestions",
-        to: "/app/loan-suggestions",
-        keywords: ["suggest", "suggestion", "advice", "next step"],
-      },
-      {
-        id: "workbench",
-        label: "Open Loan Workbench",
-        detail: "Use the deeper workbench for support handling and review.",
-        technical: "Loan workbench",
-        to: "/app/loan-workbench",
-        keywords: ["workbench", "review", "deeper", "handle"],
-      },
-      {
-        id: "money-in",
-        label: "Add money",
-        detail: "Open payment into the pool when the next step is money in.",
-        technical: "Payment pool",
-        to: "/app/payment/pool",
-        keywords: ["deposit", "pay in", "money in", "add money"],
-      },
-      {
-        id: "money-out",
-        label: "Take money out",
-        detail: "Open withdrawal instructions when the next step is money out.",
-        technical: "Withdrawal instructions",
-        to: "/app/withdrawal-instructions",
-        keywords: ["withdraw", "cash out", "take money", "money out"],
-      },
-      {
-        id: "earnings",
-        label: "Open Guarantor Earnings",
-        detail: "Read the reward side of guarantor participation.",
-        technical: "Guarantor earnings",
-        to: "/app/guarantor-earnings",
-        keywords: ["earnings", "reward", "guarantor reward"],
-      },
-      {
-        id: "finance",
-        label: "Open Finance",
-        detail: "Open the wider finance record across communities.",
-        technical: "Finance record",
-        to: "/app/finance",
-        keywords: ["finance", "money record", "balance"],
-      },
-      {
-        id: "spotlight",
-        label: "Open spotlight guide",
-        detail:
-          "Go to the guided spotlight family for free spotlight, subscription spotlight, Vault, or shop setup.",
-        technical: "Guided spotlight",
-        to: "/app/community?guide=spotlight",
-        keywords: [
-          "spotlight",
-          "free spotlight",
-          "subscription spotlight",
-          "vault",
-          "shop setup",
-        ],
-      },
-      {
-        id: "marketplace",
-        label: "Return to Marketplace",
-        detail: "Go back to the selected community Marketplace.",
-        technical: "Marketplace",
-        to: "/app/marketplace",
-        keywords: ["marketplace", "community", "shop"],
-      },
-      {
-        id: "notifications",
-        label: "Open Action Inbox",
-        detail: "Open notifications when someone is waiting directly on you.",
-        technical: "Notifications",
-        to: "/app/notifications",
-        keywords: ["notifications", "waiting", "messages", "action inbox"],
-      },
-    ],
-    [
-      activeLoans.length,
-      borrowerLoans.length,
-      guarantorInbox.length,
-      supportFlowActive,
-      supportFocus.title,
-    ]
-  );
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
       [key]: !prev[key],
     }));
-  }
-
-  function openLoansRoute(to: string) {
-    navigateWithOrigin(navigate, to, location);
-  }
-
-  function revealLoansSection(targetId: string, attempt = 0) {
-    if (typeof document === "undefined" || typeof window === "undefined") return;
-
-    if (loansRevealRef.current !== null) {
-      window.cancelAnimationFrame(loansRevealRef.current);
-      loansRevealRef.current = null;
-    }
-
-    const target = document.getElementById(targetId);
-    if (!target) {
-      if (attempt >= 6) return;
-      loansRevealRef.current = window.requestAnimationFrame(() => {
-        revealLoansSection(targetId, attempt + 1);
-      });
-      return;
-    }
-
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function openLoansSection(key: keyof CollapseState, targetId: string) {
-    setCollapsed((prev) => ({
-      ...prev,
-      [key]: false,
-    }));
-    revealLoansSection(targetId);
-  }
-
-  function handleLoansNextAction(item: NextActionGuideItem) {
-    switch (item.id) {
-      case "support-summary":
-        openLoansSection("overview", "loans-support-summary");
-        break;
-      case "current-focus":
-        openLoansSection("focus", "loans-current-focus");
-        break;
-      case "borrower-flow":
-        openLoansSection("borrower", "loans-borrower-flow");
-        break;
-      case "guarantor-queue":
-        openLoansSection("guarantor", "loans-guarantor-queue");
-        break;
-      default:
-        if (item.to) openLoansRoute(item.to);
-        break;
-    }
   }
 
   if (loading) {
@@ -854,7 +619,7 @@ export default function LoansPage() {
         }}
       >
         <PageTopNav
-          sectionLabel="Loans & Support"
+          sectionLabel="Focused Task"
           title="Loans & Support"
           subtitle="Loading the support page..."
           homeTo="/app/dashboard"
@@ -863,7 +628,7 @@ export default function LoansPage() {
         />
 
         <section style={pageCard("#FFFFFF")}>
-          <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
+          <div style={{ ...helperText(), lineHeight: 1.8 }}>
             Loading loans and support...
           </div>
         </section>
@@ -882,95 +647,121 @@ export default function LoansPage() {
       }}
     >
       <PageTopNav
-        sectionLabel="Loans & Support"
+        sectionLabel="Focused Task"
         title="Loans & Support"
-        subtitle="The live one-community workspace for borrower-side steps, guarantor requests, repayment movement, and the support routes around them."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
         backTo="/app/dashboard"
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This page runs the live Loans & Support workflow for this community: borrower-side steps, guarantor requests, repayment movement, and the next support route."
-        why="Finance keeps the wider money history across communities. Loans keeps the active support work for this one community so the story stays clear."
-        next="Start with the support summary here, then move into readiness, suggestions, workbench, or repayment depending on the pressure you need to handle now."
-        tone="blue"
-      />
-
-      <NextActionGuide
-        storageKey="gmfn.loans.nextActionGuide.v1"
-        compact={isCompact}
-        items={loansNextActionItems}
-        onSelect={handleLoansNextAction}
-        intro="Say what you want in normal words, like borrow, guarantee, pay in, withdraw, readiness, suggestion, or waiting request. GSN will point you to the closest support path."
-      />
-
       <section
         id="loans-support-overview"
-        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
+        style={pageCard(
+          "radial-gradient(circle at top right, rgba(242,207,119,0.20), transparent 34%), linear-gradient(135deg, #061827 0%, #0A2A48 62%, #0B4EB3 100%)"
+        )}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 320px",
-            gap: 16,
-            alignItems: "start",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.08fr) 280px",
+            gap: 18,
+            alignItems: "center",
           }}
         >
           <div>
-            <div style={sectionLabel()}>Support overview</div>
-
             <div
               style={{
-                marginTop: 10,
                 color: "#F8FBFF",
                 fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
+                fontSize: isCompact ? 34 : 46,
                 lineHeight: 1.1,
               }}
             >
-              Loans and support for {memberName}
-            </div>
-
-            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              This keeps the support flow calmer. Use it for borrower-side progress, guarantor-side responsibility, payment, withdrawal, or support readiness.
+              Loans & Support
             </div>
 
             <div
               style={{
-                marginTop: 14,
-                display: "flex",
+                width: 54,
+                height: 4,
+                borderRadius: 999,
+                marginTop: 12,
+                background:
+                  "linear-gradient(90deg, #F2CF77 0%, rgba(242,207,119,0.18) 100%)",
+              }}
+            />
+
+            <div style={{ marginTop: 14, ...helperText(), color: "#D7E3F1", maxWidth: 640 }}>
+              Your community workspace for borrower steps, guarantor responses, repayment movement, and support routes.
+            </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                display: "grid",
                 gap: 8,
-                flexWrap: "wrap",
+                maxWidth: 580,
               }}
             >
-              <span style={badge(true)}>Community: {communityLabel}</span>
+              <span style={badge(false)}>👥 Community: {communityLabel}</span>
+              <span style={badge(false)}>✅ Active support items: {activeLoans.length}</span>
               <span style={badge(false)}>
-                Active support items: {activeLoans.length}
-              </span>
-              <span style={badge(false)}>
-                Pending guarantor requests: {guarantorInbox.length}
+                🕒 Pending guarantor requests: {guarantorInbox.length}
               </span>
             </div>
           </div>
 
-          <div style={softCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Pool position</div>
+          <div
+            style={{
+              ...softCard("#FFFFFF"),
+              minHeight: 230,
+              display: "grid",
+              alignContent: "center",
+              justifyItems: "center",
+              textAlign: "center",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.08) 100%)",
+              border: "1px solid rgba(255,255,255,0.24)",
+              boxShadow:
+                "0 18px 40px rgba(2,6,23,0.22), inset 0 1px 0 rgba(255,255,255,0.18)",
+            }}
+          >
+            <div
+              style={{
+                width: 76,
+                height: 76,
+                borderRadius: 999,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background:
+                  "linear-gradient(180deg, rgba(242,207,119,0.95) 0%, rgba(184,137,37,0.95) 100%)",
+                color: "#07172C",
+                fontSize: 34,
+                boxShadow: "0 16px 32px rgba(2,6,23,0.28)",
+              }}
+            >
+              🪙
+            </div>
+            <div style={{ marginTop: 14, ...sectionLabel(), color: "#D7E3F1" }}>
+              Pool position
+            </div>
 
             <div
               style={{
-                marginTop: 10,
-                color: "#F8FBFF",
+                marginTop: 8,
+                color: "#F2CF77",
                 fontWeight: 900,
-                fontSize: 24,
+                fontSize: 34,
                 lineHeight: 1.2,
               }}
             >
-              {poolAmount} {poolCurrency}
+              {poolAmount}
             </div>
 
-            <div style={{ marginTop: 10, ...helperText() }}>
+            <div style={{ color: "#D7E3F1", fontWeight: 900 }}>{poolCurrency}</div>
+
+            <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1", maxWidth: 220 }}>
               This shows the pool amount currently visible to you in this community.
             </div>
           </div>
@@ -987,10 +778,13 @@ export default function LoansPage() {
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Support summary</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              A quick reading of borrower-side and guarantor-side load.
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <span style={routeIconCircle(false)}>📊</span>
+            <div>
+              <div style={sectionLabel()}>Support summary</div>
+              <div style={{ marginTop: 4, ...helperText() }}>
+                Overview of your support and queues.
+              </div>
             </div>
           </div>
 
@@ -999,37 +793,26 @@ export default function LoansPage() {
             onClick={() => toggleSection("overview")}
             style={collapseToggle()}
           >
-            {collapsed.overview ? "Open" : "Collapse"}
+            {collapsed.overview ? "View details" : "View details ›"}
           </button>
         </div>
-
-        <ExplainToggle
-          label="What this summary shows"
-          what="This section gives a quick reading of borrower-side load, guarantor-side load, and the wider support pressure around you."
-          why="It helps you decide whether to continue deeper into support, check a waiting guarantor request, or move into a money route."
-          next="Read the counts first, then open the borrower or guarantor sections below if one side needs attention."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
 
         {!collapsed.overview ? (
           <div
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(5, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 12,
             }}
           >
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Active loans</div>
+            <div style={statTile("#F8FBFF")}>
+              <div style={sectionLabel()}>💳 Active loans</div>
               <div
                 style={{
                   marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 24,
+                  color: "#0B4EB3",
+                  fontSize: 26,
                   fontWeight: 900,
                 }}
               >
@@ -1038,12 +821,12 @@ export default function LoansPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Borrower side</div>
+              <div style={sectionLabel()}>👤 Borrower side</div>
               <div
                 style={{
                   marginTop: 8,
                   color: "#92400E",
-                  fontSize: 24,
+                  fontSize: 26,
                   fontWeight: 900,
                 }}
               >
@@ -1052,12 +835,12 @@ export default function LoansPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Guarantor side</div>
+              <div style={sectionLabel()}>🛡️ Guarantor side</div>
               <div
                 style={{
                   marginTop: 8,
-                  color: "#1D4ED8",
-                  fontSize: 24,
+                  color: "#0B4EB3",
+                  fontSize: 26,
                   fontWeight: 900,
                 }}
               >
@@ -1065,13 +848,13 @@ export default function LoansPage() {
               </div>
             </div>
 
-            <div style={statTile("#FFF5F5")}>
-              <div style={sectionLabel()}>Pending requests</div>
+            <div style={{ ...statTile("#FFF5F5"), gridColumn: "span 1" }}>
+              <div style={sectionLabel()}>⏳ Pending requests</div>
               <div
                 style={{
                   marginTop: 8,
                   color: "#991B1B",
-                  fontSize: 24,
+                  fontSize: 26,
                   fontWeight: 900,
                 }}
               >
@@ -1079,13 +862,13 @@ export default function LoansPage() {
               </div>
             </div>
 
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Pool</div>
+            <div style={{ ...statTile("#F0FBF6"), gridColumn: "span 2" }}>
+              <div style={sectionLabel()}>🪙 Pool</div>
               <div
                 style={{
                   marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 18,
+                  color: "#168254",
+                  fontSize: 22,
                   fontWeight: 900,
                   lineHeight: 1.25,
                 }}
@@ -1100,530 +883,252 @@ export default function LoansPage() {
       <section id="loans-current-focus" style={pageCard("#FFFFFF")}>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 1px minmax(0, 1fr)",
+            gap: 18,
+            alignItems: "stretch",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Current support focus</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Keep the most important support action near the top.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("focus")}
-            style={collapseToggle()}
-          >
-            {collapsed.focus ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.focus ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
-            <div style={innerCard("#FCFEFF")}>
+          <div style={{ display: "grid", gridTemplateColumns: "96px minmax(0, 1fr)", gap: 16 }}>
+            <span style={{ ...routeIconCircle(false), width: 86, height: 86, fontSize: 46 }}>🎯</span>
+            <div>
+              <div style={sectionLabel()}>Current support focus</div>
               <div
                 style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: isCompact ? 22 : 28,
-                  lineHeight: 1.15,
+                  marginTop: 12,
+                  color: "#07172C",
+                  fontSize: 22,
+                  fontWeight: 950,
+                  lineHeight: 1.25,
                 }}
               >
                 {supportFocus.title}
               </div>
-
-              <div style={{ marginTop: 12, ...helperText() }}>
-                {supportFocus.detail}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  ...helperText(),
-                }}
-              >
-                Use Next routes below when you are ready to move from this support picture into the next support page.
-              </div>
-            </div>
-
-            <div style={softCard("#F8FBFF")}>
-              <div style={sectionLabel()}>How to read this page</div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <div style={helperText()}>
-                  Borrower-side load means your own support request flow is active.
-                </div>
-                <div style={helperText()}>
-                  Guarantor-side load means you are attached to someone else's support flow.
-                </div>
-                <div style={helperText()}>
-                  Pending guarantor requests mean someone is waiting for your decision now.
-                </div>
-              </div>
+              <div style={{ marginTop: 10, ...helperText() }}>{supportFocus.detail}</div>
             </div>
           </div>
-        ) : null}
-      </section>
 
-      <section id="loans-borrower-flow" style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
+          {!isCompact ? <div style={{ background: "#D8E3EE" }} /> : null}
+
           <div>
-            <div style={sectionLabel()}>Borrower-side support flow</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              These are your active borrower-side support items.
+            <div style={sectionLabel()}>How to read this page</div>
+            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+              <div style={helperText()}>
+                • Borrower-side load = your own support request flow.
+              </div>
+              <div style={helperText()}>
+                • Guarantor-side load = you are attached to someone else's support flow.
+              </div>
+              <div style={helperText()}>
+                • Pending requests = someone is waiting for your decision.
+              </div>
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("borrower")}
-            style={collapseToggle()}
-          >
-            {collapsed.borrower ? "Open" : "Collapse"}
-          </button>
         </div>
-
-        {!collapsed.borrower ? (
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            {borrowerLoans.length === 0 ? (
-              <div style={{ color: "rgba(230,238,248,0.76)", lineHeight: 1.8 }}>
-                No borrower-side support flow is active right now.
-              </div>
-            ) : (
-              borrowerLoans.map((row, index) => (
-                <div key={`${row.id || index}`} style={innerCard("#FCFEFF")}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: isCompact
-                        ? "1fr"
-                        : "minmax(0, 1.12fr) minmax(0, 0.88fr) auto",
-                      gap: 12,
-                      alignItems: "center",
-                    }}
-                  >
-                    <div>
-                      <div
-                        style={{
-                          color: "#F8FBFF",
-                          fontSize: 17,
-                          fontWeight: 900,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {safeStr(row.title || "Support item")}
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span style={badge(true)}>{getLoanAmountText(row)}</span>
-                        <span style={badge(false)}>
-                          Status: {safeStr(row.status || "Open")}
-                        </span>
-                        <span style={badge(false)}>
-                          Role: {safeStr(row.role || "Borrower")}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div style={{ ...helperText(), fontSize: 13 }}>
-                      {[
-                        row.borrowerName ? `Borrower: ${row.borrowerName}` : "",
-                        row.createdAt ? `Started: ${safeDateTime(row.createdAt)}` : "",
-                      ]
-                        .filter(Boolean)
-                        .join(" | ") || "This borrower-side support item is still active."}
-                    </div>
-
-                    <div style={{ ...helperText(), fontSize: 13 }}>
-                      Use Next routes below when you need to continue this borrower-side support item.
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        ) : null}
-      </section>
-
-      <section id="loans-guarantor-queue" style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Guarantor-side queue</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              These are the places where other people are waiting on you.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("guarantor")}
-            style={collapseToggle()}
-          >
-            {collapsed.guarantor ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.guarantor ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#FFFBEF")}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Pending guarantor requests
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                {guarantorInbox.length === 0 ? (
-                  <div style={helperText()}>
-                    No pending guarantor request is currently shown.
-                  </div>
-                ) : (
-                  guarantorInbox.map((row, index) => (
-                    <div key={`${row.id}-${index}`} style={innerCard("#FFFFFF")}>
-                      <div
-                        style={{
-                          color: "#F8FBFF",
-                          fontWeight: 900,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {row.loanId
-                          ? `Guarantor request on loan #${row.loanId}`
-                          : "Guarantor request"}
-                      </div>
-
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                        {[
-                          row.borrowerName ? `Borrower: ${row.borrowerName}` : "",
-                          row.pledgeAmount ? `Pledge: ${row.pledgeAmount}` : "",
-                          row.createdAt ? `Created: ${safeDateTime(row.createdAt)}` : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" | ") || "A borrower is waiting for your decision."}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Active guarantor-side support items
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                {guarantorLoans.length === 0 ? (
-                  <div style={helperText()}>
-                    No active guarantor-side support item is currently shown.
-                  </div>
-                ) : (
-                  guarantorLoans.slice(0, 6).map((row, index) => (
-                    <div key={`${row.id || index}`} style={innerCard("#FFFFFF")}>
-                      <div
-                        style={{
-                          color: "#F8FBFF",
-                          fontWeight: 900,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {safeStr(row.title || "Guarantor-side support item")}
-                      </div>
-
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                        {[
-                          `Status: ${safeStr(row.status || "Open")}`,
-                          row.borrowerName ? `Borrower: ${row.borrowerName}` : "",
-                          row.createdAt ? `Started: ${safeDateTime(row.createdAt)}` : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" | ")}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
       </section>
 
       <section id="loans-next-routes" style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <span style={routeIconCircle(false)}>🧭</span>
           <div>
-            <div style={sectionLabel()}>
-              {supportFlowActive ? "Next support routes" : "Next routes"}
-            </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              {supportFlowActive
-                ? "Stay inside Loans & Support and move only to the next support step."
-                : "Move from this overview into the next page you need."}
+            <div style={sectionLabel()}>Live support modules</div>
+            <div style={{ marginTop: 4, ...helperText() }}>
+              Choose the next route based on your task.
             </div>
           </div>
-
-          <button
-            type="button"
-            onClick={() => toggleSection("routes")}
-            style={collapseToggle()}
-          >
-            {collapsed.routes ? "Open" : "Collapse"}
-          </button>
         </div>
 
-        {!collapsed.routes ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <OriginLink to="/app/marketplace#marketplace-loans-support" style={routeTile(true)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Start Support Request
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gap: 12,
+          }}
+        >
+          <OriginLink to="/app/marketplace#marketplace-loans-support" style={routeTile(true)}>
+            <span style={routeIconCircle(true)}>▶️</span>
+            <div>
+              <div style={routeTitleStyle()}>Start Support Request</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Begin or continue the borrower-side flow.
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Begin or continue the borrower-side support flow.
-              </div>
-            </OriginLink>
+            </div>
+          </OriginLink>
 
-            {!supportFlowActive ? (
-              <>
-                <OriginLink to="/app/payment/pool" style={routeTile(false)}>
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Money In
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Open this when the next step is payment into the pool.
-                  </div>
-                </OriginLink>
+          <OriginLink to="/app/payment/pool" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>⬇️</span>
+            <div>
+              <div style={routeTitleStyle()}>Money In</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Use when the next step is payment into the pool.
+              </div>
+            </div>
+          </OriginLink>
 
-                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Money Out
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Open this when the next step is withdrawal handling.
-                  </div>
-                </OriginLink>
-              </>
-            ) : null}
+          <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>⬆️</span>
+            <div>
+              <div style={routeTitleStyle()}>Money Out</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Use when the next step is withdrawal handling.
+              </div>
+            </div>
+          </OriginLink>
 
-            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Loan Readiness
+          <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>🛡️</span>
+            <div>
+              <div style={routeTitleStyle()}>Loan Readiness</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Check whether the support flow looks ready.
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Read whether the current support flow looks ready.
-              </div>
-            </OriginLink>
+            </div>
+          </OriginLink>
 
-            <OriginLink to="/app/dashboard#focus-commitments" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Open Focus Commitments
+          <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>💡</span>
+            <div>
+              <div style={routeTitleStyle()}>Loan Suggestions</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Open when you need suggestions.
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open the Dashboard focus section when savings discipline, repayment
-                follow-through, or a business target needs a steadier visible plan.
-              </div>
-            </OriginLink>
+            </div>
+          </OriginLink>
 
-            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Loan Suggestions
+          <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>👥</span>
+            <div>
+              <div style={routeTitleStyle()}>Incoming Guarantor Requests</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Open the guarantor decision queue.
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when you need the next suggestions around the support flow.
-              </div>
-            </OriginLink>
+            </div>
+          </OriginLink>
 
-            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Loan Workbench
+          <OriginLink to="/app/notifications" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>🔔</span>
+            <div>
+              <div style={routeTitleStyle()}>Action Inbox</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Open when someone is waiting on your response.
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this for deeper support handling and workbench-style activity.
-              </div>
-            </OriginLink>
+            </div>
+          </OriginLink>
 
-            <OriginLink to="/app/guarantor-earnings" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Guarantor Earnings
+          <OriginLink to="/app/guarantor-earnings" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>🏆</span>
+            <div>
+              <div style={routeTitleStyle()}>Guarantor Earnings</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                Read the guarantor reward side separately.
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Read the guarantor-side reward side separately.
-              </div>
-            </OriginLink>
+            </div>
+          </OriginLink>
 
-            <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Incoming Guarantor Requests
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open the dedicated guarantor decision queue.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/notifications" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Action Inbox
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Open this when someone is waiting directly on your response.
-              </div>
-            </OriginLink>
-
-            <OriginLink to="/app/marketplace" style={routeTile(false)}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                Marketplace
-              </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+          <OriginLink to="/app/marketplace" style={routeTile(false)}>
+            <span style={routeIconCircle(false)}>🏪</span>
+            <div>
+              <div style={routeTitleStyle()}>Marketplace</div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
                 Return to your community page.
               </div>
-            </OriginLink>
+            </div>
+          </OriginLink>
+        </div>
+      </section>
+
+      <section id="loans-queues-flows" style={pageCard("#FFFFFF")}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <span style={routeIconCircle(false)}>👥</span>
+          <div>
+            <div style={sectionLabel()}>Queues & flows</div>
+            <div style={{ marginTop: 4, ...helperText() }}>
+              Live status of your support flows.
+            </div>
           </div>
-        ) : null}
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 14,
+          }}
+        >
+          <div
+            style={{
+              ...innerCard("#F4F8FF"),
+              display: "grid",
+              gridTemplateColumns: "76px minmax(0, 1fr)",
+              gap: 14,
+              alignItems: "center",
+            }}
+          >
+            <span style={{ ...routeIconCircle(false), width: 64, height: 64, fontSize: 34 }}>
+              👤
+            </span>
+            <div>
+              <div style={{ ...routeTitleStyle(), color: "#0B4EB3" }}>
+                Borrower-side support flow
+              </div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                {borrowerLoans.length > 0
+                  ? `${borrowerLoans.length} borrower-side support flow is active.`
+                  : "No borrower-side support flow is active right now."}
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              ...innerCard("#FAF7FF"),
+              display: "grid",
+              gridTemplateColumns: "76px minmax(0, 1fr)",
+              gap: 14,
+              alignItems: "center",
+            }}
+          >
+            <span style={{ ...routeIconCircle(false), width: 64, height: 64, fontSize: 34 }}>
+              🧑‍🤝‍🧑
+            </span>
+            <div>
+              <div style={{ ...routeTitleStyle(), color: "#5B21B6" }}>
+                Guarantor-side queue
+              </div>
+              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                {guarantorInbox.length > 0
+                  ? `${guarantorInbox.length} pending guarantor request is currently shown.`
+                  : "No pending guarantor request is currently shown."}
+              </div>
+              <div style={{ marginTop: 3, ...helperText(), fontSize: 13 }}>
+                {guarantorLoans.length > 0
+                  ? `${guarantorLoans.length} active guarantor-side support item is shown.`
+                  : "No active guarantor-side support item is currently shown."}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        style={{
+          ...pageCard("#FFFBEF"),
+          border: "1px solid rgba(214,170,69,0.42)",
+          display: "grid",
+          gridTemplateColumns: isCompact ? "1fr" : "60px minmax(0, 1fr)",
+          gap: 14,
+          alignItems: "center",
+        }}
+      >
+        <span style={routeIconCircle(false)}>ℹ️</span>
+        <div>
+          <div style={{ color: "#07172C", fontWeight: 950, lineHeight: 1.35 }}>
+            Loans & Support stays community-specific. Finance shows the money picture;
+            Loans & Support handles live workflow and decisions.
+          </div>
+        </div>
       </section>
 
     </div>

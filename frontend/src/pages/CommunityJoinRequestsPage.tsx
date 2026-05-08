@@ -692,7 +692,6 @@ export default function CommunityJoinRequestsPage() {
                 style={actionBtn(false)}
                 onPointerDown={consumeActionEvent}
                 onMouseDown={consumeActionEvent}
-                onTouchStart={consumeActionEvent}
               >
                 Open Activation Page
               </a>
@@ -850,7 +849,6 @@ export default function CommunityJoinRequestsPage() {
                       type="button"
                       onPointerDown={consumeActionEvent}
                       onMouseDown={consumeActionEvent}
-                      onTouchStart={consumeActionEvent}
                       onClick={() => handleVote(item.id, "approve")}
                       disabled={isBusy}
                       style={actionBtn(true, isBusy)}
@@ -862,7 +860,6 @@ export default function CommunityJoinRequestsPage() {
                       type="button"
                       onPointerDown={consumeActionEvent}
                       onMouseDown={consumeActionEvent}
-                      onTouchStart={consumeActionEvent}
                       onClick={() => handleVote(item.id, "reject")}
                       disabled={isBusy}
                       style={actionBtn(false, isBusy)}
@@ -875,7 +872,6 @@ export default function CommunityJoinRequestsPage() {
                         type="button"
                         onPointerDown={consumeActionEvent}
                         onMouseDown={consumeActionEvent}
-                        onTouchStart={consumeActionEvent}
                         onClick={() => handlePilotApprove(item.id)}
                         disabled={isBusy}
                         style={actionBtn(false, isBusy)}

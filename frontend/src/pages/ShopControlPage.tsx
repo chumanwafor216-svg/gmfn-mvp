@@ -264,41 +264,6 @@ function validateSpotlightVideoFile(
   return "";
 }
 
-function resolveSpotlightAssetUrl(path: string): string {
-  const raw = safeStr(path);
-  if (!raw) return "";
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("blob:") ||
-    raw.startsWith("data:")
-  ) {
-    return raw;
-  }
-
-  const configured =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env?.VITE_API_BASE_URL) ||
-    "/api";
-  const trimmed = String(configured || "").trim().replace(/\/+$/, "");
-
-  let origin = "";
-  if (typeof window !== "undefined" && window.location) {
-    if (/^https?:\/\//i.test(trimmed)) {
-      try {
-        origin = new URL(trimmed).origin;
-      } catch {
-        origin = window.location.origin;
-      }
-    } else {
-      origin = window.location.origin.replace(/:\d+$/, ":8012");
-    }
-  }
-
-  if (!origin) return raw;
-  return `${origin}${raw.startsWith("/") ? raw : `/${raw}`}`;
-}
-
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     borderRadius: 26,
@@ -1117,12 +1082,6 @@ export default function ShopControlPage() {
     })[0];
   }, [activeSpotlights]);
 
-  const publicShopLink = useMemo(() => {
-    const gmfnId = firstTruthy(shop?.gmfn_id, me?.gmfn_id);
-    if (!gmfnId) return "";
-    return publicFrontendUrl(`/shop/${encodeURIComponent(gmfnId)}`);
-  }, [shop, me]);
-
   const communityName = useMemo(() => {
     return firstTruthy(
       shop?.marketplace_name,
@@ -1245,65 +1204,6 @@ export default function ShopControlPage() {
       ? spotlightHasImage
       : spotlightHasVideo;
 
-  const spotlightNextAction = useMemo(() => {
-    if (activePaidSpotlights.length > 0) {
-      return {
-        title: "Wait for the current paid spotlight to conclude",
-        detail:
-          "A paid spotlight is already live for this shop. Keep monitoring the live view until it expires, then start another paid run if needed.",
-      };
-    }
-
-    if (canStartPaidSpotlight) {
-      return {
-        title: "Open spotlight tools and publish the paid run",
-        detail:
-          "Payment has been confirmed. Switch the spotlight composer to paid mode and publish when the message and image are ready.",
-      };
-    }
-
-    if (latestSpotlightPayment) {
-      return {
-        title: "Complete payment and wait for reconciliation",
-        detail:
-          "Paid spotlight is not active yet. Use the payment reference, then return here after confirmation.",
-      };
-    }
-
-    return {
-      title: "Start a paid spotlight payment request",
-      detail:
-        "Create the payment instruction first. After confirmation, this page will unlock the paid publish path for the shop.",
-    };
-  }, [activePaidSpotlights.length, canStartPaidSpotlight, latestSpotlightPayment]);
-
-  const recommendedShopMove = useMemo(() => {
-    if (!safeStr(imageUrlInput)) {
-      return {
-        title: "Add the shop picture first",
-        detail:
-          "A clear shop face helps visitors recognise the shop before they open the gallery.",
-        kind: "picture" as const,
-      };
-    }
-
-    if (publicProducts.length === 0) {
-      return {
-        title: "Add the first public product",
-        detail:
-          "Products make the gallery useful. Start with the items people can see publicly.",
-        kind: "products" as const,
-      };
-    }
-
-    return {
-      title: "Shop setup is ready",
-      detail:
-        "Keep the public picture, shop details, and product list current.",
-      kind: "monitor" as const,
-    };
-  }, [imageUrlInput, publicProducts.length]);
-
   function copyText(text: string, successMessage: string) {
     if (!text) {
       showNotice("error", "Nothing to copy yet.");
@@ -1412,36 +1312,11 @@ export default function ShopControlPage() {
     }
   }
 
-  function openSpotlightTools(
-    event?: React.SyntheticEvent<HTMLElement>,
-    mode: "free" | "paid" = "free"
-  ) {
-    if (mode === "paid") {
-      event?.stopPropagation();
-      navigate("/app/shop-control/subscription-spotlight");
-      return;
-    }
-
-    setSpotlightPublishFeedback(null);
-    setSpotlightFlowStep(shop?.id ? "upload" : "setup");
-    setSpotlightMediaChoice("image");
-    setSpotlightPriorityMode(mode);
-    setSpotlightOpen(true);
-
-    cancelPendingControlReveal();
-    revealControlTarget("shop-control-spotlight");
-  }
-
   function collapseSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
     event?.stopPropagation();
 
     setSpotlightOpen(false);
     setSpotlightFlowStep("upload");
-  }
-
-  function openPublicShopFace() {
-    if (!publicShopLink) return;
-    window.open(publicShopLink, "_blank", "noopener,noreferrer");
   }
 
   function openExternalLink(url?: string | null) {
@@ -1459,12 +1334,6 @@ export default function ShopControlPage() {
     if (options.locked) return "Identity first";
     if (options.busy) return options.busyText || "Working...";
     return options.idle;
-  }
-
-  function openShopControlSection(targetId: string) {
-    setActiveOwnerLayer(shopControlLayerForTarget(targetId));
-    cancelPendingControlReveal();
-    revealControlTarget(targetId);
   }
 
   async function createVaultInstruction(quantityTotal: 1 | 6) {

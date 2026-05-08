@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Card, Pill } from "../components/uiKit";
-import { TrustGraphEdgeOut } from "../lib/api";
+import type { TrustGraphEdgeOut } from "../lib/api";
 
 function safeStr(x: any): string {
   return (x ?? "").toString();

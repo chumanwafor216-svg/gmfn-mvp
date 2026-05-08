@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getMySettings } from "../lib/api";
 import { type GuidanceSnapshot } from "../lib/guidance";
@@ -142,18 +142,18 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
 
   const timerMapRef = useRef<Record<string, number>>({});
 
-  function clearToastTimer(id: string) {
+  const clearToastTimer = useCallback((id: string) => {
     const timerId = timerMapRef.current[id];
     if (timerId) {
       window.clearTimeout(timerId);
       delete timerMapRef.current[id];
     }
-  }
+  }, []);
 
-  function removeToast(id: string) {
+  const removeToast = useCallback((id: string) => {
     clearToastTimer(id);
     setToasts((prev) => prev.filter((item) => item.id !== id));
-  }
+  }, [clearToastTimer]);
 
   function handleToastOpen(toast: CompanionToastPayload) {
     markCompanionUserInteraction();
@@ -189,7 +189,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       alive = false;
     };
   }, []);
-    useEffect(() => {
+  useEffect(() => {
     return subscribeCompanionSettingsUpdated((payload) => {
       setSettings((prev) =>
         normalizeCompanionSettings({
@@ -212,7 +212,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
         removeToast(payload.id);
       }, payload.autoCloseMs);
     });
-  }, []);
+  }, [clearToastTimer, removeToast]);
 
   useEffect(() => {
     return () => {

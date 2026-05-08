@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -192,11 +192,10 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }
@@ -559,7 +558,7 @@ export default function GuarantorInboxPage() {
   const [notice, setNotice] = useState<Notice | null>(null);
   const [busyDecisionKey, setBusyDecisionKey] = useState("");
 
-  async function loadInbox() {
+  const loadInbox = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -604,7 +603,7 @@ export default function GuarantorInboxPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [selectedClanId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -625,7 +624,7 @@ export default function GuarantorInboxPage() {
 
   useEffect(() => {
     void loadInbox();
-  }, [selectedClanId]);
+  }, [loadInbox, selectedClanId]);
 
   const allRows = useMemo(() => {
     const rows = [...pendingRows, ...approvedRows, ...declinedRows];

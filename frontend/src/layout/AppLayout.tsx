@@ -155,9 +155,9 @@ function makeTrustPassportItem(): NavLinkItem {
 
 function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
   return {
-    label: "Shop",
+    label: "Public Shop",
     to: myShopGalleryTo,
-    match: (pathname) => pathname.startsWith("/app/shop/"),
+    match: (pathname) => pathname.startsWith("/shop/"),
   };
 }
 
@@ -203,15 +203,12 @@ function makeAdminItem(): NavLinkItem {
   };
 }
 
-function buildPrimaryItems(
-  myShopGalleryTo: string,
-  canUseAdminTools: boolean
-): NavLinkItem[] {
+function buildPrimaryItems(canUseAdminTools: boolean): NavLinkItem[] {
   const items: NavLinkItem[] = [
     makeDashboardItem(),
     makeCommunityItem(),
     makeMarketplaceItem(),
-    makeShopGalleryItem(myShopGalleryTo),
+    makeShopControlItem(),
     makeFinanceItem(),
     makeLoansItem(),
     makeTrustPassportItem(),
@@ -604,7 +601,7 @@ function getPageActions(
     return uniqueNavItems([
       makeCommunityItem(),
       makeMarketplaceItem(),
-      makeShopGalleryItem(myShopGalleryTo),
+      makeShopControlItem(),
       makeDashboardItem(),
     ]);
   }
@@ -919,7 +916,8 @@ function navItem(active = false, disabled = false): React.CSSProperties {
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.06)",
-    pointerEvents: disabled ? "none" : "auto",
+    pointerEvents: "auto",
+    cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -957,7 +955,7 @@ function mobileIconButton(): React.CSSProperties {
   return {
     ...brandStableTapTarget(),
     width: "100%",
-    minHeight: 38,
+    minHeight: 44,
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -1084,7 +1082,8 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.08)",
-    pointerEvents: disabled ? "none" : "auto",
+    pointerEvents: "auto",
+    cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
     overflowWrap: "anywhere",
   };
@@ -1149,7 +1148,8 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
     border: active
       ? "1px solid rgba(11,99,209,0.14)"
       : "1px solid rgba(11,31,51,0.08)",
-    pointerEvents: disabled ? "none" : "auto",
+    pointerEvents: "auto",
+    cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
   };
 }
@@ -1187,8 +1187,8 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 40,
-    padding: "7px 10px",
+    minHeight: 44,
+    padding: "8px 10px",
     borderRadius: 13,
     textDecoration: "none",
     textAlign: "center",
@@ -1203,7 +1203,8 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
       : "1px solid rgba(76,111,146,0.18)",
     whiteSpace: "nowrap",
     scrollSnapAlign: "center",
-    pointerEvents: disabled ? "none" : "auto",
+    pointerEvents: "auto",
+    cursor: disabled ? "not-allowed" : "pointer",
     boxShadow: active
       ? "0 10px 24px rgba(29,95,212,0.16)"
       : "0 8px 18px rgba(15,23,42,0.08)",
@@ -1216,6 +1217,20 @@ function layoutTapGuardProps(): Pick<
   "onPointerDown" | "onMouseDown"
 > {
   return actionTapGuardProps();
+}
+
+function handleDisabledNavClick(
+  event: React.MouseEvent<HTMLElement>,
+  disabled: boolean,
+  action?: () => void
+) {
+  if (disabled) {
+    event.preventDefault();
+    event.stopPropagation();
+    return;
+  }
+
+  action?.();
 }
 
 export default function AppLayout() {
@@ -1305,15 +1320,15 @@ export default function AppLayout() {
   }, []);
 
   const myShopGalleryTo = useMemo(() => {
-    if (location.pathname.startsWith("/app/shop/")) {
+    if (location.pathname.startsWith("/shop/")) {
       return location.pathname;
     }
 
     if (myGmfnId) {
-      return `/app/shop/${encodeURIComponent(myGmfnId)}`;
+      return `/shop/${encodeURIComponent(myGmfnId)}`;
     }
 
-    return "/app/shop/me";
+    return "/app/shop-control";
   }, [location.pathname, myGmfnId]);
 
   const taskMode = useMemo(
@@ -1322,8 +1337,8 @@ export default function AppLayout() {
   );
 
   const primaryItems = useMemo(
-    () => buildPrimaryItems(myShopGalleryTo, canUseAdminTools),
-    [myShopGalleryTo, canUseAdminTools]
+    () => buildPrimaryItems(canUseAdminTools),
+    [canUseAdminTools]
   );
 
   const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
@@ -1339,15 +1354,15 @@ export default function AppLayout() {
         label: "Main movement",
         hint:
           canUseAdminTools
-            ? "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop, Finance, Loans, Trust, and Admin."
-            : "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop, Finance, Loans, and Trust.",
+            ? "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop Control, Finance, Loans, Trust, and Admin."
+            : "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop Control, Finance, Loans, and Trust.",
         items: primaryItems,
       },
       {
         key: "commerce",
         label: "Shop tools",
         hint:
-          "Shop Control stays here while Shop itself now sits in the main movement row.",
+          "Shop Control sits in the main movement row. Public Shop opens only when you choose the public face.",
         items: commerceItems,
       },
       {
@@ -1687,6 +1702,9 @@ export default function AppLayout() {
                             aria-disabled={item.disabled || undefined}
                             tabIndex={item.disabled ? -1 : undefined}
                             {...layoutTapGuardProps()}
+                            onClick={(event) =>
+                              handleDisabledNavClick(event, !!item.disabled)
+                            }
                             style={navItem(
                               isItemActive(item, location.pathname, location.search),
                               !!item.disabled
@@ -1820,7 +1838,9 @@ export default function AppLayout() {
                       tabIndex={item.disabled ? -1 : undefined}
                       onPointerDown={stopActionTap}
                       onMouseDown={stopActionTap}
-                      onClick={closeDrawer}
+                      onClick={(event) =>
+                        handleDisabledNavClick(event, !!item.disabled, closeDrawer)
+                      }
                       style={drawerLink(
                         isItemActive(item, location.pathname, location.search),
                         !!item.disabled
@@ -1917,7 +1937,9 @@ export default function AppLayout() {
                   tabIndex={item.disabled ? -1 : undefined}
                   onPointerDown={stopActionTap}
                   onMouseDown={stopActionTap}
-                  onClick={closeActions}
+                  onClick={(event) =>
+                    handleDisabledNavClick(event, !!item.disabled, closeActions)
+                  }
                   style={actionsLink(
                     isItemActive(item, location.pathname, location.search),
                     !!item.disabled
@@ -1961,6 +1983,9 @@ export default function AppLayout() {
               }
               tabIndex={item.disabled ? -1 : undefined}
               {...layoutTapGuardProps()}
+              onClick={(event) =>
+                handleDisabledNavClick(event, !!item.disabled)
+              }
               style={bottomNavItem(
                 isItemActive(item, location.pathname, location.search),
                 !!item.disabled

@@ -43,7 +43,9 @@ export function setSelectedClanId(clanId: number | null): void {
   try {
     if (clanId == null) localStorage.removeItem(GMFN_SELECTED_CLAN_ID_KEY);
     else localStorage.setItem(GMFN_SELECTED_CLAN_ID_KEY, String(clanId));
-  } catch {}
+  } catch {
+    // selected clan persistence is best-effort
+  }
 }
 
 async function readTextSafe(res: Response): Promise<string> {
@@ -590,7 +592,8 @@ export async function listBankCredits(payload: {
   );
 }
 
-export async function listExpectedPayments(_payload?: any): Promise<any> {
+export async function listExpectedPayments(payload?: any): Promise<any> {
+  void payload;
   return {
     items: [],
     total: 0,
@@ -747,13 +750,14 @@ export async function getMarketplaceProductReposts(
   );
 }
 
-export async function createMarketplaceReview(_payload: {
+export async function createMarketplaceReview(payload: {
   clan_id?: number | null;
   product_id?: number | null;
   shop_id?: number | null;
   rating: number;
   review_text?: string | null;
 }): Promise<any> {
+  void payload;
   return {
     ok: false,
     detail: "Marketplace review endpoint is not enabled in the backend yet.",
@@ -797,9 +801,13 @@ function tryLegacyCopy(text: string) {
     ta.select();
     try {
       document.execCommand("copy");
-    } catch {}
+    } catch {
+      // clipboard fallback is best-effort
+    }
     ta.remove();
-  } catch {}
+  } catch {
+    // clipboard fallback is best-effort
+  }
 }
 
 /* =========================

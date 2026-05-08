@@ -327,7 +327,6 @@ function stopIdentityTap(e: React.SyntheticEvent) {
 function identityButtonGuardProps() {
   return {
     onPointerDown: stopIdentityTap,
-    onTouchStart: stopIdentityTap,
     onMouseDown: stopIdentityTap,
   };
 }

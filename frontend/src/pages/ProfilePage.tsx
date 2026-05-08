@@ -27,7 +27,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<string>("");
 
-  // Local-only placeholders (until backend stores them)
+  // Local browser fields until backend profile storage is available.
   const [displayName, setDisplayName] = useState<string>(localStorage.getItem("gmfn_profile_name") || "");
   const [phone, setPhone] = useState<string>(localStorage.getItem("gmfn_profile_phone") || "");
   const [country, setCountry] = useState<string>(localStorage.getItem("gmfn_profile_country") || "");
@@ -52,7 +52,7 @@ export default function ProfilePage() {
     localStorage.setItem("gmfn_profile_name", displayName.trim());
     localStorage.setItem("gmfn_profile_phone", phone.trim());
     localStorage.setItem("gmfn_profile_country", country.trim());
-    setNote("Saved locally ✅ (backend profile storage is a future upgrade)");
+    setNote("Saved on this device. Backend profile storage is a future upgrade.");
     setTimeout(() => setNote(""), 2200);
   }
 
@@ -76,16 +76,16 @@ export default function ProfilePage() {
               color: "#64748b",
               background: "rgba(255,255,255,0.85)",
             }}
-            title="Avatar placeholder (future upload)"
+            title="Profile mark"
           >
-            🙂
+            P
           </div>
 
           <div>
             <div style={{ fontSize: 12, color: "#64748b" }}>Signed in</div>
-            <div style={{ fontWeight: 1000 }}>{me?.email ?? "—"}</div>
+            <div style={{ fontWeight: 1000 }}>{me?.email ?? "Not available"}</div>
             <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-              Role: <b>{me?.role ?? "—"}</b>
+              Role: <b>{me?.role ?? "Not available"}</b>
             </div>
           </div>
         </div>

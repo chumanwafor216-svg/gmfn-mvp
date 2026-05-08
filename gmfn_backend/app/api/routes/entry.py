@@ -19,7 +19,14 @@ from app.api.routes.auth import (
 from app.core.security import create_access_token, get_password_hash
 from app.core.auth import is_user_activation_pending
 from app.db.database import get_db
-from app.db.models import Clan, EntryPhoneVerification, User, UserPayoutDestination
+from app.db.models import (
+    Clan,
+    ClanJoinRequest,
+    ClanMembership,
+    EntryPhoneVerification,
+    User,
+    UserPayoutDestination,
+)
 from app.db.verification_models import IdentityVerificationCheck
 from app.services.notification_service import create_notification
 from app.services.trust_events_services import build_trust_meta, log_trust_event
@@ -179,6 +186,66 @@ def _entry_duplicate_identity_error(
 def _clean_text(value: object, *, upper: bool = False) -> str:
     text = str(value or "").strip()
     return text.upper() if upper else text
+
+
+def _pending_user_has_live_entry_path(db: Session, user: User) -> bool:
+    user_id = int(user.id or 0)
+    if user_id <= 0:
+        return False
+
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == user_id,
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if membership is not None:
+        return True
+
+    join_request = (
+        db.query(ClanJoinRequest)
+        .filter(ClanJoinRequest.applicant_user_id == user_id)
+        .first()
+    )
+    if join_request is not None:
+        return True
+
+    created_clan = db.query(Clan).filter(Clan.created_by_user_id == user_id).first()
+    return created_clan is not None
+
+
+def _release_abandoned_pending_identity(
+    *,
+    db: Session,
+    user: User,
+    reason: str,
+) -> bool:
+    """Release phone/email from a half-created entry user that has no live path."""
+
+    if not is_user_activation_pending(user):
+        return False
+    if _pending_user_has_live_entry_path(db, user):
+        return False
+
+    user_id = int(user.id or 0)
+    if user_id <= 0:
+        return False
+
+    stamp = int(_now().timestamp())
+    suffix = secrets.token_hex(4)
+    user.email = f"abandoned-entry-{user_id}-{stamp}-{suffix}@abandoned.gsnmail.app"
+    user.phone_e164 = None
+    user.phone_verified_at = None
+    db.add(user)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return False
+    db.refresh(user)
+    return True
 
 
 def _normalize_phone(phone: str) -> str:
@@ -523,6 +590,14 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
 
     phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
     if phone_clash:
+        released = _release_abandoned_pending_identity(
+            db=db,
+            user=phone_clash,
+            reason="entry_phone_start_reuse",
+        )
+        if released:
+            phone_clash = None
+    if phone_clash:
         raise _entry_duplicate_identity_error(
             db=db,
             user=phone_clash,
@@ -773,6 +848,14 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
 
     phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
     if phone_clash:
+        released = _release_abandoned_pending_identity(
+            db=db,
+            user=phone_clash,
+            reason="entry_create_phone_reuse",
+        )
+        if released:
+            phone_clash = None
+    if phone_clash:
         raise _entry_duplicate_identity_error(
             db=db,
             user=phone_clash,
@@ -780,6 +863,14 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         )
 
     email_clash = db.query(User).filter(User.email == email).first()
+    if email_clash:
+        released = _release_abandoned_pending_identity(
+            db=db,
+            user=email_clash,
+            reason="entry_create_email_reuse",
+        )
+        if released:
+            email_clash = None
     if email_clash:
         raise _entry_duplicate_identity_error(
             db=db,

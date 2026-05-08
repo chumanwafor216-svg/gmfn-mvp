@@ -1,45 +1,5 @@
 // src/components/GMFNConfirmModal.tsx
 import { useState } from "react";
-type TrustImpactPreview = {
-  min?: number;   // e.g. -1
-  max?: number;   // e.g. -2
-  note?: string;  // optional human note
-};
-
-type ConfirmationReason =
-  | "insufficient_funds"
-  | "risk_too_high"
-  | "timing_issue"
-  | "policy_requirement"
-  | "other";
-
-type AlternativeAction = {
-  label: string;
-  onClick: () => void;
-};
-
-type GMFNConfirmProps = {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: (payload: {
-    reason?: ConfirmationReason;
-    note?: string;
-    acknowledgedAudit: boolean;
-  }) => Promise<void> | void;
-
-  title: string;
-  description: string;
-
-  trustImpact?: TrustImpactPreview;
-  communityImpact?: string;
-
-  requireReason?: boolean;
-  allowFreeTextReason?: boolean;
-
-  alternatives?: AlternativeAction[];
-
-  irreversible?: boolean;
-};
 
 export type GMFNConfirmResult = {
   reason?: string;
@@ -132,17 +92,13 @@ export default function GMFNConfirmModal({
           <div style={impactBox}>👥 {communityImpact}</div>
         )}
 
-        {(requireReason || true) && (
-          <>
-            <label style={label}>Reason</label>
-            <input
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="Optional reason"
-              style={input}
-            />
-          </>
-        )}
+        <label style={label}>Reason</label>
+        <input
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Optional reason"
+          style={input}
+        />
 
         <label style={label}>Internal note (optional)</label>
         <textarea
@@ -217,4 +173,4 @@ const box: React.CSSProperties = {
   padding: 10,
   background: "#fafafa",
   borderRadius: 8,
-}; 
+};

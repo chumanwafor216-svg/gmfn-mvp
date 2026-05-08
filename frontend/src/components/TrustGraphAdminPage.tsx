@@ -4,7 +4,7 @@ import {
   getMyTrustGraph,
   getTrustGraphByGmfnId,
   getTrustGraphByUserId,
-  TrustGraphNodeOut,
+  type TrustGraphNodeOut,
 } from "../lib/api";
 import TrustGraphSummaryCard from "../components/TrustGraphSummaryCard";
 import TrustGraphEdgeList from "../components/TrustGraphEdgeList";
@@ -30,21 +30,6 @@ export default function TrustGraphAdminPage() {
   const [err, setErr] = useState<string | null>(null);
 
   const isAdmin = useMemo(() => safeStr(me?.role || "").toLowerCase() === "admin", [me]);
-
-  async function loadMine() {
-    setErr(null);
-    setBusy(true);
-    try {
-      const g = await getMyTrustGraph();
-      setGraph(g);
-      setQueryUserId(safeStr(g?.user_id || ""));
-      setQueryGmfnId(safeStr(g?.gmfn_id || ""));
-    } catch (e: any) {
-      setErr(String(e?.message || e));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function loadAll() {
     setLoading(true);

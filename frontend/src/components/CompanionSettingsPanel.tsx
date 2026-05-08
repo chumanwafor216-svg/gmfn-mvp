@@ -26,7 +26,9 @@ function writeLocalCompanionSettings(value: Partial<CompanionSettings>) {
       LOCAL_COMPANION_SETTINGS_KEY,
       JSON.stringify(value)
     );
-  } catch {}
+  } catch {
+    // local settings are best-effort only
+  }
 }
 
 function pageCard(): React.CSSProperties {

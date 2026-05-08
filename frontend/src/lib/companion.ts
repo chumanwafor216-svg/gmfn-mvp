@@ -178,7 +178,9 @@ function writeJsonStorage<T>(key: string, value: T): void {
   try {
     if (!isBrowser()) return;
     window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  } catch {
+    // local storage is best-effort
+  }
 }
 
 export function normalizeCompanionSettings(
@@ -263,7 +265,9 @@ export function installCompanionInteractionCapture(): void {
     try {
       window.localStorage.setItem(COMPANION_AUDIO_UNLOCKED_KEY, "1");
       window.sessionStorage.setItem(COMPANION_INTERACTION_CAPTURE_KEY, "1");
-    } catch {}
+    } catch {
+      // local/session storage is best-effort
+    }
 
     window.removeEventListener("pointerdown", unlock);
     window.removeEventListener("keydown", unlock);
@@ -279,7 +283,9 @@ export function markCompanionUserInteraction(): void {
   try {
     if (!isBrowser()) return;
     window.localStorage.setItem(COMPANION_AUDIO_UNLOCKED_KEY, "1");
-  } catch {}
+  } catch {
+    // local storage is best-effort
+  }
 }
 
 function isAudioUnlocked(): boolean {
@@ -770,7 +776,9 @@ function showBrowserNotification(
     notification.onclick = () => {
       try {
         window.focus();
-      } catch {}
+      } catch {
+        // focusing an existing tab is best-effort
+      }
     };
 
     return true;

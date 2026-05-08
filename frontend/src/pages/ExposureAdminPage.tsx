@@ -328,7 +328,6 @@ function stopExposureTap(e: React.SyntheticEvent) {
 function exposureButtonGuardProps() {
   return {
     onPointerDown: stopExposureTap,
-    onTouchStart: stopExposureTap,
     onMouseDown: stopExposureTap,
   };
 }

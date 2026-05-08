@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
@@ -256,11 +256,10 @@ function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }
@@ -869,7 +868,14 @@ export default function LoanSummaryPage() {
   }, [feedback]);
 
   const currency = summary?.currency ?? "NGN";
-  const isAdmin = lc(me?.role) === "admin";
+  const isAdmin =
+    lc(firstTruthy(me?.role, (me as any)?.account_role, (me as any)?.user_role)) ===
+    "admin";
+  const canOpenCommandRevenue =
+    isAdmin || lc(normalizeCommunityRole(currentClan)) === "admin";
+  const revenueRoute = canOpenCommandRevenue
+    ? "/app/command-center/revenue-allocation"
+    : "/app/finance";
 
   const requiredCount = n(summary?.guarantors_required);
   const approvedCount = guarantors.filter((g) => lc(g.status) === "approved").length;
@@ -948,7 +954,7 @@ export default function LoanSummaryPage() {
 
   const pictureSrc = useMemo(() => communityImageSrc(currentClan), [currentClan]);
 
-  async function refreshAll() {
+  const refreshAll = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -1048,12 +1054,12 @@ export default function LoanSummaryPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [numericLoanId, selectedClanId]);
 
   useEffect(() => {
     if (!numericLoanId) return;
     void refreshAll();
-  }, [numericLoanId]);
+  }, [numericLoanId, refreshAll]);
 
   async function handleGuarantorDecision(
     guarantor: LoanGuarantor,
@@ -2237,8 +2243,8 @@ export default function LoanSummaryPage() {
             )}
 
             <div style={{ marginTop: 14 }}>
-              <OriginLink to="/app/revenue-allocation" style={secondaryBtn(false)}>
-                Open Revenue Allocation
+              <OriginLink to={revenueRoute} style={secondaryBtn(false)}>
+                {canOpenCommandRevenue ? "Open Revenue Allocation" : "Open Finance File"}
               </OriginLink>
             </div>
           </div>
@@ -2332,7 +2338,7 @@ export default function LoanSummaryPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/revenue-allocation" style={routeTile(false)}>
+            <OriginLink to={revenueRoute} style={routeTile(false)}>
               <div
                 style={{
                   color: "#0B1F33",
@@ -2341,10 +2347,12 @@ export default function LoanSummaryPage() {
                   lineHeight: 1.3,
                 }}
               >
-                Revenue Allocation
+                {canOpenCommandRevenue ? "Revenue Allocation" : "Finance File"}
               </div>
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                Read fee and distribution logic here.
+                {canOpenCommandRevenue
+                  ? "Read fee and distribution logic here."
+                  : "Open the money record visible to you for this community."}
               </div>
             </OriginLink>
 

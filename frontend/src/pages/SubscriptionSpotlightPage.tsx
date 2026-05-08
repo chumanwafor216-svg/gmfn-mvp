@@ -849,9 +849,9 @@ export default function SubscriptionSpotlightPage() {
             }}
           >
             {shopHeroImage ? (
-              <img src={shopHeroImage} alt="" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.24 }} />
+              <img src={shopHeroImage} alt="" aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.24, pointerEvents: "none" }} />
             ) : null}
-            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(6,17,31,0.36), rgba(6,17,31,0.78))" }} />
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(180deg, rgba(6,17,31,0.36), rgba(6,17,31,0.78))" }} />
             <div style={{ position: "relative", width: 118, height: 118, borderRadius: 999, border: "1px solid rgba(243,208,106,0.42)", display: "grid", placeItems: "center", background: "radial-gradient(circle at 36% 28%, rgba(255,255,255,0.24), transparent 28%), linear-gradient(180deg, #174C78, #071424)", color: "#F3D06A", fontSize: 58, fontWeight: 950 }}>
               S
             </div>

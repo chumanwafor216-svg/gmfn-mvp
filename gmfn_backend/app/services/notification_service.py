@@ -26,13 +26,20 @@ def create_notification(
     commit: bool = True,
     refresh: bool = True,
 ) -> Notification:
+    normalized_action_url, normalized_action_label = normalize_notification_action(
+        kind=kind,
+        title=title,
+        message=message,
+        action_url=action_url,
+        action_label=action_label,
+    )
     row = Notification(
         user_id=int(user_id),
         kind=str(kind),
         title=str(title),
         message=str(message),
-        action_url=action_url,
-        action_label=action_label,
+        action_url=normalized_action_url,
+        action_label=normalized_action_label,
         is_read=False,
         created_at=_now_utc(),
         read_at=None,
@@ -49,6 +56,106 @@ def create_notification(
 
 def _community_code(clan_id: int) -> str:
     return f"GMFN-C-{int(clan_id):06d}"
+
+
+def _safe_str(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _notification_text(
+    *,
+    kind: Any,
+    title: Any,
+    message: Any,
+    action_url: Any,
+    action_label: Any,
+) -> str:
+    return " ".join(
+        [
+            _safe_str(kind),
+            _safe_str(title),
+            _safe_str(message),
+            _safe_str(action_url),
+            _safe_str(action_label),
+        ]
+    ).lower()
+
+
+def normalize_notification_action(
+    *,
+    kind: Any,
+    title: Any,
+    message: Any,
+    action_url: str | None,
+    action_label: str | None,
+) -> tuple[str | None, str | None]:
+    """Return the current route/label truth without mutating historic rows."""
+
+    url = _safe_str(action_url) or None
+    label = _safe_str(action_label) or None
+    text = _notification_text(
+        kind=kind,
+        title=title,
+        message=message,
+        action_url=url,
+        action_label=label,
+    )
+    lower_url = _safe_str(url).lower()
+    lower_label = _safe_str(label).lower()
+
+    if (
+        _safe_str(kind).lower() == "pool.deposit_confirmed"
+        or (
+            "pool deposit" in text
+            and (
+                "confirmed" in text
+                or "deposit was confirmed" in text
+                or "deposit confirmed" in text
+            )
+        )
+    ):
+        return "/app/finance", "Open Finance File"
+
+    if lower_url == "/app/loans" and lower_label in {
+        "",
+        "open finances",
+        "view finances",
+        "open finance",
+        "view finance",
+        "open support",
+        "view support",
+    }:
+        return url, "Open Loans & Support"
+
+    if lower_url == "/app/finance" and lower_label in {
+        "",
+        "open finances",
+        "view finances",
+        "open finance",
+        "view finance",
+    }:
+        return url, "Open Finance File"
+
+    if lower_url.startswith("/app/payment/pool") and lower_label in {
+        "",
+        "deposit to pool",
+        "deposit",
+        "open deposit",
+        "make deposit",
+        "open payment",
+    }:
+        return url, "Open Money In"
+
+    if lower_url == "/app/withdrawal-instructions" and lower_label in {
+        "",
+        "withdraw",
+        "open withdrawal",
+        "view withdrawal",
+        "open payment",
+    }:
+        return url, "Open Money Out"
+
+    return url, label
 
 
 def ensure_join_review_notifications(
@@ -168,21 +275,31 @@ def list_my_notifications(
 
     rows = q.limit(int(max(1, min(limit, 200)))).all()
 
-    return {
-        "items": [
+    items: List[Dict[str, Any]] = []
+    for r in rows:
+        normalized_action_url, normalized_action_label = normalize_notification_action(
+            kind=r.kind,
+            title=r.title,
+            message=r.message,
+            action_url=r.action_url,
+            action_label=r.action_label,
+        )
+        items.append(
             {
                 "id": int(r.id),
                 "kind": str(r.kind),
                 "title": str(r.title),
                 "message": str(r.message),
-                "action_url": r.action_url,
-                "action_label": r.action_label,
+                "action_url": normalized_action_url,
+                "action_label": normalized_action_label,
                 "is_read": bool(r.is_read),
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "read_at": r.read_at.isoformat() if r.read_at else None,
             }
-            for r in rows
-        ],
+        )
+
+    return {
+        "items": items,
         "total": len(rows),
     }
 
@@ -242,14 +359,14 @@ def seed_assistance_notifications(
             "title": "Build your future gradually",
             "message": "You did well showing up today. Would you like to put a little aside for your future?",
             "action_url": "/app/payment/pool?currency=NGN",
-            "action_label": "Deposit to Pool",
+            "action_label": "Open Money In",
         },
         {
             "kind": "assistant.reminder",
             "title": "Check pending support actions",
             "message": "If you have a pending request, responding early helps your community move forward.",
             "action_url": "/app/loans",
-            "action_label": "Open Finances",
+            "action_label": "Open Loans & Support",
         },
         {
             "kind": "assistant.trust",

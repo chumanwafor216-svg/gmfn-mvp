@@ -185,7 +185,6 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
     <section
       onPointerDown={(event) => stopIntroTap(event)}
       onMouseDown={(event) => stopIntroTap(event)}
-      onTouchStart={(event) => stopIntroTap(event)}
       onClick={(event) => stopIntroTap(event)}
       style={{
         position: "relative",
@@ -277,9 +276,6 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
             stopIntroTap(event);
           }}
           onMouseDown={(event) => {
-            stopIntroTap(event);
-          }}
-          onTouchStart={(event) => {
             stopIntroTap(event);
           }}
           onClick={(event) => {

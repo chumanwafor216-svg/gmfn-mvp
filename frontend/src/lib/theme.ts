@@ -68,7 +68,6 @@ export function setThemePreset(preset: GMFNTintPreset) {
 }
 
 export function setThemeCustomTint(hex: string) {
-  const cur = loadTheme();
   const next: GMFNThemeState = { preset: "custom", tint: clampHex(hex) };
   saveTheme(next);
   applyThemeToDocument(next);

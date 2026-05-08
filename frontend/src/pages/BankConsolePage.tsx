@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
@@ -114,7 +114,6 @@ function stopBankTap(e: React.SyntheticEvent) {
 function bankButtonGuardProps() {
   return {
     onPointerDown: stopBankTap,
-    onTouchStart: stopBankTap,
     onMouseDown: stopBankTap,
   };
 }
@@ -378,7 +377,7 @@ export default function BankConsolePage() {
     return () => window.clearTimeout(timer);
   }, [err, msg]);
 
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     setLoading(true);
     setErr("");
 
@@ -440,11 +439,11 @@ export default function BankConsolePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [currency]);
 
   useEffect(() => {
     void loadAll();
-  }, [currency, selectedClanId]);
+  }, [currency, loadAll, selectedClanId]);
 
   async function ingestNow() {
     setErr("");

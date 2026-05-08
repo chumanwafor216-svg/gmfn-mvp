@@ -1,19 +1,11 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import DomainIntroToggle from "../components/DomainIntroToggle";
-import NextActionGuide, {
-  type NextActionGuideItem,
-} from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
-import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
-import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
-import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import * as api from "../lib/api";
 import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
-import { buildDashboardTrustJourneyCopy } from "../lib/dashboardUserGuidance";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -22,19 +14,9 @@ import {
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicApiUrl } from "../lib/publicLinks";
-import { buildTrustPassportActionGuide } from "../lib/trustDocumentActionGuide";
-import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
-import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
 
 type NoticeTone = "success" | "error";
-
-type CollapseState = {
-  overview: boolean;
-  explainability: boolean;
-  breakdown: boolean;
-  evidence: boolean;
-};
 
 type TrustReadingState = {
   classText: string;
@@ -42,37 +24,6 @@ type TrustReadingState = {
   tone: "green" | "yellow" | "red" | "neutral";
   statusText: string;
   whyText: string;
-};
-
-type FocusCommitmentSummary = {
-  onTrackCount: number;
-  watchCount: number;
-  behindCount: number;
-  completedCount: number;
-  nextReviewLabel: string;
-  disciplineLine: string;
-};
-
-type TrustJourneyModel = {
-  tone: "neutral" | "green" | "yellow" | "red";
-  posture: "unverified" | "repair" | "drifting" | "building" | "steady";
-  postureTitle: string;
-  postureDetail: string;
-  primaryRoute: {
-    key: string;
-    label: string;
-    detail: string;
-    to: string;
-  };
-  secondaryRoute: {
-    key: string;
-    label: string;
-    detail: string;
-    to: string;
-  };
-  helps: string[];
-  weakens: string[];
-  commitmentLine: string;
 };
 
 type ExplainabilityEvent = {
@@ -209,27 +160,6 @@ type ClanListItem = {
   community_code?: string | null;
 };
 
-const TRUST_PASSPORT_UI_STORAGE_KEY = "gmfn.trustPassport.sections.v2";
-const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
-  "gmfn.dashboard.focus-commitments.v1";
-const DASHBOARD_FOCUS_EVENTS_STORAGE_KEY =
-  "gmfn.dashboard.focus-events.v1";
-
-const TRUST_PASSPORT_HELP_BODY =
-  "Trust Passport helps your good name travel with you. In real life, many people already get support through trust: a seller may release goods on credit because someone respected says, 'I know this person. They will pay.' GSN keeps that familiar community trust, but gives it a portable proof layer.";
-
-const TRUST_PASSPORT_HELP_BULLETS = [
-  "Ordinary vouching already works, but it has limits. It mostly works where you are known. It depends on people being physically available, and it can be affected by sentiment, favour, fear, family pressure, or personal relationships.",
-  "Trust Passport is built to solve that gap. It keeps the record of what you have already done: money promises kept, loans repaid, support given, guarantor responsibility, missed promises, completed repayments, and verified community behaviour.",
-  "TrustSlip is the shareable proof from that record. Before a seller releases goods on credit, before a loan is approved, before support is given, or before a guarantor accepts risk, your TrustSlip can be checked.",
-  "This protects both sides. Your record can speak with you when the people who know you are not present. The seller, community, or guarantor does not have to rely only on words or guesswork.",
-  "For the unbanked and underbanked, this means trust is not only about bank statements, salary slips, or how much money someone has. A person who borrows small and repays properly can build proof. A person who supports others responsibly can build proof.",
-  "Finance records what happened with money. Trust Passport explains what that behaviour means. TrustSlip proves the current trust state quickly when someone needs to decide.",
-];
-
-const TRUST_PASSPORT_HELP_NOTE =
-  "Innovation wedge: GSN turns informal community vouching into portable, verifiable trust evidence, especially for people who are normally invisible to formal credit systems.";
-
 function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
@@ -295,14 +225,6 @@ function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input?.results)) return input.results as T[];
   if (Array.isArray(input?.rows)) return input.rows as T[];
   return [];
-}
-
-function normalizeDate(value: any): Date | null {
-  const raw = safeStr(value);
-  if (!raw) return null;
-  const dt = new Date(raw);
-  if (!Number.isFinite(dt.getTime())) return null;
-  return dt;
 }
 
 function apiBase(): string {
@@ -713,30 +635,6 @@ function actionBtn(
   };
 }
 
-function collapseToggle(): React.CSSProperties {
-  return {
-    ...tapSafeButtonBase(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    minWidth: 122,
-    padding: "12px 18px",
-    borderRadius: 16,
-    border: "1px solid rgba(37,78,119,0.14)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(245,250,254,0.95) 64%, rgba(231,241,249,0.92) 100%)",
-    color: "#24415C",
-    fontWeight: 900,
-    fontSize: 13.5,
-    textAlign: "center",
-    cursor: "pointer",
-    whiteSpace: "normal",
-    boxShadow:
-      "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(16,37,59,0.05)",
-  };
-}
-
 function tapSafeButtonBase(): React.CSSProperties {
   return {
     position: "relative",
@@ -778,105 +676,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: bg,
-    padding: 14,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
-  };
-}
-
-function documentFrameStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    overflow: "hidden",
-    border: "1px solid rgba(148,163,184,0.2)",
-    boxShadow:
-      "0 22px 58px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
-  };
-}
-
-function documentWatermarkStyle(): React.CSSProperties {
-  return {
-    position: "absolute",
-    top: 18,
-    right: -18,
-    transform: "rotate(-90deg)",
-    transformOrigin: "top right",
-    letterSpacing: 3.1,
-    fontSize: 11,
-    fontWeight: 900,
-    color: "rgba(215,227,241,0.2)",
-    pointerEvents: "none",
-    textTransform: "uppercase",
-  };
-}
-
-function documentFooterGrid(isCompact: boolean): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 1,
-    marginTop: 18,
-    paddingTop: 14,
-    borderTop: "1px solid rgba(215,227,241,0.16)",
-    display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-    gap: 12,
-  };
-}
-
-function documentFooterLabel(): React.CSSProperties {
-  return {
-    fontSize: 11,
-    letterSpacing: 0.28,
-    fontWeight: 900,
-    textTransform: "uppercase",
-    color: "#AFC4D9",
-  };
-}
-
-function readLocalJSON<T>(key: string, fallback: T): T {
-  try {
-    if (typeof window === "undefined") return fallback;
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeLocalJSON(key: string, value: any) {
-  try {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // ignore
-  }
-}
-
-function defaultCollapseState(): CollapseState {
-  return {
-    overview: false,
-    explainability: false,
-    breakdown: false,
-    evidence: false,
-  };
-}
-
-function normalizeCollapseState(raw: any): CollapseState {
-  const base = defaultCollapseState();
-
-  return {
-    overview: Boolean(raw?.overview ?? base.overview),
-    explainability: Boolean(raw?.explainability ?? base.explainability),
-    breakdown: Boolean(raw?.breakdown ?? base.breakdown),
-    evidence: Boolean(raw?.evidence ?? base.evidence),
-  };
-}
-
 function absoluteUrl(pathOrUrl: string): string {
   const raw = safeStr(pathOrUrl);
   if (!raw) return "";
@@ -887,58 +686,6 @@ function absoluteUrl(pathOrUrl: string): string {
     return publicApiUrl(raw);
   }
   return raw;
-}
-
-function daysUntil(value: any): number | null {
-  const dt = normalizeDate(value);
-  if (!dt) return null;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dt);
-  target.setHours(0, 0, 0, 0);
-  return Math.floor((target.getTime() - today.getTime()) / 86400000);
-}
-
-function formatDateLabel(value: any): string {
-  const dt = normalizeDate(value);
-  if (!dt) return "soon";
-  return dt.toLocaleDateString(undefined, {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function toneStyles(tone: "green" | "yellow" | "red" | "neutral") {
-  if (tone === "green") {
-    return {
-      bg: "#F3FBF5",
-      border: "1px solid rgba(34,197,94,0.16)",
-      text: "#166534",
-    };
-  }
-
-  if (tone === "yellow") {
-    return {
-      bg: "#FFFBEF",
-      border: "1px solid rgba(245,158,11,0.16)",
-      text: "#92400E",
-    };
-  }
-
-  if (tone === "red") {
-    return {
-      bg: "#FFF5F5",
-      border: "1px solid rgba(239,68,68,0.16)",
-      text: "#991B1B",
-    };
-  }
-
-  return {
-    bg: "#F8FAFC",
-    border: "1px solid rgba(148,163,184,0.16)",
-    text: "#334155",
-  };
 }
 
 function getCciState(me: any, trustSlip: any): TrustReadingState {
@@ -1250,324 +997,6 @@ function getOpenTrustState(
   };
 }
 
-function getStoredFocusCommitmentStatus(item: any) {
-  if (item?.completedAt) return "completed";
-
-  const target = Number(item?.targetValue || 0);
-  const current = Number(item?.currentValue || 0);
-  const dueIn = daysUntil(item?.dueDate);
-  const reviewIn = daysUntil(item?.nextCheckInDate);
-
-  if (target > 0 && current >= target) return "completed";
-  if (dueIn !== null && dueIn < 0) return "behind";
-  if (reviewIn !== null && reviewIn < 0) return "behind";
-  if ((dueIn !== null && dueIn <= 7) || (reviewIn !== null && reviewIn <= 3)) {
-    return "watch";
-  }
-
-  return "onTrack";
-}
-
-function summarizeStoredFocusCommitments(): FocusCommitmentSummary {
-  const commitments = readLocalJSON<any[]>(
-    DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY,
-    []
-  ).filter((item) => item && typeof item === "object");
-
-  const events = readLocalJSON<any[]>(DASHBOARD_FOCUS_EVENTS_STORAGE_KEY, []).filter(
-    (item) => item && typeof item === "object"
-  );
-
-  const active = commitments
-    .filter((item) => !item.archived && !item.completedAt)
-    .sort((a, b) => {
-      const aDays = daysUntil(a?.nextCheckInDate) ?? daysUntil(a?.dueDate) ?? 999999;
-      const bDays = daysUntil(b?.nextCheckInDate) ?? daysUntil(b?.dueDate) ?? 999999;
-      return aDays - bDays;
-    })
-    .slice(0, 2);
-
-  let onTrackCount = 0;
-  let watchCount = 0;
-  let behindCount = 0;
-  let completedCount = 0;
-
-  for (const item of commitments.filter((row) => !row.archived)) {
-    const status = getStoredFocusCommitmentStatus(item);
-    if (status === "completed") completedCount += 1;
-    if (status === "onTrack") onTrackCount += 1;
-    if (status === "watch") watchCount += 1;
-    if (status === "behind") behindCount += 1;
-  }
-
-  const recentEvents = [...events]
-    .sort((a, b) => safeStr(b?.createdAt).localeCompare(safeStr(a?.createdAt)))
-    .slice(0, 8);
-
-  const checkins = recentEvents.filter((row) => row?.kind === "checkin").length;
-  const milestones = recentEvents.filter((row) => row?.kind === "milestone").length;
-  const completions = recentEvents.filter((row) => row?.kind === "complete").length;
-  const replans = recentEvents.filter((row) => row?.kind === "replan").length;
-  const misses = recentEvents.filter(
-    (row) => row?.kind === "missed-reported"
-  ).length;
-
-  const nextReview = active[0];
-  const nextReviewLabel = nextReview
-    ? `${safeStr(nextReview?.title || "Next target")} review ${
-        daysUntil(nextReview?.nextCheckInDate) === 0
-          ? "today"
-          : daysUntil(nextReview?.nextCheckInDate) === 1
-          ? "tomorrow"
-          : `on ${formatDateLabel(nextReview?.nextCheckInDate)}`
-      }`
-    : "";
-
-  const disciplineLine =
-    completions > 0
-      ? `${completions} recent completion${
-          completions === 1 ? "" : "s"
-        } visible`
-      : misses > 0 && checkins === 0 && milestones === 0
-      ? "Discipline is under pressure and needs visible follow-through"
-      : checkins > 0 || milestones > 0
-      ? `${checkins + milestones} recent execution update${
-          checkins + milestones === 1 ? "" : "s"
-        } kept${
-          replans > 0
-            ? `, ${replans} honest replan${replans === 1 ? "" : "s"}`
-            : ""
-        }`
-      : "No recent execution signal is visible yet";
-
-  return {
-    onTrackCount,
-    watchCount,
-    behindCount,
-    completedCount,
-    nextReviewLabel,
-    disciplineLine,
-  };
-}
-
-function countGuidanceNoticesMatching(
-  guidance: GuidanceSnapshot | null,
-  tokens: string[]
-): number {
-  if (!guidance?.actionInboxSummary) return 0;
-
-  const all = [
-    ...(guidance.actionInboxSummary.actNow || []),
-    ...(guidance.actionInboxSummary.dueSoon || []),
-    ...(guidance.actionInboxSummary.watchAndWait || []),
-    ...(guidance.actionInboxSummary.generalUpdates || []),
-  ];
-
-  return all.filter((item) => {
-    const joined = `${safeStr(item?.title)} ${safeStr(item?.detail)} ${safeStr(
-      item?.ctaTo
-    )}`.toLowerCase();
-    return tokens.some((token) => joined.includes(token));
-  }).length;
-}
-
-function buildTrustJourneyModel(params: {
-  openTrust: TrustReadingState;
-  cci: TrustReadingState;
-  trustSlipCode: string;
-  trustExplainer: any;
-  focusSummary: FocusCommitmentSummary;
-}): TrustJourneyModel {
-  const helps = [...(params.trustExplainer?.helps || [])]
-    .slice(0, 2)
-    .map((item: string) => safeStr(item))
-    .filter(Boolean);
-
-  const weakens = [...(params.trustExplainer?.weakens || [])]
-    .slice(0, 2)
-    .map((item: string) => safeStr(item))
-    .filter(Boolean);
-
-  if (!safeStr(params.trustSlipCode)) {
-    return {
-      tone: "neutral",
-      posture: "unverified",
-      postureTitle: "Finish your trust record first",
-      postureDetail:
-        "Your verification is still not complete. Finish it before you expect stronger trust.",
-      primaryRoute: {
-        key: "trust-slip",
-        label: "Open TrustSlip",
-        detail: "Finish the missing verification step.",
-        to: "/app/trust-slip",
-      },
-      secondaryRoute: {
-        key: "trust",
-        label: "Open Trust Passport",
-        detail: "See the trust path in a simpler view.",
-        to: "/app/trust",
-      },
-      helps,
-      weakens,
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  if (params.openTrust.tone === "red" || params.cci.tone === "red") {
-    return {
-      tone: "red",
-      posture: "repair",
-      postureTitle: "Fix this trust issue now",
-      postureDetail:
-        "Something is hurting trust right now. Fix it before you grow, ask for support, or open up to more people.",
-      primaryRoute:
-        params.openTrust.tone === "red"
-          ? {
-              key: "trust",
-              label: "Open Trust",
-              detail: "See what is hurting trust in your community.",
-              to: "/app/trust",
-            }
-          : {
-              key: "cci",
-              label: "Open CCI",
-              detail: "See what is hurting trust outside your community.",
-              to: "/app/identity",
-            },
-      secondaryRoute: {
-        key: "notifications",
-        label: "Open Notifications",
-        detail: "Check the next item waiting for your action.",
-        to: "/app/notifications",
-      },
-      helps,
-      weakens: [
-        ...weakens,
-        params.focusSummary.behindCount > 0
-          ? `${params.focusSummary.behindCount} focus commitment${
-              params.focusSummary.behindCount === 1 ? "" : "s"
-            } behind`
-          : "",
-      ].filter(Boolean),
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  if (
-    params.openTrust.tone === "yellow" ||
-    params.cci.tone === "yellow" ||
-    params.focusSummary.behindCount > 0
-  ) {
-    return {
-      tone: "yellow",
-      posture: "drifting",
-      postureTitle: "Trust is starting to slip",
-      postureDetail:
-        "A warning sign is visible now. Correct it early before it becomes a larger trust problem.",
-      primaryRoute:
-        params.focusSummary.behindCount > 0
-          ? {
-              key: "focus",
-              label: "Open Focus Commitments",
-              detail: "Open the Dashboard focus section and correct the commitment that has slipped behind.",
-              to: "/app/dashboard#focus-commitments",
-            }
-          : params.openTrust.tone === "yellow"
-          ? {
-              key: "trust",
-              label: "Open Trust",
-              detail: "Review the community trust warning and correct it early.",
-              to: "/app/trust",
-            }
-          : {
-              key: "cci",
-              label: "Open CCI",
-              detail: "Review the cross-community warning and correct it early.",
-              to: "/app/identity",
-            },
-      secondaryRoute: {
-        key: "notifications",
-        label: "Open Notifications",
-        detail: "Check the next item that still needs your answer.",
-        to: "/app/notifications",
-      },
-      helps,
-      weakens: [
-        ...weakens,
-        params.focusSummary.behindCount > 0
-          ? `${params.focusSummary.behindCount} focus commitment${
-              params.focusSummary.behindCount === 1 ? "" : "s"
-            } behind`
-          : "",
-      ].filter(Boolean),
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  if (
-    params.focusSummary.onTrackCount > 0 ||
-    params.focusSummary.completedCount > 0
-  ) {
-    return {
-      tone: "green",
-      posture: "building",
-      postureTitle: "Trust is working well",
-      postureDetail:
-        "Your visible follow-through is helping trust stay steadier right now.",
-      primaryRoute: {
-        key: "trust",
-        label: "Open Trust Passport",
-        detail: "Review the full trust path and keep it steady.",
-        to: "/app/trust",
-      },
-      secondaryRoute: {
-        key: "focus",
-        label: "Open Focus Commitments",
-        detail: "Open the Dashboard focus section and keep the next target visible and on track.",
-        to: "/app/dashboard#focus-commitments",
-      },
-      helps: [
-        ...helps,
-        params.focusSummary.onTrackCount > 0
-          ? `${params.focusSummary.onTrackCount} focus commitment${
-              params.focusSummary.onTrackCount === 1 ? "" : "s"
-            } on track`
-          : "",
-        params.focusSummary.completedCount > 0
-          ? `${params.focusSummary.completedCount} commitment${
-              params.focusSummary.completedCount === 1 ? "" : "s"
-            } already completed`
-          : "",
-      ].filter(Boolean),
-      weakens,
-      commitmentLine: params.focusSummary.disciplineLine,
-    };
-  }
-
-  return {
-    tone: "green",
-    posture: "steady",
-    postureTitle: "Trust is steady",
-    postureDetail:
-      "No major trust problem is showing right now. Keep your actions visible and consistent.",
-    primaryRoute: {
-      key: "trust",
-      label: "Open Trust Passport",
-      detail: "Review the full trust path when you need it.",
-      to: "/app/trust",
-    },
-    secondaryRoute: {
-      key: "notifications",
-      label: "Open Notifications",
-      detail: "Answer new items early so trust stays clean.",
-      to: "/app/notifications",
-    },
-    helps,
-    weakens,
-    commitmentLine: params.focusSummary.disciplineLine,
-  };
-}
-
 export default function TrustScorePage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -1579,15 +1008,8 @@ export default function TrustScorePage() {
     return window.innerWidth <= 980;
   });
 
-  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
-    normalizeCollapseState(
-      readLocalJSON(TRUST_PASSPORT_UI_STORAGE_KEY, defaultCollapseState())
-    )
-  );
-
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [trustJourneyExpanded, setTrustJourneyExpanded] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
     text: string;
@@ -1619,10 +1041,6 @@ export default function TrustScorePage() {
   }, []);
 
   useEffect(() => {
-    writeLocalJSON(TRUST_PASSPORT_UI_STORAGE_KEY, collapsed);
-  }, [collapsed]);
-
-  useEffect(() => {
     if (!notice) return;
 
     const timer = window.setTimeout(() => {
@@ -1632,21 +1050,7 @@ export default function TrustScorePage() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  useEffect(() => {
-    if (loading || location.hash !== "#trust-journey") return;
-
-    setTrustJourneyExpanded(true);
-    revealTrustSection("trust-journey");
-
-    return () => {
-      if (typeof window !== "undefined" && trustRevealRef.current !== null) {
-        window.cancelAnimationFrame(trustRevealRef.current);
-        trustRevealRef.current = null;
-      }
-    };
-  }, [loading, location.hash]);
-
-  async function loadAll() {
+  const loadAll = useCallback(async () => {
     const clanHeaders: Record<string, string> = {};
     if (selectedClanId) {
       clanHeaders["X-Clan-Id"] = String(selectedClanId);
@@ -1753,7 +1157,7 @@ export default function TrustScorePage() {
     setExplainability(normalizeExplainability(explainRes));
     setRecompute(normalizeRecompute(recomputeRes));
     setTrustSlipSummary(normalizeTrustSlipSummary(trustSlipRes));
-  }
+  }, [selectedClanId]);
 
   useEffect(() => {
     let alive = true;
@@ -1771,7 +1175,7 @@ export default function TrustScorePage() {
     return () => {
       alive = false;
     };
-  }, [selectedClanId]);
+  }, [loadAll]);
 
   async function handleRefreshTrust() {
     setRefreshing(true);
@@ -1962,8 +1366,6 @@ export default function TrustScorePage() {
     [me, trustSlipSummary, hasSelectedCommunity]
   );
   const cci = useMemo(() => getCciState(me, trustSlipSummary), [me, trustSlipSummary]);
-  const focusSummary = useMemo(() => summarizeStoredFocusCommitments(), []);
-  const trustExplainer = guidance?.trustChangeExplainer || null;
   const trustSlipCode = useMemo(
     () =>
       firstTruthy(
@@ -1973,248 +1375,6 @@ export default function TrustScorePage() {
       ),
     [trustSlipSummary]
   );
-  const pendingJoinRequestCount = useMemo(
-    () =>
-      countGuidanceNoticesMatching(guidance, [
-        "join request",
-        "join approval",
-        "invite link",
-        "pending approval",
-        "membership request",
-      ]),
-    [guidance]
-  );
-  const urgentDemandCount = useMemo(
-    () =>
-      countGuidanceNoticesMatching(guidance, [
-        "demand box",
-        "open demand",
-        "market demand",
-        "buyer need",
-        "request for goods",
-        "request for item",
-      ]),
-    [guidance]
-  );
-  const trustJourneyModel = useMemo(
-    () =>
-      buildTrustJourneyModel({
-        openTrust,
-        cci,
-        trustSlipCode,
-        trustExplainer,
-        focusSummary,
-      }),
-    [openTrust, cci, trustSlipCode, trustExplainer, focusSummary]
-  );
-  const trustJourneyTone = useMemo(
-    () => toneStyles(trustJourneyModel.tone),
-    [trustJourneyModel.tone]
-  );
-  const trustJourneyCopy = useMemo(
-    () =>
-      buildDashboardTrustJourneyCopy({
-        openTrust,
-        cci,
-        trustSlipCode,
-        trustExplainer,
-        pendingRequestsCount: pendingJoinRequestCount,
-        unreadCount: guidance?.actionInboxSummary?.unreadCount || 0,
-        actNowCount: guidance?.actionInboxSummary?.actNow?.length || 0,
-        urgentDemandCount,
-        focusBehindCount: focusSummary.behindCount,
-        focusWatchCount: focusSummary.watchCount,
-        focusOnTrackCount: focusSummary.onTrackCount,
-        focusCompletedCount: focusSummary.completedCount,
-      }),
-    [
-      openTrust,
-      cci,
-      trustSlipCode,
-      trustExplainer,
-      pendingJoinRequestCount,
-      guidance,
-      urgentDemandCount,
-      focusSummary,
-    ]
-  );
-  const trustJourneyCountLine = [
-    guidance?.trustJourneySummary?.builtCount
-      ? `Built ${guidance.trustJourneySummary.builtCount}`
-      : "",
-    guidance?.trustJourneySummary?.protectedCount
-      ? `Protected ${guidance.trustJourneySummary.protectedCount}`
-      : "",
-    guidance?.trustJourneySummary?.weakenedCount
-      ? `Weakened ${guidance.trustJourneySummary.weakenedCount}`
-      : "",
-    guidance?.trustJourneySummary?.repairCount
-      ? `Repair ${guidance.trustJourneySummary.repairCount}`
-      : "",
-  ]
-    .filter(Boolean)
-    .join(" | ");
-  const trustJourneyFocusLabel =
-    focusSummary.behindCount > 0
-      ? `${focusSummary.behindCount} behind`
-      : focusSummary.watchCount > 0
-      ? `${focusSummary.watchCount} watch`
-      : focusSummary.onTrackCount > 0
-      ? `${focusSummary.onTrackCount} on track`
-      : focusSummary.completedCount > 0
-      ? `${focusSummary.completedCount} done`
-      : "No target";
-  const trustJourneyPrimaryLabel =
-    safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
-      ? "Review Trust Passport"
-      : trustJourneyModel.primaryRoute.label;
-  const trustJourneyPrimaryDetail =
-    safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
-      ? "Use this Trust Passport reading to see what is helping, what needs care, and what to repair next."
-      : trustJourneyModel.primaryRoute.detail;
-  const actionGuide = useMemo(() => buildTrustPassportActionGuide(), []);
-  const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
-  const trustDocumentUseCases = useMemo(
-    () => buildTrustDocumentUseCaseItems(trustDocumentFamilyItems, "passport"),
-    [trustDocumentFamilyItems]
-  );
-
-  const trustNextActionItems = useMemo<NextActionGuideItem[]>(
-    () => [
-      {
-        id: "trust-summary",
-        label: "Check my trust story",
-        detail: "Open the main Trust Passport summary on this page.",
-        technical: "Trust Passport summary",
-        keywords: ["summary", "score", "band", "passport", "trust story"],
-        tone: "primary",
-      },
-      {
-        id: "trust-journey",
-        label: "What should I repair?",
-        detail: trustJourneyPrimaryDetail,
-        technical: "Trust journey",
-        keywords: ["repair", "next step", "journey", "protect", "improve"],
-        tone: trustJourneyModel.tone === "red" ? "primary" : "secondary",
-      },
-      {
-        id: "why-change",
-        label: "Why did trust change?",
-        detail: "Open the recent events and explanation behind the reading.",
-        technical: "Trust explainability",
-        keywords: ["why", "changed", "event", "reason", "explain"],
-      },
-      {
-        id: "evidence",
-        label: "Check evidence",
-        detail: "Open capacity, risk, sponsor, and TrustSlip evidence context.",
-        technical: "Evidence context",
-        keywords: ["evidence", "risk", "sponsor", "capacity", "proof"],
-      },
-      {
-        id: "trust-slip",
-        label: "Show TrustSlip",
-        detail: "Open the smaller proof surface for one decision.",
-        technical: "TrustSlip",
-        to: "/app/trust-slip",
-        keywords: ["trustslip", "trust slip", "proof", "certificate", "merchant"],
-      },
-      {
-        id: "verify-trust-slip",
-        label: "Verify TrustSlip",
-        detail: verifyUrl
-          ? "Open the public verification view for the current TrustSlip."
-          : "Verification link is not ready yet.",
-        technical: "TrustSlip Verify",
-        keywords: ["verify", "verification", "public", "check proof"],
-        disabled: !verifyUrl,
-        disabledReason:
-          "TrustSlip verification is not ready yet. Refresh Trust Passport or open TrustSlip first.",
-      },
-      {
-        id: "cci",
-        label: "Check identity reading",
-        detail: "Open the cross-community integrity reading.",
-        technical: "CCI / Identity",
-        to: "/app/identity",
-        keywords: ["cci", "identity", "integrity", "cross community", "profile"],
-      },
-      {
-        id: "refresh",
-        label: refreshing ? "Refreshing..." : "Refresh trust",
-        detail: "Pull the latest trust reading again.",
-        technical: "Refresh",
-        keywords: ["refresh", "reload", "update", "latest"],
-        tone: "soft",
-        disabled: refreshing,
-        disabledReason: "Refresh is already running.",
-      },
-      {
-        id: "notifications",
-        label: "See what is waiting",
-        detail: "Open actions that may affect trust or membership.",
-        technical: "Notifications",
-        to: "/app/notifications",
-        keywords: ["notice", "notification", "inbox", "queue", "waiting"],
-        tone: "soft",
-      },
-      {
-        id: "marketplace",
-        label: "Return to Marketplace",
-        detail: "Go back to the selected community workspace.",
-        technical: "Marketplace",
-        to: "/app/marketplace",
-        keywords: ["market", "community", "workspace"],
-        tone: "soft",
-      },
-      {
-        id: "spotlight",
-        label: "Open spotlight guide",
-        detail:
-          "Go to the guided spotlight family for free spotlight, subscription spotlight, Vault, or shop setup.",
-        technical: "Guided spotlight",
-        to: "/app/community?guide=spotlight",
-        keywords: [
-          "spotlight",
-          "free spotlight",
-          "subscription spotlight",
-          "vault",
-          "shop setup",
-        ],
-        tone: "soft",
-      },
-      {
-        id: "focus",
-        label: "Open Focus Commitments",
-        detail: "Open the Dashboard focus section for repair, repayment, or follow-through.",
-        technical: "Dashboard focus commitments",
-        to: "/app/dashboard#focus-commitments",
-        keywords: ["promise", "commitment", "focus", "repair plan", "target"],
-        tone: "soft",
-      },
-      {
-        id: "guide",
-        label: "Open my GSN guide",
-        detail: "Open the wider guide for understanding your GSN position.",
-        technical: "My GSN and I",
-        to: "/app/my-gmfn-and-i",
-        keywords: ["guide", "help", "understand", "my gsn"],
-        tone: "soft",
-      },
-    ],
-    [refreshing, trustJourneyModel.tone, trustJourneyPrimaryDetail, verifyUrl]
-  );
-
-  function openTrustJourneyRoute(route: { to: string }) {
-    if (safeStr(route.to) === "/app/trust") {
-      setCollapsed((prev) => ({ ...prev, overview: false }));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    navigate(route.to);
-  }
-
   function openTrustRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
   }
@@ -2239,53 +1399,8 @@ export default function TrustScorePage() {
     target.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function openTrustSection(key: keyof CollapseState, targetId: string) {
-    setCollapsed((prev) => ({ ...prev, [key]: false }));
+  function openTrustSection(targetId: string) {
     revealTrustSection(targetId);
-  }
-
-  function handleTrustNextAction(item: NextActionGuideItem) {
-    switch (item.id) {
-      case "trust-summary":
-        openTrustSection("overview", "trust-passport-summary");
-        break;
-      case "trust-journey":
-        setTrustJourneyExpanded(true);
-        revealTrustSection("trust-journey");
-        break;
-      case "why-change":
-        openTrustSection("explainability", "trust-passport-explainability");
-        break;
-      case "evidence":
-        openTrustSection("evidence", "trust-passport-evidence");
-        break;
-      case "refresh":
-        void handleRefreshTrust();
-        break;
-      case "verify-trust-slip":
-        if (verifyUrl && typeof window !== "undefined") {
-          window.open(verifyUrl, "_blank", "noopener,noreferrer");
-        }
-        break;
-      default:
-        if (item.to) openTrustRoute(item.to);
-        break;
-    }
-  }
-
-  function toggleSection(key: keyof CollapseState) {
-    setCollapsed((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
-  }
-
-  function handleCollapseTap(key: keyof CollapseState) {
-    toggleSection(key);
-  }
-
-  function handleTrustJourneyTap() {
-    setTrustJourneyExpanded((prev) => !prev);
   }
 
   function handleCopy(text: string, successText: string, emptyText: string) {
@@ -2348,1548 +1463,806 @@ export default function TrustScorePage() {
     );
   }
 
-  return (
+  const trustSlipStatus = firstTruthy(
+    trustSlipSummary?.status,
+    trustSlipSummary?.active || trustSlipSummary?.verified || trustSlipCode
+      ? "Ready"
+      : "Pending"
+  );
+  const issuedText = safeDateTime(trustSlipSummary?.issued_at) || "Not stated";
+  const expiresText = safeDateTime(trustSlipSummary?.expires_at) || "Not stated";
+  const eventCount = safeStr(recompute?.event_count ?? "0");
+  const activeClanCount = safeStr(trustSlipSummary?.active_clan_count ?? "0");
+  const counterpartiesCount = safeStr(
+    trustSlipSummary?.unique_counterparties ?? "0"
+  );
+  const riskLevel = firstTruthy(capacityContext?.risk_level, "Unknown");
+  const surfaceCards = [
+    {
+      title: "Identity & Integrity",
+      detail: "Use this for steady identity proof.",
+      cta: "Open Identity & Integrity",
+      tone: "#EAF3FF",
+      icon: "🪪",
+      to: "/app/identity",
+    },
+    {
+      title: "CCI",
+      detail: "Use this for the cross-community integrity read.",
+      cta: "Open CCI",
+      tone: "#E9F8EF",
+      icon: "🌐",
+      to: "/app/cci-reading",
+    },
+    {
+      title: "TrustSlip",
+      detail: "Use this to carry a short portable proof.",
+      cta: "Open TrustSlip",
+      tone: "#FFF6DB",
+      icon: "📄",
+      to: "/app/trust-slip",
+    },
+    {
+      title: "TrustSlip Verify",
+      detail: "Use this to check whether a public code is valid now.",
+      cta: "Open Verify",
+      tone: "#F4EEFF",
+      icon: "🛡️",
+      to: "/app/trust-slip/verify",
+    },
+  ];
+
+  const MetricTile = ({
+    label,
+    value,
+    icon,
+  }: {
+    label: string;
+    value: React.ReactNode;
+    icon: string;
+  }) => (
+    <div style={statTile()}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 10,
+        }}
+      >
+        <div style={sectionLabel()}>{label}</div>
+        <div style={{ fontSize: 24, lineHeight: 1 }}>{icon}</div>
+      </div>
+      <div
+        style={{
+          marginTop: 8,
+          color: "#07172C",
+          fontSize: isCompact ? 20 : 22,
+          fontWeight: 1000,
+          lineHeight: 1.12,
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+
+  const SurfaceCard = ({
+    item,
+  }: {
+    item: (typeof surfaceCards)[number];
+  }) => (
     <div
-      className="trust-passport-root"
       style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        paddingBottom: 40,
+        ...innerCard(`linear-gradient(180deg, ${item.tone} 0%, #FFFFFF 100%)`),
         display: "grid",
-        gap: 18,
+        gap: 10,
+        minHeight: 178,
       }}
     >
-      <style>{`
-        @page { margin: 14mm; }
-        .trust-passport-root button,
-        .trust-passport-root a {
-          -webkit-tap-highlight-color: transparent;
-          touch-action: manipulation;
-        }
-        .trust-passport-root button {
-          font-family: inherit;
-        }
-        .trust-passport-root button:focus-visible,
-        .trust-passport-root a:focus-visible {
-          outline: 3px solid rgba(11,99,209,0.32);
-          outline-offset: 4px;
-        }
-        @media print {
-          body { background: #ffffff !important; }
-          a[href]:after { content: "" !important; }
-          button { display: none !important; }
-          .print-trust-nav { display: none !important; }
-          .print-trust-document,
-          .print-trust-support {
-            box-shadow: none !important;
-            border: 1px solid rgba(148,163,184,0.34) !important;
-            background: #ffffff !important;
-            break-inside: avoid;
-            page-break-inside: avoid;
-          }
-          .print-trust-document {
-            color: #0b1f33 !important;
-          }
-          .print-trust-document * {
-            color: inherit;
-          }
-          .print-trust-document .print-watermark {
-            color: rgba(11,31,51,0.08) !important;
-          }
-        }
-      `}</style>
-      <div className="print-trust-nav">
+      <div style={{ fontSize: 30, lineHeight: 1 }}>{item.icon}</div>
+      <div
+        style={{
+          color: "#07172C",
+          fontWeight: 1000,
+          fontSize: 16,
+          lineHeight: 1.2,
+        }}
+      >
+        {item.title}
+      </div>
+      <div style={{ ...helperText(), fontSize: 13.5, lineHeight: 1.45 }}>
+        {item.detail}
+      </div>
+      <button
+        type="button"
+        onPointerDown={stopTrustTap}
+        onMouseDown={stopTrustTap}
+        onClick={() => openTrustRoute(item.to)}
+        style={{
+          ...actionBtn(item.title === "TrustSlip" ? "soft" : "primary"),
+          minHeight: 44,
+          width: "100%",
+          alignSelf: "end",
+        }}
+      >
+        {item.cta}
+      </button>
+    </div>
+  );
+
+  const noticeNode = notice ? (
+    <div style={noticeCard(notice.tone)}>{notice.text}</div>
+  ) : null;
+
+  return (
+    <main
+      className="trust-passport-root gsn-page theme-trust"
+      style={{
+        minHeight: "100vh",
+        margin: "-18px",
+        padding: "18px 18px 42px",
+        display: "grid",
+        gap: 14,
+      }}
+    >
+      <div
+        style={{
+          width: "min(100%, 980px)",
+          margin: "0 auto",
+          display: "grid",
+          gap: 14,
+        }}
+      >
         <PageTopNav
-          sectionLabel="Trust Passport"
+          sectionLabel="Main Movement"
           title="Trust Passport"
-          subtitle="Trust Passport turns trust behaviour into a personal proof story while keeping the selected community reading separate."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
           backTo="/app/dashboard"
         />
 
-        <DomainIntroToggle
-          title="How Trust Passport Helps You"
-          body={TRUST_PASSPORT_HELP_BODY}
-          bullets={TRUST_PASSPORT_HELP_BULLETS}
-          note={TRUST_PASSPORT_HELP_NOTE}
-          tone="blue"
-        />
-      </div>
+        {noticeNode}
 
-      <NextActionGuide
-        storageKey="gmfn.trustPassport.nextActionGuide.v1"
-        compact={isCompact}
-        items={trustNextActionItems}
-        onSelect={handleTrustNextAction}
-        intro="Say what you want in normal words, like trust score, why changed, repair, proof, verify, CCI, or marketplace. GSN will point you to the closest trust path."
-      />
-
-      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
-
-      <TrustDocumentFamilyMap
-        compact={isCompact}
-        items={trustDocumentFamilyItems}
-        title="How Trust Passport fits into the wider trust-document family"
-        intro="Trust Passport is the fuller personal trust record. Use this map when you need to separate the stable identity layer, the portable TrustSlip proof, and the public verification check from the deeper trust story explained here."
-      />
-
-      <TrustDocumentUseCases
-        compact={isCompact}
-        items={trustDocumentUseCases}
-        title="Which trust question should stay here, and which should move elsewhere?"
-        intro="Use this chooser when someone asks for identity proof, the fuller trust explanation, portable proof, or a public validity check, and you need to know whether to stay inside Trust Passport or move to a narrower surface."
-      />
-
-      <section style={pageCard("linear-gradient(135deg, #F8FBFF 0%, #FFFFFF 54%, #FFF8E7 100%)")}>
-        <div style={sectionLabel()}>Trust record model</div>
-        <div
+        <section
           style={{
-            marginTop: 8,
-            color: "#0B1F33",
-            fontSize: isCompact ? 23 : 28,
-            fontWeight: 900,
-            lineHeight: 1.12,
-          }}
-        >
-          One person, one Trust Passport
-        </div>
-        <div style={{ marginTop: 10, ...helperText(), maxWidth: 900 }}>
-          This page should help a member see the trust story they can carry,
-          not feel judged by one number. The personal Passport gathers what is
-          known across communities, while the selected community still keeps its
-          own smaller reading.
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Personal trust record</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 18,
-                lineHeight: 1.25,
-              }}
-            >
-              {memberName}'s carried trust story
-            </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This is the record that follows the member across communities. It
-              gathers completed promises, support behaviour, CCI, TrustSlip
-              status, and evidence into one explainable story.
-            </div>
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>GSN ID: {gmfnId}</span>
-              <span style={badge(false)}>Band: {currentBand}</span>
-              <span style={badge(false)}>Score: {currentScore}</span>
-              <span style={badge(false)}>
-                TrustSlip: {trustSlipCode ? "Ready" : "Pending"}
-              </span>
-            </div>
-          </div>
-
-          <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Selected community reading</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 18,
-                lineHeight: 1.25,
-              }}
-            >
-              {communityName}
-            </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This smaller reading belongs to the current community. It helps
-              show whether this group currently sees the member as strong,
-              steady, watch, or pressure.
-            </div>
-            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Community ID: {communityCode}</span>
-              <span style={badge(false)}>Open Trust: {openTrust.classText}</span>
-              <span style={badge(false)}>CCI: {cci.classText}</span>
-              <span style={badge(false)}>
-                Active communities: {safeStr(trustSlipSummary?.active_clan_count ?? "0")}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 12,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#F8FBFF")}>
-            <div style={sectionLabel()}>What strengthens trust</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Completed repayments, responsible guarantees, clean identity
-              continuity, helpful participation, and promises that are closed
-              properly.
-            </div>
-          </div>
-
-          <div style={innerCard("#FFFBEF")}>
-            <div style={sectionLabel()}>What creates pressure</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Missed promises, defaults, overexposure, unresolved actions, or
-              identity shifts that need a simple review before sensitive work
-              continues.
-            </div>
-          </div>
-
-          <div style={innerCard("#F3FBF5")}>
-            <div style={sectionLabel()}>What can travel</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              TrustSlip, evidence packs, trust timeline, and verified
-              explanations can help a member prove reliability without exposing
-              their full private Passport.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
-
-      <section
-        className="print-trust-document"
-        style={{
-          ...pageCard(
-            "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"
-          ),
-          ...documentFrameStyle(),
-        }}
-      >
-        <div className="print-watermark" aria-hidden style={documentWatermarkStyle()}>
-          GSN Trust Passport
-        </div>
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
-            gap: 16,
-            alignItems: "start",
-          }}
-        >
-          <div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Personal GSN trust record</span>
-              <span style={badge(false)}>Community reading kept separate</span>
-            </div>
-
-            <div style={sectionLabel()}>Personal trust document</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.12,
-              }}
-            >
-              Full trust reading for {memberName}
-            </div>
-
-            <div
-              style={{
-                marginTop: 12,
-                ...helperText(),
-                color: "#D7E3F1",
-                maxWidth: 860,
-              }}
-            >
-              This is the fuller personal trust record for {memberName}. It
-              explains what is helping, what needs care, what evidence supports
-              the reading, and what can be safely shown outside as a TrustSlip.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
-              }}
-            >
-              <span style={badge(true)}>GMFN ID: {gmfnId}</span>
-              <span style={badge(false)}>Community: {communityName}</span>
-              <span style={badge(false)}>Community ID: {communityCode}</span>
-              <span style={badge(false)}>Current page: Trust Passport</span>
-              <span style={badge(false)}>Current step: Personal record</span>
-            </div>
-
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                type="button"
-                onPointerDown={stopTrustTap}
-                onMouseDown={stopTrustTap}
-                onTouchStart={stopTrustTap}
-                onClick={() => {
-                  void handleRefreshTrust();
-                }}
-                disabled={refreshing}
-                style={actionBtn("primary", refreshing)}
-              >
-                {refreshing ? "Refreshing..." : "Refresh Trust Reading"}
-              </button>
-
-              <button
-                type="button"
-                onPointerDown={stopTrustTap}
-                onMouseDown={stopTrustTap}
-                onTouchStart={stopTrustTap}
-                onClick={() => {
-                  handleCopy(
-                    gmfnId,
-                    "GMFN ID copied.",
-                    "GMFN ID is not available yet."
-                  );
-                }}
-                style={actionBtn("secondary", !gmfnId || gmfnId === "Awaiting issue")}
-                disabled={!gmfnId || gmfnId === "Awaiting issue"}
-              >
-                Copy GMFN ID
-              </button>
-
-              <button
-                type="button"
-                onPointerDown={stopTrustTap}
-                onMouseDown={stopTrustTap}
-                onTouchStart={stopTrustTap}
-                onClick={() => {
-                  if (typeof window !== "undefined" && typeof window.print === "function") {
-                    window.print();
-                  }
-                }}
-                style={actionBtn("soft")}
-              >
-                Print Trust Passport
-              </button>
-
-              <button
-                type="button"
-                onPointerDown={stopTrustTap}
-                onMouseDown={stopTrustTap}
-                onTouchStart={stopTrustTap}
-                onClick={copyTrustSnapshot}
-                style={actionBtn("soft")}
-              >
-                Copy trust snapshot
-              </button>
-
-              {verifyUrl ? (
-                <button
-                  type="button"
-                  onPointerDown={stopTrustTap}
-                  onMouseDown={stopTrustTap}
-                  onTouchStart={stopTrustTap}
-                  onClick={() => {
-                    if (typeof window !== "undefined") {
-                      window.open(verifyUrl, "_blank", "noopener,noreferrer");
-                    }
-                  }}
-                  style={actionBtn("secondary")}
-                >
-                  Open TrustSlip Verify
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...softCard(readingTone.bg),
-              border: readingTone.border,
-            }}
-          >
-            <div style={sectionLabel()}>Current trust posture</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: readingTone.text,
-                fontWeight: 900,
-                fontSize: 22,
-                lineHeight: 1.25,
-              }}
-            >
-              {currentBand}
-            </div>
-
-            <div
-              style={{
-                marginTop: 8,
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 18,
-                lineHeight: 1.25,
-              }}
-            >
-              Score: {currentScore}
-            </div>
-
-            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-              {nextStep.title}
-            </div>
-
-            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-              {nextStep.detail}
-            </div>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                gap: 10,
-              }}
-            >
-              <div style={documentMetaCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Document reference</div>
-                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                  GSN ID: {gmfnId || "Awaiting issue"}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-                  Verification code: {safeStr(trustSlipSummary?.verification_code || "Not stated")}
-                </div>
-              </div>
-
-              <div style={documentMetaCard("#F8FBFF")}>
-                <div style={sectionLabel()}>Issue window</div>
-                <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-                  Issued: {safeDateTime(trustSlipSummary?.issued_at) || "Not stated"}
-                </div>
-                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-                  Expires: {safeDateTime(trustSlipSummary?.expires_at) || "Not stated"}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div style={documentFooterGrid(isCompact)}>
-          <div>
-            <div style={documentFooterLabel()}>Issue and expiry</div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
-              Issued: {safeDateTime(trustSlipSummary?.issued_at) || "Not stated"}
-            </div>
-            <div style={{ marginTop: 4, ...helperText(), color: "#D7E3F1" }}>
-              Expires: {safeDateTime(trustSlipSummary?.expires_at) || "Not stated"}
-            </div>
-          </div>
-
-          <div>
-            <div style={documentFooterLabel()}>Reference control</div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
-              GSN ID: {gmfnId || "Awaiting issue"}
-            </div>
-            <div style={{ marginTop: 4, ...helperText(), color: "#D7E3F1" }}>
-              Verification code: {safeStr(trustSlipSummary?.verification_code || "Not stated")}
-            </div>
-          </div>
-
-          <div>
-            <div style={documentFooterLabel()}>Institutional note</div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
-              {safeStr(
-                trustSlipSummary?.disclaimer ||
-                  "Trust Passport explains the current trust reading and the evidence context behind it."
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section
-        id="trust-journey"
-        style={{
-          ...pageCard("#FFFFFF"),
-          display: "grid",
-          gap: 14,
-        }}
-      >
-        <div
-          style={{
-            position: "relative",
-            ...innerCard(
-              trustJourneyModel.tone === "red"
-                ? "linear-gradient(180deg, #FFF5F5 0%, #FFFFFF 100%)"
-                : trustJourneyModel.tone === "yellow"
-                ? "linear-gradient(180deg, #FFFBEF 0%, #FFFFFF 100%)"
-                : "linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%)"
+            ...pageCard(
+              "radial-gradient(circle at 82% 26%, rgba(242,207,119,0.22), transparent 28%), linear-gradient(135deg, #03101F 0%, #08213A 64%, #061827 100%)"
             ),
-            border: trustJourneyTone.border,
-            boxShadow:
-              trustJourneyModel.tone === "red"
-                ? "0 16px 34px rgba(239,68,68,0.07)"
-                : trustJourneyModel.tone === "yellow"
-                ? "0 16px 34px rgba(245,158,11,0.07)"
-                : "0 16px 34px rgba(11,99,209,0.06)",
-            overflow: "hidden",
+            color: "#FFFFFF",
+            border: "1px solid rgba(242,207,119,0.34)",
+            boxShadow: "0 22px 48px rgba(3,16,31,0.22)",
           }}
         >
           <div
             style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              height: 4,
-              background:
-                trustJourneyModel.tone === "red"
-                  ? "linear-gradient(90deg, #991B1B 0%, #DC2626 55%, #FCA5A5 100%)"
-                  : trustJourneyModel.tone === "yellow"
-                  ? "linear-gradient(90deg, #92400E 0%, #F59E0B 55%, #FCD34D 100%)"
-                  : "linear-gradient(90deg, #166534 0%, #0B63D1 55%, #93C5FD 100%)",
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ flex: "1 1 420px", minWidth: 0 }}>
-              <div style={sectionLabel()}>Trust Journey</div>
-              <div
-                style={{
-                  marginTop: 6,
-                  color: trustJourneyTone.text,
-                  fontSize: isCompact ? 18 : 20,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {trustJourneyModel.postureTitle}
-              </div>
-              <div
-                style={{
-                  marginTop: 6,
-                  ...helperText(),
-                  maxWidth: 760,
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                }}
-              >
-                {trustJourneyModel.postureDetail}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onPointerDown={stopTrustTap}
-              onMouseDown={stopTrustTap}
-              onTouchStart={stopTrustTap}
-              onClick={handleTrustJourneyTap}
-              style={collapseToggle()}
-            >
-              {trustJourneyExpanded ? "Collapse" : "Open"}
-            </button>
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            {[
-              {
-                label: "Trust",
-                value: openTrust.classText,
-                color: toneStyles(openTrust.tone).text,
-                background: toneStyles(openTrust.tone).bg,
-                border: toneStyles(openTrust.tone).border,
-              },
-              {
-                label: "CCI",
-                value: cci.classText,
-                color: toneStyles(cci.tone).text,
-                background: toneStyles(cci.tone).bg,
-                border: toneStyles(cci.tone).border,
-              },
-              {
-                label: "Slip",
-                value: trustSlipCode ? "Ready" : "Pending",
-                color: "#0B1F33",
-                background: "#F8FBFF",
-                border: "1px solid rgba(11,99,209,0.10)",
-              },
-              {
-                label: "Focus",
-                value: trustJourneyFocusLabel,
-                color:
-                  focusSummary.behindCount > 0
-                    ? "#991B1B"
-                    : focusSummary.watchCount > 0
-                    ? "#92400E"
-                    : "#166534",
-                background:
-                  focusSummary.behindCount > 0
-                    ? "#FFF5F5"
-                    : focusSummary.watchCount > 0
-                    ? "#FFFBEF"
-                    : "#F3FBF5",
-                border:
-                  focusSummary.behindCount > 0
-                    ? "1px solid rgba(239,68,68,0.16)"
-                    : focusSummary.watchCount > 0
-                    ? "1px solid rgba(245,158,11,0.16)"
-                    : "1px solid rgba(34,197,94,0.16)",
-              },
-            ].map((item) => (
-              <div
-                key={`trust-journey-pill-${item.label}`}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  minHeight: 34,
-                  padding: "7px 11px",
-                  borderRadius: 999,
-                  border: item.border,
-                  background: item.background,
-                  boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.72), 0 8px 18px rgba(10,24,49,0.04)",
-                }}
-              >
-                <span
-                  style={{
-                    color: "#5D7389",
-                    fontSize: 11,
-                    fontWeight: 900,
-                    letterSpacing: 0.28,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {item.label}
-                </span>
-                <span
-                  style={{
-                    color: item.color,
-                    fontSize: 13,
-                    fontWeight: 900,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {item.value}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              marginTop: 10,
-              ...helperText(),
-              fontSize: 12.8,
-              lineHeight: 1.6,
-              color: "#0B1F33",
-            }}
-          >
-            <strong>How they connect:</strong> {trustJourneyCopy.connectionSummary}
-          </div>
-
-          <div
-            style={{
-              marginTop: 12,
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.05fr)",
-              gap: 10,
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 190px",
+              gap: 18,
+              alignItems: "center",
             }}
           >
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Helping</div>
-              <div
+            <div>
+              <div style={{ ...sectionLabel(), color: "#F2CF77" }}>
+                Trust Passport
+              </div>
+              <h1
                 style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  lineHeight: 1.55,
+                  margin: "8px 0 0",
+                  fontSize: isCompact ? 30 : 42,
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.02em",
+                  fontWeight: 1000,
                 }}
               >
-                {trustJourneyCopy.helpingText}
-              </div>
-            </div>
-
-            <div
-              style={innerCard(
-                trustJourneyModel.weakens.length > 0 ? "#FFFBEF" : "#FFFFFF"
-              )}
-            >
-              <div style={sectionLabel()}>Needs care</div>
-              <div
+                Full trust reading
+              </h1>
+              <p
                 style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  lineHeight: 1.55,
+                  margin: "10px 0 0",
+                  color: "rgba(255,255,255,0.84)",
+                  fontSize: 16,
+                  lineHeight: 1.45,
+                  maxWidth: 560,
                 }}
               >
-                {trustJourneyCopy.careText}
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                border: "1px solid rgba(11,99,209,0.10)",
-              }}
-            >
-              <div style={sectionLabel()}>Do this now</div>
+                See what is helping your trust, what needs care, and what to do next.
+              </p>
 
               <div
                 style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 17,
-                  fontWeight: 900,
-                  lineHeight: 1.28,
-                }}
-              >
-                {trustJourneyPrimaryLabel}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 6,
-                  ...helperText(),
-                  fontSize: 13,
-                  lineHeight: 1.55,
-                }}
-              >
-                {trustJourneyPrimaryDetail}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
+                  marginTop: 16,
                   display: "flex",
                   gap: 8,
                   flexWrap: "wrap",
                 }}
               >
+                <span style={{ ...badge(false), color: "#FFFFFF" }}>
+                  🪪 GMFN ID: {gmfnId}
+                </span>
+                <span style={{ ...badge(false), color: "#FFFFFF" }}>
+                  👥 Community: {communityName}
+                </span>
+                <span style={{ ...badge(false), color: "#FFFFFF" }}>
+                  # Community ID: {communityCode}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(3, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
                 <button
                   type="button"
                   onPointerDown={stopTrustTap}
                   onMouseDown={stopTrustTap}
-                  onTouchStart={stopTrustTap}
-                  onClick={() => openTrustJourneyRoute(trustJourneyModel.primaryRoute)}
-                  style={actionBtn("primary")}
+                  onClick={() => {
+                    void handleRefreshTrust();
+                  }}
+                  disabled={refreshing}
+                  style={{ ...actionBtn("primary", refreshing), width: "100%" }}
                 >
-                  {safeStr(trustJourneyModel.primaryRoute.to) === "/app/trust"
-                    ? "Review"
-                    : "Open"}
+                  🔄 {refreshing ? "Refreshing..." : "Refresh Trust Reading"}
                 </button>
-
-                {trustJourneyExpanded ? (
-                  <button
-                    type="button"
-                    onPointerDown={stopTrustTap}
-                    onMouseDown={stopTrustTap}
-                    onTouchStart={stopTrustTap}
-                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
-                    style={actionBtn("secondary")}
-                  >
-                    {trustJourneyModel.secondaryRoute.label}
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onPointerDown={stopTrustTap}
+                  onMouseDown={stopTrustTap}
+                  onClick={copyTrustSnapshot}
+                  style={{ ...actionBtn("secondary"), width: "100%" }}
+                >
+                  📋 Copy Snapshot
+                </button>
+                <button
+                  type="button"
+                  onPointerDown={stopTrustTap}
+                  onMouseDown={stopTrustTap}
+                  onClick={() => {
+                    if (verifyUrl && typeof window !== "undefined") {
+                      window.open(verifyUrl, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    openTrustRoute("/app/trust-slip/verify");
+                  }}
+                  style={{ ...actionBtn("secondary"), width: "100%" }}
+                >
+                  🔎 Open TrustSlip Verify
+                </button>
               </div>
             </div>
-          </div>
 
-          {trustJourneyExpanded ? (
             <div
+              aria-hidden
               style={{
-                marginTop: 14,
+                justifySelf: isCompact ? "center" : "end",
+                width: 160,
+                height: 160,
+                borderRadius: 999,
                 display: "grid",
-                gap: 10,
+                placeItems: "center",
+                background:
+                  "radial-gradient(circle, rgba(242,207,119,0.20), rgba(255,255,255,0.05) 62%, rgba(255,255,255,0.02))",
+                border: "1px solid rgba(242,207,119,0.18)",
+                boxShadow: "inset 0 0 32px rgba(242,207,119,0.10)",
+                fontSize: 76,
               }}
             >
+              🛡️
+            </div>
+          </div>
+        </section>
+
+        <section
+          style={{
+            ...pageCard(
+              "linear-gradient(135deg, #FFF8F8 0%, #FFFFFF 56%, #FFF9E8 100%)"
+            ),
+            border: "1px solid rgba(200,58,58,0.18)",
+            boxShadow: "0 14px 34px rgba(200,58,58,0.07)",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.9fr) minmax(320px, 1.1fr)",
+              gap: 14,
+              alignItems: "stretch",
+            }}
+          >
+            <div>
               <div
                 style={{
-                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
-                  border: "1px solid rgba(11,99,209,0.10)",
-                  display: "grid",
-                  gap: 10,
+                  color: "#07172C",
+                  fontWeight: 1000,
+                  fontSize: 19,
                 }}
               >
-                <div style={sectionLabel()}>How these connect</div>
-
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontSize: 13.5,
-                    fontWeight: 800,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {trustJourneyCopy.connectionSummary}
-                </div>
-
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "repeat(2, minmax(0, 1fr))",
-                    gap: 10,
-                  }}
-                >
-                  {trustJourneyCopy.connectionItems.map((item) => (
-                    <div
-                      key={`trust-connect-${item.key}`}
-                      style={innerCard("#FFFFFF")}
-                    >
-                      <div style={sectionLabel()}>{item.title}</div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#0B1F33",
-                          fontSize: 13.5,
-                          fontWeight: 800,
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {item.detail}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                Current Trust Posture
               </div>
-
               <div
                 style={{
+                  marginTop: 12,
                   display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(2, minmax(0, 1fr))",
-                  gap: 10,
+                  gridTemplateColumns: "120px 1fr",
+                  gap: 16,
+                  alignItems: "center",
                 }}
               >
-                <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>What is helping</div>
-                  <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                    {trustJourneyModel.helps.length > 0 ? (
-                      trustJourneyModel.helps.map((item, index) => (
-                        <div key={`trust-help-${index}`} style={helperText()}>
-                          {item}
-                        </div>
-                      ))
-                    ) : (
-                      <div style={helperText()}>
-                        No strong trust support is showing yet.
-                      </div>
-                    )}
-                  </div>
-                </div>
-
                 <div
-                  style={innerCard(
-                    trustJourneyModel.weakens.length > 0 ? "#FFFBEF" : "#FFFFFF"
-                  )}
+                  style={{
+                    color: readingTone.text,
+                    fontSize: 66,
+                    lineHeight: 0.9,
+                    fontWeight: 1000,
+                  }}
                 >
-                  <div style={sectionLabel()}>What needs care</div>
-                  <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                    {trustJourneyModel.weakens.length > 0 ? (
-                      trustJourneyModel.weakens.map((item, index) => (
-                        <div key={`trust-weak-${index}`} style={helperText()}>
-                          {item}
-                        </div>
-                      ))
-                    ) : (
-                      <div style={helperText()}>
-                        No major trust problem is showing right now.
-                      </div>
-                    )}
+                  {currentBand}
+                </div>
+                <div
+                  style={{
+                    borderLeft: "1px solid rgba(7,23,44,0.12)",
+                    paddingLeft: 18,
+                  }}
+                >
+                  <div style={sectionLabel()}>Score</div>
+                  <div
+                    style={{
+                      color: "#07172C",
+                      fontSize: 32,
+                      fontWeight: 1000,
+                      lineHeight: 1,
+                      marginTop: 6,
+                    }}
+                  >
+                    {currentScore}
                   </div>
                 </div>
               </div>
-
-              <div
+              <p style={{ ...helperText(), marginTop: 14, maxWidth: 360 }}>
+                {nextStep.detail ||
+                  "Respond early to keep your trust record understandable."}
+              </p>
+              <button
+                type="button"
+                onPointerDown={stopTrustTap}
+                onMouseDown={stopTrustTap}
+                onClick={() =>
+                  openTrustSection("trust-passport-explainability")
+                }
                 style={{
-                  ...innerCard("#FFFFFF"),
-                  border: trustJourneyTone.border,
-                  display: "grid",
-                  gap: 12,
+                  ...actionBtn("primary"),
+                  marginTop: 12,
+                  background:
+                    "linear-gradient(180deg, #E33636 0%, #B81414 100%)",
+                  border: "1px solid rgba(153,27,27,0.22)",
                 }}
               >
+                Review what needs care →
+              </button>
+            </div>
+
+            <div
+              style={{
+                ...innerCard("#FFFFFF"),
+                display: "grid",
+                gap: 0,
+                padding: 0,
+                overflow: "hidden",
+              }}
+            >
+              {[
+                ["🛡️", "TrustSlip", trustSlipStatus],
+                ["🌐", "CCI", cciBand],
+                ["🔗", "Verification code", trustSlipCode || "Not stated"],
+                ["📅", "Issued", issuedText],
+                ["📅", "Expires", expiresText],
+              ].map(([icon, label, value]) => (
                 <div
+                  key={label}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "minmax(0, 1fr) auto",
+                    gridTemplateColumns: "32px minmax(0, 1fr) minmax(0, 1fr)",
                     gap: 10,
                     alignItems: "center",
+                    padding: "12px 14px",
+                    borderBottom: "1px solid rgba(216,227,238,0.72)",
                   }}
                 >
-                  <div style={helperText()}>
-                    {trustJourneyModel.commitmentLine}
-                    {focusSummary.nextReviewLabel
-                      ? ` ${focusSummary.nextReviewLabel}.`
-                      : ""}
-                    {trustJourneyCountLine ? ` ${trustJourneyCountLine}.` : ""}
-                  </div>
-
-                  <button
-                    type="button"
-                    onPointerDown={stopTrustTap}
-                    onMouseDown={stopTrustTap}
-                    onTouchStart={stopTrustTap}
-                    onClick={() => openTrustJourneyRoute(trustJourneyModel.secondaryRoute)}
-                    style={actionBtn("secondary")}
+                  <span>{icon}</span>
+                  <span style={{ color: "#46566D", fontWeight: 850 }}>{label}</span>
+                  <span
+                    style={{
+                      color:
+                        label === "TrustSlip" && value === "Ready"
+                          ? "#168254"
+                          : label === "CCI" && safeStr(value).toUpperCase() !== "A"
+                          ? "#92400E"
+                          : "#07172C",
+                      fontWeight: 900,
+                      textAlign: "right",
+                      wordBreak: "break-word",
+                    }}
                   >
-                    {trustJourneyModel.secondaryRoute.label}
-                  </button>
+                    {value}
+                  </span>
                 </div>
-              </div>
-            </div>
-          ) : trustJourneyCountLine || focusSummary.nextReviewLabel ? (
-            <div
-              style={{
-                marginTop: 10,
-                ...helperText(),
-                fontSize: 12.5,
-                lineHeight: 1.5,
-              }}
-            >
-              {[focusSummary.nextReviewLabel || "", trustJourneyCountLine]
-                .filter(Boolean)
-                .join(" | ")}
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      <section id="trust-passport-summary" style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Trust summary</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              The main trust numbers and structural indicators stay together here.
+              ))}
             </div>
           </div>
+        </section>
 
-          <button
-            type="button"
-            onPointerDown={stopTrustTap}
-            onMouseDown={stopTrustTap}
-            onTouchStart={stopTrustTap}
-            onClick={() => handleCollapseTap("overview")}
-            style={collapseToggle()}
-          >
-            {collapsed.overview ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.overview ? (
-          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr 1fr"
-                  : "repeat(6, minmax(0, 1fr))",
-                gap: 12,
-              }}
-            >
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Current band</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}
-              >
-                {currentBand}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Current score</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}
-              >
-                {currentScore}
-              </div>
-            </div>
-
-            <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>CCI</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B63D1",
-                  fontSize: 18,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {cciScore} / {cciBand}
-              </div>
-            </div>
-
-            <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Graph score</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B63D1",
-                  fontSize: 18,
-                  fontWeight: 900,
-                }}
-              >
-                {graphScore}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Trust limit</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 18,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {trustLimit} {trustCurrency}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Event count</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}
-              >
-                {safeStr(recompute?.event_count ?? "0")}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Level label</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 16,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {levelLabel}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Standing score</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 16,
-                  fontWeight: 900,
-                }}
-              >
-                {standingScore}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Lifetime trust</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 16,
-                  fontWeight: 900,
-                }}
-              >
-                {lifetimeTrust}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Counterparties</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}
-              >
-                {safeStr(trustSlipSummary?.unique_counterparties ?? "0")}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Sponsors</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}
-              >
-                {safeStr(trustSlipSummary?.sponsor_count ?? "0")}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Active clans</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontSize: 22,
-                  fontWeight: 900,
-                }}
-              >
-                {safeStr(trustSlipSummary?.active_clan_count ?? "0")}
-              </div>
-            </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section id="trust-passport-explainability" style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Why did my trust change?</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This section explains the most recent trust movement and the events behind it.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onPointerDown={stopTrustTap}
-            onMouseDown={stopTrustTap}
-            onTouchStart={stopTrustTap}
-            onClick={() => handleCollapseTap("explainability")}
-            style={collapseToggle()}
-          >
-            {collapsed.explainability ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.explainability ? (
+        <section id="trust-passport-summary" style={pageCard("#FFFFFF")}>
           <div
             style={{
-              marginTop: 14,
+              color: "#07172C",
+              fontWeight: 1000,
+              fontSize: 18,
+              marginBottom: 12,
+            }}
+          >
+            Trust Summary
+          </div>
+          <div
+            style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gridTemplateColumns: isCompact
+                ? "repeat(2, minmax(0, 1fr))"
+                : "repeat(3, minmax(0, 1fr))",
               gap: 12,
             }}
           >
-            <div style={innerCard("#FCFEFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
+            <MetricTile label="Current Band" value={currentBand} icon="🛡️" />
+            <MetricTile label="Current Score" value={currentScore} icon="📈" />
+            <MetricTile
+              label="Trust Limit"
+              value={`${trustLimit} ${trustCurrency}`}
+              icon="💳"
+            />
+            <MetricTile label="Event Count" value={eventCount} icon="🗓️" />
+            <MetricTile label="Active Clans" value={activeClanCount} icon="👥" />
+            <MetricTile
+              label="Counterparties"
+              value={counterpartiesCount}
+              icon="🤝"
+            />
+          </div>
+        </section>
+
+        <section id="trust-passport-explainability" style={pageCard("#FFFFFF")}>
+          <div
+            style={{
+              color: "#07172C",
+              fontWeight: 1000,
+              fontSize: 18,
+              marginBottom: 12,
+            }}
+          >
+            Why did my trust change?
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(4, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#F4F8FF")}>
+              <div style={{ fontSize: 24 }}>💬</div>
+              <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B4EB3" }}>
                 Latest explanation
               </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  Latest reason: {safeStr(explainability?.latest_reason || "No reason is shown yet.")}
-                </div>
-                <div style={helperText()}>
-                  Latest note: {safeStr(explainability?.latest_note || "No note is shown yet.")}
-                </div>
-                <div style={helperText()}>
-                  Latest source: {safeStr(explainability?.latest_source || "No source is shown yet.")}
-                </div>
-              </div>
+              <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.5 }}>
+                {safeStr(
+                  explainability?.latest_reason ||
+                    explainability?.latest_note ||
+                    "No recent trust movement is shown yet."
+                )}
+              </p>
             </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
+            <div style={innerCard("#F8F6FF")}>
+              <div style={{ fontSize: 24 }}>🕘</div>
+              <div style={{ marginTop: 8, fontWeight: 1000, color: "#5542A8" }}>
                 Recent trust events
               </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                {recentEvents.length === 0 ? (
-                  <div style={helperText()}>
-                    No recent trust event is currently shown.
-                  </div>
-                ) : (
-                  recentEvents.slice(0, 6).map((item, index) => (
-                    <div key={`${item.id || index}`} style={innerCard("#F8FBFF")}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 10,
-                          flexWrap: "wrap",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: "#0B1F33",
-                            fontWeight: 900,
-                            lineHeight: 1.35,
-                          }}
-                        >
-                          {safeStr(item.event_type || "Trust event")}
-                        </div>
-
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {safeStr(item.delta) ? (
-                            <span style={badge(true)}>Delta: {safeStr(item.delta)}</span>
-                          ) : null}
-                          {safeStr(item.created_at) ? (
-                            <span style={badge(false)}>
-                              {safeDateTime(item.created_at)}
-                            </span>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {safeStr(item.reason || item.note) ? (
-                        <div style={{ marginTop: 8, ...helperText() }}>
-                          {safeStr(item.reason || item.note)}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))
-                )}
+              <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.5 }}>
+                {recentEvents.length
+                  ? `${recentEvents.length} recent trust event${
+                      recentEvents.length === 1 ? "" : "s"
+                    } visible.`
+                  : "No recent trust events are visible."}
+              </p>
+            </div>
+            <div style={innerCard("#F3FBF5")}>
+              <div style={{ fontSize: 24 }}>✅</div>
+              <div style={{ marginTop: 8, fontWeight: 1000, color: "#166534" }}>
+                What helps trust
               </div>
+              <ul style={{ ...helperText(), margin: "8px 0 0", paddingLeft: 18 }}>
+                <li>Completed repayments</li>
+                <li>Responsible guarantees</li>
+                <li>Clean identity continuity</li>
+                <li>Promises closed properly</li>
+              </ul>
+            </div>
+            <div style={innerCard("#FFF2F2")}>
+              <div style={{ fontSize: 24 }}>⚠️</div>
+              <div style={{ marginTop: 8, fontWeight: 1000, color: "#991B1B" }}>
+                What creates pressure
+              </div>
+              <ul style={{ ...helperText(), margin: "8px 0 0", paddingLeft: 18 }}>
+                <li>Missed promises</li>
+                <li>Pending responses</li>
+                <li>Overexposure</li>
+                <li>Unresolved actions</li>
+              </ul>
             </div>
           </div>
-        ) : null}
-      </section>
+        </section>
 
-      <section id="trust-passport-evidence" style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Recomputed breakdown</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This section shows the current score breakdown used for the latest trust reading.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onPointerDown={stopTrustTap}
-            onMouseDown={stopTrustTap}
-            onTouchStart={stopTrustTap}
-            onClick={() => handleCollapseTap("breakdown")}
-            style={collapseToggle()}
-          >
-            {collapsed.breakdown ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.breakdown ? (
+        <section style={pageCard("#FFFFFF")}>
           <div
             style={{
-              marginTop: 14,
+              color: "#07172C",
+              fontWeight: 1000,
+              fontSize: 18,
+              marginBottom: 12,
+            }}
+          >
+            Choose the right trust surface
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(4, minmax(0, 1fr))",
+              gap: 12,
+            }}
+          >
+            {surfaceCards.map((item) => (
+              <SurfaceCard key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
+
+        <section id="trust-passport-evidence" style={pageCard("#FFFFFF")}>
+          <div
+            style={{
+              color: "#07172C",
+              fontWeight: 1000,
+              fontSize: 18,
+              marginBottom: 12,
+            }}
+          >
+            Evidence & Institutional Context
+          </div>
+          <div
+            style={{
               display: "grid",
               gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
               gap: 12,
             }}
           >
-            <div style={innerCard("#FCFEFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Ruleset
+            <div style={innerCard("#FFFBF0")}>
+              <div style={{ fontWeight: 1000, color: "#07172C" }}>
+                🏛️ Capacity context
               </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  Borrower repayment delta: {safeStr(ruleset?.borrower_repayment_delta || "-")}
+              {[
+                [
+                  "Available guarantee capacity",
+                  safeStr(capacityContext?.available_guarantee_capacity || "0.00"),
+                ],
+                [
+                  "Current locked guarantees",
+                  safeStr(capacityContext?.current_locked_guarantees || "0.00"),
+                ],
+                [
+                  "Overexposure ratio",
+                  safeStr(capacityContext?.overexposure_ratio || "0.00"),
+                ],
+                ["Risk level", riskLevel],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    marginTop: 10,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    color: "#46566D",
+                    borderBottom: "1px dotted rgba(7,23,44,0.18)",
+                    paddingBottom: 5,
+                  }}
+                >
+                  <span>{label}</span>
+                  <b style={{ color: label === "Risk level" ? "#991B1B" : "#07172C" }}>
+                    {value}
+                  </b>
                 </div>
-                <div style={helperText()}>
-                  Guarantor repayment delta: {safeStr(ruleset?.guarantor_repayment_delta || "-")}
-                </div>
-                <div style={helperText()}>
-                  Precision: {safeStr(ruleset?.precision || "-")}
-                </div>
-                <div style={helperText()}>
-                  Ordering: {safeStr(ruleset?.ordering || "-")}
-                </div>
-                <div style={helperText()}>
-                  Computed band: {safeStr(recompute?.breakdown?.computed_band || recompute?.band || "-")}
-                </div>
-                <div style={helperText()}>
-                  Computed score: {safeStr(recompute?.breakdown?.computed_score || recompute?.score || "-")}
-                </div>
-                <div style={helperText()}>
-                  Computed score int: {safeStr(recompute?.breakdown?.computed_score_int ?? "-")}
-                </div>
+              ))}
+            </div>
+            <div style={innerCard("#FFFFFF")}>
+              <div style={{ fontWeight: 1000, color: "#07172C" }}>
+                🏅 Institutional note
+              </div>
+              <p style={{ ...helperText(), marginTop: 10 }}>
+                {safeStr(
+                  trustSlipSummary?.disclaimer ||
+                    "Community-backed integrity limit. Not a bank guarantee. No auto-debit. TrustSlip is a portable summary derived from GSN trust history."
+                )}
+              </p>
+              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(true)}>
+                  TrustSlip: {trustSlipStatus || "Pending"}
+                </span>
+                <span style={badge(false)}>CCI: {cciScore} / {cciBand}</span>
+                <span style={badge(false)}>
+                  Graph score: {graphScore}
+                </span>
               </div>
             </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Counts by event type
+          </div>
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#F8FBFF")}>
+              <div style={{ fontWeight: 1000, color: "#07172C" }}>
+                🧾 Full reading lines
               </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                {eventCounts.length === 0 ? (
-                  <div style={helperText()}>
-                    No event-type count is currently shown.
+              {[
+                ["Open Trust", openTrust.classText],
+                ["Open Trust reason", openTrust.whyText],
+                ["CCI reason", cci.whyText],
+                ["Level label", levelLabel],
+                ["Standing score", standingScore],
+                ["Lifetime trust", lifetimeTrust],
+                ["Sponsors", safeStr(trustSlipSummary?.sponsor_count ?? "0")],
+                ["Phone verified", trustSlipSummary?.phone_verified ? "Yes" : "No"],
+                [
+                  "Not a bank guarantee",
+                  trustSlipSummary?.not_a_bank_guarantee ? "Yes" : "No",
+                ],
+                ["No auto-debit", trustSlipSummary?.no_auto_debit ? "Yes" : "No"],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: "minmax(110px, 0.8fr) minmax(0, 1.2fr)",
+                    gap: 10,
+                    alignItems: "start",
+                    color: "#46566D",
+                    borderBottom: "1px dotted rgba(7,23,44,0.16)",
+                    paddingBottom: 5,
+                  }}
+                >
+                  <span>{label}</span>
+                  <b
+                    style={{
+                      color: "#07172C",
+                      textAlign: "right",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {safeStr(value || "-")}
+                  </b>
+                </div>
+              ))}
+            </div>
+            <div style={innerCard("#FFFDF5")}>
+              <div style={{ fontWeight: 1000, color: "#07172C" }}>
+                📊 Reading breakdown
+              </div>
+              <p style={{ ...helperText(), marginTop: 10 }}>
+                These are the remaining evidence lines behind the trust reading.
+              </p>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={badge(false)}>
+                  Ruleset: {safeStr(ruleset?.precision || ruleset?.ordering || "Not stated")}
+                </span>
+                <span style={badge(false)}>
+                  Risk flags: {riskFlags.length > 0 ? riskFlags.join(", ") : "None visible"}
+                </span>
+              </div>
+              <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                {[
+                  [
+                    "Borrower repayment delta",
+                    safeStr(ruleset?.borrower_repayment_delta || "-"),
+                  ],
+                  [
+                    "Guarantor repayment delta",
+                    safeStr(ruleset?.guarantor_repayment_delta || "-"),
+                  ],
+                  ["Precision", safeStr(ruleset?.precision || "-")],
+                  ["Ordering", safeStr(ruleset?.ordering || "-")],
+                  [
+                    "Computed band",
+                    safeStr(recompute?.breakdown?.computed_band || recompute?.band || "-"),
+                  ],
+                  [
+                    "Computed score",
+                    safeStr(recompute?.breakdown?.computed_score || recompute?.score || "-"),
+                  ],
+                  [
+                    "Computed score int",
+                    safeStr(recompute?.breakdown?.computed_score_int ?? "-"),
+                  ],
+                  [
+                    "Last event used",
+                    safeStr(
+                      recompute?.breakdown?.last_event_id_used ??
+                        recompute?.last_event_id ??
+                        "-"
+                    ),
+                  ],
+                  [
+                    "Event count used",
+                    safeStr(
+                      recompute?.breakdown?.event_count_used ??
+                        recompute?.event_count ??
+                        "-"
+                    ),
+                  ],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      color: "#46566D",
+                      borderBottom: "1px dotted rgba(7,23,44,0.16)",
+                      paddingBottom: 5,
+                    }}
+                  >
+                    <span>{label}</span>
+                    <b style={{ color: "#07172C", textAlign: "right" }}>{value}</b>
                   </div>
-                ) : (
-                  eventCounts.map(([key, value]) => (
+                ))}
+                {eventCounts.length > 0 ? (
+                  eventCounts.map(([eventName, count]) => (
                     <div
-                      key={key}
+                      key={eventName}
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         gap: 10,
-                        alignItems: "center",
-                        borderBottom: "1px solid rgba(11,31,51,0.06)",
-                        paddingBottom: 8,
+                        color: "#46566D",
+                        borderBottom: "1px dotted rgba(7,23,44,0.16)",
+                        paddingBottom: 5,
                       }}
                     >
-                      <div style={{ ...helperText(), color: "#0B1F33" }}>{key}</div>
-                      <span style={badge(true)}>{String(value)}</span>
+                      <span>{safeStr(eventName)}</span>
+                      <b style={{ color: "#07172C" }}>{safeStr(count)}</b>
                     </div>
                   ))
+                ) : (
+                  <div style={helperText()}>
+                    No event-type breakdown is currently shown.
+                  </div>
                 )}
               </div>
             </div>
           </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Evidence and institutional context</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Exposure, capacity, risk flags, sponsorship, and TrustSlip context stay together here.
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onPointerDown={stopTrustTap}
-            onMouseDown={stopTrustTap}
-            onTouchStart={stopTrustTap}
-            onClick={() => handleCollapseTap("evidence")}
-            style={collapseToggle()}
-          >
-            {collapsed.evidence ? "Open" : "Collapse"}
-          </button>
-        </div>
-
-        {!collapsed.evidence ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Capacity context
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  Available guarantee capacity: {safeStr(capacityContext?.available_guarantee_capacity || "0.00")}
-                </div>
-                <div style={helperText()}>
-                  Current locked guarantees: {safeStr(capacityContext?.current_locked_guarantees || "0.00")}
-                </div>
-                <div style={helperText()}>
-                  Overexposure ratio: {safeStr(capacityContext?.overexposure_ratio || "0.00")}
-                </div>
-                <div style={helperText()}>
-                  Risk level: {safeStr(capacityContext?.risk_level || "unknown")}
-                </div>
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Risk and network context
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  Sponsor count: {safeStr(trustSlipSummary?.sponsor_count ?? "0")}
-                </div>
-                <div style={helperText()}>
-                  Active clan count: {safeStr(trustSlipSummary?.active_clan_count ?? "0")}
-                </div>
-                <div style={helperText()}>
-                  Unique counterparties: {safeStr(trustSlipSummary?.unique_counterparties ?? "0")}
-                </div>
-                <div style={helperText()}>
-                  Phone verified: {String(Boolean(trustSlipSummary?.phone_verified))}
-                </div>
-                <div style={helperText()}>
-                  Risk flags: {riskFlags.length > 0 ? riskFlags.join(", ") : "None visible"}
-                </div>
-              </div>
-            </div>
-
-            <div style={innerCard("#F8FBFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Institutional note
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  TrustSlip status: {safeStr(trustSlipSummary?.status || "-")}
-                </div>
-                <div style={helperText()}>
-                  Issued: {safeDateTime(trustSlipSummary?.issued_at) || "-"}
-                </div>
-                <div style={helperText()}>
-                  Expires: {safeDateTime(trustSlipSummary?.expires_at) || "-"}
-                </div>
-                <div style={helperText()}>
-                  Disclaimer: {safeStr(
-                    trustSlipSummary?.disclaimer ||
-                      "TrustSlip is a portable summary derived from GSN trust history."
-                  )}
-                </div>
-                <div style={helperText()}>
-                  Not a bank guarantee: {String(Boolean(trustSlipSummary?.not_a_bank_guarantee))}
-                </div>
-                <div style={helperText()}>
-                  No auto-debit: {String(Boolean(trustSlipSummary?.no_auto_debit))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-    </div>
+        </section>
+      </div>
+    </main>
   );
+
 }
-
-
 

@@ -241,7 +241,6 @@ export default function AdminIdentityRiskPage() {
               <summary
                 style={summaryToggle()}
                 onPointerDown={stopIdentityRiskTap}
-                onTouchStart={stopIdentityRiskTap}
                 onMouseDown={stopIdentityRiskTap}
               >
                 Detailed identity signals

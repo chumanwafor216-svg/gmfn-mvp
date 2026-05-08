@@ -172,7 +172,7 @@ export default function LockManagementPage() {
 
         <div style={{ marginTop: 12, ...helperText(), maxWidth: 900 }}>
           Do not pretend this action exists when the backend cannot perform it.
-          A fake page wastes testing time and creates false confidence.
+          A simulated release page would waste testing time and create false confidence.
           Until the backend exposes a real audited release-lock endpoint, this page
           remains informational only.
         </div>
@@ -246,7 +246,7 @@ export default function LockManagementPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               If the endpoint is absent, the UI should say so clearly and stop
-              there. That is cleaner than a dead button with fake inputs.
+              there. That is cleaner than inactive controls that imply a live release path.
             </div>
           </div>
         </div>

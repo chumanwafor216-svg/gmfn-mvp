@@ -1,5 +1,178 @@
 # Handoff Notes
 
+## 2026-05-08 Button and CTA Audit Stabilization
+
+- Ran the requested two-auditor pass:
+  - button/tap mechanics audit
+  - CTA route truth and incomplete-screen audit
+- Corrected button mechanics across the active frontend path:
+  - removed redundant `onTouchStart` guards from shared `EntryControls`, `NextActionGuide`, `DomainIntroToggle`, plus active Finance, Trust, Marketplace, Loans, and Notifications helpers.
+  - continued the sweep across page-level helpers so `onTouchStart` is no longer present in `src/pages` or `src/components`.
+  - increased shared text-button tap target sizes toward the 54px design-system floor.
+  - changed Spotlight audio unlock so pointer-down only stops propagation and click owns the actual audio action.
+  - fixed Subscription Spotlight decorative overlays so they cannot intercept taps.
+  - fixed disabled app navigation links so taps are intercepted instead of falling through.
+- Corrected CTA truth:
+  - protected app navigation now treats owner shop work as `Shop Control`.
+  - public shop face links now use `/shop/:gmfnId`, not protected-looking `/app/shop/:gmfnId`.
+  - Cover buttons now say `Open Welcome` and `Read the full guide first`.
+  - Dashboard generic `Open` labels were made specific.
+  - Community Home create-community now opens `/create`, and the `/app/create-community` aliases redirect there.
+  - Community Home no longer carries the hidden free spotlight publisher inside the overview; the visible shortcut now opens `Shop Control` at `#shop-control-spotlight`.
+  - Marketplace and Shop Control unused-symbol debt discovered by the audit was cleaned where it touched the shop/spotlight route.
+- Verification:
+  - `npm run build` passed outside the sandbox.
+  - `npm exec -- eslint src` now passes with zero warnings after the continuation cleanup.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - Devil's advocate: the audited button/CTA lane and the full frontend lint gate are clean now; line-ending warnings remain repository normalization noise.
+
+## 2026-05-08 Frontend Lint Cleanup Continuation
+
+- Continued after the button/CTA audit to clear the broader frontend lint debt.
+- Fixed:
+  - disabled `ExplainToggle` hook order without re-enabling explain surfaces.
+  - unused legacy confirm-modal types and constant-truthiness logic.
+  - type-only imports in Share/TrustGraph components and page wrappers.
+  - empty best-effort storage/clipboard catch blocks.
+  - stale locals in dashboard attention/theme helpers and backup API stubs.
+  - hook dependency warnings by stabilizing loader callbacks in companion, bank, guarantor inbox, liquidity, loans, marketplace, and withdrawal pages.
+- Verification:
+  - `npm exec -- eslint src` passes with no warnings.
+  - `npm run build` passes outside the sandbox.
+  - `git diff --check` passes with line-ending normalization warnings only.
+- Devil's advocate:
+  - this is verification cleanup, not copy/design polish. Existing mojibake text remains in some older components and should be handled separately if the verification team is judging visible copy quality.
+
+## 2026-05-08 Frontend Copy-Encoding Cleanup
+
+- Cleaned the visible broken encoding artifacts called out after the lint pass:
+  - `src/components/ShareButtons.tsx` now uses plain labels for copy/share/QR/close actions and toast messages.
+  - `src/pages/CommunityHomePage.tsx` now uses stable ASCII stat symbols for Guarantees, Earned, Trade, and Trust.
+  - `src/pages/WithdrawalInstructionsPage.tsx` now joins the intelligence-reading fragments with ` | ` instead of a broken replacement marker.
+  - old handoff-note references to the broken dash marker were rewritten in plain language.
+- Verification:
+  - targeted scan for common mojibake/replacement-character sequences returned no matches in `frontend/src`, `frontend/docs`, or `docs`.
+  - repo-wide live-source scan with `_freeze_points` excluded returned no broken encoding matches. `_freeze_points` still contains archived historical mojibake and was intentionally left untouched as reference/freeze material.
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox.
+  - `python -m pytest -q gmfn_backend\tests --basetemp C:\tmp\pytest-gmfn-clean` passed outside the sandbox after temp-directory permission was needed: 105 passed, 14 sqlite/SQLAlchemy deprecation warnings.
+  - `git diff --check` passed with line-ending normalization warnings only.
+- Devil's advocate:
+  - this is an encoding cleanup and verification pass, not a full editorial tone review of every screen.
+
+## 2026-05-08 University-Readiness Verification Pass
+
+- Continued the cleanup for university/demo readiness after lint, build, and backend tests were green.
+- Removed additional presentation blockers:
+  - `src/components/RevenuePanel.tsx` now uses clean ASCII fee-flow wording and describes the pilot rate as a calibration estimate, not a placeholder.
+  - `src/pages/LockManagementPage.tsx` no longer uses visible `fake` language; it explains the disabled lock-release lane as an intentional backend-authority constraint.
+  - `src/pages/ProfilePage.tsx` no longer shows broken icon/dash text or a broken saved marker.
+  - `../gmfn_backend/app/services/trust_slip_evidence_pdf_service.py` no longer falls back to a localhost QR URL; it uses the configured public frontend origin or the existing public Render origin.
+- Verification:
+  - live-source mojibake scan with `_freeze_points` excluded returned no matches.
+  - `python -m py_compile gmfn_backend\app\services\trust_slip_evidence_pdf_service.py` passed.
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox.
+  - `python -m pytest -q gmfn_backend\tests --basetemp C:\tmp\pytest-gmfn-university` passed outside the sandbox after temp-directory permission was needed: 105 passed, 14 sqlite/SQLAlchemy deprecation warnings.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - Removed the upload artifact generated by the backend test suite under `uploads/profile/users`.
+- Devil's advocate:
+  - engineering gates are green for the university handoff. Manual browser verification is still the final human acceptance step.
+
+## 2026-05-05 Notification Backend Producer Cleanup
+
+- Continued the Notification lane source audit after the frontend resolver cleanup.
+- Corrected backend producer truth in `../gmfn_backend/app/services/notification_hooks.py`:
+  - guarantor request notices still route to `/app/loans`, but now label the CTA as `Open Loans & Support` instead of `Open Finances`.
+  - confirmed pool-deposit notices now route to `/app/finance` with `Open Finance File`, because confirmed deposits belong in the user's Finance File, not the Loans & Support workflow.
+- Corrected seeded assistant notification labels in `../gmfn_backend/app/services/notification_service.py`:
+  - money-in nudge now says `Open Money In`.
+  - support reminder now says `Open Loans & Support`.
+- Added backend notification action normalization in `../gmfn_backend/app/services/notification_service.py`:
+  - new notifications are stored with cleaned route/label pairs.
+  - old stored notification rows are normalized when returned by `/notifications/me`, so stale `View Finances` / `/app/loans` pool-deposit rows reach the frontend as `Open Finance File` / `/app/finance` without silently rewriting the database.
+  - old `Deposit to Pool` labels on Money In notices now display as `Open Money In`.
+- Added `../gmfn_backend/tests/test_notification_route_truth.py` to lock the bad historic-row cases.
+- Tightened the frontend label fallback in `src/pages/NotificationsPage.tsx` and `src/lib/guidance.ts` so `Deposit to Pool` is treated as old generic language and shown as `Open Money In`.
+- Re-scanned backend service/route producers for the stale labels `Open Finances`, `View Finances`, and `Deposit to Pool`; no remaining matches were found in the audited backend notification producer paths.
+- Verification:
+  - `python -B -m py_compile ..\gmfn_backend\app\services\notification_hooks.py ..\gmfn_backend\app\services\notification_service.py` passed.
+  - `python -m pytest -q ..\gmfn_backend\tests\test_notification_route_truth.py --basetemp C:\tmp\pytest-notification-route-truth` passed: 3 tests.
+  - `npm exec -- eslint src\pages\NotificationsPage.tsx src\lib\guidance.ts` passed.
+  - `git diff --check` passed.
+- Devil's advocate truth:
+  - This cleans future backend-produced notification CTAs and cleans historic rows at API delivery time. It does not rewrite existing database rows; if admin reporting reads the notification table directly, those raw historic values can still appear there until a migration/admin cleanup is run.
+
+## 2026-05-05 Notification Lane Route Audit
+
+- Audited notification producers in `../gmfn_backend/app`:
+  - join-review notices use `/app/community/{id}/join-requests?...`
+  - activation/rejection notices use `/activate-membership` and `/join-approval/{id}`
+  - onboarding trust notices use `/app/trust`
+  - marketplace request notices use `/app/demand-box`
+  - loan/support hooks use `/app/loans` and `/app/trust`
+  - seed assistant notices use `/app/payment/pool`, `/app/loans`, and `/app/trust`
+- Updated `src/pages/NotificationsPage.tsx` and `src/lib/guidance.ts` so notification CTAs no longer accept every absolute `/app/...` path blindly. Known app paths, public entry paths, and explicitly safe dynamic paths are allowed; unknown absolute app paths now fall back to `/app/notifications`.
+- Added notification/guidance aliases for the finance doors that are now part of the user-facing finance and loans lanes: Payment Rails, Payout Details, and Guarantor Inbox.
+- Corrected misleading notification labels at the frontend guidance layer:
+  - `/app/loans` with finance-style backend labels now shows `Open Loans & Support`.
+  - `/app/finance` now shows `Open Finance File` for generic finance labels.
+  - Money In, Money Out, Demand Box, join review, activation, and join decision notices now get clearer labels when the backend label is generic.
+- Added one explicit truth correction: the backend pool-deposit-confirmed hook currently points to `/app/loans` while describing a finance deposit. The notification/guidance layer now routes that notice to `/app/finance` so the user lands in Finance File, where money records belong.
+- Devil's advocate truth:
+  - This pass cleans the frontend notification/guidance resolver. It does not edit backend notification producers because the backend sits outside the current writable frontend root.
+  - Admin paths such as `/app/command-center/*` are still allowed for admin notices; route guards remain responsible for protecting those lanes.
+- Verification:
+  - `npm exec -- eslint src\pages\NotificationsPage.tsx src\lib\guidance.ts` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed.
+
+## 2026-05-05 Loans Internal Route Audit
+
+- Audited the internal Loans & Support lane buttons and route doors across:
+  - `src/pages/LoansPage.tsx`
+  - `src/pages/LoanReadinessPage.tsx`
+  - `src/pages/LoanSuggestionsPage.tsx`
+  - `src/pages/LoanWorkbenchPage.tsx`
+  - `src/pages/LoanSummaryPage.tsx`
+  - `src/pages/GuarantorInboxPage.tsx`
+  - `src/pages/GuarantorEarningsPage.tsx`
+  - `src/pages/PaymentInstructionsPage.tsx`
+  - `src/pages/WithdrawalInstructionsPage.tsx`
+  - `src/pages/NotificationsPage.tsx`
+- Confirmed the visible static Loans lane destinations exist in `src/App.tsx`: Loans, Money In, Money Out, Loan Readiness, Loan Suggestions, Loan Workbench, Loan Summary, Loan Payment Instructions, Guarantor Inbox, Guarantor Earnings, Marketplace, Notifications, Payment Rails, Payout Details, Finance, Community, and the dashboard Focus Commitments anchor.
+- Confirmed `/app/marketplace#marketplace-loans-support` has a real Marketplace anchor, so the Support Start Page route is not a ghost endpoint.
+- Corrected one role-placement issue:
+  - `LoanSummaryPage` and `LoanWorkbenchPage` no longer send ordinary users to the command-centre revenue allocation lane.
+  - admin or clan-admin users still route to `/app/command-center/revenue-allocation`.
+  - ordinary users now see/open `Finance File`, which is the user-facing money record for the community.
+- Devil's advocate truth:
+  - `/app/revenue-allocation` was not dead; it redirects to the command-centre route. The problem was role fit, not route existence.
+  - `NotificationsPage` can still accept backend-provided absolute action paths. It normalizes many known aliases, but a fully dynamic backend CTA cannot be proven clean by static frontend audit alone. Backend notification producers should be audited before freezing the notification lane.
+- Verification:
+  - `npm exec -- eslint src\pages\LoanSummaryPage.tsx src\pages\LoanWorkbenchPage.tsx src\pages\LoansPage.tsx` passed with existing hook dependency warnings only.
+  - `git diff --check` passed.
+  - `npm run build` passed after correcting the revenue-role patch ordering.
+
+## 2026-05-05 Loans & Support First-Surface Remodel
+
+- Owner correction: `/app/loans` must copy the pasted Loans & Support reference frame directly, not translate it into a different surface.
+- Updated `src/pages/LoansPage.tsx`:
+  - removed the generic explain/next-action guide from the first visible surface so the page no longer opens with a busy instruction engine.
+  - rebuilt the top as `Focused Task / Loans & Support` with no extra header subtitle, a dark navy hero, the exact borrower/guarantor support workspace copy, selected-community pill, active support count, pending guarantor request count, and a right-side `Pool position` card.
+  - added the reference hero underline and kept the pool card language as `This shows the pool amount currently visible to you in this community.`
+  - kept the existing backend truth connected through `listMyLoans`, `getLoanGuarantorInbox`, `getCurrentClan`, `getPoolMe`, and `buildGuidanceSnapshot`.
+  - audited all visible Loans buttons against `src/App.tsx`; no ghost frontend endpoint was found for the current nine visible route tiles. The `Start Support Request` hash target also exists on `/app/marketplace`.
+  - tightened the data calls so `getPoolMe` and `listMyLoans` receive the selected community id, matching the backend's `X-Clan-Id` source of truth for `/pool/me` and `/loans`.
+  - rebuilt the visible structure in the screenshot order: `Support summary`, `Current support focus / How to read this page`, `Live support modules`, `Queues & flows`, and the final yellow note.
+  - `Support summary` now uses the reference five blocks only: Active loans, Borrower side, Guarantor side, Pending requests, and Pool.
+  - `Live support modules` now uses the reference nine routes only: Start Support Request, Money In, Money Out, Loan Readiness, Loan Suggestions, Incoming Guarantor Requests, Action Inbox, Guarantor Earnings, and Marketplace.
+  - the final note now says: `Loans & Support stays community-specific. Finance shows the money picture; Loans & Support handles live workflow and decisions.`
+- Truth/devil's advocate:
+  - the `Pool position` amount is the pool amount visible from the current frontend API call. It is not a full fund engine by itself.
+  - this pass remodels `/app/loans`; the deeper route pages such as readiness, suggestions, workbench, payment pool, and withdrawal instructions still carry their own older surfaces and should be audited separately before freezing the full Loans lane.
+- Verification: `npm exec -- eslint src\pages\LoansPage.tsx`, `git diff --check`, and `npm run build` passed.
+
 ## 2026-05-05 Finance Overview Translation Remodel
 
 - Owner approved moving `/app/finance` toward the simpler Finance Overview reference frame: a calm top surface for non-technical users, with the existing finance truth preserved underneath.
@@ -7,14 +180,18 @@
   - first visible surface now reads as `Finance overview` with the approved message: `Your community finances. Clear. Secure. Together.`
   - hero metrics now translate existing backend-visible truth into four simple blocks: communities, total visible balance, this-month inflow, and trust score.
   - hero still carries the route truth through compact pills for community, GSN ID, community ID, pool reference, and member role.
-  - added simple action tiles for `Record Transaction`, `View Reports`, `Bank Accounts`, and `Export Data`.
-  - added `Cash flow summary`, `Recent transactions`, and `Finance health` cards before the detailed sections.
+  - renamed the main action tiles into clearer user language: `Money In`, `View Reports`, `Payment Rails`, and `View Ledger`.
+  - added emoji markers to the hero metrics and action tiles so the finance surface is easier for non-technical users to scan.
+  - added a compact `More finance tools` card with doors for `Money Out`, `Payout Details`, `Loan Readiness`, and `Trust Passport`.
+  - renamed the first finance cards to `Visible Cash Flow`, `Recent Finance Events`, and `Finance Signals` before the detailed sections.
+  - corrected builder-facing finance language so the page now speaks to the user: `selected community unit`, `pool-side event ledger`, `reconciliation`, `proof trail`, and `visible record` were replaced on visible surfaces with user terms like `this community`, `money history`, `payment confirmation`, `clear record`, and `recorded movement`.
+  - polished action and detail buttons with clearer labels, rounded pill detail buttons, stronger touch targets, and calmer blue/white finance styling.
   - detailed balances, reconciliation, borrower/support exposure, guarantor earnings, and event ledger sections remain in the file as drill-down surfaces instead of being deleted.
   - expected payments now use the member-facing `/payment-instructions/my/expected` path instead of the admin bank expected-payment endpoint.
   - pool and loan reads now pass the selected community id so the visible finance truth stays scoped to the active community context.
 - Devil's advocate truth:
-  - `Cash flow summary` is currently built from visible pool events only. It is not yet a full bank-statement cashflow engine.
-  - `Export Data` currently opens the visible ledger area first; a real export route/file workflow is not implemented here.
+  - `Visible Cash Flow` is currently built from visible pool events only. It is not yet a full bank-statement cashflow engine.
+  - `View Ledger` currently opens the visible event ledger area first; a real export route/file workflow is not implemented here.
   - Finance now decongests the surface, but `FinancePage.tsx` remains large. Future work should extract reusable Finance cards before adding more JSX.
 - Verification: `npm exec -- eslint src\pages\FinancePage.tsx` passed, and `npm run build` passed.
 - Protocol note: the UX docs named in `AGENTS.md` (`docs/DESIGN_SYSTEM.md`, `docs/SCREEN_REGISTRY.md`, `docs/SCREEN_SPECS.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`) are still missing from this frontend repo, so this pass used the available protocol files, handoff notes, backend/frontend inspection, and the owner's screenshot as the operative UX reference.
@@ -442,6 +619,9 @@
   - `docs/SUBSCRIPTION_SPOTLIGHT_FREEZE.md` records the frozen paid spotlight lane rules and the auditor-found stale-path repairs.
   - Focused paid-lane emoji pass: `/app/vault-control` and `/app/shop-control/subscription-spotlight` now use small explanatory emojis on payment, block, link, media, preview, and publish labels. The pass was intentionally limited to guidance points and did not change backend logic, route ownership, or button mechanics.
   - Marketplace simplification pass: `/app/marketplace` now opens with a screenshot-inspired GSN Marketplace surface instead of a long exposed control layout. The first visible surface is a dark institutional identity card, four clear blocks for Dues & Contributions, Support Requests, Trusted Trade, and Trust Score, then simple row routes for Dues Calendar, Support Cases, Member Ledger, Demand Box, and Records & Links. Existing money, members, links, demand, and support routes remain underneath and are opened from the guided blocks.
+  - Entry registration abandonment repair: backend `/entry/phone/start` and `/entry/create` now release identity details from abandoned half-created pending users before blocking a fresh registration attempt. The release is deliberately narrow: it only applies to pending users with no active membership, no join request, and no created community. Real pending join requests and real activation-pending memberships remain protected and still route to review/activation. This addresses the tester trap where a stopped or failed registration reserved phone/email details but could not sign in or restart.
+  - Trust Passport remodel: `/app/trust` now opens with the approved Trust Passport structure: dark institutional hero, current trust posture, TrustSlip/CCI verification facts, trust summary, explanation cards, trust-surface route cards, and institutional evidence. It reuses the existing backend truth already loaded by `TrustScorePage` rather than inventing new trust values. A dedicated `theme-trust` was added to the shared tokens so Trust pages stay inside the GSN colour system. The old exposed Trust surface was removed from the page file rather than left as an unreachable duplicate.
+  - Trust Passport line audit: `/app/trust` was checked against the previous TrustScore evidence surface. The remodel now carries the old recompute lines that were missing from the first pass: borrower/guarantor repayment deltas, precision, ordering, computed band, computed score, computed score int, last event used, event count used, and event-type counts. Stale Trust Journey/old collapse helper code left behind from the previous surface was removed so the page has fewer hidden button paths and no duplicate unreachable guidance layer.
 
 - Verification:
   - `npm run build` passed on 2026-05-04 after the spotlight publisher repair.
@@ -513,6 +693,12 @@
   - The unused `ensure_vault_subscription_expected_payment` helper was removed from `gmfn_backend/app/services/expected_payments_service.py` because it could create a Vault expected payment without a matching Vault order. The only active Vault payment-instruction path now goes through `payment_instruction_service.create_vault_subscription_instruction`.
   - `python -m pytest -q ..\gmfn_backend\tests --basetemp C:\tmp\pytest-backend-vault-full-2` passed outside the sandbox after the final transaction cleanup: 96 passed.
   - `npm run build` passed again after the final transaction cleanup.
+  - `python -m pytest ..\gmfn_backend\tests\test_entry_create.py` passed on 2026-05-05 after the entry registration abandonment repair: 17 passed.
+  - `python -m pytest ..\gmfn_backend\tests\test_join_requests.py` passed on 2026-05-05 after confirming pending join requests remain protected: 28 passed.
+  - `npm run build` passed on 2026-05-05 after the Trust Passport remodel.
+  - `git diff --check -- src/pages/TrustScorePage.tsx src/styles/tokens.css` passed on 2026-05-05 after the Trust Passport remodel.
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx` passed on 2026-05-05 after the Trust Passport line audit cleanup.
+  - `npm run build` passed on 2026-05-05 after the Trust Passport line audit cleanup.
 
 - Remaining risk:
   - Frontend build confirms the upload/publish code compiles. Actual picture/video display still depends on the backend process using the same `GMFN_UPLOADS_DIR` for upload saving and `/uploads` static serving.

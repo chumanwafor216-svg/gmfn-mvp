@@ -325,7 +325,7 @@ const DASHBOARD_TARGETS = {
   GUIDE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   BUILD_FIRST_CIRCLE: "/app/build-first-circle",
-  SHOP_ME: "/app/shop/me",
+  SHOP_ME: "/app/shop-control",
   COMMAND_CENTER: "/app/command-center",
   GUARANTOR_EARNINGS: "/app/guarantor-earnings",
 } as const;
@@ -4884,7 +4884,7 @@ export default function DashboardPage() {
 
     navigateWithOrigin(
       navigate,
-      `/app/shop/${encodeURIComponent(spotlightGmfnId)}`,
+      `/shop/${encodeURIComponent(spotlightGmfnId)}`,
       location
     );
   }
@@ -8304,7 +8304,7 @@ export default function DashboardPage() {
                       textTransform: "uppercase",
                     }}
                   >
-                    Open
+                    Open seller details
                   </button>
                 ) : null}
 
@@ -9698,7 +9698,7 @@ export default function DashboardPage() {
                   boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
                 }}
               >
-                Open
+                Open Focus Commitments
               </button>
             </div>
           ) : null}

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.security import get_password_hash
 from app.db.database import SessionLocal
-from app.db.models import User
+from app.db.models import Clan, ClanJoinRequest, User
 
 
 def _parse_api_datetime(value: str) -> datetime:
@@ -33,6 +33,153 @@ def test_entry_phone_preview_session_lasts_one_day_for_pilot_onboarding(client):
     expires_at = _parse_api_datetime(start_body["expires_at"])
     assert expires_at - started_at > timedelta(hours=23, minutes=59)
     assert expires_at - started_at < timedelta(hours=24, minutes=1)
+
+
+def test_entry_phone_start_releases_abandoned_pending_identity(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        abandoned = User(
+            email="abandoned-intake@example.com",
+            phone_e164="+2348011112222",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(abandoned)
+        db.commit()
+        abandoned_id = int(abandoned.id)
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Returning Starter",
+            "phone_e164": "+2348011112222",
+            "email": "abandoned-intake@example.com",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+    assert start_body["ok"] is True
+    assert start_body["phone_e164"] == "+2348011112222"
+
+    with SessionLocal() as db:
+        released = db.get(User, abandoned_id)
+        assert released is not None
+        assert released.phone_e164 is None
+        assert released.email.startswith(f"abandoned-entry-{abandoned_id}-")
+        assert released.email.endswith("@abandoned.gsnmail.app")
+
+
+def test_entry_create_releases_abandoned_pending_email_identity(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        abandoned = User(
+            email="half-finished@example.com",
+            phone_e164=None,
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(abandoned)
+        db.commit()
+        abandoned_id = int(abandoned.id)
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Fresh Founder",
+            "phone_e164": "+2348011113333",
+            "email": "half-finished@example.com",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": start_body["verification_id"],
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Fresh Founder",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "0123456789",
+            "country": "NG",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Fresh Founder Circle",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    assert create_res.json()["email"] == "half-finished@example.com"
+
+    with SessionLocal() as db:
+        released = db.get(User, abandoned_id)
+        assert released is not None
+        assert released.email.startswith(f"abandoned-entry-{abandoned_id}-")
+
+
+def test_entry_phone_start_keeps_real_pending_join_request_protected(client):
+    os.environ["GMFN_DEV_MODE"] = "1"
+
+    with SessionLocal() as db:
+        owner = User(email="owner@example.com", hashed_password="hashed", role="admin")
+        applicant = User(
+            email="pending-applicant@example.com",
+            phone_e164="+2348011114444",
+            hashed_password="PENDING_APPROVAL",
+            role="user",
+        )
+        db.add(owner)
+        db.add(applicant)
+        db.flush()
+        clan = Clan(
+            name="Protected Join Circle",
+            invite_code="protected-join-circle",
+            community_code="GMFN-C-PROTECT1",
+            created_by_user_id=int(owner.id),
+            status="active",
+        )
+        db.add(clan)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                clan_id=int(clan.id),
+                applicant_user_id=int(applicant.id),
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+        applicant_id = int(applicant.id)
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Pending Applicant",
+            "phone_e164": "+2348011114444",
+        },
+    )
+    assert start_res.status_code == 409, start_res.text
+    assert start_res.json()["detail"]["code"] == "entry_pending_admin_review"
+
+    with SessionLocal() as db:
+        protected = db.get(User, applicant_id)
+        assert protected is not None
+        assert protected.phone_e164 == "+2348011114444"
 
 
 def test_entry_phone_verification_then_create_and_phone_login(client):

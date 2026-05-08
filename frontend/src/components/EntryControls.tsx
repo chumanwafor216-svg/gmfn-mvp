@@ -11,11 +11,10 @@ function guardEntryButtonPress(event: React.SyntheticEvent<HTMLElement>) {
 
 function entryTapGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardEntryButtonPress,
-    onTouchStart: guardEntryButtonPress,
     onMouseDown: guardEntryButtonPress,
   };
 }
@@ -30,15 +29,19 @@ export function EntryActionButton({
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: variant === "primary" ? 50 : 44,
-    padding: variant === "primary" ? "14px 22px" : "11px 16px",
+    minHeight: variant === "primary" ? 54 : 50,
+    maxWidth: "100%",
+    padding: variant === "primary" ? "15px 22px" : "12px 16px",
     borderRadius: variant === "primary" ? 16 : 14,
     fontSize: 14.5,
     fontWeight: 900,
+    lineHeight: 1.15,
     textAlign: "center",
     whiteSpace: "normal",
+    overflowWrap: "anywhere",
     cursor: "pointer",
     textDecoration: "none",
+    boxSizing: "border-box",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -77,10 +80,6 @@ export function EntryActionButton({
       onPointerDown={(event) => {
         guardEntryButtonPress(event);
         props.onPointerDown?.(event);
-      }}
-      onTouchStart={(event) => {
-        guardEntryButtonPress(event);
-        props.onTouchStart?.(event);
       }}
       onMouseDown={(event) => {
         guardEntryButtonPress(event);

@@ -121,12 +121,11 @@ function stopSystemTap(event: React.SyntheticEvent<HTMLElement>) {
 
 function systemButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown" | "onTouchStart"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: stopSystemTap,
     onMouseDown: stopSystemTap,
-    onTouchStart: stopSystemTap,
   };
 }
 

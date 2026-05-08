@@ -156,11 +156,10 @@ function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
 
 function buttonGuardProps(): Pick<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }

@@ -188,8 +188,8 @@ export function brandActionButton(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 48,
-      padding: "10px 14px",
+      minHeight: 54,
+      padding: "12px 16px",
       borderRadius: 14,
       border: disabled ? "1px solid rgba(159,173,190,0.34)" : "1px solid rgba(8,48,110,0.36)",
       background: disabled
@@ -217,8 +217,8 @@ export function brandActionButton(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
-      minHeight: 46,
-      padding: "8px 12px",
+      minHeight: 48,
+      padding: "10px 13px",
       borderRadius: 12,
       border: `1px solid ${gmfnBrand.colors.lineStrong}`,
       background:
@@ -242,8 +242,8 @@ export function brandActionButton(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
-    padding: "10px 14px",
+    minHeight: 54,
+    padding: "12px 16px",
     borderRadius: 14,
     border: `1px solid ${gmfnBrand.colors.lineStrong}`,
     background:

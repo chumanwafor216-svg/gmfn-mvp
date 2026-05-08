@@ -193,7 +193,6 @@ function guardButtonPress(
 function buttonGuardProps() {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }

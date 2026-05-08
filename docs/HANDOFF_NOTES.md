@@ -1,3 +1,84 @@
+### Button and CTA audit stabilization pass (2026-05-08)
+
+- Ran the requested two-auditor pass:
+  - Auditor 1 checked frontend button/tap mechanics.
+  - Auditor 2 checked CTA route truth and incomplete screen responsibilities.
+- Button mechanics corrected:
+  - removed redundant `onTouchStart` guard layers from shared `EntryControls`, `NextActionGuide`, `DomainIntroToggle`, and active Finance/Trust/Marketplace/Loans/Notifications route helpers.
+  - continued the sweep across remaining page-level button helpers so `onTouchStart` is no longer present in `frontend/src/pages` or `frontend/src/components`; tap ownership now stays with pointer/mouse guards plus click handlers.
+  - raised shared `brandActionButton` text-button target sizes toward the design-system 54px floor.
+  - raised entry/shared guide button target floors and mobile app-shell controls.
+  - changed Spotlight video/audio unlock so pointer-down only owns propagation and the actual audio toggle happens on click.
+  - added `pointerEvents: "none"` to Subscription Spotlight decorative hero overlays.
+  - changed disabled app navigation links so they no longer use `pointerEvents: "none"`; disabled clicks are now intercepted instead of falling through.
+- CTA route truth corrected:
+  - authenticated main navigation now uses `Shop Control` for protected owner shop work.
+  - public shop face actions now route to `/shop/:gmfnId` instead of protected-looking `/app/shop/:gmfnId`.
+  - Cover CTAs now match the locked spec: `Open Welcome` and `Read the full guide first`.
+  - Dashboard compact `Open` labels were replaced with `Open seller details` and `Open Focus Commitments`.
+  - Community Home `Create community` now opens the approved `/create` entry lane, and `/app/create-community` / `/app/new-community` redirect there instead of the legacy mixed `/app/clans` page.
+  - Community Home no longer carries the hidden free spotlight publisher block on the overview surface; the visible spotlight area is status/shortcut-oriented and links to `Shop Control` at `#shop-control-spotlight`.
+  - Shop Control and Marketplace unused-symbol debt discovered by the audit was cleaned where it touched the owner shop/spotlight route.
+- Verification:
+  - `npm run build` passed outside the sandbox after esbuild spawn needed elevated execution.
+  - `npm exec -- eslint src` now passes with zero warnings after cleaning the broader frontend lint debt found during continuation.
+  - `git diff --check` passed with line-ending normalization warnings only.
+- Devil's-advocate truth:
+  - this fixes the highest-risk button jump/tap ownership issues found today, removes the hidden Community Home publisher debt, and leaves the frontend passing full lint/build checks. The line-ending warnings remain repository normalization noise, not code-quality failures.
+
+### Frontend lint cleanup continuation (2026-05-08)
+
+- Continued after the button/CTA stabilization pass to remove global frontend lint failures.
+- Cleaned low-risk lint debt:
+  - fixed the disabled `ExplainToggle` hook-order issue without re-enabling the explain surfaces.
+  - removed unused legacy confirm-modal types and constant-truthiness logic.
+  - converted TrustGraph and share imports to type-only imports where required.
+  - removed an unused TrustGraph loader and stale dashboard/theme locals.
+  - documented best-effort storage/clipboard `catch` blocks instead of leaving empty blocks.
+  - stabilized loader callbacks on affected pages so hook dependency lint is clean.
+- Verification:
+  - `npm exec -- eslint src` passes with no warnings.
+  - `npm run build` passes outside the sandbox after esbuild spawn needed elevated execution.
+  - `git diff --check` passes with line-ending normalization warnings only.
+- Devil's-advocate truth:
+  - this was lint/verification cleanup, not a UX redesign. Some files still contain old mojibake text from earlier history, but it is not newly introduced by this pass and should be handled as a separate copy-encoding cleanup if product wants that polished.
+
+### Frontend copy-encoding cleanup (2026-05-08)
+
+- Cleaned visible broken encoding artifacts found after the lint/build pass:
+  - `frontend/src/components/ShareButtons.tsx` now uses plain ASCII labels for copy/share/QR/close actions and toast messages instead of broken or inconsistent symbol text.
+  - `frontend/src/pages/CommunityHomePage.tsx` now uses stable ASCII stat symbols for Guarantees, Earned, Trade, and Trust.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx` now joins intelligence-reading fragments with ` | ` instead of a broken replacement marker.
+  - Older handoff-note references to a broken dash marker were rewritten as plain language.
+- Verification:
+  - targeted scan for common broken encoding sequences and replacement characters returned no matches in `frontend/src`, `frontend/docs`, or `docs`.
+  - repo-wide live-source scan with `_freeze_points` excluded returned no broken encoding matches. `_freeze_points` still contains archived historical mojibake and was intentionally not edited because it is reference/freeze material.
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox after esbuild spawn needed elevated execution.
+  - `python -m pytest -q gmfn_backend\tests --basetemp C:\tmp\pytest-gmfn-clean` passed outside the sandbox after temp-directory permission was needed: 105 passed, 14 sqlite/SQLAlchemy deprecation warnings.
+  - `git diff --check` passed with line-ending normalization warnings only.
+- Devil's-advocate truth:
+  - this removes the obvious broken encoding artifacts from live source/docs and leaves frontend plus backend verification gates green. It does not mean every piece of product copy has been editorially reviewed for tone; it means the visible mojibake class of issue found today is cleaned and the test/lint/build gates pass.
+
+### University-readiness verification pass (2026-05-08)
+
+- Continued the cleanup specifically for university/demo readiness after the core gates were green.
+- Removed additional presentation blockers:
+  - `frontend/src/components/RevenuePanel.tsx` now uses ASCII fee-flow wording and calls the pilot rate a calibration estimate instead of a placeholder.
+  - `frontend/src/pages/LockManagementPage.tsx` no longer uses visible `fake` language; it explains the disabled lock-release lane as an intentional backend-authority constraint.
+  - `frontend/src/pages/ProfilePage.tsx` no longer shows broken icon/dash text or a `Saved locally` success marker with broken encoding.
+  - `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py` no longer falls back to a localhost QR URL; it now uses the configured public frontend origin or the existing public Render origin.
+- Verification:
+  - live-source mojibake scan with `_freeze_points` excluded returned no matches.
+  - `python -m py_compile gmfn_backend\app\services\trust_slip_evidence_pdf_service.py` passed.
+  - `npm exec -- eslint src` passed.
+  - `npm run build` passed outside the sandbox after esbuild spawn needed elevated execution.
+  - `python -m pytest -q gmfn_backend\tests --basetemp C:\tmp\pytest-gmfn-university` passed outside the sandbox after temp-directory permission was needed: 105 passed, 14 sqlite/SQLAlchemy deprecation warnings.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - Removed the upload artifact generated by the backend test suite under `uploads/profile/users`.
+- Devil's-advocate truth:
+  - this is now ready for university verification in the engineering sense: full frontend lint/build, backend tests, diff check, and live-source encoding scan are green. It is not a claim that every user journey has been manually clicked in a browser by a human reviewer; that should still happen during the university verification session.
+
 ### Vault international settlement identifiers (2026-05-04)
 
 - Owner feedback from phone: Vault payment details showed account name/account number but omitted sort code and other international bank identifiers, which would block transfers in many regions.
@@ -18921,12 +19002,12 @@ GSN-branded invite composer and invite-entry continuity.
   - `frontend/src/pages/LoanSuggestionsPage.tsx`
     - darkened the page-card / soft-card / inner-card / stat-tile system
     - moved route tiles, badges, helper text, collapse controls, and non-primary buttons into the darker institutional family
-    - cleaned the legacy broken fallback date marker from `â€”` to `Not stated`
+    - cleaned the legacy broken fallback date marker from a broken dash to `Not stated`
     - retuned explicit explanatory/result text so the suggested-supporter route no longer mixes dark shells with brighter utility cards
   - `frontend/src/pages/LoanWorkbenchPage.tsx`
     - darkened the page-card / soft-card / inner-card / stat-tile system
     - moved route tiles, badges, helper text, collapse controls, and non-primary buttons into the same darker institutional family as Loans and Readiness
-    - cleaned the legacy broken fallback date marker from `â€”` to `Not stated`
+    - cleaned the legacy broken fallback date marker from a broken dash to `Not stated`
     - retuned detailed workbench reading text so the live loan support route feels visually aligned with the stronger private operational surfaces
   - `frontend/src/pages/GuarantorInboxPage.tsx`
     - darkened the inbox shell, route tiles, badges, helper text, filter controls, secondary controls, and collapse controls

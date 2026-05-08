@@ -328,12 +328,11 @@ function stopCommandTap(event: React.SyntheticEvent<HTMLElement>) {
 
 function commandButtonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown" | "onTouchStart"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: stopCommandTap,
     onMouseDown: stopCommandTap,
-    onTouchStart: stopCommandTap,
   };
 }
 

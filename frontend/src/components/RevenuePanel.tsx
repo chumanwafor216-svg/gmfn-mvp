@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
  * RevenuePanel (Pilot)
  * - Authority UI: neutral base, transparent fee breakdown
  * - Freeze-safe: frontend-only calculation (no backend dependency)
- * - Purpose: show Gross → Service Fee → Net to borrower (no hidden charges)
+ * - Purpose: show Gross -> Service Fee -> Net to borrower (no hidden charges)
  */
 
 type Props = {
@@ -61,7 +61,7 @@ function pill(kind: "green" | "red" | "gray" | "blue" | "gold"): React.CSSProper
 
 // Freeze-safe constants (frontend only). Adjust later to match published policy.
 const PILOT_SERVICE_FEE_RATE = 0.03; // 3%
-const PROD_SERVICE_FEE_RATE = 0.05; // 5% placeholder
+const PROD_SERVICE_FEE_RATE = 0.05; // 5% draft policy rate
 
 export default function RevenuePanel({ amount, currency, mode = "pilot" }: Props) {
   const amt = useMemo(() => parseAmount(amount), [amount]);
@@ -77,7 +77,7 @@ export default function RevenuePanel({ amount, currency, mode = "pilot" }: Props
         <div>
           <div style={{ fontSize: 16, fontWeight: 1000 }}>Revenue (transparent)</div>
           <div style={{ marginTop: 4, fontSize: 12, color: "#64748b" }}>
-            Clear breakdown: gross request → service fee → net to borrower.
+            Clear breakdown: gross request, service fee, and net to borrower.
           </div>
         </div>
 
@@ -114,7 +114,7 @@ export default function RevenuePanel({ amount, currency, mode = "pilot" }: Props
 
       <div style={{ marginTop: 12, fontSize: 12, color: "#64748b" }}>
         {mode === "pilot"
-          ? "Pilot note: rate is a placeholder while we validate behavior and the evidence trail."
+          ? "Pilot note: rate is a calibration estimate while we validate behavior and the evidence trail."
           : "Production note: rate must match published policy."}
       </div>
     </div>

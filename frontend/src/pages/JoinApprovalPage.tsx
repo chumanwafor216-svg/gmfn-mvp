@@ -450,7 +450,6 @@ export default function JoinApprovalPage() {
             type="button"
             onPointerDown={consumeActionEvent}
             onMouseDown={consumeActionEvent}
-            onTouchStart={consumeActionEvent}
             onClick={goBack}
             style={actionBtn(false)}
           >
@@ -709,7 +708,6 @@ export default function JoinApprovalPage() {
                     type="button"
                     onPointerDown={consumeActionEvent}
                     onMouseDown={consumeActionEvent}
-                    onTouchStart={consumeActionEvent}
                     style={actionBtn(true)}
                     onClick={() =>
                       navigateWithOrigin(

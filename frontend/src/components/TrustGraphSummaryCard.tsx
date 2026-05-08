@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Pill } from "../components/uiKit";
-import { TrustGraphSummaryOut } from "../lib/api";
+import type { TrustGraphSummaryOut } from "../lib/api";
 
 function safeStr(x: any): string {
   return (x ?? "").toString();

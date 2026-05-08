@@ -116,7 +116,7 @@ const NOTIFICATION_TARGETS = {
   GUIDE: "/app/my-gmfn-and-i",
   SETTINGS: "/app/my-gmfn-and-i?tab=settings",
   BUILD_FIRST_CIRCLE: "/app/build-first-circle",
-  SHOP_ME: "/app/shop/me",
+  SHOP_ME: "/app/shop-control",
   COMMAND_CENTER: "/app/command-center",
   GUARANTOR_EARNINGS: "/app/guarantor-earnings",
 } as const;
@@ -140,10 +140,14 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 
   "money-in": NOTIFICATION_TARGETS.MONEY_IN,
   "payment/pool": NOTIFICATION_TARGETS.MONEY_IN,
+  "payment-rails": "/app/payment-rails",
+  "bank-accounts": "/app/payment-rails",
+  "bank-rails": "/app/payment-rails",
 
   "money-out": NOTIFICATION_TARGETS.MONEY_OUT,
   withdrawal: NOTIFICATION_TARGETS.MONEY_OUT,
   "withdrawal-instructions": NOTIFICATION_TARGETS.MONEY_OUT,
+  "payout-details": "/app/payout-details",
 
   marketplace: NOTIFICATION_TARGETS.MARKETPLACE,
   market: NOTIFICATION_TARGETS.MARKETPLACE,
@@ -228,7 +232,51 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 
   earnings: NOTIFICATION_TARGETS.GUARANTOR_EARNINGS,
   "guarantor-earnings": NOTIFICATION_TARGETS.GUARANTOR_EARNINGS,
+  "guarantor-inbox": "/app/guarantor-inbox",
 };
+
+const SAFE_STATIC_APP_PATHS = new Set([
+  "dashboard",
+  "community",
+  "marketplace",
+  "finance",
+  "payment/pool",
+  "payment-rails",
+  "payout-details",
+  "withdrawal-instructions",
+  "trust",
+  "trust-slip",
+  "trust-slip/verify",
+  "identity",
+  "notifications",
+  "demand-box",
+  "loans",
+  "loan-readiness",
+  "loan-suggestions",
+  "loan-workbench",
+  "guarantor-earnings",
+  "guarantor-inbox",
+  "my-gmfn-and-i",
+  "build-first-circle",
+  "shop/me",
+  "shop-control",
+  "shop-control/subscription-spotlight",
+  "shop-gallery-control",
+  "vault-control",
+  "free-spotlight",
+  "paid-spotlight",
+  "shop-assets",
+  "command-center",
+  "command-center/bank-console",
+  "command-center/revenue-allocation",
+  "command-center/exposure",
+  "command-center/trust-analytics",
+  "command-center/trust-events",
+  "command-center/identity-risk",
+  "command-center/incomplete-loans",
+  "command-center/system-operations",
+  "command-center/trust-graph",
+]);
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -417,11 +465,10 @@ function guardButtonPress(event: React.SyntheticEvent) {
 
 function buttonGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onTouchStart" | "onMouseDown"
+  "onPointerDown" | "onMouseDown"
 > {
   return {
     onPointerDown: guardButtonPress,
-    onTouchStart: guardButtonPress,
     onMouseDown: guardButtonPress,
   };
 }
@@ -523,6 +570,24 @@ function isSafeRelativeAppPath(path: string): boolean {
   );
 }
 
+function normalizeAppTargetPath(path: string, suffix: string): string {
+  const appPath = safeStr(path).replace(/^app\/?/i, "");
+  const lowerAppPath = appPath.toLowerCase();
+
+  if (!lowerAppPath) return NOTIFICATION_TARGETS.DASHBOARD;
+
+  const aliased = EXACT_TARGET_ALIASES[lowerAppPath];
+  if (aliased) {
+    return mergeAliasTarget(aliased, suffix);
+  }
+
+  if (SAFE_STATIC_APP_PATHS.has(lowerAppPath) || isSafeRelativeAppPath(lowerAppPath)) {
+    return `/app/${appPath}${suffix}`;
+  }
+
+  return NOTIFICATION_TARGETS.NOTIFICATIONS;
+}
+
 function normalizeActionTargetPath(value: any): string {
   const raw = safeStr(value);
   if (!raw) return NOTIFICATION_TARGETS.NOTIFICATIONS;
@@ -536,7 +601,26 @@ function normalizeActionTargetPath(value: any): string {
   }
 
   if (raw.startsWith("/")) {
-    return raw;
+    const { path, suffix } = splitPathSuffix(raw.replace(/^\/+/, ""));
+    const normalizedPath = safeStr(path).replace(/^\/+/, "");
+    const lowerPath = normalizedPath.toLowerCase();
+
+    if (!lowerPath) return NOTIFICATION_TARGETS.NOTIFICATIONS;
+
+    if (lowerPath === "app" || lowerPath.startsWith("app/")) {
+      return normalizeAppTargetPath(normalizedPath, suffix);
+    }
+
+    const aliased = EXACT_TARGET_ALIASES[lowerPath];
+    if (aliased) {
+      return mergeAliasTarget(aliased, suffix);
+    }
+
+    if (matchesRoutePrefix(lowerPath, PUBLIC_ROUTE_PREFIXES)) {
+      return `/${normalizedPath}${suffix}`;
+    }
+
+    return NOTIFICATION_TARGETS.NOTIFICATIONS;
   }
 
   if (raw.startsWith("?")) {
@@ -555,7 +639,7 @@ function normalizeActionTargetPath(value: any): string {
   }
 
   if (lowerPath === "app" || lowerPath.startsWith("app/")) {
-    return `/${normalizedPath}${suffix}`;
+    return normalizeAppTargetPath(normalizedPath, suffix);
   }
 
   if (matchesRoutePrefix(lowerPath, PUBLIC_ROUTE_PREFIXES)) {
@@ -573,7 +657,20 @@ function resolveNoticeTarget(raw: any): string {
   const explicit = normalizeActionTargetPath(
     raw?.action_url || raw?.cta_to || raw?.ctaTo || raw?.to
   );
-  if (explicit && explicit !== NOTIFICATION_TARGETS.NOTIFICATIONS) return explicit;
+  if (explicit && explicit !== NOTIFICATION_TARGETS.NOTIFICATIONS) {
+    const explicitText = rawNotificationText(raw);
+    if (
+      explicit === NOTIFICATION_TARGETS.LOANS &&
+      containsAny(explicitText, [
+        "pool deposit",
+        "deposit confirmed",
+        "deposit was confirmed",
+      ])
+    ) {
+      return NOTIFICATION_TARGETS.FINANCE;
+    }
+    return explicit;
+  }
 
   const text = [
     safeStr(raw?.kind),
@@ -666,9 +763,47 @@ function normalizeNotificationCtaLabel(
 ): string {
   const direct = safeStr(rawLabel);
   const normalizedTarget = normalizeActionTargetPath(ctaTo);
+  const targetPath = splitPathSuffix(normalizedTarget).path;
+  const genericLabel =
+    !direct ||
+    /^(open|continue|review|view|open finances|view finances|open support|view support|deposit|deposit to pool|open deposit|make deposit|open payment)$/i.test(
+      direct
+    );
 
   if (normalizedTarget === NOTIFICATION_TARGETS.COMMITMENT_BUILDER) {
     return "Open Focus Commitments";
+  }
+
+  if (targetPath === NOTIFICATION_TARGETS.LOANS && (genericLabel || /finance/i.test(direct))) {
+    return "Open Loans & Support";
+  }
+
+  if (targetPath === NOTIFICATION_TARGETS.FINANCE && (genericLabel || /finance/i.test(direct))) {
+    return "Open Finance File";
+  }
+
+  if (targetPath === NOTIFICATION_TARGETS.MONEY_IN && genericLabel) {
+    return "Open Money In";
+  }
+
+  if (targetPath === NOTIFICATION_TARGETS.MONEY_OUT && genericLabel) {
+    return "Open Money Out";
+  }
+
+  if (targetPath === NOTIFICATION_TARGETS.DEMAND_BOX && genericLabel) {
+    return "Open Demand Box";
+  }
+
+  if (/^\/app\/community\/[^/]+\/join-requests$/.test(targetPath) && genericLabel) {
+    return "Review Join Request";
+  }
+
+  if (targetPath === "/activate-membership" && genericLabel) {
+    return "Activate Membership";
+  }
+
+  if (/^\/join-approval\/[^/]+$/.test(targetPath) && genericLabel) {
+    return "View Decision";
   }
 
   if (normalizedTarget === NOTIFICATION_TARGETS.GUIDE) {
