@@ -90,7 +90,8 @@
 - Owner clarified that the picture frame button should not sit on top of the photo.
 - Updated `frontend/src/pages/DashboardPage.tsx` so both dashboard photo areas place the `Frame` / `Picture frame` tap control under the picture.
 - The tap-to-open/tap-to-close behavior remains.
-- The tool rails remain mounted with fixed height so opening/closing changes visibility, not surrounding layout height.
+- Follow-up from screenshot: the closed rail must not leave a large blank space in the card.
+- The tool rail now opens as an absolute overlay under the button; closed state does not reserve visible layout height.
 - Updated `docs/SCREEN_SPECS.md` to freeze that the control belongs under the picture.
 - Dashboard Market Wisdom was not changed.
 

@@ -6330,6 +6330,7 @@ export default function DashboardPage() {
                 alignSelf: "center",
                 display: "grid",
                 gap: isPhone ? 6 : 8,
+                position: "relative",
               }}
             >
               <div
@@ -6399,14 +6400,24 @@ export default function DashboardPage() {
 
               <div
                 style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  right: 0,
+                  zIndex: 20,
                   display: "grid",
                   gap: 5,
                   gridTemplateColumns: "1fr",
-                  minHeight: isPhone ? 112 : 122,
                   alignContent: "start",
                   opacity: pictureToolsOpen ? 1 : 0,
                   visibility: pictureToolsOpen ? "visible" : "hidden",
                   pointerEvents: pictureToolsOpen ? "auto" : "none",
+                  borderRadius: 14,
+                  padding: 6,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
+                  border: "1px solid rgba(11,99,209,0.12)",
+                  boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
                 }}
               >
                 <button
@@ -6910,6 +6921,8 @@ export default function DashboardPage() {
                 boxShadow:
                   "0 20px 40px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
                 padding: isPhone ? 5 : isCompact ? 10 : 12,
+                position: "relative",
+                zIndex: 5,
               }}
             >
               <div
@@ -7022,17 +7035,26 @@ export default function DashboardPage() {
 
               <div
                 style={{
-                  marginTop: 10,
+                  position: "absolute",
+                  left: isPhone ? 5 : isCompact ? 10 : 12,
+                  right: isPhone ? 5 : isCompact ? 10 : 12,
+                  top: "calc(100% + 8px)",
+                  zIndex: 20,
                   display: "grid",
                   gridTemplateColumns: isPhone
                     ? "repeat(3, minmax(0, 1fr))"
                     : "repeat(3, minmax(0, 1fr))",
                   gap: 8,
                   alignItems: "stretch",
-                  minHeight: isPhone ? 44 : 42,
                   opacity: pictureToolsOpen ? 1 : 0,
                   visibility: pictureToolsOpen ? "visible" : "hidden",
                   pointerEvents: pictureToolsOpen ? "auto" : "none",
+                  borderRadius: 16,
+                  padding: 8,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
+                  border: "1px solid rgba(11,99,209,0.12)",
+                  boxShadow: "0 18px 30px rgba(2,12,27,0.18)",
                 }}
               >
                 <button
