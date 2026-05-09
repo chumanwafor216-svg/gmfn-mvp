@@ -711,14 +711,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
-  const routeClanId = useMemo(() => {
-    const query = new URLSearchParams(location.search);
-    return positiveNumber(
-      query.get("clan_id") ||
-        query.get("community") ||
-        query.get("community_id")
-    );
-  }, [location.search]);
   const routeProductId = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("product_id") || query.get("product"));
@@ -785,8 +777,6 @@ export default function ShopGalleryPage() {
 
         const publicShopRes = cleanedGmfnId
           ? await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
-              clan_id: routeClanId || undefined,
-              product_id: routeProductId || undefined,
               product_limit: 100,
               broadcast_limit: 24,
             }).catch(() => null)
@@ -807,10 +797,11 @@ export default function ShopGalleryPage() {
         const normalizedProducts = rowsOf<any>(publicShopRes?.products)
           .filter((row) => {
             const src = row?.item || row?.product || row?.data || row;
-            return (
-              firstMeaningful(src?.visibility_mode, "community_visible") ===
+            const mode = firstMeaningful(
+              src?.visibility_mode,
               "community_visible"
-            );
+            ).toLowerCase();
+            return mode !== "vault_private";
           })
           .map((row, index) => normalizeProduct(row, index + 1))
           .filter(Boolean) as ShopProduct[];
@@ -884,7 +875,7 @@ export default function ShopGalleryPage() {
     return () => {
       alive = false;
     };
-  }, [gmfnId, routeClanId, routeProductId]);
+  }, [gmfnId]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);

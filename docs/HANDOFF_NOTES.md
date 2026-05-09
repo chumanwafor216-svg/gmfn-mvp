@@ -15,6 +15,26 @@
 - Devil's-advocate truth:
   - this deliberately removes the public block deep-link behavior from the current UX. Old inbound URLs that already contain `product_id` may still be understood by the page/backend for compatibility, but newly generated public shares/copies should now point to the whole shop page.
 
+### Two-line-auditor public shop 0/12 repair (2026-05-09)
+
+- Owner screenshot still showed `0/12` in Shop Diaries after link fixes, so two line auditors were requested and used:
+  - frontend auditor checked `publicLinks.ts`, `ShopAssetsPage.tsx`, and `ShopGalleryPage.tsx`
+  - backend auditor checked `marketplace.py`, product/shop ownership, and the public shop endpoint
+- Local truth found during audit:
+  - `http://127.0.0.1:5174/api/marketplace/public/shop/GMFN-U-9867079C` returns 12 products locally.
+  - `http://127.0.0.1:8012/marketplace/public/shop/GMFN-U-9867079C` returns 12 products locally.
+  - the phone screenshot address bar showed `frontend.onrender.com`, so it may be observing Render/stale deploy behavior rather than the local 5174 API response.
+- Frontend correction:
+  - `ShopGalleryPage` no longer sends `clan_id` or `product_id` into the public shelf fetch.
+  - legacy `product_id` may still be used only to reveal/open a block after the whole shelf loads.
+  - product filtering now excludes only explicit `vault_private` rows instead of requiring exact `community_visible`, so legacy public rows are not dropped.
+- Backend correction:
+  - public shop route now builds the product shelf from all active shop rows owned by the GMFN owner, guarded by `seller_user_id == owner.id`, instead of trusting only the single canonical shop row.
+  - accepted public visibility modes for the shelf include `community_visible`, legacy `public`, and legacy `community`.
+  - Vault/private rows remain excluded.
+- Devil's-advocate truth:
+  - this fixes both stale public query parameters and the canonical-shop-slicing risk found by the auditors. If a browser still shows `0/12` after this, the next proof step is to confirm the exact URL/API host being used and hard-refresh/restart the 5174/Render frontend bundle.
+
 ### Public shop link contract audit (2026-05-09)
 
 - Owner instruction clarified the public-shop contract:

@@ -906,6 +906,21 @@ def get_public_marketplace_shop_by_gmfn_id(
     if not shop or not bool(getattr(shop, "is_active", True)):
         raise HTTPException(status_code=404, detail="Shop not found")
 
+    active_owner_shop_ids = [
+        int(row.id)
+        for row in (
+            db.query(MarketplaceShop)
+            .filter(
+                MarketplaceShop.owner_user_id == int(owner.id),
+                MarketplaceShop.is_active.is_(True),
+            )
+            .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
+            .all()
+        )
+    ]
+    if not active_owner_shop_ids:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
     requested_clan_id = _safe_int(clan_id, 0)
     requested_clan = None
     if requested_clan_id > 0:
@@ -922,9 +937,14 @@ def get_public_marketplace_shop_by_gmfn_id(
 
     product_query = (
         db.query(MarketplaceProduct)
-        .filter(MarketplaceProduct.shop_id == int(shop.id))
+        .filter(MarketplaceProduct.shop_id.in_(active_owner_shop_ids))
+        .filter(MarketplaceProduct.seller_user_id == int(owner.id))
         .filter(MarketplaceProduct.is_active.is_(True))
-        .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
+        .filter(
+            MarketplaceProduct.visibility_mode.in_(
+                [VISIBILITY_COMMUNITY, "public", "community"]
+            )
+        )
     )
 
     product_rows = (
@@ -944,9 +964,14 @@ def get_public_marketplace_shop_by_gmfn_id(
         requested_product = (
             db.query(MarketplaceProduct)
             .filter(MarketplaceProduct.id == int(requested_product_id))
-            .filter(MarketplaceProduct.shop_id == int(shop.id))
+            .filter(MarketplaceProduct.shop_id.in_(active_owner_shop_ids))
+            .filter(MarketplaceProduct.seller_user_id == int(owner.id))
             .filter(MarketplaceProduct.is_active.is_(True))
-            .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
+            .filter(
+                MarketplaceProduct.visibility_mode.in_(
+                    [VISIBILITY_COMMUNITY, "public", "community"]
+                )
+            )
             .first()
         )
         if requested_product is not None:

@@ -14,6 +14,25 @@
   - Shop Gallery product buttons now say `Share shop` and use the whole-shop link.
   - Shop Assets block actions now say `Copy shop link`.
 
+## 2026-05-09 Two-Line-Auditor Public Shop 0/12 Repair
+
+- Owner requested two line auditors because the phone still showed `0/12` in Shop Diaries.
+- Frontend auditor found:
+  - public link builders were correct
+  - `ShopGalleryPage` still passed legacy `clan_id` / `product_id` into the public shop fetch
+  - `ShopGalleryPage` filtered products too narrowly by exact `community_visible`
+- Backend auditor found:
+  - `/marketplace/public/shop/{gmfn_id}` still selected one canonical shop row before reading products
+  - legacy/deployed data with more than one active shop row for one owner could make the public shelf look empty even when owner-owned public products exist elsewhere
+- Applied corrections:
+  - `ShopGalleryPage` now fetches the whole public shelf without `clan_id` or `product_id`
+  - route product IDs are legacy reveal/open hints only after the full shelf loads
+  - product filtering excludes only explicit `vault_private`
+  - backend public route now gathers active public products across all active owner shop rows, guarded by seller ownership
+- Local proof:
+  - local 5174/8012 API for `GMFN-U-9867079C` returned 12 products during audit.
+  - screenshot address bar showed `frontend.onrender.com`, so continued `0/12` there may mean Render/stale bundle/stale backend rather than local 5174 data.
+
 ## 2026-05-09 Canonical Public Shop Domain Links
 
 - Owner clarified that the shop-owner public shop link should show the complete public shop domain.
