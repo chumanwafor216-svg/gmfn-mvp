@@ -2738,6 +2738,7 @@ export default function DashboardPage() {
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [pictureToolsOpen, setPictureToolsOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [appUsage] = useState<AppUseRecord[]>(() => readDashboardAppUsage());
@@ -6371,8 +6372,16 @@ export default function DashboardPage() {
                     {profileInitials}
                   </span>
                 )}
-                <div
-                  aria-label="Picture frame tools"
+                <button
+                  type="button"
+                  aria-controls={avatarInputId}
+                  aria-expanded={pictureToolsOpen}
+                  onClick={(event) =>
+                    runDashboardUiMutation(event, () =>
+                      setPictureToolsOpen((open) => !open)
+                    )
+                  }
+                  {...dashboardButtonGuardProps()}
                   style={{
                     position: "absolute",
                     left: 6,
@@ -6394,15 +6403,15 @@ export default function DashboardPage() {
                     fontWeight: 900,
                     fontSize: isPhone ? 10 : 11,
                     lineHeight: 1,
-                    cursor: "default",
-                    touchAction: "none",
+                    cursor: "pointer",
+                    touchAction: "manipulation",
                     whiteSpace: "nowrap",
                     WebkitTapHighlightColor: "transparent",
                     userSelect: "none",
                   }}
                 >
                   <span>{isPhone ? "Frame" : "Picture frame"}</span>
-                </div>
+                </button>
               </div>
 
               <div
@@ -6412,6 +6421,9 @@ export default function DashboardPage() {
                   gridTemplateColumns: "1fr",
                   minHeight: isPhone ? 112 : 122,
                   alignContent: "start",
+                  opacity: pictureToolsOpen ? 1 : 0,
+                  visibility: pictureToolsOpen ? "visible" : "hidden",
+                  pointerEvents: pictureToolsOpen ? "auto" : "none",
                 }}
               >
                 <button
@@ -6982,8 +6994,16 @@ export default function DashboardPage() {
                       {profileInitials}
                     </div>
                   )}
-                  <div
-                    aria-label="Picture frame tools"
+                  <button
+                    type="button"
+                    aria-controls={avatarInputId}
+                    aria-expanded={pictureToolsOpen}
+                    onClick={(event) =>
+                      runDashboardUiMutation(event, () =>
+                        setPictureToolsOpen((open) => !open)
+                      )
+                    }
+                    {...dashboardButtonGuardProps()}
                     style={{
                       position: "absolute",
                       right: isPhone ? 10 : 12,
@@ -7006,8 +7026,8 @@ export default function DashboardPage() {
                       fontSize: isPhone ? 12.3 : 12.7,
                       lineHeight: 1,
                       letterSpacing: 0.08,
-                      cursor: "default",
-                      touchAction: "none",
+                      cursor: "pointer",
+                      touchAction: "manipulation",
                       whiteSpace: "nowrap",
                       WebkitTapHighlightColor: "transparent",
                       WebkitAppearance: "none",
@@ -7022,7 +7042,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <span>Picture frame</span>
-                  </div>
+                  </button>
                 </div>
               </div>
 
@@ -7052,6 +7072,9 @@ export default function DashboardPage() {
                   gap: 8,
                   alignItems: "stretch",
                   minHeight: isPhone ? 44 : 42,
+                  opacity: pictureToolsOpen ? 1 : 0,
+                  visibility: pictureToolsOpen ? "visible" : "hidden",
+                  pointerEvents: pictureToolsOpen ? "auto" : "none",
                 }}
               >
                 <button

@@ -53,6 +53,16 @@
 - Updated root `docs/SCREEN_SPECS.md` so the frozen rule says picture tools must stay fixed and non-collapsible.
 - Dashboard Market Wisdom was not changed.
 
+## 2026-05-09 Dashboard Picture Frame Tap-Open Behavior Restored
+
+- Owner clarified that picture frame tools should still be tap-to-open and tap-to-close.
+- Updated `src/pages/DashboardPage.tsx`:
+  - restored a `pictureToolsOpen` toggle for the photo frame control
+  - kept the tool rails mounted at fixed height
+  - closed state uses opacity/visibility/pointer-events only, so surrounding layout height does not change
+- Updated root `docs/SCREEN_SPECS.md` to freeze the correct behavior: tap open/close is allowed, but layout collapse is not.
+- Dashboard Market Wisdom was not changed.
+
 ## 2026-05-09 Public Shop Whole-Page Share Correction
 
 - Owner clarified from local 5174 testing that every public-shop share/copy should open the whole public shop page.
