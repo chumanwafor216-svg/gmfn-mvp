@@ -117,6 +117,18 @@ assertContains(
 );
 
 assertContains(
+  "src/App.tsx",
+  /function RedirectPublicShopAlias\(\) \{[\s\S]*?to=\{gmfnId \? publicShopPath\(gmfnId\) : "\/cover"\}[\s\S]*?replace[\s\S]*?\}/,
+  "Public shop aliases must strip old product/community query strings and land on the canonical whole-shop diaries URL."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /const target = to\.startsWith\("\/app\/"\)[\s\S]*?\? withClanQuery\(to, activeCommunityId\)[\s\S]*?: to;/,
+  "Marketplace route handling must not attach community query strings to public shop links."
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /href=\{publicShopViewLink\}[\s\S]*?\{publicShopViewLink\}/,
   "Marketplace public shop card must visibly show the full public shop domain as a real public link."
@@ -204,6 +216,18 @@ assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /href=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}/,
   "Public Shop Gallery must visibly show the complete public shop domain as a real link."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /if \(loading\) return;[\s\S]*?const shouldRevealProduct = id !== PUBLIC_SHOP_DIARIES_ANCHOR;[\s\S]*?revealGalleryTarget\(id\);/,
+  "Public Shop Gallery must wait for the shelf to load and treat #shop-diaries as the whole-shop landing, not a product/block deep link."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /if \(attempt < 60\)/,
+  "Public Shop Gallery hash landing must retry long enough for mobile/API-loaded shop sections to mount."
 );
 
 assertNotContains(

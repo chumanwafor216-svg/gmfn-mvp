@@ -245,17 +245,12 @@ function RedirectToCover(props: {
 }
 
 function RedirectPublicShopAlias() {
-  const location = useLocation();
   const params = useParams<Record<string, string | undefined>>();
   const gmfnId = String(params.gmfnId || "").trim();
 
   return (
     <Navigate
-      to={mergeTargetWithCurrent(
-        gmfnId ? publicShopPath(gmfnId) : "/cover",
-        location.search,
-        location.hash
-      )}
+      to={gmfnId ? publicShopPath(gmfnId) : "/cover"}
       replace
     />
   );

@@ -2050,7 +2050,7 @@ export default function MarketplacePage() {
     to: string
   ) {
     consumeMarketplaceButtonEvent(event);
-    const target = to.startsWith("/app/") || to.startsWith("/shop/")
+    const target = to.startsWith("/app/")
       ? withClanQuery(to, activeCommunityId)
       : to;
     navigateWithOrigin(navigate, target, location);

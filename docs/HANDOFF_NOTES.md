@@ -1,3 +1,27 @@
+### Public shop whole-domain landing repair (2026-05-09)
+
+- Owner asked to solve the public shop link issue after repeated wrong landings.
+- Devil's-advocate truth from code:
+  - the canonical public shop builders were already mostly correct (`/shop/{GSN_ID}#shop-diaries`).
+  - the remaining failure was likely old URL baggage and timing, not the copy label alone.
+  - `RedirectPublicShopAlias` still preserved old query/hash state, so legacy `/open-shop/...?...product_id=...` or community-filtered links could become `/shop/...?...product_id=...#shop-diaries`.
+  - Marketplace route handling was still adding selected-community query strings to `/shop/...` paths.
+  - Public Shop Gallery could attempt the hash scroll before the public shelf finished loading.
+- System-level correction:
+  - `frontend/src/App.tsx` now redirects public shop aliases straight to the clean canonical public shop path, without carrying old product/community query strings.
+  - `frontend/src/pages/MarketplacePage.tsx` no longer attaches marketplace/community query params to public `/shop/...` links.
+  - `frontend/src/pages/ShopGalleryPage.tsx` now waits until loading is done before hash landing, treats `#shop-diaries` as the whole-shop landing even if an old `product_id` query is present, and retries the reveal longer for mobile/API-loaded content.
+  - `frontend/tools/audit-link-contracts.mjs` now locks these behaviors.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+  - targeted ESLint over App, Marketplace, ShopGallery, and the link audit passed.
+  - `python -m pytest -q gmfn_backend\tests\test_frontend_link_origins.py --basetemp C:\tmp\pytest-public-shop-link` passed.
+  - `git diff --check` passed with line-ending warnings only.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild spawn escalation.
+- Remaining risk:
+  - live Render/phone still needs a hard refresh after deploy. If a phone remains on `frontend.onrender.com` or an old bundle, it can still show the previous behavior even though this branch is corrected.
+
 ### Shared tap-target stacking root cause (2026-05-09)
 
 - Owner reported the app still jumps indiscriminately after Marketplace/link-specific fixes.

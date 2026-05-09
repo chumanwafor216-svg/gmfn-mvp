@@ -909,7 +909,7 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    if (attempt < 18) {
+    if (attempt < 60) {
       galleryRevealTargetRef.current = targetId;
       galleryRevealFrameRef.current = window.requestAnimationFrame(() => {
         galleryRevealFrameRef.current = null;
@@ -947,18 +947,21 @@ export default function ShopGalleryPage() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (!location.hash) return;
+    if (loading) return;
 
     const id = location.hash.replace(/^#/, "");
-    const matchedProduct =
-      products.find((product) => {
-        return routeProductId > 0 && product.id === routeProductId;
-      }) ||
-      products.find((product) => {
-        return (
-          id === publicShopBlockAnchorId(product) ||
-          id === legacyProductAnchorId(product)
-        );
-      });
+    const shouldRevealProduct = id !== PUBLIC_SHOP_DIARIES_ANCHOR;
+    const matchedProduct = shouldRevealProduct
+      ? products.find((product) => {
+          return routeProductId > 0 && product.id === routeProductId;
+        }) ||
+        products.find((product) => {
+          return (
+            id === publicShopBlockAnchorId(product) ||
+            id === legacyProductAnchorId(product)
+          );
+        })
+      : null;
 
     cancelPendingGalleryReveal();
 
@@ -977,6 +980,7 @@ export default function ShopGalleryPage() {
     };
   }, [
     cancelPendingGalleryReveal,
+    loading,
     location.hash,
     products,
     revealGalleryTarget,
