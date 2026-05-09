@@ -1228,9 +1228,9 @@ export default function ShopGalleryPage() {
 
     void shareOrCopy({
       title,
-      text: `${blockLabel}\n${text}\n${product.priceText}\nFrom ${shopContext}.`,
+      text: `${blockLabel}\n${text}\n${product.priceText}\nFrom ${shopContext}.\nOpen the full public shop and check this block there.`,
       url: productUrl,
-      successText: `${blockLabel} share ready.`,
+      successText: `Full public shop share ready. Mention ${blockLabel} in your message.`,
     });
   }
 
@@ -1276,11 +1276,11 @@ export default function ShopGalleryPage() {
 
   function repostShop() {
     safeCopy(
-      `Repost this public shop:\n${shopNameText}\n${shopDescriptionText}\n${absoluteShopLink}`
+      `GSN network repost:\n${shopNameText}\n${shopDescriptionText}\n${absoluteShopLink}`
     );
     setNotice({
       tone: "success",
-      text: "Shop repost pack copied. Share it where this shop should be seen.",
+      text: "GSN repost pack copied for sharing inside the network.",
     });
   }
 
@@ -1555,7 +1555,7 @@ export default function ShopGalleryPage() {
               textOverflow: "ellipsis",
             }}
           >
-            {isCompact ? "Repost" : "Repost shop"}
+            {isCompact ? "GSN repost" : "GSN repost"}
           </button>
           <button
             type="button"
@@ -2285,7 +2285,7 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          Share
+                          Share shop
                         </button>
                       </div>
                     </div>

@@ -2097,7 +2097,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       }
                       style={ownerActionButton(actionBtn("soft"), isCompact)}
                     >
-                      Copy link
+                      Copy shop link
                     </button>
                   </>
                 ) : (
@@ -2739,7 +2739,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         )}
                       disabled={!productLink || isHidden}
                     >
-                      Copy link
+                      Copy shop link
                     </button>
                   </div>
                 </div>

@@ -1,5 +1,19 @@
 # Handoff Notes
 
+## 2026-05-09 Public Shop Whole-Page Share Correction
+
+- Owner clarified from local 5174 testing that every public-shop share/copy should open the whole public shop page.
+- Correct contract:
+  - `Share shop` and `Copy shop link` are different actions, but both carry the same full public shop URL.
+  - public product/block actions may mention a block in the message, but the URL still opens the whole public shop.
+  - public shop URLs should not add `product_id`, `block`, `clan_id`, `community`, or app-only route targeting.
+  - Vault links are the separate block/private-offer mechanism; Vault can open a selected restricted item/block.
+  - `GSN repost` is network/internal repost language, not the same as public external sharing.
+- Updated shared frontend behavior:
+  - `src/lib/publicLinks.ts` now makes `publicShopBlockPath()` / `publicShopBlockUrl()` return the canonical whole-shop route.
+  - Shop Gallery product buttons now say `Share shop` and use the whole-shop link.
+  - Shop Assets block actions now say `Copy shop link`.
+
 ## 2026-05-09 Canonical Public Shop Domain Links
 
 - Owner clarified that the shop-owner public shop link should show the complete public shop domain.

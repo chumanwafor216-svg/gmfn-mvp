@@ -210,19 +210,7 @@ export function publicShopBlockPath(params: {
   productId?: string | number | null;
   block?: string | number | null;
 }): string {
-  const ownerId = cleanText(params.gmfnId);
-  if (!ownerId) return "";
-
-  const query = new URLSearchParams();
-  const productId = cleanText(params.productId);
-  const block = cleanText(params.block);
-
-  if (productId) query.set("product_id", productId);
-  if (block) query.set("block", block);
-
-  const hash = block ? `shop-block-${encodeURIComponent(block)}` : PUBLIC_SHOP_DIARIES_ANCHOR;
-  const search = query.toString();
-  return `/shop/${encodeURIComponent(ownerId)}${search ? `?${search}` : ""}#${hash}`;
+  return publicShopPath(params.gmfnId);
 }
 
 export function publicShopBlockUrl(params: {

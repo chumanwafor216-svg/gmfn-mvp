@@ -1,3 +1,20 @@
+### Public shop share/copy contract tightening (2026-05-09)
+
+- Owner correction from local 5174 review:
+  - public shop `Share` and `Copy link` are different actions, but they must carry the same whole-public-shop URL
+  - public block/card sharing must not create a public block-specific URL for now
+  - if a user wants to mention Block #1/#2/#3, the message can mention the block, but the URL must still open the whole public shop page
+  - block-specific restricted access belongs to Vault links, not public shop links
+  - `Repost` is a GSN/network action, not the same as external public sharing
+- Tightened `frontend/src/lib/publicLinks.ts` so `publicShopBlockPath` and `publicShopBlockUrl` now resolve to the canonical whole-shop link (`/shop/{GSN_ID}#shop-diaries`) instead of adding `product_id`, `block`, or a block hash.
+- Updated public Shop Gallery wording:
+  - public product card action now says `Share shop`
+  - product share messages may mention the selected block, but the URL remains the full public shop URL
+  - `Repost shop` is now labeled `GSN repost`, and its copied text says it is for network reposting
+- Updated owner Shop Assets block actions from `Copy link` to `Copy shop link`, matching the whole-shop URL behavior.
+- Devil's-advocate truth:
+  - this deliberately removes the public block deep-link behavior from the current UX. Old inbound URLs that already contain `product_id` may still be understood by the page/backend for compatibility, but newly generated public shares/copies should now point to the whole shop page.
+
 ### Public shop link contract audit (2026-05-09)
 
 - Owner instruction clarified the public-shop contract:
