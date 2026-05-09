@@ -590,6 +590,11 @@ export default function CommunityShopControlPanel({
     return gmfnId ? publicShopPath(gmfnId) : "";
   }, [shop]);
 
+  const publicShopLink = useMemo(() => {
+    const gmfnId = safeStr(shop?.gmfnId);
+    return gmfnId ? publicShopUrl(gmfnId) : "";
+  }, [shop]);
+
   const shopImageSrc = useMemo(() => {
     return safeStr(shop?.imageUrl);
   }, [shop]);
@@ -608,7 +613,7 @@ export default function CommunityShopControlPanel({
       return;
     }
 
-    api.safeCopy(publicShopUrl(safeStr(shop?.gmfnId)));
+    api.safeCopy(publicShopLink);
     setNotice({ tone: "success", text: "Public shop link copied." });
   }
 
@@ -751,16 +756,39 @@ export default function CommunityShopControlPanel({
 
                   <div
                     style={{
-                      display: "flex",
+                      marginTop: 10,
+                      borderRadius: 14,
+                      border: "1px solid rgba(11,99,209,0.12)",
+                      background:
+                        "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
+                      color: "#0B1F33",
+                      fontSize: 12,
+                      fontWeight: 850,
+                      lineHeight: 1.45,
+                      padding: "10px 12px",
+                      wordBreak: "break-word",
+                      overflowWrap: "anywhere",
+                      minHeight: 46,
+                    }}
+                  >
+                    {publicShopLink || "Public shop link is not ready yet."}
+                  </div>
+
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                      gridAutoRows: "52px",
                       gap: 10,
-                      flexWrap: "wrap",
+                      alignItems: "stretch",
+                      overflowAnchor: "none",
                     }}
                   >
                 <button
                   type="button"
                   {...panelButtonGuardProps()}
                   onClick={() => openPanelRoute("/app/shop-control?section=summary")}
-                  style={actionBtn("primary")}
+                  style={{ ...actionBtn("primary"), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
                 >
                       Open Owner Shop Control
                     </button>
@@ -770,7 +798,7 @@ export default function CommunityShopControlPanel({
                         type="button"
                         {...panelButtonGuardProps()}
                         onClick={() => openPanelRoute(publicShopTo)}
-                        style={actionBtn("secondary")}
+                        style={{ ...actionBtn("secondary"), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
                       >
                         Open Public Shop Face
                       </button>
@@ -779,7 +807,7 @@ export default function CommunityShopControlPanel({
                         type="button"
                         {...panelButtonGuardProps()}
                         disabled
-                        style={actionBtn("secondary", true)}
+                        style={{ ...actionBtn("secondary", true), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
                       >
                         Open Public Shop Face
                       </button>
@@ -790,7 +818,7 @@ export default function CommunityShopControlPanel({
                         {...panelButtonGuardProps()}
                         onClick={copyShopLink}
                         disabled={!publicShopTo}
-                        style={actionBtn("secondary", !publicShopTo)}
+                        style={{ ...actionBtn("secondary", !publicShopTo), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
                       >
                         Copy Public Shop Link
                     </button>
@@ -803,7 +831,7 @@ export default function CommunityShopControlPanel({
                           withClanQuery("/app/marketplace", selectedClanId)
                         )
                       }
-                      style={actionBtn("secondary")}
+                      style={{ ...actionBtn("secondary"), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
                     >
                       Open Community Marketplace
                     </button>

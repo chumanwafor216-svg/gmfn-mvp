@@ -29,6 +29,10 @@
   - `frontend/src/pages/ClansPage.tsx` now uses the same canonical join invite builder for fallback invite links.
   - `frontend/src/pages/MarketplaceWorkspacePage.tsx` no longer describes public shop links as community-context-attached; it describes them as the complete public shop-face domain.
   - Static scan found no remaining `publicFrontendUrl("/start/join...")` invite fallback in `frontend/src`.
+- Continued public-shop domain visibility pass:
+  - `frontend/src/components/CommunityShopControlPanel.tsx` now displays the complete canonical public shop URL in the Owner Shop Control panel before copy/open.
+  - The same panel's owner link action row now uses fixed-height grid rows to reduce button movement.
+  - Backend origin tests and the frontend mobile tap-stability audit both passed during continuation.
 
 ### Cover primary CTA restored to Continue (2026-05-09)
 
