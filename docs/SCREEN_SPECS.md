@@ -58,6 +58,28 @@ Primary action:
 Continue
 ```
 
+## DashboardPage
+
+Purpose:
+Personal landing page across trust, attention, commitments, events, and next actions.
+
+Must show:
+- Identity Passport hero
+- dashboard profile picture frame
+- Picture frame control
+- picture tools: Upload, Change, Remove
+- Trust / CCI / TrustSlip status row
+- Market Wisdom presentation
+
+Frozen:
+- Market Wisdom presentation and interaction model
+- dashboard profile picture frame tools
+
+Rules:
+- Picture frame tools must remain visible by default inside the dashboard picture frame area.
+- Remove must clear the saved account profile picture, not only hide it locally.
+- Dashboard must stay a reflector / command centre, not a content dump.
+
 ## AuthGatewayPage
 
 Purpose:

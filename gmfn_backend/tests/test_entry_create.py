@@ -456,6 +456,43 @@ def test_auth_me_profile_image_upload_persists_on_user_record(client):
     assert me_body["profile_image_url"] == upload_body["profile_image_url"]
 
 
+def test_auth_me_profile_image_delete_clears_user_record(client):
+    with SessionLocal() as db:
+        user = User(
+            email="avatar.remove@example.com",
+            hashed_password=get_password_hash("secret123"),
+            role="user",
+            display_name="Avatar Remove",
+            profile_image_url="/uploads/profile/users/existing.png",
+        )
+        db.add(user)
+        db.commit()
+
+    login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "avatar.remove@example.com",
+            "password": "secret123",
+        },
+    )
+    assert login_res.status_code == 200, login_res.text
+    token = login_res.json()["access_token"]
+
+    delete_res = client.delete(
+        "/auth/me/profile-image",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert delete_res.status_code == 200, delete_res.text
+    assert delete_res.json()["profile_image_url"] is None
+
+    me_res = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert me_res.status_code == 200, me_res.text
+    assert me_res.json()["profile_image_url"] is None
+
+
 def test_admin_pilot_intake_reports_completed_create_entry(client, override_current_user):
     os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
     os.environ["GMFN_DEV_MODE"] = "1"

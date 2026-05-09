@@ -39,6 +39,20 @@
 - Updated `frontend/src/pages/CoverPage.tsx` and `docs/SCREEN_SPECS.md` so the visible secondary button now reads `About GSN & I`.
 - Scope: copy/spec correction only; the action still opens `/guide`.
 
+### Dashboard picture frame tools restored and frozen (2026-05-09)
+
+- Owner reported that the Dashboard picture frame tools were missing.
+- Restored the Dashboard profile picture frame control in `frontend/src/pages/DashboardPage.tsx`:
+  - visible `Picture frame` toggle on the photo frame
+  - tools visible by default: `Upload`, `Change`, `Remove`
+  - tools use the existing dashboard tap guard/stable button style
+- Added real backend-backed removal:
+  - `DELETE /auth/me/profile-image` clears `User.profile_image_url`
+  - frontend `removeMyProfileImage()` calls that endpoint
+  - Dashboard `Remove` now clears the saved account profile picture instead of only hiding it locally
+- Froze the behavior in `docs/SCREEN_SPECS.md` and `docs/FREEZE_POLICY.md`.
+- Frozen Dashboard Market Wisdom was not restyled or restructured.
+
 ### Two-line-auditor public shop 0/12 repair (2026-05-09)
 
 - Owner screenshot still showed `0/12` in Shop Diaries after link fixes, so two line auditors were requested and used:

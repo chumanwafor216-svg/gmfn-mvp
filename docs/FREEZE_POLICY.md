@@ -74,7 +74,7 @@ Examples:
 - `mobile/path/to/reference/behavior`
 
 Current explicit frozen paths:
-- [ADD EXACT PATHS HERE]
+- `frontend/src/pages/DashboardPage.tsx` dashboard Market Wisdom presentation and dashboard profile picture frame tools only; other dashboard edits still require normal impact review.
 - [ADD EXACT PATHS HERE]
 - [ADD EXACT PATHS HERE]
 

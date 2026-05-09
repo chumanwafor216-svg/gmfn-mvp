@@ -14,6 +14,7 @@ import {
   getMyTrustSlip,
   getSelectedClanId,
   listMarketplaceRequests,
+  removeMyProfileImage,
   uploadMyProfileImageFile,
 } from "../lib/api";
 import {
@@ -2737,6 +2738,7 @@ export default function DashboardPage() {
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [pictureOptionsOpen, setPictureOptionsOpen] = useState<boolean>(true);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [appUsage] = useState<AppUseRecord[]>(() => readDashboardAppUsage());
@@ -4921,6 +4923,47 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
+  function openAvatarPicker(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
+    fileInputRef.current?.click();
+  }
+
+  async function removeAvatar(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
+
+    try {
+      const updated = await removeMyProfileImage();
+      for (const key of dashboardAvatarStorageKeys) {
+        try {
+          localStorage.removeItem(key);
+        } catch {
+          // Storage can be unavailable in private browsing; the backend clear still wins.
+        }
+      }
+
+      setAvatarSrc("");
+      setMe((previous: any) => ({
+        ...(previous || {}),
+        ...(updated || {}),
+        profile_image_url: null,
+      }));
+      setAvatarStatus({
+        tone: "success",
+        text: "Picture removed from your GSN profile and dashboard.",
+      });
+    } catch (error) {
+      setAvatarStatus({
+        tone: "error",
+        text:
+          error instanceof Error
+            ? error.message
+            : "Picture could not be removed right now.",
+      });
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
   async function onAvatarSelected(event: React.ChangeEvent<HTMLInputElement>) {
     const input = event.currentTarget;
     const file = input.files?.[0];
@@ -6850,10 +6893,12 @@ export default function DashboardPage() {
                   <button
                     type="button"
                     aria-controls={avatarInputId}
-                    onClick={(event) => {
-                      consumeDashboardButtonEvent(event);
-                      fileInputRef.current?.click();
-                    }}
+                    aria-expanded={pictureOptionsOpen}
+                    onClick={(event) =>
+                      runDashboardUiMutation(event, () =>
+                        setPictureOptionsOpen((prev) => !prev)
+                      )
+                    }
                     {...dashboardButtonGuardProps()}
                     style={{
                       position: "absolute",
@@ -6863,7 +6908,7 @@ export default function DashboardPage() {
                       alignItems: "center",
                       justifyContent: "center",
                       minHeight: isPhone ? 46 : 44,
-                      minWidth: isPhone ? 116 : 132,
+                      minWidth: isPhone ? 128 : 148,
                       maxWidth: "calc(100% - 20px)",
                       padding: isPhone ? "11px 16px" : "10px 17px",
                       borderRadius: 999,
@@ -6889,15 +6934,11 @@ export default function DashboardPage() {
                       pointerEvents: "auto",
                       transform: "none",
                       outlineOffset: 4,
+                      gap: 6,
                     }}
                   >
-                    {avatarSrc
-                      ? isPhone
-                        ? "Change"
-                        : "Change photo"
-                      : isPhone
-                      ? "Upload"
-                      : "Upload photo"}
+                    <span>Picture frame</span>
+                    <span aria-hidden="true">{pictureOptionsOpen ? "-" : "+"}</span>
                   </button>
                 </div>
               </div>
@@ -6917,6 +6958,57 @@ export default function DashboardPage() {
                   pointerEvents: "none",
                 }}
               />
+
+              {pictureOptionsOpen ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: isPhone
+                      ? "repeat(3, minmax(0, 1fr))"
+                      : "repeat(3, minmax(0, 1fr))",
+                    gap: 8,
+                    alignItems: "stretch",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={openAvatarPicker}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false)),
+                      minHeight: isPhone ? 44 : 42,
+                    }}
+                  >
+                    Upload
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={openAvatarPicker}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false)),
+                      minHeight: isPhone ? 44 : 42,
+                    }}
+                  >
+                    Change
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    disabled={!avatarSrc}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(!avatarSrc)),
+                      minHeight: isPhone ? 44 : 42,
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : null}
 
               {avatarStatus ? (
                 <div

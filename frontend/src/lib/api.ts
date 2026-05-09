@@ -449,6 +449,10 @@ export async function uploadMyProfileImageFile(file: File): Promise<any> {
   return readJsonOrTextSafe(res);
 }
 
+export async function removeMyProfileImage(): Promise<any> {
+  return httpJson("/auth/me/profile-image", "DELETE");
+}
+
 export async function activateApprovedMember(payload: {
   gmfn_id?: string | null;
   request_id?: string | number | null;

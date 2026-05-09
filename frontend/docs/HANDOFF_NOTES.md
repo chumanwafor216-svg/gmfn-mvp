@@ -20,6 +20,17 @@
 - Updated `src/pages/CoverPage.tsx` so the visible secondary button now reads `About GSN & I`.
 - Updated the root `docs/SCREEN_SPECS.md` to keep the locked Cover spec aligned.
 
+## 2026-05-09 Dashboard Picture Frame Tools Restored and Frozen
+
+- Owner reported that the Dashboard picture frame tools were missing.
+- Restored the Dashboard profile picture frame control in `src/pages/DashboardPage.tsx`:
+  - visible `Picture frame` toggle on the photo frame
+  - tools visible by default: `Upload`, `Change`, `Remove`
+  - tools use the dashboard stable tap guards
+- Added `removeMyProfileImage()` in `src/lib/api.ts`; backend `DELETE /auth/me/profile-image` clears the saved account profile picture so `Remove` is real, not local-only.
+- Updated root `docs/SCREEN_SPECS.md` and `docs/FREEZE_POLICY.md` to freeze the restored picture frame tools.
+- Frozen Dashboard Market Wisdom was not changed.
+
 ## 2026-05-09 Public Shop Whole-Page Share Correction
 
 - Owner clarified from local 5174 testing that every public-shop share/copy should open the whole public shop page.

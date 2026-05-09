@@ -747,6 +747,24 @@ async def upload_my_profile_image(
     return _build_me_payload(db, current_user)
 
 
+@router.delete("/me/profile-image", response_model=UserOut)
+def remove_my_profile_image(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.profile_image_url = None
+    db.add(current_user)
+    db.commit()
+    db.refresh(current_user)
+
+    try:
+        current_user = _ensure_user_gmfn_id(db, current_user)
+    except Exception:
+        pass
+
+    return _build_me_payload(db, current_user)
+
+
 @router.get("/approved-member/{gmfn_id}", response_model=dict[str, object])
 def get_approved_member_activation_status(
     gmfn_id: str,
