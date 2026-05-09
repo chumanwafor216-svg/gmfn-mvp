@@ -2766,6 +2766,8 @@ export default function MarketplacePage() {
   }
 
   async function handleStartLoanDraft() {
+    if (startingLoanDraft) return;
+
     if (!activeCommunityId) {
       showNotice("error", "Select a community before starting a support request.");
       return;
@@ -2837,6 +2839,8 @@ export default function MarketplacePage() {
   }
 
   async function handleRefreshSuggestions() {
+    if (loadingSuggestions) return;
+
     if (!loanDraftId || !activeCommunityId) {
       showNotice("error", "Start the support request first.");
       return;
@@ -2887,6 +2891,8 @@ export default function MarketplacePage() {
   }
 
   async function handleSendGuarantorRequests() {
+    if (sendingGuarantorRequests) return;
+
     if (!activeCommunityId) {
       showNotice("error", "Select a community first.");
       return;
@@ -2966,6 +2972,8 @@ export default function MarketplacePage() {
   }
 
   async function handleCancelLoanDraft() {
+    if (cancellingLoanDraft) return;
+
     if (!loanDraftId) {
       resetLoanTaskState({ clearInputs: true });
       showNotice("success", "Support draft cleared.");
@@ -3013,6 +3021,11 @@ export default function MarketplacePage() {
       ),
     [selectedSupporters, requiredGuarantorCount]
   );
+  const guarantorRequestsBlocked =
+    sendingGuarantorRequests ||
+    requiredGuarantorCount <= 0 ||
+    visibleSelectedSupporters.length < requiredGuarantorCount ||
+    loanStatusLower === "approved";
 
   if (loading) {
     return (
@@ -5024,10 +5037,11 @@ export default function MarketplacePage() {
                   {...marketplaceButtonGuardProps()}
                   onClick={(event) => {
                     runMarketplaceAction(event, () => {
+                      if (startingLoanDraft) return;
                       void handleStartLoanDraft();
                     });
                   }}
-                  disabled={startingLoanDraft}
+                  aria-disabled={startingLoanDraft}
                   style={actionBtn("primary", startingLoanDraft)}
                 >
                   {startingLoanDraft ? "Starting..." : "Start Support Request"}
@@ -5039,10 +5053,11 @@ export default function MarketplacePage() {
                     {...marketplaceButtonGuardProps()}
                     onClick={(event) => {
                       runMarketplaceAction(event, () => {
+                        if (loadingSuggestions) return;
                         void handleRefreshSuggestions();
                       });
                     }}
-                    disabled={loadingSuggestions}
+                    aria-disabled={loadingSuggestions}
                     style={actionBtn("secondary", loadingSuggestions)}
                   >
                     {loadingSuggestions ? "Refreshing..." : "Refresh Fit Check"}
@@ -5055,10 +5070,11 @@ export default function MarketplacePage() {
                     {...marketplaceButtonGuardProps()}
                     onClick={(event) => {
                       runMarketplaceAction(event, () => {
+                        if (cancellingLoanDraft) return;
                         void handleCancelLoanDraft();
                       });
                     }}
-                    disabled={cancellingLoanDraft}
+                    aria-disabled={cancellingLoanDraft}
                     style={actionBtn("secondary", cancellingLoanDraft)}
                   >
                     {cancellingLoanDraft ? "Cancelling..." : "Cancel Draft"}
@@ -5317,21 +5333,14 @@ export default function MarketplacePage() {
                           {...marketplaceButtonGuardProps()}
                           onClick={(event) => {
                             runMarketplaceAction(event, () => {
+                              if (guarantorRequestsBlocked) return;
                               void handleSendGuarantorRequests();
                             });
                           }}
-                          disabled={
-                            sendingGuarantorRequests ||
-                            requiredGuarantorCount <= 0 ||
-                            visibleSelectedSupporters.length < requiredGuarantorCount ||
-                            loanStatusLower === "approved"
-                          }
+                          aria-disabled={guarantorRequestsBlocked}
                           style={actionBtn(
                             "primary",
-                            sendingGuarantorRequests ||
-                              requiredGuarantorCount <= 0 ||
-                              visibleSelectedSupporters.length < requiredGuarantorCount ||
-                              loanStatusLower === "approved"
+                            guarantorRequestsBlocked
                           )}
                         >
                           {sendingGuarantorRequests

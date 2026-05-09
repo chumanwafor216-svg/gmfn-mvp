@@ -20884,3 +20884,33 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after the usual Windows sandbox `spawn EPERM` on Vite/esbuild.
 - Remaining risk:
   - Needs live phone validation after deploy/hard refresh: Marketplace -> Records & Links -> Public shop face should show `https://gmfn-frontend.onrender.com/shop/<GSN-ID>#shop-diaries`; tapping the visible URL or `Open Shop Face` should open the public shop page, not `/app/shop-control`.
+
+### Marketplace button-system audit and native-disabled removal (2026-05-09)
+
+- Owner reported that many Marketplace buttons still do not land well and asked for a system-level audit instead of page-by-page patching.
+- Audited `frontend/src/pages/MarketplacePage.tsx`:
+  - found 51 Marketplace `<button>` surfaces.
+  - confirmed all 51 are using `marketplacePointerGuardProps()` or `marketplaceButtonGuardProps()`.
+  - confirmed remaining unstable pattern was native `disabled=` on support/guarantor buttons.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - removed native `disabled=` from the remaining Marketplace buttons.
+  - replaced with `aria-disabled` plus guarded no-op checks for:
+    - Start Support Request
+    - Refresh Fit Check
+    - Cancel Draft
+    - Send Guarantor Requests
+  - added early exits in the async handlers so double taps cannot start duplicate work while busy.
+  - added one shared `guarantorRequestsBlocked` flag so visual disabled state and tap behavior cannot drift apart.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - now scans the entire Marketplace page, not only Records & Links.
+  - rejects any native `disabled=` in Marketplace.
+  - requires every Marketplace `<button>` to use the shared Marketplace tap guard.
+  - requires the support/guarantor blocked-state patterns to stay in place.
+- Verification:
+  - Marketplace button audit count: 51 buttons, 51 guarded, 0 native disabled.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-mobile-tap-stability.mjs` passed.
+- Remaining risk:
+  - This removes the confirmed system-level native-disabled/tap-ownership issue from Marketplace. If live phone taps still land on wrong routes after deploy, the next likely cause is a visual overlay or app-shell/bottom-nav hit area, which needs a live DOM/screenshot trace rather than another one-button patch.

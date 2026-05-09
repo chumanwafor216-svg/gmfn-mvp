@@ -78,19 +78,21 @@ for (const filePath of listSourceFiles(sourceRoot)) {
 
 const marketplacePagePath = join(sourceRoot, "pages", "MarketplacePage.tsx");
 const marketplaceLines = readFileSync(marketplacePagePath, "utf8").split(/\r?\n/);
+const marketplaceSource = marketplaceLines.join("\n");
 let insideOwnedLinksSection = false;
+let marketplaceButtonCount = 0;
 
 marketplaceLines.forEach((line, index) => {
   if (line.includes('id="marketplace-owned-links"')) {
     insideOwnedLinksSection = true;
   }
 
-  if (insideOwnedLinksSection && line.trim().startsWith("disabled={")) {
+  if (line.trim().startsWith("disabled=")) {
     findings.push({
       file: relative(frontendRoot, marketplacePagePath),
       line: index + 1,
       label:
-        "Marketplace Records & Links controls must capture missing-link taps instead of becoming native-disabled dead targets",
+        "Marketplace controls must capture inactive taps with aria-disabled instead of native-disabled dead targets",
       text: line.trim(),
     });
   }
@@ -99,6 +101,60 @@ marketplaceLines.forEach((line, index) => {
     insideOwnedLinksSection = false;
   }
 });
+
+marketplaceLines.forEach((line, index) => {
+  if (!line.includes("<button")) return;
+  marketplaceButtonCount += 1;
+  const block = marketplaceLines.slice(index, index + 16).join("\n");
+  if (
+    !block.includes("marketplacePointerGuardProps") &&
+    !block.includes("marketplaceButtonGuardProps")
+  ) {
+    findings.push({
+      file: relative(frontendRoot, marketplacePagePath),
+      line: index + 1,
+      label:
+        "Every Marketplace button must use the shared Marketplace tap guard so taps cannot bubble to a neighboring route",
+      text: line.trim(),
+    });
+  }
+});
+
+if (marketplaceButtonCount < 40) {
+  findings.push({
+    file: relative(frontendRoot, marketplacePagePath),
+    line: 1,
+    label:
+      "Marketplace button audit expected to inspect the full button surface",
+    text: `Only found ${marketplaceButtonCount} Marketplace buttons.`,
+  });
+}
+
+const marketplaceActionSystemChecks = [
+  {
+    label:
+      "Marketplace async support buttons must expose inactive state with aria-disabled",
+    pattern:
+      /aria-disabled=\{startingLoanDraft\}[\s\S]*?aria-disabled=\{loadingSuggestions\}[\s\S]*?aria-disabled=\{cancellingLoanDraft\}/,
+  },
+  {
+    label:
+      "Marketplace guarantor request button must use one shared blocked flag",
+    pattern:
+      /const guarantorRequestsBlocked =[\s\S]*?aria-disabled=\{guarantorRequestsBlocked\}[\s\S]*?actionBtn\([\s\S]*?guarantorRequestsBlocked/,
+  },
+];
+
+for (const check of marketplaceActionSystemChecks) {
+  if (!check.pattern.test(marketplaceSource)) {
+    findings.push({
+      file: relative(frontendRoot, marketplacePagePath),
+      line: 1,
+      label: check.label,
+      text: "Expected Marketplace action stability pattern was not found.",
+    });
+  }
+}
 
 const dashboardPagePath = join(sourceRoot, "pages", "DashboardPage.tsx");
 const dashboardSource = readFileSync(dashboardPagePath, "utf8");
