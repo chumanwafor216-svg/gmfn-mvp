@@ -1190,6 +1190,14 @@ export default function ShopGalleryPage() {
   }
 
   async function copyShopLink() {
+    if (shopLoadFailed) {
+      setNotice({
+        tone: "error",
+        text: "This public shop link is not active yet. Ask the owner to refresh the shop link from Marketplace before copying it.",
+      });
+      return;
+    }
+
     if (!absoluteShopLink) {
       setNotice({ tone: "error", text: "Public shop link is not ready yet." });
       return;
@@ -1620,9 +1628,10 @@ export default function ShopGalleryPage() {
           <button
             type="button"
             {...buttonGuardProps()}
+            aria-disabled={shopLoadFailed}
             onClick={copyShopLink}
             style={{
-              ...secondaryBtn(false),
+              ...secondaryBtn(shopLoadFailed),
               minHeight: isCompact ? 40 : 52,
               padding: isCompact ? "7px 4px" : "9px 12px",
               borderRadius: isCompact ? 13 : 14,
@@ -1636,7 +1645,38 @@ export default function ShopGalleryPage() {
           </button>
         </div>
 
-        {absoluteShopLink ? (
+        {absoluteShopLink && shopLoadFailed ? (
+          <span
+            aria-disabled
+            onClick={() =>
+              setNotice({
+                tone: "error",
+                text: "This public shop link is not active yet. Ask the owner to refresh the shop link from Marketplace before opening it.",
+              })
+            }
+            style={{
+              ...stableTapTarget,
+              display: "block",
+              minHeight: 42,
+              padding: isCompact ? "8px 10px" : "10px 12px",
+              borderRadius: 14,
+              border: "1px solid rgba(13,95,168,0.14)",
+              background: "rgba(255,255,255,0.78)",
+              color: "#22415D",
+              fontSize: isCompact ? 10.2 : 12,
+              fontWeight: 850,
+              lineHeight: 1.35,
+              cursor: "not-allowed",
+              opacity: 0.78,
+              textDecoration: "none",
+              textUnderlineOffset: 3,
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+            }}
+          >
+            {absoluteShopLink}
+          </span>
+        ) : absoluteShopLink ? (
           <a
             {...buttonGuardProps()}
             href={absoluteShopLink}

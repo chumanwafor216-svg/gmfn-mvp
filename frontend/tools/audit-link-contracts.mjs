@@ -238,8 +238,20 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const copied = await safeCopy\(absoluteShopLink\);[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
-  "Public Shop Gallery copy must wait for clipboard success instead of claiming success while the old clipboard may still contain another route."
+  /async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopLink\);[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
+  "Public Shop Gallery copy must block failed public-shop links and wait for clipboard success before reporting a valid copy."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /aria-disabled=\{shopLoadFailed\}[\s\S]*?onClick=\{copyShopLink\}[\s\S]*?\.\.\.secondaryBtn\(shopLoadFailed\)/,
+  "Public Shop Gallery Copy link button must visibly lock when the public shop load failed."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /absoluteShopLink && shopLoadFailed[\s\S]*?<span[\s\S]*?aria-disabled[\s\S]*?not active yet[\s\S]*?<\/span>[\s\S]*?: absoluteShopLink \? \([\s\S]*?<a[\s\S]*?href=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}[\s\S]*?<\/a>/,
+  "Public Shop Gallery must show failed public-shop URLs as locked text, not clickable links that recirculate stale shop URLs."
 );
 
 assertContains(

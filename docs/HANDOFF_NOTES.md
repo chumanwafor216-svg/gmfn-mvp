@@ -1,3 +1,20 @@
+### Failed public shop link recirculation guard (2026-05-09)
+
+- Owner screenshot still showed the public shop failed state with `Copy link` available.
+- Devil's-advocate truth:
+  - the page was correctly saying the link was not connected.
+  - but it still allowed copying/opening the same stale failed public-shop URL, which could keep spreading the broken link.
+- Correction:
+  - `frontend/src/pages/ShopGalleryPage.tsx` now blocks `Copy link` when the public shop load failed.
+  - the visible URL is shown as locked text in failed state, not as a clickable link.
+  - valid loaded public shops still show the normal clickable full public shop URL.
+  - `frontend/tools/audit-link-contracts.mjs` now locks the failed-state copy/open guard.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-link-contracts.mjs` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed outside sandbox after the known Vite/esbuild spawn escalation.
+
 ### Public shop production identity diagnostic (2026-05-09)
 
 - Owner asked to "go get it" after the public shop page correctly reached `/shop/{id}` but still reported that the shop link was not connected to an active shop.
