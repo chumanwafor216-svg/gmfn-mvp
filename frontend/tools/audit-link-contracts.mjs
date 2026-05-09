@@ -220,8 +220,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /if \(direct\) return publicShopDiariesUrl\(direct\);\s*return "";/,
-  "Marketplace workspace must not manufacture a public shop URL from a member GSN ID without a backend-provided shop link."
+  /const selectedGmfnId = safeStr\([\s\S]*?selectedMember\?\.gmfn_id[\s\S]*?selectedMember\?\.member_gmfn_id[\s\S]*?selectedMember\?\.user\?\.gmfn_id[\s\S]*?if \(selectedGmfnId\) return publicShopUrl\(selectedGmfnId\);/,
+  "Marketplace workspace must turn the selected member GSN ID into the canonical whole public shop domain."
 );
 
 assertContains(

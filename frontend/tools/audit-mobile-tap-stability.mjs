@@ -79,6 +79,16 @@ for (const filePath of listSourceFiles(sourceRoot)) {
 const marketplacePagePath = join(sourceRoot, "pages", "MarketplacePage.tsx");
 const marketplaceLines = readFileSync(marketplacePagePath, "utf8").split(/\r?\n/);
 const marketplaceSource = marketplaceLines.join("\n");
+const marketplaceWorkspacePath = join(
+  sourceRoot,
+  "pages",
+  "MarketplaceWorkspacePage.tsx"
+);
+const marketplaceWorkspaceLines = readFileSync(
+  marketplaceWorkspacePath,
+  "utf8"
+).split(/\r?\n/);
+const marketplaceWorkspaceSource = marketplaceWorkspaceLines.join("\n");
 const indexCssPath = join(sourceRoot, "index.css");
 const indexCssSource = readFileSync(indexCssPath, "utf8");
 let insideOwnedLinksSection = false;
@@ -101,6 +111,18 @@ marketplaceLines.forEach((line, index) => {
 
   if (insideOwnedLinksSection && line.includes('id="marketplace-members-shops"')) {
     insideOwnedLinksSection = false;
+  }
+});
+
+marketplaceWorkspaceLines.forEach((line, index) => {
+  if (line.trim().startsWith("disabled=")) {
+    findings.push({
+      file: relative(frontendRoot, marketplaceWorkspacePath),
+      line: index + 1,
+      label:
+        "Community Access Desk controls must use guarded aria-disabled states instead of native-disabled dead targets",
+      text: line.trim(),
+    });
   }
 });
 
@@ -204,6 +226,32 @@ for (const check of marketplaceActionSystemChecks) {
       line: 1,
       label: check.label,
       text: "Expected Marketplace action stability pattern was not found.",
+    });
+  }
+}
+
+const marketplaceWorkspaceChecks = [
+  {
+    label:
+      "Community Access Desk button helper must not create local stacking layers around mobile buttons",
+    pattern:
+      /function btn\([\s\S]*?WebkitAppearance: "none",(?![\s\S]{0,180}(?:zIndex|isolation|position):)[\s\S]*?transition: "none",/,
+  },
+  {
+    label:
+      "Community Access Desk public shop actions must use guarded aria-disabled controls",
+    pattern:
+      /aria-disabled=\{!shopViewLink\}[\s\S]*?Copy Public Shop Link[\s\S]*?aria-disabled=\{!shopViewLink\}[\s\S]*?Copy Public Shop Message/,
+  },
+];
+
+for (const check of marketplaceWorkspaceChecks) {
+  if (!check.pattern.test(marketplaceWorkspaceSource)) {
+    findings.push({
+      file: relative(frontendRoot, marketplaceWorkspacePath),
+      line: 1,
+      label: check.label,
+      text: "Expected Community Access Desk tap-stability pattern was not found.",
     });
   }
 }

@@ -21,6 +21,7 @@ import { navigateWithOrigin } from "../lib/nav";
 import {
   publicFrontendUrl,
   publicShopDiariesUrl,
+  publicShopUrl,
 } from "../lib/publicLinks";
 
 function safeStr(x: any): string {
@@ -142,10 +143,11 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     userSelect: "none",
     appearance: "none",
     WebkitAppearance: "none",
-    position: "relative",
-    isolation: "isolate",
-    zIndex: 2,
     transform: "none",
+    transition: "none",
+    flexShrink: 0,
+    overflow: "hidden",
+    overflowAnchor: "none",
     outlineOffset: 4,
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
@@ -525,6 +527,24 @@ export default function MarketplaceWorkspacePage() {
   }, [selectedMember]);
 
   const shopViewLink = useMemo(() => {
+    const selectedDirect = safeStr(
+      selectedMember?.shop_view_url ||
+        selectedMember?.shop_link ||
+        selectedMember?.shop_profile_url ||
+        selectedMember?.public_shop_url ||
+        ""
+    );
+    if (selectedDirect) return publicShopDiariesUrl(selectedDirect);
+
+    const selectedGmfnId = safeStr(
+      selectedMember?.owner_gmfn_id ||
+        selectedMember?.gmfn_id ||
+        selectedMember?.member_gmfn_id ||
+        selectedMember?.user?.gmfn_id ||
+        ""
+    );
+    if (selectedGmfnId) return publicShopUrl(selectedGmfnId);
+
     const direct = safeStr(
       inviteInfo?.shop_view_url ||
         inviteInfo?.shop_link ||
@@ -535,7 +555,7 @@ export default function MarketplaceWorkspacePage() {
     if (direct) return publicShopDiariesUrl(direct);
 
     return "";
-  }, [inviteInfo]);
+  }, [inviteInfo, selectedMember]);
 
   const guideUrl = useMemo(() => {
     return publicFrontendUrl("/guide");
@@ -619,6 +639,11 @@ export default function MarketplaceWorkspacePage() {
   }
 
   function shareWhatsAppJoin() {
+    if (!inviteLink) {
+      setMsg("Community invite link is not available yet.");
+      return;
+    }
+
     const title = safeStr(communityName || "this community");
     const text = [
       `You are invited to begin the request-to-join process for ${title}.`,
@@ -679,11 +704,19 @@ export default function MarketplaceWorkspacePage() {
         member?.public_shop_url ||
         ""
     );
-    if (!direct) {
-      setMsg("This member does not yet have a confirmed public shop link.");
+    const gmfnId = safeStr(
+      member?.owner_gmfn_id ||
+        member?.gmfn_id ||
+        member?.member_gmfn_id ||
+        member?.user?.gmfn_id ||
+        ""
+    );
+    const link = direct ? publicShopDiariesUrl(direct) : publicShopUrl(gmfnId);
+    if (!link) {
+      setMsg("This member does not yet have a public shop identity.");
       return;
     }
-    window.open(publicShopDiariesUrl(direct), "_blank", "noopener,noreferrer");
+    window.open(link, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -1024,11 +1057,15 @@ export default function MarketplaceWorkspacePage() {
                       type="button"
                       {...buttonGuardProps()}
                       onClick={() => {
+                        if (!inviteLink) {
+                          setMsg("Community invite link is not available yet.");
+                          return;
+                        }
                         safeCopy(inviteLink);
                         setMsg("Community invite link copied.");
                       }}
                     style={btn(true, !inviteLink)}
-                    disabled={!inviteLink}
+                    aria-disabled={!inviteLink}
                   >
                     Copy Join Link
                   </button>
@@ -1129,8 +1166,8 @@ export default function MarketplaceWorkspacePage() {
                     type="button"
                     {...buttonGuardProps()}
                     onClick={copyShopViewLink}
-                    style={btn(false)}
-                    disabled={!shopViewLink}
+                    style={btn(false, !shopViewLink)}
+                    aria-disabled={!shopViewLink}
                   >
                   Copy Public Shop Link
                 </button>
@@ -1139,8 +1176,8 @@ export default function MarketplaceWorkspacePage() {
                     type="button"
                     {...buttonGuardProps()}
                     onClick={copyShopViewMessage}
-                    style={btn(false)}
-                    disabled={!shopViewLink}
+                    style={btn(false, !shopViewLink)}
+                    aria-disabled={!shopViewLink}
                   >
                   Copy Public Shop Message
                 </button>

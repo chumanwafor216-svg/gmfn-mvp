@@ -1365,6 +1365,10 @@ function buildMaskedLinkLabel(
     return `Secure GSN founder entry${code ? ` • code ${code}` : ""}`;
   }
 
+  if (String(kind) === "marketplace") {
+    return `Community access desk for ${cleanedSubject}${code ? ` - ref ${code}` : ""}`;
+  }
+
   if (kind === "marketplace") {
     return `Public marketplace face for ${cleanedSubject}${code ? ` • ref ${code}` : ""}`;
   }
@@ -1514,6 +1518,10 @@ function buildGsnEmailSubject(
 
   if (kind === "create") {
     return "GSN start a new community link";
+  }
+
+  if (String(kind) === "marketplace") {
+    return `GSN community access desk link for ${cleanedCommunity}`;
   }
 
   if (kind === "marketplace") {
@@ -2639,7 +2647,7 @@ export default function MarketplacePage() {
 
   const marketplaceEmailMessage = useMemo(() => {
     return [
-      `Here is the public GSN marketplace face for ${activeCommunityName}.`,
+      `Here is the public GSN community access desk for ${activeCommunityName}.`,
       "",
       publicCommunityWorkspaceLink,
     ].join("\n");
@@ -4260,9 +4268,9 @@ export default function MarketplacePage() {
         {sectionsOpen.tools ? (
           <ExplainToggle
             label="What these links do"
-            what="This area separates the GSN create-entry link from the links that belong to the selected marketplace: the community join link, the public marketplace face, the public shop face, and controlled private-access links."
+            what="This area separates the GSN create-entry link from the links that belong to the selected community: the community join link, the community access desk, the public shop face, and controlled private-access links."
             why="Join and create should never feel like the same action. Marketplace-facing links should stay local to this community, while create entry should remain the one wider GSN starting door."
-            next="Use join when someone should enter this exact community, create when someone should start a new community, the public marketplace face when someone should see this community outwardly, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
+            next="Use join when someone should enter this exact community, create when someone should start a new community, the community access desk when someone should see this community outwardly, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
             tone="light"
             style={{ marginTop: 12 }}
           />
@@ -4601,9 +4609,9 @@ export default function MarketplacePage() {
                 </div>
 
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Public marketplace face</div>
+                  <div style={sectionLabel()}>Community access desk</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Share the outward face of this selected marketplace.
+                    Share the outward access desk for this community. This is not the public shop.
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <span
@@ -4612,8 +4620,8 @@ export default function MarketplacePage() {
                       )}
                     >
                       {publicCommunityWorkspaceLink
-                        ? "Public marketplace link ready"
-                        : "Public marketplace link not ready yet"}
+                        ? "Community access desk ready"
+                        : "Community access desk not ready yet"}
                     </span>
                   </div>
                   <div
@@ -4625,7 +4633,7 @@ export default function MarketplacePage() {
                   >
                     {publicCommunityWorkspaceLink
                       ? maskedMarketplaceFaceLabel
-                      : "Marketplace face appears after the community context is ready."}
+                      : "Community access desk appears after the community context is ready."}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <button
@@ -4635,8 +4643,8 @@ export default function MarketplacePage() {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceLink(
                               publicCommunityWorkspaceLink,
-                            "Public marketplace link copied.",
-                            "Public marketplace link is not ready yet."
+                            "Community access desk link copied.",
+                            "Community access desk link is not ready yet."
                           );
                         });
                       }}
@@ -4647,7 +4655,7 @@ export default function MarketplacePage() {
                       )}
                       aria-disabled={!publicCommunityWorkspaceLink}
                     >
-                      Copy Marketplace Link
+                      Copy Community Desk
                     </button>
                     <button
                       type="button"
@@ -4658,7 +4666,7 @@ export default function MarketplacePage() {
                             marketplaceEmailSubject,
                             marketplaceEmailMessage,
                             publicCommunityWorkspaceLink,
-                            "Public marketplace link is not ready yet."
+                            "Community access desk link is not ready yet."
                           );
                         });
                       }}
@@ -4678,7 +4686,7 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           openMarketplaceExternalLink(
                             publicCommunityWorkspaceLink,
-                            "Public marketplace link is not ready yet."
+                            "Community access desk link is not ready yet."
                           );
                         });
                       }}
@@ -4689,7 +4697,7 @@ export default function MarketplacePage() {
                       )}
                       aria-disabled={!publicCommunityWorkspaceLink}
                     >
-                      Open Marketplace Face
+                      Open Community Desk
                     </button>
                   </div>
                 </div>
