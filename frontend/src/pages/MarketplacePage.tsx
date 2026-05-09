@@ -1364,7 +1364,12 @@ function cleanMaskedLinkLabel(label: string): string {
 function linkReserveTextStyle(): React.CSSProperties {
   return {
     marginTop: 10,
-    minHeight: 42,
+    height: 66,
+    minHeight: 66,
+    maxHeight: 66,
+    overflowY: "auto",
+    overscrollBehavior: "contain",
+    scrollbarWidth: "thin",
     overflowWrap: "anywhere",
     wordBreak: "break-word",
     overflowAnchor: "none",
@@ -1864,20 +1869,6 @@ export default function MarketplacePage() {
     return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
   }, [selectedCommunity]);
 
-  const currentUserVisibleShop = useMemo(() => {
-    if (!me || !currentGmfnId) return null;
-    const userId = positiveNumber(me?.id || me?.user_id);
-
-    return getShopForMember(
-      {
-        id: userId || undefined,
-        user_id: userId || undefined,
-        gmfn_id: currentGmfnId,
-      },
-      shops
-    );
-  }, [currentGmfnId, me, shops]);
-
   const myShopTo = useMemo(() => {
     return currentGmfnId ? publicShopPath(currentGmfnId) : "";
   }, [currentGmfnId]);
@@ -1910,9 +1901,9 @@ export default function MarketplacePage() {
   }, []);
 
   const publicShopViewLink = useMemo(() => {
-    if (!currentGmfnId || !currentUserVisibleShop) return "";
+    if (!currentGmfnId) return "";
     return publicShopUrl(currentGmfnId);
-  }, [currentGmfnId, currentUserVisibleShop]);
+  }, [currentGmfnId]);
 
   const publicShopUnavailableText = currentGmfnId
     ? "Your public shop is not visible in this marketplace yet."
@@ -4586,9 +4577,26 @@ export default function MarketplacePage() {
                       fontSize: 12,
                     }}
                   >
-                    {publicShopViewLink
-                      ? publicShopViewLink
-                      : publicShopUnavailableText}
+                    {publicShopViewLink ? (
+                      <a
+                        href={publicShopViewLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          color: "inherit",
+                          fontWeight: 850,
+                          textDecoration: "underline",
+                          textUnderlineOffset: 3,
+                          touchAction: "manipulation",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {publicShopViewLink}
+                      </a>
+                    ) : (
+                      publicShopUnavailableText
+                    )}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <button

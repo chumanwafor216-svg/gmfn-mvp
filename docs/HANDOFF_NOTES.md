@@ -20854,3 +20854,33 @@ GSN-branded invite composer and invite-entry continuity.
   - requires the activation page to use the canonical endpoint for GMFN-ID activation.
 - Remaining risk:
   - This pass addresses the clearest frontend/system-level cause of cover-page ejection. It still needs full live tester smoke validation: create community -> activate membership -> dashboard, join invite -> approval/activation -> dashboard, stale token -> login not cover.
+
+### Public shop link and mobile jump tightening (2026-05-09)
+
+- Owner reported that refreshing/clicking the public shop link could still land on Shop Control and that the link/body area still felt jumpy on phone.
+- Confirmed mismatch:
+  - `frontend/src/pages/MarketplacePage.tsx` only exposed the public shop link when a visible shop record existed in the selected marketplace.
+  - Product rule is stricter: the public shop domain belongs to the member GSN ID and should open the whole public shop face even when the 12 public blocks are empty.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - public shop link now derives from `currentGmfnId` alone.
+  - removed the dependency on the selected marketplace's visible shop record.
+  - visible public shop URL is now a real public anchor, not just passive text.
+  - public link reserve now has fixed height and internal scroll so refreshing/printing the long URL does not resize the surrounding button area.
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx`:
+  - owner shop control now keeps a public shop URL from fallback GSN ID even when no shop record is returned yet.
+  - visible public shop URL is a real public anchor.
+  - link reserve has fixed height/internal scroll.
+  - public shop missing-link controls use `aria-disabled` and guarded clicks instead of native disabled buttons, reducing mobile tap fall-through.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - audit now requires Marketplace public shop links to exist from GSN ID alone.
+  - audit requires public shop URL text to render as an actual anchor.
+  - audit requires fixed-height public link reserves.
+  - audit rejects native disabled owner public shop controls.
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/components/CommunityShopControlPanel.tsx tools/audit-link-contracts.mjs` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run build` passed outside the sandbox after the usual Windows sandbox `spawn EPERM` on Vite/esbuild.
+- Remaining risk:
+  - Needs live phone validation after deploy/hard refresh: Marketplace -> Records & Links -> Public shop face should show `https://gmfn-frontend.onrender.com/shop/<GSN-ID>#shop-diaries`; tapping the visible URL or `Open Shop Face` should open the public shop page, not `/app/shop-control`.

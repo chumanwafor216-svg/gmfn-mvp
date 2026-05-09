@@ -112,14 +112,20 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /return publicShopUrl\(currentGmfnId\);/,
-  "Marketplace public shop copy/open actions must use the canonical full public shop URL."
+  /const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!currentGmfnId\) return "";[\s\S]*?return publicShopUrl\(currentGmfnId\);[\s\S]*?}, \[currentGmfnId\]\);/,
+  "Marketplace public shop copy/open actions must use the canonical full public shop URL whenever a GSN ID exists, even before public items are visible."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /\{\s*publicShopViewLink\s*\?\s*publicShopViewLink\s*:\s*publicShopUnavailableText\s*\}/,
-  "Marketplace public shop card must visibly show the full public shop domain."
+  /href=\{publicShopViewLink\}[\s\S]*?\{publicShopViewLink\}/,
+  "Marketplace public shop card must visibly show the full public shop domain as a real public link."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function linkReserveTextStyle\(\): React\.CSSProperties[\s\S]*?height: 66,[\s\S]*?maxHeight: 66,[\s\S]*?overflowY: "auto",/,
+  "Marketplace public link reserves must stay fixed-height so link refresh does not make surrounding buttons jump."
 );
 
 assertContains(
@@ -160,8 +166,20 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /\{publicShopLink \|\| "Public shop link is not ready yet\."\}/,
-  "Owner shop control must visibly show the full public shop domain."
+  /function normalizeShop\(raw: any, fallbackGmfnId: string, currentClan: any\): ShopSummary \| null \{[\s\S]*?if \(!raw && !fallbackGmfnId\) return null;/,
+  "Owner shop control must preserve a public shop domain from the member GSN ID even when the shop record is not returned yet."
+);
+
+assertContains(
+  "src/components/CommunityShopControlPanel.tsx",
+  /href=\{publicShopLink\}[\s\S]*?\{publicShopLink\}/,
+  "Owner shop control must visibly show the full public shop domain as a real public link."
+);
+
+assertNotContains(
+  "src/components/CommunityShopControlPanel.tsx",
+  /^\s*disabled(?:=|\s*$)/,
+  "Owner public shop controls must capture missing-link taps with aria-disabled instead of native disabled fall-through."
 );
 
 assertNotContains(

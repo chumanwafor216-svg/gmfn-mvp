@@ -132,7 +132,7 @@ function resolveImageSrc(raw: any): string {
 }
 
 function normalizeShop(raw: any, fallbackGmfnId: string, currentClan: any): ShopSummary | null {
-  if (!raw) return null;
+  if (!raw && !fallbackGmfnId) return null;
 
   const src = rowsOf<any>(raw)[0] || raw?.item || raw?.shop || raw?.data || raw;
 
@@ -768,10 +768,34 @@ export default function CommunityShopControlPanel({
                       padding: "10px 12px",
                       wordBreak: "break-word",
                       overflowWrap: "anywhere",
-                      minHeight: 46,
+                      height: 60,
+                      minHeight: 60,
+                      maxHeight: 60,
+                      overflowY: "auto",
+                      overscrollBehavior: "contain",
+                      scrollbarWidth: "thin",
                     }}
                   >
-                    {publicShopLink || "Public shop link is not ready yet."}
+                    {publicShopLink ? (
+                      <a
+                        href={publicShopLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          color: "inherit",
+                          fontWeight: 900,
+                          textDecoration: "underline",
+                          textUnderlineOffset: 3,
+                          touchAction: "manipulation",
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {publicShopLink}
+                      </a>
+                    ) : (
+                      "Public shop link is not ready yet."
+                    )}
                   </div>
 
                   <div
@@ -806,7 +830,10 @@ export default function CommunityShopControlPanel({
                       <button
                         type="button"
                         {...panelButtonGuardProps()}
-                        disabled
+                        aria-disabled
+                        onClick={() => {
+                          setNotice({ tone: "error", text: "Public shop link is not ready yet." });
+                        }}
                         style={{ ...actionBtn("secondary", true), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
                       >
                         Open Public Shop Face
@@ -817,7 +844,7 @@ export default function CommunityShopControlPanel({
                         type="button"
                         {...panelButtonGuardProps()}
                         onClick={copyShopLink}
-                        disabled={!publicShopTo}
+                        aria-disabled={!publicShopTo}
                         style={{ ...actionBtn("secondary", !publicShopTo), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
                       >
                         Copy Public Shop Link
