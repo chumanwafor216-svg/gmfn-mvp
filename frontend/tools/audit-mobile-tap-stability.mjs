@@ -100,6 +100,34 @@ marketplaceLines.forEach((line, index) => {
   }
 });
 
+const dashboardPagePath = join(sourceRoot, "pages", "DashboardPage.tsx");
+const dashboardSource = readFileSync(dashboardPagePath, "utf8");
+const dashboardFrameChecks = [
+  {
+    label:
+      "Dashboard passport picture tools must be anchored from the fixed-height Frame button slot",
+    pattern:
+      /aria-expanded=\{passportPictureToolsOpen\}[\s\S]*?\{isPhone \? "Frame" : "Picture frame"\}[\s\S]*?top: "calc\(100% \+ 6px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"/,
+  },
+  {
+    label:
+      "Dashboard main picture tools must be anchored from the fixed-height Picture frame button slot",
+    pattern:
+      /aria-expanded=\{pictureToolsOpen\}[\s\S]*?Picture frame[\s\S]*?top: "calc\(100% \+ 8px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"/,
+  },
+];
+
+for (const check of dashboardFrameChecks) {
+  if (!check.pattern.test(dashboardSource)) {
+    findings.push({
+      file: relative(frontendRoot, dashboardPagePath),
+      line: 1,
+      label: check.label,
+      text: "Expected fixed-slot anchored picture-frame tool rail was not found.",
+    });
+  }
+}
+
 if (findings.length > 0) {
   console.error("Mobile tap stability audit failed:");
   for (const finding of findings) {

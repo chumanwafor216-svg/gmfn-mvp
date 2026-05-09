@@ -20741,3 +20741,29 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox.
 - Remaining risk:
   - This should address copy-triggered mobile viewport jumps, especially on local phone testing over insecure HTTP. Live validation still needs a fresh redeploy/hard refresh because old bundles will keep the old `safeCopy()` behavior.
+
+### Dashboard picture-frame button stability pass (2026-05-09)
+
+- Owner explicitly reported the Dashboard picture-frame button is still unstable/jumpy, so this pass intentionally touched the otherwise frozen Dashboard profile picture-frame control area.
+- Confirmed against `docs/SCREEN_SPECS.md`:
+  - picture-frame controls must tap open/closed.
+  - the button must sit under the picture.
+  - the tool rail must overlay under the button without adding/removing layout height.
+  - passport-frame and large dashboard-frame rails must use separate open states.
+  - rails must be anchored to their own fixed-height button wrapper, not the whole card.
+- Updated `frontend/src/pages/DashboardPage.tsx` only in the picture-frame control areas:
+  - moved the small passport-frame Upload/Change/Remove rail inside the fixed-height `Frame` button slot.
+  - moved the large dashboard `Picture frame` Upload/Change/Remove rail inside the fixed-height button slot.
+  - raised rail z-index from 20 to 80 and kept `transition: "none"` so opening tools does not depend on the larger picture/card wrapper.
+  - left Market Wisdom untouched.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - added Dashboard-specific checks that both picture-frame rails remain anchored from their fixed-height button slots.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx` passed.
+  - `npm exec -- eslint tools/audit-mobile-tap-stability.mjs src/pages/DashboardPage.tsx` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check` passed, with only Windows line-ending warnings.
+  - `npm run build` passed outside the sandbox.
+- Remaining risk:
+  - Needs live mobile tap validation after redeploy/hard refresh: Dashboard -> tap `Picture frame` repeatedly -> tap Upload/Change/Remove and confirm the button slot does not move.

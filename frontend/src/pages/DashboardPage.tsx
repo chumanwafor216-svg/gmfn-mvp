@@ -6429,85 +6429,86 @@ export default function DashboardPage() {
                 >
                   {isPhone ? "Frame" : "Picture frame"}
                 </button>
-              </div>
 
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 6px)",
-                  left: 0,
-                  right: 0,
-                  zIndex: 20,
-                  display: "grid",
-                  gap: 5,
-                  gridTemplateColumns: "1fr",
-                  alignContent: "start",
-                  opacity: passportPictureToolsOpen ? 1 : 0,
-                  visibility: passportPictureToolsOpen ? "visible" : "hidden",
-                  pointerEvents: passportPictureToolsOpen ? "auto" : "none",
-                  borderRadius: 14,
-                  padding: 6,
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
-                  border: "1px solid rgba(11,99,209,0.12)",
-                  boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={openAvatarPicker}
-                  {...dashboardButtonGuardProps()}
+                <div
                   style={{
-                    ...dashboardFillButton(subtleBtn(false)),
-                    minHeight: isPhone ? 34 : 36,
-                    height: isPhone ? 34 : 36,
-                    maxHeight: isPhone ? 34 : 36,
-                    padding: isPhone ? "7px 8px" : "8px 10px",
-                    fontSize: isPhone ? 10.5 : 11.5,
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    right: 0,
+                    zIndex: 80,
+                    display: "grid",
+                    gap: 5,
+                    gridTemplateColumns: "1fr",
+                    alignContent: "start",
+                    opacity: passportPictureToolsOpen ? 1 : 0,
+                    visibility: passportPictureToolsOpen ? "visible" : "hidden",
+                    pointerEvents: passportPictureToolsOpen ? "auto" : "none",
+                    borderRadius: 14,
+                    padding: 6,
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
+                    border: "1px solid rgba(11,99,209,0.12)",
+                    boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
                     transition: "none",
                   }}
                 >
-                  Upload
-                </button>
-                <button
-                  type="button"
-                  onClick={openAvatarPicker}
-                  {...dashboardButtonGuardProps()}
-                  style={{
-                    ...dashboardFillButton(subtleBtn(false)),
-                    minHeight: isPhone ? 34 : 36,
-                    height: isPhone ? 34 : 36,
-                    maxHeight: isPhone ? 34 : 36,
-                    padding: isPhone ? "7px 8px" : "8px 10px",
-                    fontSize: isPhone ? 10.5 : 11.5,
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
-                    transition: "none",
-                  }}
-                >
-                  Change
-                </button>
-                <button
-                  type="button"
-                  onClick={removeAvatar}
-                  disabled={!avatarSrc}
-                  {...dashboardButtonGuardProps()}
-                  style={{
-                    ...dashboardFillButton(subtleBtn(!avatarSrc)),
-                    minHeight: isPhone ? 34 : 36,
-                    height: isPhone ? 34 : 36,
-                    maxHeight: isPhone ? 34 : 36,
-                    padding: isPhone ? "7px 8px" : "8px 10px",
-                    fontSize: isPhone ? 10.5 : 11.5,
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
-                    transition: "none",
-                  }}
-                >
-                  Remove
-                </button>
+                  <button
+                    type="button"
+                    onClick={openAvatarPicker}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false)),
+                      minHeight: isPhone ? 34 : 36,
+                      height: isPhone ? 34 : 36,
+                      maxHeight: isPhone ? 34 : 36,
+                      padding: isPhone ? "7px 8px" : "8px 10px",
+                      fontSize: isPhone ? 10.5 : 11.5,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
+                    }}
+                  >
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openAvatarPicker}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false)),
+                      minHeight: isPhone ? 34 : 36,
+                      height: isPhone ? 34 : 36,
+                      maxHeight: isPhone ? 34 : 36,
+                      padding: isPhone ? "7px 8px" : "8px 10px",
+                      fontSize: isPhone ? 10.5 : 11.5,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
+                    }}
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    disabled={!avatarSrc}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(!avatarSrc)),
+                      minHeight: isPhone ? 34 : 36,
+                      height: isPhone ? 34 : 36,
+                      maxHeight: isPhone ? 34 : 36,
+                      padding: isPhone ? "7px 8px" : "8px 10px",
+                      fontSize: isPhone ? 10.5 : 11.5,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -7095,81 +7096,82 @@ export default function DashboardPage() {
                   >
                     Picture frame
                   </button>
-                </div>
 
-                <div
-                  style={{
-                    position: "absolute",
-                    left: isPhone ? 3 : 6,
-                    right: isPhone ? 3 : 6,
-                    top: "calc(100% + 8px)",
-                    zIndex: 20,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                    gap: 8,
-                    alignItems: "stretch",
-                    opacity: pictureToolsOpen ? 1 : 0,
-                    visibility: pictureToolsOpen ? "visible" : "hidden",
-                    pointerEvents: pictureToolsOpen ? "auto" : "none",
-                    borderRadius: 16,
-                    padding: 8,
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
-                    border: "1px solid rgba(11,99,209,0.12)",
-                    boxShadow: "0 18px 30px rgba(2,12,27,0.18)",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={openAvatarPicker}
-                    {...dashboardButtonGuardProps()}
+                  <div
                     style={{
-                      ...dashboardFillButton(subtleBtn(false)),
-                      minHeight: isPhone ? 44 : 42,
-                      height: isPhone ? 44 : 42,
-                      maxHeight: isPhone ? 44 : 42,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
+                      position: "absolute",
+                      left: 0,
+                      right: 0,
+                      top: "calc(100% + 8px)",
+                      zIndex: 80,
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                      gap: 8,
+                      alignItems: "stretch",
+                      opacity: pictureToolsOpen ? 1 : 0,
+                      visibility: pictureToolsOpen ? "visible" : "hidden",
+                      pointerEvents: pictureToolsOpen ? "auto" : "none",
+                      borderRadius: 16,
+                      padding: 8,
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
+                      border: "1px solid rgba(11,99,209,0.12)",
+                      boxShadow: "0 18px 30px rgba(2,12,27,0.18)",
                       transition: "none",
                     }}
                   >
-                    Upload
-                  </button>
+                    <button
+                      type="button"
+                      onClick={openAvatarPicker}
+                      {...dashboardButtonGuardProps()}
+                      style={{
+                        ...dashboardFillButton(subtleBtn(false)),
+                        minHeight: isPhone ? 44 : 42,
+                        height: isPhone ? 44 : 42,
+                        maxHeight: isPhone ? 44 : 42,
+                        lineHeight: 1,
+                        whiteSpace: "nowrap",
+                        transition: "none",
+                      }}
+                    >
+                      Upload
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={openAvatarPicker}
-                    {...dashboardButtonGuardProps()}
-                    style={{
-                      ...dashboardFillButton(subtleBtn(false)),
-                      minHeight: isPhone ? 44 : 42,
-                      height: isPhone ? 44 : 42,
-                      maxHeight: isPhone ? 44 : 42,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
-                      transition: "none",
-                    }}
-                  >
-                    Change
-                  </button>
+                    <button
+                      type="button"
+                      onClick={openAvatarPicker}
+                      {...dashboardButtonGuardProps()}
+                      style={{
+                        ...dashboardFillButton(subtleBtn(false)),
+                        minHeight: isPhone ? 44 : 42,
+                        height: isPhone ? 44 : 42,
+                        maxHeight: isPhone ? 44 : 42,
+                        lineHeight: 1,
+                        whiteSpace: "nowrap",
+                        transition: "none",
+                      }}
+                    >
+                      Change
+                    </button>
 
-                  <button
-                    type="button"
-                    onClick={removeAvatar}
-                    disabled={!avatarSrc}
-                    {...dashboardButtonGuardProps()}
-                    style={{
-                      ...dashboardFillButton(subtleBtn(!avatarSrc)),
-                      minHeight: isPhone ? 44 : 42,
-                      height: isPhone ? 44 : 42,
-                      maxHeight: isPhone ? 44 : 42,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
-                      transition: "none",
-                    }}
-                  >
-                    Remove
-                  </button>
+                    <button
+                      type="button"
+                      onClick={removeAvatar}
+                      disabled={!avatarSrc}
+                      {...dashboardButtonGuardProps()}
+                      style={{
+                        ...dashboardFillButton(subtleBtn(!avatarSrc)),
+                        minHeight: isPhone ? 44 : 42,
+                        height: isPhone ? 44 : 42,
+                        maxHeight: isPhone ? 44 : 42,
+                        lineHeight: 1,
+                        whiteSpace: "nowrap",
+                        transition: "none",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               </div>
 
