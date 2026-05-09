@@ -731,6 +731,10 @@ export default function ShopGalleryPage() {
         query.get("community_id")
     );
   }, [location.search]);
+  const routeProductId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(query.get("product_id") || query.get("product"));
+  }, [location.search]);
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -794,6 +798,7 @@ export default function ShopGalleryPage() {
         const publicShopRes = cleanedGmfnId
           ? await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
               clan_id: routeClanId || undefined,
+              product_id: routeProductId || undefined,
               product_limit: 100,
               broadcast_limit: 24,
             }).catch(() => null)
@@ -891,7 +896,7 @@ export default function ShopGalleryPage() {
     return () => {
       alive = false;
     };
-  }, [gmfnId, routeClanId]);
+  }, [gmfnId, routeClanId, routeProductId]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
@@ -966,12 +971,16 @@ export default function ShopGalleryPage() {
     if (products.length === 0) return;
 
     const id = location.hash.replace(/^#/, "");
-    const matchedProduct = products.find((product) => {
-      return (
-        id === publicShopBlockAnchorId(product) ||
-        id === legacyProductAnchorId(product)
-      );
-    });
+    const matchedProduct =
+      products.find((product) => {
+        return routeProductId > 0 && product.id === routeProductId;
+      }) ||
+      products.find((product) => {
+        return (
+          id === publicShopBlockAnchorId(product) ||
+          id === legacyProductAnchorId(product)
+        );
+      });
 
     cancelPendingGalleryReveal();
 
@@ -988,7 +997,13 @@ export default function ShopGalleryPage() {
     return () => {
       cancelPendingGalleryReveal();
     };
-  }, [cancelPendingGalleryReveal, location.hash, products, revealGalleryTarget]);
+  }, [
+    cancelPendingGalleryReveal,
+    location.hash,
+    products,
+    revealGalleryTarget,
+    routeProductId,
+  ]);
 
   useEffect(() => {
     return () => {
@@ -1206,8 +1221,14 @@ export default function ShopGalleryPage() {
   function shareProduct(product: ShopProduct) {
     const blockLabel = publicShopBlockLabel(product);
     const hash = `#${publicShopBlockAnchorId(product)}`;
+    const query = new URLSearchParams(location.search);
+    if (product.id) {
+      query.set("product_id", String(product.id));
+    }
+    query.set("block", String(product.slotNumber));
+    const queryText = query.toString();
     const productUrl = publicFrontendUrl(
-      `${location.pathname}${location.search || ""}${hash}`
+      `${location.pathname}${queryText ? `?${queryText}` : ""}${hash}`
     );
     const productTitle = productDisplayTitle(product);
     const title = `${blockLabel} - ${productTitle}`;

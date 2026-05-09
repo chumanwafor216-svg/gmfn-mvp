@@ -2304,6 +2304,7 @@ export async function getPublicMarketplaceShopByGmfnId(
   gmfnId: string,
   params?: {
     clan_id?: number | null;
+    product_id?: number | null;
     product_limit?: number;
     broadcast_limit?: number;
   }
@@ -2311,6 +2312,7 @@ export async function getPublicMarketplaceShopByGmfnId(
   return httpJson(
     `/marketplace/public/shop/${encodeURIComponent(String(gmfnId))}${buildQuery({
       clan_id: params?.clan_id ?? undefined,
+      product_id: params?.product_id ?? undefined,
       product_limit: params?.product_limit ?? 100,
       broadcast_limit: params?.broadcast_limit ?? 24,
     })}`,

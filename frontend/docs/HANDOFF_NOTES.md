@@ -1,5 +1,22 @@
 # Handoff Notes
 
+## 2026-05-09 Public Shop Block Link Target Fix
+
+- Owner showed a public shop block link landing on the shop page with `0/12` visible blocks instead of opening the shared block.
+- Root cause:
+  - the previous block share used a URL hash such as `#shop-block-3`, but URL hashes are not sent to the backend.
+  - when the share URL also carried community context, the public shop endpoint could filter out the product before the frontend had any block to open.
+- Updated frontend:
+  - `src/pages/ShopGalleryPage.tsx` now adds `product_id` and `block` query values to block share URLs.
+  - the gallery now opens by `product_id` first, then scrolls to the matching public block anchor after products load.
+  - `src/lib/api.ts` now sends `product_id` to the public shop endpoint.
+- Updated backend:
+  - `gmfn_backend/app/api/routes/marketplace.py` public shop endpoint now accepts `product_id`.
+  - if that product belongs to the same shop, is active, and is `community_visible`, it is included in the public payload even when the community filter would otherwise exclude it.
+- Remaining truth:
+  - private Vault products still do not become public through this fix.
+  - if the shared product is inactive, belongs to another shop, or is Vault-only, the page should not expose it.
+
 ## 2026-05-09 Public Shop Block Double-Tap Restore
 
 - Owner reported public shop blocks no longer pop open to the full block on double click/double tap, and no longer collapse from the block body on a single click/tap.

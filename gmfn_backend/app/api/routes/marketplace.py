@@ -890,6 +890,7 @@ def get_marketplace_shop_by_gmfn_id(
 def get_public_marketplace_shop_by_gmfn_id(
     gmfn_id: str,
     clan_id: Optional[int] = Query(default=None),
+    product_id: Optional[int] = Query(default=None),
     product_limit: int = Query(default=100, ge=1, le=300),
     broadcast_limit: int = Query(default=24, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -946,6 +947,22 @@ def get_public_marketplace_shop_by_gmfn_id(
         .limit(int(product_limit))
         .all()
     )
+
+    requested_product_id = _safe_int(product_id, 0)
+    if requested_product_id > 0 and all(
+        int(getattr(row, "id", 0) or 0) != requested_product_id
+        for row in product_rows
+    ):
+        requested_product = (
+            db.query(MarketplaceProduct)
+            .filter(MarketplaceProduct.id == int(requested_product_id))
+            .filter(MarketplaceProduct.shop_id == int(shop.id))
+            .filter(MarketplaceProduct.is_active.is_(True))
+            .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
+            .first()
+        )
+        if requested_product is not None:
+            product_rows = [requested_product, *product_rows]
 
     current_time = _now_utc()
     broadcast_query = (
