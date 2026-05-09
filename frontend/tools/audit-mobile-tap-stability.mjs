@@ -79,6 +79,8 @@ for (const filePath of listSourceFiles(sourceRoot)) {
 const marketplacePagePath = join(sourceRoot, "pages", "MarketplacePage.tsx");
 const marketplaceLines = readFileSync(marketplacePagePath, "utf8").split(/\r?\n/);
 const marketplaceSource = marketplaceLines.join("\n");
+const indexCssPath = join(sourceRoot, "index.css");
+const indexCssSource = readFileSync(indexCssPath, "utf8");
 let insideOwnedLinksSection = false;
 let marketplaceButtonCount = 0;
 
@@ -130,7 +132,45 @@ if (marketplaceButtonCount < 40) {
   });
 }
 
+const globalButtonStackingRule =
+  /:where\(button,\s*\[role="button"\],\s*\.gmfn-btn\)\s*\{[^}]*?(?:position:\s*relative|z-index:\s*1|isolation:\s*isolate)[^}]*?\}/;
+
+if (globalButtonStackingRule.test(indexCssSource)) {
+  findings.push({
+    file: relative(frontendRoot, indexCssPath),
+    line: 1,
+    label:
+      "Global button reset must not create stacking layers that can move mobile hit testing",
+    text:
+      "Remove global position/z-index/isolation from the button reset; layer only named overlays deliberately.",
+  });
+}
+
 const marketplaceActionSystemChecks = [
+  {
+    label:
+      "Marketplace action buttons must not create stacking layers that can drift over neighboring mobile controls",
+    pattern:
+      /function actionBtn\([\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?overflow: "hidden",[\s\S]*?function maskedLinkCode/,
+  },
+  {
+    label:
+      "Marketplace inline action grids must not create page-local stacking layers around mobile buttons",
+    pattern:
+      /function marketplaceInlineActionsStyle\([\s\S]*?display: "grid",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?transition: "none",/,
+  },
+  {
+    label:
+      "Public shop face actions must use one lock flag and one in-flight ref so refresh/copy/email/open cannot double-fire while the card is reflowing",
+    pattern:
+      /publicShopPrepareInFlightRef = useRef\(false\)[\s\S]*?const publicShopActionsLocked =[\s\S]*?!currentGmfnId \|\| !activeCommunityId \|\| preparingPublicShopLink[\s\S]*?publicShopPrepareInFlightRef\.current[\s\S]*?publicShopPrepareInFlightRef\.current = true[\s\S]*?publicShopPrepareInFlightRef\.current = false[\s\S]*?aria-disabled=\{publicShopActionsLocked\}[\s\S]*?aria-disabled=\{publicShopActionsLocked\}[\s\S]*?aria-disabled=\{publicShopActionsLocked\}[\s\S]*?aria-disabled=\{publicShopActionsLocked\}/,
+  },
+  {
+    label:
+      "Public shop status pill must be height-locked so status wording cannot push the action buttons on phone",
+    pattern:
+      /function stableStatusPillStyle\([\s\S]*?height: 34,[\s\S]*?maxHeight: 34,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?stableStatusPillStyle\(Boolean\(publicShopViewLink\)\)/,
+  },
   {
     label:
       "Marketplace async support buttons must expose inactive state with aria-disabled",

@@ -21171,3 +21171,36 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-mobile-tap-stability.mjs` passed.
 - Remaining risk:
   - This removes the confirmed system-level native-disabled/tap-ownership issue from Marketplace. If live phone taps still land on wrong routes after deploy, the next likely cause is a visual overlay or app-shell/bottom-nav hit area, which needs a live DOM/screenshot trace rather than another one-button patch.
+
+### Marketplace public shop action-button hardening (2026-05-09)
+
+- Owner reported that the Marketplace -> Public Shop Face buttons (`Refresh Shop Link`, `Copy Shop Link`, `Email Link`, `Open Shop Face`) were still jumpy on phone and could not reliably be tapped.
+- Devil's advocate finding:
+  - the previous Marketplace-wide guard pass removed native disabled/fall-through risks, but the route still had local stacking layers around action buttons.
+  - `actionBtn()`, `marketplaceInlineActionsStyle()`, and `marketplaceInlineActionStyle()` were still setting local `position` / `isolation` / `zIndex` layers.
+  - that can make mobile hit-testing feel like the button has moved, especially near long link text and the fixed bottom navigation.
+- Updated `frontend/src/index.css`:
+  - removed global `position: relative`, `z-index: 1`, and `isolation: isolate` from the button reset.
+  - this is the root correction for the same stacking-layer pattern that kept reappearing after page-level button fixes.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - removed the local stacking layers from Marketplace action buttons and inline action grids.
+  - kept fixed row/button heights and no-transition tap targets.
+  - added one shared `publicShopActionsLocked` flag for the Public Shop Face refresh/copy/email/open controls.
+  - added a ref-based in-flight lock so a very fast second tap cannot enter the public-shop refresh path before React rerenders.
+  - locked the Public Shop Face status pill height so status wording cannot push the buttons down on narrow phones.
+  - all four Public Shop Face controls now use the same `aria-disabled={publicShopActionsLocked}` state and guarded click behavior.
+  - blocked taps now show the real reason instead of falling through or double-firing while refresh is in progress.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - audit now rejects global button-reset stacking layers in `frontend/src/index.css`.
+  - audit now rejects Marketplace action buttons that recreate local stacking layers.
+  - audit now requires the Public Shop Face controls to share one locked-state contract plus a ref-based in-flight lock.
+  - audit now requires the Public Shop Face status pill to stay height-locked.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx tools\audit-mobile-tap-stability.mjs` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed outside the sandbox after the usual Windows sandbox `spawn EPERM` on Vite/esbuild.
+- Remaining truth:
+  - this is the button/tap stability fix, not the production data fix.
+  - if `GMFN-U-9867079C` still says the public shop is not connected, production still needs the owner identity plus active shop connection to exist.
+  - the correct owner-side refresh place is Marketplace -> Records & Links -> Public Shop Face, then `Refresh Shop Link`; the public viewer page itself should stay read-only when the backend says the shop is missing.

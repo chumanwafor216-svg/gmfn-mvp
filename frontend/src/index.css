@@ -58,9 +58,6 @@ html, body {
 
 :where(button, [role="button"], .gmfn-btn) {
   min-width: 0;
-  position: relative;
-  z-index: 1;
-  isolation: isolate;
   overflow-anchor: none;
 }
 
