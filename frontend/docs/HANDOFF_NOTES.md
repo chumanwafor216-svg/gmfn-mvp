@@ -13,12 +13,24 @@
   - React touch handlers beside pointer/click handling.
   - CSS `:active` hooks.
   - transform `will-change` on tappable source.
+  - native `disabled={...}` inside Marketplace Records & Links, because missing-link controls must still capture taps and explain what is missing instead of becoming dead mobile targets.
 - Fresh active-source scan before adding the guard found no remaining matches in `frontend/src`.
 - Purpose:
   - freeze the successful correction at system level so future Marketplace, Records & Links, Action Inbox, Shop Control, Trust Passport, and shared button work cannot quietly bring the same mobile instability back.
 - Remaining truth:
   - this is a source-pattern guard plus build/lint verification, not a substitute for live phone clicks on Render.
   - no backend, auth, payments, schemas, or route contracts were changed by this guard.
+
+## 2026-05-09 Marketplace Records & Links mislanding follow-up
+
+- Owner reported that after the freeze push, Marketplace links/actions were again landing in the wrong place.
+- Truth check:
+  - the freeze commit itself did not change runtime app code.
+  - the likely runtime regression was the earlier line-audit decision to put native `disabled` back on Records & Links buttons.
+- Updated `src/pages/MarketplacePage.tsx`:
+  - Records & Links outward-link controls now keep `aria-disabled` and disabled visual styling, but no longer use native `disabled` for missing-link states.
+  - this lets the button capture the phone tap and show the correct missing-link/admin/clipboard explanation instead of becoming a dead target that can feel like it landed in Shop Control, Trust Passport, Action Inbox, or another nearby route.
+- Updated `tools/audit-mobile-tap-stability.mjs` so native `disabled={...}` inside the Marketplace Records & Links section fails the audit.
 
 ## 2026-05-09 Marketplace Records & Links Button Stability
 

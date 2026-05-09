@@ -1,3 +1,5 @@
+/* global console, process */
+
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, extname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,6 +67,30 @@ for (const filePath of listSourceFiles(sourceRoot)) {
     }
   });
 }
+
+const marketplacePagePath = join(sourceRoot, "pages", "MarketplacePage.tsx");
+const marketplaceLines = readFileSync(marketplacePagePath, "utf8").split(/\r?\n/);
+let insideOwnedLinksSection = false;
+
+marketplaceLines.forEach((line, index) => {
+  if (line.includes('id="marketplace-owned-links"')) {
+    insideOwnedLinksSection = true;
+  }
+
+  if (insideOwnedLinksSection && line.trim().startsWith("disabled={")) {
+    findings.push({
+      file: relative(frontendRoot, marketplacePagePath),
+      line: index + 1,
+      label:
+        "Marketplace Records & Links controls must capture missing-link taps instead of becoming native-disabled dead targets",
+      text: line.trim(),
+    });
+  }
+
+  if (insideOwnedLinksSection && line.includes('id="marketplace-members-shops"')) {
+    insideOwnedLinksSection = false;
+  }
+});
 
 if (findings.length > 0) {
   console.error("Mobile tap stability audit failed:");

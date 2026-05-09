@@ -4190,7 +4190,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                       aria-disabled={!inviteLink}
                     >
                       Copy Join Link
@@ -4208,7 +4207,6 @@ export default function MarketplacePage() {
                         creatingInviteLink || !canManageMarketplaceLinks,
                         isCompact
                       )}
-                      disabled={creatingInviteLink || !canManageMarketplaceLinks}
                       aria-disabled={creatingInviteLink || !canManageMarketplaceLinks}
                     >
                       {creatingInviteLink ? "Refreshing..." : "Refresh Join Link"}
@@ -4231,7 +4229,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                       aria-disabled={!inviteLink}
                     >
                       Copy Invite Message
@@ -4254,7 +4251,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                       aria-disabled={!inviteLink}
                     >
                       Email Join Link
@@ -4282,7 +4278,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                       aria-disabled={!inviteLink}
                     >
                       WhatsApp
@@ -4354,7 +4349,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                       aria-disabled={!publicCreateEntryLink}
                     >
                       Copy Create Link
@@ -4377,7 +4371,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                       aria-disabled={!publicCreateEntryLink}
                     >
                       Copy Message
@@ -4400,7 +4393,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                       aria-disabled={!publicCreateEntryLink}
                     >
                       Email Link
@@ -4421,7 +4413,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                       aria-disabled={!publicCreateEntryLink}
                     >
                       Open Create Link
@@ -4449,7 +4440,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                       aria-disabled={!publicCreateEntryLink}
                     >
                       Send WhatsApp
@@ -4502,7 +4492,6 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                       aria-disabled={!publicCommunityWorkspaceLink}
                     >
                       Copy Marketplace Link
@@ -4525,7 +4514,6 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                       aria-disabled={!publicCommunityWorkspaceLink}
                     >
                       Email Link
@@ -4546,7 +4534,6 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                       aria-disabled={!publicCommunityWorkspaceLink}
                     >
                       Open Marketplace Face
@@ -4595,7 +4582,6 @@ export default function MarketplacePage() {
                         !publicShopViewLink,
                         isCompact
                       )}
-                      disabled={!publicShopViewLink}
                       aria-disabled={!publicShopViewLink}
                     >
                       Copy Shop Link
@@ -4618,7 +4604,6 @@ export default function MarketplacePage() {
                         !publicShopViewLink,
                         isCompact
                       )}
-                      disabled={!publicShopViewLink}
                       aria-disabled={!publicShopViewLink}
                     >
                       Email Link
@@ -4639,7 +4624,6 @@ export default function MarketplacePage() {
                         !publicShopViewLink,
                         isCompact
                       )}
-                      disabled={!publicShopViewLink}
                       aria-disabled={!publicShopViewLink}
                     >
                       Open Shop Face
