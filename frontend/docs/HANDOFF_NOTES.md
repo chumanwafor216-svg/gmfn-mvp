@@ -1,5 +1,21 @@
 # Handoff Notes
 
+## 2026-05-09 Public Shop Canonical 12-Block Payload Fix
+
+- Owner screenshot showed the public shop link still landing with `0/12` public blocks under Shop Diaries.
+- Root cause follow-up:
+  - generic public shop links were still preserving community query values.
+  - even without an explicit `clan_id`, the backend public shop endpoint fell back to the shop's home `clan_id` and filtered public products by it.
+- Updated frontend:
+  - `publicShopDiariesPath()` now strips `clan_id`, `community`, and `community_id` as well as block/product query values for general shop links.
+  - block-specific links still carry product targeting separately.
+- Updated backend:
+  - `/marketplace/public/shop/{gmfn_id}` now filters products/broadcasts by community only when `clan_id` is explicitly supplied.
+  - the canonical general public shop face now returns that shop's active `community_visible` public blocks across the shop, matching the owner expectation for the 12-block public shop face.
+- Remaining truth:
+  - explicitly community-scoped shop URLs can still filter by `clan_id`.
+  - private Vault products remain hidden from the public shop face.
+
 ## 2026-05-09 Public Shop Link Landing Contract
 
 - Owner clarified the intended public shop-link behavior:

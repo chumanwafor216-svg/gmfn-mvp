@@ -920,23 +920,15 @@ def get_public_marketplace_shop_by_gmfn_id(
             .first()
         )
 
-    effective_clan_id = (
-        int(requested_clan_id)
-        if requested_clan_id > 0
-        else int(shop.clan_id)
-        if getattr(shop, "clan_id", None) is not None
-        else None
-    )
-
     product_query = (
         db.query(MarketplaceProduct)
         .filter(MarketplaceProduct.shop_id == int(shop.id))
         .filter(MarketplaceProduct.is_active.is_(True))
         .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
     )
-    if effective_clan_id is not None:
+    if requested_clan_id > 0:
         product_query = product_query.filter(
-            MarketplaceProduct.clan_id == int(effective_clan_id)
+            MarketplaceProduct.clan_id == int(requested_clan_id)
         )
 
     product_rows = (
@@ -973,9 +965,9 @@ def get_public_marketplace_shop_by_gmfn_id(
             | (MarketplaceBroadcast.expires_at > current_time)
         )
     )
-    if effective_clan_id is not None:
+    if requested_clan_id > 0:
         broadcast_query = broadcast_query.filter(
-            MarketplaceBroadcast.clan_id == int(effective_clan_id)
+            MarketplaceBroadcast.clan_id == int(requested_clan_id)
         )
 
     broadcast_rows = (
@@ -988,10 +980,10 @@ def get_public_marketplace_shop_by_gmfn_id(
     )
 
     effective_clan = requested_clan
-    if effective_clan is None and effective_clan_id is not None:
+    if effective_clan is None and requested_clan_id > 0:
         effective_clan = (
             db.query(Clan)
-            .filter(Clan.id == int(effective_clan_id))
+            .filter(Clan.id == int(requested_clan_id))
             .first()
         )
 
@@ -1002,7 +994,7 @@ def get_public_marketplace_shop_by_gmfn_id(
         "broadcasts": [_broadcast_out(db, row) for row in broadcast_rows],
         "primary_broadcast": _broadcast_out(db, broadcast_rows[0]) if broadcast_rows else None,
         "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
-        "clan_id": effective_clan_id,
+        "clan_id": requested_clan_id if requested_clan_id > 0 else None,
         "community_name": (
             _safe_str(getattr(effective_clan, "marketplace_name", None))
             or _safe_str(getattr(effective_clan, "name", None))

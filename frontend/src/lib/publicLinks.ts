@@ -149,6 +149,9 @@ export function publicShopDiariesPath(pathOrUrl: string): string {
     url.searchParams.delete("product_id");
     url.searchParams.delete("product");
     url.searchParams.delete("block");
+    url.searchParams.delete("clan_id");
+    url.searchParams.delete("community");
+    url.searchParams.delete("community_id");
     url.hash = PUBLIC_SHOP_DIARIES_ANCHOR;
 
     if (isAbsolute) return url.toString();
@@ -160,6 +163,9 @@ export function publicShopDiariesPath(pathOrUrl: string): string {
     params.delete("product_id");
     params.delete("product");
     params.delete("block");
+    params.delete("clan_id");
+    params.delete("community");
+    params.delete("community_id");
     const query = params.toString();
     return `${path || "/"}${query ? `?${query}` : ""}#${PUBLIC_SHOP_DIARIES_ANCHOR}`;
   }
