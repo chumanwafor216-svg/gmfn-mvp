@@ -14,6 +14,7 @@ import OriginLink from "../components/OriginLink";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
+  createMarketplaceShop,
   createClanInvite,
   createLoanRequest,
   getClanTrustScoreExplained,
@@ -21,6 +22,7 @@ import {
   getCurrentClan,
   getLoanGuarantorSuggestions,
   getLoanSummary,
+  getMarketplaceShopByGmfnId,
   getMarketplaceShops,
   getMe,
   getPoolMe,
@@ -1819,6 +1821,9 @@ export default function MarketplacePage() {
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
+  const [publicShopRecord, setPublicShopRecord] =
+    useState<MarketplaceShop | null>(null);
+  const [preparingPublicShopLink, setPreparingPublicShopLink] = useState(false);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
@@ -1901,13 +1906,13 @@ export default function MarketplacePage() {
   }, []);
 
   const publicShopViewLink = useMemo(() => {
-    if (!currentGmfnId) return "";
+    if (!currentGmfnId || !publicShopRecord) return "";
     return publicShopUrl(currentGmfnId);
-  }, [currentGmfnId]);
+  }, [currentGmfnId, publicShopRecord]);
 
-  const publicShopUnavailableText = currentGmfnId
-    ? "Your public shop is not visible in this marketplace yet."
-    : "Your GSN ID is not ready yet.";
+  const publicShopUnavailableText = !currentGmfnId
+    ? "Your GSN ID is not ready yet."
+    : "Prepare your public shop link first so it is connected to an active shop before you send it.";
 
   const controlledMarketplaceLinkNote = useMemo(() => {
     if (!selectedCommunity) {
@@ -2244,7 +2249,17 @@ export default function MarketplacePage() {
         positiveNumber(resolvedCommunity?.id || resolvedCommunity?.clan_id) ||
         selectedClanId;
 
-      const [membersRes, shopsRes, poolRes, inviteRes, loansRes, trustRes] =
+      const currentMemberGmfnId = safeStr(meRes?.gmfn_id || "");
+
+      const [
+        membersRes,
+        shopsRes,
+        ownerShopRes,
+        poolRes,
+        inviteRes,
+        loansRes,
+        trustRes,
+      ] =
         await Promise.all([
           currentCommunityId
             ? listClanMembers(currentCommunityId).catch(() => ({ items: [] }))
@@ -2256,6 +2271,12 @@ export default function MarketplacePage() {
                 limit: 200,
               }).catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] }),
+          currentMemberGmfnId
+            ? getMarketplaceShopByGmfnId(currentMemberGmfnId, {
+                clan_id: currentCommunityId || undefined,
+                header_clan_id: currentCommunityId || undefined,
+              }).catch(() => null)
+            : Promise.resolve(null),
           currentCommunityId
             ? getPoolMe("NGN", 20, { clan_id: currentCommunityId }).catch(
                 () => null
@@ -2296,6 +2317,7 @@ export default function MarketplacePage() {
       setSelectedCommunity(resolvedCommunity);
       setMembers(memberRows);
       setShops(shopRows);
+      setPublicShopRecord(normalizeMarketplaceShop(ownerShopRes));
       setPoolInfo(poolRes);
       setMarketplaceTrust(trustRes || null);
       setInviteLink(getInviteUrl(inviteRes));
@@ -2308,6 +2330,51 @@ export default function MarketplacePage() {
   useEffect(() => {
     void loadPage();
   }, [loadPage, selectedClanId]);
+
+  async function preparePublicShopLink() {
+    if (!activeCommunityId) {
+      setNotice({
+        tone: "error",
+        text: "Select a community before preparing the public shop link.",
+      });
+      return;
+    }
+
+    if (!currentGmfnId) {
+      setNotice({ tone: "error", text: "Your GSN ID is not ready yet." });
+      return;
+    }
+
+    setPreparingPublicShopLink(true);
+    try {
+      const displayName = safeStr(me?.display_name || me?.name || "");
+      const shopName = publicShopRecord?.name || displayName || `${currentGmfnId} Shop`;
+      const created = await createMarketplaceShop({
+        clan_id: activeCommunityId,
+        name: shopName,
+        description:
+          publicShopRecord?.description ||
+          "Public GSN shop face for the owner's active shop blocks.",
+      });
+
+      const normalized = normalizeMarketplaceShop(created);
+      setPublicShopRecord(normalized);
+      await loadPage();
+      setNotice({
+        tone: "success",
+        text: "Public shop link is connected to an active shop. You can copy or open it now.",
+      });
+    } catch (err: any) {
+      setNotice({
+        tone: "error",
+        text:
+          safeStr(err?.message) ||
+          "Public shop link could not be prepared right now.",
+      });
+    } finally {
+      setPreparingPublicShopLink(false);
+    }
+  }
 
   useEffect(() => {
     let alive = true;
@@ -4577,7 +4644,9 @@ export default function MarketplacePage() {
                     <span style={compactStatusPillStyle(Boolean(publicShopViewLink))}>
                       {publicShopViewLink
                         ? "Public shop link ready"
-                        : "Public shop link not ready yet"}
+                        : publicShopRecord
+                        ? "Public shop link reconnecting"
+                        : "Public shop link needs refresh"}
                     </span>
                   </div>
                   <div
@@ -4610,6 +4679,25 @@ export default function MarketplacePage() {
                     )}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
+                    <button
+                      type="button"
+                      {...marketplaceButtonGuardProps()}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          void preparePublicShopLink();
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "primary",
+                        !currentGmfnId || !activeCommunityId || preparingPublicShopLink,
+                        isCompact
+                      )}
+                      aria-disabled={
+                        !currentGmfnId || !activeCommunityId || preparingPublicShopLink
+                      }
+                    >
+                      {preparingPublicShopLink ? "Refreshing..." : "Refresh Shop Link"}
+                    </button>
                     <button
                         type="button"
                         {...marketplaceButtonGuardProps()}

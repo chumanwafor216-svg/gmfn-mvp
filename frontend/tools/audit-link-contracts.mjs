@@ -112,8 +112,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!currentGmfnId\) return "";[\s\S]*?return publicShopUrl\(currentGmfnId\);[\s\S]*?}, \[currentGmfnId\]\);/,
-  "Marketplace public shop copy/open actions must use the canonical full public shop URL whenever a GSN ID exists, even before public items are visible."
+  /const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!currentGmfnId \|\| !publicShopRecord\) return "";[\s\S]*?return publicShopUrl\(currentGmfnId\);[\s\S]*?}, \[currentGmfnId, publicShopRecord\]\);/,
+  "Marketplace public shop copy/open actions must use the canonical full public shop URL only after the backend confirms an active owner shop."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /async function preparePublicShopLink\(\)[\s\S]*?createMarketplaceShop\([\s\S]*?setPublicShopRecord\(normalized\);[\s\S]*?Public shop link is connected to an active shop/,
+  "Marketplace must provide an owner-side refresh that connects the public shop link to an active shop before copying."
 );
 
 assertContains(

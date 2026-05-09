@@ -1,3 +1,21 @@
+### Marketplace public shop link owner-side readiness (2026-05-09)
+
+- Owner reported the public page now says: `Public shop could not be loaded... link is not connected to an active shop yet`.
+- Truth:
+  - the public page is now correctly exposing the backend failure instead of pretending the shop is empty.
+  - Marketplace was still marking the public shop link as ready as soon as the member had a GSN ID, even if `/marketplace/shops/by-gmfn/{id}` could not confirm an active shop.
+- Correction:
+  - `frontend/src/pages/MarketplacePage.tsx` now checks the backend for the current owner's active shop before exposing/copying/opening the public shop URL.
+  - added `Refresh Shop Link` in the `Public shop face` lane. It calls the existing `createMarketplaceShop()` upsert to create or reconnect the canonical owner shop for the selected community.
+  - public shop copy/email/open actions remain disabled until the active shop is confirmed.
+  - `frontend/tools/audit-link-contracts.mjs` now locks that the public shop URL is exposed only after an active owner shop is confirmed and that Marketplace has a refresh action to connect the link first.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx tools\audit-link-contracts.mjs` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - Refreshing/creating the shop record connects the public URL to an active shop. If the live database has no public products attached to that shop yet, the public page will load but still show an honest empty `0/12` until products are created/restored.
+
 ### Public shop 0/12 live follow-up (2026-05-09)
 
 - Owner screenshot still showed the public shop landing at Shop Diaries but displaying `0/12`.
