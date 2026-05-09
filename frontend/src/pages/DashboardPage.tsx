@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import GSNBrandMark from "../components/GSNBrandMark";
+import PictureFrameToolsControl from "../components/PictureFrameToolsControl";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import SystemPictureFrame from "../components/SystemPictureFrame";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -924,18 +925,6 @@ function stopDashboardPointerEvent(
   event?: React.SyntheticEvent<HTMLElement>
 ) {
   event?.stopPropagation();
-}
-
-function dashboardFrameTapGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onPointerUp" | "onMouseDown" | "onClick"
-> {
-  return {
-    onPointerDown: stopDashboardPointerEvent,
-    onPointerUp: stopDashboardPointerEvent,
-    onMouseDown: stopDashboardPointerEvent,
-    onClick: stopDashboardPointerEvent,
-  };
 }
 
 function safeStr(x: unknown): string {
@@ -6391,9 +6380,17 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              <div
-                {...dashboardFrameTapGuardProps()}
-                style={{
+              <PictureFrameToolsControl
+                open={passportPictureToolsOpen}
+                label={isPhone ? "Frame" : "Picture frame"}
+                ariaLabel="Passport picture frame tools"
+                onToggle={(event) =>
+                  runDashboardUiMutation(event, () => {
+                    setPictureToolsOpen(false);
+                    setPassportPictureToolsOpen((open) => !open);
+                  })
+                }
+                slotStyle={{
                   height: isPhone ? 34 : 36,
                   minHeight: isPhone ? 34 : 36,
                   maxHeight: isPhone ? 34 : 36,
@@ -6402,23 +6399,9 @@ export default function DashboardPage() {
                   maxWidth: "100%",
                   display: "block",
                   flex: "0 0 auto",
-                  position: "relative",
-                  zIndex: 24,
-                  overflow: "visible",
+                  zIndex: 240,
                 }}
-              >
-                <button
-                  type="button"
-                  aria-controls={avatarInputId}
-                  aria-expanded={passportPictureToolsOpen}
-                  onClick={(event) =>
-                    runDashboardUiMutation(event, () => {
-                      setPictureToolsOpen(false);
-                      setPassportPictureToolsOpen((open) => !open);
-                    })
-                  }
-                  {...dashboardButtonGuardProps()}
-                  style={{
+                buttonStyle={{
                     ...dashboardFillButton(subtleBtn(false)),
                     height: isPhone ? 34 : 36,
                     minHeight: isPhone ? 34 : 36,
@@ -6438,26 +6421,12 @@ export default function DashboardPage() {
                     transition: "none",
                     boxShadow:
                       "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
-                  }}
-                >
-                  {isPhone ? "Frame" : "Picture frame"}
-                </button>
-
-                <div
-                  {...dashboardFrameTapGuardProps()}
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 6px)",
-                    left: 0,
-                    right: 0,
-                    zIndex: 80,
-                    display: "grid",
+                }}
+                railGap={6}
+                railColumns="1fr"
+                railStyle={{
                     gap: 5,
-                    gridTemplateColumns: "1fr",
                     alignContent: "start",
-                    opacity: passportPictureToolsOpen ? 1 : 0,
-                    visibility: passportPictureToolsOpen ? "visible" : "hidden",
-                    pointerEvents: passportPictureToolsOpen ? "auto" : "none",
                     borderRadius: 14,
                     padding: 6,
                     background:
@@ -6465,13 +6434,12 @@ export default function DashboardPage() {
                     border: "1px solid rgba(11,99,209,0.12)",
                     boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
                     transition: "none",
-                  }}
-                >
-                  <button
-                    type="button"
-                    onClick={openAvatarPicker}
-                    {...dashboardButtonGuardProps()}
-                    style={{
+                }}
+                actions={[
+                  {
+                    label: "Upload",
+                    onClick: openAvatarPicker,
+                    style: {
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 34 : 36,
                       height: isPhone ? 34 : 36,
@@ -6481,15 +6449,12 @@ export default function DashboardPage() {
                       lineHeight: 1,
                       whiteSpace: "nowrap",
                       transition: "none",
-                    }}
-                  >
-                    Upload
-                  </button>
-                  <button
-                    type="button"
-                    onClick={openAvatarPicker}
-                    {...dashboardButtonGuardProps()}
-                    style={{
+                    },
+                  },
+                  {
+                    label: "Change",
+                    onClick: openAvatarPicker,
+                    style: {
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 34 : 36,
                       height: isPhone ? 34 : 36,
@@ -6499,22 +6464,13 @@ export default function DashboardPage() {
                       lineHeight: 1,
                       whiteSpace: "nowrap",
                       transition: "none",
-                    }}
-                  >
-                    Change
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      if (!avatarSrc) {
-                        consumeDashboardButtonEvent(event);
-                        return;
-                      }
-                      void removeAvatar(event);
-                    }}
-                    aria-disabled={!avatarSrc}
-                    {...dashboardButtonGuardProps()}
-                    style={{
+                    },
+                  },
+                  {
+                    label: "Remove",
+                    disabled: !avatarSrc,
+                    onClick: removeAvatar,
+                    style: {
                       ...dashboardFillButton(subtleBtn(!avatarSrc)),
                       minHeight: isPhone ? 34 : 36,
                       height: isPhone ? 34 : 36,
@@ -6524,12 +6480,10 @@ export default function DashboardPage() {
                       lineHeight: 1,
                       whiteSpace: "nowrap",
                       transition: "none",
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-              </div>
+                    },
+                  },
+                ]}
+              />
             </div>
           </div>
 
@@ -7064,9 +7018,17 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                <div
-                  {...dashboardFrameTapGuardProps()}
-                  style={{
+                <PictureFrameToolsControl
+                  open={pictureToolsOpen}
+                  label="Picture frame"
+                  ariaLabel="Dashboard picture frame tools"
+                  onToggle={(event) =>
+                    runDashboardUiMutation(event, () => {
+                      setPassportPictureToolsOpen(false);
+                      setPictureToolsOpen((open) => !open);
+                    })
+                  }
+                  slotStyle={{
                     marginTop: isPhone ? 7 : 9,
                     height: isPhone ? 44 : 42,
                     minHeight: isPhone ? 44 : 42,
@@ -7076,23 +7038,9 @@ export default function DashboardPage() {
                     maxWidth: "100%",
                     display: "block",
                     flex: "0 0 auto",
-                    position: "relative",
-                    zIndex: 24,
-                    overflow: "visible",
+                    zIndex: 240,
                   }}
-                >
-                  <button
-                    type="button"
-                    aria-controls={avatarInputId}
-                    aria-expanded={pictureToolsOpen}
-                    onClick={(event) =>
-                      runDashboardUiMutation(event, () => {
-                        setPassportPictureToolsOpen(false);
-                        setPictureToolsOpen((open) => !open);
-                      })
-                    }
-                    {...dashboardButtonGuardProps()}
-                    style={{
+                  buttonStyle={{
                       ...dashboardFillButton(subtleBtn(false)),
                       height: isPhone ? 44 : 42,
                       minHeight: isPhone ? 44 : 42,
@@ -7113,26 +7061,12 @@ export default function DashboardPage() {
                       transition: "none",
                       boxShadow:
                         "0 12px 22px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.92)",
-                    }}
-                  >
-                    Picture frame
-                  </button>
-
-                  <div
-                    {...dashboardFrameTapGuardProps()}
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      right: 0,
-                      top: "calc(100% + 8px)",
-                      zIndex: 80,
-                      display: "grid",
-                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  }}
+                  railGap={8}
+                  railColumns="repeat(3, minmax(0, 1fr))"
+                  railStyle={{
                       gap: 8,
                       alignItems: "stretch",
-                      opacity: pictureToolsOpen ? 1 : 0,
-                      visibility: pictureToolsOpen ? "visible" : "hidden",
-                      pointerEvents: pictureToolsOpen ? "auto" : "none",
                       borderRadius: 16,
                       padding: 8,
                       background:
@@ -7140,13 +7074,12 @@ export default function DashboardPage() {
                       border: "1px solid rgba(11,99,209,0.12)",
                       boxShadow: "0 18px 30px rgba(2,12,27,0.18)",
                       transition: "none",
-                    }}
-                  >
-                    <button
-                      type="button"
-                      onClick={openAvatarPicker}
-                      {...dashboardButtonGuardProps()}
-                      style={{
+                  }}
+                  actions={[
+                    {
+                      label: "Upload",
+                      onClick: openAvatarPicker,
+                      style: {
                         ...dashboardFillButton(subtleBtn(false)),
                         minHeight: isPhone ? 44 : 42,
                         height: isPhone ? 44 : 42,
@@ -7154,16 +7087,12 @@ export default function DashboardPage() {
                         lineHeight: 1,
                         whiteSpace: "nowrap",
                         transition: "none",
-                      }}
-                    >
-                      Upload
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={openAvatarPicker}
-                      {...dashboardButtonGuardProps()}
-                      style={{
+                      },
+                    },
+                    {
+                      label: "Change",
+                      onClick: openAvatarPicker,
+                      style: {
                         ...dashboardFillButton(subtleBtn(false)),
                         minHeight: isPhone ? 44 : 42,
                         height: isPhone ? 44 : 42,
@@ -7171,23 +7100,13 @@ export default function DashboardPage() {
                         lineHeight: 1,
                         whiteSpace: "nowrap",
                         transition: "none",
-                      }}
-                    >
-                      Change
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        if (!avatarSrc) {
-                          consumeDashboardButtonEvent(event);
-                          return;
-                        }
-                        void removeAvatar(event);
-                      }}
-                      aria-disabled={!avatarSrc}
-                      {...dashboardButtonGuardProps()}
-                      style={{
+                      },
+                    },
+                    {
+                      label: "Remove",
+                      disabled: !avatarSrc,
+                      onClick: removeAvatar,
+                      style: {
                         ...dashboardFillButton(subtleBtn(!avatarSrc)),
                         minHeight: isPhone ? 44 : 42,
                         height: isPhone ? 44 : 42,
@@ -7195,12 +7114,10 @@ export default function DashboardPage() {
                         lineHeight: 1,
                         whiteSpace: "nowrap",
                         transition: "none",
-                      }}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
+                      },
+                    },
+                  ]}
+                />
               </div>
 
               <input

@@ -105,15 +105,15 @@ const dashboardSource = readFileSync(dashboardPagePath, "utf8");
 const dashboardFrameChecks = [
   {
     label:
-      "Dashboard passport picture tools must be anchored from the fixed-height Frame button slot",
+      "Dashboard passport picture tools must use the shared system-level frame tools control",
     pattern:
-      /\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?aria-expanded=\{passportPictureToolsOpen\}[\s\S]*?\{isPhone \? "Frame" : "Picture frame"\}[\s\S]*?\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?top: "calc\(100% \+ 6px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"[\s\S]*?aria-disabled=\{!avatarSrc\}/,
+      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label=\{isPhone \? "Frame" : "Picture frame"\}[\s\S]*?railGap=\{6\}[\s\S]*?actions=\{\[[\s\S]*?label: "Upload"[\s\S]*?label: "Change"[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc/,
   },
   {
     label:
-      "Dashboard main picture tools must be anchored from the fixed-height Picture frame button slot",
+      "Dashboard main picture tools must use the shared system-level frame tools control",
     pattern:
-      /\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?aria-expanded=\{pictureToolsOpen\}[\s\S]*?Picture frame[\s\S]*?\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?top: "calc\(100% \+ 8px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"[\s\S]*?aria-disabled=\{!avatarSrc\}/,
+      /<PictureFrameToolsControl[\s\S]*?open=\{pictureToolsOpen\}[\s\S]*?label="Picture frame"[\s\S]*?railGap=\{8\}[\s\S]*?railColumns="repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?actions=\{\[[\s\S]*?label: "Upload"[\s\S]*?label: "Change"[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc/,
   },
 ];
 
@@ -124,6 +124,42 @@ for (const check of dashboardFrameChecks) {
       line: 1,
       label: check.label,
       text: "Expected fixed-slot anchored picture-frame tool rail was not found.",
+    });
+  }
+}
+
+const pictureFrameControlPath = join(
+  sourceRoot,
+  "components",
+  "PictureFrameToolsControl.tsx"
+);
+const pictureFrameControlSource = readFileSync(pictureFrameControlPath, "utf8");
+const pictureFrameSystemChecks = [
+  {
+    label:
+      "Picture frame tools must render through a portal so card overflow cannot hide them",
+    pattern: /createPortal\(/,
+  },
+  {
+    label:
+      "Picture frame tools must use fixed overlay placement instead of page-local absolute rails",
+    pattern: /position: "fixed"/,
+  },
+  {
+    label:
+      "Picture frame tools must capture rail taps so they cannot fall through to route controls",
+    pattern:
+      /onPointerDown=\{stopFrameToolEvent\}[\s\S]*?onPointerUp=\{stopFrameToolEvent\}[\s\S]*?onClick=\{stopFrameToolEvent\}/,
+  },
+];
+
+for (const check of pictureFrameSystemChecks) {
+  if (!check.pattern.test(pictureFrameControlSource)) {
+    findings.push({
+      file: relative(frontendRoot, pictureFrameControlPath),
+      line: 1,
+      label: check.label,
+      text: "Expected shared picture-frame tool behavior was not found.",
     });
   }
 }

@@ -20790,3 +20790,32 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox.
 - Remaining risk:
   - If the top-right app-shell `Tools` button is the control being described as "picture frame gears/tool", that is a different component in `frontend/src/layout/AppLayout.tsx` and should be traced separately. This pass fixed the actual Dashboard picture-frame Upload/Change/Remove controls.
+
+### System-level picture-frame tools control (2026-05-09)
+
+- Owner objected that the picture-frame tools had "evaporated" again and correctly called out that the prior Dashboard fixes were still too page-local.
+- Truth recorded:
+  - the earlier fixes tightened Dashboard markup but still left the picture-frame rail dependent on Dashboard/card structure.
+  - if an ancestor card uses clipping/overflow, a page-local absolute rail can disappear even when the button slot itself is stable.
+- Added `frontend/src/components/PictureFrameToolsControl.tsx`:
+  - reusable system-level control for picture-frame tools.
+  - owns the fixed-height trigger slot.
+  - renders the tool rail through a React portal to `document.body`, so parent card overflow cannot hide it.
+  - positions the rail with fixed viewport coordinates under the trigger.
+  - captures rail and button taps so they cannot fall through to route buttons such as Finance.
+  - uses `aria-disabled` actions instead of native disabled fall-through behavior.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - replaced both hand-built Dashboard picture-frame rails with `PictureFrameToolsControl`.
+  - the small passport `Frame` and the large dashboard `Picture frame` now share the same system control while keeping separate open states.
+  - Market Wisdom was not touched.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - Dashboard frame checks now require use of the shared `PictureFrameToolsControl`.
+  - audit verifies the shared component uses `createPortal`, fixed overlay placement, and tap capture.
+- Verification:
+  - `npm exec -- eslint src/components/PictureFrameToolsControl.tsx src/pages/DashboardPage.tsx` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check` passed, with only Windows line-ending warnings.
+  - `npm run build` passed outside the sandbox.
+- Remaining risk:
+  - Needs live phone validation after redeploy/hard refresh: Dashboard -> `Picture frame` -> confirm Upload/Change/Remove appears and remains visible above the page, without landing on Finance.
