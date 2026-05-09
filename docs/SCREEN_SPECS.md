@@ -77,6 +77,7 @@ Frozen:
 
 Rules:
 - Picture frame controls must tap open and tap closed.
+- The picture frame control button must sit under the picture, not over the picture.
 - Opening/closing picture frame tools must not add/remove layout height; the tool rails must remain mounted with fixed space while visibility changes.
 - Remove must clear the saved account profile picture, not only hide it locally.
 - Dashboard must stay a reflector / command centre, not a content dump.

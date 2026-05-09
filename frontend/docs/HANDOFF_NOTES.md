@@ -63,6 +63,15 @@
 - Updated root `docs/SCREEN_SPECS.md` to freeze the correct behavior: tap open/close is allowed, but layout collapse is not.
 - Dashboard Market Wisdom was not changed.
 
+## 2026-05-09 Dashboard Picture Frame Button Moved Below Photo
+
+- Owner clarified that the picture frame button should not sit on top of the photo.
+- Updated `src/pages/DashboardPage.tsx` so both dashboard photo areas place the `Frame` / `Picture frame` tap control under the picture.
+- The tap-to-open/tap-to-close behavior remains.
+- The tool rails remain mounted with fixed height so opening/closing changes visibility, not surrounding layout height.
+- Updated root `docs/SCREEN_SPECS.md` to freeze that the control belongs under the picture.
+- Dashboard Market Wisdom was not changed.
+
 ## 2026-05-09 Public Shop Whole-Page Share Correction
 
 - Owner clarified from local 5174 testing that every public-shop share/copy should open the whole public shop page.

@@ -6372,47 +6372,30 @@ export default function DashboardPage() {
                     {profileInitials}
                   </span>
                 )}
-                <button
-                  type="button"
-                  aria-controls={avatarInputId}
-                  aria-expanded={pictureToolsOpen}
-                  onClick={(event) =>
-                    runDashboardUiMutation(event, () =>
-                      setPictureToolsOpen((open) => !open)
-                    )
-                  }
-                  {...dashboardButtonGuardProps()}
-                  style={{
-                    position: "absolute",
-                    left: 6,
-                    right: 6,
-                    bottom: 6,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 4,
-                    minHeight: isPhone ? 30 : 34,
-                    padding: isPhone ? "6px 7px" : "7px 9px",
-                    borderRadius: 999,
-                    border: "1px solid rgba(255,255,255,0.84)",
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.94) 100%)",
-                    color: DASHBOARD_BRAND.accentDeep,
-                    boxShadow:
-                      "0 10px 18px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
-                    fontWeight: 900,
-                    fontSize: isPhone ? 10 : 11,
-                    lineHeight: 1,
-                    cursor: "pointer",
-                    touchAction: "manipulation",
-                    whiteSpace: "nowrap",
-                    WebkitTapHighlightColor: "transparent",
-                    userSelect: "none",
-                  }}
-                >
-                  <span>{isPhone ? "Frame" : "Picture frame"}</span>
-                </button>
               </div>
+
+              <button
+                type="button"
+                aria-controls={avatarInputId}
+                aria-expanded={pictureToolsOpen}
+                onClick={(event) =>
+                  runDashboardUiMutation(event, () =>
+                    setPictureToolsOpen((open) => !open)
+                  )
+                }
+                {...dashboardButtonGuardProps()}
+                style={{
+                  ...dashboardFillButton(subtleBtn(false)),
+                  minHeight: isPhone ? 34 : 36,
+                  padding: isPhone ? "7px 8px" : "8px 10px",
+                  borderRadius: 999,
+                  fontSize: isPhone ? 10.5 : 11.5,
+                  boxShadow:
+                    "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
+                }}
+              >
+                {isPhone ? "Frame" : "Picture frame"}
+              </button>
 
               <div
                 style={{
@@ -6994,56 +6977,31 @@ export default function DashboardPage() {
                       {profileInitials}
                     </div>
                   )}
-                  <button
-                    type="button"
-                    aria-controls={avatarInputId}
-                    aria-expanded={pictureToolsOpen}
-                    onClick={(event) =>
-                      runDashboardUiMutation(event, () =>
-                        setPictureToolsOpen((open) => !open)
-                      )
-                    }
-                    {...dashboardButtonGuardProps()}
-                    style={{
-                      position: "absolute",
-                      right: isPhone ? 10 : 12,
-                      bottom: isPhone ? 10 : 12,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      minHeight: isPhone ? 46 : 44,
-                      minWidth: isPhone ? 128 : 148,
-                      maxWidth: "calc(100% - 20px)",
-                      padding: isPhone ? "11px 16px" : "10px 17px",
-                      borderRadius: 999,
-                      border: "1px solid rgba(255,255,255,0.82)",
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,247,255,0.94) 54%, rgba(220,232,246,0.94) 100%)",
-                      color: DASHBOARD_BRAND.accentDeep,
-                      boxShadow:
-                        "0 16px 28px rgba(2,12,27,0.28), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -8px 14px rgba(120,142,170,0.10)",
-                      fontWeight: 900,
-                      fontSize: isPhone ? 12.3 : 12.7,
-                      lineHeight: 1,
-                      letterSpacing: 0.08,
-                      cursor: "pointer",
-                      touchAction: "manipulation",
-                      whiteSpace: "nowrap",
-                      WebkitTapHighlightColor: "transparent",
-                      WebkitAppearance: "none",
-                      appearance: "none",
-                      userSelect: "none",
-                      isolation: "isolate",
-                      zIndex: 4,
-                      pointerEvents: "auto",
-                      transform: "none",
-                      outlineOffset: 4,
-                      gap: 6,
-                    }}
-                  >
-                    <span>Picture frame</span>
-                  </button>
                 </div>
+
+                <button
+                  type="button"
+                  aria-controls={avatarInputId}
+                  aria-expanded={pictureToolsOpen}
+                  onClick={(event) =>
+                    runDashboardUiMutation(event, () =>
+                      setPictureToolsOpen((open) => !open)
+                    )
+                  }
+                  {...dashboardButtonGuardProps()}
+                  style={{
+                    ...dashboardFillButton(subtleBtn(false)),
+                    marginTop: isPhone ? 7 : 9,
+                    minHeight: isPhone ? 44 : 42,
+                    borderRadius: 999,
+                    fontSize: isPhone ? 12 : 12.5,
+                    fontWeight: 900,
+                    boxShadow:
+                      "0 12px 22px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.92)",
+                  }}
+                >
+                  Picture frame
+                </button>
               </div>
 
               <input
