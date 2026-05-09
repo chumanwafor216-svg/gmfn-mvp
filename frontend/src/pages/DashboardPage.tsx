@@ -6255,7 +6255,9 @@ export default function DashboardPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isPhone ? "minmax(0, 1fr) 78px" : "minmax(0, 1fr) 180px",
+              gridTemplateColumns: isPhone
+                ? "minmax(0, 1fr) minmax(104px, 118px)"
+                : "minmax(0, 1fr) 180px",
               gap: isPhone ? 10 : 18,
               alignItems: "center",
             }}
@@ -6325,44 +6327,144 @@ export default function DashboardPage() {
 
             <div
               style={{
-                width: "100%",
-                aspectRatio: "1 / 1",
-                borderRadius: isPhone ? 18 : 24,
-                overflow: "hidden",
-                border: "1px solid rgba(255,255,255,0.92)",
-                background:
-                  "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(218,232,248,0.96) 100%)",
-                boxShadow:
-                  "0 14px 28px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.92)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
                 alignSelf: "center",
+                display: "grid",
+                gap: isPhone ? 6 : 8,
               }}
             >
-              {avatarSrc ? (
-                <img
-                  src={avatarSrc}
-                  alt="Profile"
+              <div
+                style={{
+                  width: "100%",
+                  aspectRatio: "1 / 1",
+                  borderRadius: isPhone ? 18 : 24,
+                  overflow: "hidden",
+                  border: "1px solid rgba(255,255,255,0.92)",
+                  background:
+                    "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(218,232,248,0.96) 100%)",
+                  boxShadow:
+                    "0 14px 28px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.92)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                }}
+              >
+                {avatarSrc ? (
+                  <img
+                    src={avatarSrc}
+                    alt="Profile"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      objectPosition: "center 18%",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  <span
+                    style={{
+                      color: DASHBOARD_BRAND.accentDeep,
+                      fontSize: isPhone ? 24 : 42,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {profileInitials}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  aria-controls={avatarInputId}
+                  aria-expanded={pictureOptionsOpen}
+                  onClick={(event) =>
+                    runDashboardUiMutation(event, () =>
+                      setPictureOptionsOpen((prev) => !prev)
+                    )
+                  }
+                  {...dashboardButtonGuardProps()}
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    objectPosition: "center 18%",
-                    display: "block",
-                  }}
-                />
-              ) : (
-                <span
-                  style={{
+                    position: "absolute",
+                    left: 6,
+                    right: 6,
+                    bottom: 6,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                    minHeight: isPhone ? 30 : 34,
+                    padding: isPhone ? "6px 7px" : "7px 9px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,255,255,0.84)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.94) 100%)",
                     color: DASHBOARD_BRAND.accentDeep,
-                    fontSize: isPhone ? 24 : 42,
-                    fontWeight: 1000,
+                    boxShadow:
+                      "0 10px 18px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    fontWeight: 900,
+                    fontSize: isPhone ? 10 : 11,
+                    lineHeight: 1,
+                    cursor: "pointer",
+                    touchAction: "manipulation",
+                    whiteSpace: "nowrap",
+                    WebkitTapHighlightColor: "transparent",
+                    userSelect: "none",
                   }}
                 >
-                  {profileInitials}
-                </span>
-              )}
+                  <span>{isPhone ? "Frame" : "Picture frame"}</span>
+                  <span aria-hidden="true">{pictureOptionsOpen ? "-" : "+"}</span>
+                </button>
+              </div>
+
+              {pictureOptionsOpen ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 5,
+                    gridTemplateColumns: "1fr",
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={openAvatarPicker}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false)),
+                      minHeight: isPhone ? 34 : 36,
+                      padding: isPhone ? "7px 8px" : "8px 10px",
+                      fontSize: isPhone ? 10.5 : 11.5,
+                    }}
+                  >
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openAvatarPicker}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false)),
+                      minHeight: isPhone ? 34 : 36,
+                      padding: isPhone ? "7px 8px" : "8px 10px",
+                      fontSize: isPhone ? 10.5 : 11.5,
+                    }}
+                  >
+                    Change
+                  </button>
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    disabled={!avatarSrc}
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(!avatarSrc)),
+                      minHeight: isPhone ? 34 : 36,
+                      padding: isPhone ? "7px 8px" : "8px 10px",
+                      fontSize: isPhone ? 10.5 : 11.5,
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : null}
             </div>
           </div>
 

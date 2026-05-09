@@ -27,9 +27,17 @@
   - visible `Picture frame` toggle on the photo frame
   - tools visible by default: `Upload`, `Change`, `Remove`
   - tools use the dashboard stable tap guards
+- Follow-up correction: the top Identity Passport avatar frame also carries the attached `Frame` / picture tools, because that is the first photo visible on phone.
 - Added `removeMyProfileImage()` in `src/lib/api.ts`; backend `DELETE /auth/me/profile-image` clears the saved account profile picture so `Remove` is real, not local-only.
 - Updated root `docs/SCREEN_SPECS.md` and `docs/FREEZE_POLICY.md` to freeze the restored picture frame tools.
 - Frozen Dashboard Market Wisdom was not changed.
+
+## 2026-05-09 Dashboard Top Photo Tools Attached
+
+- Owner confirmed the photo still did not have tools attached.
+- Root cause: Dashboard renders the avatar twice; the first visible Identity Passport photo still had no tools after the lower picture frame was restored.
+- Updated `src/pages/DashboardPage.tsx` so the top Identity Passport photo has an attached `Frame` / `Picture frame` toggle and visible `Upload`, `Change`, `Remove` tools.
+- The same upload/remove handlers are used; Dashboard Market Wisdom was not changed.
 
 ## 2026-05-09 Public Shop Whole-Page Share Correction
 
