@@ -81,6 +81,7 @@ Rules:
 - Opening/closing picture frame tools must not add/remove layout height; the tool rail opens as an overlay under the button and must not leave a blank reserved gap when closed.
 - The dashboard passport frame and large picture frame must use separate open states; tapping one frame button must not open or resize the other frame rail.
 - Frame buttons must sit in fixed-height slots with no transition-driven movement.
+- Frame button slots and picture-tool buttons must opt out of shrink, wrapping, and transition movement.
 - Picture tool rails must be anchored to their own frame button wrapper, not to the whole card.
 - Remove must clear the saved account profile picture, not only hide it locally.
 - Dashboard must stay a reflector / command centre, not a content dump.

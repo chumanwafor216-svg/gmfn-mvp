@@ -72,6 +72,7 @@
 - The tool rail now opens as an absolute overlay under the button; closed state does not reserve visible layout height.
 - Follow-up: the frame button itself was still jumpy. The top passport frame and lower picture frame now use separate open states, and both buttons sit in fixed-height slots with transitions disabled.
 - Follow-up: the lower Upload/Change/Remove rail was anchored to the outer card; it now lives inside the same picture-frame wrapper as the button so it opens directly under `Picture frame`.
+- Tightened the frame button slots again: the slots and tool buttons now opt out of flex shrink, wrapping, and transition movement.
 - Updated root `docs/SCREEN_SPECS.md` to freeze that the control belongs under the picture.
 - Dashboard Market Wisdom was not changed.
 

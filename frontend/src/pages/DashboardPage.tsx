@@ -6385,6 +6385,12 @@ export default function DashboardPage() {
                   minHeight: isPhone ? 34 : 36,
                   maxHeight: isPhone ? 34 : 36,
                   width: "100%",
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  display: "block",
+                  flex: "0 0 auto",
+                  position: "relative",
+                  zIndex: 24,
                   overflow: "visible",
                 }}
               >
@@ -6405,6 +6411,12 @@ export default function DashboardPage() {
                     minHeight: isPhone ? 34 : 36,
                     maxHeight: isPhone ? 34 : 36,
                     padding: isPhone ? "0 8px" : "0 10px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxSizing: "border-box",
+                    flex: "0 0 auto",
+                    verticalAlign: "top",
                     borderRadius: 999,
                     fontSize: isPhone ? 10.5 : 11.5,
                     lineHeight: 1,
@@ -6448,8 +6460,13 @@ export default function DashboardPage() {
                   style={{
                     ...dashboardFillButton(subtleBtn(false)),
                     minHeight: isPhone ? 34 : 36,
+                    height: isPhone ? 34 : 36,
+                    maxHeight: isPhone ? 34 : 36,
                     padding: isPhone ? "7px 8px" : "8px 10px",
                     fontSize: isPhone ? 10.5 : 11.5,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                    transition: "none",
                   }}
                 >
                   Upload
@@ -6461,8 +6478,13 @@ export default function DashboardPage() {
                   style={{
                     ...dashboardFillButton(subtleBtn(false)),
                     minHeight: isPhone ? 34 : 36,
+                    height: isPhone ? 34 : 36,
+                    maxHeight: isPhone ? 34 : 36,
                     padding: isPhone ? "7px 8px" : "8px 10px",
                     fontSize: isPhone ? 10.5 : 11.5,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                    transition: "none",
                   }}
                 >
                   Change
@@ -6475,8 +6497,13 @@ export default function DashboardPage() {
                   style={{
                     ...dashboardFillButton(subtleBtn(!avatarSrc)),
                     minHeight: isPhone ? 34 : 36,
+                    height: isPhone ? 34 : 36,
+                    maxHeight: isPhone ? 34 : 36,
                     padding: isPhone ? "7px 8px" : "8px 10px",
                     fontSize: isPhone ? 10.5 : 11.5,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                    transition: "none",
                   }}
                 >
                   Remove
@@ -7023,6 +7050,12 @@ export default function DashboardPage() {
                     minHeight: isPhone ? 44 : 42,
                     maxHeight: isPhone ? 44 : 42,
                     width: "100%",
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    display: "block",
+                    flex: "0 0 auto",
+                    position: "relative",
+                    zIndex: 24,
                     overflow: "visible",
                   }}
                 >
@@ -7043,6 +7076,12 @@ export default function DashboardPage() {
                       minHeight: isPhone ? 44 : 42,
                       maxHeight: isPhone ? 44 : 42,
                       padding: isPhone ? "0 12px" : "0 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      boxSizing: "border-box",
+                      flex: "0 0 auto",
+                      verticalAlign: "top",
                       borderRadius: 999,
                       fontSize: isPhone ? 12 : 12.5,
                       fontWeight: 900,
@@ -7087,6 +7126,11 @@ export default function DashboardPage() {
                     style={{
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 44 : 42,
+                      height: isPhone ? 44 : 42,
+                      maxHeight: isPhone ? 44 : 42,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
                     }}
                   >
                     Upload
@@ -7099,6 +7143,11 @@ export default function DashboardPage() {
                     style={{
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 44 : 42,
+                      height: isPhone ? 44 : 42,
+                      maxHeight: isPhone ? 44 : 42,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
                     }}
                   >
                     Change
@@ -7112,6 +7161,11 @@ export default function DashboardPage() {
                     style={{
                       ...dashboardFillButton(subtleBtn(!avatarSrc)),
                       minHeight: isPhone ? 44 : 42,
+                      height: isPhone ? 44 : 42,
+                      maxHeight: isPhone ? 44 : 42,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
                     }}
                   >
                     Remove
