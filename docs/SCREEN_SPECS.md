@@ -11,7 +11,7 @@ Must show:
 - Global Support Network
 - Trust made visible for stronger communities.
 - Trust Infrastructure Protocol card
-- Open Welcome button
+- Continue button
 - Read the full guide first button
 - Secure / Verified / Global badges
 
@@ -24,7 +24,7 @@ Must not show:
 Primary action:
 
 ```text
-Open Welcome
+Continue
 ```
 
 ## WelcomeGuidePage

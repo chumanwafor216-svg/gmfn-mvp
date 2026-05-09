@@ -15,6 +15,15 @@
 - Devil's-advocate truth:
   - this deliberately removes the public block deep-link behavior from the current UX. Old inbound URLs that already contain `product_id` may still be understood by the page/backend for compatibility, but newly generated public shares/copies should now point to the whole shop page.
 
+### Cover primary CTA restored to Continue (2026-05-09)
+
+- Owner explicitly rejected the visible `/cover` primary CTA text `Open Welcome`.
+- Updated `frontend/src/pages/CoverPage.tsx` so the main button reads `Continue` again while keeping the same route behavior and busy state (`Continuing...`).
+- Updated `docs/SCREEN_SPECS.md` so CoverPage now documents `Continue` as the primary action. This prevents future cleanup passes from reintroducing `Open Welcome`.
+- Scope:
+  - copy-only frontend/spec change
+  - no route, auth, backend, or layout behavior changed
+
 ### Two-line-auditor public shop 0/12 repair (2026-05-09)
 
 - Owner screenshot still showed `0/12` in Shop Diaries after link fixes, so two line auditors were requested and used:

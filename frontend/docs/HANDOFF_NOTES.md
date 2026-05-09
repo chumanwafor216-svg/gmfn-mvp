@@ -1,5 +1,13 @@
 # Handoff Notes
 
+## 2026-05-09 Cover Primary CTA Restored to Continue
+
+- Owner explicitly rejected the visible `/cover` primary CTA text `Open Welcome`.
+- Updated `src/pages/CoverPage.tsx` so the main button reads `Continue` again.
+- Busy state remains `Continuing...`.
+- Route behavior did not change.
+- Updated the root `docs/SCREEN_SPECS.md` to document `Continue` as the CoverPage primary action so future passes do not reintroduce `Open Welcome`.
+
 ## 2026-05-09 Public Shop Whole-Page Share Correction
 
 - Owner clarified from local 5174 testing that every public-shop share/copy should open the whole public shop page.

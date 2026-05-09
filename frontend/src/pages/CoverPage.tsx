@@ -1547,7 +1547,7 @@ export default function CoverPage() {
 
             >
 
-              {busy ? "Continuing..." : "Open Welcome"}
+              {busy ? "Continuing..." : "Continue"}
 
             </button>
 
