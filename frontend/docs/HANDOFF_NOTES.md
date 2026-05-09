@@ -1,5 +1,26 @@
 # Handoff Notes
 
+## 2026-05-09 Public Shop Link Landing Contract
+
+- Owner clarified the intended public shop-link behavior:
+  - a general public shop link is for someone outside the community to view that one shop's public 12-block face.
+  - it should land on the actual `Shop Diaries` / 12-block section, not on the upper billboard or private Vault explanation.
+  - a block-specific share link may still open one particular block.
+- Confirmed logic:
+  - backend public shop endpoint returns the shop face plus public `community_visible` products.
+  - frontend controls landing position through URL hashes/anchors.
+- Updated frontend public-link construction:
+  - added `PUBLIC_SHOP_DIARIES_ANCHOR` and `publicShopDiariesPath()` in `src/lib/publicLinks.ts`.
+  - generic public shop links now use `#shop-diaries` and strip block-specific query values such as `product_id`, `product`, and `block`.
+  - `src/pages/ShopGalleryPage.tsx` gives the 12-block section the `shop-diaries` anchor and allows that anchor to scroll even when there are zero public blocks.
+  - generic shop copy/share/request/repost flows now use the 12-block landing link.
+  - Marketplace Records & Links public shop face now uses the 12-block landing link.
+  - Community Home shop panel and Shop Assets public shop copy links now use the 12-block landing link.
+  - Shop Assets product deep links remain product-specific and do not reuse the generic `#shop-diaries` hash.
+- Remaining truth:
+  - this changes where public shop links land; it does not expose private Vault blocks or change backend visibility rules.
+  - if a shop truly has zero public products, the link now still lands at the Shop Diaries section and shows the zero-state there.
+
 ## 2026-05-09 Public Shop Block Link Target Fix
 
 - Owner showed a public shop block link landing on the shop page with `0/12` visible blocks instead of opening the shared block.

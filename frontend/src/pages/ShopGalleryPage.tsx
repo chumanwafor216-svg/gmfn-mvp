@@ -6,7 +6,11 @@ import {
   getPublicMarketplaceShopByGmfnId,
   safeCopy,
 } from "../lib/api";
-import { publicFrontendUrl } from "../lib/publicLinks";
+import {
+  PUBLIC_SHOP_DIARIES_ANCHOR,
+  publicFrontendUrl,
+  publicShopDiariesPath,
+} from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
@@ -968,7 +972,6 @@ export default function ShopGalleryPage() {
   useEffect(() => {
     if (typeof document === "undefined") return;
     if (!location.hash) return;
-    if (products.length === 0) return;
 
     const id = location.hash.replace(/^#/, "");
     const matchedProduct =
@@ -1136,7 +1139,9 @@ export default function ShopGalleryPage() {
   }, [miniSpotlight, effectiveShop]);
 
   const absoluteShopLink = useMemo(() => {
-    return publicFrontendUrl(`${location.pathname}${location.search || ""}`);
+    return publicFrontendUrl(
+      publicShopDiariesPath(`${location.pathname}${location.search || ""}`)
+    );
   }, [location.pathname, location.search]);
 
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
@@ -1873,6 +1878,7 @@ export default function ShopGalleryPage() {
         </div>
 
         <section
+          id={PUBLIC_SHOP_DIARIES_ANCHOR}
           className="public-shop-section"
           style={{
             borderRadius: isCompact ? 24 : 28,
@@ -1882,6 +1888,7 @@ export default function ShopGalleryPage() {
               "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(239,247,253,0.96) 100%)",
             boxShadow:
               "0 24px 52px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+            scrollMarginTop: 12,
           }}
         >
           <div

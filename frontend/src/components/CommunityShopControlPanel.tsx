@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicFrontendUrl } from "../lib/publicLinks";
+import { publicFrontendUrl, publicShopDiariesPath } from "../lib/publicLinks";
 import {
   actionTapGuardProps,
   brandStableTapTarget,
@@ -588,7 +588,9 @@ export default function CommunityShopControlPanel({
   const publicShopTo = useMemo(() => {
     const gmfnId = safeStr(shop?.gmfnId);
     return gmfnId
-      ? withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, selectedClanId)
+      ? publicShopDiariesPath(
+          withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, selectedClanId)
+        )
       : "";
   }, [selectedClanId, shop]);
 

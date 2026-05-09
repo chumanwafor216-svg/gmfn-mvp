@@ -1,5 +1,6 @@
 const DEFAULT_PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com";
 const DEFAULT_PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com";
+export const PUBLIC_SHOP_DIARIES_ANCHOR = "shop-diaries";
 
 function cleanText(value: unknown): string {
   return String(value ?? "").trim();
@@ -132,6 +133,36 @@ export function publicFrontendUrl(pathOrUrl: string): string {
 
   const path = raw.startsWith("/") ? raw : `/${raw.replace(/^\/+/, "")}`;
   return `${publicOrigin}${path}`;
+}
+
+export function publicShopDiariesPath(pathOrUrl: string): string {
+  const raw = cleanText(pathOrUrl);
+  if (!raw) return "";
+
+  try {
+    const isAbsolute = /^https?:\/\//i.test(raw);
+    const url = new URL(
+      isAbsolute ? raw : raw.startsWith("/") ? raw : `/${raw.replace(/^\/+/, "")}`,
+      "https://public-shop.local"
+    );
+
+    url.searchParams.delete("product_id");
+    url.searchParams.delete("product");
+    url.searchParams.delete("block");
+    url.hash = PUBLIC_SHOP_DIARIES_ANCHOR;
+
+    if (isAbsolute) return url.toString();
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    const [withoutHash] = raw.split("#");
+    const [path, search = ""] = withoutHash.split("?");
+    const params = new URLSearchParams(search);
+    params.delete("product_id");
+    params.delete("product");
+    params.delete("block");
+    const query = params.toString();
+    return `${path || "/"}${query ? `?${query}` : ""}#${PUBLIC_SHOP_DIARIES_ANCHOR}`;
+  }
 }
 
 export function publicApiUrl(pathOrUrl: string): string {

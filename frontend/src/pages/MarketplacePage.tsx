@@ -4,7 +4,7 @@ import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicFrontendUrl } from "../lib/publicLinks";
+import { publicFrontendUrl, publicShopDiariesPath } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import {
@@ -1878,7 +1878,9 @@ export default function MarketplacePage() {
   const publicShopViewLink = useMemo(() => {
     if (!currentGmfnId || !currentUserVisibleShop) return "";
     return publicFrontendUrl(
-      withClanQuery(`/shop/${encodeURIComponent(currentGmfnId)}`, activeCommunityId)
+      publicShopDiariesPath(
+        withClanQuery(`/shop/${encodeURIComponent(currentGmfnId)}`, activeCommunityId)
+      )
     );
   }, [currentGmfnId, currentUserVisibleShop, activeCommunityId]);
 
