@@ -1,3 +1,22 @@
+### Marketplace mobile link/button root-cause continuation (2026-05-09)
+
+- Owner reported that the latest deployed/local pass was only a minor improvement: Marketplace buttons still felt jumpy and public/join links could still land wrong.
+- Line-audit finding:
+  - the Marketplace join-link builder itself is now canonical, but the shared mobile shell still allowed `Public Shop` to fall back to `/app/shop-control` before the member GSN ID was loaded.
+  - `Refresh Join Link` also refreshed and immediately attempted clipboard copy, which is risky on phone because the shared fallback copy path focuses a hidden textarea and can make mobile Chrome re-anchor the page.
+- System-level corrections:
+  - `frontend/src/layout/AppLayout.tsx` now disables global/mobile `Public Shop` navigation until a real member GSN ID exists instead of sending the user to Shop Control as a loading fallback.
+  - `frontend/src/pages/MarketplacePage.tsx` now makes `Refresh Join Link` only refresh the link and show it. Copying is a separate intentional tap on `Copy Join Link` or `Copy Invite Message`.
+  - `frontend/src/lib/api.ts` hardens `safeCopy()` legacy fallback by restoring scroll immediately and on the next frame, preserving selection, avoiding mobile keyboard/zoom cues, and restoring the active element with `preventScroll`.
+  - `frontend/tools/audit-link-contracts.mjs` now fails if Public Shop navigation regresses to a Shop Control fallback.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now fails if Refresh Join Link starts auto-copying again or if the shared copy fallback loses its anti-jump protections.
+- Verification so far:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - targeted ESLint over the changed frontend files/tools passed.
+- Devil's-advocate truth:
+  - this addresses two system-level tap/link causes that page-level button fixes could not solve. It still needs a full build and phone retest; if a wrong landing remains after this, the next suspect is a live overlay/nav hit-box or stale deployed bundle, not the Join-link URL contract itself.
+
 ### Public shop share/copy contract tightening (2026-05-09)
 
 - Owner correction from local 5174 review:

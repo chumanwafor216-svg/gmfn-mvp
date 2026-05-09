@@ -143,6 +143,12 @@ const marketplaceActionSystemChecks = [
     pattern:
       /const guarantorRequestsBlocked =[\s\S]*?aria-disabled=\{guarantorRequestsBlocked\}[\s\S]*?actionBtn\([\s\S]*?guarantorRequestsBlocked/,
   },
+  {
+    label:
+      "Refreshing a Marketplace join link must not auto-copy on mobile; copy is a separate tap",
+    pattern:
+      /async function handleCreateInviteLink\([\s\S]*?setInviteLink\(nextInviteLink\);(?![\s\S]{0,260}safeCopy\(nextInviteLink\))[\s\S]*?Copy it from the link shown here\./,
+  },
 ];
 
 for (const check of marketplaceActionSystemChecks) {
@@ -208,6 +214,34 @@ const pictureFrameSystemChecks = [
       /onPointerDown=\{stopFrameToolEvent\}[\s\S]*?onPointerUp=\{stopFrameToolEvent\}[\s\S]*?onClick=\{stopFrameToolEvent\}/,
   },
 ];
+
+const apiPath = join(sourceRoot, "lib", "api.ts");
+const apiSource = readFileSync(apiPath, "utf8");
+const copySystemChecks = [
+  {
+    label:
+      "Legacy clipboard fallback must restore scroll immediately and on the next frame",
+    pattern:
+      /const restoreScroll = \(\) => win\?\.scrollTo\(scrollX, scrollY\);[\s\S]*?ta\.focus\(\{ preventScroll: true \}\);[\s\S]*?restoreScroll\(\);[\s\S]*?win\?\.requestAnimationFrame\(restoreScroll\);/,
+  },
+  {
+    label:
+      "Legacy clipboard fallback must avoid mobile keyboard/zoom focus movement",
+    pattern:
+      /ta\.setAttribute\("inputmode", "none"\);[\s\S]*?ta\.style\.fontSize = "16px";[\s\S]*?ta\.style\.caretColor = "transparent";/,
+  },
+];
+
+for (const check of copySystemChecks) {
+  if (!check.pattern.test(apiSource)) {
+    findings.push({
+      file: relative(frontendRoot, apiPath),
+      line: 1,
+      label: check.label,
+      text: "Expected shared clipboard anti-jump behavior was not found.",
+    });
+  }
+}
 
 for (const check of pictureFrameSystemChecks) {
   if (!check.pattern.test(pictureFrameControlSource)) {

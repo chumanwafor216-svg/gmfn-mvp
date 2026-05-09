@@ -2614,27 +2614,39 @@ function tryLegacyCopy(text: string): boolean {
     const win = document.defaultView;
     const scrollX = win?.scrollX ?? 0;
     const scrollY = win?.scrollY ?? 0;
+    const restoreScroll = () => win?.scrollTo(scrollX, scrollY);
     const activeElement =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
+    const selection = document.getSelection();
+    const selectedRanges =
+      selection && selection.rangeCount > 0
+        ? Array.from({ length: selection.rangeCount }, (_unused, index) =>
+            selection.getRangeAt(index).cloneRange()
+          )
+        : [];
 
     const ta = document.createElement("textarea");
     ta.value = text;
     ta.readOnly = true;
     ta.setAttribute("readonly", "true");
     ta.setAttribute("aria-hidden", "true");
+    ta.setAttribute("inputmode", "none");
     ta.tabIndex = -1;
     ta.style.position = "fixed";
-    ta.style.left = "0";
-    ta.style.top = "0";
+    ta.style.left = "1px";
+    ta.style.top = "1px";
     ta.style.width = "1px";
     ta.style.height = "1px";
     ta.style.opacity = "0";
     ta.style.pointerEvents = "none";
     ta.style.zIndex = "-1";
+    ta.style.fontSize = "16px";
+    ta.style.caretColor = "transparent";
     document.body.appendChild(ta);
     ta.focus({ preventScroll: true });
+    restoreScroll();
     ta.select();
     ta.setSelectionRange(0, ta.value.length);
 
@@ -2646,7 +2658,12 @@ function tryLegacyCopy(text: string): boolean {
     } finally {
       ta.remove();
       activeElement?.focus({ preventScroll: true });
-      win?.scrollTo(scrollX, scrollY);
+      if (selection && selectedRanges.length > 0) {
+        selection.removeAllRanges();
+        selectedRanges.forEach((range) => selection.addRange(range));
+      }
+      restoreScroll();
+      win?.requestAnimationFrame(restoreScroll);
     }
   } catch {
     // Copy is best-effort only.

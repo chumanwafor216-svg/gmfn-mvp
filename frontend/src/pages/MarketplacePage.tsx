@@ -2676,15 +2676,12 @@ export default function MarketplacePage() {
       }
 
       setInviteLink(nextInviteLink);
-      const copied = await safeCopy(nextInviteLink);
       const retiredCount = Number(inviteRes?.retired_live_invites || 0);
       showNotice(
-        copied ? "success" : "error",
-        copied
-          ? retiredCount > 0
-            ? "Fresh join invite created, copied, and older live link retired."
-            : "Fresh join invite created and copied."
-          : "Fresh join invite is ready, but this browser blocked clipboard copy. The old clipboard may still contain another app route."
+        "success",
+        retiredCount > 0
+          ? "Fresh join invite created and older live link retired. Copy it from the link shown here."
+          : "Fresh join invite created. Copy it from the link shown here."
       );
     } catch (err: any) {
       showNotice(

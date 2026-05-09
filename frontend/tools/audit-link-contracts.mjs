@@ -147,6 +147,24 @@ assertContains(
 );
 
 assertContains(
+  "src/layout/AppLayout.tsx",
+  /const myShopGalleryDisabled = !location\.pathname\.startsWith\("\/shop\/"\) && !myGmfnId;/,
+  "Global Public Shop navigation must be disabled until the member GSN ID is known."
+);
+
+assertContains(
+  "src/layout/AppLayout.tsx",
+  /makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)/,
+  "Global Public Shop navigation must not fall back to Shop Control while the public shop URL is loading."
+);
+
+assertNotContains(
+  "src/layout/AppLayout.tsx",
+  /const myShopGalleryTo = useMemo[\s\S]*?return "\/app\/shop-control";[\s\S]*?}, \[location\.hash, location\.pathname, location\.search, myGmfnId\]\);/,
+  "Public Shop navigation must never use Shop Control as a loading fallback."
+);
+
+assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
   /return selectedMemberGmfnId \? publicShopUrl\(selectedMemberGmfnId\) : "";/,
   "Marketplace workspace public shop fallback must use the canonical full public shop URL."

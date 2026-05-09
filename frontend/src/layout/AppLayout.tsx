@@ -154,10 +154,14 @@ function makeTrustPassportItem(): NavLinkItem {
   };
 }
 
-function makeShopGalleryItem(myShopGalleryTo: string): NavLinkItem {
+function makeShopGalleryItem(
+  myShopGalleryTo: string,
+  disabled = false
+): NavLinkItem {
   return {
     label: "Public Shop",
     to: myShopGalleryTo,
+    disabled,
     match: (pathname) => pathname.startsWith("/shop/"),
   };
 }
@@ -576,13 +580,14 @@ function getPageActions(
   pathname: string,
   search: string,
   myShopGalleryTo: string,
-  isPlatformAdmin: boolean
+  isPlatformAdmin: boolean,
+  myShopGalleryDisabled = false
 ): NavLinkItem[] {
   if (pathname === "/app/dashboard") {
     return uniqueNavItems([
       makeCommunityItem(),
       makeMarketplaceItem(),
-      makeShopGalleryItem(myShopGalleryTo),
+      makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
       { label: "Finance", to: "/app/finance" },
       { label: "Notifications", to: "/app/notifications" },
       { label: "Trust Passport", to: "/app/trust" },
@@ -627,7 +632,7 @@ function getPageActions(
 
   if (pathname.startsWith("/app/community")) {
     return uniqueNavItems([
-      makeShopGalleryItem(myShopGalleryTo),
+      makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
       makeShopControlItem(),
       { label: "Demand Box", to: "/app/demand-box" },
       { label: "Finance", to: "/app/finance" },
@@ -637,7 +642,7 @@ function getPageActions(
 
   if (pathname === "/app/marketplace") {
     return uniqueNavItems([
-      makeShopGalleryItem(myShopGalleryTo),
+      makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
       { label: "Loans & Support", to: "/app/loans" },
       makeShopControlItem(),
       { label: "Finance", to: "/app/finance" },
@@ -1329,8 +1334,10 @@ export default function AppLayout() {
       return publicShopPath(myGmfnId);
     }
 
-    return "/app/shop-control";
+    return `${location.pathname}${location.search || ""}${location.hash || ""}`;
   }, [location.hash, location.pathname, location.search, myGmfnId]);
+
+  const myShopGalleryDisabled = !location.pathname.startsWith("/shop/") && !myGmfnId;
 
   const taskMode = useMemo(
     () => getTaskModeMeta(location.pathname),
@@ -1555,8 +1562,21 @@ export default function AppLayout() {
     () =>
       taskMode
         ? taskMode.actions
-        : getPageActions(location.pathname, location.search, myShopGalleryTo, isAdmin),
-    [taskMode, location.pathname, location.search, myShopGalleryTo, isAdmin]
+        : getPageActions(
+            location.pathname,
+            location.search,
+            myShopGalleryTo,
+            isAdmin,
+            myShopGalleryDisabled
+          ),
+    [
+      taskMode,
+      location.pathname,
+      location.search,
+      myShopGalleryTo,
+      isAdmin,
+      myShopGalleryDisabled,
+    ]
   );
 
   const mobileBottomItems = useMemo<NavLinkItem[]>(() => {
@@ -1570,7 +1590,7 @@ export default function AppLayout() {
           pathname.startsWith("/app/community/"),
       },
       makeMarketplaceItem(),
-      makeShopGalleryItem(myShopGalleryTo),
+      makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
       makeFinanceItem(),
       makeLoansItem("Loans"),
       {
@@ -1590,7 +1610,7 @@ export default function AppLayout() {
     }
 
     return items;
-  }, [canUseAdminTools, myShopGalleryTo]);
+  }, [canUseAdminTools, myShopGalleryDisabled, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<
     { title: string; items: NavLinkItem[] }[]
