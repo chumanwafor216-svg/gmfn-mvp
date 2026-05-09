@@ -30,6 +30,9 @@ type NavGroup = {
   items: NavLinkItem[];
 };
 
+const MOBILE_BOTTOM_NAV_RESERVED_SPACE =
+  "calc(150px + env(safe-area-inset-bottom, 0px))";
+
 type RouteMeta = {
   section: string;
   page: string;
@@ -933,8 +936,8 @@ function mainContent(isMobile: boolean, taskMode: boolean): React.CSSProperties 
     minWidth: 0,
     padding: isMobile
       ? taskMode
-        ? "16px 16px calc(94px + env(safe-area-inset-bottom, 0px))"
-        : "16px 16px calc(94px + env(safe-area-inset-bottom, 0px))"
+        ? `16px 16px ${MOBILE_BOTTOM_NAV_RESERVED_SPACE}`
+        : `16px 16px ${MOBILE_BOTTOM_NAV_RESERVED_SPACE}`
       : "24px 28px 34px",
     overflowX: "hidden",
     flex: isMobile ? "1 1 auto" : undefined,
@@ -1026,6 +1029,7 @@ function drawerPanel(open: boolean): React.CSSProperties {
     color: "#FFFFFF",
     overflowY: "auto",
     transform: open ? "translateX(0)" : "translateX(-100%)",
+    pointerEvents: open ? "auto" : "none",
     transition: "transform 0.25s ease",
     zIndex: 1300,
     boxShadow: "12px 0 30px rgba(11,31,51,0.18)",
@@ -1486,7 +1490,10 @@ export default function AppLayout() {
     if (!activeItem) return;
 
     const frame = window.requestAnimationFrame(() => {
-      const navRect = mobileBottomNavRef.current?.getBoundingClientRect();
+      const bottomNav = mobileBottomNavRef.current;
+      if (!bottomNav) return;
+
+      const navRect = bottomNav.getBoundingClientRect();
       const itemRect = activeItem.getBoundingClientRect();
       const isVisible =
         navRect &&
@@ -1495,10 +1502,13 @@ export default function AppLayout() {
 
       if (isVisible) return;
 
-      activeItem.scrollIntoView({
+      const nextLeft =
+        activeItem.offsetLeft -
+        Math.max((bottomNav.clientWidth - activeItem.offsetWidth) / 2, 0);
+
+      bottomNav.scrollTo({
+        left: Math.max(nextLeft, 0),
         behavior: "auto",
-        inline: "center",
-        block: "nearest",
       });
     });
 

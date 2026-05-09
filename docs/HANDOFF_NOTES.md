@@ -1,3 +1,27 @@
+### Line-auditor follow-up: mobile shell and public shop copy truth (2026-05-09)
+
+- Owner asked to engage line auditors and try again after the previous Marketplace fix was only a minor improvement.
+- Two line auditors were engaged:
+  - Auditor A traced Marketplace/public shop/invite link destinations and found no current Marketplace URL builder path to Finance or Shop Control, but found Public Shop Gallery still claimed copy success without awaiting clipboard success.
+  - Auditor B traced mobile tap interception and confirmed the committed app shell still used `scrollIntoView()` on the fixed bottom rail and only reserved `94px` under it, creating a credible phone hit-area/jump risk.
+- System-level corrections:
+  - `frontend/src/layout/AppLayout.tsx` now reserves `150px + safe-area` under the fixed mobile bottom rail so page buttons cannot sit under route tabs.
+  - The mobile bottom rail now recenters its own horizontal scroll with `scrollTo()` instead of `activeItem.scrollIntoView()`, avoiding browser page re-anchoring.
+  - The closed mobile drawer now sets `pointerEvents: none` so a transformed fixed drawer cannot participate in hit testing.
+  - `frontend/src/pages/MarketplacePage.tsx` guards the visible public shop URL anchor with the same Marketplace tap guard.
+  - `frontend/src/pages/ShopGalleryPage.tsx` now awaits clipboard copy success for public shop copy/share, Vault request copy, and GSN repost copy. If copy is blocked, it shows an error instead of falsely saying copied while the old clipboard may still contain Finance/Shop Control.
+  - Public Shop Gallery now visibly renders the complete public shop URL as a real anchor below the share/copy controls.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now locks the larger bottom reserve, nav-local scroll, closed-drawer pointer behavior, and guarded public shop anchor.
+  - `frontend/tools/audit-link-contracts.mjs` now locks Public Shop Gallery clipboard truth and visible full-domain display.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - targeted ESLint over AppLayout, Marketplace, ShopGallery, and audit tools passed.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild spawn escalation.
+  - `git diff --check` passed with line-ending warnings only.
+- Devil's-advocate truth:
+  - this does not prove Render is already running the new bundle until commit/push/redeploy completes. It does remove the strongest remaining code-level reasons a phone tap could hit the wrong route or a blocked copy could leave an old wrong URL in the clipboard.
+
 ### Marketplace mobile link/button root-cause continuation (2026-05-09)
 
 - Owner reported that the latest deployed/local pass was only a minor improvement: Marketplace buttons still felt jumpy and public/join links could still land wrong.

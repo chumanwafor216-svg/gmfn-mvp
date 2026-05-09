@@ -149,6 +149,12 @@ const marketplaceActionSystemChecks = [
     pattern:
       /async function handleCreateInviteLink\([\s\S]*?setInviteLink\(nextInviteLink\);(?![\s\S]{0,260}safeCopy\(nextInviteLink\))[\s\S]*?Copy it from the link shown here\./,
   },
+  {
+    label:
+      "Marketplace visible public shop URL anchor must use shared tap guard",
+    pattern:
+      /<a[\s\S]{0,80}\{\.\.\.marketplacePointerGuardProps\(\)\}[\s\S]{0,220}href=\{publicShopViewLink\}/,
+  },
 ];
 
 for (const check of marketplaceActionSystemChecks) {
@@ -214,6 +220,40 @@ const pictureFrameSystemChecks = [
       /onPointerDown=\{stopFrameToolEvent\}[\s\S]*?onPointerUp=\{stopFrameToolEvent\}[\s\S]*?onClick=\{stopFrameToolEvent\}/,
   },
 ];
+
+const appLayoutPath = join(sourceRoot, "layout", "AppLayout.tsx");
+const appLayoutSource = readFileSync(appLayoutPath, "utf8");
+const appShellChecks = [
+  {
+    label:
+      "Mobile app shell must reserve enough bottom space so page buttons cannot sit under the fixed bottom rail",
+    pattern:
+      /const MOBILE_BOTTOM_NAV_RESERVED_SPACE =\s*"calc\(150px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?padding: isMobile[\s\S]*?MOBILE_BOTTOM_NAV_RESERVED_SPACE/,
+  },
+  {
+    label:
+      "Mobile bottom rail must scroll horizontally without scrollIntoView moving the page",
+    pattern:
+      /const bottomNav = mobileBottomNavRef\.current;[\s\S]*?bottomNav\.scrollTo\(\{[\s\S]*?left: Math\.max\(nextLeft, 0\),[\s\S]*?behavior: "auto",[\s\S]*?}\);/,
+  },
+  {
+    label:
+      "Closed mobile drawer must disable pointer events so transformed fixed layers cannot intercept taps",
+    pattern:
+      /function drawerPanel\(open: boolean\): React\.CSSProperties[\s\S]*?transform: open \? "translateX\(0\)" : "translateX\(-100%\)",[\s\S]*?pointerEvents: open \? "auto" : "none",/,
+  },
+];
+
+for (const check of appShellChecks) {
+  if (!check.pattern.test(appLayoutSource)) {
+    findings.push({
+      file: relative(frontendRoot, appLayoutPath),
+      line: 1,
+      label: check.label,
+      text: "Expected mobile app-shell tap-stability behavior was not found.",
+    });
+  }
+}
 
 const apiPath = join(sourceRoot, "lib", "api.ts");
 const apiSource = readFileSync(apiPath, "utf8");

@@ -1159,8 +1159,13 @@ export default function ShopGalleryPage() {
         return;
       }
 
-      safeCopy(`${params.title}\n${params.text}\n${params.url}`);
-      setNotice({ tone: "success", text: params.successText });
+      const copied = await safeCopy(`${params.title}\n${params.text}\n${params.url}`);
+      setNotice({
+        tone: copied ? "success" : "error",
+        text: copied
+          ? params.successText
+          : "Clipboard copy was blocked. The old clipboard may still contain another app route.",
+      });
     } catch {
       setNotice({
         tone: "error",
@@ -1169,9 +1174,19 @@ export default function ShopGalleryPage() {
     }
   }
 
-  function copyShopLink() {
-    safeCopy(absoluteShopLink);
-    setNotice({ tone: "success", text: "Public shop link copied." });
+  async function copyShopLink() {
+    if (!absoluteShopLink) {
+      setNotice({ tone: "error", text: "Public shop link is not ready yet." });
+      return;
+    }
+
+    const copied = await safeCopy(absoluteShopLink);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Public shop link copied."
+        : "Clipboard copy was blocked. Use the visible public shop link instead.",
+    });
   }
 
   function shareShop() {
@@ -1225,7 +1240,7 @@ export default function ShopGalleryPage() {
     });
   }
 
-  function askForVaultAccess() {
+  async function askForVaultAccess() {
     const shopTitle = firstMeaningful(
       effectiveShop?.shopName,
       effectiveShop?.ownerName,
@@ -1258,20 +1273,24 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    safeCopy(`${requestText}\n${absoluteShopLink}`);
+    const copied = await safeCopy(`${requestText}\n${absoluteShopLink}`);
     setNotice({
-      tone: "success",
-      text: "Vault access request copied. Send it to the shop owner.",
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Vault access request copied. Send it to the shop owner."
+        : "Clipboard copy was blocked. Ask the shop owner for a private Vault access link.",
     });
   }
 
-  function repostShop() {
-    safeCopy(
+  async function repostShop() {
+    const copied = await safeCopy(
       `GSN network repost:\n${shopNameText}\n${shopDescriptionText}\n${absoluteShopLink}`
     );
     setNotice({
-      tone: "success",
-      text: "GSN repost pack copied for sharing inside the network.",
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "GSN repost pack copied for sharing inside the network."
+        : "Clipboard copy was blocked. Use the visible public shop link instead.",
     });
   }
 
@@ -1583,6 +1602,34 @@ export default function ShopGalleryPage() {
             {isCompact ? "Copy link" : "Copy link"}
           </button>
         </div>
+
+        {absoluteShopLink ? (
+          <a
+            {...buttonGuardProps()}
+            href={absoluteShopLink}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              ...stableTapTarget,
+              display: "block",
+              minHeight: 42,
+              padding: isCompact ? "8px 10px" : "10px 12px",
+              borderRadius: 14,
+              border: "1px solid rgba(13,95,168,0.14)",
+              background: "rgba(255,255,255,0.78)",
+              color: "#22415D",
+              fontSize: isCompact ? 10.2 : 12,
+              fontWeight: 850,
+              lineHeight: 1.35,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+            }}
+          >
+            {absoluteShopLink}
+          </a>
+        ) : null}
 
         <div
           style={{

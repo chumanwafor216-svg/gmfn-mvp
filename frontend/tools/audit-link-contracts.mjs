@@ -194,6 +194,18 @@ assertContains(
   "Owner shop control must visibly show the full public shop domain as a real public link."
 );
 
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /const copied = await safeCopy\(absoluteShopLink\);[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
+  "Public Shop Gallery copy must wait for clipboard success instead of claiming success while the old clipboard may still contain another route."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /href=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}/,
+  "Public Shop Gallery must visibly show the complete public shop domain as a real link."
+);
+
 assertNotContains(
   "src/components/CommunityShopControlPanel.tsx",
   /^\s*disabled(?:=|\s*$)/,

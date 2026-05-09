@@ -4589,6 +4589,7 @@ export default function MarketplacePage() {
                   >
                     {publicShopViewLink ? (
                       <a
+                        {...marketplacePointerGuardProps()}
                         href={publicShopViewLink}
                         target="_blank"
                         rel="noreferrer"
