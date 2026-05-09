@@ -208,8 +208,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /return selectedMemberGmfnId \? publicShopUrl\(selectedMemberGmfnId\) : "";/,
-  "Marketplace workspace public shop fallback must use the canonical full public shop URL."
+  /if \(direct\) return publicShopDiariesUrl\(direct\);\s*return "";/,
+  "Marketplace workspace must not manufacture a public shop URL from a member GSN ID without a backend-provided shop link."
 );
 
 assertContains(
@@ -220,20 +220,32 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /return gmfnId \? publicShopUrl\(gmfnId\) : "";/,
-  "Owner shop control must build the copyable public shop link from the canonical full domain helper."
+  /return gmfnId && shop\?\.id \? publicShopUrl\(gmfnId\) : "";/,
+  "Owner shop control must only expose a public shop link after a backend-confirmed active shop record exists."
 );
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /function normalizeShop\(raw: any, fallbackGmfnId: string, currentClan: any\): ShopSummary \| null \{[\s\S]*?if \(!raw && !fallbackGmfnId\) return null;/,
-  "Owner shop control must preserve a public shop domain from the member GSN ID even when the shop record is not returned yet."
+  /async function copyShopLink\(\)[\s\S]*?if \(!publicShopTo\)[\s\S]*?not connected to an active shop[\s\S]*?const copied = await api\.safeCopy\(publicShopLink\)/,
+  "Owner shop control must not copy a public shop link until the active shop link is confirmed."
 );
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
   /href=\{publicShopLink\}[\s\S]*?\{publicShopLink\}/,
   "Owner shop control must visibly show the full public shop domain as a real public link."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /const gmfnId = useMemo\([\s\S]*?firstTruthy\(shop\?\.owner_gmfn_id, shop\?\.gmfn_id\)[\s\S]*?\[shop\]/,
+  "Shop Assets must build public shop links only from the backend-confirmed shop owner identity, not from a member ID fallback."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /async function copyText\(text: string, successMessage: string\)[\s\S]*?const copied = await safeCopy\(text\);[\s\S]*?Clipboard copy was blocked\. Refresh the public shop link before sharing\./,
+  "Shop Assets copy actions must wait for clipboard success and not report copied stale shop links."
 );
 
 assertContains(

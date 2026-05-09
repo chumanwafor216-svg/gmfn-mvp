@@ -765,7 +765,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     void loadPage();
   }, [loadPage]);
 
-  const gmfnId = useMemo(() => firstTruthy(shop?.gmfn_id, me?.gmfn_id), [shop, me]);
+  const gmfnId = useMemo(
+    () => firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id),
+    [shop]
+  );
   const shopLink = useMemo(() => buildShopLink(gmfnId), [gmfnId]);
 
   const publicProducts = useMemo(
@@ -800,14 +803,19 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
   const selectedPublicProduct = publicGallerySlots[selectedPublicSlot - 1] || null;
 
-  function copyText(text: string, successMessage: string) {
+  async function copyText(text: string, successMessage: string) {
     if (!text) {
       showNotice("error", "Nothing to copy yet.");
       return;
     }
 
-    safeCopy(text);
-    showNotice("success", successMessage);
+    const copied = await safeCopy(text);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? successMessage
+        : "Clipboard copy was blocked. Refresh the public shop link before sharing."
+    );
   }
 
   function setShopPreviewFromFile(file: File | null) {

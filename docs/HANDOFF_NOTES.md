@@ -1,3 +1,25 @@
+### Owner-side public shop link readiness guards (2026-05-09)
+
+- Owner required line auditors for the public shop link issue.
+- Auditor A backend confirmed:
+  - public `/marketplace/public/shop/{gmfn_id}` is read-only and cannot repair a missing production user/shop.
+  - the visible `GMFN-U-9867079C` live API still fails at `Seller identity not found`, before shop/product lookup.
+- Auditor B frontend confirmed:
+  - public viewer failed-state copy/share/repost/open is now blocked.
+  - remaining risk was owner-side surfaces that could manufacture a public shop URL from a GSN/GMFN ID without a backend-confirmed active shop.
+- Correction:
+  - `frontend/src/components/CommunityShopControlPanel.tsx` now exposes/copies the public shop link only when a backend-confirmed shop id exists.
+  - `frontend/src/pages/ShopAssetsPage.tsx` now builds shop/product links from the confirmed shop owner identity only, not from the signed-in member ID fallback, and waits for clipboard success.
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx` no longer manufactures a public shop URL from a selected member GSN ID. It uses only backend-provided/direct shop link fields.
+  - `frontend/tools/audit-link-contracts.mjs` now locks these owner-side readiness rules.
+- Verification:
+  - line auditors completed read-only backend/frontend audits.
+  - live API check still returned `{"detail":"Seller identity not found"}` for `GMFN-U-9867079C`.
+  - `npm exec -- eslint src\components\CommunityShopControlPanel.tsx src\pages\ShopAssetsPage.tsx src\pages\MarketplaceWorkspacePage.tsx tools\audit-link-contracts.mjs` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed outside sandbox after the known Vite/esbuild spawn escalation.
+
 ### Failed public shop link recirculation guard (2026-05-09)
 
 - Owner screenshot still showed the public shop failed state with `Copy link` available.

@@ -21,8 +21,6 @@ import { navigateWithOrigin } from "../lib/nav";
 import {
   publicFrontendUrl,
   publicShopDiariesUrl,
-  publicShopPath,
-  publicShopUrl,
 } from "../lib/publicLinks";
 
 function safeStr(x: any): string {
@@ -517,14 +515,6 @@ export default function MarketplaceWorkspacePage() {
     return safeStr(inviteInfo?.code || inviteInfo?.invite_code || "");
   }, [inviteInfo]);
 
-  const selectedMemberGmfnId = useMemo(() => {
-    return safeStr(
-      selectedMember?.gmfn_id ||
-        selectedMember?.member_gmfn_id ||
-        selectedMember?.user?.gmfn_id
-    );
-  }, [selectedMember]);
-
   const selectedMemberName = useMemo(() => {
     return safeStr(
       selectedMember?.display_name ||
@@ -544,8 +534,8 @@ export default function MarketplaceWorkspacePage() {
     );
     if (direct) return publicShopDiariesUrl(direct);
 
-    return selectedMemberGmfnId ? publicShopUrl(selectedMemberGmfnId) : "";
-  }, [inviteInfo, selectedMemberGmfnId]);
+    return "";
+  }, [inviteInfo]);
 
   const guideUrl = useMemo(() => {
     return publicFrontendUrl("/guide");
@@ -643,13 +633,25 @@ export default function MarketplaceWorkspacePage() {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
-  function copyShopViewLink() {
-    if (!shopViewLink) return;
-    safeCopy(shopViewLink);
-    setMsg("Community public shop link copied.");
+  async function copyShopViewLink() {
+    if (!shopViewLink) {
+      setMsg("Public shop link is not confirmed yet. Refresh it from Marketplace first.");
+      return;
+    }
+    const copied = await safeCopy(shopViewLink);
+    setMsg(
+      copied
+        ? "Community public shop link copied."
+        : "Clipboard copy was blocked. Refresh the public shop link from Marketplace first."
+    );
   }
 
-  function copyShopViewMessage() {
+  async function copyShopViewMessage() {
+    if (!shopViewLink) {
+      setMsg("Public shop link is not confirmed yet. Refresh it from Marketplace first.");
+      return;
+    }
+
     const title = safeStr(communityName || "this community");
     const text = [
       selectedMemberName
@@ -661,23 +663,27 @@ export default function MarketplaceWorkspacePage() {
       .filter(Boolean)
       .join("\n\n");
 
-    safeCopy(text);
-    setMsg("Community public shop message copied.");
+    const copied = await safeCopy(text);
+    setMsg(
+      copied
+        ? "Community public shop message copied."
+        : "Clipboard copy was blocked. Refresh the public shop link from Marketplace first."
+    );
   }
 
   function openShopForMember(member: any) {
-    const gmfnId = safeStr(
-      member?.gmfn_id || member?.member_gmfn_id || member?.user?.gmfn_id
+    const direct = safeStr(
+      member?.shop_view_url ||
+        member?.shop_link ||
+        member?.shop_profile_url ||
+        member?.public_shop_url ||
+        ""
     );
-    if (!gmfnId) {
-      setMsg("This member does not yet have a visible shop identity.");
+    if (!direct) {
+      setMsg("This member does not yet have a confirmed public shop link.");
       return;
     }
-    navigateWithOrigin(
-      navigate,
-      publicShopPath(gmfnId),
-      location
-    );
+    window.open(publicShopDiariesUrl(direct), "_blank", "noopener,noreferrer");
   }
 
   return (

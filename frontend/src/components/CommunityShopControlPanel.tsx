@@ -587,12 +587,12 @@ export default function CommunityShopControlPanel({
 
   const publicShopTo = useMemo(() => {
     const gmfnId = safeStr(shop?.gmfnId);
-    return gmfnId ? publicShopPath(gmfnId) : "";
+    return gmfnId && shop?.id ? publicShopPath(gmfnId) : "";
   }, [shop]);
 
   const publicShopLink = useMemo(() => {
     const gmfnId = safeStr(shop?.gmfnId);
-    return gmfnId ? publicShopUrl(gmfnId) : "";
+    return gmfnId && shop?.id ? publicShopUrl(gmfnId) : "";
   }, [shop]);
 
   const shopImageSrc = useMemo(() => {
@@ -607,14 +607,22 @@ export default function CommunityShopControlPanel({
     );
   }, [shop]);
 
-  function copyShopLink() {
+  async function copyShopLink() {
     if (!publicShopTo) {
-      setNotice({ tone: "error", text: "Public shop link is not ready yet." });
+      setNotice({
+        tone: "error",
+        text: "Public shop link is not connected to an active shop yet. Open Marketplace and refresh the public shop link first.",
+      });
       return;
     }
 
-    api.safeCopy(publicShopLink);
-    setNotice({ tone: "success", text: "Public shop link copied." });
+    const copied = await api.safeCopy(publicShopLink);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Public shop link copied."
+        : "Clipboard copy was blocked. Use Marketplace to refresh and copy the public shop link.",
+    });
   }
 
   function openPanelRoute(to: string) {
@@ -794,7 +802,7 @@ export default function CommunityShopControlPanel({
                         {publicShopLink}
                       </a>
                     ) : (
-                      "Public shop link is not ready yet."
+                      "Public shop link is not connected to an active shop yet. Refresh it from Marketplace before sharing."
                     )}
                   </div>
 
