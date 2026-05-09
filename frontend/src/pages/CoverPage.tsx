@@ -347,15 +347,7 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
 
 
 function nextRouteForMode(mode: EntryMode): string {
-
-  if (mode === "create") return "/create";
-
-  if (mode === "invite") return "/join";
-
-  if (mode === "approved") return "/activate-membership";
-
-  if (mode === "existing") return "/login";
-
+  void mode;
   return "/welcome";
 
 }

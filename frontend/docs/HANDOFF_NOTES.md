@@ -8,6 +8,12 @@
 - Route behavior did not change.
 - Updated the root `docs/SCREEN_SPECS.md` to document `Continue` as the CoverPage primary action so future passes do not reintroduce `Open Welcome`.
 
+## 2026-05-09 Cover Second Page Locked to Welcome
+
+- Owner clarified that the second page after `/cover` should be the Welcome page.
+- Updated `src/pages/CoverPage.tsx` so `Continue` always opens `/welcome`, regardless of create/invite/approved/existing entry mode.
+- Entry mode is still detected and persisted for downstream use.
+
 ## 2026-05-09 Public Shop Whole-Page Share Correction
 
 - Owner clarified from local 5174 testing that every public-shop share/copy should open the whole public shop page.

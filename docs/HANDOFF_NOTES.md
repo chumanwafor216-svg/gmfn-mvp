@@ -24,6 +24,15 @@
   - copy-only frontend/spec change
   - no route, auth, backend, or layout behavior changed
 
+### Cover second page locked to Welcome (2026-05-09)
+
+- Owner clarified that the second page after `/cover` should be the Welcome page.
+- Updated `frontend/src/pages/CoverPage.tsx` so the `Continue` action always opens `/welcome`, regardless of create/invite/approved/existing entry mode.
+- Entry mode is still detected and persisted from query/state before leaving Cover, so downstream entry context is not discarded.
+- Scope:
+  - route target correction for Cover only
+  - no backend/auth changes
+
 ### Two-line-auditor public shop 0/12 repair (2026-05-09)
 
 - Owner screenshot still showed `0/12` in Shop Diaries after link fixes, so two line auditors were requested and used:
