@@ -1,5 +1,20 @@
 # Handoff Notes
 
+## 2026-05-09 Public Shop Block Share Particularisation
+
+- Owner reported the public shop Share button was generic and did not particularise to the block being shared.
+- Updated `src/pages/ShopGalleryPage.tsx`:
+  - every public shop product card now has a stable block anchor: `#shop-block-{slotNumber}`.
+  - the block share URL now uses that anchor instead of depending on an optional database product id.
+  - share title/text now includes the public block number, product title, price text, and shop context.
+  - incoming block links open the matching block and scroll to it.
+  - old `#product-{id}` links are still recognized and redirected in-page to the matching public block anchor.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining truth:
+  - this particularises public shop block sharing in the frontend. It does not change backend product ids, shop visibility, Vault access, payment, auth, or marketplace route contracts.
+
 ## 2026-05-09 Mobile Tap Stability Freeze Guard
 
 - Owner confirmed the previous mobile tap stabilization stopped the app-wide button jumpiness, especially on phone.

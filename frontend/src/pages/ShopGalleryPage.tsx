@@ -175,6 +175,18 @@ function productBuyerCue(product: ShopProduct, shopName: string): string {
   return "Ask, share, or save this offer for later.";
 }
 
+function publicShopBlockLabel(product: ShopProduct): string {
+  return `Block #${product.slotNumber}`;
+}
+
+function publicShopBlockAnchorId(product: ShopProduct): string {
+  return `shop-block-${product.slotNumber}`;
+}
+
+function legacyProductAnchorId(product: ShopProduct): string {
+  return product.id ? `product-${product.id}` : "";
+}
+
 function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
   const size = compact ? 104 : 150;
   const doorSize = compact ? 66 : 92;
@@ -947,13 +959,29 @@ export default function ShopGalleryPage() {
     if (products.length === 0) return;
 
     const id = location.hash.replace(/^#/, "");
+    const matchedProduct = products.find((product) => {
+      return (
+        id === publicShopBlockAnchorId(product) ||
+        id === legacyProductAnchorId(product)
+      );
+    });
+
     cancelPendingGalleryReveal();
-    revealGalleryTarget(id);
+
+    if (matchedProduct) {
+      if (products.indexOf(matchedProduct) >= GALLERY_SLOTS_TOTAL) {
+        setShowAllProducts(true);
+      }
+      setOpenProductId(matchedProduct.id ?? matchedProduct.slotNumber);
+      revealGalleryTarget(publicShopBlockAnchorId(matchedProduct));
+    } else {
+      revealGalleryTarget(id);
+    }
 
     return () => {
       cancelPendingGalleryReveal();
     };
-  }, [cancelPendingGalleryReveal, location.hash, products.length, revealGalleryTarget]);
+  }, [cancelPendingGalleryReveal, location.hash, products, revealGalleryTarget]);
 
   useEffect(() => {
     return () => {
@@ -1169,22 +1197,29 @@ export default function ShopGalleryPage() {
   }
 
   function shareProduct(product: ShopProduct) {
-    const hash = product.id ? `#product-${product.id}` : "";
+    const blockLabel = publicShopBlockLabel(product);
+    const hash = `#${publicShopBlockAnchorId(product)}`;
     const productUrl = publicFrontendUrl(
       `${location.pathname}${location.search || ""}${hash}`
     );
-    const title = productDisplayTitle(product);
+    const productTitle = productDisplayTitle(product);
+    const title = `${blockLabel} - ${productTitle}`;
     const text = firstMeaningful(
       productBuyerCue(product, ""),
       product.description,
-      "Shop product"
+      "Public shop block"
+    );
+    const shopContext = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this public shop"
     );
 
     void shareOrCopy({
       title,
-      text: `${text} - ${product.priceText}`,
+      text: `${blockLabel}\n${text}\n${product.priceText}\nFrom ${shopContext}.`,
       url: productUrl,
-      successText: "Product share ready.",
+      successText: `${blockLabel} share ready.`,
     });
   }
 
@@ -1895,7 +1930,7 @@ export default function ShopGalleryPage() {
                   <article
                     key={`public-diary-${product.id || index}`}
                     className="shop-diary-card"
-                    id={product.id ? `product-${product.id}` : undefined}
+                    id={publicShopBlockAnchorId(product)}
                     aria-expanded={isProductOpen}
                     style={{
                       position: "relative",
