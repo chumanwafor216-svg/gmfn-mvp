@@ -70,6 +70,7 @@
 - The tap-to-open/tap-to-close behavior remains.
 - Follow-up from screenshot: the closed rail must not leave a large blank space in the card.
 - The tool rail now opens as an absolute overlay under the button; closed state does not reserve visible layout height.
+- Follow-up: the frame button itself was still jumpy. The top passport frame and lower picture frame now use separate open states, and both buttons sit in fixed-height slots with transitions disabled.
 - Updated root `docs/SCREEN_SPECS.md` to freeze that the control belongs under the picture.
 - Dashboard Market Wisdom was not changed.
 

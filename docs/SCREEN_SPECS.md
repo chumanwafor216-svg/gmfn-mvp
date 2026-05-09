@@ -79,6 +79,8 @@ Rules:
 - Picture frame controls must tap open and tap closed.
 - The picture frame control button must sit under the picture, not over the picture.
 - Opening/closing picture frame tools must not add/remove layout height; the tool rail opens as an overlay under the button and must not leave a blank reserved gap when closed.
+- The dashboard passport frame and large picture frame must use separate open states; tapping one frame button must not open or resize the other frame rail.
+- Frame buttons must sit in fixed-height slots with no transition-driven movement.
 - Remove must clear the saved account profile picture, not only hide it locally.
 - Dashboard must stay a reflector / command centre, not a content dump.
 

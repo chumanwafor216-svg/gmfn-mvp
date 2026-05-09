@@ -2738,6 +2738,8 @@ export default function DashboardPage() {
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [passportPictureToolsOpen, setPassportPictureToolsOpen] =
+    useState<boolean>(false);
   const [pictureToolsOpen, setPictureToolsOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -6331,6 +6333,8 @@ export default function DashboardPage() {
                 display: "grid",
                 gap: isPhone ? 6 : 8,
                 position: "relative",
+                width: "100%",
+                minWidth: 0,
               }}
             >
               <div
@@ -6375,28 +6379,44 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              <button
-                type="button"
-                aria-controls={avatarInputId}
-                aria-expanded={pictureToolsOpen}
-                onClick={(event) =>
-                  runDashboardUiMutation(event, () =>
-                    setPictureToolsOpen((open) => !open)
-                  )
-                }
-                {...dashboardButtonGuardProps()}
+              <div
                 style={{
-                  ...dashboardFillButton(subtleBtn(false)),
+                  height: isPhone ? 34 : 36,
                   minHeight: isPhone ? 34 : 36,
-                  padding: isPhone ? "7px 8px" : "8px 10px",
-                  borderRadius: 999,
-                  fontSize: isPhone ? 10.5 : 11.5,
-                  boxShadow:
-                    "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
+                  maxHeight: isPhone ? 34 : 36,
+                  width: "100%",
+                  overflow: "visible",
                 }}
               >
-                {isPhone ? "Frame" : "Picture frame"}
-              </button>
+                <button
+                  type="button"
+                  aria-controls={avatarInputId}
+                  aria-expanded={passportPictureToolsOpen}
+                  onClick={(event) =>
+                    runDashboardUiMutation(event, () =>
+                      setPassportPictureToolsOpen((open) => !open)
+                    )
+                  }
+                  {...dashboardButtonGuardProps()}
+                  style={{
+                    ...dashboardFillButton(subtleBtn(false)),
+                    height: isPhone ? 34 : 36,
+                    minHeight: isPhone ? 34 : 36,
+                    maxHeight: isPhone ? 34 : 36,
+                    padding: isPhone ? "0 8px" : "0 10px",
+                    borderRadius: 999,
+                    fontSize: isPhone ? 10.5 : 11.5,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    transition: "none",
+                    boxShadow:
+                      "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
+                  }}
+                >
+                  {isPhone ? "Frame" : "Picture frame"}
+                </button>
+              </div>
 
               <div
                 style={{
@@ -6409,9 +6429,9 @@ export default function DashboardPage() {
                   gap: 5,
                   gridTemplateColumns: "1fr",
                   alignContent: "start",
-                  opacity: pictureToolsOpen ? 1 : 0,
-                  visibility: pictureToolsOpen ? "visible" : "hidden",
-                  pointerEvents: pictureToolsOpen ? "auto" : "none",
+                  opacity: passportPictureToolsOpen ? 1 : 0,
+                  visibility: passportPictureToolsOpen ? "visible" : "hidden",
+                  pointerEvents: passportPictureToolsOpen ? "auto" : "none",
                   borderRadius: 14,
                   padding: 6,
                   background:
@@ -6992,29 +7012,46 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  aria-controls={avatarInputId}
-                  aria-expanded={pictureToolsOpen}
-                  onClick={(event) =>
-                    runDashboardUiMutation(event, () =>
-                      setPictureToolsOpen((open) => !open)
-                    )
-                  }
-                  {...dashboardButtonGuardProps()}
+                <div
                   style={{
-                    ...dashboardFillButton(subtleBtn(false)),
                     marginTop: isPhone ? 7 : 9,
+                    height: isPhone ? 44 : 42,
                     minHeight: isPhone ? 44 : 42,
-                    borderRadius: 999,
-                    fontSize: isPhone ? 12 : 12.5,
-                    fontWeight: 900,
-                    boxShadow:
-                      "0 12px 22px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    maxHeight: isPhone ? 44 : 42,
+                    width: "100%",
+                    overflow: "visible",
                   }}
                 >
-                  Picture frame
-                </button>
+                  <button
+                    type="button"
+                    aria-controls={avatarInputId}
+                    aria-expanded={pictureToolsOpen}
+                    onClick={(event) =>
+                      runDashboardUiMutation(event, () =>
+                        setPictureToolsOpen((open) => !open)
+                      )
+                    }
+                    {...dashboardButtonGuardProps()}
+                    style={{
+                      ...dashboardFillButton(subtleBtn(false)),
+                      height: isPhone ? 44 : 42,
+                      minHeight: isPhone ? 44 : 42,
+                      maxHeight: isPhone ? 44 : 42,
+                      padding: isPhone ? "0 12px" : "0 14px",
+                      borderRadius: 999,
+                      fontSize: isPhone ? 12 : 12.5,
+                      fontWeight: 900,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      transition: "none",
+                      boxShadow:
+                        "0 12px 22px rgba(2,12,27,0.16), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    }}
+                  >
+                    Picture frame
+                  </button>
+                </div>
               </div>
 
               <input
