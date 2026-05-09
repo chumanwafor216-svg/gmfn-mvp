@@ -25,6 +25,10 @@
 - Updated `frontend/src/pages/MarketplacePage.tsx` so the Join link and Public shop face display the full URL, not a masked label.
 - Tightened Marketplace link action buttons to fixed 54px rows with no transition movement.
 - Updated `docs/SCREEN_SPECS.md` to freeze that public shop links must show/copy the complete public domain and invite links must not fall back to Finance or any unrelated app route.
+- Continuation audit:
+  - `frontend/src/pages/ClansPage.tsx` now uses the same canonical join invite builder for fallback invite links.
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx` no longer describes public shop links as community-context-attached; it describes them as the complete public shop-face domain.
+  - Static scan found no remaining `publicFrontendUrl("/start/join...")` invite fallback in `frontend/src`.
 
 ### Cover primary CTA restored to Continue (2026-05-09)
 

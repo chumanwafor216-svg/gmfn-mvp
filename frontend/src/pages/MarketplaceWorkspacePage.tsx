@@ -1096,8 +1096,8 @@ export default function MarketplaceWorkspacePage() {
                   lineHeight: 1.7,
                 }}
               >
-                Select a member row below, then share that public shop-face
-                link with this community context attached.
+                Select a member row below, then share the complete public
+                shop-face domain for that member.
               </div>
 
               <div

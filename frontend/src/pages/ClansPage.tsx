@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
-import { normalizedJoinInviteUrl } from "../lib/joinLinks";
+import { canonicalJoinInviteUrl, normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import {
@@ -293,7 +293,7 @@ function buildInviteState(
   const code = safeStr(raw?.code || raw?.invite_code || "");
   const link =
     normalizedJoinInviteUrl(raw) ||
-    (code ? publicFrontendUrl(`/start/join/${encodeURIComponent(code)}`) : "");
+    canonicalJoinInviteUrl(code);
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();

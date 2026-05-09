@@ -117,6 +117,10 @@
 - Updated `src/pages/MarketplacePage.tsx` so the Join link and Public shop face show the full URL in the UI, not a masked label.
 - Tightened Marketplace link action buttons to fixed 54px rows with no transition movement.
 - Updated root `docs/SCREEN_SPECS.md` to freeze the link contract.
+- Continuation audit:
+  - `src/pages/ClansPage.tsx` now uses the same canonical join invite builder for fallback invite links.
+  - `src/pages/MarketplaceWorkspacePage.tsx` no longer describes public shop links as community-context-attached; it describes them as the complete public shop-face domain.
+  - Static scan found no remaining `publicFrontendUrl("/start/join...")` invite fallback in `src`.
 
 ## 2026-05-09 Canonical Public Shop Domain Links
 
