@@ -1,3 +1,23 @@
+### Shared tap-target stacking root cause (2026-05-09)
+
+- Owner reported the app still jumps indiscriminately after Marketplace/link-specific fixes.
+- Devil's-advocate diagnosis:
+  - the remaining symptom is wider than Marketplace links, so the likely cause is shared mobile interaction styling rather than one bad button.
+  - `frontend/src/styles/gmfnBrand.ts` had `brandStableTapTarget()` applying `position: relative`, `zIndex: 2`, and `isolation: isolate` to almost every shared button/link.
+  - That means the "stability" helper was also putting many controls into their own stacking layers, which can make hit boxes compete unpredictably with fixed nav, sticky bars, cards, drawers, and overlays on phone.
+- Correction:
+  - removed the global `position`, `zIndex`, and `isolation` from `brandStableTapTarget()`.
+  - components that genuinely need layer control must declare it locally instead of inheriting it from every tap target.
+  - updated `frontend/tools/audit-mobile-tap-stability.mjs` so the shared tap target cannot reintroduce global z-index/isolation stacking.
+- Verification so far:
+  - `npm run audit:tap-stability` passed.
+  - targeted ESLint over the shared brand style and audit tool passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild spawn escalation.
+  - `git diff --check` passed with line-ending warnings only.
+- Devil's-advocate truth:
+  - this is the most plausible system-level explanation for "indiscriminate" jumpiness after the page/link patches. It still needs the full frontend build and phone retest before calling it proven.
+
 ### Line-auditor follow-up: mobile shell and public shop copy truth (2026-05-09)
 
 - Owner asked to engage line auditors and try again after the previous Marketplace fix was only a minor improvement.

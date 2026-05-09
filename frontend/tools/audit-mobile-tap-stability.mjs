@@ -223,6 +223,8 @@ const pictureFrameSystemChecks = [
 
 const appLayoutPath = join(sourceRoot, "layout", "AppLayout.tsx");
 const appLayoutSource = readFileSync(appLayoutPath, "utf8");
+const gmfnBrandPath = join(sourceRoot, "styles", "gmfnBrand.ts");
+const gmfnBrandSource = readFileSync(gmfnBrandPath, "utf8");
 const appShellChecks = [
   {
     label:
@@ -244,6 +246,15 @@ const appShellChecks = [
   },
 ];
 
+const sharedTapTargetChecks = [
+  {
+    label:
+      "Shared stable tap target must not put every button/link into a z-index stacking layer",
+    forbiddenPattern:
+      /export function brandStableTapTarget\(\): React\.CSSProperties \{[\s\S]*?\b(?:zIndex|isolation)\s*:/,
+  },
+];
+
 for (const check of appShellChecks) {
   if (!check.pattern.test(appLayoutSource)) {
     findings.push({
@@ -251,6 +262,17 @@ for (const check of appShellChecks) {
       line: 1,
       label: check.label,
       text: "Expected mobile app-shell tap-stability behavior was not found.",
+    });
+  }
+}
+
+for (const check of sharedTapTargetChecks) {
+  if (check.forbiddenPattern.test(gmfnBrandSource)) {
+    findings.push({
+      file: relative(frontendRoot, gmfnBrandPath),
+      line: 1,
+      label: check.label,
+      text: "Unexpected stacking-layer style found in brandStableTapTarget().",
     });
   }
 }
