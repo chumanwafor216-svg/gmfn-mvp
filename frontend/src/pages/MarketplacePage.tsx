@@ -1371,6 +1371,18 @@ function linkReserveTextStyle(): React.CSSProperties {
   };
 }
 
+function joinLinkReserveTextStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...linkReserveTextStyle(),
+    height: isCompact ? 78 : 66,
+    minHeight: isCompact ? 78 : 66,
+    maxHeight: isCompact ? 78 : 66,
+    overflowY: "auto",
+    overscrollBehavior: "contain",
+    scrollbarWidth: "thin",
+  };
+}
+
 function shareMessageCardStyle(isCompact = false): React.CSSProperties {
   return {
     marginTop: 10,
@@ -4164,7 +4176,7 @@ export default function MarketplacePage() {
                   </div>
                   <div
                     style={{
-                      ...linkReserveTextStyle(),
+                      ...joinLinkReserveTextStyle(isCompact),
                       ...helperText(),
                       fontSize: inviteLink ? 12 : 13,
                     }}

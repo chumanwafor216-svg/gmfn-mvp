@@ -123,6 +123,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function joinLinkReserveTextStyle\(isCompact: boolean\): React\.CSSProperties[\s\S]*?height: isCompact \? 78 : 66,[\s\S]*?maxHeight: isCompact \? 78 : 66,[\s\S]*?overflowY: "auto",/,
+  "The Join this community URL reserve must stay fixed-height so the buttons do not jump when a long invite link appears."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /sectionLabel\(\)}>Join this community[\s\S]*?joinLinkReserveTextStyle\(isCompact\)[\s\S]*?Copy Join Link[\s\S]*?Refresh Join Link[\s\S]*?Copy Invite Message[\s\S]*?Email Join Link[\s\S]*?WhatsApp/,
+  "The Join this community lane must keep its stable button set and order."
+);
+
+assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
   /return selectedMemberGmfnId \? publicShopUrl\(selectedMemberGmfnId\) : "";/,
   "Marketplace workspace public shop fallback must use the canonical full public shop URL."

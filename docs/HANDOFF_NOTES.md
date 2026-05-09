@@ -20693,3 +20693,22 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox.
 - Remaining risk:
   - This is a static/system contract audit plus build verification. It is not a substitute for a live mobile click-through on the Render deployment after the branch is pushed and redeployed.
+
+### Join this community button stability pass (2026-05-09)
+
+- Focused specifically on the Marketplace `Join this community` lane after owner feedback.
+- Confirmed the likely tap-jump source: the text block above the Join buttons changed height when the empty placeholder became a long real invite URL.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - added a fixed-height, scrollable `joinLinkReserveTextStyle`.
+  - applied it only to the `Join this community` URL/placeholder block so the `Copy Join Link`, `Refresh Join Link`, `Copy Invite Message`, `Email Join Link`, and `WhatsApp` buttons keep the same landing position before and after link creation.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - added assertions that the Join lane keeps the fixed-height URL reserve and stable button order.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint tools/audit-link-contracts.mjs src/pages/MarketplacePage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_frontend_link_origins.py --basetemp C:\tmp\pytest-join-buttons` passed.
+  - `git diff --check` passed, with only Windows line-ending warnings.
+  - `npm run build` passed outside the sandbox.
+- Remaining risk:
+  - Needs a live mobile tap check after deployment: open Marketplace -> Records & Links -> Join this community -> Refresh Join Link -> tap each Join action and confirm no visual bounce or wrong-route landing.
