@@ -1,3 +1,21 @@
+### Public shop suspended-domain and owner-id hardening (2026-05-09)
+
+- Owner screenshot still showed the public shop failure on `frontend.onrender.com`.
+- Live truth:
+  - `https://frontend.onrender.com/shop/GSN-U-9867079C` returns Render `Service Suspended`.
+  - `https://gmfn-frontend.onrender.com/shop/GSN-U-9867079C` returns `200`.
+  - `https://gmfn-api.onrender.com/marketplace/public/shop/GSN-U-9867079C?product_limit=100&broadcast_limit=24` returns `404` with `{"detail":"Seller identity not found"}`.
+  - the same API check for `GMFN-U-9867079C` also returns `Seller identity not found`.
+- Devil's-advocate conclusion:
+  - this is not yet a product-listing problem. Production API cannot match that exact visible ID to a user/seller record.
+  - the phone is also using a suspended/wrong frontend host, so copied links must never keep `frontend.onrender.com` as their public origin.
+- Correction:
+  - `frontend/src/lib/publicLinks.ts` now rejects `frontend.onrender.com` as a shareable public frontend origin and falls back to `https://gmfn-frontend.onrender.com`.
+  - `frontend/src/pages/MarketplacePage.tsx` now builds the copy/open public shop URL from the backend-confirmed shop owner ID first (`owner_gmfn_id`, then `gmfn_id`, then the current member ID).
+  - `frontend/tools/audit-link-contracts.mjs` locks both rules.
+- Remaining risk:
+  - after deploy, the owner still needs to open Marketplace on the canonical frontend, tap `Refresh Shop Link`, and then copy the link again. A cached/suspended `frontend.onrender.com` tab cannot be trusted for validation.
+
 ### Marketplace public shop link owner-side readiness (2026-05-09)
 
 - Owner reported the public page now says: `Public shop could not be loaded... link is not connected to an active shop yet`.

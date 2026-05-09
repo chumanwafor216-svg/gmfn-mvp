@@ -1,6 +1,7 @@
 const DEFAULT_PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com";
 const DEFAULT_PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com";
 export const PUBLIC_SHOP_DIARIES_ANCHOR = "shop-diaries";
+const SUSPENDED_PUBLIC_FRONTEND_HOSTS = new Set(["frontend.onrender.com"]);
 
 function cleanText(value: unknown): string {
   return String(value ?? "").trim();
@@ -33,6 +34,10 @@ export function isPrivateFrontendHost(hostname: string): boolean {
   }
 
   return false;
+}
+
+function isSuspendedPublicFrontendHost(hostname: string): boolean {
+  return SUSPENDED_PUBLIC_FRONTEND_HOSTS.has(cleanText(hostname).toLowerCase());
 }
 
 function publicEnvCandidates(): string[] {
@@ -71,6 +76,7 @@ function normalizePublicOrigin(raw: string): string {
     const url = new URL(text);
     if (!/^https?:$/i.test(url.protocol)) return "";
     if (isPrivateFrontendHost(url.hostname)) return "";
+    if (isSuspendedPublicFrontendHost(url.hostname)) return "";
     return trimTrailingSlash(url.origin);
   } catch {
     return "";

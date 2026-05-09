@@ -1869,6 +1869,11 @@ export default function MarketplacePage() {
   }, [location.search]);
   const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
+  const publicShopOwnerId = firstTruthy(
+    publicShopRecord?.owner_gmfn_id,
+    publicShopRecord?.gmfn_id,
+    currentGmfnId
+  );
 
   const activeCommunityId = useMemo(() => {
     return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
@@ -1906,9 +1911,9 @@ export default function MarketplacePage() {
   }, []);
 
   const publicShopViewLink = useMemo(() => {
-    if (!currentGmfnId || !publicShopRecord) return "";
-    return publicShopUrl(currentGmfnId);
-  }, [currentGmfnId, publicShopRecord]);
+    if (!publicShopOwnerId || !publicShopRecord) return "";
+    return publicShopUrl(publicShopOwnerId);
+  }, [publicShopOwnerId, publicShopRecord]);
 
   const publicShopUnavailableText = !currentGmfnId
     ? "Your GSN ID is not ready yet."

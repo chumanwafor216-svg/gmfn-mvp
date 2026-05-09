@@ -82,6 +82,12 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
+  /SUSPENDED_PUBLIC_FRONTEND_HOSTS\s*=\s*new Set\(\["frontend\.onrender\.com"\]\)/,
+  "Public links must reject the suspended frontend.onrender.com service as a shareable origin."
+);
+
+assertContains(
+  "src/lib/publicLinks.ts",
   /return\s+`\/shop\/\$\{encodeURIComponent\(ownerId\)\}#\$\{PUBLIC_SHOP_DIARIES_ANCHOR\}`;/,
   "Public shop links must land on the whole shop diaries domain, not a private app route or one block."
 );
@@ -112,8 +118,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!currentGmfnId \|\| !publicShopRecord\) return "";[\s\S]*?return publicShopUrl\(currentGmfnId\);[\s\S]*?}, \[currentGmfnId, publicShopRecord\]\);/,
-  "Marketplace public shop copy/open actions must use the canonical full public shop URL only after the backend confirms an active owner shop."
+  /const publicShopOwnerId = firstTruthy\([\s\S]*?publicShopRecord\?\.owner_gmfn_id,[\s\S]*?publicShopRecord\?\.gmfn_id,[\s\S]*?currentGmfnId[\s\S]*?\);[\s\S]*?const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!publicShopOwnerId \|\| !publicShopRecord\) return "";[\s\S]*?return publicShopUrl\(publicShopOwnerId\);[\s\S]*?}, \[publicShopOwnerId, publicShopRecord\]\);/,
+  "Marketplace public shop copy/open actions must use the backend-confirmed owner ID and canonical full public shop URL only after an active owner shop exists."
 );
 
 assertContains(
