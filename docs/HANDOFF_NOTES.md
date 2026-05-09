@@ -1,3 +1,22 @@
+### Suspended host early migration guard (2026-05-09)
+
+- Owner screenshots showed the newest failed-shop copy guard live, but the phone browser still stayed on suspended `frontend.onrender.com`.
+- Line Auditor C confirmed:
+  - `App.tsx` had a redirect, but it runs inside React `useEffect`, after React/Suspense starts.
+  - if the old host serves a stale app shell or bundle, that redirect can be too late or never run.
+  - no frontend service worker was found, so this looks like stale deploy/host mismatch/browser cache rather than PWA cache.
+- Correction:
+  - `frontend/index.html` now has a head script that redirects `frontend.onrender.com` to `https://gmfn-frontend.onrender.com` before React loads, preserving path/search/hash.
+  - `frontend/src/main.tsx` now has a synchronous backup guard before rendering React.
+  - `frontend/src/App.tsx` remains as tertiary fallback.
+  - `frontend/tools/audit-link-contracts.mjs` locks all three redirect layers.
+- Verification:
+  - line auditor completed read-only host redirect audit.
+  - `npm exec -- eslint src\main.tsx tools\audit-link-contracts.mjs` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed outside sandbox after the known Vite/esbuild spawn escalation.
+
 ### Owner-side public shop link readiness guards (2026-05-09)
 
 - Owner required line auditors for the public shop link issue.

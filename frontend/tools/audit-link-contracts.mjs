@@ -93,6 +93,18 @@ assertContains(
 );
 
 assertContains(
+  "index.html",
+  /window\.location\.hostname\.toLowerCase\(\) !== "frontend\.onrender\.com"[\s\S]*?window\.location\.replace\([\s\S]*?"https:\/\/gmfn-frontend\.onrender\.com"[\s\S]*?window\.location\.pathname[\s\S]*?window\.location\.search[\s\S]*?window\.location\.hash/,
+  "The HTML shell must redirect frontend.onrender.com before React loads."
+);
+
+assertContains(
+  "src/main.tsx",
+  /function migrateSuspendedPublicHost\(\): boolean[\s\S]*?isSuspendedPublicFrontendHost\(hostname\)[\s\S]*?configuredPublicFrontendOrigin\(\)[\s\S]*?window\.location\.replace\(target\);[\s\S]*?if \(!migrateSuspendedPublicHost\(\)\)/,
+  "The React entrypoint must redirect frontend.onrender.com synchronously before rendering the app."
+);
+
+assertContains(
   "src/lib/publicLinks.ts",
   /return\s+`\/shop\/\$\{encodeURIComponent\(ownerId\)\}#\$\{PUBLIC_SHOP_DIARIES_ANCHOR\}`;/,
   "Public shop links must land on the whole shop diaries domain, not a private app route or one block."
