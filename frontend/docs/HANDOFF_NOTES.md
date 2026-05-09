@@ -14,6 +14,12 @@
 - Updated `src/pages/CoverPage.tsx` so `Continue` always opens `/welcome`, regardless of create/invite/approved/existing entry mode.
 - Entry mode is still detected and persisted for downstream use.
 
+## 2026-05-09 Cover Secondary CTA Wording Corrected
+
+- Owner requested the secondary Cover action stop saying `Read the full guide first`.
+- Updated `src/pages/CoverPage.tsx` so the visible secondary button now reads `About GSN & I`.
+- Updated the root `docs/SCREEN_SPECS.md` to keep the locked Cover spec aligned.
+
 ## 2026-05-09 Public Shop Whole-Page Share Correction
 
 - Owner clarified from local 5174 testing that every public-shop share/copy should open the whole public shop page.

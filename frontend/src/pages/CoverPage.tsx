@@ -1572,7 +1572,7 @@ export default function CoverPage() {
 
             >
 
-              Read the full guide first
+              About GSN & I
 
             </button>
             </div>

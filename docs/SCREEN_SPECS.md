@@ -12,7 +12,7 @@ Must show:
 - Trust made visible for stronger communities.
 - Trust Infrastructure Protocol card
 - Continue button
-- Read the full guide first button
+- About GSN & I button
 - Secure / Verified / Global badges
 
 Must not show:

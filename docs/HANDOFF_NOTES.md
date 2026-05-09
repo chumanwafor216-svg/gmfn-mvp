@@ -33,6 +33,12 @@
   - route target correction for Cover only
   - no backend/auth changes
 
+### Cover secondary CTA wording corrected (2026-05-09)
+
+- Owner requested the secondary Cover action stop saying `Read the full guide first`.
+- Updated `frontend/src/pages/CoverPage.tsx` and `docs/SCREEN_SPECS.md` so the visible secondary button now reads `About GSN & I`.
+- Scope: copy/spec correction only; the action still opens `/guide`.
+
 ### Two-line-auditor public shop 0/12 repair (2026-05-09)
 
 - Owner screenshot still showed `0/12` in Shop Diaries after link fixes, so two line auditors were requested and used:
