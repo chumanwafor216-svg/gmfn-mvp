@@ -589,6 +589,22 @@ def activate_membership(
             detail="This identity has not been admitted to an active community",
         )
 
+    if not is_user_activation_pending(user):
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "account_already_activated",
+                "message": (
+                    "This membership is already activated. Sign in with the existing "
+                    "password or use the account recovery path."
+                ),
+                "next_action": "login",
+                "next_action_label": "Sign in",
+                "login_path": "/login?force=1",
+                "gmfn_id": gmfn_id,
+            },
+        )
+
     user.hashed_password = get_password_hash(password)
     db.add(user)
     db.commit()

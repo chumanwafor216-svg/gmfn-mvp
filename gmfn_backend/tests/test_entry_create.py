@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.security import get_password_hash
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanJoinRequest, User
+from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
 
 
 def _parse_api_datetime(value: str) -> datetime:
@@ -406,6 +406,69 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     notifications_body = notifications_res.json()
     notification_titles = [item["title"] for item in notifications_body["items"]]
     assert "Starter trust has been established" in notification_titles
+
+
+def test_activate_membership_cannot_reset_already_activated_account(client):
+    with SessionLocal() as db:
+        user = User(
+            email="active.member@example.com",
+            hashed_password=get_password_hash("old-secret"),
+            role="user",
+            gmfn_id="GMFN-U-ACTIVE1",
+            phone_e164="+2348011112222",
+            display_name="Active Member",
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        clan = Clan(
+            name="Active Member Circle",
+            invite_code="active-member-circle",
+            status="active",
+            created_by_user_id=int(user.id),
+        )
+        db.add(clan)
+        db.commit()
+        db.refresh(clan)
+
+        db.add(
+            ClanMembership(
+                clan_id=int(clan.id),
+                user_id=int(user.id),
+                role="member",
+            )
+        )
+        db.commit()
+
+    reset_res = client.post(
+        "/auth/activate-membership",
+        json={
+            "gmfn_id": "GMFN-U-ACTIVE1",
+            "password": "new-secret",
+            "confirm_password": "new-secret",
+        },
+    )
+    assert reset_res.status_code == 409, reset_res.text
+    assert reset_res.json()["detail"]["code"] == "account_already_activated"
+
+    old_login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "active.member@example.com",
+            "password": "old-secret",
+        },
+    )
+    assert old_login_res.status_code == 200, old_login_res.text
+
+    new_login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "active.member@example.com",
+            "password": "new-secret",
+        },
+    )
+    assert new_login_res.status_code == 401, new_login_res.text
 
 
 def test_auth_me_profile_image_upload_persists_on_user_record(client):

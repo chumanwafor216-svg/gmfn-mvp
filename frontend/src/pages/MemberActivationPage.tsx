@@ -1,8 +1,12 @@
 import React, { useMemo, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import OriginLink from "../components/OriginLink";
-import { activateApprovedMember, observeIdentityRisk } from "../lib/api";
+import {
+  activateApprovedMember,
+  activateMembership,
+  observeIdentityRisk,
+} from "../lib/api";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -272,6 +276,7 @@ function buttonGuardProps(): Pick<
 }
 
 export default function MemberActivationPage() {
+  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
 
@@ -332,12 +337,20 @@ export default function MemberActivationPage() {
     try {
       setBusy(true);
 
-      await activateApprovedMember({
-        gmfn_id: requestReady.gmfn_id || null,
-        request_id: requestReady.request_id || null,
-        password: requestReady.password,
-        confirm_password: requestReady.confirm_password,
-      });
+      if (requestReady.gmfn_id) {
+        await activateMembership({
+          gmfn_id: requestReady.gmfn_id,
+          password: requestReady.password,
+          confirm_password: requestReady.confirm_password,
+        });
+      } else {
+        await activateApprovedMember({
+          gmfn_id: null,
+          request_id: requestReady.request_id || null,
+          password: requestReady.password,
+          confirm_password: requestReady.confirm_password,
+        });
+      }
 
       await observeIdentityRisk().catch(() => null);
 
@@ -345,6 +358,7 @@ export default function MemberActivationPage() {
       setSuccess(
         "Membership activated successfully. Your starter trust, onboarding proofs, and identity observation are now available for review."
       );
+      navigate("/app/dashboard", { replace: true });
     } catch (err: any) {
       setError(err?.message || "Activation failed.");
     } finally {

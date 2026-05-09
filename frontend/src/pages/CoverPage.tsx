@@ -52,6 +52,24 @@ function writeStorage(key: string, value: string | null): void {
 
 }
 
+function readStorage(key: string): string | null {
+
+  try {
+
+    if (!canUseStorage()) return null;
+
+    const value = window.localStorage.getItem(key);
+
+    return value == null ? null : String(value);
+
+  } catch {
+
+    return null;
+
+  }
+
+}
+
 
 
 function normalizeValue(value: unknown): string {
@@ -196,6 +214,12 @@ function detectEntryMode(
 
 
 
+  const storedMatch = matchEntryMode(normalizeValue(readStorage(ENTRY_MODE_KEY)));
+
+  if (storedMatch) return storedMatch;
+
+
+
   const path = normalizeValue(pathname);
 
 
@@ -286,7 +310,11 @@ function persistEntryState(entryMode: EntryMode, search: string): void {
 
   if (entryMode === "invite") {
 
-    writeStorage(ENTRY_INVITE_CODE_KEY, inviteCode);
+    if (inviteCode) {
+
+      writeStorage(ENTRY_INVITE_CODE_KEY, inviteCode);
+
+    }
 
     writeStorage(ENTRY_CREATE_CODE_KEY, null);
 
@@ -298,7 +326,11 @@ function persistEntryState(entryMode: EntryMode, search: string): void {
 
   if (entryMode === "create") {
 
-    writeStorage(ENTRY_CREATE_CODE_KEY, createCode);
+    if (createCode) {
+
+      writeStorage(ENTRY_CREATE_CODE_KEY, createCode);
+
+    }
 
     writeStorage(ENTRY_INVITE_CODE_KEY, null);
 

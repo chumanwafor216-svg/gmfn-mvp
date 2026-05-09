@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "audit:link-contracts": "node tools/audit-link-contracts.mjs",
+    "audit:entry-auth": "node tools/audit-entry-auth-contracts.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

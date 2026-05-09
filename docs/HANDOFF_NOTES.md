@@ -20819,3 +20819,38 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox.
 - Remaining risk:
   - Needs live phone validation after redeploy/hard refresh: Dashboard -> `Picture frame` -> confirm Upload/Change/Remove appears and remains visible above the page, without landing on Finance.
+
+### Entry/auth stability incident pass (2026-05-09)
+
+- Owner reported testers are being thrown out during registration/login, landing back on the cover page, and then being told credentials are wrong.
+- Treated this as a system stability incident, not a visual/button task.
+- Confirmed backend contract:
+  - `/auth/login` returns structured `account_activation_pending` details when an identity exists but activation is unfinished.
+  - `/auth/activate-membership` is the canonical GMFN-ID membership activation endpoint.
+  - `/auth/activate-approved-member` remains useful for approved join records that only have a request ID.
+- Confirmed frontend risk:
+  - `frontend/src/components/RequireAuth.tsx` could redirect a user with a stored token to `/cover` when `/auth/me` failed.
+  - That made stale/invalid sessions look like the app abruptly threw testers out to the public cover page.
+- Updated `frontend/src/components/RequireAuth.tsx`:
+  - invalid/unauthorized stored sessions now clear the access token and selected community at the system guard.
+  - protected-route auth failures now go to `/login?session=expired` while preserving the originally requested route in navigation state.
+  - removed the protected-route fallback that sent failed auth checks to `/cover`.
+- Updated `frontend/src/pages/CoverPage.tsx`:
+  - plain cover visits now preserve stored invite/create/approved entry intent.
+  - stored invite/create codes are no longer erased when `/cover` opens without an explicit new code in the URL.
+- Updated `frontend/src/pages/MemberActivationPage.tsx`:
+  - uses `activateMembership()` when a GMFN ID is available.
+  - falls back to `activateApprovedMember()` only when activation has a request ID without GMFN ID.
+  - after successful activation, enters `/app/dashboard` with the fresh token instead of leaving testers stranded on the public activation screen.
+- Updated `gmfn_backend/app/api/routes/auth.py`:
+  - `/auth/activate-membership` now rejects already activated identities with structured `account_already_activated` instead of overwriting the password hash.
+- Updated `gmfn_backend/tests/test_entry_create.py`:
+  - added regression coverage proving already activated accounts cannot be reset through `/auth/activate-membership`.
+- Added `frontend/tools/audit-entry-auth-contracts.mjs` and `npm run audit:entry-auth`:
+  - rejects protected auth failures that navigate to `/cover`.
+  - requires invalid stored sessions to be cleared in the route guard.
+  - requires cover-page visits to preserve stored entry intent and codes.
+  - requires login to preserve activation-pending handling.
+  - requires the activation page to use the canonical endpoint for GMFN-ID activation.
+- Remaining risk:
+  - This pass addresses the clearest frontend/system-level cause of cover-page ejection. It still needs full live tester smoke validation: create community -> activate membership -> dashboard, join invite -> approval/activation -> dashboard, stale token -> login not cover.

@@ -6,6 +6,8 @@ import {
   getMe,
   getMyIdentityRisk,
   observeIdentityRisk,
+  setAccessToken,
+  setSelectedClanId,
 } from "../lib/api";
 
 type Props = {
@@ -183,6 +185,11 @@ function computeClientFingerprint(): string {
   }
 }
 
+function httpStatus(error: unknown): number | null {
+  const status = Number((error as any)?.status);
+  return Number.isFinite(status) ? status : null;
+}
+
 export default function RequireAuth({ children, requireRole }: Props) {
   const location = useLocation();
 
@@ -215,12 +222,23 @@ export default function RequireAuth({ children, requireRole }: Props) {
           return;
         }
 
-        const [me, currentClan] = await Promise.all([
-          getMe().catch(() => null),
-          getCurrentClan().catch(() => null),
-        ]);
+        let me: any = null;
+        let meError: unknown = null;
+
+        try {
+          me = await getMe();
+        } catch (error) {
+          meError = error;
+        }
+
+        const currentClan = await getCurrentClan().catch(() => null);
 
         if (!me) {
+          const status = httpStatus(meError);
+          if (status === 401 || status === 403) {
+            setAccessToken(null);
+            setSelectedClanId(null);
+          }
           finish(false);
           return;
         }
@@ -375,7 +393,13 @@ export default function RequireAuth({ children, requireRole }: Props) {
       );
     }
 
-    return <Navigate to="/cover" replace />;
+    return (
+      <Navigate
+        to="/login?session=expired"
+        replace
+        state={{ from: location }}
+      />
+    );
   }
 
   if (continuityBlock) {
