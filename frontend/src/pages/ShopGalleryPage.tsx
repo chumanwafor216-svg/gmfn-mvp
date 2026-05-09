@@ -187,6 +187,13 @@ function legacyProductAnchorId(product: ShopProduct): string {
   return product.id ? `product-${product.id}` : "";
 }
 
+function isInteractiveCardTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(
+    target.closest("button,a,input,select,textarea,[role='button']")
+  );
+}
+
 function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
   const size = compact ? 104 : 150;
   const doorSize = compact ? 66 : 92;
@@ -1932,6 +1939,16 @@ export default function ShopGalleryPage() {
                     className="shop-diary-card"
                     id={publicShopBlockAnchorId(product)}
                     aria-expanded={isProductOpen}
+                    onClick={(event) => {
+                      if (!isProductOpen) return;
+                      if (isInteractiveCardTarget(event.target)) return;
+                      setOpenProductId(null);
+                    }}
+                    onDoubleClick={(event) => {
+                      if (isInteractiveCardTarget(event.target)) return;
+                      event.preventDefault();
+                      setOpenProductId(productOpenId);
+                    }}
                     style={{
                       position: "relative",
                       borderRadius: isCompact ? 18 : 20,
@@ -1959,7 +1976,7 @@ export default function ShopGalleryPage() {
                         ? "0.78 / 1"
                         : "1.35 / 1",
                       gridColumn: isProductOpen ? "1 / -1" : undefined,
-                      cursor: "default",
+                      cursor: isProductOpen ? "zoom-out" : "zoom-in",
                       scrollMarginTop: 18,
                     }}
                   >

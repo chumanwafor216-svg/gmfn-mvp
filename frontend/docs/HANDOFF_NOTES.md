@@ -1,5 +1,19 @@
 # Handoff Notes
 
+## 2026-05-09 Public Shop Block Double-Tap Restore
+
+- Owner reported public shop blocks no longer pop open to the full block on double click/double tap, and no longer collapse from the block body on a single click/tap.
+- Updated `src/pages/ShopGalleryPage.tsx`:
+  - public shop block cards now expand when the card body receives a double click/double tap.
+  - an expanded block collapses when the card body receives a single click/tap.
+  - internal controls are excluded from card-level handling, so `Open`, `Share`, links, inputs, and media buttons keep their own behavior.
+  - cursor intent now reflects the state: closed blocks use `zoom-in`, open blocks use `zoom-out`.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining truth:
+  - this restores the frontend gallery interaction only. It does not change shop data, product ids, backend routes, Vault access, payments, auth, or Marketplace route contracts.
+
 ## 2026-05-09 Public Shop Block Share Particularisation
 
 - Owner reported the public shop Share button was generic and did not particularise to the block being shared.
