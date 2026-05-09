@@ -135,6 +135,12 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     assert body["primary_broadcast"]["image_url"] == spotlight_image_url
     assert len(body["broadcasts"]) == 1
 
+    gsn_alias = client.get("/marketplace/public/shop/GSN-U-TESTSHOP")
+    assert gsn_alias.status_code == 200, gsn_alias.text
+    alias_body = gsn_alias.json()
+    assert alias_body["item"]["gmfn_id"] == "GMFN-U-TESTSHOP"
+    assert [item["name"] for item in alias_body["products"]] == ["Fresh Rice"]
+
 
 def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_path):
     monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))

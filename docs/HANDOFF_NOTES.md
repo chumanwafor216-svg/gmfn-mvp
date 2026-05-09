@@ -1,3 +1,27 @@
+### Public shop 0/12 live follow-up (2026-05-09)
+
+- Owner screenshot still showed the public shop landing at Shop Diaries but displaying `0/12`.
+- Live checks:
+  - screenshot was on `frontend.onrender.com`, while canonical repo/deploy docs use `gmfn-frontend.onrender.com`.
+  - `https://frontend.onrender.com/shop/GSN-U-9867079C` returned `503` during this audit.
+  - `https://gmfn-frontend.onrender.com/shop/GSN-U-9867079C` returned `200`, but its live bundle hash did not yet match the latest local build hash from the prior commit, so Render may not have served the newest frontend yet.
+  - `https://gmfn-api.onrender.com/marketplace/public/shop/GMFN-U-9867079C?product_limit=100&broadcast_limit=24` returned `404`.
+  - `https://gmfn-api.onrender.com/marketplace/public/shop/GSN-U-9867079C?product_limit=100&broadcast_limit=24` also returned `404`.
+- Devil's-advocate truth:
+  - the screenshot's `0/12` is not proof that the gallery layout failed. The live backend is not finding the shop identity for that exact ID, and the frontend was swallowing that lookup failure into a misleading empty state.
+- Correction:
+  - backend marketplace identity lookup now treats `GSN-U-...` and `GMFN-U-...` as equivalent public/shop identity keys, matching the product-brand rule.
+  - lookup is now case-insensitive for GMFN/GSN IDs.
+  - public Shop Gallery no longer silently catches a failed public-shop fetch and turns it into `0/12`; it shows a public-shop load error inside Shop Diaries.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\marketplace.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp .pytest_tmp_public_shop_prefix_2` passed outside sandbox after pytest temp-folder permission escalation.
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - if the live database truly has no active shop for `9867079C`, code cannot invent the products. After backend/frontend redeploy, the next live check must verify the exact copied URL ID against the Render API response.
+
 ### Public shop whole-domain landing repair (2026-05-09)
 
 - Owner asked to solve the public shop link issue after repeated wrong landings.

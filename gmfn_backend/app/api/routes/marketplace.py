@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -322,9 +323,29 @@ def _get_user_by_identity_key(
     if not raw:
         return None
 
-    user = db.query(User).filter(User.gmfn_id == raw).first()
-    if user:
-        return user
+    identity_candidates = [raw]
+    upper_raw = raw.upper()
+    if upper_raw.startswith("GSN-U-"):
+        identity_candidates.append(f"GMFN-U-{raw[6:]}")
+    elif upper_raw.startswith("GMFN-U-"):
+        identity_candidates.append(f"GSN-U-{raw[7:]}")
+
+    seen_candidates = set()
+    for candidate in identity_candidates:
+        normalized_candidate = _safe_str(candidate)
+        if not normalized_candidate:
+            continue
+        candidate_key = normalized_candidate.upper()
+        if candidate_key in seen_candidates:
+            continue
+        seen_candidates.add(candidate_key)
+        user = (
+            db.query(User)
+            .filter(func.upper(User.gmfn_id) == candidate_key)
+            .first()
+        )
+        if user:
+            return user
 
     numeric_id = _safe_int(raw, 0)
     if numeric_id > 0:

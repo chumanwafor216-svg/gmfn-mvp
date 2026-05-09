@@ -779,7 +779,7 @@ export default function ShopGalleryPage() {
           ? await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
               product_limit: 100,
               broadcast_limit: 24,
-            }).catch(() => null)
+            })
           : null;
 
         const normalizedShop = normalizeShop(
@@ -864,8 +864,11 @@ export default function ShopGalleryPage() {
         );
       } catch (err: any) {
         if (!alive) return;
+        const message = safeStr(err?.message);
         setError(
-          safeStr(err?.message) || "Shop gallery could not be loaded right now."
+          /seller identity|shop not found|404/i.test(message)
+            ? "This public shop link is not connected to an active shop yet. Ask the owner to refresh and send the full public shop link again."
+            : message || "Shop gallery could not be loaded right now."
         );
       } finally {
         if (alive) setLoading(false);
@@ -1924,6 +1927,13 @@ export default function ShopGalleryPage() {
 
           {loading ? (
             <div style={{ ...helperText(), padding: 16 }}>Loading shop gallery...</div>
+          ) : error ? (
+            <div style={{ ...innerCard("#F8FBFF") }}>
+              <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
+                Public shop could not be loaded.
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>{error}</div>
+            </div>
           ) : visibleProducts.length === 0 ? (
             <div style={{ ...innerCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
