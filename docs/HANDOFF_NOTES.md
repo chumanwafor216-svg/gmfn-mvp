@@ -20767,3 +20767,26 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox.
 - Remaining risk:
   - Needs live mobile tap validation after redeploy/hard refresh: Dashboard -> tap `Picture frame` repeatedly -> tap Upload/Change/Remove and confirm the button slot does not move.
+
+### Dashboard picture-frame tap-leak fix (2026-05-09)
+
+- Owner reported the Dashboard picture-frame gear/tools were landing on Finance.
+- Treated this as an explicit follow-up to the frozen Dashboard picture-frame control area.
+- Confirmed likely cause:
+  - the picture-frame rails were visually anchored after the previous pass, but the rail/slot wrappers still needed their own event guards.
+  - native `disabled={!avatarSrc}` on the Remove buttons can behave inconsistently on mobile and may not reliably capture taps, allowing the tap to feel like it falls through to a route button behind/near the rail.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - added `dashboardFrameTapGuardProps()` for the picture-frame slot and rail wrappers.
+  - applied the guard to both passport and large dashboard picture-frame slots and rails.
+  - changed both Remove controls from native `disabled` to `aria-disabled` plus guarded `onClick`, so every tap is captured even when there is no picture to remove.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - Dashboard picture-frame checks now require the guarded slot/rail structure.
+  - audit now rejects native `disabled={!avatarSrc}` in Dashboard picture-frame controls.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint tools/audit-mobile-tap-stability.mjs src/pages/DashboardPage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check` passed, with only Windows line-ending warnings.
+  - `npm run build` passed outside the sandbox.
+- Remaining risk:
+  - If the top-right app-shell `Tools` button is the control being described as "picture frame gears/tool", that is a different component in `frontend/src/layout/AppLayout.tsx` and should be traced separately. This pass fixed the actual Dashboard picture-frame Upload/Change/Remove controls.

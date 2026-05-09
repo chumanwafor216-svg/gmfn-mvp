@@ -926,6 +926,18 @@ function stopDashboardPointerEvent(
   event?.stopPropagation();
 }
 
+function dashboardFrameTapGuardProps(): Pick<
+  React.HTMLAttributes<HTMLElement>,
+  "onPointerDown" | "onPointerUp" | "onMouseDown" | "onClick"
+> {
+  return {
+    onPointerDown: stopDashboardPointerEvent,
+    onPointerUp: stopDashboardPointerEvent,
+    onMouseDown: stopDashboardPointerEvent,
+    onClick: stopDashboardPointerEvent,
+  };
+}
+
 function safeStr(x: unknown): string {
   return String(x ?? "").trim();
 }
@@ -6380,6 +6392,7 @@ export default function DashboardPage() {
               </div>
 
               <div
+                {...dashboardFrameTapGuardProps()}
                 style={{
                   height: isPhone ? 34 : 36,
                   minHeight: isPhone ? 34 : 36,
@@ -6431,6 +6444,7 @@ export default function DashboardPage() {
                 </button>
 
                 <div
+                  {...dashboardFrameTapGuardProps()}
                   style={{
                     position: "absolute",
                     top: "calc(100% + 6px)",
@@ -6491,8 +6505,14 @@ export default function DashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={removeAvatar}
-                    disabled={!avatarSrc}
+                    onClick={(event) => {
+                      if (!avatarSrc) {
+                        consumeDashboardButtonEvent(event);
+                        return;
+                      }
+                      void removeAvatar(event);
+                    }}
+                    aria-disabled={!avatarSrc}
                     {...dashboardButtonGuardProps()}
                     style={{
                       ...dashboardFillButton(subtleBtn(!avatarSrc)),
@@ -7045,6 +7065,7 @@ export default function DashboardPage() {
                 </div>
 
                 <div
+                  {...dashboardFrameTapGuardProps()}
                   style={{
                     marginTop: isPhone ? 7 : 9,
                     height: isPhone ? 44 : 42,
@@ -7098,6 +7119,7 @@ export default function DashboardPage() {
                   </button>
 
                   <div
+                    {...dashboardFrameTapGuardProps()}
                     style={{
                       position: "absolute",
                       left: 0,
@@ -7156,8 +7178,14 @@ export default function DashboardPage() {
 
                     <button
                       type="button"
-                      onClick={removeAvatar}
-                      disabled={!avatarSrc}
+                      onClick={(event) => {
+                        if (!avatarSrc) {
+                          consumeDashboardButtonEvent(event);
+                          return;
+                        }
+                        void removeAvatar(event);
+                      }}
+                      aria-disabled={!avatarSrc}
                       {...dashboardButtonGuardProps()}
                       style={{
                         ...dashboardFillButton(subtleBtn(!avatarSrc)),

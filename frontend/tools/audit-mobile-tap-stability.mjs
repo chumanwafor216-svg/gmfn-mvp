@@ -107,13 +107,13 @@ const dashboardFrameChecks = [
     label:
       "Dashboard passport picture tools must be anchored from the fixed-height Frame button slot",
     pattern:
-      /aria-expanded=\{passportPictureToolsOpen\}[\s\S]*?\{isPhone \? "Frame" : "Picture frame"\}[\s\S]*?top: "calc\(100% \+ 6px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"/,
+      /\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?aria-expanded=\{passportPictureToolsOpen\}[\s\S]*?\{isPhone \? "Frame" : "Picture frame"\}[\s\S]*?\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?top: "calc\(100% \+ 6px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"[\s\S]*?aria-disabled=\{!avatarSrc\}/,
   },
   {
     label:
       "Dashboard main picture tools must be anchored from the fixed-height Picture frame button slot",
     pattern:
-      /aria-expanded=\{pictureToolsOpen\}[\s\S]*?Picture frame[\s\S]*?top: "calc\(100% \+ 8px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"/,
+      /\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?aria-expanded=\{pictureToolsOpen\}[\s\S]*?Picture frame[\s\S]*?\{\.\.\.dashboardFrameTapGuardProps\(\)\}[\s\S]*?top: "calc\(100% \+ 8px\)"[\s\S]*?zIndex: 80[\s\S]*?transition: "none"[\s\S]*?aria-disabled=\{!avatarSrc\}/,
   },
 ];
 
@@ -126,6 +126,16 @@ for (const check of dashboardFrameChecks) {
       text: "Expected fixed-slot anchored picture-frame tool rail was not found.",
     });
   }
+}
+
+if (/(^|\s)disabled=\{!avatarSrc\}/m.test(dashboardSource)) {
+  findings.push({
+    file: relative(frontendRoot, dashboardPagePath),
+    line: 1,
+    label:
+      "Dashboard picture-frame tool buttons must avoid native disabled so mobile taps cannot fall through to route controls",
+    text: "disabled={!avatarSrc}",
+  });
 }
 
 if (findings.length > 0) {
