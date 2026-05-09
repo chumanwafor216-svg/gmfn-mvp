@@ -34,6 +34,14 @@ const forbiddenPatterns = [
     label: "Transform will-change can keep tappable controls on unstable layers",
     pattern: /willChange\s*:\s*["']transform["']|will-change\s*:\s*transform/,
   },
+  {
+    label: "Offscreen legacy copy fields can make mobile browsers re-anchor after tap",
+    pattern: /\.(?:left|top)\s*=\s*["']-9999px["']/,
+  },
+  {
+    label: "Legacy copy focus must opt out of scroll movement on mobile",
+    pattern: /(?:ta|textarea|copyTarget|copyTextarea)\.focus\(\s*\)/i,
+  },
 ];
 
 function listSourceFiles(directory) {

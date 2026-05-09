@@ -20712,3 +20712,32 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox.
 - Remaining risk:
   - Needs a live mobile tap check after deployment: open Marketplace -> Records & Links -> Join this community -> Refresh Join Link -> tap each Join action and confirm no visual bounce or wrong-route landing.
+
+### Join this community line-auditor follow-up (2026-05-09)
+
+- Owner requested explicit line auditors because the `Join this community` buttons still felt wrong on phone.
+- Two line-auditors traced the lane:
+  - link-path audit confirmed the Join lane uses `normalizedJoinInviteUrl()` / `canonicalJoinInviteUrl()` and does not produce `/app/finance`; any Finance landing risk is now more likely stale deploy/cache/wrong tap area than the Join-link code path.
+  - layout/event audit confirmed the Join button grid is fixed-height, the Join URL reserve is fixed-height, the Join preview is fixed-height, and the notice is fixed-position.
+- Strongest remaining root cause found:
+  - `frontend/src/lib/api.ts` `safeCopy()` legacy fallback used a hidden textarea at `left/top: -9999px`, then called `select()`.
+  - on mobile/local `http://192.168...` testing, clipboard API can be blocked, so the fallback runs; selecting the offscreen textarea can steal focus and make mobile Chrome re-anchor/scroll the viewport, which looks like the button area jumped.
+- Updated `frontend/src/lib/api.ts`:
+  - legacy copy fallback now keeps the textarea fixed at viewport origin with 1px size and opacity 0.
+  - focuses with `{ preventScroll: true }`.
+  - restores the previous focused element with `{ preventScroll: true }`.
+  - restores `scrollX/scrollY` after the copy attempt.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - added a fixed-height `joinShareMessageCardStyle` and applied it to the Join message preview, closing another dynamic-height path in the same lane.
+- Updated audits:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now rejects `-9999px` legacy copy fields and textarea copy focus without `preventScroll`.
+  - `frontend/tools/audit-link-contracts.mjs` now also verifies the fixed-height Join message preview.
+- Verification:
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm exec -- eslint tools/audit-mobile-tap-stability.mjs tools/audit-link-contracts.mjs src/lib/api.ts src/pages/MarketplacePage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_frontend_link_origins.py --basetemp C:\tmp\pytest-join-copy-fallback` passed.
+  - `git diff --check` passed, with only Windows line-ending warnings.
+  - `npm run build` passed outside the sandbox.
+- Remaining risk:
+  - This should address copy-triggered mobile viewport jumps, especially on local phone testing over insecure HTTP. Live validation still needs a fresh redeploy/hard refresh because old bundles will keep the old `safeCopy()` behavior.

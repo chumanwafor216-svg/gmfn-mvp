@@ -1401,6 +1401,17 @@ function shareMessageCardStyle(isCompact = false): React.CSSProperties {
   };
 }
 
+function joinShareMessageCardStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...shareMessageCardStyle(isCompact),
+    height: isCompact ? 146 : 132,
+    minHeight: isCompact ? 146 : 132,
+    maxHeight: isCompact ? 146 : 132,
+    overscrollBehavior: "contain",
+    scrollbarWidth: "thin",
+  };
+}
+
 function buildGsnShareMessage(
   kind: "join" | "create",
   opts: {
@@ -4298,7 +4309,7 @@ export default function MarketplacePage() {
                       WhatsApp
                     </button>
                   </div>
-                  <div style={shareMessageCardStyle(isCompact)}>
+                  <div style={joinShareMessageCardStyle(isCompact)}>
                     <div style={sectionLabel()}>Message to send</div>
                     <div
                       style={{
