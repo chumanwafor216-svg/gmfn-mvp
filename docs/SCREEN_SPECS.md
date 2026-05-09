@@ -76,7 +76,8 @@ Frozen:
 - dashboard profile picture frame tools
 
 Rules:
-- Picture frame tools must remain visible by default inside the dashboard picture frame area.
+- Picture frame tools must remain visible as fixed rails inside the dashboard picture frame area.
+- Do not make the picture frame tools collapsible or gear-driven; opening/closing must not change surrounding layout height.
 - Remove must clear the saved account profile picture, not only hide it locally.
 - Dashboard must stay a reflector / command centre, not a content dump.
 

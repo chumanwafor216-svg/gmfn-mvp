@@ -62,6 +62,19 @@
 - Follow-up anti-jump correction: both top and lower picture tool lanes now reserve the same space when collapsed, using hidden placeholders instead of adding/removing layout height.
 - This reuses the same backend-backed upload/remove behavior and did not touch Dashboard Market Wisdom.
 
+### Dashboard picture frame gears removed for stability (2026-05-09)
+
+- Owner reported that the picture frame gears still needed tightening because buttons had started jumping again.
+- Root cause: even with reserved space, the `Picture frame` open/close gear was still a state change around the photo controls.
+- Updated `frontend/src/pages/DashboardPage.tsx` so both dashboard photo areas now use fixed, always-visible tool rails:
+  - `Upload`
+  - `Change`
+  - `Remove`
+- The old `pictureOptionsOpen` toggle state and plus/minus gear behavior were removed.
+- `Picture frame` / `Frame` is now a stable badge attached to the photo, not a button that changes layout.
+- Updated `docs/SCREEN_SPECS.md` so the frozen rule says picture tools must stay fixed and non-collapsible.
+- Dashboard Market Wisdom was not changed.
+
 ### Two-line-auditor public shop 0/12 repair (2026-05-09)
 
 - Owner screenshot still showed `0/12` in Shop Diaries after link fixes, so two line auditors were requested and used:
