@@ -1,5 +1,25 @@
 # Handoff Notes
 
+## 2026-05-09 Mobile Tap Stability Freeze Guard
+
+- Owner confirmed the previous mobile tap stabilization stopped the app-wide button jumpiness, especially on phone.
+- Added a frontend-level guard script:
+  - `tools/audit-mobile-tap-stability.mjs`
+  - package command: `npm run audit:tap-stability`
+- The guard fails if active frontend source reintroduces the patterns that caused or worsened the jumpiness:
+  - `translateZ(0)` GPU tap promotion.
+  - smooth post-action scroll behavior.
+  - `stopImmediatePropagation`.
+  - React touch handlers beside pointer/click handling.
+  - CSS `:active` hooks.
+  - transform `will-change` on tappable source.
+- Fresh active-source scan before adding the guard found no remaining matches in `frontend/src`.
+- Purpose:
+  - freeze the successful correction at system level so future Marketplace, Records & Links, Action Inbox, Shop Control, Trust Passport, and shared button work cannot quietly bring the same mobile instability back.
+- Remaining truth:
+  - this is a source-pattern guard plus build/lint verification, not a substitute for live phone clicks on Render.
+  - no backend, auth, payments, schemas, or route contracts were changed by this guard.
+
 ## 2026-05-09 Marketplace Records & Links Button Stability
 
 - Owner reported Marketplace Records & Links buttons still felt jumpy after the previous link audit.
