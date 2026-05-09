@@ -6421,6 +6421,8 @@ export default function DashboardPage() {
                     display: "grid",
                     gap: 5,
                     gridTemplateColumns: "1fr",
+                    minHeight: isPhone ? 112 : 122,
+                    alignContent: "start",
                   }}
                 >
                   <button
@@ -6464,7 +6466,25 @@ export default function DashboardPage() {
                     Remove
                   </button>
                 </div>
-              ) : null}
+              ) : (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    display: "grid",
+                    gap: 5,
+                    gridTemplateColumns: "1fr",
+                    minHeight: isPhone ? 112 : 122,
+                    alignContent: "start",
+                    opacity: 0,
+                    pointerEvents: "none",
+                    visibility: "hidden",
+                  }}
+                >
+                  <span style={{ minHeight: isPhone ? 34 : 36 }} />
+                  <span style={{ minHeight: isPhone ? 34 : 36 }} />
+                  <span style={{ minHeight: isPhone ? 34 : 36 }} />
+                </div>
+              )}
             </div>
           </div>
 
@@ -7071,6 +7091,7 @@ export default function DashboardPage() {
                       : "repeat(3, minmax(0, 1fr))",
                     gap: 8,
                     alignItems: "stretch",
+                    minHeight: isPhone ? 44 : 42,
                   }}
                 >
                   <button
@@ -7110,7 +7131,28 @@ export default function DashboardPage() {
                     Remove
                   </button>
                 </div>
-              ) : null}
+              ) : (
+                <div
+                  aria-hidden="true"
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: isPhone
+                      ? "repeat(3, minmax(0, 1fr))"
+                      : "repeat(3, minmax(0, 1fr))",
+                    gap: 8,
+                    alignItems: "stretch",
+                    minHeight: isPhone ? 44 : 42,
+                    opacity: 0,
+                    pointerEvents: "none",
+                    visibility: "hidden",
+                  }}
+                >
+                  <span style={{ minHeight: isPhone ? 44 : 42 }} />
+                  <span style={{ minHeight: isPhone ? 44 : 42 }} />
+                  <span style={{ minHeight: isPhone ? 44 : 42 }} />
+                </div>
+              )}
 
               {avatarStatus ? (
                 <div

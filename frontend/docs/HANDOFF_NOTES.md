@@ -37,6 +37,7 @@
 - Owner confirmed the photo still did not have tools attached.
 - Root cause: Dashboard renders the avatar twice; the first visible Identity Passport photo still had no tools after the lower picture frame was restored.
 - Updated `src/pages/DashboardPage.tsx` so the top Identity Passport photo has an attached `Frame` / `Picture frame` toggle and visible `Upload`, `Change`, `Remove` tools.
+- Follow-up anti-jump correction: both top and lower picture tool lanes now reserve the same space when collapsed, using hidden placeholders instead of adding/removing layout height.
 - The same upload/remove handlers are used; Dashboard Market Wisdom was not changed.
 
 ## 2026-05-09 Public Shop Whole-Page Share Correction
