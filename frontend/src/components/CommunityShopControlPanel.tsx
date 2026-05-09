@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicFrontendUrl, publicShopDiariesPath } from "../lib/publicLinks";
+import {
+  publicShopDiariesPath,
+  publicShopDiariesUrl,
+} from "../lib/publicLinks";
 import {
   actionTapGuardProps,
   brandStableTapTarget,
@@ -612,9 +615,7 @@ export default function CommunityShopControlPanel({
       return;
     }
 
-    const url = publicFrontendUrl(publicShopTo);
-
-    api.safeCopy(url);
+    api.safeCopy(publicShopDiariesUrl(publicShopTo));
     setNotice({ tone: "success", text: "Public shop link copied." });
   }
 

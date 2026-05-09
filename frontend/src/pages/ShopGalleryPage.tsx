@@ -8,8 +8,8 @@ import {
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
-  publicFrontendUrl,
-  publicShopDiariesPath,
+  canonicalPublicFrontendUrl,
+  publicShopDiariesUrl,
 } from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import {
@@ -1139,9 +1139,7 @@ export default function ShopGalleryPage() {
   }, [miniSpotlight, effectiveShop]);
 
   const absoluteShopLink = useMemo(() => {
-    return publicFrontendUrl(
-      publicShopDiariesPath(`${location.pathname}${location.search || ""}`)
-    );
+    return publicShopDiariesUrl(`${location.pathname}${location.search || ""}`);
   }, [location.pathname, location.search]);
 
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
@@ -1232,7 +1230,7 @@ export default function ShopGalleryPage() {
     }
     query.set("block", String(product.slotNumber));
     const queryText = query.toString();
-    const productUrl = publicFrontendUrl(
+    const productUrl = canonicalPublicFrontendUrl(
       `${location.pathname}${queryText ? `?${queryText}` : ""}${hash}`
     );
     const productTitle = productDisplayTitle(product);

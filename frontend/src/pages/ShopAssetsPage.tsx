@@ -15,7 +15,10 @@ import {
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
-import { publicFrontendUrl, publicShopDiariesPath } from "../lib/publicLinks";
+import {
+  canonicalPublicFrontendUrl,
+  publicShopDiariesUrl,
+} from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
 import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
 import {
@@ -513,10 +516,8 @@ function withClanQuery(path: string, clanId: number): string {
 
 function buildShopLink(gmfnId: string, clanId: number): string {
   if (!gmfnId) return "";
-  return publicFrontendUrl(
-    publicShopDiariesPath(
-      withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, clanId)
-    )
+  return publicShopDiariesUrl(
+    withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, clanId)
   );
 }
 
@@ -532,7 +533,7 @@ function buildProductDeepLink(
     )}`,
     clanId
   );
-  return publicFrontendUrl(`${path}#product-${productId}`);
+  return canonicalPublicFrontendUrl(`${path}#product-${productId}`);
 }
 
 function extractProductLabel(description: string): string {

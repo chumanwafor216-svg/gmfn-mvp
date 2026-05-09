@@ -135,6 +135,25 @@ export function publicFrontendUrl(pathOrUrl: string): string {
   return `${publicOrigin}${path}`;
 }
 
+export function canonicalPublicFrontendUrl(pathOrUrl: string): string {
+  const raw = cleanText(pathOrUrl);
+  if (!raw) return "";
+
+  const publicOrigin = configuredPublicFrontendOrigin();
+
+  if (/^https?:\/\//i.test(raw)) {
+    try {
+      const url = new URL(raw);
+      return `${publicOrigin}${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      return raw;
+    }
+  }
+
+  const path = raw.startsWith("/") ? raw : `/${raw.replace(/^\/+/, "")}`;
+  return `${publicOrigin}${path}`;
+}
+
 export function publicShopDiariesPath(pathOrUrl: string): string {
   const raw = cleanText(pathOrUrl);
   if (!raw) return "";
@@ -169,6 +188,10 @@ export function publicShopDiariesPath(pathOrUrl: string): string {
     const query = params.toString();
     return `${path || "/"}${query ? `?${query}` : ""}#${PUBLIC_SHOP_DIARIES_ANCHOR}`;
   }
+}
+
+export function publicShopDiariesUrl(pathOrUrl: string): string {
+  return canonicalPublicFrontendUrl(publicShopDiariesPath(pathOrUrl));
 }
 
 export function publicApiUrl(pathOrUrl: string): string {

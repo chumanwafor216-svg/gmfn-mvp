@@ -1,5 +1,25 @@
 # Handoff Notes
 
+## 2026-05-09 Canonical Public Shop Domain Links
+
+- Owner clarified that the shop-owner public shop link should show the complete public shop domain.
+- Root truth:
+  - `publicFrontendUrl()` intentionally supports current-browser origins for general app links.
+  - public shop links sent outside the community need a stricter canonical contract.
+- Updated `src/lib/publicLinks.ts`:
+  - added `canonicalPublicFrontendUrl()` to build absolute links from the configured public frontend origin, falling back to `https://gmfn-frontend.onrender.com`.
+  - added `publicShopDiariesUrl()` for complete canonical public shop URLs that land on `#shop-diaries`.
+- Updated shop-link producers:
+  - `src/pages/ShopGalleryPage.tsx`
+  - `src/pages/MarketplacePage.tsx`
+  - `src/pages/MarketplaceWorkspacePage.tsx`
+  - `src/pages/ShopAssetsPage.tsx`
+  - `src/components/CommunityShopControlPanel.tsx`
+- Behavior:
+  - copied/shared general public shop links now use the complete canonical public shop domain.
+  - generic public shop links still strip community/product filters and land on the 12-block `Shop Diaries` section.
+  - product/block-specific links also use the canonical public frontend domain while preserving `product_id` and the product hash.
+
 ## 2026-05-09 Public Shop Canonical 12-Block Payload Fix
 
 - Owner screenshot showed the public shop link still landing with `0/12` public blocks under Shop Diaries.

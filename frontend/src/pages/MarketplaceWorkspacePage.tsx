@@ -18,7 +18,7 @@ import {
 } from "../lib/api";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicFrontendUrl } from "../lib/publicLinks";
+import { publicFrontendUrl, publicShopDiariesUrl } from "../lib/publicLinks";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -537,10 +537,10 @@ export default function MarketplaceWorkspacePage() {
         inviteInfo?.public_shop_url ||
         ""
     );
-    if (direct) return publicFrontendUrl(direct);
+    if (direct) return publicShopDiariesUrl(direct);
 
     return selectedMemberGmfnId
-      ? publicFrontendUrl(
+      ? publicShopDiariesUrl(
           withClanQuery(`/shop/${encodeURIComponent(selectedMemberGmfnId)}`, activeClanId)
         )
       : "";
