@@ -1,3 +1,26 @@
+### Public shop production identity diagnostic (2026-05-09)
+
+- Owner asked to "go get it" after the public shop page correctly reached `/shop/{id}` but still reported that the shop link was not connected to an active shop.
+- Devil's-advocate truth:
+  - the frontend is now reaching the public shop surface.
+  - live production API still returned `Seller identity not found` for both `GMFN-U-9867079C` and `GSN-U-9867079C` during the audit.
+  - that failure happens before products, shop blocks, or scroll landing can matter.
+  - local/handoff evidence shows `GMFN-U-9867079C` as a local/test admin identity, not active frontend source code.
+- System-level correction:
+  - `gmfn_backend/app/api/routes/system_diagnostics.py` now has admin-only `GET /system/public-shop-identity/{identity_key}`.
+  - It checks the exact identity, the GMFN/GSN alias, numeric-id fallback, suffix matches, active owner shop rows, active products, and public/community-visible product count.
+  - It returns a clear `public_shop_status`: `identity_missing`, `shop_missing`, `products_empty`, or `ready`.
+- How to use after backend deploy:
+  - call `/system/public-shop-identity/GMFN-U-9867079C` with an admin token.
+  - if `identity_missing`, production does not have this owner identity and the visible link is stale/local or the production user data must be repaired.
+  - if `shop_missing`, the signed-in owner must open Marketplace on the canonical frontend and refresh/copy the public shop link so an active shop row is created.
+  - if `products_empty`, the owner shop exists but public shop blocks/products are missing.
+  - if `ready`, the backend is connected and any remaining failure is frontend host/cache/deploy.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\system_diagnostics.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_system_public_shop_diagnostics.py --basetemp C:\tmp\pytest-public-shop-diagnostics` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp C:\tmp\pytest-public-shop-existing-diagnostic` passed outside sandbox after Windows temp permission errors inside sandbox.
+
 ### Public shop root audit and suspended-host guard (2026-05-09)
 
 - Owner requested two auditors because the public shop link still showed a failure after a full-day trace.
