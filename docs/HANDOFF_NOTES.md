@@ -20673,3 +20673,23 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM`.
 - Remaining risk:
   - No automated browser runner exists in the current frontend package. A real deployed click-through is still needed for the owner-reported Marketplace path.
+
+### Public shop / invite link contract audit (2026-05-09)
+
+- Continued the owner-requested system-level audit for Marketplace Records & Links, public shop links, and invite links after the latest shop-domain fixes.
+- Added `frontend/tools/audit-link-contracts.mjs` and wired it as `npm run audit:link-contracts`.
+- The audit now fails if the frontend drifts away from these contracts:
+  - public shop links must use the deployed public frontend domain and land on the whole `/shop/:gmfnId#shop-diaries` public shop domain.
+  - product/block shares must resolve back to the complete public shop domain, not a block-only or Vault-only route.
+  - Marketplace, Marketplace Workspace, and Owner Shop Control must visibly show the full public shop URL before copy/open actions.
+  - invite links must canonicalize to `/start/join/:code` and reject unrelated fallback routes, preventing a join/invite link from landing in Finance, Marketplace, or another app page.
+  - Marketplace public shop cards must not hide the domain behind a masked label.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint tools/audit-link-contracts.mjs src/lib/publicLinks.ts src/lib/joinLinks.ts src/pages/MarketplacePage.tsx src/pages/ClansPage.tsx src/pages/MarketplaceWorkspacePage.tsx src/components/CommunityShopControlPanel.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_frontend_link_origins.py --basetemp C:\tmp\pytest-link-origins` passed.
+  - `git diff --check` passed, with only the expected Windows line-ending warning for `frontend/package.json`.
+  - `npm run build` passed outside the sandbox.
+- Remaining risk:
+  - This is a static/system contract audit plus build verification. It is not a substitute for a live mobile click-through on the Render deployment after the branch is pushed and redeployed.
