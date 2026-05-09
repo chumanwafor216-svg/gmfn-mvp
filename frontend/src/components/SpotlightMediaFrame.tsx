@@ -83,6 +83,10 @@ export default function SpotlightMediaFrame(
     event?.stopPropagation();
   }
 
+  function stopMediaPointerEvent(event?: React.SyntheticEvent) {
+    event?.stopPropagation();
+  }
+
   function toggleAudio(event?: React.SyntheticEvent) {
     stopMediaControlEvent(event);
 
@@ -216,9 +220,9 @@ export default function SpotlightMediaFrame(
     <button
       type="button"
       data-media-control="true"
-      onPointerDown={stopMediaControlEvent}
-      onMouseDown={stopMediaControlEvent}
-      onPointerUp={stopMediaControlEvent}
+      onPointerDown={stopMediaPointerEvent}
+      onMouseDown={stopMediaPointerEvent}
+      onPointerUp={stopMediaPointerEvent}
       onClick={toggleAudio}
       onKeyDown={(event) => {
         if (event.key !== "Enter" && event.key !== " ") return;

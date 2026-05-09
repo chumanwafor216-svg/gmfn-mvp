@@ -900,7 +900,7 @@ export default function ShopGalleryPage() {
     if (target) {
       cancelPendingGalleryReveal();
       target.scrollIntoView({
-        behavior: "smooth",
+        behavior: "auto",
         block: "start",
       });
       return;

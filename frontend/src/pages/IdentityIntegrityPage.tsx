@@ -230,7 +230,7 @@ function stableTapStyle(): React.CSSProperties {
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 2,
   };
 }

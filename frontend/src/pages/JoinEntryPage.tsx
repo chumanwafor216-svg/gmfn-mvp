@@ -104,7 +104,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     pointerEvents: "auto",
     appearance: "none",
     WebkitAppearance: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
   };
 }
@@ -136,7 +136,7 @@ function secondaryLink(): React.CSSProperties {
     pointerEvents: "auto",
     appearance: "none",
     WebkitAppearance: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
   };
 }

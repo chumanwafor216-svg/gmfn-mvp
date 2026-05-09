@@ -2583,24 +2583,28 @@ export async function getDailyInsight(): Promise<any> {
    UTIL
    ========================= */
 
-export function safeCopy(text: string): void {
+export async function safeCopy(text: string): Promise<boolean> {
   const t = String(text || "").trim();
-  if (!t) return;
+  if (!t) return false;
 
   if (
     typeof navigator !== "undefined" &&
     (navigator as any)?.clipboard?.writeText
   ) {
-    (navigator as any).clipboard.writeText(t).catch(() => tryLegacyCopy(t));
-    return;
+    try {
+      await (navigator as any).clipboard.writeText(t);
+      return true;
+    } catch {
+      return tryLegacyCopy(t);
+    }
   }
 
-  tryLegacyCopy(t);
+  return tryLegacyCopy(t);
 }
 
-function tryLegacyCopy(text: string) {
+function tryLegacyCopy(text: string): boolean {
   try {
-    if (typeof document === "undefined") return;
+    if (typeof document === "undefined") return false;
 
     const ta = document.createElement("textarea");
     ta.value = text;
@@ -2611,14 +2615,16 @@ function tryLegacyCopy(text: string) {
     ta.select();
 
     try {
-      document.execCommand("copy");
+      return document.execCommand("copy");
     } catch {
       // Legacy copy can fail in restricted browser contexts.
+      return false;
+    } finally {
+      ta.remove();
     }
-
-    ta.remove();
   } catch {
     // Copy is best-effort only.
+    return false;
   }
 }
 

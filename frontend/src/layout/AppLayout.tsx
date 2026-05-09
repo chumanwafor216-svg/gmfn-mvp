@@ -1505,8 +1505,17 @@ export default function AppLayout() {
     if (!activeItem) return;
 
     const frame = window.requestAnimationFrame(() => {
+      const navRect = mobileBottomNavRef.current?.getBoundingClientRect();
+      const itemRect = activeItem.getBoundingClientRect();
+      const isVisible =
+        navRect &&
+        itemRect.left >= navRect.left + 8 &&
+        itemRect.right <= navRect.right - 8;
+
+      if (isVisible) return;
+
       activeItem.scrollIntoView({
-        behavior: "smooth",
+        behavior: "auto",
         inline: "center",
         block: "nearest",
       });

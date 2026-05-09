@@ -1446,7 +1446,7 @@ export default function FinancePage() {
       return;
     }
 
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    target.scrollIntoView({ behavior: "auto", block: "start" });
   }
 
   if (loading) {

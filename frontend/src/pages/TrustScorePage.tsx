@@ -640,7 +640,7 @@ function tapSafeButtonBase(): React.CSSProperties {
     appearance: "none",
     WebkitAppearance: "none",
     isolation: "isolate",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
   };
 }
@@ -1389,7 +1389,7 @@ export default function TrustScorePage() {
       return;
     }
 
-    target.scrollIntoView({ behavior: "smooth", block: "start" });
+    target.scrollIntoView({ behavior: "auto", block: "start" });
   }
 
   function openTrustSection(targetId: string) {

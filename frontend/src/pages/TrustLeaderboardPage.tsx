@@ -52,7 +52,7 @@ function stableTapStyle(): React.CSSProperties {
     WebkitAppearance: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
-    transform: "translateZ(0)",
+    transform: "none",
     lineHeight: 1.2,
   };
 }

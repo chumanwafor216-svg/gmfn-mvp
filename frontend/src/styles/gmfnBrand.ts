@@ -147,7 +147,11 @@ export function brandStableTapTarget(): React.CSSProperties {
     WebkitTapHighlightColor: "transparent",
     touchAction: "manipulation",
     userSelect: "none",
-    backfaceVisibility: "hidden",
+    WebkitUserSelect: "none",
+    WebkitTouchCallout: "none",
+    backfaceVisibility: "visible",
+    transform: "none",
+    overflowAnchor: "none",
     outlineOffset: 4,
   };
 }

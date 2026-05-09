@@ -1,5 +1,59 @@
 # Handoff Notes
 
+## 2026-05-09 Marketplace Records & Links Button Stability
+
+- Owner reported Marketplace Records & Links buttons still felt jumpy after the previous link audit.
+- Follow-up from live phone testing: owner confirmed the jumpiness is worse on phone.
+- Later owner report: jumpiness appears to have spread throughout the app, so the fix moved from Marketplace-only to shared frontend tap stability.
+- Marketplace page changes:
+  - Marketplace success/error notices now render as a fixed bottom toast instead of an in-flow block above the page, preventing copy/share actions from shifting the current scroll position.
+  - Removed route-local `onTouchStart` / `onTouchStartCapture` guards from Marketplace button helpers; pointer and mouse guards remain.
+  - Section scrolling now uses immediate scroll and skips scrolling when the target section is already comfortably visible, reducing double-step movement after section expansion.
+  - Marketplace now cancels pending section-scroll animation frames before scheduling another one, so rapid taps cannot leave an older section scroll queued behind the latest tap.
+  - Follow-up audit found one remaining raw section-open animation frame; replaced it with the same cancelable scroll scheduler used elsewhere.
+  - Opening a different Marketplace section clears stale `#marketplace-loans-support` / `#marketplace-owned-links` hashes from the URL so old anchors do not reassert on later renders.
+  - Manual section toggles now clear known Marketplace hashes too, preventing a stale anchor from staying in the URL after the user collapses or reopens a lane.
+  - Section collapse/open controls now use the same pointer guard helper as the Records & Links action buttons.
+  - Public shop link buttons are now disabled unless the current member has a shop visible in the selected Marketplace.
+  - Join-link refresh now stays admin-only in the UI, matching the backend `/clans/{clan_id}/invite` contract.
+  - Follow-up on exact owner callout: the join-link message preview now renders below the action row, so clicking `Refresh Join Link` no longer inserts a large preview above the clicked buttons and pushes them downward.
+  - Follow-up on reported copy-link misroutes: link-block copy/email/open controls no longer use native `disabled` when a link is missing. They remain clickable, capture the tap, and show the missing-link explanation instead of allowing a dead control to feel like it fell through to nearby routes such as Shop Control or Trust Passport.
+  - Follow-up on copied links opening stale routes: `src/lib/api.ts` `safeCopy` now returns a real success/failure boolean. Marketplace waits for that result before saying a link was copied, so a blocked clipboard write no longer leaves the user unknowingly pasting an old Shop Control / Trust Passport URL.
+  - Phone-specific stability pass: Marketplace action buttons no longer use `translateZ(0)`, the Records & Links action grids opt out of scroll anchoring, and the join-link/message areas reserve stable space so refreshing or loading a join link does not inject a new block into the mobile button stack.
+- App-wide tap stability changes:
+  - Independent line-auditor pass was requested after the owner asked whether any auditor was working with us.
+  - The auditor flagged root-level scroll anchoring disablement as too broad. The `html`, `body`, and `#root` `overflow-anchor: none` patch was reverted. Narrow tappable-surface `overflow-anchor: none` remains.
+  - `src/styles/gmfnBrand.ts` `brandStableTapTarget()` now opts out of scroll anchoring, disables WebKit selection/callout, uses `transform: none`, and removes the old `backfaceVisibility: hidden` promotion hint.
+  - Shared controls in `src/components/EntryControls.tsx`, `src/components/NextActionGuide.tsx`, and `src/components/DomainIntroToggle.tsx` no longer request `translateZ(0)`.
+  - Mechanical app-wide rewrite removed remaining `transform: "translateZ(0)"` from frontend page/component source so mobile tap surfaces no longer rely on the global CSS override to cancel GPU-promotion hints.
+  - App-wide post-action reveal scrolls called out by the auditor now use instant `behavior: "auto"` instead of smooth scrolling in `src/layout/AppLayout.tsx`, `src/pages/CommunityHomePage.tsx`, `src/pages/ShopControlPage.tsx`, `src/pages/ShopGalleryPage.tsx`, `src/pages/DemandBoxPage.tsx`, and `src/pages/MarketplaceWorkspacePage.tsx`. Mobile bottom nav now skips centering if the active item is already visible.
+  - Follow-up after owner reported a positive sign: removed the remaining smooth reveal scrolls in `src/pages/CreateEntryPage.tsx`, `src/pages/FinancePage.tsx`, and `src/pages/TrustScorePage.tsx`.
+  - `src/components/SpotlightMediaFrame.tsx` no longer calls `preventDefault()` on pointer down/up for the audio unlock button; click/key handlers own the actual action.
+  - Marketplace visually disabled Records & Links buttons are natively disabled again, and `src/pages/ShopControlPage.tsx` spotlight publish also pairs `aria-disabled` with native `disabled`.
+  - Marketplace button guards no longer call native `stopImmediatePropagation()`.
+- Related support-flow route tightening:
+  - `src/pages/LoansPage.tsx`, `src/pages/LoanReadinessPage.tsx`, `src/pages/LoanSuggestionsPage.tsx`, `src/pages/PaymentInstructionsPage.tsx`, and `src/pages/WithdrawalInstructionsPage.tsx` now preserve the selected community when opening `Action Inbox` / notifications from the Marketplace-adjacent money and support lanes.
+  - `src/pages/LoanSuggestionsPage.tsx` now reads `community` / `clan_id` from the URL and applies the shared community route helper to its support-route tiles, so it no longer drops Marketplace context while moving between readiness, suggestions, workbench, guarantor inbox, loans, and notifications.
+- Verification:
+  - `rg -n "onTouchStart|onTouchStartCapture" src/pages/MarketplacePage.tsx src/pages src/components` returned no active matches.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild spawn limitation.
+  - `git diff --check` passed with the existing line-ending normalization warning only.
+  - Re-scanned Marketplace section scroll code: no raw first-call `requestAnimationFrame(() => scrollToMarketplaceSection(...))` remains.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx src/pages/PaymentInstructionsPage.tsx src/pages/WithdrawalInstructionsPage.tsx` passed.
+  - `npm exec -- eslint src/lib/api.ts src/pages/MarketplacePage.tsx` passed after the clipboard-truth patch.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx` passed after the phone-specific stability pass.
+  - `npm run build` passed after the phone-specific stability pass.
+  - `npm exec -- eslint src` passed after the app-wide tap stability pass.
+  - `npm run build` passed after the app-wide tap stability pass.
+  - `rg -n 'translateZ\(0\)' src -g '*.tsx' -g '*.ts'` returned no matches after the app-wide rewrite.
+  - Follow-up scan `rg -n 'behavior:\s*"smooth"|translateZ\(0\)|stopImmediatePropagation' src -g '*.tsx' -g '*.ts'` returned no matches.
+  - `npm exec -- eslint src` and `npm run build` passed again after the final smooth-scroll cleanup.
+  - Vite dev server is responding at `http://127.0.0.1:5173/`.
+  - Phone-facing Vite dev server is responding at `http://192.168.1.38:5175/`.
+- Devil's advocate:
+  - This fixes the main source-level mobile tap instability pattern found across the frontend. It does not prove every screen is corrected until the same paths are tapped on a real phone after hot reload/deployment. If jumpiness remains, next audit target is event propagation/nested clickable surfaces rather than transforms/scroll anchoring.
+
 ## 2026-05-08 Frontend-to-Backend Wording Truth Pass
 
 - Continued after `f183b93` with another auditor-backed pass from frontend surfaces into backend-exposed messages.

@@ -6907,7 +6907,7 @@ export default function DashboardPage() {
                       isolation: "isolate",
                       zIndex: 4,
                       pointerEvents: "auto",
-                      transform: "translateZ(0)",
+                      transform: "none",
                       outlineOffset: 4,
                     }}
                   >

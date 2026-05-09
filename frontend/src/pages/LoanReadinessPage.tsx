@@ -329,7 +329,7 @@ function stableTapStyle(): React.CSSProperties {
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
     lineHeight: 1.2,
   };
@@ -1794,7 +1794,7 @@ export default function LoanReadinessPage() {
                   </div>
                 </OriginLink>
 
-                <OriginLink to="/app/notifications" style={routeTile(false)}>
+                <OriginLink to={communityTo("/app/notifications")} style={routeTile(false)}>
                   <div
                     style={{
                       color: "#F8FBFF",

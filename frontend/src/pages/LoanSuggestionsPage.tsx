@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
 import * as api from "../lib/api";
+import {
+  communityIdFromSearch,
+  withCommunityQuery,
+} from "../lib/communityRouteContext";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -402,7 +407,7 @@ function stableTapStyle(): React.CSSProperties {
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
     lineHeight: 1.2,
   };
@@ -688,7 +693,17 @@ function communityImageSrc(currentClan: any): string {
 }
 
 export default function LoanSuggestionsPage() {
-  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId =
+    routeClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const communityTo = useMemo(
+    () => (to: string) => withCommunityQuery(to, selectedClanId),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -998,7 +1013,7 @@ export default function LoanSuggestionsPage() {
         title: "Choose the community first.",
         detail:
           "Fit reading is clearer once your current community is in place.",
-        ctaTo: "/app/community",
+        ctaTo: communityTo("/app/community"),
         ctaLabel: "Open Community Home",
       };
     }
@@ -1008,7 +1023,7 @@ export default function LoanSuggestionsPage() {
         title: "Start the borrower-side support draft from the Money Out handoff.",
         detail:
           "Money Out has already shown that support is needed. Resume the support draft, then return here for fit reading.",
-        ctaTo: "/app/marketplace#marketplace-loans-support",
+        ctaTo: communityTo("/app/marketplace#marketplace-loans-support"),
         ctaLabel: "Open Support Start Page",
       };
     }
@@ -1018,7 +1033,7 @@ export default function LoanSuggestionsPage() {
         title: "Start the support request first.",
         detail:
           "This becomes useful only after the borrower-side support item exists.",
-        ctaTo: "/app/marketplace#marketplace-loans-support",
+        ctaTo: communityTo("/app/marketplace#marketplace-loans-support"),
         ctaLabel: "Open Support Start Page",
       };
     }
@@ -1028,7 +1043,7 @@ export default function LoanSuggestionsPage() {
         title: "Continue into the deeper support workbench.",
         detail:
           "The fit picture is visible enough. The next move is the deeper workbench.",
-        ctaTo: "/app/loan-workbench",
+        ctaTo: communityTo("/app/loan-workbench"),
         ctaLabel: "Open Loan Workbench",
       };
     }
@@ -1037,10 +1052,16 @@ export default function LoanSuggestionsPage() {
       title: "Return to the active support draft and review it.",
       detail:
         "If the fit picture is still weak, review the active support item before moving again.",
-      ctaTo: "/app/loan-workbench",
+      ctaTo: communityTo("/app/loan-workbench"),
       ctaLabel: "Open Loan Workbench",
     };
-  }, [selectedClanId, cameFromWithdrawalSupport, activeBorrowerLoan, suggestedSupporters.length]);
+  }, [
+    selectedClanId,
+    communityTo,
+    cameFromWithdrawalSupport,
+    activeBorrowerLoan,
+    suggestedSupporters.length,
+  ]);
 
   const suggestionsSupportActive =
     cameFromWithdrawalSupport || Boolean(activeBorrowerLoan);
@@ -1069,7 +1090,7 @@ export default function LoanSuggestionsPage() {
           subtitle="Loading the fit-suggestion stage..."
           homeTo="/app/dashboard"
           homeLabel="Dashboard"
-          backTo="/app/loan-readiness"
+          backTo={communityTo("/app/loan-readiness")}
           backLabel="Loan Readiness"
         />
 
@@ -1098,7 +1119,7 @@ export default function LoanSuggestionsPage() {
         subtitle="Use this stage to read guarantor fit before you continue deeper into the support flow."
         homeTo="/app/dashboard"
         homeLabel="Dashboard"
-        backTo="/app/loan-readiness"
+        backTo={communityTo("/app/loan-readiness")}
         backLabel="Loan Readiness"
       />
 
@@ -1724,7 +1745,7 @@ export default function LoanSuggestionsPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-readiness")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1740,7 +1761,7 @@ export default function LoanSuggestionsPage() {
               </div>
             </OriginLink>
 
-            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/loan-workbench")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1757,7 +1778,7 @@ export default function LoanSuggestionsPage() {
             </OriginLink>
 
             {!suggestionsSupportActive ? (
-              <OriginLink to="/app/loans" style={routeTile(false)}>
+              <OriginLink to={communityTo("/app/loans")} style={routeTile(false)}>
                 <div
                   style={{
                     color: "#F8FBFF",
@@ -1774,7 +1795,7 @@ export default function LoanSuggestionsPage() {
               </OriginLink>
             ) : null}
 
-            <OriginLink to="/app/guarantor-inbox" style={routeTile(false)}>
+            <OriginLink to={communityTo("/app/guarantor-inbox")} style={routeTile(false)}>
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1792,7 +1813,7 @@ export default function LoanSuggestionsPage() {
 
             {!suggestionsSupportActive ? (
               <>
-                <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+                <OriginLink to={communityTo("/app/withdrawal-instructions")} style={routeTile(false)}>
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1808,7 +1829,7 @@ export default function LoanSuggestionsPage() {
                   </div>
                 </OriginLink>
 
-                <OriginLink to="/app/notifications" style={routeTile(false)}>
+                <OriginLink to={communityTo("/app/notifications")} style={routeTile(false)}>
                   <div
                     style={{
                       color: "#F8FBFF",

@@ -137,7 +137,7 @@ const stableTapTarget: React.CSSProperties = {
   touchAction: "manipulation",
   userSelect: "none",
   pointerEvents: "auto",
-  transform: "translateZ(0)",
+  transform: "none",
   outlineOffset: 4,
   boxSizing: "border-box",
   appearance: "none",
@@ -590,7 +590,7 @@ export default function DemandBoxPage() {
     }
 
     target.scrollIntoView({
-      behavior: "smooth",
+      behavior: "auto",
       block: "start",
     });
 

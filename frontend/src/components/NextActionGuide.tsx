@@ -294,8 +294,9 @@ function guideButtonStyle(
     appearance: "none",
     WebkitAppearance: "none",
     isolation: "isolate",
-    transform: "translateZ(0)",
-    willChange: "box-shadow",
+    transform: "none",
+    willChange: "auto",
+    overflowAnchor: "none",
     outlineOffset: 4,
   };
 }

@@ -941,7 +941,7 @@ export default function ShopControlPage() {
     if (target) {
       cancelPendingControlReveal();
       target.scrollIntoView({
-        behavior: "smooth",
+        behavior: "auto",
         block: "start",
       });
       return;
@@ -2364,6 +2364,7 @@ export default function ShopControlPage() {
                 onClick={() => {
                   void handleCreateSpotlight();
                 }}
+                disabled={creatingSpotlight}
                 aria-disabled={creatingSpotlight}
                 style={fullButton(
                   actionBtn(

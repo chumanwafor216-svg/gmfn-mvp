@@ -154,7 +154,7 @@ function stableTapStyle(): React.CSSProperties {
     userSelect: "none",
     pointerEvents: "auto",
     boxSizing: "border-box",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
     appearance: "none",
     WebkitAppearance: "none",

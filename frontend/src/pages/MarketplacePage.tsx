@@ -90,6 +90,7 @@ type ClanMember = {
   id?: number;
   user_id?: number;
   gmfn_id?: string | null;
+  role?: string | null;
   display_name?: string | null;
   nickname?: string | null;
   first_name?: string | null;
@@ -187,6 +188,13 @@ const DEFAULT_SECTION_STATE: SectionState = {
   tools: false,
   members: false,
   support: false,
+};
+
+const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
+  money: "marketplace-money-routes",
+  tools: "marketplace-owned-links",
+  members: "marketplace-members-shops",
+  support: "marketplace-loans-support",
 };
 
 const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
@@ -1207,6 +1215,7 @@ function actionBtn(
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
+      WebkitUserSelect: "none",
       boxSizing: "border-box",
       appearance: "none",
       WebkitAppearance: "none",
@@ -1215,7 +1224,9 @@ function actionBtn(
       isolation: "isolate",
       zIndex: 1,
       overflow: "hidden",
-      transform: "translateZ(0)",
+      transform: "none",
+      flexShrink: 0,
+      overflowAnchor: "none",
       transition: "box-shadow 100ms ease, border-color 100ms ease",
     };
   }
@@ -1245,6 +1256,7 @@ function actionBtn(
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
+      WebkitUserSelect: "none",
       boxSizing: "border-box",
       appearance: "none",
       WebkitAppearance: "none",
@@ -1253,7 +1265,9 @@ function actionBtn(
       isolation: "isolate",
       zIndex: 1,
       overflow: "hidden",
-      transform: "translateZ(0)",
+      transform: "none",
+      flexShrink: 0,
+      overflowAnchor: "none",
       transition: "box-shadow 100ms ease, border-color 100ms ease",
     };
   }
@@ -1282,6 +1296,7 @@ function actionBtn(
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
+    WebkitUserSelect: "none",
     boxSizing: "border-box",
     appearance: "none",
     WebkitAppearance: "none",
@@ -1290,7 +1305,9 @@ function actionBtn(
     isolation: "isolate",
     zIndex: 1,
     overflow: "hidden",
-    transform: "translateZ(0)",
+    transform: "none",
+    flexShrink: 0,
+    overflowAnchor: "none",
     transition: "box-shadow 100ms ease, border-color 100ms ease",
   };
 }
@@ -1340,7 +1357,15 @@ function cleanMaskedLinkLabel(label: string): string {
   return label.replace(/\s+[^ -~]+\s+/g, " - ");
 }
 
-function shareMessageCardStyle(): React.CSSProperties {
+function linkReserveTextStyle(): React.CSSProperties {
+  return {
+    marginTop: 10,
+    minHeight: 42,
+    overflowAnchor: "none",
+  };
+}
+
+function shareMessageCardStyle(isCompact = false): React.CSSProperties {
   return {
     marginTop: 10,
     borderRadius: 14,
@@ -1350,6 +1375,11 @@ function shareMessageCardStyle(): React.CSSProperties {
     boxShadow:
       "0 12px 20px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.9)",
     padding: "10px 12px",
+    minHeight: isCompact ? 146 : 132,
+    maxHeight: isCompact ? 146 : 164,
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch",
+    overflowAnchor: "none",
   };
 }
 
@@ -1456,8 +1486,10 @@ function marketplaceInlineActionsStyle(
     gridTemplateColumns: isCompact
       ? "1fr"
       : "repeat(auto-fit, minmax(168px, 1fr))",
+    gridAutoRows: "minmax(54px, auto)",
     gap: 10,
     alignItems: "stretch",
+    overflowAnchor: "none",
   };
 }
 
@@ -1477,6 +1509,7 @@ function marketplaceInlineActionStyle(
     zIndex: 5,
     pointerEvents: "auto",
     touchAction: "manipulation",
+    overflowAnchor: "none",
   };
 }
 
@@ -1647,12 +1680,21 @@ function textAreaStyle(): React.CSSProperties {
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   return {
     ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
+    position: "fixed",
+    left: "50%",
+    bottom: 18,
+    transform: "translateX(-50%)",
+    width: "min(720px, calc(100vw - 32px))",
+    zIndex: 80,
+    pointerEvents: "none",
     color: tone === "success" ? "#166534" : "#991B1B",
     border:
       tone === "success"
         ? "1px solid rgba(34,197,94,0.16)"
         : "1px solid rgba(239,68,68,0.16)",
     fontWeight: 800,
+    boxShadow:
+      "0 18px 42px rgba(10,24,49,0.20), inset 0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -1768,6 +1810,7 @@ export default function MarketplacePage() {
   const [intentGuideOpen, setIntentGuideOpen] = useState(false);
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
+  const scrollFrameRef = useRef<number | null>(null);
   const withdrawalHandoffAppliedRef = useRef("");
 
   const routeSelectedClanId = useMemo(() => {
@@ -1784,6 +1827,20 @@ export default function MarketplacePage() {
   const activeCommunityId = useMemo(() => {
     return positiveNumber(selectedCommunity?.id || selectedCommunity?.clan_id);
   }, [selectedCommunity]);
+
+  const currentUserVisibleShop = useMemo(() => {
+    if (!me || !currentGmfnId) return null;
+    const userId = positiveNumber(me?.id || me?.user_id);
+
+    return getShopForMember(
+      {
+        id: userId || undefined,
+        user_id: userId || undefined,
+        gmfn_id: currentGmfnId,
+      },
+      shops
+    );
+  }, [currentGmfnId, me, shops]);
 
   const myShopTo = useMemo(() => {
     return currentGmfnId
@@ -1819,11 +1876,15 @@ export default function MarketplacePage() {
   }, []);
 
   const publicShopViewLink = useMemo(() => {
-    if (!currentGmfnId) return "";
+    if (!currentGmfnId || !currentUserVisibleShop) return "";
     return publicFrontendUrl(
       withClanQuery(`/shop/${encodeURIComponent(currentGmfnId)}`, activeCommunityId)
     );
-  }, [currentGmfnId, activeCommunityId]);
+  }, [currentGmfnId, currentUserVisibleShop, activeCommunityId]);
+
+  const publicShopUnavailableText = currentGmfnId
+    ? "Your public shop is not visible in this marketplace yet."
+    : "Your GSN ID is not ready yet.";
 
   const controlledMarketplaceLinkNote = useMemo(() => {
     if (!selectedCommunity) {
@@ -1872,6 +1933,7 @@ export default function MarketplacePage() {
     key: keyof SectionState
   ) {
     consumeMarketplaceButtonEvent(event);
+    clearMarketplaceHash();
     toggleSection(key);
   }
 
@@ -1880,7 +1942,6 @@ export default function MarketplacePage() {
   ) {
     if (!event) return;
     event.stopPropagation();
-    (event.nativeEvent as Event | undefined)?.stopImmediatePropagation?.();
   }
 
   function consumeMarketplaceButtonEvent(
@@ -1889,7 +1950,6 @@ export default function MarketplacePage() {
     if (!event) return;
     event.preventDefault();
     event.stopPropagation();
-    (event.nativeEvent as Event | undefined)?.stopImmediatePropagation?.();
   }
 
   function runMarketplaceAction(
@@ -1900,14 +1960,35 @@ export default function MarketplacePage() {
     action();
   }
 
+  function clearStaleMarketplaceHash(activeSectionId: string) {
+    if (typeof window === "undefined") return;
+    const currentHash = safeStr(window.location.hash).replace(/^#/, "");
+    if (!currentHash || currentHash === activeSectionId) return;
+
+    clearMarketplaceHash();
+  }
+
+  function clearMarketplaceHash() {
+    if (typeof window === "undefined") return;
+    const currentHash = safeStr(window.location.hash).replace(/^#/, "");
+    if (!currentHash) return;
+    if (!Object.values(MARKETPLACE_SECTION_ANCHORS).includes(currentHash)) {
+      return;
+    }
+
+    window.history.replaceState(
+      window.history.state,
+      "",
+      `${window.location.pathname}${window.location.search}`
+    );
+  }
+
   function marketplacePointerGuardProps(): Pick<
     React.HTMLAttributes<HTMLElement>,
     | "onPointerDownCapture"
     | "onPointerDown"
     | "onMouseDownCapture"
     | "onMouseDown"
-    | "onTouchStartCapture"
-    | "onTouchStart"
     | "onClick"
   > {
     return {
@@ -1915,8 +1996,6 @@ export default function MarketplacePage() {
       onPointerDown: consumeMarketplacePointerEvent,
       onMouseDownCapture: consumeMarketplacePointerEvent,
       onMouseDown: consumeMarketplacePointerEvent,
-      onTouchStartCapture: consumeMarketplacePointerEvent,
-      onTouchStart: consumeMarketplacePointerEvent,
       onClick: consumeMarketplacePointerEvent,
     };
   }
@@ -1927,16 +2006,12 @@ export default function MarketplacePage() {
     | "onPointerDown"
     | "onMouseDownCapture"
     | "onMouseDown"
-    | "onTouchStartCapture"
-    | "onTouchStart"
   > {
     return {
       onPointerDownCapture: consumeMarketplacePointerEvent,
       onPointerDown: consumeMarketplacePointerEvent,
       onMouseDownCapture: consumeMarketplacePointerEvent,
       onMouseDown: consumeMarketplacePointerEvent,
-      onTouchStartCapture: consumeMarketplacePointerEvent,
-      onTouchStart: consumeMarketplacePointerEvent,
     };
   }
 
@@ -1976,21 +2051,60 @@ export default function MarketplacePage() {
     id: string,
     attempt = 0
   ) {
+    if (attempt === 0 && scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
+
     const target =
       document.getElementById(id) ||
       (id === "marketplace-loans-support" ? supportSectionRef.current : null);
     if (target) {
+      const rect = target.getBoundingClientRect();
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight || 0;
+      const alreadyComfortablyVisible =
+        rect.top >= 16 && rect.bottom <= Math.max(viewportHeight - 16, 16);
+
+      if (alreadyComfortablyVisible) return;
+
       target.scrollIntoView({
         block: "start",
-        behavior: "smooth",
+        behavior: "auto",
       });
       return;
     }
     if (attempt >= 5) return;
-    window.requestAnimationFrame(() => {
+    scrollFrameRef.current = window.requestAnimationFrame(() => {
+      scrollFrameRef.current = null;
       scrollToMarketplaceSection(id, attempt + 1);
     });
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+    };
+  }, []);
+
+  const scheduleMarketplaceSectionScroll = useCallback(
+    function scheduleMarketplaceSectionScroll(sectionId: string) {
+      if (typeof window === "undefined") return;
+      if (scrollFrameRef.current !== null) {
+        window.cancelAnimationFrame(scrollFrameRef.current);
+        scrollFrameRef.current = null;
+      }
+
+      scrollFrameRef.current = window.requestAnimationFrame(() => {
+        scrollFrameRef.current = null;
+        scrollToMarketplaceSection(sectionId);
+      });
+    },
+    [scrollToMarketplaceSection]
+  );
 
   function openMarketplaceIntent(
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -2008,13 +2122,15 @@ export default function MarketplacePage() {
 
     if (item.id === "support") {
       setSectionsOpen((prev) => ({ ...prev, support: true }));
-      scrollToMarketplaceSection("marketplace-loans-support");
+      clearStaleMarketplaceHash("marketplace-loans-support");
+      scheduleMarketplaceSectionScroll("marketplace-loans-support");
       return;
     }
 
     if (item.id === "invite") {
       setSectionsOpen((prev) => ({ ...prev, tools: true }));
-      scrollToMarketplaceSection("marketplace-owned-links");
+      clearStaleMarketplaceHash("marketplace-owned-links");
+      scheduleMarketplaceSectionScroll("marketplace-owned-links");
       return;
     }
 
@@ -2455,6 +2571,30 @@ export default function MarketplacePage() {
     }).length;
   }, [loans]);
 
+  const currentMemberRole = useMemo(() => {
+    const currentUserId = positiveNumber(me?.id || me?.user_id);
+    const currentGmfn = safeStr(currentGmfnId).toUpperCase();
+    const currentMember = members.find((member) => {
+      const memberUserId = positiveNumber(member?.user_id || member?.id);
+      const memberGmfn = safeStr(member?.gmfn_id).toUpperCase();
+
+      if (currentUserId > 0 && memberUserId === currentUserId) return true;
+      return Boolean(currentGmfn && memberGmfn && currentGmfn === memberGmfn);
+    });
+
+    return safeStr(
+      firstDefined(
+        currentMember?.role,
+        selectedCommunity?.membership_role,
+        selectedCommunity?.member_role,
+        selectedCommunity?.role
+      )
+    ).toLowerCase();
+  }, [currentGmfnId, me, members, selectedCommunity]);
+
+  const canManageMarketplaceLinks =
+    currentMemberRole === "admin" || safeStr(me?.role).toLowerCase() === "admin";
+
   const marketplacePoolLabel =
     visiblePoolAmount === "—"
       ? "Pool pending"
@@ -2487,12 +2627,23 @@ export default function MarketplacePage() {
   ) {
     consumeMarketplaceButtonEvent(event);
     setSectionsOpen((prev) => ({ ...prev, [key]: true }));
-    window.requestAnimationFrame(() => scrollToMarketplaceSection(sectionId));
+    clearStaleMarketplaceHash(sectionId);
+    scheduleMarketplaceSectionScroll(sectionId);
   }
 
   async function handleCreateInviteLink() {
     if (!activeCommunityId) {
       showNotice("error", "Select a community first.");
+      return;
+    }
+
+    if (creatingInviteLink) {
+      showNotice("error", "Join link refresh is already running.");
+      return;
+    }
+
+    if (!canManageMarketplaceLinks) {
+      showNotice("error", "Only a community admin can refresh this join link.");
       return;
     }
 
@@ -2508,26 +2659,28 @@ export default function MarketplacePage() {
       }
 
       setInviteLink(nextInviteLink);
-      safeCopy(nextInviteLink);
+      const copied = await safeCopy(nextInviteLink);
       const retiredCount = Number(inviteRes?.retired_live_invites || 0);
       showNotice(
-        "success",
-        retiredCount > 0
-          ? "Fresh join invite created, copied, and older live link retired."
-          : "Fresh join invite created and copied."
+        copied ? "success" : "error",
+        copied
+          ? retiredCount > 0
+            ? "Fresh join invite created, copied, and older live link retired."
+            : "Fresh join invite created and copied."
+          : "Fresh join invite is ready, but this browser blocked clipboard copy. The old clipboard may still contain another app route."
       );
     } catch (err: any) {
       showNotice(
         "error",
         safeStr(err?.message) ||
-          "GSN could not create the WhatsApp join link yet. Please refresh and try again."
+          "GSN could not create the join link yet. Please refresh and try again."
       );
     } finally {
       setCreatingInviteLink(false);
     }
   }
 
-  function copyMarketplaceLink(
+  async function copyMarketplaceLink(
     url: string,
     successText: string,
     missingText: string
@@ -2537,11 +2690,16 @@ export default function MarketplacePage() {
       return;
     }
 
-    safeCopy(url);
-    showNotice("success", successText);
+    const copied = await safeCopy(url);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? successText
+        : "Clipboard copy was blocked. The old clipboard may still contain another app route."
+    );
   }
 
-  function copyMarketplaceMessage(
+  async function copyMarketplaceMessage(
     message: string,
     url: string,
     successText: string,
@@ -2552,8 +2710,13 @@ export default function MarketplacePage() {
       return;
     }
 
-    safeCopy(message);
-    showNotice("success", successText);
+    const copied = await safeCopy(message);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? successText
+        : "Clipboard copy was blocked. The old clipboard may still contain another app route."
+    );
   }
 
   function openMarketplaceEmail(
@@ -3650,6 +3813,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
+            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "money")}
             style={actionBtn("soft")}
           >
@@ -3932,6 +4096,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
+            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "tools")}
             style={actionBtn("soft")}
           >
@@ -3994,32 +4159,19 @@ export default function MarketplacePage() {
                         : "Join link not ready yet"}
                     </span>
                   </div>
-                  {inviteLink ? (
-                    <>
-                      <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-                        {maskedInviteLinkLabel || "Secure GSN join link"}
-                      </div>
-                    </>
-                  ) : (
-                    <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                      Create the join link first, then copy or open it from here.
-                    </div>
-                  )}
-                  {inviteLink ? (
-                    <div style={shareMessageCardStyle()}>
-                      <div style={sectionLabel()}>Message to send</div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          ...helperText(),
-                          whiteSpace: "pre-line",
-                          fontSize: 13,
-                        }}
-                      >
-                        {joinWhatsappPreview}
-                      </div>
-                    </div>
-                  ) : null}
+                  <div
+                    style={{
+                      ...linkReserveTextStyle(),
+                      ...helperText(),
+                      fontSize: inviteLink ? 12 : 13,
+                    }}
+                  >
+                    {inviteLink
+                      ? maskedInviteLinkLabel || "Secure GSN join link"
+                      : canManageMarketplaceLinks
+                        ? "Create the join link first, then copy or open it from here."
+                        : "A community admin prepares this join link before it can be copied or sent."}
+                  </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <button
                       type="button"
@@ -4039,6 +4191,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!inviteLink}
+                      aria-disabled={!inviteLink}
                     >
                       Copy Join Link
                     </button>
@@ -4052,10 +4205,11 @@ export default function MarketplacePage() {
                       }}
                       style={marketplaceInlineActionStyle(
                         "secondary",
-                        creatingInviteLink,
+                        creatingInviteLink || !canManageMarketplaceLinks,
                         isCompact
                       )}
-                      disabled={creatingInviteLink}
+                      disabled={creatingInviteLink || !canManageMarketplaceLinks}
+                      aria-disabled={creatingInviteLink || !canManageMarketplaceLinks}
                     >
                       {creatingInviteLink ? "Refreshing..." : "Refresh Join Link"}
                     </button>
@@ -4078,6 +4232,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!inviteLink}
+                      aria-disabled={!inviteLink}
                     >
                       Copy Invite Message
                     </button>
@@ -4100,6 +4255,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!inviteLink}
+                      aria-disabled={!inviteLink}
                     >
                       Email Join Link
                     </button>
@@ -4127,9 +4283,25 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!inviteLink}
+                      aria-disabled={!inviteLink}
                     >
                       WhatsApp
                     </button>
+                  </div>
+                  <div style={shareMessageCardStyle(isCompact)}>
+                    <div style={sectionLabel()}>Message to send</div>
+                    <div
+                      style={{
+                        marginTop: 8,
+                        ...helperText(),
+                        whiteSpace: "pre-line",
+                        fontSize: 13,
+                      }}
+                    >
+                      {inviteLink
+                        ? joinWhatsappPreview
+                        : "The join message preview will appear here after the join link is ready."}
+                    </div>
                   </div>
                 </div>
 
@@ -4147,7 +4319,7 @@ export default function MarketplacePage() {
                     </span>
                   </div>
                   {publicCreateEntryLink ? (
-                    <div style={shareMessageCardStyle()}>
+                    <div style={shareMessageCardStyle(isCompact)}>
                       <div style={sectionLabel()}>Message to send</div>
                       <div
                         style={{
@@ -4183,6 +4355,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCreateEntryLink}
+                      aria-disabled={!publicCreateEntryLink}
                     >
                       Copy Create Link
                     </button>
@@ -4205,6 +4378,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCreateEntryLink}
+                      aria-disabled={!publicCreateEntryLink}
                     >
                       Copy Message
                     </button>
@@ -4227,6 +4401,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCreateEntryLink}
+                      aria-disabled={!publicCreateEntryLink}
                     >
                       Email Link
                     </button>
@@ -4247,6 +4422,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCreateEntryLink}
+                      aria-disabled={!publicCreateEntryLink}
                     >
                       Open Create Link
                     </button>
@@ -4274,6 +4450,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCreateEntryLink}
+                      aria-disabled={!publicCreateEntryLink}
                     >
                       Send WhatsApp
                     </button>
@@ -4296,11 +4473,17 @@ export default function MarketplacePage() {
                         : "Public marketplace link not ready yet"}
                     </span>
                   </div>
-                  {publicCommunityWorkspaceLink ? (
-                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                      {maskedMarketplaceFaceLabel}
-                    </div>
-                  ) : null}
+                  <div
+                    style={{
+                      ...linkReserveTextStyle(),
+                      ...helperText(),
+                      fontSize: 12,
+                    }}
+                  >
+                    {publicCommunityWorkspaceLink
+                      ? maskedMarketplaceFaceLabel
+                      : "Marketplace face appears after the community context is ready."}
+                  </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <button
                         type="button"
@@ -4320,6 +4503,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCommunityWorkspaceLink}
+                      aria-disabled={!publicCommunityWorkspaceLink}
                     >
                       Copy Marketplace Link
                     </button>
@@ -4342,6 +4526,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCommunityWorkspaceLink}
+                      aria-disabled={!publicCommunityWorkspaceLink}
                     >
                       Email Link
                     </button>
@@ -4362,6 +4547,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicCommunityWorkspaceLink}
+                      aria-disabled={!publicCommunityWorkspaceLink}
                     >
                       Open Marketplace Face
                     </button>
@@ -4380,11 +4566,17 @@ export default function MarketplacePage() {
                         : "Public shop link not ready yet"}
                     </span>
                   </div>
-                  {publicShopViewLink ? (
-                    <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                      {maskedShopFaceLabel}
-                    </div>
-                  ) : null}
+                  <div
+                    style={{
+                      ...linkReserveTextStyle(),
+                      ...helperText(),
+                      fontSize: 12,
+                    }}
+                  >
+                    {publicShopViewLink
+                      ? maskedShopFaceLabel
+                      : publicShopUnavailableText}
+                  </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <button
                         type="button"
@@ -4394,7 +4586,7 @@ export default function MarketplacePage() {
                             copyMarketplaceLink(
                               publicShopViewLink,
                             "Public shop link copied.",
-                            "Public shop link is not ready yet."
+                            publicShopUnavailableText
                           );
                         });
                       }}
@@ -4404,6 +4596,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicShopViewLink}
+                      aria-disabled={!publicShopViewLink}
                     >
                       Copy Shop Link
                     </button>
@@ -4416,7 +4609,7 @@ export default function MarketplacePage() {
                             shopEmailSubject,
                             shopEmailMessage,
                             publicShopViewLink,
-                            "Public shop link is not ready yet."
+                            publicShopUnavailableText
                           );
                         });
                       }}
@@ -4426,6 +4619,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicShopViewLink}
+                      aria-disabled={!publicShopViewLink}
                     >
                       Email Link
                     </button>
@@ -4436,7 +4630,7 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           openMarketplaceExternalLink(
                             publicShopViewLink,
-                            "Public shop link is not ready yet."
+                            publicShopUnavailableText
                           );
                         });
                       }}
@@ -4446,6 +4640,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                       disabled={!publicShopViewLink}
+                      aria-disabled={!publicShopViewLink}
                     >
                       Open Shop Face
                     </button>
@@ -4510,6 +4705,7 @@ export default function MarketplacePage() {
 
           <button
             type="button"
+            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "members")}
             style={actionBtn("soft")}
           >
@@ -4705,6 +4901,7 @@ export default function MarketplacePage() {
             <span style={badge(false)}>Active items: {activeLoanCount}</span>
             <button
               type="button"
+              {...marketplaceButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "support")}
               style={actionBtn("soft")}
             >

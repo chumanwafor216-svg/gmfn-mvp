@@ -328,7 +328,7 @@ function stableTapStyle(): React.CSSProperties {
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
     lineHeight: 1.2,
   };
@@ -2526,7 +2526,7 @@ export default function WithdrawalInstructionsPage() {
                 Marketplace
               </OriginLink>
 
-              <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
+              <OriginLink to={communityTo("/app/notifications")} style={actionBtn("secondary")}>
                 Action Inbox
               </OriginLink>
             </div>

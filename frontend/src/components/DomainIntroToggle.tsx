@@ -303,7 +303,8 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
             WebkitAppearance: "none",
             boxSizing: "border-box",
             isolation: "isolate",
-            transform: "translateZ(0)",
+            transform: "none",
+            overflowAnchor: "none",
             boxShadow:
               "0 12px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -2px 0 rgba(10,24,49,0.04)",
             ...tone.button,

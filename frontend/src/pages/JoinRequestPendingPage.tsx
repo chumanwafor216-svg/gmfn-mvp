@@ -75,7 +75,7 @@ function actionBtn(primary = false): React.CSSProperties {
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
-    transform: "translateZ(0)",
+    transform: "none",
   };
 }
 

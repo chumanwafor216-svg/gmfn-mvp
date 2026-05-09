@@ -125,7 +125,7 @@ function primaryBtn(disabled = false): React.CSSProperties {
     pointerEvents: "auto",
     appearance: "none",
     WebkitAppearance: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
   };
 }
@@ -157,7 +157,7 @@ function secondaryBtn(): React.CSSProperties {
     pointerEvents: "auto",
     appearance: "none",
     WebkitAppearance: "none",
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
   };
 }
@@ -666,7 +666,7 @@ export default function CreateEntryPage() {
     const reveal = () => {
       const node = map[next].current;
       if (node) {
-        node.scrollIntoView({ behavior: "smooth", block: "start" });
+        node.scrollIntoView({ behavior: "auto", block: "start" });
         panelRevealFrameRef.current = null;
         return;
       }

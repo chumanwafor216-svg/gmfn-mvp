@@ -43,6 +43,7 @@ html, body {
 
 :where(a, button, [role="button"], summary, input, select, textarea) {
   -webkit-tap-highlight-color: transparent;
+  overflow-anchor: none;
 }
 
 :where(a, button, [role="button"], summary, input[type="button"], input[type="submit"]) {
@@ -51,13 +52,16 @@ html, body {
 
 :where(a, button, [role="button"], summary) {
   -webkit-touch-callout: none;
+  -webkit-user-select: none;
   user-select: none;
 }
 
 :where(button, [role="button"], .gmfn-btn) {
+  min-width: 0;
   position: relative;
   z-index: 1;
   isolation: isolate;
+  overflow-anchor: none;
 }
 
 :where(a, button, [role="button"], summary, input[type="button"], input[type="submit"], .gmfn-btn) {

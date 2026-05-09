@@ -142,7 +142,7 @@ function btn(primary = false, disabled = false): React.CSSProperties {
     position: "relative",
     isolation: "isolate",
     zIndex: 2,
-    transform: "translateZ(0)",
+    transform: "none",
     outlineOffset: 4,
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
@@ -386,7 +386,7 @@ export default function MarketplaceWorkspacePage() {
   ) {
     if (ref.current) {
       ref.current.scrollIntoView({
-        behavior: "smooth",
+        behavior: "auto",
         block: "start",
       });
       return;

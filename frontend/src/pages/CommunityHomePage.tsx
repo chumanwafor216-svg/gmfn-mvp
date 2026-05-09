@@ -897,7 +897,7 @@ export default function CommunityHomePage() {
           .find((el) => el && typeof el.scrollIntoView === "function");
 
         if (target) {
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          target.scrollIntoView({ behavior: "auto", block: "start" });
           communityRevealFrameRef.current = null;
           return;
         }
