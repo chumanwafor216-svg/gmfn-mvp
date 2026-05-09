@@ -109,6 +109,15 @@
   - local 5174/8012 API for `GMFN-U-9867079C` returned 12 products during audit.
   - screenshot address bar showed `frontend.onrender.com`, so continued `0/12` there may mean Render/stale bundle/stale backend rather than local 5174 data.
 
+## 2026-05-09 Marketplace Invite/Shop Link Destination Repair
+
+- Owner reported that a join invite link was landing in Finance and that the public shop link was not showing the domain.
+- Fixed `src/lib/joinLinks.ts` so normalized invite links only come from a real invite code or a real join/invite route. Stale unrelated app URLs such as `/app/finance` are no longer accepted as invite links.
+- Canonical join invite links now use the configured public frontend origin.
+- Updated `src/pages/MarketplacePage.tsx` so the Join link and Public shop face show the full URL in the UI, not a masked label.
+- Tightened Marketplace link action buttons to fixed 54px rows with no transition movement.
+- Updated root `docs/SCREEN_SPECS.md` to freeze the link contract.
+
 ## 2026-05-09 Canonical Public Shop Domain Links
 
 - Owner clarified that the shop-owner public shop link should show the complete public shop domain.

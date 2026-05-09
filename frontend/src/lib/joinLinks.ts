@@ -1,4 +1,7 @@
-import { publicFrontendOrigin, publicFrontendUrl } from "./publicLinks";
+import {
+  canonicalPublicFrontendUrl,
+  publicFrontendOrigin,
+} from "./publicLinks";
 
 function safeText(value: unknown): string {
   return String(value ?? "").trim();
@@ -51,7 +54,49 @@ export function inviteCodeFromLink(rawLink: string): string {
 export function canonicalJoinInviteUrl(code: string): string {
   const cleanCode = safeText(code);
   if (!cleanCode) return "";
-  return `${publicFrontendOrigin()}/start/join/${encodeURIComponent(cleanCode)}`;
+  return canonicalPublicFrontendUrl(`/start/join/${encodeURIComponent(cleanCode)}`);
+}
+
+function isJoinInviteLink(rawLink: string): boolean {
+  const direct = safeText(rawLink);
+  if (!direct) return false;
+
+  try {
+    const url = new URL(direct, publicFrontendOrigin());
+    const parts = url.pathname.split("/").filter(Boolean);
+
+    if (parts.length === 0) return false;
+
+    for (let index = 0; index < parts.length; index += 1) {
+      const current = parts[index];
+      const next = parts[index + 1];
+
+      if (
+        (current === "join" ||
+          current === "invite" ||
+          current === "get-invite") &&
+        Boolean(next)
+      ) {
+        return true;
+      }
+
+      if (
+        current === "start" &&
+        (next === "join" || next === "invite") &&
+        Boolean(parts[index + 2])
+      ) {
+        return true;
+      }
+    }
+
+    return Boolean(
+      url.searchParams.get("invite") ||
+        url.searchParams.get("invite_code") ||
+        url.searchParams.get("join_code")
+    );
+  } catch {
+    return false;
+  }
 }
 
 function searchParamsFromLink(rawLink: string): URLSearchParams {
@@ -105,6 +150,6 @@ export function normalizedJoinInviteUrl(payload: any): string {
     const query = params.toString();
     return query ? `${base}?${query}` : base;
   }
-  if (direct) return publicFrontendUrl(direct);
+  if (isJoinInviteLink(direct)) return canonicalPublicFrontendUrl(direct);
   return "";
 }

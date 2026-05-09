@@ -1365,6 +1365,8 @@ function linkReserveTextStyle(): React.CSSProperties {
   return {
     marginTop: 10,
     minHeight: 42,
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
     overflowAnchor: "none",
   };
 }
@@ -1490,7 +1492,7 @@ function marketplaceInlineActionsStyle(
     gridTemplateColumns: isCompact
       ? "1fr"
       : "repeat(auto-fit, minmax(168px, 1fr))",
-    gridAutoRows: "minmax(54px, auto)",
+    gridAutoRows: "54px",
     gap: 10,
     alignItems: "stretch",
     overflowAnchor: "none",
@@ -1507,13 +1509,20 @@ function marketplaceInlineActionStyle(
   return {
     ...actionBtn(kind, disabled),
     width: "100%",
+    height: 54,
     minHeight: 54,
+    maxHeight: 54,
+    padding: "0 12px",
     position: "relative",
     isolation: "isolate",
     zIndex: 5,
     pointerEvents: "auto",
     touchAction: "manipulation",
     overflowAnchor: "none",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    transition: "none",
   };
 }
 
@@ -2435,12 +2444,6 @@ export default function MarketplacePage() {
       )
     );
   }, [publicCommunityWorkspaceLink, activeCommunityName]);
-
-  const maskedShopFaceLabel = useMemo(() => {
-    return cleanMaskedLinkLabel(
-      buildMaskedLinkLabel(publicShopViewLink, "shop", activeCommunityName)
-    );
-  }, [publicShopViewLink, activeCommunityName]);
 
   const joinWhatsappMessage = useMemo(() => {
     return buildGsnShareMessage("join", {
@@ -4167,7 +4170,7 @@ export default function MarketplacePage() {
                     }}
                   >
                     {inviteLink
-                      ? maskedInviteLinkLabel || "Secure GSN join link"
+                      ? inviteLink
                       : canManageMarketplaceLinks
                         ? "Create the join link first, then copy or open it from here."
                         : "A community admin prepares this join link before it can be copied or sent."}
@@ -4561,7 +4564,7 @@ export default function MarketplacePage() {
                     }}
                   >
                     {publicShopViewLink
-                      ? maskedShopFaceLabel
+                      ? publicShopViewLink
                       : publicShopUnavailableText}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>

@@ -290,3 +290,8 @@ Must show:
 - Private Vault Access
 - Grow Trusted Circle
 - Owner Spotlight Status
+
+Rules:
+- Public shop link surfaces must show and copy the complete canonical public shop URL, including the public domain and `/shop/{GSN_ID}#shop-diaries`.
+- Join invite link surfaces must show and copy only canonical `/start/join/{code}` invite URLs. They must not fall back to unrelated app routes such as Finance, Dashboard, Trust, or Marketplace.
+- Marketplace link action buttons must keep fixed-height rows and avoid transition-driven layout movement.

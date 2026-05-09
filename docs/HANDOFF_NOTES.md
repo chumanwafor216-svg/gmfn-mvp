@@ -15,6 +15,17 @@
 - Devil's-advocate truth:
   - this deliberately removes the public block deep-link behavior from the current UX. Old inbound URLs that already contain `product_id` may still be understood by the page/backend for compatibility, but newly generated public shares/copies should now point to the whole shop page.
 
+### Marketplace invite/shop link destination repair (2026-05-09)
+
+- Owner reported that a join invite link was landing in Finance and that the public shop link was not showing the domain.
+- Root cause found in frontend link handling:
+  - `normalizedJoinInviteUrl()` could fall back to a direct URL from an invite payload even when that URL was not a join/invite route. That allowed stale or wrong app routes such as `/app/finance` to be treated as the invite link.
+  - Marketplace link cards were displaying masked labels instead of the full join/public shop URL, which made it impossible to verify the domain before sending.
+- Updated `frontend/src/lib/joinLinks.ts` so invite URLs are produced only from a real invite code or a real join/invite route, and canonicalized through the configured public frontend origin.
+- Updated `frontend/src/pages/MarketplacePage.tsx` so the Join link and Public shop face display the full URL, not a masked label.
+- Tightened Marketplace link action buttons to fixed 54px rows with no transition movement.
+- Updated `docs/SCREEN_SPECS.md` to freeze that public shop links must show/copy the complete public domain and invite links must not fall back to Finance or any unrelated app route.
+
 ### Cover primary CTA restored to Continue (2026-05-09)
 
 - Owner explicitly rejected the visible `/cover` primary CTA text `Open Welcome`.
