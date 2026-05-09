@@ -1,3 +1,16 @@
+### Marketplace public shop link actions auto-refresh (2026-05-09)
+
+- Owner reported that saying "tap Refresh Shop Link" is not enough because the public shop surface they can see may only show copy/open style link buttons.
+- Truth:
+  - the public viewer page cannot create/repair the owner's active shop because it is unauthenticated and has no owner permission.
+  - the signed-in owner Marketplace page can repair it, so the copy/open/email actions should not depend on the owner finding a separate refresh button first.
+- Correction:
+  - `frontend/src/pages/MarketplacePage.tsx` now makes `Copy Shop Link`, `Email Link`, and `Open Shop Face` call the same owner-side shop-link preparation before doing their normal action when the confirmed public shop URL is not ready yet.
+  - the explicit `Refresh Shop Link` button remains available, but it is no longer the only route to reconnect the link.
+  - `frontend/tools/audit-link-contracts.mjs` now locks that the Marketplace public shop link actions auto-refresh before copy/email/open.
+- Remaining risk:
+  - this still requires the owner to be signed in and using the canonical active frontend. A visitor already on a broken public page cannot repair the owner's shop identity from that public page.
+
 ### Public shop suspended-domain and owner-id hardening (2026-05-09)
 
 - Owner screenshot still showed the public shop failure on `frontend.onrender.com`.

@@ -124,8 +124,20 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /async function preparePublicShopLink\(\)[\s\S]*?createMarketplaceShop\([\s\S]*?setPublicShopRecord\(normalized\);[\s\S]*?Public shop link is connected to an active shop/,
+  /async function preparePublicShopLink\(\): Promise<string>[\s\S]*?createMarketplaceShop\([\s\S]*?setPublicShopRecord\(normalized\);[\s\S]*?Public shop link is connected to an active shop/,
   "Marketplace must provide an owner-side refresh that connects the public shop link to an active shop before copying."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /async function getFreshPublicShopLink\(\): Promise<string> \{[\s\S]*?if \(publicShopViewLink\) return publicShopViewLink;[\s\S]*?return preparePublicShopLink\(\);[\s\S]*?\}/,
+  "Marketplace public shop link actions must auto-refresh the owner shop link when the confirmed link is not ready yet."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /copyFreshPublicShopLink\(\)[\s\S]*?Copy Shop Link[\s\S]*?emailFreshPublicShopLink\(\)[\s\S]*?Email Link[\s\S]*?openFreshPublicShopLink\(\)[\s\S]*?Open Shop Face/,
+  "Marketplace Copy, Email, and Open public shop buttons must use the auto-refreshing link actions."
 );
 
 assertContains(

@@ -2336,18 +2336,18 @@ export default function MarketplacePage() {
     void loadPage();
   }, [loadPage, selectedClanId]);
 
-  async function preparePublicShopLink() {
+  async function preparePublicShopLink(): Promise<string> {
     if (!activeCommunityId) {
       setNotice({
         tone: "error",
         text: "Select a community before preparing the public shop link.",
       });
-      return;
+      return "";
     }
 
     if (!currentGmfnId) {
       setNotice({ tone: "error", text: "Your GSN ID is not ready yet." });
-      return;
+      return "";
     }
 
     setPreparingPublicShopLink(true);
@@ -2365,10 +2365,19 @@ export default function MarketplacePage() {
       const normalized = normalizeMarketplaceShop(created);
       setPublicShopRecord(normalized);
       await loadPage();
+      const ownerId = firstTruthy(
+        normalized?.owner_gmfn_id,
+        normalized?.gmfn_id,
+        currentGmfnId
+      );
+      const link = ownerId ? publicShopUrl(ownerId) : "";
       setNotice({
         tone: "success",
-        text: "Public shop link is connected to an active shop. You can copy or open it now.",
+        text: link
+          ? "Public shop link is connected to an active shop."
+          : "Public shop refreshed, but the owner ID is still not ready.",
       });
+      return link;
     } catch (err: any) {
       setNotice({
         tone: "error",
@@ -2376,9 +2385,39 @@ export default function MarketplacePage() {
           safeStr(err?.message) ||
           "Public shop link could not be prepared right now.",
       });
+      return "";
     } finally {
       setPreparingPublicShopLink(false);
     }
+  }
+
+  async function getFreshPublicShopLink(): Promise<string> {
+    if (publicShopViewLink) return publicShopViewLink;
+    return preparePublicShopLink();
+  }
+
+  async function copyFreshPublicShopLink() {
+    const link = await getFreshPublicShopLink();
+    copyMarketplaceLink(
+      link,
+      "Public shop link refreshed and copied.",
+      publicShopUnavailableText
+    );
+  }
+
+  async function emailFreshPublicShopLink() {
+    const link = await getFreshPublicShopLink();
+    openMarketplaceEmail(
+      shopEmailSubject,
+      ["Here is the public GSN shop face.", "", link].join("\n"),
+      link,
+      publicShopUnavailableText
+    );
+  }
+
+  async function openFreshPublicShopLink() {
+    const link = await getFreshPublicShopLink();
+    openMarketplaceExternalLink(link, publicShopUnavailableText);
   }
 
   useEffect(() => {
@@ -2586,14 +2625,6 @@ export default function MarketplacePage() {
   const shopEmailSubject = useMemo(() => {
     return buildGsnEmailSubject("shop", activeCommunityName);
   }, [activeCommunityName]);
-
-  const shopEmailMessage = useMemo(() => {
-    return [
-      "Here is the public GSN shop face.",
-      "",
-      publicShopViewLink,
-    ].join("\n");
-  }, [publicShopViewLink]);
 
   const poolAmount = getPoolAmountText(poolInfo);
   const poolCurrency = getPoolCurrency(poolInfo);
@@ -4708,41 +4739,38 @@ export default function MarketplacePage() {
                         {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
-                            copyMarketplaceLink(
-                              publicShopViewLink,
-                            "Public shop link copied.",
-                            publicShopUnavailableText
-                          );
-                        });
-                      }}
+                            void copyFreshPublicShopLink();
+                          });
+                        }}
                       style={marketplaceInlineActionStyle(
                         "secondary",
-                        !publicShopViewLink,
+                        !currentGmfnId ||
+                          !activeCommunityId ||
+                          preparingPublicShopLink,
                         isCompact
                       )}
-                      aria-disabled={!publicShopViewLink}
+                      aria-disabled={
+                        !currentGmfnId || !activeCommunityId || preparingPublicShopLink
+                      }
                     >
-                      Copy Shop Link
+                      {preparingPublicShopLink ? "Refreshing..." : "Copy Shop Link"}
                     </button>
                     <button
                       type="button"
                       {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
-                          openMarketplaceEmail(
-                            shopEmailSubject,
-                            shopEmailMessage,
-                            publicShopViewLink,
-                            publicShopUnavailableText
-                          );
+                          void emailFreshPublicShopLink();
                         });
                       }}
                       style={marketplaceInlineActionStyle(
                         "secondary",
-                        !publicShopViewLink,
+                        !currentGmfnId || !activeCommunityId || preparingPublicShopLink,
                         isCompact
                       )}
-                      aria-disabled={!publicShopViewLink}
+                      aria-disabled={
+                        !currentGmfnId || !activeCommunityId || preparingPublicShopLink
+                      }
                     >
                       Email Link
                     </button>
@@ -4751,18 +4779,17 @@ export default function MarketplacePage() {
                       {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
-                          openMarketplaceExternalLink(
-                            publicShopViewLink,
-                            publicShopUnavailableText
-                          );
+                          void openFreshPublicShopLink();
                         });
                       }}
                       style={marketplaceInlineActionStyle(
                         "secondary",
-                        !publicShopViewLink,
+                        !currentGmfnId || !activeCommunityId || preparingPublicShopLink,
                         isCompact
                       )}
-                      aria-disabled={!publicShopViewLink}
+                      aria-disabled={
+                        !currentGmfnId || !activeCommunityId || preparingPublicShopLink
+                      }
                     >
                       Open Shop Face
                     </button>
