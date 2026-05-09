@@ -1125,30 +1125,38 @@ export default function ShopGalleryPage() {
     return ownerId ? publicShopUrl(ownerId) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
+  const shopLoadFailed = Boolean(error);
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
-    effectiveShop?.description ||
-      "Public shop face for trusted products. Private Vault offers open only through a trust link."
+    shopLoadFailed
+      ? "This public shop link has reached the shop page, but the backend has not connected it to an active owner shop yet."
+      : effectiveShop?.description ||
+          "Public shop face for trusted products. Private Vault offers open only through a trust link."
   );
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopCommunityText = safeStr(effectiveShop?.communityName);
   const shopWhatsAppText = safeStr(effectiveShop?.whatsapp);
   const shopTelegramText = safeStr(effectiveShop?.telegram);
   const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
-  const publicBlockText =
-    publicBlockCount === 1
+  const publicBlockText = shopLoadFailed
+    ? "Shop not connected"
+    : publicBlockCount === 1
       ? "1 public block live"
       : `${publicBlockCount} public blocks live`;
-  const shopDiaryCounterText = `${publicBlockCount}/${GALLERY_SLOTS_TOTAL}`;
+  const shopDiaryCounterText = shopLoadFailed
+    ? "Needs refresh"
+    : `${publicBlockCount}/${GALLERY_SLOTS_TOTAL}`;
   const shopLocationText = firstMeaningful(
     shopCommunityText,
     "GSN public marketplace"
   );
-  const shopContactText = firstMeaningful(
-    shopWhatsAppText ? `WhatsApp ${shopWhatsAppText}` : "",
-    shopTelegramText ? `Telegram ${shopTelegramText}` : "",
-    "Share by shop link"
-  );
+  const shopContactText = shopLoadFailed
+    ? "Owner refresh needed"
+    : firstMeaningful(
+        shopWhatsAppText ? `WhatsApp ${shopWhatsAppText}` : "",
+        shopTelegramText ? `Telegram ${shopTelegramText}` : "",
+        "Share by shop link"
+      );
   async function shareOrCopy(params: {
     title: string;
     text: string;
@@ -1197,6 +1205,14 @@ export default function ShopGalleryPage() {
   }
 
   function shareShop() {
+    if (shopLoadFailed) {
+      setNotice({
+        tone: "error",
+        text: "This shop link needs the owner to refresh it from Marketplace before it can be shared.",
+      });
+      return;
+    }
+
     const shopTitle = firstMeaningful(
       effectiveShop?.shopName,
       effectiveShop?.ownerName,
@@ -1290,6 +1306,14 @@ export default function ShopGalleryPage() {
   }
 
   async function repostShop() {
+    if (shopLoadFailed) {
+      setNotice({
+        tone: "error",
+        text: "This shop link needs the owner to refresh it from Marketplace before it can be reposted.",
+      });
+      return;
+    }
+
     const copied = await safeCopy(
       `GSN network repost:\n${shopNameText}\n${shopDescriptionText}\n${absoluteShopLink}`
     );
@@ -1560,9 +1584,10 @@ export default function ShopGalleryPage() {
           <button
             type="button"
             {...buttonGuardProps()}
+            aria-disabled={shopLoadFailed}
             onClick={repostShop}
             style={{
-              ...primaryBtn(false),
+              ...primaryBtn(shopLoadFailed),
               minHeight: isCompact ? 40 : 52,
               padding: isCompact ? "7px 4px" : "10px 14px",
               borderRadius: isCompact ? 13 : 14,
@@ -1577,9 +1602,10 @@ export default function ShopGalleryPage() {
           <button
             type="button"
             {...buttonGuardProps()}
+            aria-disabled={shopLoadFailed}
             onClick={shareShop}
             style={{
-              ...primaryBtn(false),
+              ...primaryBtn(shopLoadFailed),
               minHeight: isCompact ? 40 : 52,
               padding: isCompact ? "7px 4px" : "10px 14px",
               borderRadius: isCompact ? 13 : 14,

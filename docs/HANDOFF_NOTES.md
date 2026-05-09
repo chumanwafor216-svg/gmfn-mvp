@@ -1,3 +1,19 @@
+### Public shop root audit and suspended-host guard (2026-05-09)
+
+- Owner requested two auditors because the public shop link still showed a failure after a full-day trace.
+- Auditor A backend finding:
+  - live failure `Seller identity not found` occurs before shop/product lookup.
+  - local backend already accepts `GSN-U-...` and `GMFN-U-...` aliases for public shop identity.
+  - strongest root cause is either production backend is not deployed to the alias-hardened commit, or production data has no `users.gmfn_id` matching suffix `9867079C`.
+- Frontend correction:
+  - `frontend/src/App.tsx` now redirects any cached app shell running on suspended `frontend.onrender.com` to the canonical configured public frontend while preserving path/search/hash.
+  - `frontend/src/pages/ShopGalleryPage.tsx` no longer shows normal `0 public blocks live` / `0/12` status while the public shop API failed. It shows `Shop not connected` / `Needs refresh` instead and prevents GSN repost/share from presenting a broken shop as live.
+  - `frontend/tools/audit-link-contracts.mjs` now locks both behaviors.
+- Freeze note:
+  - the solved mobile button-jump root cause remains `frontend/src/styles/gmfnBrand.ts` removing global z-index/isolation from `brandStableTapTarget()`, plus `frontend/tools/audit-mobile-tap-stability.mjs`. Future assistants should run `npm run audit:tap-stability` before touching shared button/tap behavior.
+- Remaining production truth:
+  - code cannot make `GMFN-U-9867079C` work if the production database does not have a user with that `gmfn_id`. The next root check is production data/deploy status for this exact ID.
+
 ### Marketplace public shop link actions auto-refresh (2026-05-09)
 
 - Owner reported that saying "tap Refresh Shop Link" is not enough because the public shop surface they can see may only show copy/open style link buttons.

@@ -36,7 +36,7 @@ export function isPrivateFrontendHost(hostname: string): boolean {
   return false;
 }
 
-function isSuspendedPublicFrontendHost(hostname: string): boolean {
+export function isSuspendedPublicFrontendHost(hostname: string): boolean {
   return SUSPENDED_PUBLIC_FRONTEND_HOSTS.has(cleanText(hostname).toLowerCase());
 }
 

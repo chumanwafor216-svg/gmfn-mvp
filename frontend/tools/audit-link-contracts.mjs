@@ -87,6 +87,12 @@ assertContains(
 );
 
 assertContains(
+  "src/App.tsx",
+  /function PublicHostRedirect\(\)[\s\S]*?isSuspendedPublicFrontendHost\(hostname\)[\s\S]*?window\.location\.replace\([\s\S]*?targetOrigin[\s\S]*?window\.location\.pathname[\s\S]*?window\.location\.search[\s\S]*?window\.location\.hash/,
+  "The app shell must redirect cached/suspended frontend.onrender.com sessions onto the canonical public frontend host."
+);
+
+assertContains(
   "src/lib/publicLinks.ts",
   /return\s+`\/shop\/\$\{encodeURIComponent\(ownerId\)\}#\$\{PUBLIC_SHOP_DIARIES_ANCHOR\}`;/,
   "Public shop links must land on the whole shop diaries domain, not a private app route or one block."
@@ -240,6 +246,12 @@ assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /href=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}/,
   "Public Shop Gallery must visibly show the complete public shop domain as a real link."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /const shopLoadFailed = Boolean\(error\);[\s\S]*?const publicBlockText = shopLoadFailed[\s\S]*?"Shop not connected"[\s\S]*?const shopDiaryCounterText = shopLoadFailed[\s\S]*?"Needs refresh"/,
+  "Public Shop Gallery must not show normal public-block status while the public shop failed to load."
 );
 
 assertContains(

@@ -10,7 +10,11 @@ import {
 
 import AppLayout from "./layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
-import { publicShopPath } from "./lib/publicLinks";
+import {
+  configuredPublicFrontendOrigin,
+  isSuspendedPublicFrontendHost,
+  publicShopPath,
+} from "./lib/publicLinks";
 import { gmfnBrand } from "./styles/gmfnBrand";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
@@ -292,9 +296,28 @@ function RedirectVaultAlias() {
   );
 }
 
+function PublicHostRedirect() {
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const hostname = String(window.location.hostname || "").trim();
+    if (!isSuspendedPublicFrontendHost(hostname)) return;
+
+    const targetOrigin = configuredPublicFrontendOrigin();
+    if (!targetOrigin || targetOrigin === window.location.origin) return;
+
+    window.location.replace(
+      `${targetOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`
+    );
+  }, []);
+
+  return null;
+}
+
 export default function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
+      <PublicHostRedirect />
       <Routes>
         <Route path="/" element={<Navigate to="/cover" replace />} />
 
