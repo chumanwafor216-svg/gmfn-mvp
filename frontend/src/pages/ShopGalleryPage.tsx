@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   getCurrentClan,
@@ -8,8 +8,9 @@ import {
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
-  canonicalPublicFrontendUrl,
-  publicShopDiariesUrl,
+  publicShopBlockUrl,
+  publicShopPath,
+  publicShopUrl,
 } from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import {
@@ -100,22 +101,6 @@ function firstMeaningful(...values: any[]): string {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const target = safeStr(path);
-  const selectedId = positiveNumber(clanId);
-  if (!target || !selectedId) return target;
-  const [pathAndSearch, hash = ""] = target.split("#");
-  const [pathname, search = ""] = pathAndSearch.split("?");
-  const query = new URLSearchParams(search);
-  if (!query.has("clan_id") && !query.has("community")) {
-    query.set("clan_id", String(selectedId));
-  }
-  const nextSearch = query.toString();
-  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
-    hash ? `#${hash}` : ""
-  }`;
 }
 
 function rowsOf<T = any>(input: any): T[] {
@@ -726,7 +711,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 export default function ShopGalleryPage() {
   const { gmfnId } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const routeClanId = useMemo(() => {
     const query = new URLSearchParams(location.search);
     return positiveNumber(
@@ -1099,15 +1083,15 @@ export default function ShopGalleryPage() {
   const miniSpotlightView = useMemo(() => {
     const currentShopGmfnId = firstMeaningful(effectiveShop?.gmfnId).toUpperCase();
     const spotlightShopGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
-    const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
     const messageParts = splitSpotlightMessage(miniSpotlight?.message);
     const isCurrentShop =
       Boolean(currentShopGmfnId) &&
       Boolean(spotlightShopGmfnId) &&
       currentShopGmfnId === spotlightShopGmfnId.toUpperCase();
     const shopTo = spotlightShopGmfnId
-      ? withClanQuery(`/shop/${encodeURIComponent(spotlightShopGmfnId)}`, spotlightClanId)
+      ? publicShopPath(spotlightShopGmfnId)
       : "";
+    const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
     const communityTo = spotlightClanId
       ? `/community/${encodeURIComponent(String(spotlightClanId))}`
       : "";
@@ -1133,14 +1117,15 @@ export default function ShopGalleryPage() {
       helperLine: isCurrentShop
         ? "This live spotlight currently belongs to the shop you are already viewing."
         : shopTo
-        ? "Open the shop behind the current live spotlight item."
+        ? "This public page keeps visitors inside the current shop view."
         : "This live spotlight item does not currently expose a linked shop.",
     };
   }, [miniSpotlight, effectiveShop]);
 
   const absoluteShopLink = useMemo(() => {
-    return publicShopDiariesUrl(`${location.pathname}${location.search || ""}`);
-  }, [location.pathname, location.search]);
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    return ownerId ? publicShopUrl(ownerId) : "";
+  }, [effectiveShop?.gmfnId, gmfnId]);
 
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
@@ -1223,16 +1208,11 @@ export default function ShopGalleryPage() {
 
   function shareProduct(product: ShopProduct) {
     const blockLabel = publicShopBlockLabel(product);
-    const hash = `#${publicShopBlockAnchorId(product)}`;
-    const query = new URLSearchParams(location.search);
-    if (product.id) {
-      query.set("product_id", String(product.id));
-    }
-    query.set("block", String(product.slotNumber));
-    const queryText = query.toString();
-    const productUrl = canonicalPublicFrontendUrl(
-      `${location.pathname}${queryText ? `?${queryText}` : ""}${hash}`
-    );
+    const productUrl = publicShopBlockUrl({
+      gmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
+      productId: product.id,
+      block: product.slotNumber,
+    });
     const productTitle = productDisplayTitle(product);
     const title = `${blockLabel} - ${productTitle}`;
     const text = firstMeaningful(
@@ -1305,23 +1285,7 @@ export default function ShopGalleryPage() {
   }
 
   function openSpotlightPreview() {
-    if (miniSpotlightView.shopTo && !miniSpotlightView.isCurrentShop) {
-      navigate(miniSpotlightView.shopTo);
-      return;
-    }
-
-    if (miniSpotlight) {
-      setNotice({
-        tone: "success",
-        text: "This live billboard item is already open on this public shop page.",
-      });
-      return;
-    }
-
-    setNotice({
-      tone: "error",
-      text: "No live community billboard item is showing here right now.",
-    });
+    revealGalleryTarget(PUBLIC_SHOP_DIARIES_ANCHOR);
   }
 
   return (
@@ -1697,7 +1661,7 @@ export default function ShopGalleryPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Open billboard shop
+                  View shop blocks
                 </button>
               </div>
               <div

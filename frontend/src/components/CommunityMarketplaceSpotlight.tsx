@@ -10,6 +10,7 @@ import {
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
+import { publicShopPath } from "../lib/publicLinks";
 
 type MarketplaceFeedItem = {
   id?: number;
@@ -335,7 +336,7 @@ export default function CommunityMarketplaceSpotlight() {
       ],
       primaryLabel: gmfnId ? "Open seller shop" : "Open Marketplace",
       primaryTo: gmfnId
-        ? withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, sourceClanId)
+        ? publicShopPath(gmfnId)
         : withClanQuery("/app/marketplace", sourceClanId || selectedClanId),
     };
   }, [activeItem, selectedClanId]);

@@ -10,6 +10,7 @@ import {
 
 import AppLayout from "./layout/AppLayout";
 import RequireAuth from "./components/RequireAuth";
+import { publicShopPath } from "./lib/publicLinks";
 import { gmfnBrand } from "./styles/gmfnBrand";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
@@ -251,7 +252,7 @@ function RedirectPublicShopAlias() {
   return (
     <Navigate
       to={mergeTargetWithCurrent(
-        gmfnId ? `/shop/${encodeURIComponent(gmfnId)}` : "/cover",
+        gmfnId ? publicShopPath(gmfnId) : "/cover",
         location.search,
         location.hash
       )}

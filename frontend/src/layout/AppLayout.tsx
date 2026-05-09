@@ -8,6 +8,7 @@ import {
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
 import OriginLink from "../components/OriginLink";
+import { publicShopPath } from "../lib/publicLinks";
 import {
   actionTapGuardProps,
   brandStableTapTarget,
@@ -69,27 +70,6 @@ function writeRole(role: string): void {
 
 function pathOnly(to: string): string {
   return String(to || "").split("?")[0].split("#")[0] || "/";
-}
-
-function positiveNumber(value: unknown): number {
-  const n = Number(value || 0);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = positiveNumber(clanId);
-  if (!path || !safeClanId) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const [pathname, search = ""] = baseWithQuery.split("?");
-  const query = new URLSearchParams(search);
-  if (!query.has("clan_id") && !query.has("community")) {
-    query.set("clan_id", String(safeClanId));
-  }
-  const nextSearch = query.toString();
-  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
-    hash ? `#${hash}` : ""
-  }`;
 }
 
 function isItemActive(
@@ -1269,7 +1249,6 @@ export default function AppLayout() {
   const [myGmfnId, setMyGmfnId] = useState<string>("");
   const [myRole, setMyRole] = useState<string>(() => readRole());
   const [myClanRole, setMyClanRole] = useState<string>("");
-  const [myClanId, setMyClanId] = useState<number>(0);
 
   const isAdmin = useMemo(() => {
     const role = String(myRole || "").trim().toLowerCase();
@@ -1320,11 +1299,6 @@ export default function AppLayout() {
       setMyGmfnId(gmfnId);
       setMyRole(role);
       setMyClanRole(clanRole);
-      setMyClanId(
-        positiveNumber(
-          currentClan?.id || currentClan?.clan_id || currentClan?.community_id
-        )
-      );
       writeRole(role);
     })();
 
@@ -1348,15 +1322,15 @@ export default function AppLayout() {
 
   const myShopGalleryTo = useMemo(() => {
     if (location.pathname.startsWith("/shop/")) {
-      return withClanQuery(`${location.pathname}${location.search || ""}`, myClanId);
+      return `${location.pathname}${location.search || ""}${location.hash || ""}`;
     }
 
     if (myGmfnId) {
-      return withClanQuery(`/shop/${encodeURIComponent(myGmfnId)}`, myClanId);
+      return publicShopPath(myGmfnId);
     }
 
     return "/app/shop-control";
-  }, [location.pathname, location.search, myClanId, myGmfnId]);
+  }, [location.hash, location.pathname, location.search, myGmfnId]);
 
   const taskMode = useMemo(
     () => getTaskModeMeta(location.pathname),

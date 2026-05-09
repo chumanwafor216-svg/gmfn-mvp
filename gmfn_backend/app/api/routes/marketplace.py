@@ -926,10 +926,6 @@ def get_public_marketplace_shop_by_gmfn_id(
         .filter(MarketplaceProduct.is_active.is_(True))
         .filter(MarketplaceProduct.visibility_mode == VISIBILITY_COMMUNITY)
     )
-    if requested_clan_id > 0:
-        product_query = product_query.filter(
-            MarketplaceProduct.clan_id == int(requested_clan_id)
-        )
 
     product_rows = (
         product_query.order_by(
@@ -980,10 +976,15 @@ def get_public_marketplace_shop_by_gmfn_id(
     )
 
     effective_clan = requested_clan
-    if effective_clan is None and requested_clan_id > 0:
+    if effective_clan is None:
+        home_clan_id = requested_clan_id or _safe_int(getattr(shop, "clan_id", None), 0)
+        effective_clan_id = int(home_clan_id or 0)
+    else:
+        effective_clan_id = 0
+    if effective_clan is None and effective_clan_id > 0:
         effective_clan = (
             db.query(Clan)
-            .filter(Clan.id == int(requested_clan_id))
+            .filter(Clan.id == int(effective_clan_id))
             .first()
         )
 

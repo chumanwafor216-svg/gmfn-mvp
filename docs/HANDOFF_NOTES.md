@@ -1,3 +1,33 @@
+### Public shop link contract audit (2026-05-09)
+
+- Owner instruction clarified the public-shop contract:
+  - a public shop link is the owner's complete public shop domain, not a community-filtered slice
+  - the generic public shop URL lands at `/shop/{GSN_ID}#shop-diaries`
+  - a block-specific public share may include `product_id` and `block`, but it still stays inside `/shop/{GSN_ID}`
+  - Vault access remains separate at `/vault/{token}` and must not be treated as the public shop link
+  - public visitors should stay inside the public shop surface, not be pushed into Community Home, Trust Passport, Action Inbox, or protected app routes
+- System-level frontend correction:
+  - added canonical shared builders in `frontend/src/lib/publicLinks.ts`:
+    - `publicShopPath`
+    - `publicShopUrl`
+    - `publicShopBlockPath`
+    - `publicShopBlockUrl`
+  - updated public-shop producers and openers across App aliases, AppLayout, Dashboard spotlight, Community spotlight, Community Shop Control, Marketplace, Marketplace Workspace, Shop Assets, Shop Gallery, and Vault Access to use those shared builders instead of ad hoc `/shop/...?...clan_id=...` strings.
+  - public shop copy/share buttons now emit the canonical public frontend origin plus `/shop/{GSN_ID}#shop-diaries`.
+  - public block share emits `/shop/{GSN_ID}?product_id={id}&block={n}#shop-block-{n}` and no longer inherits unrelated query parameters.
+  - public Shop Gallery's spotlight CTA now scrolls to the current shop blocks instead of navigating visitors away to another shop/app context.
+- Backend correction:
+  - `GET /marketplace/public/shop/{gmfn_id}` no longer filters public products by `clan_id`; `clan_id` can still supply metadata/broadcast context, but the product shelf is the owner's whole active `community_visible` public shop.
+  - Vault-private products remain excluded.
+  - home/community display metadata falls back to the shop's home clan when no community query is supplied.
+- Verification:
+  - targeted frontend ESLint over all changed public-shop files passed.
+  - `python -m py_compile gmfn_backend\app\api\routes\marketplace.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp C:\tmp\pytest-public-shop-links-3` passed: 7 passed, 8 SQLAlchemy/sqlite deprecation warnings.
+  - `git diff --check` passed with line-ending normalization warnings only.
+- Devil's-advocate truth:
+  - this fixes the link contract and the backend shelf logic. It does not prove the currently deployed Render instance has picked up the commit until the change is committed, pushed, and Render redeploys. Manual phone verification should check a copied owner shop link lands directly at the Shop Diaries/public block area.
+
 ### Frontend-to-backend wording truth pass (2026-05-08)
 
 - Continued after `f183b93` with another auditor-backed pass from frontend surfaces into backend-exposed messages.

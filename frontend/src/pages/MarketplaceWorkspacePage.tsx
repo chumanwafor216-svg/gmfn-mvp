@@ -18,7 +18,12 @@ import {
 } from "../lib/api";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicFrontendUrl, publicShopDiariesUrl } from "../lib/publicLinks";
+import {
+  publicFrontendUrl,
+  publicShopDiariesUrl,
+  publicShopPath,
+  publicShopUrl,
+} from "../lib/publicLinks";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -539,12 +544,8 @@ export default function MarketplaceWorkspacePage() {
     );
     if (direct) return publicShopDiariesUrl(direct);
 
-    return selectedMemberGmfnId
-      ? publicShopDiariesUrl(
-          withClanQuery(`/shop/${encodeURIComponent(selectedMemberGmfnId)}`, activeClanId)
-        )
-      : "";
-  }, [activeClanId, inviteInfo, selectedMemberGmfnId]);
+    return selectedMemberGmfnId ? publicShopUrl(selectedMemberGmfnId) : "";
+  }, [inviteInfo, selectedMemberGmfnId]);
 
   const guideUrl = useMemo(() => {
     return publicFrontendUrl("/guide");
@@ -674,7 +675,7 @@ export default function MarketplaceWorkspacePage() {
     }
     navigateWithOrigin(
       navigate,
-      withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, activeClanId),
+      publicShopPath(gmfnId),
       location
     );
   }

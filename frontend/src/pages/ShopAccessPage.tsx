@@ -9,6 +9,7 @@ import {
   type VaultShopAccessProduct,
   type VaultShopAccessView,
 } from "../lib/api";
+import { publicShopPath } from "../lib/publicLinks";
 
 type NoticeTone = "error" | "info";
 
@@ -22,23 +23,6 @@ function firstTruthy(...values: unknown[]): string {
     if (text) return text;
   }
   return "";
-}
-
-function positiveNumber(value: unknown): number {
-  const n = Number(value || 0);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = positiveNumber(clanId);
-  if (!path || !safeClanId) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
 }
 
 function pageShell(): React.CSSProperties {
@@ -296,16 +280,7 @@ export default function ShopAccessPage() {
 
   const publicShopRoute = useMemo(() => {
     const gmfnId = safeStr(view?.gmfn_id);
-    const clanId = positiveNumber(
-      (view as any)?.clan_id ||
-        (view as any)?.raw?.clan_id ||
-        (view as any)?.raw?.shop?.clan_id ||
-        (view as any)?.raw?.data?.clan_id ||
-        (view as any)?.raw?.data?.shop?.clan_id
-    );
-    return gmfnId
-      ? withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, clanId)
-      : "";
+    return gmfnId ? publicShopPath(gmfnId) : "";
   }, [view]);
 
   const restrictionBadges = useMemo(() => {

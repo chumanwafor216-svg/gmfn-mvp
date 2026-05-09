@@ -281,6 +281,10 @@ def test_shop_gallery_products_follow_owner_across_membership_communities(
                     (
                         2, 1, 1, 1, 'Private Vault Product', 'Must stay private',
                         '9000', 'NGN', :vault_image_url, 'vault_private', 1
+                    ),
+                    (
+                        3, 2, 1, 1, 'Second Community Product', 'Also part of the same public shop',
+                        '1500', 'NGN', :product_image_url, 'community_visible', 1
                     )
                 """
             ),
@@ -299,12 +303,13 @@ def test_shop_gallery_products_follow_owner_across_membership_communities(
     owner_shop = client.get("/marketplace/shops/by-gmfn/GMFN-U-GLOBALSHOP?clan_id=2")
     assert owner_shop.status_code == 200, owner_shop.text
     owner_shop_names = [item["name"] for item in owner_shop.json()["products"]]
-    assert owner_shop_names == ["Origin Public Product"]
+    assert set(owner_shop_names) == {"Origin Public Product", "Second Community Product"}
 
     public_shop = client.get("/marketplace/public/shop/GMFN-U-GLOBALSHOP?clan_id=2")
     assert public_shop.status_code == 200, public_shop.text
     public_names = [item["name"] for item in public_shop.json()["products"]]
-    assert public_names == ["Origin Public Product"]
+    assert set(public_names) == {"Origin Public Product", "Second Community Product"}
+    assert "Private Vault Product" not in public_names
 
 
 def test_shop_spotlight_publish_targets_only_the_shop_community(

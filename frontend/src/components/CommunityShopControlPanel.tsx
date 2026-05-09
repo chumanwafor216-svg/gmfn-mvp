@@ -2,10 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
-import {
-  publicShopDiariesPath,
-  publicShopDiariesUrl,
-} from "../lib/publicLinks";
+import { publicShopPath, publicShopUrl } from "../lib/publicLinks";
 import {
   actionTapGuardProps,
   brandStableTapTarget,
@@ -590,12 +587,8 @@ export default function CommunityShopControlPanel({
 
   const publicShopTo = useMemo(() => {
     const gmfnId = safeStr(shop?.gmfnId);
-    return gmfnId
-      ? publicShopDiariesPath(
-          withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, selectedClanId)
-        )
-      : "";
-  }, [selectedClanId, shop]);
+    return gmfnId ? publicShopPath(gmfnId) : "";
+  }, [shop]);
 
   const shopImageSrc = useMemo(() => {
     return safeStr(shop?.imageUrl);
@@ -615,7 +608,7 @@ export default function CommunityShopControlPanel({
       return;
     }
 
-    api.safeCopy(publicShopDiariesUrl(publicShopTo));
+    api.safeCopy(publicShopUrl(safeStr(shop?.gmfnId)));
     setNotice({ tone: "success", text: "Public shop link copied." });
   }
 

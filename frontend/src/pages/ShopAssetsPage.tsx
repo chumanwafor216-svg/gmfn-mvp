@@ -16,8 +16,8 @@ import {
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
 import {
-  canonicalPublicFrontendUrl,
-  publicShopDiariesUrl,
+  publicShopBlockUrl,
+  publicShopUrl,
 } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
 import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
@@ -497,43 +497,18 @@ async function uploadMarketplaceVideoFile(
   );
 }
 
-function positiveNumber(value: unknown): number {
-  const n = Number(value || 0);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = positiveNumber(clanId);
-  if (!path || !safeClanId) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
-}
-
-function buildShopLink(gmfnId: string, clanId: number): string {
+function buildShopLink(gmfnId: string): string {
   if (!gmfnId) return "";
-  return publicShopDiariesUrl(
-    withClanQuery(`/shop/${encodeURIComponent(gmfnId)}`, clanId)
-  );
+  return publicShopUrl(gmfnId);
 }
 
 function buildProductDeepLink(
   gmfnId: string,
   productId: number,
-  clanId: number
+  block?: number
 ): string {
   if (!gmfnId || !productId) return "";
-  const path = withClanQuery(
-    `/shop/${encodeURIComponent(gmfnId)}?product_id=${encodeURIComponent(
-      String(productId)
-    )}`,
-    clanId
-  );
-  return canonicalPublicFrontendUrl(`${path}#product-${productId}`);
+  return publicShopBlockUrl({ gmfnId, productId, block });
 }
 
 function extractProductLabel(description: string): string {
@@ -791,10 +766,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }, [loadPage]);
 
   const gmfnId = useMemo(() => firstTruthy(shop?.gmfn_id, me?.gmfn_id), [shop, me]);
-  const shopLink = useMemo(
-    () => buildShopLink(gmfnId, selectedClanId),
-    [gmfnId, selectedClanId]
-  );
+  const shopLink = useMemo(() => buildShopLink(gmfnId), [gmfnId]);
 
   const publicProducts = useMemo(
     () =>
@@ -2118,7 +2090,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                           buildProductDeepLink(
                             gmfnId,
                             Number(selectedPublicProduct.id),
-                            selectedClanId
+                            selectedPublicSlot
                           ),
                           "Block link copied."
                         )
@@ -2573,10 +2545,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             products.map((item) => {
               const label = extractProductLabel(firstTruthy(item?.description));
               const cleanDescription = stripProductLabel(firstTruthy(item?.description));
+              const publicSlotNumber =
+                publicProducts.findIndex((product) => product?.id === item?.id) + 1;
               const productLink = buildProductDeepLink(
                 gmfnId,
                 Number(item.id),
-                selectedClanId
+                publicSlotNumber > 0 ? publicSlotNumber : undefined
               );
               const isHidden = item?.is_active === false;
               const itemName = firstTruthy(item?.name, "Product");

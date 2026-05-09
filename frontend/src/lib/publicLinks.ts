@@ -194,6 +194,46 @@ export function publicShopDiariesUrl(pathOrUrl: string): string {
   return canonicalPublicFrontendUrl(publicShopDiariesPath(pathOrUrl));
 }
 
+export function publicShopPath(gmfnId: string): string {
+  const ownerId = cleanText(gmfnId);
+  if (!ownerId) return "";
+  return `/shop/${encodeURIComponent(ownerId)}#${PUBLIC_SHOP_DIARIES_ANCHOR}`;
+}
+
+export function publicShopUrl(gmfnId: string): string {
+  const path = publicShopPath(gmfnId);
+  return path ? canonicalPublicFrontendUrl(path) : "";
+}
+
+export function publicShopBlockPath(params: {
+  gmfnId: string;
+  productId?: string | number | null;
+  block?: string | number | null;
+}): string {
+  const ownerId = cleanText(params.gmfnId);
+  if (!ownerId) return "";
+
+  const query = new URLSearchParams();
+  const productId = cleanText(params.productId);
+  const block = cleanText(params.block);
+
+  if (productId) query.set("product_id", productId);
+  if (block) query.set("block", block);
+
+  const hash = block ? `shop-block-${encodeURIComponent(block)}` : PUBLIC_SHOP_DIARIES_ANCHOR;
+  const search = query.toString();
+  return `/shop/${encodeURIComponent(ownerId)}${search ? `?${search}` : ""}#${hash}`;
+}
+
+export function publicShopBlockUrl(params: {
+  gmfnId: string;
+  productId?: string | number | null;
+  block?: string | number | null;
+}): string {
+  const path = publicShopBlockPath(params);
+  return path ? canonicalPublicFrontendUrl(path) : "";
+}
+
 export function publicApiUrl(pathOrUrl: string): string {
   const raw = cleanText(pathOrUrl);
   if (!raw) return "";

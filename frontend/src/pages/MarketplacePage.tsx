@@ -4,7 +4,11 @@ import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicFrontendUrl, publicShopDiariesUrl } from "../lib/publicLinks";
+import {
+  publicFrontendUrl,
+  publicShopPath,
+  publicShopUrl,
+} from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
 import OriginLink from "../components/OriginLink";
 import {
@@ -1843,10 +1847,8 @@ export default function MarketplacePage() {
   }, [currentGmfnId, me, shops]);
 
   const myShopTo = useMemo(() => {
-    return currentGmfnId
-      ? withClanQuery(`/shop/${encodeURIComponent(currentGmfnId)}`, activeCommunityId)
-      : "";
-  }, [currentGmfnId, activeCommunityId]);
+    return currentGmfnId ? publicShopPath(currentGmfnId) : "";
+  }, [currentGmfnId]);
 
   useEffect(() => {
     if (routeSelectedClanId > 0) {
@@ -1877,10 +1879,8 @@ export default function MarketplacePage() {
 
   const publicShopViewLink = useMemo(() => {
     if (!currentGmfnId || !currentUserVisibleShop) return "";
-    return publicShopDiariesUrl(
-      withClanQuery(`/shop/${encodeURIComponent(currentGmfnId)}`, activeCommunityId)
-    );
-  }, [currentGmfnId, currentUserVisibleShop, activeCommunityId]);
+    return publicShopUrl(currentGmfnId);
+  }, [currentGmfnId, currentUserVisibleShop]);
 
   const publicShopUnavailableText = currentGmfnId
     ? "Your public shop is not visible in this marketplace yet."
@@ -2555,14 +2555,14 @@ export default function MarketplacePage() {
           : "Shop not visible yet",
         shopTo:
           shop && gmfn
-            ? withClanQuery(`/shop/${encodeURIComponent(gmfn)}`, activeCommunityId)
+            ? publicShopPath(gmfn)
             : "",
       };
     });
 
     rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
-  }, [activeCommunityId, members, shops]);
+  }, [members, shops]);
 
   const activeLoanCount = useMemo(() => {
     return loans.filter((item) => {

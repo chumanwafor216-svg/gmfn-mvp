@@ -30,6 +30,7 @@ import {
   getSmartMarketWisdomPair,
   type MarketWisdomPair,
 } from "../lib/marketWisdom";
+import { publicShopPath } from "../lib/publicLinks";
 import {
   buildDashboardNextRouteCopy,
   buildDashboardTrustAttentionCore,
@@ -975,18 +976,6 @@ function firstNumberLike(...values: unknown[]): number | null {
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = positiveNumber(clanId);
-  if (!path || !safeClanId) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
 }
 
 function dashboardAvatarStorageKeysForUser(user: any): string[] {
@@ -4896,16 +4885,7 @@ export default function DashboardPage() {
 
     navigateWithOrigin(
       navigate,
-      withClanQuery(
-        `/shop/${encodeURIComponent(spotlightGmfnId)}`,
-        positiveNumber(
-          activeSpotlight?.source_clan_id ||
-            activeSpotlight?.clan_id ||
-            activeSpotlight?.source_marketplace_id ||
-            activeSpotlight?.marketplace_id ||
-            selectedClanId
-        )
-      ),
+      publicShopPath(spotlightGmfnId),
       location
     );
   }
