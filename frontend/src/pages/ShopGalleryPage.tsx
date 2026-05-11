@@ -4,9 +4,11 @@ import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   createMarketplaceShop,
+  getAccessToken,
   getCurrentClan,
   getMe,
   getPublicMarketplaceShopByGmfnId,
+  getSelectedClanId,
   safeCopy,
 } from "../lib/api";
 import {
@@ -116,6 +118,28 @@ function isDisconnectedPublicShopError(message: any): boolean {
   return /seller identity|shop not found|not connected|active shop|404/i.test(
     safeStr(message)
   );
+}
+
+function publicShopReconnectAttemptKey(gmfnId: string): string {
+  const token = safeStr(getAccessToken());
+  const sessionKey = token ? token.slice(-16) : "no-owner-session";
+  return `${safeStr(gmfnId).toUpperCase()}::${sessionKey}`;
+}
+
+function publicShopReconnectErrorMessage(message: string): string {
+  if (/no active clan selected/i.test(message)) {
+    return "GSN found your owner sign-in, but it could not find an active community for this shop yet. Open Marketplace or Community Home once while signed in, then this public shop page can reconnect Shop Diaries.";
+  }
+
+  if (/not an active member/i.test(message)) {
+    return "GSN found your owner sign-in, but this browser is pointing at a community where the owner is not active. Open the shop from Marketplace again so GSN can use the right community.";
+  }
+
+  if (isDisconnectedPublicShopError(message)) {
+    return "This public shop link is not connected to an active shop yet. If you are the owner, sign in in this browser; this page will reconnect Shop Diaries automatically as soon as your owner session is available.";
+  }
+
+  return message || "Shop gallery could not be loaded right now.";
 }
 
 function replacePublicShopAddress(gmfnId: string): void {
@@ -756,6 +780,7 @@ export default function ShopGalleryPage() {
   );
   const [error, setError] = useState<string>("");
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
+  const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
   const autoRefreshAttemptedRef = useRef("");
 
   useEffect(() => {
@@ -780,6 +805,50 @@ export default function ShopGalleryPage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const cleanedGmfnId = safeStr(gmfnId || "");
+    if (!cleanedGmfnId || !isDisconnectedPublicShopError(error)) return;
+
+    let retryFrame: number | null = null;
+
+    const requestOwnerSessionRetry = () => {
+      if (!getAccessToken()) return;
+
+      const refreshKey = publicShopReconnectAttemptKey(cleanedGmfnId);
+      if (autoRefreshAttemptedRef.current === refreshKey) return;
+      if (retryFrame !== null) return;
+
+      retryFrame = window.requestAnimationFrame(() => {
+        retryFrame = null;
+        setShopReconnectRetryKey((key) => key + 1);
+      });
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) requestOwnerSessionRetry();
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (!event.key || event.key === "access_token") requestOwnerSessionRetry();
+    };
+
+    window.addEventListener("focus", requestOwnerSessionRetry);
+    window.addEventListener("storage", handleStorage);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    const retryTimer = window.setInterval(requestOwnerSessionRetry, 2500);
+    requestOwnerSessionRetry();
+
+    return () => {
+      window.removeEventListener("focus", requestOwnerSessionRetry);
+      window.removeEventListener("storage", handleStorage);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.clearInterval(retryTimer);
+      if (retryFrame !== null) window.cancelAnimationFrame(retryFrame);
+    };
+  }, [error, gmfnId]);
 
   useEffect(() => {
     let alive = true;
@@ -884,7 +953,15 @@ export default function ShopGalleryPage() {
         return "";
       }
 
-      const clanId = positiveNumber(clanRes?.id || clanRes?.clan_id);
+      if (!identityMatches(ownerGmfnId, cleanedGmfnId)) {
+        throw new Error(
+          `This public shop link belongs to ${cleanedGmfnId}, but this browser is signed in as ${ownerGmfnId}. Sign in as ${cleanedGmfnId}, or open your current public shop link from Marketplace.`
+        );
+      }
+
+      const clanId = positiveNumber(
+        clanRes?.id || clanRes?.clan_id || getSelectedClanId()
+      );
       const ownerName = firstMeaningful(
         meRes?.display_name,
         meRes?.nickname,
@@ -920,9 +997,10 @@ export default function ShopGalleryPage() {
           publicShopRes = await loadPublicShop(cleanedGmfnId);
         } catch (err: any) {
           const message = safeStr(err?.message);
-          const refreshKey = cleanedGmfnId.toUpperCase();
+          const refreshKey = publicShopReconnectAttemptKey(cleanedGmfnId);
           const canAttemptRefresh =
             cleanedGmfnId &&
+            getAccessToken() &&
             isDisconnectedPublicShopError(message) &&
             autoRefreshAttemptedRef.current !== refreshKey;
 
@@ -957,11 +1035,7 @@ export default function ShopGalleryPage() {
       } catch (err: any) {
         if (!alive) return;
         const message = safeStr(err?.message);
-        setError(
-          isDisconnectedPublicShopError(message)
-            ? "This public shop link is not connected to an active shop yet. If you are the owner, sign in and open this same link again; Shop Diaries will reconnect automatically."
-            : message || "Shop gallery could not be loaded right now."
-        );
+        setError(publicShopReconnectErrorMessage(message));
       } finally {
         if (alive) {
           setAutoRefreshingShop(false);
@@ -973,7 +1047,7 @@ export default function ShopGalleryPage() {
     return () => {
       alive = false;
     };
-  }, [gmfnId]);
+  }, [gmfnId, shopReconnectRetryKey]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);

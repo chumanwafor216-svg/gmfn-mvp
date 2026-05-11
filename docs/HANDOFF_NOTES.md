@@ -1,3 +1,27 @@
+### Public shop stale-link reconnect retries after owner sign-in (2026-05-11)
+
+- Followed up after the product owner still saw the public Shop Diaries stale-link message:
+  - `This public shop link is not connected to an active shop yet...`
+- Truth/devil's advocate:
+  - The earlier auto-refresh did attempt owner-only reconnect, but it could mark the reconnect as already attempted even when no owner session was available yet.
+  - That meant signing in afterward could leave the same public page stuck until a manual reload, which is exactly the wrong experience for "automatic" reconnect.
+  - Reconnect must still be owner-only; a public visitor should never be able to reactivate or rewrite somebody else's shop.
+- Frontend change:
+  - `frontend/src/pages/ShopGalleryPage.tsx` now retries the stale public-shop reconnect when an owner auth token becomes available through focus, storage, visibility, or a short polling check.
+  - Reconnect attempts are keyed by both public shop ID and owner session, so an unauthenticated failed attempt no longer blocks a later signed-in owner attempt.
+  - The reconnect now checks that `/auth/me` matches the GMFN/GSN ID in the public link before calling `createMarketplaceShop(...)`.
+  - The refresh path also falls back to the locally selected community ID when `getCurrentClan()` cannot hydrate on the public page.
+  - Error copy now distinguishes missing active community, wrong owner session, and stale unauthenticated public link.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - If the public link is opened by the wrong signed-in account, it will not reconnect and should show the exact mismatch.
+  - If the owner account has no active community membership at all, the backend still cannot safely create/reactivate a public shop until the owner is active in a community.
+
 ### Public shop face block anti-jump follow-up (2026-05-11)
 
 - Followed up after the product owner reported the Marketplace `Public shop face` block was still jumping.
