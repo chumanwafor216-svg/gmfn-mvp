@@ -1,3 +1,20 @@
+### Marketplace and shop button-jump hardening (2026-05-11)
+
+- Followed up after the product owner asked to continue until the checked jumpy-button parameters were corrected across Marketplace, Shop Control, Shop Assets, Community Home, and Marketplace Workspace.
+- Truth/devil's advocate:
+  - The button components themselves were already on the stable shared button family and passed the existing audits.
+  - The remaining visible jumping risk was layout around the buttons: notices appearing in page flow, collapse-header rows changing height, and action grids allowing dynamic labels to resize rows.
+- Frontend change:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx` now shows access-desk error/success messages as a fixed toast instead of inserting/removing full cards above the page content, and its main Open/Hide toggles use a stable 50px height.
+  - `frontend/src/pages/ShopControlPage.tsx` now fixes Spotlight/action control grid rows at 56px desktop / 64px compact and opts the grid out of scroll anchoring.
+  - `frontend/src/pages/ShopAssetsPage.tsx` now fixes owner action-grid rows at 48px desktop / 56px compact and opts the grid out of scroll anchoring.
+  - `frontend/src/pages/CommunityHomePage.tsx` and `frontend/src/components/CommunityShopControlPanel.tsx` now reserve fixed-height collapse-button rows and opt them out of scroll anchoring.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplaceWorkspacePage.tsx src\pages\ShopControlPage.tsx src\pages\ShopAssetsPage.tsx src\pages\CommunityHomePage.tsx src\components\CommunityShopControlPanel.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+
 ### Public shop root links reveal Shop Diaries (2026-05-11)
 
 - Followed up after the product owner clarified that the public home is inside Marketplace and asked whether the shop link can show Shop Diaries after two days on this lane.

@@ -233,6 +233,24 @@ function sectionLabel(): React.CSSProperties {
   };
 }
 
+function floatingNoticeCard(tone: "success" | "error"): React.CSSProperties {
+  return {
+    ...pageCard(tone === "error" ? "#FEF2F2" : "#ECFDF5"),
+    position: "fixed",
+    left: "50%",
+    bottom: 18,
+    transform: "translateX(-50%)",
+    width: "min(720px, calc(100vw - 32px))",
+    zIndex: 90,
+    pointerEvents: "none",
+    border: tone === "error" ? "1px solid #FECACA" : "1px solid #A7F3D0",
+    color: tone === "error" ? "#991B1B" : "#065F46",
+    fontWeight: 900,
+    boxShadow:
+      "0 18px 42px rgba(10,24,49,0.22), inset 0 1px 0 rgba(255,255,255,0.82)",
+  };
+}
+
 type CommunityTrustState = {
   classText: string;
   scoreText: string;
@@ -781,6 +799,16 @@ export default function MarketplaceWorkspacePage() {
 
   return (
     <div style={{ maxWidth: 1100, margin: "0 auto", paddingBottom: 36 }}>
+      {err || msg ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={floatingNoticeCard(err ? "error" : "success")}
+        >
+          {err || msg}
+        </div>
+      ) : null}
+
       <PageTopNav
         sectionLabel="Community Access Desk"
         title={communityName}
@@ -795,34 +823,6 @@ export default function MarketplaceWorkspacePage() {
         tone="light"
         style={{ marginTop: 18 }}
       />
-
-      {err ? (
-        <div
-          style={{
-            ...pageCard("#FEF2F2"),
-            marginTop: 18,
-            border: "1px solid #FECACA",
-            color: "#991B1B",
-            fontWeight: 900,
-          }}
-        >
-          {err}
-        </div>
-      ) : null}
-
-      {msg ? (
-        <div
-          style={{
-            ...pageCard("#ECFDF5"),
-            marginTop: 18,
-            border: "1px solid #A7F3D0",
-            color: "#065F46",
-            fontWeight: 900,
-          }}
-        >
-          {msg}
-        </div>
-      ) : null}
 
       <div style={{ ...pageCard(), marginTop: 18 }}>
         <div style={sectionLabel()}>Community profile</div>
@@ -1055,6 +1055,7 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setInviteOpen((v) => !v)}
+            stableHeight={50}
             debugId="marketplace-workspace.toggle-invite"
           >
             {inviteOpen ? "Hide" : "Open"}
@@ -1260,6 +1261,7 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setMoneyOpen((v) => !v)}
+            stableHeight={50}
             debugId="marketplace-workspace.toggle-money"
           >
             {moneyOpen ? "Hide" : "Open"}
@@ -1314,6 +1316,7 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setAlertsOpen((v) => !v)}
+            stableHeight={50}
             debugId="marketplace-workspace.toggle-alerts"
           >
             {alertsOpen ? "Hide" : "Open"}
@@ -1376,6 +1379,7 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setMembersOpen((v) => !v)}
+            stableHeight={50}
             debugId="marketplace-workspace.toggle-members"
           >
             {membersOpen ? "Hide" : "Open"}

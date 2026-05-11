@@ -392,8 +392,10 @@ function controlGrid(isCompact: boolean, minWidth = 138): React.CSSProperties {
     gridTemplateColumns: isCompact
       ? "repeat(2, minmax(0, 1fr))"
       : `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
+    gridAutoRows: isCompact ? "64px" : "56px",
     gap: 10,
     alignItems: "stretch",
+    overflowAnchor: "none",
   };
 }
 

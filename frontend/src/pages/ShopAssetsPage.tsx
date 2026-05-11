@@ -172,8 +172,10 @@ function ownerActionGrid(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(148px, 1fr))",
+    gridAutoRows: isCompact ? "56px" : "48px",
     gap: isCompact ? 12 : 10,
     alignItems: "stretch",
+    overflowAnchor: "none",
   };
 }
 

@@ -429,6 +429,8 @@ function collapseButtonRow(): React.CSSProperties {
     width: "100%",
     gap: 8,
     flexWrap: "wrap",
+    minHeight: 50,
+    overflowAnchor: "none",
   };
 }
 
