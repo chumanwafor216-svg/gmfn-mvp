@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
+import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 
 
 
@@ -598,52 +599,6 @@ function buttonStyle(disabled = false): React.CSSProperties {
     touchAction: "manipulation",
 
     WebkitTapHighlightColor: "transparent",
-
-  };
-
-}
-
-
-
-function stableTapStyle(): React.CSSProperties {
-
-  return {
-
-    touchAction: "manipulation",
-
-    WebkitTapHighlightColor: "transparent",
-
-  };
-
-}
-
-
-
-function guardButtonPress(
-
-  event:
-
-    | React.PointerEvent<HTMLElement>
-
-    | React.TouchEvent<HTMLElement>
-
-    | React.MouseEvent<HTMLElement>
-
-): void {
-
-  event.stopPropagation();
-
-}
-
-
-
-function buttonGuardProps() {
-
-  return {
-
-    onPointerDown: guardButtonPress,
-
-    onMouseDown: guardButtonPress,
 
   };
 
@@ -1557,56 +1512,46 @@ export default function CoverPage() {
             }}
           >
             <div style={{ ...buttonDockStyle(), display: "grid", gap: 10, justifyItems: "center" }}>
-            <button
+              <PrimaryButton
+                onClick={goNext}
+                busy={busy}
+                busyLabel="Continuing..."
+                minWidth={236}
+                stableHeight={58}
+                debugId="cover.continue"
+                style={buttonStyle(busy)}
+              >
+                Continue
+              </PrimaryButton>
 
-              type="button"
-
-              onClick={goNext}
-
-              {...buttonGuardProps()}
-
-              disabled={busy}
-
-              style={{ ...buttonStyle(busy), ...stableTapStyle() }}
-
-            >
-
-              {busy ? "Continuing..." : "Continue"}
-
-            </button>
-
-            <button
-
-              type="button"
-
-              onClick={openGuide}
-
-              {...buttonGuardProps()}
-
-              disabled={busy}
-
-              style={{
-                ...buttonStyle(false),
-                ...stableTapStyle(),
-                minHeight: 40,
-                padding: "10px 20px",
-                borderRadius: 18,
-                background: "linear-gradient(180deg, rgba(235,244,255,0.20) 0%, rgba(98,126,153,0.13) 100%)",
-                color: "#F4F8FC",
-                border: "1px solid rgba(221,232,244,0.22)",
-                boxShadow: "0 14px 28px rgba(1,9,22,0.26), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(2,12,24,0.28)",
-                fontSize: 13,
-                fontWeight: 900,
-                letterSpacing: "0.025em",
-                textTransform: "none",
-                textShadow: "0 1px 0 rgba(0,0,0,0.30)",
-              }}
-
-            >
-
-              About GSN & I
-
-            </button>
+              <SecondaryButton
+                onClick={openGuide}
+                disabled={busy}
+                minWidth={236}
+                stableHeight={40}
+                debugId="cover.about-gsn"
+                style={{
+                  ...buttonStyle(busy),
+                  minHeight: 40,
+                  padding: "10px 20px",
+                  borderRadius: 18,
+                  background: busy
+                    ? "linear-gradient(180deg, rgba(151,170,190,0.46) 0%, rgba(134,156,175,0.38) 100%)"
+                    : "linear-gradient(180deg, rgba(235,244,255,0.20) 0%, rgba(98,126,153,0.13) 100%)",
+                  color: busy ? "#DDE7F1" : "#F4F8FC",
+                  border: "1px solid rgba(221,232,244,0.22)",
+                  boxShadow: busy
+                    ? "none"
+                    : "0 14px 28px rgba(1,9,22,0.26), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -1px 0 rgba(2,12,24,0.28)",
+                  fontSize: 13,
+                  fontWeight: 900,
+                  letterSpacing: "0.025em",
+                  textTransform: "none",
+                  textShadow: busy ? "none" : "0 1px 0 rgba(0,0,0,0.30)",
+                }}
+              >
+                About GSN & I
+              </SecondaryButton>
             </div>
           </div>
 

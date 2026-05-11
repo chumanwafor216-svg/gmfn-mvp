@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { SecondaryButton } from "./StableButton";
 import { getMySettings, updateMySettings } from "../lib/api";
 import { emitCompanionSettingsUpdated } from "../lib/workspaceEvents";
 import {
@@ -307,27 +308,30 @@ export default function CompanionSettingsPanel() {
               flexWrap: "wrap",
             }}
           >
-            <button
-              type="button"
+            <SecondaryButton
               onClick={() => void patch("companionMode", "off")}
+              stableHeight={40}
+              debugId="companion-settings.mode.off"
               style={optionButton(settings.companionMode === "off")}
             >
               Off
-            </button>
-            <button
-              type="button"
+            </SecondaryButton>
+            <SecondaryButton
               onClick={() => void patch("companionMode", "light")}
+              stableHeight={40}
+              debugId="companion-settings.mode.light"
               style={optionButton(settings.companionMode === "light")}
             >
               Light
-            </button>
-            <button
-              type="button"
+            </SecondaryButton>
+            <SecondaryButton
               onClick={() => void patch("companionMode", "active")}
+              stableHeight={40}
+              debugId="companion-settings.mode.active"
               style={optionButton(settings.companionMode === "active")}
             >
               Active
-            </button>
+            </SecondaryButton>
           </div>
         </div>
 
@@ -342,38 +346,42 @@ export default function CompanionSettingsPanel() {
               flexWrap: "wrap",
             }}
           >
-            <button
-              type="button"
+            <SecondaryButton
               onClick={() => void patch("audibleNudgeLevel", "off")}
+              stableHeight={40}
+              debugId="companion-settings.audible.off"
               style={optionButton(settings.audibleNudgeLevel === "off")}
             >
               Off
-            </button>
-            <button
-              type="button"
+            </SecondaryButton>
+            <SecondaryButton
               onClick={() => void patch("audibleNudgeLevel", "urgent-only")}
+              stableHeight={40}
+              debugId="companion-settings.audible.urgent-only"
               style={optionButton(
                 settings.audibleNudgeLevel === "urgent-only"
               )}
             >
               Urgent only
-            </button>
-            <button
-              type="button"
+            </SecondaryButton>
+            <SecondaryButton
               onClick={() => void patch("audibleNudgeLevel", "important-only")}
+              stableHeight={40}
+              debugId="companion-settings.audible.important-only"
               style={optionButton(
                 settings.audibleNudgeLevel === "important-only"
               )}
             >
               Important only
-            </button>
-            <button
-              type="button"
+            </SecondaryButton>
+            <SecondaryButton
               onClick={() => void patch("audibleNudgeLevel", "all")}
+              stableHeight={40}
+              debugId="companion-settings.audible.all"
               style={optionButton(settings.audibleNudgeLevel === "all")}
             >
               All nudges
-            </button>
+            </SecondaryButton>
           </div>
         </div>
 
@@ -395,20 +403,24 @@ export default function CompanionSettingsPanel() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
+              <SecondaryButton
                 onClick={() => void patch("voicePromptsEnabled", true)}
+                minWidth={86}
+                stableHeight={38}
+                debugId="companion-settings.voice.on"
                 style={toggleButton(settings.voicePromptsEnabled === true)}
               >
                 On
-              </button>
-              <button
-                type="button"
+              </SecondaryButton>
+              <SecondaryButton
                 onClick={() => void patch("voicePromptsEnabled", false)}
+                minWidth={86}
+                stableHeight={38}
+                debugId="companion-settings.voice.off"
                 style={toggleButton(settings.voicePromptsEnabled === false)}
               >
                 Off
-              </button>
+              </SecondaryButton>
             </div>
 
             <div
@@ -434,20 +446,24 @@ export default function CompanionSettingsPanel() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
+              <SecondaryButton
                 onClick={() => void patch("systemPushEnabled", true)}
+                minWidth={86}
+                stableHeight={38}
+                debugId="companion-settings.push.on"
                 style={toggleButton(settings.systemPushEnabled === true)}
               >
                 On
-              </button>
-              <button
-                type="button"
+              </SecondaryButton>
+              <SecondaryButton
                 onClick={() => void patch("systemPushEnabled", false)}
+                minWidth={86}
+                stableHeight={38}
+                debugId="companion-settings.push.off"
                 style={toggleButton(settings.systemPushEnabled === false)}
               >
                 Off
-              </button>
+              </SecondaryButton>
             </div>
 
             <div

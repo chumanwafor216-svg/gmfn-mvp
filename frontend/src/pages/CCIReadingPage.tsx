@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide from "../components/NextActionGuide";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { CardActionRow, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
-import { getMe, safeCopy } from "../lib/api";
+import { getMe, getSelectedClanId, safeCopy } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
@@ -84,50 +85,6 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 1000,
     whiteSpace: "normal",
-  };
-}
-
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function actionBtn(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    padding: "12px 16px",
-    borderRadius: 15,
-    border: primary
-      ? "1px solid rgba(18,77,176,0.22)"
-      : "1px solid rgba(121,149,190,0.18)",
-    background: primary
-      ? "linear-gradient(180deg, #2A6AF3 0%, #134FBF 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F2F7FF 100%)",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    boxShadow: primary
-      ? "0 14px 28px rgba(19,79,191,0.22)"
-      : "0 12px 26px rgba(15,23,42,0.07)",
-    fontWeight: 900,
-    fontSize: 14,
-    textDecoration: "none",
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
@@ -256,9 +213,26 @@ function toneMeta(tone: ReadingState["tone"]) {
   return { bg: "#F8FAFC", border: "1px solid rgba(148,163,184,0.16)", text: "#334155" };
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 export default function CCIReadingPage() {
   const location = useLocation();
   const navigate = useNavigate();
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "cci-reading.nav.dashboard"),
+      identity: routeTarget("cci", selectedClanId, "cci-reading.identity"),
+      trust: routeTarget("trust", selectedClanId, "cci-reading.trust"),
+    }),
+    [selectedClanId]
+  );
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -335,9 +309,9 @@ export default function CCIReadingPage() {
         sectionLabel="CCI"
         title="CCI"
         subtitle="Your cross-community integrity reading without opening the full Trust Passport."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/dashboard"
+        backTo={routes.dashboard}
         backLabel="Dashboard"
       />
 
@@ -381,17 +355,17 @@ export default function CCIReadingPage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               {loading ? "Loading the CCI reading..." : cci.whyText}
             </div>
-            <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <OriginLink to="/app/identity" style={actionBtn(false)}>
+            <CardActionRow style={{ marginTop: 16 }}>
+              <StableCtaLink to={routes.identity} debugId="cci-reading.identity">
                 Open Identity & Integrity
-              </OriginLink>
-              <OriginLink to="/app/trust" style={actionBtn(false)}>
+              </StableCtaLink>
+              <StableCtaLink to={routes.trust} debugId="cci-reading.trust">
                 Open Trust Passport
-              </OriginLink>
-              <button type="button" onClick={copyCciSnapshot} style={actionBtn(false)}>
+              </StableCtaLink>
+              <SecondaryButton onClick={copyCciSnapshot} debugId="cci-reading.copy-snapshot">
                 Copy CCI snapshot
-              </button>
-            </div>
+              </SecondaryButton>
+            </CardActionRow>
           </div>
         </div>
       </section>

@@ -1,14 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   decideLoanGuarantor,
   getAccessToken,
@@ -232,41 +238,8 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function routeTileStyle(primary = false): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function routeTile(primary = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -281,84 +254,10 @@ function routeTile(primary = false): React.CSSProperties {
       : "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(234,243,251,0.986) 100%)",
     padding: 16,
     textDecoration: "none",
+    textAlign: "left",
     boxShadow: primary
       ? "0 16px 34px rgba(29,95,212,0.10)"
       : "0 14px 30px rgba(15,23,42,0.05)",
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 54,
-    minWidth: 132,
-    padding: "12px 16px",
-    borderRadius: 15,
-    border: "none",
-    background: disabled
-      ? "#CBD5E1"
-      : "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)",
-    color: "#FFFFFF",
-    fontWeight: 1000,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: disabled ? "none" : "0 14px 30px rgba(29,95,212,0.26)",
-  };
-}
-
-function secondaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 54,
-    minWidth: 132,
-    padding: "12px 16px",
-    borderRadius: 15,
-    border: "1px solid rgba(20,52,83,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #E8F1FB 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 1000,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: "0 12px 24px rgba(15,23,42,0.06)",
-  };
-}
-
-function collapseToggle(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    minWidth: 120,
-    padding: "9px 13px",
-    borderRadius: 12,
-    border: "1px solid rgba(20,52,83,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #E8F1FB 100%)",
-    color: "#213D59",
-    fontWeight: 800,
-    fontSize: 13,
-    textAlign: "center",
-    cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
   };
 }
 
@@ -808,6 +707,15 @@ function nextStepText(status: string) {
   return "Next: review guarantors, evidence, and repayment state for this loan.";
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { loanId?: number | string } = {}
+): string {
+  return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
+}
+
 export default function LoanSummaryPage() {
   const { loanId } = useParams();
   const numericLoanId = Number(loanId || 0);
@@ -839,6 +747,23 @@ export default function LoanSummaryPage() {
     tone: FeedbackTone;
     text: string;
   } | null>(null);
+  const activeCommunityId = Number(summary?.clan_id || selectedClanId || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", activeCommunityId, "loan-summary.route.dashboard"),
+      loans: routeTarget("loans", activeCommunityId, "loan-summary.route.loans-target"),
+      workbench: routeTarget("loanWorkbench", activeCommunityId, "loan-summary.route.workbench-target"),
+      suggestions: routeTarget("loanSuggestions", activeCommunityId, "loan-summary.route.suggestions-target"),
+      readiness: routeTarget("loanReadiness", activeCommunityId, "loan-summary.route.readiness-target"),
+      finance: routeTarget("finance", activeCommunityId, "loan-summary.route.finance-target"),
+      revenueAllocation: routeTarget(
+        "revenueAllocation",
+        activeCommunityId,
+        "loan-summary.route.revenue-allocation-target"
+      ),
+    }),
+    [activeCommunityId]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -873,9 +798,7 @@ export default function LoanSummaryPage() {
     "admin";
   const canOpenCommandRevenue =
     isAdmin || lc(normalizeCommunityRole(currentClan)) === "admin";
-  const revenueRoute = canOpenCommandRevenue
-    ? "/app/command-center/revenue-allocation"
-    : "/app/finance";
+  const revenueRoute = canOpenCommandRevenue ? routes.revenueAllocation : routes.finance;
 
   const requiredCount = n(summary?.guarantors_required);
   const approvedCount = guarantors.filter((g) => lc(g.status) === "approved").length;
@@ -1200,9 +1123,9 @@ export default function LoanSummaryPage() {
           sectionLabel="Loan Summary"
           title="Loan Summary"
           subtitle="Loading the loan detail page..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/loans"
+          backTo={routes.loans}
           backLabel="Loans & Support"
         />
 
@@ -1230,9 +1153,9 @@ export default function LoanSummaryPage() {
           sectionLabel="Loan Summary"
           title="Loan Summary"
           subtitle="Review one support item here."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/loans"
+          backTo={routes.loans}
           backLabel="Loans & Support"
         />
 
@@ -1261,9 +1184,9 @@ export default function LoanSummaryPage() {
         sectionLabel="Loan Summary"
         title={`Loan #${summary.id}`}
         subtitle="Review the support item, guarantor progress, repayment state, evidence trail, and finance distribution in one calmer page."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/loans"
+        backTo={routes.loans}
         backLabel="Loans & Support"
       />
 
@@ -1384,20 +1307,18 @@ export default function LoanSummaryPage() {
                 flexWrap: "wrap",
               }}
             >
-                <button
-                  type="button"
-                  onClick={copyLoanSummary}
-                  style={secondaryBtn(false)}
-                >
-                  Copy loan summary
-                </button>
-                <button
-                  type="button"
-                  onClick={copyLoanAuditLink}
-                  style={secondaryBtn(false)}
-                >
-                  Copy audit link
-              </button>
+              <SecondaryButton
+                onClick={copyLoanSummary}
+                debugId="loan-summary.copy-summary"
+              >
+                Copy loan summary
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={copyLoanAuditLink}
+                debugId="loan-summary.copy-audit-link"
+              >
+                Copy audit link
+              </SecondaryButton>
             </div>
           </div>
 
@@ -1457,13 +1378,12 @@ export default function LoanSummaryPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("overview")}
-            style={collapseToggle()}
+            debugId="loan-summary.toggle-overview"
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1688,13 +1608,12 @@ export default function LoanSummaryPage() {
               </div>
             </div>
 
-            <button
-              type="button"
+            <SubtleButton
               onClick={() => toggleSection("guarantors")}
-              style={collapseToggle()}
+              debugId="loan-summary.toggle-guarantors"
             >
               {collapsed.guarantors ? "Open" : "Collapse"}
-            </button>
+            </SubtleButton>
           </div>
 
           <ExplainToggle
@@ -1795,25 +1714,25 @@ export default function LoanSummaryPage() {
                             justifyContent: isCompact ? "flex-start" : "flex-end",
                           }}
                         >
-                          <button
-                            type="button"
-                            {...buttonGuardProps()}
+                          <PrimaryButton
                             onClick={() => handleGuarantorDecision(g, "approved")}
-                            disabled={!canDecide || busyApprove || busyDecline}
-                            style={primaryBtn(!canDecide || busyApprove || busyDecline)}
+                            disabled={!canDecide || busyDecline}
+                            busy={busyApprove}
+                            busyLabel="Approving..."
+                            debugId={`loan-summary.guarantor.${g.id || idx}.approve`}
                           >
-                            {busyApprove ? "Approving..." : "Approve"}
-                          </button>
+                            Approve
+                          </PrimaryButton>
 
-                          <button
-                            type="button"
-                            {...buttonGuardProps()}
+                          <SecondaryButton
                             onClick={() => handleGuarantorDecision(g, "declined")}
-                            disabled={!canDecide || busyApprove || busyDecline}
-                            style={secondaryBtn(!canDecide || busyApprove || busyDecline)}
+                            disabled={!canDecide || busyApprove}
+                            busy={busyDecline}
+                            busyLabel="Declining..."
+                            debugId={`loan-summary.guarantor.${g.id || idx}.decline`}
                           >
-                            {busyDecline ? "Declining..." : "Decline"}
-                          </button>
+                            Decline
+                          </SecondaryButton>
                         </div>
                       </div>
                     </div>
@@ -1847,22 +1766,18 @@ export default function LoanSummaryPage() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <SecondaryButton
                 disabled
-                style={secondaryBtn(true)}
+                debugId="loan-summary.bulk-approve-disabled"
               >
                 Bulk approve disabled
-              </button>
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              </SecondaryButton>
+              <SecondaryButton
                 disabled
-                style={secondaryBtn(true)}
+                debugId="loan-summary.bulk-decline-disabled"
               >
                 Bulk decline disabled
-              </button>
+              </SecondaryButton>
             </div>
           </div>
 
@@ -1965,13 +1880,12 @@ export default function LoanSummaryPage() {
               </div>
             </div>
 
-            <button
-              type="button"
+            <SubtleButton
               onClick={() => toggleSection("repayment")}
-              style={collapseToggle()}
+              debugId="loan-summary.toggle-repayment"
             >
               {collapsed.repayment ? "Open" : "Collapse"}
-            </button>
+            </SubtleButton>
           </div>
 
           {!collapsed.repayment ? (
@@ -2097,13 +2011,12 @@ export default function LoanSummaryPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
+              <SubtleButton
                 onClick={() => toggleSection("evidence")}
-                style={collapseToggle()}
+                debugId="loan-summary.toggle-evidence"
               >
                 {collapsed.evidence ? "Open" : "Collapse"}
-              </button>
+              </SubtleButton>
             </div>
 
             {!collapsed.evidence ? (
@@ -2243,9 +2156,12 @@ export default function LoanSummaryPage() {
             )}
 
             <div style={{ marginTop: 14 }}>
-              <OriginLink to={revenueRoute} style={secondaryBtn(false)}>
+              <StableCtaLink
+                to={revenueRoute}
+                debugId="loan-summary.open-revenue-preview"
+              >
                 {canOpenCommandRevenue ? "Open Revenue Allocation" : "Open Finance File"}
-              </OriginLink>
+              </StableCtaLink>
             </div>
           </div>
         </div>
@@ -2272,13 +2188,12 @@ export default function LoanSummaryPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("routes")}
-            style={collapseToggle()}
+            debugId="loan-summary.toggle-routes"
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -2290,7 +2205,11 @@ export default function LoanSummaryPage() {
               gap: 12,
             }}
           >
-            <OriginLink to="/app/loan-workbench" style={routeTile(true)}>
+            <StableCtaLink
+              to={routes.workbench}
+              debugId="loan-summary.route.workbench"
+              style={routeTileStyle(true)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -2304,9 +2223,13 @@ export default function LoanSummaryPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Continue deeper support handling here.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/loan-suggestions" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.suggestions}
+              debugId="loan-summary.route.suggestions"
+              style={routeTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -2320,9 +2243,13 @@ export default function LoanSummaryPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the next question is guarantor fit.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.readiness}
+              debugId="loan-summary.route.readiness"
+              style={routeTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -2336,9 +2263,13 @@ export default function LoanSummaryPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the question is whether the path is clean enough to continue.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to={revenueRoute} style={routeTile(false)}>
+            <StableCtaLink
+              to={revenueRoute}
+              debugId="loan-summary.route.revenue"
+              style={routeTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -2354,11 +2285,18 @@ export default function LoanSummaryPage() {
                   ? "Read fee and distribution logic here."
                   : "Open the money record visible to you for this community."}
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink
-              to={canRepay ? `/app/payment/loans/${summary.id}` : "/app/finance"}
-              style={routeTile(false)}
+            <StableCtaLink
+              to={
+                canRepay
+                  ? routeTarget("repayment", activeCommunityId, "loan-summary.route.repayment-target", {
+                      loanId: summary.id,
+                    })
+                  : routes.finance
+              }
+              debugId="loan-summary.route.payment-or-finance"
+              style={routeTileStyle(false)}
             >
               <div
                 style={{
@@ -2375,10 +2313,14 @@ export default function LoanSummaryPage() {
                   ? "Open this when the support item has moved into repayment."
                   : "Open this when the next question is the broader money truth."}
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
             {!supportItemActive ? (
-              <OriginLink to="/app/loans" style={routeTile(false)}>
+              <StableCtaLink
+                to={routes.loans}
+                debugId="loan-summary.route.loans"
+                style={routeTileStyle(false)}
+              >
                 <div
                   style={{
                     color: "#0B1F33",
@@ -2392,7 +2334,7 @@ export default function LoanSummaryPage() {
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   Return to the broader support overview.
                 </div>
-              </OriginLink>
+              </StableCtaLink>
             ) : null}
           </div>
         ) : null}

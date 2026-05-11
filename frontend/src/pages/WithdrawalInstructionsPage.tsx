@@ -1,14 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { navigateWithOrigin } from "../lib/nav";
 import * as api from "../lib/api";
-import {
-  communityIdFromSearch,
-  withCommunityQuery,
-} from "../lib/communityRouteContext";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   getCommunityMoneySurface,
   loadCommunityWithdrawalRoute,
@@ -316,51 +314,12 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(
-  event:
-    | React.PointerEvent<HTMLElement>
-    | React.MouseEvent<HTMLElement>
-    | React.TouchEvent<HTMLElement>
-) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps() {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function actionBtn(
+function moneyOutActionButtonStyle(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "12px 16px",
       borderRadius: 15,
       border: disabled
         ? "1px solid rgba(148,163,184,0.24)"
@@ -374,21 +333,13 @@ function actionBtn(
         : "0 18px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.18)",
       fontWeight: 1000,
       fontSize: 14,
-      textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
     };
   }
 
   if (kind === "soft") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
       borderRadius: 13,
       border: "1px solid rgba(121,149,190,0.20)",
       background:
@@ -399,20 +350,12 @@ function actionBtn(
         : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
       fontWeight: 900,
       fontSize: 13,
-      textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
     };
   }
 
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 16px",
     borderRadius: 15,
     border: "1px solid rgba(121,149,190,0.20)",
     background:
@@ -423,22 +366,13 @@ function actionBtn(
       : "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     fontWeight: 900,
     fontSize: 14,
-    textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
-    ...stableTapStyle(),
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function moneyOutCollapseButtonStyle(): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    minWidth: 128,
-    padding: "10px 14px",
     borderRadius: 13,
     border: "1px solid rgba(121,149,190,0.20)",
     background:
@@ -449,8 +383,6 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
@@ -636,6 +568,14 @@ function communityImageSrc(currentClan: any): string {
   return resolveMediaUrl(raw);
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 export default function WithdrawalInstructionsPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -645,8 +585,43 @@ export default function WithdrawalInstructionsPage() {
   );
   const selectedClanId =
     routeClanId || Number((api as any).getSelectedClanId?.() || 0);
-  const communityTo = useMemo(
-    () => (to: string) => withCommunityQuery(to, selectedClanId),
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "money-out.nav.dashboard"),
+      marketplace: routeTarget("marketplace", selectedClanId, "money-out.nav.marketplace"),
+      finance: routeTarget("finance", selectedClanId, "money-out.route.finance"),
+      payoutDetails: routeTarget(
+        "payoutDetails",
+        selectedClanId,
+        "money-out.route.payout-details"
+      ),
+      paymentRails: routeTarget(
+        "paymentRails",
+        selectedClanId,
+        "money-out.route.payment-rails"
+      ),
+      loanReadiness: routeTarget(
+        "loanReadiness",
+        selectedClanId,
+        "money-out.route.readiness"
+      ),
+      loanSuggestions: routeTarget(
+        "loanSuggestions",
+        selectedClanId,
+        "money-out.route.suggestions"
+      ),
+      loanWorkbench: routeTarget(
+        "loanWorkbench",
+        selectedClanId,
+        "money-out.route.workbench"
+      ),
+      loans: routeTarget("loans", selectedClanId, "money-out.route.loans"),
+      notifications: routeTarget(
+        "notifications",
+        selectedClanId,
+        "money-out.route.notifications"
+      ),
+    }),
     [selectedClanId]
   );
 
@@ -1201,7 +1176,7 @@ export default function WithdrawalInstructionsPage() {
 
     persistSupportHandoff();
 
-    navigateWithOrigin(navigate, communityTo("/app/loan-readiness"), location);
+    navigateWithOrigin(navigate, routes.loanReadiness, location);
   }
 
   async function handleRefresh() {
@@ -1321,9 +1296,9 @@ export default function WithdrawalInstructionsPage() {
           sectionLabel="Money Out"
           title="Guided Withdrawal"
           subtitle="Loading the withdrawal flow..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo={communityTo("/app/marketplace")}
+          backTo={routes.marketplace}
           backLabel="Marketplace"
         />
 
@@ -1350,9 +1325,9 @@ export default function WithdrawalInstructionsPage() {
         sectionLabel="Money Out"
         title="Guided Withdrawal"
         subtitle="Money Out stays guided from beginning to outcome. The community rail stays fixed, the personal payout destination stays explicit, and support takes over only when the amount goes above the effective available position."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo={communityTo("/app/marketplace")}
+        backTo={routes.marketplace}
         backLabel="Marketplace"
       />
 
@@ -1503,13 +1478,15 @@ export default function WithdrawalInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("overview")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-out.toggle-overview"
+            style={moneyOutCollapseButtonStyle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1714,13 +1691,15 @@ export default function WithdrawalInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("request")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-out.toggle-request"
+            style={moneyOutCollapseButtonStyle()}
           >
             {collapsed.request ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1876,26 +1855,24 @@ export default function WithdrawalInstructionsPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {!effectiveAvailableKnown ? (
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
+                  <PrimaryButton
                     disabled
-                    style={actionBtn("primary", true)}
+                    debugId="money-out.awaiting-pool"
+                    style={moneyOutActionButtonStyle("primary", true)}
                   >
                     Awaiting Pool Reading
-                  </button>
+                  </PrimaryButton>
                 ) : !requiresSupport ? (
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
+                  <PrimaryButton
                     onClick={() => void handleDirectWithdrawal()}
                     disabled={
                       submittingWithdrawal ||
                       requestedAmount <= 0 ||
-                      !communityRailReady ||
-                      !payoutReady
+                        !communityRailReady ||
+                        !payoutReady
                     }
-                    style={actionBtn(
+                    debugId="money-out.continue-direct"
+                    style={moneyOutActionButtonStyle(
                       "primary",
                       submittingWithdrawal ||
                         requestedAmount <= 0 ||
@@ -1906,38 +1883,37 @@ export default function WithdrawalInstructionsPage() {
                     {submittingWithdrawal
                       ? "Submitting..."
                       : "Continue Direct Withdrawal"}
-                  </button>
+                  </PrimaryButton>
                 ) : (
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
+                  <PrimaryButton
                     onClick={handleContinueToSupportPath}
                     disabled={requestedAmount <= 0 || !communityRailReady || !payoutReady}
-                    style={actionBtn(
+                    debugId="money-out.open-support"
+                    style={moneyOutActionButtonStyle(
                       "primary",
                       requestedAmount <= 0 || !communityRailReady || !payoutReady
                     )}
                   >
                     Open Loan Readiness Support
-                  </button>
+                  </PrimaryButton>
                 )}
 
-                <button
-                  type="button"
+                <SecondaryButton
                   onClick={handleCopyWithdrawalSummary}
-                  style={actionBtn("secondary")}
+                  debugId="money-out.copy-summary"
+                  style={moneyOutActionButtonStyle("secondary")}
                 >
                   Copy Withdrawal Summary
-                </button>
+                </SecondaryButton>
 
-                <button
-                  {...buttonGuardProps()}
-                  type="button"
+                <SubtleButton
                   onClick={handleResetTask}
-                  style={actionBtn("soft")}
+                  stableHeight={42}
+                  debugId="money-out.reset-task"
+                  style={moneyOutActionButtonStyle("soft")}
                 >
                   Reset Task
-                </button>
+                </SubtleButton>
               </div>
             </div>
           </div>
@@ -1961,13 +1937,15 @@ export default function WithdrawalInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("destination")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-out.toggle-destination"
+            style={moneyOutCollapseButtonStyle()}
           >
             {collapsed.destination ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.destination ? (
@@ -2066,23 +2044,22 @@ export default function WithdrawalInstructionsPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <button
-                    {...buttonGuardProps()}
-                    type="button"
+                  <PrimaryButton
                     onClick={() => void handleSaveDestination()}
                     disabled={savingDestination}
-                    style={actionBtn("primary", savingDestination)}
+                    debugId="money-out.save-destination"
+                    style={moneyOutActionButtonStyle("primary", savingDestination)}
                   >
                     {savingDestination ? "Saving..." : "Save Payout Account"}
-                  </button>
+                  </PrimaryButton>
 
-                    <button
-                      type="button"
+                    <SecondaryButton
                       onClick={handleCopyPayoutAccount}
-                      style={actionBtn("secondary")}
+                      debugId="money-out.copy-payout-account"
+                      style={moneyOutActionButtonStyle("secondary")}
                     >
                     Copy Payout Account
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             </div>
@@ -2171,15 +2148,14 @@ export default function WithdrawalInstructionsPage() {
             </div>
           </div>
 
-          <button
-            {...buttonGuardProps()}
-            type="button"
+          <SecondaryButton
             onClick={() => void handleLoadWithdrawalRoute()}
             disabled={loadingRoute}
-            style={actionBtn("secondary", loadingRoute)}
+            debugId="money-out.refresh-community-rail"
+            style={moneyOutActionButtonStyle("secondary", loadingRoute)}
           >
             {loadingRoute ? "Loading..." : "Refresh Community Rail"}
-          </button>
+          </SecondaryButton>
         </div>
 
         <ExplainToggle
@@ -2233,35 +2209,47 @@ export default function WithdrawalInstructionsPage() {
               <div style={sectionLabel()}>Rail actions</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                  <button
-                    type="button"
+                  <PrimaryButton
                     onClick={handleCopyCommunityRail}
                     disabled={!communityRailReady}
-                    style={actionBtn("primary", !communityRailReady)}
+                    debugId="money-out.copy-community-rail"
+                    style={moneyOutActionButtonStyle("primary", !communityRailReady)}
                   >
                   Copy Community Rail
-                </button>
+                </PrimaryButton>
 
-                <OriginLink to={communityTo("/app/finance")} style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.finance}
+                  debugId="money-out.rail.open-finance"
+                  stableHeight={48}
+                  style={moneyOutActionButtonStyle("secondary")}
+                >
                   Open Finance
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/payout-details" style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.payoutDetails}
+                  debugId="money-out.rail.open-payout-details"
+                  stableHeight={48}
+                  style={moneyOutActionButtonStyle("secondary")}
+                >
                   Open Payout Details
-                </OriginLink>
+                </StableCtaLink>
               </div>
             </div>
           </div>
         ) : null}
 
         <div style={{ marginTop: 12 }}>
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("rail")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-out.toggle-rail"
+            style={moneyOutCollapseButtonStyle()}
           >
             {collapsed.rail ? "Open rail details" : "Collapse rail details"}
-          </button>
+          </SubtleButton>
         </div>
       </section>
 
@@ -2283,23 +2271,24 @@ export default function WithdrawalInstructionsPage() {
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              type="button"
+            <SubtleButton
               onClick={() => toggleSection("result")}
-              style={collapseToggle()}
+              minWidth={128}
+              stableHeight={46}
+              debugId="money-out.toggle-result"
+              style={moneyOutCollapseButtonStyle()}
             >
               {collapsed.result ? "Open" : "Collapse"}
-            </button>
+            </SubtleButton>
 
-            <button
-              {...buttonGuardProps()}
-              type="button"
+            <SecondaryButton
               onClick={() => void handleRefresh()}
               disabled={refreshing}
-              style={actionBtn("secondary", refreshing)}
+              debugId="money-out.refresh-status"
+              style={moneyOutActionButtonStyle("secondary", refreshing)}
             >
               {refreshing ? "Refreshing..." : "Refresh Status"}
-            </button>
+            </SecondaryButton>
           </div>
         </div>
 
@@ -2425,27 +2414,52 @@ export default function WithdrawalInstructionsPage() {
 
                 {requiresSupport ? (
                   <>
-                      <OriginLink to={communityTo("/app/loan-readiness")} style={actionBtn("secondary")}>
+                      <StableCtaLink
+                        to={routes.loanReadiness}
+                        debugId="money-out.result.open-readiness"
+                        stableHeight={48}
+                        style={moneyOutActionButtonStyle("secondary")}
+                      >
                         Open Loan Readiness
-                      </OriginLink>
+                      </StableCtaLink>
 
-                      <OriginLink to={communityTo("/app/loan-suggestions")} style={actionBtn("secondary")}>
+                      <StableCtaLink
+                        to={routes.loanSuggestions}
+                        debugId="money-out.result.open-suggestions"
+                        stableHeight={48}
+                        style={moneyOutActionButtonStyle("secondary")}
+                      >
                         Open Loan Suggestions
-                      </OriginLink>
+                      </StableCtaLink>
 
-                      <OriginLink to={communityTo("/app/loan-workbench")} style={actionBtn("secondary")}>
+                      <StableCtaLink
+                        to={routes.loanWorkbench}
+                        debugId="money-out.result.open-workbench"
+                        stableHeight={48}
+                        style={moneyOutActionButtonStyle("secondary")}
+                      >
                         Open Loan Workbench
-                      </OriginLink>
+                      </StableCtaLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
                   <>
-                    <OriginLink to={communityTo("/app/finance")} style={actionBtn("secondary")}>
+                    <StableCtaLink
+                      to={routes.finance}
+                      debugId="money-out.result.open-finance"
+                      stableHeight={48}
+                      style={moneyOutActionButtonStyle("secondary")}
+                    >
                       Open Finance
-                    </OriginLink>
+                    </StableCtaLink>
 
-                      <OriginLink to={communityTo("/app/payout-details")} style={actionBtn("secondary")}>
+                      <StableCtaLink
+                        to={routes.payoutDetails}
+                        debugId="money-out.result.open-payout-details"
+                        stableHeight={48}
+                        style={moneyOutActionButtonStyle("secondary")}
+                      >
                         Open Payout Details
-                      </OriginLink>
+                      </StableCtaLink>
                   </>
                 ) : null}
               </div>
@@ -2477,13 +2491,15 @@ export default function WithdrawalInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("routes")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-out.toggle-routes"
+            style={moneyOutCollapseButtonStyle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -2498,37 +2514,85 @@ export default function WithdrawalInstructionsPage() {
                 gap: 12,
               }}
             >
-                <OriginLink to={communityTo("/app/finance")} style={actionBtn("primary")}>
+                <StableCtaLink
+                  to={routes.finance}
+                  debugId="money-out.route.finance"
+                  stableHeight={48}
+                  fullWidth
+                  style={moneyOutActionButtonStyle("primary")}
+                >
                   Open Finance
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/payout-details")} style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.payoutDetails}
+                  debugId="money-out.route.payout-details"
+                  stableHeight={48}
+                  fullWidth
+                  style={moneyOutActionButtonStyle("secondary")}
+                >
                   Open Payout Details
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/payment-rails")} style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.paymentRails}
+                  debugId="money-out.route.payment-rails"
+                  stableHeight={48}
+                  fullWidth
+                  style={moneyOutActionButtonStyle("secondary")}
+                >
                   Open Payment Rails
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/loan-readiness")} style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.loanReadiness}
+                  debugId="money-out.route.readiness"
+                  stableHeight={48}
+                  fullWidth
+                  style={moneyOutActionButtonStyle("secondary")}
+                >
                   Open Loan Readiness
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/loan-workbench")} style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.loanWorkbench}
+                  debugId="money-out.route.workbench"
+                  stableHeight={48}
+                  fullWidth
+                  style={moneyOutActionButtonStyle("secondary")}
+                >
                   Open Loan Workbench
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/loans")} style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.loans}
+                  debugId="money-out.route.loans"
+                  stableHeight={48}
+                  fullWidth
+                  style={moneyOutActionButtonStyle("secondary")}
+                >
                   Open Loans & Support
-                </OriginLink>
+                </StableCtaLink>
 
-              <OriginLink to={communityTo("/app/marketplace")} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.marketplace}
+                debugId="money-out.route.marketplace"
+                stableHeight={48}
+                fullWidth
+                style={moneyOutActionButtonStyle("secondary")}
+              >
                 Marketplace
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo("/app/notifications")} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.notifications}
+                debugId="money-out.route.notifications"
+                stableHeight={48}
+                fullWidth
+                style={moneyOutActionButtonStyle("secondary")}
+              >
                 Action Inbox
-              </OriginLink>
+              </StableCtaLink>
             </div>
           ) : (
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>

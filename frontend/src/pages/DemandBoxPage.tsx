@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  StableDisclosureSummary,
+  SubtleButton,
+} from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -19,6 +25,7 @@ import {
   setSelectedClanId as persistSelectedClanId,
   updateMarketplaceRequestStatus,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type DemandRow = {
   id?: number;
@@ -108,9 +115,6 @@ function detailsShell(): React.CSSProperties {
 
 function detailsSummary(): React.CSSProperties {
   return {
-    ...stableTapTarget,
-    listStyle: "none",
-    cursor: "pointer",
     padding: "16px 18px",
     fontWeight: 900,
     color: "#0B1F33",
@@ -126,115 +130,6 @@ function statTile(): React.CSSProperties {
   return {
     ...institutionalStatTile(),
     border: "1px solid rgba(20,52,83,0.16)",
-  };
-}
-
-const stableTapTarget: React.CSSProperties = {
-  position: "relative",
-  zIndex: 10,
-  isolation: "isolate",
-  WebkitTapHighlightColor: "transparent",
-  touchAction: "manipulation",
-  userSelect: "none",
-  pointerEvents: "auto",
-  transform: "none",
-  outlineOffset: 4,
-  boxSizing: "border-box",
-  appearance: "none",
-  WebkitAppearance: "none",
-};
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapTarget,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    padding: "12px 15px",
-    borderRadius: 14,
-    border: "1px solid rgba(9,61,122,0.12)",
-    background: disabled
-      ? "#CBD5E1"
-      : "linear-gradient(180deg, #1773E6 0%, #0B63D1 55%, #084C9E 100%)",
-    color: "#FFFFFF",
-    fontWeight: 900,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    lineHeight: 1.2,
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: disabled
-      ? "none"
-      : "0 14px 28px rgba(11,99,209,0.2), inset 0 1px 0 rgba(255,255,255,0.2)",
-  };
-}
-
-function secondaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapTarget,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    padding: "12px 15px",
-    borderRadius: 14,
-    border: "1px solid rgba(13,95,168,0.12)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F3F8FD 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    lineHeight: 1.2,
-    opacity: disabled ? 0.86 : 1,
-    boxShadow:
-      "0 12px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.9)",
-  };
-}
-
-function subtleBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapTarget,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "11px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(122,152,195,0.18)",
-    background: "linear-gradient(180deg, #F4F8FF 0%, #E2ECFB 100%)",
-    color: disabled ? "#94A3B8" : "#24415C",
-    fontWeight: 800,
-    fontSize: 13,
-    textAlign: "center",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    lineHeight: 1.2,
-    opacity: disabled ? 0.86 : 1,
-    boxShadow:
-      "0 10px 20px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
 }
 
@@ -321,31 +216,20 @@ function demandBrandShell(): React.CSSProperties {
   };
 }
 
-function whiteActionBtn(disabled = false): React.CSSProperties {
+function communityChoiceStyle(active: boolean): React.CSSProperties {
   return {
-    ...secondaryBtn(disabled),
-    minHeight: 44,
-    padding: "10px 14px",
-    border: "1px solid rgba(11,99,209,0.14)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #E7EFFA 100%)",
-    color: disabled ? "#94A3B8" : "#123055",
-    fontWeight: 900,
-    lineHeight: 1.22,
-    boxShadow:
-      "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
-  };
-}
-
-function communityChoiceBtn(active: boolean, disabled = false): React.CSSProperties {
-  return {
-    ...(active ? whiteActionBtn(disabled) : secondaryBtn(disabled)),
-    width: "100%",
     minHeight: 52,
     justifyContent: "space-between",
     textAlign: "left",
     borderRadius: 16,
     padding: "11px 13px",
     lineHeight: 1.24,
+    border: active ? "1px solid rgba(11,99,209,0.24)" : undefined,
+    background: active
+      ? "linear-gradient(180deg, #FFFFFF 0%, #E7EFFA 100%)"
+      : undefined,
+    color: active ? "#123055" : undefined,
+    fontWeight: active ? 900 : undefined,
   };
 }
 
@@ -443,6 +327,14 @@ function isMineRow(row: DemandRow, me: any): boolean {
   return false;
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 export default function DemandBoxPage() {
   const location = useLocation();
   const routeSelectedClanId = useMemo(() => {
@@ -455,6 +347,19 @@ export default function DemandBoxPage() {
   }, [location.search]);
   const [selectedClanId, setSelectedClanIdState] = useState<number>(() =>
     routeSelectedClanId || Number(getSelectedClanId() || 0)
+  );
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "demand-box.nav.dashboard"),
+      community: routeTarget("communityHome", selectedClanId, "demand-box.open-community"),
+      marketplace: routeTarget("marketplace", selectedClanId, "demand-box.return"),
+      notifications: routeTarget(
+        "notifications",
+        selectedClanId,
+        "demand-box.open-notifications"
+      ),
+    }),
+    [selectedClanId]
   );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -743,7 +648,7 @@ export default function DemandBoxPage() {
     );
   }, [location.state]);
   const demandReturnTo =
-    originPath && originPath !== currentPath ? originPath : "/app/marketplace";
+    originPath && originPath !== currentPath ? originPath : routes.marketplace;
   const demandReturnLabel =
     originPath && originPath !== currentPath ? "Back to source" : "Marketplace";
 
@@ -802,7 +707,7 @@ export default function DemandBoxPage() {
           sectionLabel="Demand Box"
           title="Demand Box"
           subtitle="Loading Demand Box..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={demandReturnTo}
           backLabel={demandReturnLabel}
@@ -832,7 +737,7 @@ export default function DemandBoxPage() {
           sectionLabel="Demand Box"
           title="Demand Box"
           subtitle="Choose the community before posting your personal request."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={demandReturnTo}
           backLabel={demandReturnLabel}
@@ -883,21 +788,27 @@ export default function DemandBoxPage() {
                 const busy = selectingClanId === clanId;
 
                 return (
-                  <button
+                  <SecondaryButton
                     key={`${clanId || index}`}
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() => {
-                      void handleChooseDemandCommunity(community);
-                    }}
+                    onClick={() => handleChooseDemandCommunity(community)}
                     disabled={busy || !clanId}
-                    style={communityChoiceBtn(false, busy || !clanId)}
+                    busy={busy}
+                    busyLabel={
+                      <>
+                        <span>{communityName(community, clanId)}</span>
+                        <span style={{ opacity: 0.76 }}>Selecting...</span>
+                      </>
+                    }
+                    fullWidth
+                    stableHeight={52}
+                    debugId={`demand-box.community-missing.${clanId || index}`}
+                    style={communityChoiceStyle(false)}
                   >
                     <span>{communityName(community, clanId)}</span>
                     <span style={{ opacity: 0.76 }}>
-                      {busy ? "Selecting..." : "Choose"}
+                      Choose
                     </span>
-                  </button>
+                  </SecondaryButton>
                 );
               })
             ) : (
@@ -908,12 +819,22 @@ export default function DemandBoxPage() {
             )}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <OriginLink to="/app/community" style={whiteActionBtn(false)}>
+              <StableCtaLink
+                to={routes.community}
+                debugId="demand-box.open-community"
+                stableHeight={44}
+                style={{ fontWeight: 900 }}
+              >
                 Open Community Home
-              </OriginLink>
-              <OriginLink to="/app/dashboard" style={whiteActionBtn(false)}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.dashboard}
+                debugId="demand-box.missing-community-dashboard"
+                stableHeight={44}
+                style={{ fontWeight: 900 }}
+              >
                 Dashboard
-              </OriginLink>
+              </StableCtaLink>
             </div>
           </div>
         </section>
@@ -936,7 +857,7 @@ export default function DemandBoxPage() {
           sectionLabel="Demand Box"
           title="Choose community"
           subtitle="Community Home holds all your communities. Pick the one this demand should come from."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
           backTo={demandReturnTo}
           backLabel={demandReturnLabel}
@@ -1002,23 +923,30 @@ export default function DemandBoxPage() {
               const clanId = Number(community?.id || community?.clan_id || 0);
               const active = clanId > 0 && clanId === selectedClanId;
               const busy = selectingClanId === clanId;
+              const ChoiceButton = active ? PrimaryButton : SecondaryButton;
 
               return (
-                <button
+                <ChoiceButton
                   key={`${clanId || index}`}
-                  type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => {
-                    void handleChooseDemandCommunity(community);
-                  }}
+                  onClick={() => handleChooseDemandCommunity(community)}
                   disabled={busy || !clanId}
-                  style={communityChoiceBtn(active, busy || !clanId)}
+                  busy={busy}
+                  busyLabel={
+                    <>
+                      <span>{communityName(community, clanId)}</span>
+                      <span style={{ opacity: 0.82 }}>Opening...</span>
+                    </>
+                  }
+                  fullWidth
+                  stableHeight={52}
+                  debugId={`demand-box.create-community.${clanId || index}`}
+                  style={communityChoiceStyle(active)}
                 >
                   <span>{communityName(community, clanId)}</span>
                   <span style={{ opacity: 0.82 }}>
-                    {busy ? "Opening..." : active ? "Use this" : "Choose"}
+                    {active ? "Use this" : "Choose"}
                   </span>
-                </button>
+                </ChoiceButton>
               );
             })}
           </div>
@@ -1049,7 +977,7 @@ export default function DemandBoxPage() {
             ? `You are posting from the ${currentCommunityName} marketplace.`
             : "Ask for what you need, from the right community, with trust attached."
         }
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={demandReturnTo}
         backLabel={demandReturnLabel}
@@ -1127,21 +1055,31 @@ export default function DemandBoxPage() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
+              <SecondaryButton
                 onClick={() => {
                   revealDemandCreate();
                 }}
-                style={whiteActionBtn(false)}
+                debugId="demand-box.create"
+                stableHeight={44}
+                style={{ fontWeight: 900 }}
               >
                 Create demand
-              </button>
-              <OriginLink to={demandReturnTo} style={whiteActionBtn(false)}>
+              </SecondaryButton>
+              <StableCtaLink
+                to={demandReturnTo}
+                debugId="demand-box.return"
+                stableHeight={44}
+                style={{ fontWeight: 900 }}
+              >
                 {demandReturnLabel}
-              </OriginLink>
-              <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.dashboard}
+                debugId="demand-box.hero-dashboard"
+                stableHeight={44}
+              >
                 Dashboard
-              </OriginLink>
+              </StableCtaLink>
             </div>
           </div>
 
@@ -1334,23 +1272,30 @@ export default function DemandBoxPage() {
                 const clanId = Number(community?.id || community?.clan_id || 0);
                 const active = clanId > 0 && clanId === selectedClanId;
                 const busy = selectingClanId === clanId;
+                const ChoiceButton = active ? PrimaryButton : SecondaryButton;
 
                 return (
-                  <button
+                  <ChoiceButton
                     key={`${clanId || index}`}
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() => {
-                      void handleChooseDemandCommunity(community);
-                    }}
+                    onClick={() => handleChooseDemandCommunity(community)}
                     disabled={busy || !clanId}
-                    style={communityChoiceBtn(active, busy || !clanId)}
+                    busy={busy}
+                    busyLabel={
+                      <>
+                        <span>{communityName(community, clanId)}</span>
+                        <span style={{ opacity: 0.82 }}>Selecting...</span>
+                      </>
+                    }
+                    fullWidth
+                    stableHeight={52}
+                    debugId={`demand-box.form-community.${clanId || index}`}
+                    style={communityChoiceStyle(active)}
                   >
                     <span>{communityName(community, clanId)}</span>
                     <span style={{ opacity: 0.82 }}>
-                      {active ? "Selected" : busy ? "Selecting..." : "Choose"}
+                      {active ? "Selected" : "Choose"}
                     </span>
-                  </button>
+                  </ChoiceButton>
                 );
               })
             ) : (
@@ -1520,39 +1465,40 @@ export default function DemandBoxPage() {
                 alignItems: "stretch",
               }}
             >
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => {
-                  void handleCreateDemand();
-                }}
+              <PrimaryButton
+                onClick={() => handleCreateDemand()}
                 disabled={creating || !safeStr(title)}
-                style={{
-                  ...primaryBtn(creating || !safeStr(title)),
-                  width: "100%",
-                  minHeight: 46,
-                }}
+                busy={creating}
+                busyLabel="Posting..."
+                fullWidth
+                stableHeight={46}
+                debugId="demand-box.post"
               >
-                {creating ? "Posting..." : "Post demand"}
-              </button>
+                Post demand
+              </PrimaryButton>
 
-              <OriginLink
-                to="/app/notifications"
-                style={{ ...whiteActionBtn(false), width: "100%" }}
+              <StableCtaLink
+                to={routes.notifications}
+                fullWidth
+                stableHeight={46}
+                debugId="demand-box.open-notifications"
+                style={{ fontWeight: 900 }}
               >
                 Open notifications
-              </OriginLink>
+              </StableCtaLink>
             </div>
           </div>
 
           <div style={detailsShell()}>
             <details>
-              <summary
+              <StableDisclosureSummary
                 style={detailsSummary()}
+                stableHeight={44}
+                debugId="demand-box.more-detail"
               >
                 <span>More detail</span>
                 <span style={{ color: "#64748B", fontSize: 13 }}>Optional</span>
-              </summary>
+              </StableDisclosureSummary>
 
               <div style={{ padding: "0 18px 18px", display: "grid", gap: 12 }}>
                 <div>
@@ -1708,29 +1654,25 @@ export default function DemandBoxPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
-                        onClick={() => {
-                          void handleUpdateDemandStatus(row, "fulfilled");
-                        }}
+                      <SecondaryButton
+                        onClick={() => handleUpdateDemandStatus(row, "fulfilled")}
                         disabled={busy}
-                        style={secondaryBtn(busy)}
+                        busy={busy}
+                        busyLabel="Updating..."
+                        debugId={`demand-box.request.${row?.id || index}.fulfilled`}
                       >
-                        {busy ? "Updating..." : "Mark fulfilled"}
-                      </button>
+                        Mark fulfilled
+                      </SecondaryButton>
 
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
-                        onClick={() => {
-                          void handleUpdateDemandStatus(row, "cancelled");
-                        }}
+                      <SubtleButton
+                        onClick={() => handleUpdateDemandStatus(row, "cancelled")}
                         disabled={busy}
-                        style={subtleBtn(busy)}
+                        busy={busy}
+                        busyLabel="Updating..."
+                        debugId={`demand-box.request.${row?.id || index}.cancelled`}
                       >
-                        {busy ? "Updating..." : "Cancel demand"}
-                      </button>
+                        Cancel demand
+                      </SubtleButton>
                     </div>
                   </div>
                 );
@@ -1837,12 +1779,18 @@ export default function DemandBoxPage() {
           </div>
 
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <OriginLink to={demandReturnTo} style={secondaryBtn(false)}>
+            <StableCtaLink
+              to={demandReturnTo}
+              debugId="demand-box.bottom-return"
+            >
               {demandReturnLabel}
-            </OriginLink>
-            <OriginLink to="/app/dashboard" style={secondaryBtn(false)}>
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.dashboard}
+              debugId="demand-box.bottom-dashboard"
+            >
               Dashboard
-            </OriginLink>
+            </StableCtaLink>
           </div>
         </section>
       </section>

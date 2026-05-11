@@ -5,12 +5,18 @@ import GSNBrandMark from "../components/GSNBrandMark";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import {
+  navigateToCta,
+  resolveCtaTarget,
+  type CtaIntent,
+} from "../lib/ctaTargets";
+import { routeWithCommunity } from "../lib/appRoutes";
+import {
   publicFrontendUrl,
   publicShopPath,
   publicShopUrl,
 } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
+import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
@@ -178,6 +184,7 @@ type MarketplaceIntentItem = {
   detail: string;
   technical: string;
   to: string;
+  intent?: CtaIntent;
   tone: "primary" | "secondary" | "soft";
   keywords: string[];
   visible?: boolean;
@@ -209,7 +216,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Add money",
     detail: "Pay into this marketplace or community pool.",
     technical: "Money In",
-    to: "/app/payment/pool",
+    to: "",
+    intent: "moneyIn",
     tone: "primary",
     keywords: ["add", "deposit", "pay", "pay in", "money in", "fund", "top up"],
   },
@@ -218,7 +226,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Take money out",
     detail: "Start the withdrawal or payout route.",
     technical: "Money Out",
-    to: "/app/withdrawal-instructions",
+    to: "",
+    intent: "moneyOut",
     tone: "secondary",
     keywords: ["withdraw", "cash out", "money out", "payout", "take out"],
   },
@@ -227,7 +236,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Check money record",
     detail: "Review the money picture for this selected marketplace.",
     technical: "Finance",
-    to: "/app/finance",
+    to: "",
+    intent: "finance",
     tone: "secondary",
     keywords: ["finance", "balance", "pool", "record", "account", "money"],
   },
@@ -263,7 +273,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Check trust or ID",
     detail: "Open your broader trust reading.",
     technical: "Trust Passport",
-    to: "/app/trust",
+    to: "",
+    intent: "trust",
     tone: "soft",
     keywords: ["trust", "score", "passport"],
   },
@@ -272,7 +283,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Check identity",
     detail: "Open identity and continuity checks.",
     technical: "Identity",
-    to: "/app/identity",
+    to: "",
+    intent: "cci",
     tone: "soft",
     keywords: ["id", "identity", "continuity"],
     visible: false,
@@ -282,7 +294,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Show proof",
     detail: "Open TrustSlip proof.",
     technical: "TrustSlip",
-    to: "/app/trust-slip",
+    to: "",
+    intent: "trustSlip",
     tone: "soft",
     keywords: ["trustslip", "slip", "proof", "verify"],
     visible: false,
@@ -292,7 +305,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Post a need",
     detail: "Tell this marketplace what is needed.",
     technical: "Demand Box",
-    to: "/app/demand-box",
+    to: "",
+    intent: "demandBox",
     tone: "soft",
     keywords: ["need", "demand", "request", "post", "supply", "want"],
   },
@@ -301,7 +315,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Switch community",
     detail: "Return to Community Home and choose another group.",
     technical: "Community Home",
-    to: "/app/community",
+    to: "",
+    intent: "communityHome",
     tone: "soft",
     keywords: ["community", "group", "clan", "choose", "switch", "home"],
   },
@@ -310,7 +325,8 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     label: "Check messages",
     detail: "See alerts, requests, and unfinished items.",
     technical: "Notifications",
-    to: "/app/notifications",
+    to: "",
+    intent: "notifications",
     tone: "soft",
     keywords: ["message", "messages", "notification", "alert", "notice"],
   },
@@ -422,22 +438,6 @@ function mergeFirstVisible(...rows: any[]): any {
 
 function getRowId(row: any): number {
   return positiveNumber(row?.id || row?.clan_id || row?.community_id);
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const target = safeStr(path);
-  const selectedId = positiveNumber(clanId);
-  if (!target || !selectedId) return target;
-  const [pathAndSearch, hash = ""] = target.split("#");
-  const [pathname, search = ""] = pathAndSearch.split("?");
-  const query = new URLSearchParams(search);
-  if (!query.has("clan_id") && !query.has("community")) {
-    query.set("clan_id", String(selectedId));
-  }
-  const nextSearch = query.toString();
-  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
-    hash ? `#${hash}` : ""
-  }`;
 }
 
 function buildSelectedCommunity(
@@ -1213,7 +1213,7 @@ function publicShopActionUnavailableMessage(
     : fallbackText;
 }
 
-function actionBtn(
+function marketplaceActionStyle(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
@@ -1555,7 +1555,7 @@ function marketplaceInlineActionStyle(
   void _isCompact;
 
   return {
-    ...actionBtn(kind, disabled),
+    ...marketplaceActionStyle(kind, disabled),
     width: "100%",
     height: 54,
     minHeight: 54,
@@ -1588,7 +1588,7 @@ function intentChoiceStyle(
   tone: MarketplaceIntentItem["tone"]
 ): React.CSSProperties {
   return {
-    ...actionBtn(tone),
+    ...marketplaceActionStyle(tone),
     minHeight: 68,
     alignItems: "flex-start",
     flexDirection: "column",
@@ -1988,13 +1988,6 @@ export default function MarketplacePage() {
     toggleSection(key);
   }
 
-  function consumeMarketplacePointerEvent(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    if (!event) return;
-    event.stopPropagation();
-  }
-
   function consumeMarketplaceButtonEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -2034,38 +2027,6 @@ export default function MarketplacePage() {
     );
   }
 
-  function marketplacePointerGuardProps(): Pick<
-    React.HTMLAttributes<HTMLElement>,
-    | "onPointerDownCapture"
-    | "onPointerDown"
-    | "onMouseDownCapture"
-    | "onMouseDown"
-    | "onClick"
-  > {
-    return {
-      onPointerDownCapture: consumeMarketplacePointerEvent,
-      onPointerDown: consumeMarketplacePointerEvent,
-      onMouseDownCapture: consumeMarketplacePointerEvent,
-      onMouseDown: consumeMarketplacePointerEvent,
-      onClick: consumeMarketplacePointerEvent,
-    };
-  }
-
-  function marketplaceButtonGuardProps(): Pick<
-    React.HTMLAttributes<HTMLElement>,
-    | "onPointerDownCapture"
-    | "onPointerDown"
-    | "onMouseDownCapture"
-    | "onMouseDown"
-  > {
-    return {
-      onPointerDownCapture: consumeMarketplacePointerEvent,
-      onPointerDown: consumeMarketplacePointerEvent,
-      onMouseDownCapture: consumeMarketplacePointerEvent,
-      onMouseDown: consumeMarketplacePointerEvent,
-    };
-  }
-
   function toggleProfileDetails(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -2079,17 +2040,23 @@ export default function MarketplacePage() {
   ) {
     consumeMarketplaceButtonEvent(event);
     const target = to.startsWith("/app/")
-      ? withClanQuery(to, activeCommunityId)
+      ? routeWithCommunity(to, activeCommunityId)
       : to;
     navigateWithOrigin(navigate, target, location);
   }
 
-  function openFinance(event?: React.SyntheticEvent<HTMLElement>) {
+  function openMarketplaceCta(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    intent: CtaIntent
+  ) {
     consumeMarketplaceButtonEvent(event);
-    navigateWithOrigin(
+    navigateToCta(
       navigate,
-      withClanQuery("/app/finance", activeCommunityId),
-      location
+      location,
+      resolveCtaTarget(intent, {
+        communityId: activeCommunityId,
+        debugId: `marketplace.route.${intent}`,
+      })
     );
   }
 
@@ -2187,6 +2154,11 @@ export default function MarketplacePage() {
 
     if (item.id === "shop" && !item.to) {
       showNotice("error", "Your shop route is not ready yet.");
+      return;
+    }
+
+    if (item.intent) {
+      openMarketplaceCta(undefined, item.intent);
       return;
     }
 
@@ -3233,22 +3205,20 @@ export default function MarketplacePage() {
               flexWrap: "wrap",
             }}
           >
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
-              onClick={(event) => openMarketplaceRoute(event, "/app/community")}
-              style={actionBtn("primary")}
+              onClick={(event) => openMarketplaceCta(event, "communityHome")}
+              style={marketplaceActionStyle("primary")}
             >
               Community Home
-            </button>
-            <button
+            </StableButton>
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
-              onClick={(event) => openMarketplaceRoute(event, "/app/dashboard")}
-              style={actionBtn("secondary")}
+              onClick={(event) => openMarketplaceCta(event, "dashboard")}
+              style={marketplaceActionStyle("secondary")}
             >
               Dashboard
-            </button>
+            </StableButton>
           </div>
         </section>
       </MarketplaceShell>
@@ -3367,9 +3337,8 @@ export default function MarketplacePage() {
               gap: isCompact ? 10 : 12,
             }}
           >
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -3399,11 +3368,10 @@ export default function MarketplacePage() {
               <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
                 Shared money position
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3437,11 +3405,10 @@ export default function MarketplacePage() {
               <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
                 Help, loans, guarantors
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3475,11 +3442,10 @@ export default function MarketplacePage() {
               <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
                 Members and visible shops
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={toggleProfileDetails}
               aria-expanded={profileDetailsOpen}
               style={marketplaceOsTileStyle()}
@@ -3508,7 +3474,7 @@ export default function MarketplacePage() {
               <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
                 This community only
               </span>
-            </button>
+            </StableButton>
           </div>
 
           {profileDetailsOpen ? (
@@ -3573,9 +3539,8 @@ export default function MarketplacePage() {
               gap: 10,
             }}
           >
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -3611,13 +3576,12 @@ export default function MarketplacePage() {
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 ›
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
-                openMarketplaceRoute(event, "/app/payment-rails")
+                openMarketplaceCta(event, "paymentRails")
               }
               style={marketplaceOsRowStyle()}
             >
@@ -3651,11 +3615,10 @@ export default function MarketplacePage() {
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 ›
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3695,11 +3658,10 @@ export default function MarketplacePage() {
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 ›
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3739,12 +3701,11 @@ export default function MarketplacePage() {
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 ›
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
-              onClick={(event) => openMarketplaceRoute(event, "/app/demand-box")}
+              onClick={(event) => openMarketplaceCta(event, "demandBox")}
               style={marketplaceOsRowStyle()}
             >
               <span
@@ -3777,11 +3738,10 @@ export default function MarketplacePage() {
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 ›
               </span>
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...marketplacePointerGuardProps()}
               onClick={(event) =>
                 openMarketplaceSection(event, "tools", "marketplace-owned-links")
               }
@@ -3817,12 +3777,11 @@ export default function MarketplacePage() {
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
                 ›
               </span>
-            </button>
+            </StableButton>
           </div>
 
-          <button
+          <StableButton
             type="button"
-            {...marketplaceButtonGuardProps()}
             onClick={toggleIntentGuide}
             aria-expanded={intentGuideOpen}
             style={{
@@ -3861,7 +3820,7 @@ export default function MarketplacePage() {
             <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
               {intentGuideOpen ? "⌃" : "›"}
             </span>
-          </button>
+          </StableButton>
 
           {intentGuideOpen ? (
             <div style={intentGuideCardStyle()}>
@@ -3893,13 +3852,12 @@ export default function MarketplacePage() {
                   }}
                 />
 
-                <button
+                <StableButton
                   type="submit"
-                  {...marketplacePointerGuardProps()}
-                  style={actionBtn("primary")}
+                  style={marketplaceActionStyle("primary")}
                 >
                   {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
-                </button>
+                </StableButton>
               </form>
 
               <div
@@ -3915,10 +3873,9 @@ export default function MarketplacePage() {
                 {marketplaceIntentItems
                   .filter((item) => item.visible !== false)
                   .map((item) => (
-                    <button
+                    <StableButton
                       key={item.id}
                       type="button"
-                      {...marketplacePointerGuardProps()}
                       onClick={(event) => openMarketplaceIntent(event, item)}
                       style={intentChoiceStyle(item.tone)}
                     >
@@ -3942,7 +3899,7 @@ export default function MarketplacePage() {
                       >
                         {item.detail}
                       </span>
-                    </button>
+                    </StableButton>
                   ))}
               </div>
             </div>
@@ -3972,14 +3929,13 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          <button
+          <StableButton
             type="button"
-            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "money")}
-            style={actionBtn("soft")}
+            style={marketplaceActionStyle("soft")}
           >
             {sectionsOpen.money ? "Collapse" : "Open"}
-          </button>
+          </StableButton>
         </div>
 
         <ExplainToggle
@@ -4132,14 +4088,12 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={(event) => openMarketplaceRoute(event, "/app/payment/pool")}
-                  style={actionBtn("primary")}
+                <StableButton
+                  type="button"                  onClick={(event) => openMarketplaceCta(event, "moneyIn")}
+                  style={marketplaceActionStyle("primary")}
                 >
                   Money In
-                </button>
+                </StableButton>
               </div>
             </div>
 
@@ -4174,16 +4128,14 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={(event) =>
-                    openMarketplaceRoute(event, "/app/withdrawal-instructions")
+                <StableButton
+                  type="button"                  onClick={(event) =>
+                    openMarketplaceCta(event, "moneyOut")
                   }
-                  style={actionBtn("secondary")}
+                  style={marketplaceActionStyle("secondary")}
                 >
                   Money Out
-                </button>
+                </StableButton>
               </div>
             </div>
 
@@ -4217,14 +4169,12 @@ export default function MarketplacePage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={openFinance}
-                  style={actionBtn("secondary")}
+                <StableButton
+                  type="button"                  onClick={(event) => openMarketplaceCta(event, "finance")}
+                  style={marketplaceActionStyle("secondary")}
                 >
                   See this in Finance
-                </button>
+                </StableButton>
               </div>
             </div>
           </div>
@@ -4255,14 +4205,13 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          <button
+          <StableButton
             type="button"
-            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "tools")}
-            style={actionBtn("soft")}
+            style={marketplaceActionStyle("soft")}
           >
             {sectionsOpen.tools ? "Collapse" : "Open"}
-          </button>
+          </StableButton>
         </div>
 
         {sectionsOpen.tools ? (
@@ -4334,9 +4283,8 @@ export default function MarketplacePage() {
                         : "A community admin prepares this join link before it can be copied or sent."}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
@@ -4351,13 +4299,12 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      aria-disabled={!inviteLink}
+                      disabled={!inviteLink}
                     >
                       Copy Join Link
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           void handleCreateInviteLink();
@@ -4368,13 +4315,12 @@ export default function MarketplacePage() {
                         creatingInviteLink || !canManageMarketplaceLinks,
                         isCompact
                       )}
-                      aria-disabled={creatingInviteLink || !canManageMarketplaceLinks}
+                      disabled={creatingInviteLink || !canManageMarketplaceLinks}
                     >
                       {creatingInviteLink ? "Refreshing..." : "Refresh Join Link"}
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceMessage(
@@ -4390,13 +4336,12 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      aria-disabled={!inviteLink}
+                      disabled={!inviteLink}
                     >
                       Copy Invite Message
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           openMarketplaceEmail(
@@ -4412,13 +4357,12 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      aria-disabled={!inviteLink}
+                      disabled={!inviteLink}
                     >
                       Email Join Link
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (!inviteLink) {
@@ -4439,10 +4383,10 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      aria-disabled={!inviteLink}
+                      disabled={!inviteLink}
                     >
                       WhatsApp
-                    </button>
+                    </StableButton>
                   </div>
                   <div style={joinShareMessageCardStyle(isCompact)}>
                     <div style={sectionLabel()}>Message to send</div>
@@ -4493,9 +4437,8 @@ export default function MarketplacePage() {
                     </div>
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
@@ -4510,13 +4453,12 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCreateEntryLink}
+                      disabled={!publicCreateEntryLink}
                     >
                       Copy Create Link
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                         type="button"
-                        {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceMessage(
@@ -4532,13 +4474,12 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCreateEntryLink}
+                      disabled={!publicCreateEntryLink}
                     >
                       Copy Message
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           openMarketplaceEmail(
@@ -4554,13 +4495,12 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCreateEntryLink}
+                      disabled={!publicCreateEntryLink}
                     >
                       Email Link
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           openMarketplaceExternalLink(
@@ -4574,13 +4514,12 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCreateEntryLink}
+                      disabled={!publicCreateEntryLink}
                     >
                       Open Create Link
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (!publicCreateEntryLink) {
@@ -4601,10 +4540,10 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCreateEntryLink}
+                      disabled={!publicCreateEntryLink}
                     >
                       Send WhatsApp
-                    </button>
+                    </StableButton>
                   </div>
                 </div>
 
@@ -4636,9 +4575,8 @@ export default function MarketplacePage() {
                       : "Community access desk appears after the community context is ready."}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
+                    <StableButton
                         type="button"
-                        {...marketplaceButtonGuardProps()}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
                             copyMarketplaceLink(
@@ -4653,13 +4591,12 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCommunityWorkspaceLink}
+                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Copy Community Desk
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           openMarketplaceEmail(
@@ -4675,13 +4612,12 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCommunityWorkspaceLink}
+                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Email Link
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           openMarketplaceExternalLink(
@@ -4695,10 +4631,10 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      aria-disabled={!publicCommunityWorkspaceLink}
+                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Open Community Desk
-                    </button>
+                    </StableButton>
                   </div>
                 </div>
 
@@ -4724,12 +4660,16 @@ export default function MarketplacePage() {
                     }}
                   >
                     {publicShopViewLink ? (
-                      <a
-                        {...marketplacePointerGuardProps()}
-                        href={publicShopViewLink}
+                      <StableCtaLink
+                        to={publicShopViewLink}
                         target="_blank"
                         rel="noreferrer"
                         style={{
+                          minHeight: 0,
+                          padding: 0,
+                          border: "0",
+                          background: "transparent",
+                          boxShadow: "none",
                           color: "inherit",
                           fontWeight: 850,
                           textDecoration: "underline",
@@ -4740,15 +4680,14 @@ export default function MarketplacePage() {
                         }}
                       >
                         {publicShopViewLink}
-                      </a>
+                      </StableCtaLink>
                     ) : (
                       publicShopUnavailableText
                     )}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4769,13 +4708,12 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      aria-disabled={publicShopActionsLocked}
+                      disabled={publicShopActionsLocked}
                     >
                       {preparingPublicShopLink ? "Refreshing..." : "Refresh Shop Link"}
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4796,13 +4734,12 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      aria-disabled={publicShopActionsLocked}
+                      disabled={publicShopActionsLocked}
                     >
                       {preparingPublicShopLink ? "Refreshing..." : "Copy Shop Link"}
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4823,13 +4760,12 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      aria-disabled={publicShopActionsLocked}
+                      disabled={publicShopActionsLocked}
                     >
                       Email Link
-                    </button>
-                    <button
+                    </StableButton>
+                    <StableButton
                       type="button"
-                      {...marketplaceButtonGuardProps()}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4850,10 +4786,10 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      aria-disabled={publicShopActionsLocked}
+                      disabled={publicShopActionsLocked}
                     >
                       Open Shop Face
-                    </button>
+                    </StableButton>
                   </div>
                 </div>
 
@@ -4867,11 +4803,10 @@ export default function MarketplacePage() {
                     <span style={badge(false)}>Vault-style access stays controlled</span>
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <button
+                    <StableButton
                       type="button"
-                      {...marketplacePointerGuardProps()}
                       onClick={(event) =>
-                        openMarketplaceRoute(event, "/app/shop-control")
+                        openMarketplaceCta(event, "shop")
                       }
                       style={marketplaceInlineActionStyle(
                         "secondary",
@@ -4880,7 +4815,7 @@ export default function MarketplacePage() {
                       )}
                     >
                       Open Owner Shop Control
-                    </button>
+                    </StableButton>
                   </div>
                 </div>
               </div>
@@ -4913,14 +4848,13 @@ export default function MarketplacePage() {
             </div>
           </div>
 
-          <button
+          <StableButton
             type="button"
-            {...marketplaceButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "members")}
-            style={actionBtn("soft")}
+            style={marketplaceActionStyle("soft")}
           >
             {sectionsOpen.members ? "Collapse" : "Open"}
-          </button>
+          </StableButton>
         </div>
 
         {sectionsOpen.members ? (
@@ -5049,29 +4983,28 @@ export default function MarketplacePage() {
                           }}
                         >
                           {row.shopTo ? (
-                            <OriginLink
+                            <StableCtaLink
                               to={row.shopTo}
-                              style={actionBtn("secondary")}
+                              style={marketplaceActionStyle("secondary")}
                             >
                               Open shop
-                            </OriginLink>
+                            </StableCtaLink>
                           ) : null}
 
                           {fitSuggestion ? (
-                            <button
+                            <StableButton
                               type="button"
-                              {...marketplaceButtonGuardProps()}
                               onClick={(event) => {
                                 runMarketplaceAction(event, () => {
                                   toggleMemberAsSupporter(row);
                                 });
                               }}
                               style={
-                                selected ? actionBtn("primary") : actionBtn("soft")
+                                selected ? marketplaceActionStyle("primary") : marketplaceActionStyle("soft")
                               }
                             >
                               {selected ? "Chosen" : "Choose supporter"}
-                            </button>
+                            </StableButton>
                           ) : null}
                         </div>
                       ) : null}
@@ -5109,14 +5042,13 @@ export default function MarketplacePage() {
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(false)}>Active items: {activeLoanCount}</span>
-            <button
+            <StableButton
               type="button"
-              {...marketplaceButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "support")}
-              style={actionBtn("soft")}
+              style={marketplaceActionStyle("soft")}
             >
               {sectionsOpen.support ? "Collapse" : "Open"}
-            </button>
+            </StableButton>
           </div>
         </div>
 
@@ -5211,53 +5143,50 @@ export default function MarketplacePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <button
+                <StableButton
                   type="button"
-                  {...marketplaceButtonGuardProps()}
                   onClick={(event) => {
                     runMarketplaceAction(event, () => {
                       if (startingLoanDraft) return;
                       void handleStartLoanDraft();
                     });
                   }}
-                  aria-disabled={startingLoanDraft}
-                  style={actionBtn("primary", startingLoanDraft)}
+                  disabled={startingLoanDraft}
+                  style={marketplaceActionStyle("primary", startingLoanDraft)}
                 >
                   {startingLoanDraft ? "Starting..." : "Start Support Request"}
-                </button>
+                </StableButton>
 
                 {loanDraftId ? (
-                  <button
+                  <StableButton
                     type="button"
-                    {...marketplaceButtonGuardProps()}
                     onClick={(event) => {
                       runMarketplaceAction(event, () => {
                         if (loadingSuggestions) return;
                         void handleRefreshSuggestions();
                       });
                     }}
-                    aria-disabled={loadingSuggestions}
-                    style={actionBtn("secondary", loadingSuggestions)}
+                    disabled={loadingSuggestions}
+                    style={marketplaceActionStyle("secondary", loadingSuggestions)}
                   >
                     {loadingSuggestions ? "Refreshing..." : "Refresh Fit Check"}
-                  </button>
+                  </StableButton>
                 ) : null}
 
                 {loanDraftId ? (
-                  <button
+                  <StableButton
                     type="button"
-                    {...marketplaceButtonGuardProps()}
                     onClick={(event) => {
                       runMarketplaceAction(event, () => {
                         if (cancellingLoanDraft) return;
                         void handleCancelLoanDraft();
                       });
                     }}
-                    aria-disabled={cancellingLoanDraft}
-                    style={actionBtn("secondary", cancellingLoanDraft)}
+                    disabled={cancellingLoanDraft}
+                    style={marketplaceActionStyle("secondary", cancellingLoanDraft)}
                   >
                     {cancellingLoanDraft ? "Cancelling..." : "Cancel Draft"}
-                  </button>
+                  </StableButton>
                 ) : null}
               </div>
 
@@ -5269,52 +5198,42 @@ export default function MarketplacePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={(event) =>
-                    openMarketplaceRoute(event, "/app/loan-readiness")
+                <StableButton
+                  type="button"                  onClick={(event) =>
+                    openMarketplaceCta(event, "loanReadiness")
                   }
-                  style={actionBtn("soft")}
+                  style={marketplaceActionStyle("soft")}
                 >
                   Loan Readiness
-                </button>
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={(event) =>
-                    openMarketplaceRoute(event, "/app/loan-suggestions")
+                </StableButton>
+                <StableButton
+                  type="button"                  onClick={(event) =>
+                    openMarketplaceCta(event, "loanSuggestions")
                   }
-                  style={actionBtn("soft")}
+                  style={marketplaceActionStyle("soft")}
                 >
                   Loan Suggestions
-                </button>
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={(event) =>
-                    openMarketplaceRoute(event, "/app/loan-workbench")
+                </StableButton>
+                <StableButton
+                  type="button"                  onClick={(event) =>
+                    openMarketplaceCta(event, "loanWorkbench")
                   }
-                  style={actionBtn("soft")}
+                  style={marketplaceActionStyle("soft")}
                 >
                   Loan Workbench
-                </button>
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={openFinance}
-                  style={actionBtn("soft")}
+                </StableButton>
+                <StableButton
+                  type="button"                  onClick={(event) => openMarketplaceCta(event, "finance")}
+                  style={marketplaceActionStyle("soft")}
                 >
                   Finance
-                </button>
-                <button
-                  type="button"
-                  {...marketplacePointerGuardProps()}
-                  onClick={(event) => openMarketplaceRoute(event, "/app/loans")}
-                  style={actionBtn("soft")}
+                </StableButton>
+                <StableButton
+                  type="button"                  onClick={(event) => openMarketplaceCta(event, "loans")}
+                  style={marketplaceActionStyle("soft")}
                 >
                   Full Loans View
-                </button>
+                </StableButton>
               </div>
 
               {loanDraftId ? (
@@ -5427,9 +5346,8 @@ export default function MarketplacePage() {
                                     </div>
                                   </div>
 
-                                  <button
+                                  <StableButton
                                     type="button"
-                                    {...marketplaceButtonGuardProps()}
                                     onClick={(event) => {
                                       runMarketplaceAction(event, () => {
                                         toggleSuggestedSupporter(item);
@@ -5437,12 +5355,12 @@ export default function MarketplacePage() {
                                     }}
                                     style={
                                       selected
-                                        ? actionBtn("primary")
-                                        : actionBtn("secondary")
+                                        ? marketplaceActionStyle("primary")
+                                        : marketplaceActionStyle("secondary")
                                     }
                                   >
                                     {selected ? "Selected" : "Choose"}
-                                  </button>
+                                  </StableButton>
                                 </div>
                               </div>
                             );
@@ -5472,19 +5390,18 @@ export default function MarketplacePage() {
                             }}
                           >
                             {visibleSelectedSupporters.map((item) => (
-                              <button
+                              <StableButton
                                 key={item.key}
                                 type="button"
-                                {...marketplaceButtonGuardProps()}
                                 onClick={(event) => {
                                   runMarketplaceAction(event, () => {
                                     toggleSuggestedSupporter(item);
                                   });
                                 }}
-                                style={actionBtn("soft")}
+                                style={marketplaceActionStyle("soft")}
                               >
                                 {item.name} ×
-                              </button>
+                              </StableButton>
                             ))}
                           </div>
                         </div>
@@ -5507,17 +5424,16 @@ export default function MarketplacePage() {
                           flexWrap: "wrap",
                         }}
                       >
-                        <button
+                        <StableButton
                           type="button"
-                          {...marketplaceButtonGuardProps()}
                           onClick={(event) => {
                             runMarketplaceAction(event, () => {
                               if (guarantorRequestsBlocked) return;
                               void handleSendGuarantorRequests();
                             });
                           }}
-                          aria-disabled={guarantorRequestsBlocked}
-                          style={actionBtn(
+                          disabled={guarantorRequestsBlocked}
+                          style={marketplaceActionStyle(
                             "primary",
                             guarantorRequestsBlocked
                           )}
@@ -5527,7 +5443,7 @@ export default function MarketplacePage() {
                             : loanStatusLower === "approved"
                             ? "Already Approved"
                             : "Send Guarantor Requests"}
-                        </button>
+                        </StableButton>
 
                         <span style={badge(false)}>
                           Selected: {visibleSelectedSupporters.length}

@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide from "../components/NextActionGuide";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
@@ -16,6 +16,7 @@ import {
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipVerifyActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
@@ -156,100 +157,6 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      position: "relative",
-      zIndex: 2,
-      boxSizing: "border-box",
-      appearance: "none",
-      WebkitAppearance: "none",
-      touchAction: "manipulation",
-      WebkitTapHighlightColor: "transparent",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "12px 16px",
-      borderRadius: 16,
-      border: disabled
-        ? "1px solid rgba(148,163,184,0.22)"
-        : "1px solid rgba(9,83,176,0.24)",
-      background: disabled
-        ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D2 100%)"
-        : "linear-gradient(180deg, #1D75E8 0%, #0B63D1 100%)",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 15,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled ? "none" : "0 12px 28px rgba(15,23,42,0.12)",
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      position: "relative",
-      zIndex: 2,
-      boxSizing: "border-box",
-      appearance: "none",
-      WebkitAppearance: "none",
-      touchAction: "manipulation",
-      WebkitTapHighlightColor: "transparent",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 44,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "1px solid rgba(124,153,196,0.22)",
-      background: "linear-gradient(180deg, #F6FAFF 0%, #EAF2FF 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: "0 12px 28px rgba(15,23,42,0.08)",
-    };
-  }
-
-  return {
-    position: "relative",
-    zIndex: 2,
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 16px",
-    borderRadius: 16,
-    border: "1px solid rgba(124,153,196,0.22)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 900,
-    fontSize: 15,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
   };
 }
 
@@ -536,6 +443,10 @@ function deriveBanner(record: TrustSlipVerifyRecord | null): {
   };
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function TrustSlipVerifyPage() {
   const params = useParams<{ code?: string }>();
   const location = useLocation();
@@ -559,6 +470,15 @@ export default function TrustSlipVerifyPage() {
   const [loadError, setLoadError] = useState("");
 
   const isAppRoute = location.pathname.startsWith("/app/");
+  const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "trust-slip-verify.route.dashboard"),
+      trustSlip: routeTarget("trustSlip", selectedClanId, "trust-slip-verify.route.trust-slip"),
+      trust: routeTarget("trust", selectedClanId, "trust-slip-verify.route.trust"),
+    }),
+    [selectedClanId]
+  );
   const queryCode = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("code"));
@@ -796,9 +716,9 @@ export default function TrustSlipVerifyPage() {
             sectionLabel="TrustSlip Verify"
             title="TrustSlip Verify"
             subtitle="Loading the verification reading..."
-            homeTo="/app/dashboard"
+            homeTo={routes.dashboard}
             homeLabel="Dashboard"
-            backTo="/app/trust-slip"
+            backTo={routes.trustSlip}
             backLabel="TrustSlip"
           />
         ) : (
@@ -867,9 +787,9 @@ export default function TrustSlipVerifyPage() {
             sectionLabel="TrustSlip Verify"
             title="TrustSlip Verify"
             subtitle="Confirm who this TrustSlip belongs to, whether it is valid now, and when the current verification window ends."
-            homeTo="/app/dashboard"
+            homeTo={routes.dashboard}
             homeLabel="Dashboard"
-            backTo="/app/trust-slip"
+            backTo={routes.trustSlip}
             backLabel="TrustSlip"
           />
         </div>
@@ -912,12 +832,22 @@ export default function TrustSlipVerifyPage() {
               flexWrap: "wrap",
             }}
           >
-            <OriginLink to="/welcome" style={actionBtn("secondary")}>
+            <StableCtaLink
+              to="/welcome"
+              kind="secondary"
+              stableHeight={48}
+              debugId="trust-slip-verify.hero.welcome"
+            >
               Welcome
-            </OriginLink>
-            <OriginLink to="/guide" style={actionBtn("secondary")}>
+            </StableCtaLink>
+            <StableCtaLink
+              to="/guide"
+              kind="secondary"
+              stableHeight={48}
+              debugId="trust-slip-verify.hero.guide"
+            >
               My GSN and I
-            </OriginLink>
+            </StableCtaLink>
           </div>
         </section>
       )}
@@ -1266,57 +1196,76 @@ export default function TrustSlipVerifyPage() {
             flexWrap: "wrap",
           }}
         >
-          <button
+          <PrimaryButton
             type="button"
             onClick={copyCode}
             disabled={!resolvedCode}
-            style={actionBtn("primary", !resolvedCode)}
+            stableHeight={48}
+            debugId="trust-slip-verify.copy-code"
           >
             Copy TrustSlip Code
-          </button>
+          </PrimaryButton>
 
-          <button
+          <SecondaryButton
             type="button"
             onClick={copyVerifyLink}
             disabled={!verifyUrl}
-            style={actionBtn("secondary", !verifyUrl)}
+            stableHeight={48}
+            debugId="trust-slip-verify.copy-link"
           >
             Copy Verify Link
-          </button>
+          </SecondaryButton>
 
-          <button
+          <SecondaryButton
             type="button"
             onClick={copyGmfnId}
             disabled={!gmfnId || gmfnId === "Awaiting issue"}
-            style={actionBtn("secondary", !gmfnId || gmfnId === "Awaiting issue")}
+            stableHeight={48}
+            debugId="trust-slip-verify.copy-gmfn-id"
           >
             Copy GMFN ID
-          </button>
+          </SecondaryButton>
 
-          <button
+          <SubtleButton
             type="button"
             onClick={() => {
               if (typeof window !== "undefined" && typeof window.print === "function") {
                 window.print();
               }
             }}
-            style={actionBtn("soft")}
+            stableHeight={44}
+            debugId="trust-slip-verify.print"
           >
             Print Verification
-          </button>
+          </SubtleButton>
 
-          <button type="button" onClick={copyVerificationSnapshot} style={actionBtn("soft")}>
+          <SubtleButton
+            type="button"
+            onClick={copyVerificationSnapshot}
+            stableHeight={44}
+            debugId="trust-slip-verify.copy-snapshot"
+          >
             Copy verification snapshot
-          </button>
+          </SubtleButton>
 
           {isAppRoute ? (
-            <OriginLink to="/app/trust" style={actionBtn("soft")}>
+            <StableCtaLink
+              to={routes.trust}
+              kind="soft"
+              stableHeight={44}
+              debugId="trust-slip-verify.route.trust"
+            >
               Trust Passport
-            </OriginLink>
+            </StableCtaLink>
           ) : (
-            <OriginLink to="/guide" style={actionBtn("soft")}>
+            <StableCtaLink
+              to="/guide"
+              kind="soft"
+              stableHeight={44}
+              debugId="trust-slip-verify.route.guide"
+            >
               My GSN and I
-            </OriginLink>
+            </StableCtaLink>
           )}
         </div>
       </section>

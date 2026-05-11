@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
+import {
+  DangerButton,
+  PrimaryButton,
+  SecondaryButton,
+  SubtleButton,
+} from "../components/StableButton";
 import * as api from "../lib/api";
 import {
   buildGuidanceSnapshot,
@@ -12,6 +18,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicApiUrl } from "../lib/publicLinks";
 import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
@@ -162,6 +169,10 @@ type ClanListItem = {
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 function firstTruthy(...values: any[]): string {
@@ -543,112 +554,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      ...tapSafeButtonBase(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 50,
-      minWidth: 126,
-      padding: "12px 17px",
-      borderRadius: 16,
-      border: disabled ? "1px solid rgba(148,163,184,0.22)" : "1px solid rgba(11,49,92,0.22)",
-      background: disabled
-        ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D2 100%)"
-        : "linear-gradient(180deg, #0B63D1 0%, #1A5FA4 58%, #0D3C6C 100%)",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled
-        ? "none"
-        : "0 14px 26px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -3px 0 rgba(4,22,42,0.18)",
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...tapSafeButtonBase(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      minWidth: 118,
-      padding: "11px 15px",
-      borderRadius: 15,
-      border: "1px solid rgba(37,78,119,0.14)",
-      background:
-        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(240,247,253,0.95) 60%, rgba(225,237,247,0.92) 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled
-        ? "none"
-        : "0 11px 22px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -2px 0 rgba(16,37,59,0.04)",
-    };
-  }
-
-  return {
-    ...tapSafeButtonBase(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    minWidth: 126,
-    padding: "12px 17px",
-    borderRadius: 16,
-    border: "1px solid rgba(37,78,119,0.14)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(246,251,255,0.96) 58%, rgba(233,243,251,0.94) 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: disabled
-      ? "none"
-      : "0 12px 24px rgba(10,24,49,0.095), inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -2px 0 rgba(16,37,59,0.05)",
-  };
-}
-
-function tapSafeButtonBase(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 8,
-    boxSizing: "border-box",
-    pointerEvents: "auto",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    appearance: "none",
-    WebkitAppearance: "none",
-    isolation: "isolate",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function stopTrustTap(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
 function helperText(): React.CSSProperties {
   return {
     color: "#526579",
@@ -994,6 +899,17 @@ export default function TrustScorePage() {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "trust-score.route.dashboard"),
+      notifications: routeTarget("notifications", selectedClanId, "trust-score.route.notifications"),
+      identity: routeTarget("cci", selectedClanId, "trust-score.route.identity"),
+      cciReading: routeTarget("cciReading", selectedClanId, "trust-score.route.cci-reading"),
+      trustSlip: routeTarget("trustSlip", selectedClanId, "trust-score.route.trust-slip"),
+      verify: routeTarget("merchantVerify", selectedClanId, "trust-score.route.verify"),
+    }),
+    [selectedClanId]
+  );
   const trustRevealRef = useRef<number | null>(null);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -1309,10 +1225,10 @@ export default function TrustScorePage() {
         guidance?.nextBestStep?.detail ||
           "Use the recent trust explanation and event mix to understand what to repair or protect next."
       ),
-      ctaTo: safeStr(guidance?.nextBestStep?.ctaTo || "/app/notifications"),
+      ctaTo: safeStr(guidance?.nextBestStep?.ctaTo || routes.notifications),
       ctaLabel: safeStr(guidance?.nextBestStep?.ctaLabel || "Open Action Inbox"),
     };
-  }, [guidance]);
+  }, [guidance, routes.notifications]);
 
   const verifyUrl = useMemo(() => {
     return absoluteUrl(
@@ -1442,9 +1358,9 @@ export default function TrustScorePage() {
           sectionLabel="Trust Passport"
           title="Trust Passport"
           subtitle="Loading the trust passport..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
+          backTo={routes.dashboard}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1477,7 +1393,7 @@ export default function TrustScorePage() {
       cta: "Open Identity & Integrity",
       tone: "#EAF3FF",
       icon: "🪪",
-      to: "/app/identity",
+      to: routes.identity,
     },
     {
       title: "CCI",
@@ -1485,7 +1401,7 @@ export default function TrustScorePage() {
       cta: "Open CCI",
       tone: "#E9F8EF",
       icon: "🌐",
-      to: "/app/cci-reading",
+      to: routes.cciReading,
     },
     {
       title: "TrustSlip",
@@ -1493,7 +1409,7 @@ export default function TrustScorePage() {
       cta: "Open TrustSlip",
       tone: "#FFF6DB",
       icon: "📄",
-      to: "/app/trust-slip",
+      to: routes.trustSlip,
     },
     {
       title: "TrustSlip Verify",
@@ -1501,7 +1417,7 @@ export default function TrustScorePage() {
       cta: "Open Verify",
       tone: "#F4EEFF",
       icon: "🛡️",
-      to: "/app/trust-slip/verify",
+      to: routes.verify,
     },
   ];
 
@@ -1567,20 +1483,27 @@ export default function TrustScorePage() {
       <div style={{ ...helperText(), fontSize: 13.5, lineHeight: 1.45 }}>
         {item.detail}
       </div>
-      <button
-        type="button"
-        onPointerDown={stopTrustTap}
-        onMouseDown={stopTrustTap}
-        onClick={() => openTrustRoute(item.to)}
-        style={{
-          ...actionBtn(item.title === "TrustSlip" ? "soft" : "primary"),
-          minHeight: 44,
-          width: "100%",
-          alignSelf: "end",
-        }}
-      >
-        {item.cta}
-      </button>
+      {item.title === "TrustSlip" ? (
+        <SubtleButton
+          onClick={() => openTrustRoute(item.to)}
+          fullWidth
+          stableHeight={44}
+          debugId={`trust-score.surface.${item.title}`}
+          style={{ alignSelf: "end" }}
+        >
+          {item.cta}
+        </SubtleButton>
+      ) : (
+        <PrimaryButton
+          onClick={() => openTrustRoute(item.to)}
+          fullWidth
+          stableHeight={44}
+          debugId={`trust-score.surface.${item.title}`}
+          style={{ alignSelf: "end" }}
+        >
+          {item.cta}
+        </PrimaryButton>
+      )}
     </div>
   );
 
@@ -1610,9 +1533,9 @@ export default function TrustScorePage() {
         <PageTopNav
           sectionLabel="Main Movement"
           title="Trust Passport"
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
+          backTo={routes.dashboard}
         />
 
         {noticeNode}
@@ -1691,42 +1614,37 @@ export default function TrustScorePage() {
                   gap: 10,
                 }}
               >
-                <button
-                  type="button"
-                  onPointerDown={stopTrustTap}
-                  onMouseDown={stopTrustTap}
+                <PrimaryButton
                   onClick={() => {
                     void handleRefreshTrust();
                   }}
-                  disabled={refreshing}
-                  style={{ ...actionBtn("primary", refreshing), width: "100%" }}
+                  busy={refreshing}
+                  busyLabel="Refreshing..."
+                  fullWidth
+                  debugId="trust-score.refresh"
                 >
                   🔄 {refreshing ? "Refreshing..." : "Refresh Trust Reading"}
-                </button>
-                <button
-                  type="button"
-                  onPointerDown={stopTrustTap}
-                  onMouseDown={stopTrustTap}
+                </PrimaryButton>
+                <SecondaryButton
                   onClick={copyTrustSnapshot}
-                  style={{ ...actionBtn("secondary"), width: "100%" }}
+                  fullWidth
+                  debugId="trust-score.copy-snapshot"
                 >
                   📋 Copy Snapshot
-                </button>
-                <button
-                  type="button"
-                  onPointerDown={stopTrustTap}
-                  onMouseDown={stopTrustTap}
+                </SecondaryButton>
+                <SecondaryButton
                   onClick={() => {
                     if (verifyUrl && typeof window !== "undefined") {
                       window.open(verifyUrl, "_blank", "noopener,noreferrer");
                       return;
                     }
-                    openTrustRoute("/app/trust-slip/verify");
+                    openTrustRoute(routes.verify);
                   }}
-                  style={{ ...actionBtn("secondary"), width: "100%" }}
+                  fullWidth
+                  debugId="trust-score.verify"
                 >
                   🔎 Open TrustSlip Verify
-                </button>
+                </SecondaryButton>
               </div>
             </div>
 
@@ -1821,23 +1739,15 @@ export default function TrustScorePage() {
                 {nextStep.detail ||
                   "Respond early to keep your trust record understandable."}
               </p>
-              <button
-                type="button"
-                onPointerDown={stopTrustTap}
-                onMouseDown={stopTrustTap}
+              <DangerButton
                 onClick={() =>
                   openTrustSection("trust-passport-explainability")
                 }
-                style={{
-                  ...actionBtn("primary"),
-                  marginTop: 12,
-                  background:
-                    "linear-gradient(180deg, #E33636 0%, #B81414 100%)",
-                  border: "1px solid rgba(153,27,27,0.22)",
-                }}
+                debugId="trust-score.review-care"
+                style={{ marginTop: 12 }}
               >
                 Review what needs care →
-              </button>
+              </DangerButton>
             </div>
 
             <div

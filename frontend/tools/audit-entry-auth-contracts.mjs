@@ -83,6 +83,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/LoginPage.tsx",
+  /function joinRedirectFromLoginSearch\(searchParams: URLSearchParams\)[\s\S]*next\.set\("invite_code", inviteCode\)[\s\S]*return finalQuery \? `\/join\?\$\{finalQuery\}` : "\/join";/,
+  "Login must preserve invite query context and return existing GMFN holders to the join flow after sign-in."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /const inviteTarget = joinRedirectFromLoginSearch\(searchParams\);[\s\S]*if \(inviteTarget\) return inviteTarget;[\s\S]*return "\/app\/dashboard";/,
+  "Login must prefer invite-aware continuation before falling back to dashboard."
+);
+
+assertContains(
   "src/pages/MemberActivationPage.tsx",
   /if \(requestReady\.gmfn_id\)[\s\S]*activateMembership\([\s\S]*gmfn_id: requestReady\.gmfn_id[\s\S]*else[\s\S]*activateApprovedMember\(/,
   "The public activation page must use canonical membership activation when a GMFN ID is present."
@@ -90,8 +102,26 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /navigate\("\/app\/dashboard", \{ replace: true \}\);/,
+  /dashboard:\s*routeTarget\("dashboard"[\s\S]*navigate\(routes\.dashboard, \{ replace: true \}\);/,
   "Successful activation must enter the authenticated workspace instead of leaving testers stranded."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /Choose how you are joining[\s\S]*I already have a GMFN ID[\s\S]*I am new to GSN/,
+  "Logged-out invite entry must branch existing GMFN holders away from new-person signup."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /usingExistingIdentity[\s\S]*Join this community with your existing GMFN identity[\s\S]*does not create a new GMFN ID/,
+  "Logged-in invite entry must reassure existing GMFN holders that identity is reused."
+);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /lockedAuthenticatedWithoutGmfn[\s\S]*will not create a second identity for a logged-in\s+member/,
+  "Logged-in invite entry must not fall back to the new-person form when identity state is unclear."
 );
 
 if (findings.length > 0) {

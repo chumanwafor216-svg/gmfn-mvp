@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { CardActionRow, StableCtaLink } from "../components/StableButton";
 import { getJoinApprovalStatus } from "../lib/api";
+import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -20,6 +21,10 @@ type ReviewerLine = {
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
+}
+
+function ctaPath(target: CtaTarget): string {
+  return typeof target.to === "string" ? target.to : String(target.to);
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -46,36 +51,6 @@ function softCard(bg = "#F4F8FC"): React.CSSProperties {
     padding: 14,
     boxShadow:
       "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
-  };
-}
-
-function actionBtn(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 16px",
-    borderRadius: 14,
-    border: primary
-      ? "1px solid rgba(11,80,170,0.22)"
-      : "1px solid rgba(37,78,119,0.20)",
-    background: primary
-      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: "pointer",
-    boxShadow: primary
-      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
-      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
-    whiteSpace: "normal",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
   };
 }
 
@@ -320,6 +295,31 @@ export default function JoinRequestPendingPage() {
       location.search
     );
   }, [requestId, location.search]);
+  const approvalCta = useMemo(
+    () =>
+      resolveCtaTarget("joinPending", {
+        explicitTo: approvalTo || undefined,
+        enabled: Boolean(approvalTo),
+        disabledReason: "Approval status is not available until the request ID is known.",
+        debugId: "join-pending.approval-status",
+      }),
+    [approvalTo]
+  );
+  const guideCta = useMemo(
+    () =>
+      resolveCtaTarget("welcome", {
+        explicitTo: "/guide",
+        debugId: "join-pending.guide",
+      }),
+    []
+  );
+  const welcomeCta = useMemo(
+    () =>
+      resolveCtaTarget("welcome", {
+        debugId: "join-pending.welcome",
+      }),
+    []
+  );
 
   const activationTo = useMemo(() => {
     const resultPath = safeStr(liveStatus?.result_path || "");
@@ -729,18 +729,16 @@ export default function JoinRequestPendingPage() {
                   </div>
                 ) : null}
 
-                <div
-                  style={{
-                    marginTop: 16,
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <OriginLink to={approvalTo} style={actionBtn(true)}>
+                <CardActionRow style={{ marginTop: 16 }}>
+                  <StableCtaLink
+                    to={ctaPath(approvalCta)}
+                    kind="primary"
+                    disabled={!approvalCta.enabled}
+                    debugId={approvalCta.debugId}
+                  >
                     Open approval status
-                  </OriginLink>
-                </div>
+                  </StableCtaLink>
+                </CardActionRow>
               </>
             ) : (
               <div style={{ marginTop: 10, ...helperText() }}>
@@ -759,26 +757,31 @@ export default function JoinRequestPendingPage() {
               after entry.
             </div>
 
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <OriginLink to="/guide" style={actionBtn(false)}>
+            <CardActionRow style={{ marginTop: 16 }}>
+              <StableCtaLink
+                to={ctaPath(guideCta)}
+                kind="secondary"
+                debugId={guideCta.debugId}
+              >
                 Open full GSN guide
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to="/guide" style={actionBtn(false)}>
+              <StableCtaLink
+                to={ctaPath(guideCta)}
+                kind="secondary"
+                debugId="join-pending.focus-guide"
+              >
                 Read about Focus Commitments first
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to="/welcome" style={actionBtn(false)}>
+              <StableCtaLink
+                to={ctaPath(welcomeCta)}
+                kind="secondary"
+                debugId={welcomeCta.debugId}
+              >
                 Open Welcome
-              </OriginLink>
-            </div>
+              </StableCtaLink>
+            </CardActionRow>
           </div>
         </div>
       </div>

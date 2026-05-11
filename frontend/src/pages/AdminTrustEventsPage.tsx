@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { adminRecentTrustEvents, safeCopy } from "../lib/api";
+import { SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import { adminRecentTrustEvents, getSelectedClanId, safeCopy } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -72,46 +73,11 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function actionBtn(kind: "primary" | "secondary" | "soft" = "secondary"): React.CSSProperties {
+function adminTrustEventActionStyle(kind: "primary" | "secondary" | "soft" = "secondary"): React.CSSProperties {
   const base: React.CSSProperties = {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    padding: "10px 14px",
     borderRadius: 14,
-    textDecoration: "none",
     fontWeight: 900,
     fontSize: 14,
-    whiteSpace: "normal",
   };
 
   if (kind === "primary") {
@@ -143,11 +109,9 @@ function actionBtn(kind: "primary" | "secondary" | "soft" = "secondary"): React.
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function adminTrustEventCollapseStyle(): React.CSSProperties {
   return {
-    ...actionBtn("soft"),
-    minHeight: 40,
-    padding: "8px 14px",
+    ...adminTrustEventActionStyle("soft"),
   };
 }
 
@@ -206,12 +170,27 @@ function buildEventSnapshot(row: any): string {
   ].join("`n");
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function AdminTrustEventsPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const pattern = useMemo(() => topPattern(), []);
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "admin-trust-events.route.dashboard"),
+      commandCenter: routeTarget("adminCommand", selectedClanId, "admin-trust-events.route.command-center"),
+      analytics: routeTarget("trustAnalytics", selectedClanId, "admin-trust-events.route.analytics"),
+      graph: routeTarget("trustGraph", selectedClanId, "admin-trust-events.route.graph"),
+      identityRisk: routeTarget("identityRisk", selectedClanId, "admin-trust-events.route.identity-risk"),
+    }),
+    [selectedClanId]
+  );
 
   useEffect(() => {
     let alive = true;
@@ -270,7 +249,7 @@ export default function AdminTrustEventsPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust-event records for oversight, evidence, and explainability checks." homeTo="/app/dashboard" homeLabel="Dashboard" backTo="/app/command-center" backLabel="Command Center" />
+      <PageTopNav sectionLabel="Trust Events" title="Trust Events" subtitle="Review recent trust-event records for oversight, evidence, and explainability checks." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
 
       <ExplainToggle
         label="What this screen does"
@@ -315,10 +294,38 @@ export default function AdminTrustEventsPage() {
           </div>
 
           <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <OriginLink to="/app/command-center/trust-analytics" style={actionBtn("primary")}>Open Trust Analytics</OriginLink>
-            <OriginLink to="/app/command-center/trust-graph" style={actionBtn("secondary")}>Open Trust Graph</OriginLink>
-            <OriginLink to="/app/command-center/identity-risk" style={actionBtn("secondary")}>Open Identity Risk</OriginLink>
-            <OriginLink to="/app/command-center" style={actionBtn("soft")}>Back to Command Center</OriginLink>
+            <StableCtaLink
+              to={routes.analytics}
+              debugId="admin-trust-events.route.analytics"
+              stableHeight={44}
+              style={adminTrustEventActionStyle("primary")}
+            >
+              Open Trust Analytics
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.graph}
+              debugId="admin-trust-events.route.graph"
+              stableHeight={44}
+              style={adminTrustEventActionStyle("secondary")}
+            >
+              Open Trust Graph
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.identityRisk}
+              debugId="admin-trust-events.route.identity-risk"
+              stableHeight={44}
+              style={adminTrustEventActionStyle("secondary")}
+            >
+              Open Identity Risk
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.commandCenter}
+              debugId="admin-trust-events.route.command-center"
+              stableHeight={44}
+              style={adminTrustEventActionStyle("soft")}
+            >
+              Back to Command Center
+            </StableCtaLink>
           </div>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
@@ -352,8 +359,24 @@ export default function AdminTrustEventsPage() {
                   </div>
 
                   <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button type="button" {...buttonGuardProps()} onClick={() => { void copyEvent(row); }} style={actionBtn("secondary")}>Copy event snapshot</button>
-                    <button type="button" {...buttonGuardProps()} onClick={() => toggleRow(rowKey)} style={collapseToggle()}>{detailOpen ? "Collapse raw event" : "Open raw event"}</button>
+                    <SecondaryButton
+                      onClick={() => {
+                        void copyEvent(row);
+                      }}
+                      stableHeight={44}
+                      debugId={`admin-trust-events.row.${rowKey}.copy`}
+                      style={adminTrustEventActionStyle("secondary")}
+                    >
+                      Copy event snapshot
+                    </SecondaryButton>
+                    <SubtleButton
+                      onClick={() => toggleRow(rowKey)}
+                      stableHeight={40}
+                      debugId={`admin-trust-events.row.${rowKey}.toggle`}
+                      style={adminTrustEventCollapseStyle()}
+                    >
+                      {detailOpen ? "Collapse raw event" : "Open raw event"}
+                    </SubtleButton>
                   </div>
 
                   {detailOpen ? (

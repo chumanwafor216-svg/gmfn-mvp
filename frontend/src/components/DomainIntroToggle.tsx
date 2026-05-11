@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SubtleButton } from "./StableButton";
 
 type DomainIntroTone = "light" | "blue" | "dark";
 
@@ -268,42 +269,23 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
           </div>
         </div>
 
-        <button
-          type="button"
+        <SubtleButton
           aria-expanded={open}
           aria-label={`${buttonLabel} ${props.title}`}
-          onPointerDown={(event) => {
-            stopIntroTap(event);
-          }}
-          onMouseDown={(event) => {
-            stopIntroTap(event);
-          }}
-          onClick={(event) => {
-            stopIntroTap(event, true);
+          onClick={() => {
             setOpen((prev) => !prev);
           }}
+          minWidth={108}
+          stableHeight={48}
+          debugId="domain-intro.toggle"
           style={{
             position: "relative",
             zIndex: 2,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: 48,
-            minWidth: 108,
-            padding: "11px 18px",
             borderRadius: 999,
             fontSize: 13,
             fontWeight: 900,
             cursor: "pointer",
-            textAlign: "center",
-            touchAction: "manipulation",
-            WebkitTapHighlightColor: "transparent",
-            userSelect: "none",
-            appearance: "none",
-            WebkitAppearance: "none",
-            boxSizing: "border-box",
             isolation: "isolate",
-            transform: "none",
             overflowAnchor: "none",
             boxShadow:
               "0 12px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -2px 0 rgba(10,24,49,0.04)",
@@ -311,7 +293,7 @@ export default function DomainIntroToggle(props: DomainIntroToggleProps) {
           }}
         >
           {buttonLabel}
-        </button>
+        </SubtleButton>
       </div>
 
       {open ? (

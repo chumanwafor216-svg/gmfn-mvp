@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { PrimaryButton } from "../components/StableButton";
 import { devBootstrapClan } from "../lib/api";
 
 function topPattern(): string {
@@ -121,9 +122,13 @@ export default function SeedDemoPage() {
                 This action may create or reset development data required for demonstration flows.
               </div>
               <div style={{ marginTop: 16 }}>
-                <button
+                <PrimaryButton
                   onClick={runSeed}
                   disabled={busy}
+                  busy={busy}
+                  busyLabel="Running..."
+                  stableHeight={44}
+                  debugId="seed-demo.run"
                   style={{
                     padding: "12px 16px",
                     borderRadius: 14,
@@ -131,12 +136,12 @@ export default function SeedDemoPage() {
                     background: "#0B63D1",
                     color: "#FFFFFF",
                     fontWeight: 1000,
-                    cursor: "pointer",
+                    cursor: busy ? "not-allowed" : "pointer",
                     fontSize: 14,
                   }}
                 >
-                  {busy ? "Running..." : "Run demo seed"}
-                </button>
+                  Run demo seed
+                </PrimaryButton>
               </div>
             </div>
           </div>

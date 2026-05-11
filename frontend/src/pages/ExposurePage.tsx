@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 
 import {
   getMe,
@@ -9,7 +8,9 @@ import {
   getCciScore,
 } from "../lib/api";
 
+import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import { formatMoney } from "../lib/money";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type MeLite = {
   id?: number | string;
@@ -84,30 +85,6 @@ function timeAgo(iso?: string): string {
   return `${days} day(s) ago`;
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function stopExposureTap(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
-function exposureButtonGuardProps() {
-  return {
-    onPointerDown: stopExposureTap,
-    onMouseDown: stopExposureTap,
-  };
-}
-
 function toolButtonStyle(disabled = false): React.CSSProperties {
   return {
     padding: "10px 12px",
@@ -116,7 +93,6 @@ function toolButtonStyle(disabled = false): React.CSSProperties {
     background: "white",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.6 : 1,
-    ...stableTapStyle(),
   };
 }
 
@@ -126,8 +102,29 @@ function routeLinkStyle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     minHeight: 40,
-    ...stableTapStyle(),
   };
+}
+
+function inlineLinkStyle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    minHeight: 24,
+    padding: 0,
+    border: "none",
+    borderRadius: 0,
+    background: "transparent",
+    boxShadow: "none",
+    color: "#2563EB",
+    fontSize: "inherit",
+    fontWeight: 700,
+    textDecoration: "underline",
+    textUnderlineOffset: 2,
+  };
+}
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 export default function ExposurePage() {
@@ -154,6 +151,13 @@ export default function ExposurePage() {
   const [lastDefaulted, setLastDefaulted] = useState<number | null>(null);
 
   const isAdmin = (me?.role || "").toLowerCase() === "admin";
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", clanId, "exposure.route.dashboard"),
+      trustAnalytics: routeTarget("trustAnalytics", clanId, "exposure.route.trust-analytics"),
+    }),
+    [clanId]
+  );
 
   const userEmailById = useMemo(() => {
     const m = new Map<number, string>();
@@ -171,7 +175,8 @@ export default function ExposurePage() {
 
   function userTimelineLink(userId?: number) {
     if (!userId) return "#";
-    return `/app/command-center/trust-analytics?clan_id=${clanId}&user_id=${userId}`;
+    const separator = routes.trustAnalytics.includes("?") ? "&" : "?";
+    return `${routes.trustAnalytics}${separator}user_id=${encodeURIComponent(String(userId))}`;
   }
 
   function loanTimelineLink(loanId?: number) {
@@ -352,36 +357,49 @@ export default function ExposurePage() {
             />
           </div>
 
-          <button
+          <SecondaryButton
             onClick={runOverdueNowUI}
             disabled={loading || !isAdmin}
+            busy={loading}
+            busyLabel="Working..."
+            stableHeight={40}
+            debugId="exposure.run-overdue"
             style={toolButtonStyle(loading || !isAdmin)}
-            {...exposureButtonGuardProps()}
           >
-            {loading ? "Working..." : "Run overdue detector now"}
-          </button>
+            Run overdue detector now
+          </SecondaryButton>
 
-          <button
+          <SecondaryButton
             onClick={loadExposureUI}
             disabled={loading || !isAdmin}
+            busy={loading}
+            stableHeight={40}
+            debugId="exposure.refresh"
             style={toolButtonStyle(loading || !isAdmin)}
-            {...exposureButtonGuardProps()}
           >
             Refresh exposure
-          </button>
+          </SecondaryButton>
 
-          <button
+          <SecondaryButton
             onClick={loadCciScoresUI}
             disabled={cciLoading || rows.length === 0}
+            busy={cciLoading}
+            busyLabel="Loading CCI..."
+            stableHeight={40}
+            debugId="exposure.load-cci"
             style={toolButtonStyle(cciLoading || rows.length === 0)}
-            {...exposureButtonGuardProps()}
           >
-            {cciLoading ? "Loading CCI..." : "Load CCI scores"}
-          </button>
+            Load CCI scores
+          </SecondaryButton>
 
-          <Link to="/app/command-center/trust-analytics" style={routeLinkStyle()}>
+          <StableCtaLink
+            to={routes.trustAnalytics}
+            stableHeight={40}
+            debugId="exposure.open-trust-analytics"
+            style={routeLinkStyle()}
+          >
             Trust Analytics →
-          </Link>
+          </StableCtaLink>
         </div>
 
         <div style={{ marginTop: 10, fontSize: 12, color: "#6b7280" }}>
@@ -501,14 +519,30 @@ export default function ExposurePage() {
                     </td>
 
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
-                      {e.loan_id ? <Link to={loanTimelineLink(e.loan_id)}>#{e.loan_id}</Link> : "—"}
+                      {e.loan_id ? (
+                        <StableCtaLink
+                          to={loanTimelineLink(e.loan_id)}
+                          stableHeight={24}
+                          debugId={`exposure.loan.${e.loan_id}.timeline`}
+                          style={inlineLinkStyle()}
+                        >
+                          #{e.loan_id}
+                        </StableCtaLink>
+                      ) : (
+                        "—"
+                      )}
                     </td>
 
                     <td style={{ padding: 8, borderBottom: "1px solid #f3f3f3" }}>
                       {borrowerId ? (
-                        <Link to={userTimelineLink(borrowerId)}>
+                        <StableCtaLink
+                          to={userTimelineLink(borrowerId)}
+                          stableHeight={24}
+                          debugId={`exposure.user.${borrowerId}.timeline`}
+                          style={inlineLinkStyle()}
+                        >
                           {displayUserLabel(borrowerId)}
-                        </Link>
+                        </StableCtaLink>
                       ) : (
                         "—"
                       )}
@@ -530,7 +564,14 @@ export default function ExposurePage() {
       </div>
 
       <div style={{ marginTop: 12 }}>
-        <Link to="/">← Back to Dashboard</Link>
+        <StableCtaLink
+          to={routes.dashboard}
+          stableHeight={40}
+          debugId="exposure.back-dashboard"
+          style={routeLinkStyle()}
+        >
+          ← Back to Dashboard
+        </StableCtaLink>
       </div>
     </div>
   );

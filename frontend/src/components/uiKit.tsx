@@ -1,6 +1,6 @@
 // src/components/uiKit.tsx
 import React from "react";
-import { brandStableTapTarget } from "../styles/gmfnBrand";
+import { PrimaryButton, StableButton } from "./StableButton";
 
 export function Card(props: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
@@ -32,31 +32,46 @@ export function PageHeader(props: { title: string; subtitle?: string; right?: Re
   );
 }
 
-export function Button(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+export function Button({
+  children,
+  style,
+  type = "button",
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
+    <StableButton
       {...props}
+      type={type}
       className="gmfn-btn"
+      stableHeight={44}
       style={{
-        ...brandStableTapTarget(),
         minHeight: 44,
         padding: "10px 14px",
-        ...(props.style || {}),
+        ...style,
       }}
-    />
+    >
+      {children}
+    </StableButton>
   );
 }
 
-export function ButtonPrimary(props: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+export function ButtonPrimary({
+  children,
+  style,
+  type = "button",
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
-    <button
+    <PrimaryButton
       {...props}
+      type={type}
       className="gmfn-btn gmfn-btn-primary"
       style={{
-        ...brandStableTapTarget(),
-        ...(props.style || {}),
+        ...style,
       }}
-    />
+    >
+      {children}
+    </PrimaryButton>
   );
 }
 

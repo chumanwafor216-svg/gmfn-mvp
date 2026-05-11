@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   getAdminIncompleteLoans,
   getCurrentClan,
   getSelectedClanId,
   safeCopy,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -97,46 +98,11 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function actionBtn(kind: "primary" | "secondary" | "soft" = "secondary"): React.CSSProperties {
+function adminIncompleteLoanActionStyle(kind: "primary" | "secondary" | "soft" = "secondary"): React.CSSProperties {
   const base: React.CSSProperties = {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
     borderRadius: 14,
     fontWeight: 900,
     fontSize: 14,
-    textDecoration: "none",
-    whiteSpace: "normal",
   };
 
   if (kind === "primary") {
@@ -191,6 +157,15 @@ function buildLoanSnapshot(loan: any): string {
   ].join("`n");
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { loanId?: string } = {}
+): string {
+  return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
+}
+
 export default function AdminIncompleteLoansPage() {
   const [rows, setRows] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -198,6 +173,19 @@ export default function AdminIncompleteLoansPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const pattern = useMemo(() => topPattern(), []);
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "admin-incomplete-loans.route.dashboard"),
+      commandCenter: routeTarget("adminCommand", selectedClanId, "admin-incomplete-loans.route.command-center"),
+      systemOperations: routeTarget(
+        "systemOperations",
+        selectedClanId,
+        "admin-incomplete-loans.route.system-operations"
+      ),
+      bankConsole: routeTarget("bankConsole", selectedClanId, "admin-incomplete-loans.route.bank-console"),
+    }),
+    [selectedClanId]
+  );
 
   useEffect(() => {
     let alive = true;
@@ -284,7 +272,7 @@ export default function AdminIncompleteLoansPage() {
 
   return (
     <div style={{ maxWidth: 1260, margin: "0 auto" }}>
-      <PageTopNav sectionLabel="Incomplete Loans" title="Incomplete Loans" subtitle="Review unresolved loans in the current community before they auto-cancel, stall, or stay under-covered." homeTo="/app/dashboard" homeLabel="Dashboard" backTo="/app/command-center" backLabel="Command Center" />
+      <PageTopNav sectionLabel="Incomplete Loans" title="Incomplete Loans" subtitle="Review unresolved loans in the current community before they auto-cancel, stall, or stay under-covered." homeTo={routes.dashboard} homeLabel="Dashboard" backTo={routes.commandCenter} backLabel="Command Center" />
 
       <ExplainToggle
         label="What this screen does"
@@ -332,10 +320,38 @@ export default function AdminIncompleteLoansPage() {
           </div>
 
           <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button type="button" {...buttonGuardProps()} onClick={copyQueueSnapshot} style={actionBtn("secondary")}>Copy queue snapshot</button>
-            <OriginLink to="/app/command-center/system-operations" style={actionBtn("primary")}>Open System Operations</OriginLink>
-            <OriginLink to="/app/command-center/bank-console" style={actionBtn("secondary")}>Open Bank Console</OriginLink>
-            <OriginLink to="/app/command-center" style={actionBtn("soft")}>Back to Command Center</OriginLink>
+            <SecondaryButton
+              onClick={copyQueueSnapshot}
+              stableHeight={42}
+              debugId="admin-incomplete-loans.copy-queue"
+              style={adminIncompleteLoanActionStyle("secondary")}
+            >
+              Copy queue snapshot
+            </SecondaryButton>
+            <StableCtaLink
+              to={routes.systemOperations}
+              debugId="admin-incomplete-loans.route.system-operations"
+              stableHeight={42}
+              style={adminIncompleteLoanActionStyle("primary")}
+            >
+              Open System Operations
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.bankConsole}
+              debugId="admin-incomplete-loans.route.bank-console"
+              stableHeight={42}
+              style={adminIncompleteLoanActionStyle("secondary")}
+            >
+              Open Bank Console
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.commandCenter}
+              debugId="admin-incomplete-loans.route.command-center"
+              stableHeight={42}
+              style={adminIncompleteLoanActionStyle("soft")}
+            >
+              Back to Command Center
+            </StableCtaLink>
           </div>
 
           <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
@@ -375,17 +391,29 @@ export default function AdminIncompleteLoansPage() {
                   <div style={{ marginTop: 14, color: "#6B7A88", lineHeight: 1.8 }}>Status: {safeStr(loan?.status || "incomplete")}</div>
 
                   <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <SecondaryButton
                       onClick={() => {
                         void copyText(buildLoanSnapshot(loan), `Loan #${loanId} snapshot copied.`, "Clipboard is not available here.");
                       }}
-                      style={actionBtn("secondary")}
+                      stableHeight={42}
+                      debugId={`admin-incomplete-loans.loan.${loanId}.copy`}
+                      style={adminIncompleteLoanActionStyle("secondary")}
                     >
                       Copy loan snapshot
-                    </button>
-                    <OriginLink to={`/app/loan-summary/${encodeURIComponent(loanId)}`} style={actionBtn("primary")}>Open Loan Summary</OriginLink>
+                    </SecondaryButton>
+                    <StableCtaLink
+                      to={routeTarget(
+                        "loanSummary",
+                        selectedClanId,
+                        `admin-incomplete-loans.loan.${loanId}.summary`,
+                        { loanId }
+                      )}
+                      debugId={`admin-incomplete-loans.loan.${loanId}.summary`}
+                      stableHeight={42}
+                      style={adminIncompleteLoanActionStyle("primary")}
+                    >
+                      Open Loan Summary
+                    </StableCtaLink>
                   </div>
                 </div>
               );

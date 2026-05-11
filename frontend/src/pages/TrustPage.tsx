@@ -2,15 +2,18 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
 
 import {
   getMe,
+  getSelectedClanId,
   getTrustScoreExplained,
   getTrustWhyMe,
   listTrustEvents,
   safeCopy,
 } from "../lib/api";
 import type { TrustEventsQuery } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type Me = {
   id: number;
@@ -228,36 +231,6 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function actionBtn(kind: "primary" | "secondary" = "secondary"): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    padding: kind === "primary" ? "12px 18px" : "11px 17px",
-    borderRadius: 16,
-    border:
-      kind === "primary"
-        ? "1px solid rgba(11,99,209,0.18)"
-        : "1px solid rgba(124,153,196,0.22)",
-    background:
-      kind === "primary"
-        ? "linear-gradient(180deg, #0C63D2 0%, #084A9A 100%)"
-        : "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
-    color: kind === "primary" ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    fontSize: 15,
-    textDecoration: "none",
-    whiteSpace: "normal",
-    boxShadow:
-      kind === "primary"
-        ? "0 18px 34px rgba(11,99,209,0.22)"
-        : "0 12px 28px rgba(15,23,42,0.10)",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-  };
-}
-
 function fieldInput(): React.CSSProperties {
   return {
     minHeight: 46,
@@ -271,7 +244,21 @@ function fieldInput(): React.CSSProperties {
   };
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function TrustPage() {
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "trust.route.dashboard"),
+      community: routeTarget("communityHome", selectedClanId, "trust.route.community"),
+      trustSlip: routeTarget("trustSlip", selectedClanId, "trust.route.trust-slip"),
+      openTrust: routeTarget("openTrust", selectedClanId, "trust.route.open-trust"),
+    }),
+    [selectedClanId]
+  );
   const [me, setMe] = useState<Me | null>(null);
   const [score, setScore] = useState<TrustScoreExplained | null>(null);
   const [why, setWhy] = useState<TrustWhy | null>(null);
@@ -431,13 +418,13 @@ export default function TrustPage() {
         sectionLabel="Trust Passport"
         title="Trust"
         subtitle="Read the live trust score, starter trust base, explainability pack, and trust-event ledger together."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/community"
+        backTo={routes.community}
         backLabel="Community Home"
         nextLinks={[
-          { label: "TrustSlip", to: "/app/trust-slip" },
-          { label: "Open Trust", to: "/app/open-trust-reading" },
+          { label: "TrustSlip", to: routes.trustSlip },
+          { label: "Open Trust", to: routes.openTrust },
         ]}
       />
 
@@ -468,14 +455,26 @@ export default function TrustPage() {
           event trail in one place so people do not mistake one number for the
           full trust story.
         </div>
-        <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={loadAll} disabled={loading} style={actionBtn("primary")}>
-            {loading ? "Loading..." : "Refresh Trust"}
-          </button>
-          <button onClick={exportCsv} disabled={loading} style={actionBtn("secondary")}>
+        <CardActionRow style={{ marginTop: 16 }}>
+          <PrimaryButton
+            type="button"
+            onClick={() => void loadAll()}
+            disabled={loading}
+            busy={loading}
+            busyLabel="Loading..."
+            debugId="trust.refresh"
+          >
+            Refresh Trust
+          </PrimaryButton>
+          <SecondaryButton
+            type="button"
+            onClick={exportCsv}
+            disabled={loading}
+            debugId="trust.export-csv"
+          >
             Export Trust CSV
-          </button>
-        </div>
+          </SecondaryButton>
+        </CardActionRow>
       </div>
 
       <div style={{ marginTop: 16 }}>
@@ -518,9 +517,13 @@ export default function TrustPage() {
               </div>
             </div>
 
-          <button onClick={() => setShowExplain((v) => !v)} style={actionBtn("secondary")}>
+          <SecondaryButton
+            type="button"
+            onClick={() => setShowExplain((v) => !v)}
+            debugId="trust.toggle-explainability"
+          >
             {showExplain ? "Hide explainability" : "Show explainability"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {showExplain && (
@@ -601,12 +604,14 @@ export default function TrustPage() {
                 <div><b>Pack ID:</b> {why.pack_id || "—"}</div>
                 <div style={{ wordBreak: "break-all" }}><b>Checksum:</b> {why.checksum || "—"}</div>
                 <div><b>Based on:</b> {why.based_on_event_at || "—"}</div>
-                <button
-                  style={{ ...actionBtn("secondary"), marginTop: 10 }}
+                <SecondaryButton
+                  type="button"
+                  style={{ marginTop: 10 }}
                   onClick={() => safeCopy(JSON.stringify(why, null, 2))}
+                  debugId="trust.copy-explainability-json"
                 >
                   Copy explainability JSON
-                </button>
+                </SecondaryButton>
               </div>
             ) : null}
           </div>
@@ -632,16 +637,26 @@ export default function TrustPage() {
           <input style={fieldInput()} value={eventType} onChange={(e) => setEventType(e.target.value)} placeholder="repayment / guarantor / ..." />
         </div>
 
-        <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button onClick={loadAll} disabled={loading} style={actionBtn("primary")}>Apply filters</button>
-          <button
+        <CardActionRow style={{ marginTop: 12 }}>
+          <PrimaryButton
+            type="button"
+            onClick={() => void loadAll()}
+            disabled={loading}
+            busy={loading}
+            busyLabel="Applying..."
+            debugId="trust.apply-filters"
+          >
+            Apply filters
+          </PrimaryButton>
+          <SecondaryButton
+            type="button"
             onClick={() => { setLoanId(""); setActorId(""); setSubjectId(""); setEventType(""); }}
             disabled={loading}
-            style={actionBtn("secondary")}
+            debugId="trust.clear-filters"
           >
             Clear filters
-          </button>
-        </div>
+          </SecondaryButton>
+        </CardActionRow>
       </div>
 
       <div style={pageCard()}>

@@ -1,7 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import { safeCopy as copyWithFallback } from "../lib/api";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
+import { getSelectedClanId, safeCopy as copyWithFallback } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type TimelineItem = {
   event_type: string;
@@ -200,68 +207,6 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    transform: "none",
-    lineHeight: 1.2,
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  const base: React.CSSProperties = {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 18px",
-    borderRadius: 16,
-    fontWeight: 900,
-    fontSize: 15,
-    textDecoration: "none",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.55 : 1,
-    cursor: disabled ? "not-allowed" : "pointer",
-    boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
-  };
-
-  if (kind === "primary") {
-    return {
-      ...base,
-      border: "1px solid rgba(9,83,176,0.24)",
-      background: "linear-gradient(180deg, #1D75E8 0%, #0B63D1 100%)",
-      color: "#FFFFFF",
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...base,
-      border: "1px solid rgba(124,153,196,0.22)",
-      background: "linear-gradient(180deg, #F6FAFF 0%, #EAF2FF 100%)",
-      color: "#17324D",
-    };
-  }
-
-  return {
-    ...base,
-    border: "1px solid rgba(124,153,196,0.22)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
-    color: "#0B1F33",
-  };
-}
-
 function deltaBadge(tone: "pos" | "neg" | "zero"): React.CSSProperties {
   const base: React.CSSProperties = {
     padding: "4px 10px",
@@ -276,7 +221,18 @@ function deltaBadge(tone: "pos" | "neg" | "zero"): React.CSSProperties {
   return { ...base, background: "#F8FAFC", borderColor: "#E2E8F0", color: "#475569" };
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function TrustTimelinePage() {
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      trustSlip: routeTarget("trustSlip", selectedClanId, "trust-timeline.route.trust-slip"),
+    }),
+    [selectedClanId]
+  );
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [scoreExplained, setScoreExplained] = useState<ScoreExplained | null>(
@@ -399,17 +355,20 @@ export default function TrustTimelinePage() {
           answer a challenge, support a claim, or export proof.
         </div>
 
-        <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <OriginLink to="/app/trust-slip" style={{ textDecoration: "none" }}>
-            <button style={actionBtn("secondary")}>Back to TrustSlip</button>
-          </OriginLink>
-          <button onClick={loadAll} style={actionBtn("primary")}>
+        <CardActionRow style={{ marginTop: 16 }}>
+          <StableCtaLink to={routes.trustSlip} debugId="trust-timeline.trust-slip">
+            Back to TrustSlip
+          </StableCtaLink>
+          <PrimaryButton onClick={loadAll} debugId="trust-timeline.refresh">
             Refresh
-          </button>
-          <button onClick={downloadTimelinePdf} style={actionBtn("soft")}>
+          </PrimaryButton>
+          <SubtleButton
+            onClick={downloadTimelinePdf}
+            debugId="trust-timeline.download-pdf"
+          >
             Download Timeline PDF
-          </button>
-        </div>
+          </SubtleButton>
+        </CardActionRow>
       </section>
 
       {err ? (
@@ -507,19 +466,22 @@ export default function TrustTimelinePage() {
               </span>
             </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-              <button
+            <CardActionRow style={{ marginTop: 12 }}>
+              <SecondaryButton
                 disabled={!packId}
                 onClick={() => packId && safeCopy(packId)}
-                style={actionBtn("secondary", !packId)}
+                debugId="trust-timeline.copy-pack-id"
               >
                 Copy Pack ID
-              </button>
+              </SecondaryButton>
 
-              <button onClick={downloadEvidenceZip} style={actionBtn("soft")}>
+              <SubtleButton
+                onClick={downloadEvidenceZip}
+                debugId="trust-timeline.download-evidence-zip"
+              >
                 Download Evidence Pack (ZIP)
-              </button>
-            </div>
+              </SubtleButton>
+            </CardActionRow>
 
             <div style={{ marginTop: 10, fontSize: 12, ...helperText() }}>
               Use the Pack ID when you need to reference this evidence bundle.

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
 import { getMySettings } from "../lib/api";
 import { type GuidanceSnapshot } from "../lib/guidance";
 import { subscribeCompanionSettingsUpdated } from "../lib/workspaceEvents";
@@ -68,11 +69,6 @@ function toneText(priority: CompanionToastPayload["priority"]): string {
 function actionButton(priority: CompanionToastPayload["priority"]): React.CSSProperties {
   if (priority === "urgent") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 36,
-      padding: "8px 12px",
       borderRadius: 12,
       border: "none",
       background: "#DC2626",
@@ -86,11 +82,6 @@ function actionButton(priority: CompanionToastPayload["priority"]): React.CSSPro
 
   if (priority === "important") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 36,
-      padding: "8px 12px",
       borderRadius: 12,
       border: "none",
       background: "#D97706",
@@ -103,11 +94,6 @@ function actionButton(priority: CompanionToastPayload["priority"]): React.CSSPro
   }
 
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 36,
-    padding: "8px 12px",
     borderRadius: 12,
     border: "none",
     background: "#0B63D1",
@@ -123,6 +109,7 @@ function dismissButton(): React.CSSProperties {
   return {
     width: 32,
     height: 32,
+    minWidth: 32,
     borderRadius: 10,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -323,14 +310,16 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
               </div>
             </div>
 
-            <button
-              type="button"
+            <SubtleButton
               aria-label="Dismiss companion message"
               onClick={() => removeToast(toast.id)}
+              stableHeight={32}
+              minWidth={32}
+              debugId={`companion-toast.${toast.id}.dismiss-icon`}
               style={dismissButton()}
             >
               ×
-            </button>
+            </SubtleButton>
           </div>
 
           <div
@@ -353,24 +342,21 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
             }}
           >
             {toast.ctaTo ? (
-              <button
-                type="button"
+              <PrimaryButton
                 onClick={() => handleToastOpen(toast)}
+                stableHeight={36}
+                debugId={`companion-toast.${toast.id}.open`}
                 style={actionButton(toast.priority)}
               >
                 {toast.ctaLabel || "Open"}
-              </button>
+              </PrimaryButton>
             ) : null}
 
-            <button
-              type="button"
+            <SecondaryButton
               onClick={() => removeToast(toast.id)}
+              stableHeight={36}
+              debugId={`companion-toast.${toast.id}.dismiss`}
               style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: 36,
-                padding: "8px 12px",
                 borderRadius: 12,
                 border: "1px solid rgba(11,31,51,0.10)",
                 background: "#FFFFFF",
@@ -382,7 +368,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
               }}
             >
               Dismiss
-            </button>
+            </SecondaryButton>
           </div>
         </div>
       ))}

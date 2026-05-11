@@ -1,8 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import PageTopNav from "../components/PageTopNav";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import ShopAssetsPage from "./ShopAssetsPage";
 import {
   createMarketplaceShop,
@@ -22,6 +28,7 @@ import {
   prepareSpotlightImageFile,
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   SPOTLIGHT_MAX_IMAGE_BYTES,
   SPOTLIGHT_MAX_VIDEO_BYTES,
@@ -29,10 +36,7 @@ import {
 } from "../lib/spotlightPilot";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
-import {
-  actionTapGuardProps,
-  brandStableTapTarget,
-} from "../styles/gmfnBrand";
+import { rememberPublishRecovery } from "../lib/publishRecovery";
 
 type ShopRecord = {
   id: number;
@@ -140,6 +144,19 @@ type ShopControlLayerKey =
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { hash?: string } = {}
+): string {
+  return resolveCtaTarget(intent, {
+    communityId,
+    debugId,
+    ...extra,
+  }).to as string;
 }
 
 function shopControlLayerForTarget(targetId: string): ShopControlLayerKey {
@@ -369,106 +386,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-const stableTapTarget: React.CSSProperties = {
-  ...brandStableTapTarget(),
-  zIndex: 10,
-};
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      ...stableTapTarget,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "10px 16px",
-      borderRadius: 16,
-      border: disabled ? "1px solid rgba(148,163,184,0.45)" : "1px solid rgba(112,74,14,0.52)",
-      background: disabled
-        ? "#CBD5E1"
-        : "linear-gradient(180deg, #FFF6C8 0%, #E6BE4D 42%, #B78018 76%, #815407 100%)",
-      color: disabled ? "#FFFFFF" : "#172033",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled
-        ? "none"
-        : "0 6px 0 rgba(92,64,18,0.32), 0 16px 28px rgba(11,31,51,0.18), inset 0 1px 0 rgba(255,255,255,0.72), inset 0 -2px 0 rgba(72,45,4,0.28)",
-      lineHeight: 1.15,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...stableTapTarget,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "9px 13px",
-      borderRadius: 14,
-      border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(18,58,89,0.18)",
-      background: disabled
-        ? "linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%)"
-        : "linear-gradient(180deg, #FFFFFF 0%, #F4F9FF 46%, #E3EEF9 100%)",
-      color: disabled ? "#94A3B8" : "#0F355B",
-      fontWeight: 900,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      opacity: disabled ? 0.86 : 1,
-      lineHeight: 1.15,
-      boxShadow:
-        "0 5px 0 rgba(22,58,94,0.18), 0 12px 22px rgba(7,24,39,0.10), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -2px 0 rgba(18,58,89,0.10)",
-    };
-  }
-
-  return {
-    ...stableTapTarget,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "10px 14px",
-    borderRadius: 15,
-    border: disabled ? "1px solid rgba(148,163,184,0.38)" : "1px solid rgba(18,58,89,0.18)",
-    background: disabled
-      ? "linear-gradient(180deg, #F1F5F9 0%, #CBD5E1 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F5FAFF 54%, #E4EFFA 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    opacity: disabled ? 0.86 : 1,
-    lineHeight: 1.15,
-    boxShadow:
-      "0 5px 0 rgba(22,58,94,0.16), 0 12px 22px rgba(7,24,39,0.09), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -2px 0 rgba(18,58,89,0.08)",
-  };
-}
-
 function controlGrid(isCompact: boolean, minWidth = 138): React.CSSProperties {
   return {
     display: "grid",
@@ -477,15 +394,6 @@ function controlGrid(isCompact: boolean, minWidth = 138): React.CSSProperties {
       : `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
     gap: 10,
     alignItems: "stretch",
-  };
-}
-
-function fullButton(style: React.CSSProperties): React.CSSProperties {
-  return {
-    ...style,
-    width: "100%",
-    minWidth: 0,
-    alignSelf: "stretch",
   };
 }
 
@@ -696,13 +604,60 @@ export default function ShopControlPage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
   const effectiveShopClanId = Number(shop?.clan_id || selectedClanId || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget(
+        "dashboard",
+        effectiveShopClanId,
+        "shop-control.route.dashboard"
+      ),
+      marketplace: routeTarget(
+        "marketplace",
+        effectiveShopClanId,
+        "shop-control.route.marketplace"
+      ),
+      shop: routeTarget("shop", effectiveShopClanId, "shop-control.route.shop"),
+      shopGallery: routeTarget(
+        "shop",
+        effectiveShopClanId,
+        "shop-control.route.gallery",
+        { hash: "shop-control-gallery-tools" }
+      ),
+      shopAssets: routeTarget(
+        "shopAssets",
+        effectiveShopClanId,
+        "shop-control.route.shop-assets"
+      ),
+      freeSpotlight: routeTarget(
+        "freeSpotlight",
+        effectiveShopClanId,
+        "shop-control.route.free-spotlight"
+      ),
+      subscriptionSpotlight: routeTarget(
+        "subscriptionSpotlight",
+        effectiveShopClanId,
+        "shop-control.route.subscription-spotlight"
+      ),
+      vaultControl: routeTarget(
+        "vaultControl",
+        effectiveShopClanId,
+        "shop-control.route.vault-control"
+      ),
+      trustSlip: routeTarget(
+        "trustSlip",
+        effectiveShopClanId,
+        "shop-control.route.trust-slip"
+      ),
+    }),
+    [effectiveShopClanId]
+  );
   const shopHeroShortcuts = [
-    { label: "Dashboard", icon: "\u{1F4CA}", to: "/app/dashboard" },
-    { label: "Marketplace", icon: "\u{1F6CD}\uFE0F", to: "/app/marketplace" },
-    { label: "Shop gallery", icon: "\u{1F5BC}\uFE0F", to: "/app/shop-control#shop-control-gallery-tools" },
-    { label: "Free spotlight", icon: "\u2B50", to: "/app/free-spotlight" },
-    { label: "Subscription spotlight", icon: "\u{1F4B3}", to: "/app/shop-control/subscription-spotlight" },
-    { label: "Vault", icon: "\u{1F510}", to: "/app/vault-control" },
+    { label: "Dashboard", icon: "\u{1F4CA}", to: routes.dashboard },
+    { label: "Marketplace", icon: "\u{1F6CD}\uFE0F", to: routes.marketplace },
+    { label: "Shop gallery", icon: "\u{1F5BC}\uFE0F", to: routes.shopGallery },
+    { label: "Free spotlight", icon: "\u2B50", to: routes.freeSpotlight },
+    { label: "Subscription spotlight", icon: "\u{1F4B3}", to: routes.subscriptionSpotlight },
+    { label: "Vault", icon: "\u{1F510}", to: routes.vaultControl },
   ];
 
   useEffect(() => {
@@ -1022,7 +977,7 @@ export default function ShopControlPage() {
     lastAutoScrolledHashRef.current = targetId;
 
     if (targetId === "shop-control-paid-spotlight") {
-      navigate("/app/shop-control/subscription-spotlight", { replace: true });
+      navigate(routes.subscriptionSpotlight, { replace: true });
       return;
     }
 
@@ -1038,7 +993,7 @@ export default function ShopControlPage() {
 
     cancelPendingControlReveal();
     revealControlTarget(targetId);
-  }, [cancelPendingControlReveal, loading, location.hash, location.search, navigate, revealControlTarget, shop?.id]);
+  }, [cancelPendingControlReveal, loading, location.hash, location.search, navigate, revealControlTarget, routes.subscriptionSpotlight, shop?.id]);
 
   const publicProducts = useMemo(
     () =>
@@ -1677,6 +1632,11 @@ export default function ShopControlPage() {
       return;
     }
 
+    rememberPublishRecovery(
+      routes.freeSpotlight,
+      "shop-control.spotlight.preview.publish"
+    );
+
     if (shopActionsLocked && spotlightPriorityMode === "paid") {
       const lockMessage =
         "Identity review is blocking paid spotlight right now. Open the identity review first, then return here to publish.";
@@ -2025,25 +1985,25 @@ export default function ShopControlPage() {
               </div>
 
               <div style={{ marginTop: 14, ...controlGrid(isCompact, 150) }}>
-                <button
+                <PrimaryButton
                   type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => {
-                    void ensureSpotlightShopRecord();
-                  }}
+                  onClick={() => ensureSpotlightShopRecord()}
                   disabled={creatingSpotlightShop}
-                  style={fullButton(actionBtn("primary", creatingSpotlightShop))}
+                  busy={creatingSpotlightShop}
+                  busyLabel="Preparing shop..."
+                  fullWidth
+                  debugId="shop-control.spotlight.setup.continue"
                 >
-                  {creatingSpotlightShop ? "Preparing shop..." : "Continue"}
-                </button>
-                <button
+                  Continue
+                </PrimaryButton>
+                <SecondaryButton
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={collapseSpotlightTools}
-                  style={fullButton(actionBtn("secondary"))}
+                  fullWidth
+                  debugId="shop-control.spotlight.setup.cancel"
                 >
                   Cancel spotlight
-                </button>
+                </SecondaryButton>
               </div>
             </div>
           </>
@@ -2091,14 +2051,15 @@ export default function ShopControlPage() {
                 >
                   Normal community visibility.
                 </div>
-                <button
+                <SecondaryButton
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() => setSpotlightPriorityMode("free")}
-                  style={{ ...fullButton(actionBtn("secondary")), marginTop: 12 }}
+                  fullWidth
+                  style={{ marginTop: 12 }}
+                  debugId="shop-control.spotlight.free-lane"
                 >
                   Use free lane
-                </button>
+                </SecondaryButton>
               </div>
 
               <div
@@ -2128,14 +2089,15 @@ export default function ShopControlPage() {
                 <div style={{ marginTop: 6, ...helperText(), fontSize: 13, lineHeight: 1.45 }}>
                   Paid priority opens on its own focused page.
                 </div>
-                <button
+                <SecondaryButton
                   type="button"
-                  {...buttonGuardProps()}
-                  onClick={() => navigate("/app/shop-control/subscription-spotlight")}
-                  style={{ ...fullButton(actionBtn("secondary")), marginTop: 12 }}
+                  onClick={() => navigate(routes.subscriptionSpotlight)}
+                  fullWidth
+                  style={{ marginTop: 12 }}
+                  debugId="shop-control.spotlight.paid-lane"
                 >
                   Open paid lane
-                </button>
+                </SecondaryButton>
                 <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
                   Payment and paid publishing are kept separate from Free Spotlight.
                 </div>
@@ -2148,30 +2110,33 @@ export default function ShopControlPage() {
                 Pick one clear format.
               </div>
               <div style={{ marginTop: 12, ...controlGrid(isCompact, 150) }}>
-                <button
+                <StableButton
                   type="button"
-                  {...buttonGuardProps()}
+                  kind={spotlightMediaChoice === "image" ? "primary" : "secondary"}
                   onClick={() => setSpotlightMediaChoice("image")}
-                  style={fullButton(actionBtn(spotlightMediaChoice === "image" ? "primary" : "secondary"))}
+                  fullWidth
+                  debugId="shop-control.spotlight.media.image"
                 >
                   🖼️ Picture
-                </button>
-                <button
+                </StableButton>
+                <StableButton
                   type="button"
-                  {...buttonGuardProps()}
+                  kind={spotlightMediaChoice === "video" ? "primary" : "secondary"}
                   onClick={() => setSpotlightMediaChoice("video")}
-                  style={fullButton(actionBtn(spotlightMediaChoice === "video" ? "primary" : "secondary"))}
+                  fullWidth
+                  debugId="shop-control.spotlight.media.video"
                 >
                   🎬 Video
-                </button>
-                <button
+                </StableButton>
+                <StableButton
                   type="button"
-                  {...buttonGuardProps()}
+                  kind={spotlightMediaChoice === "both" ? "primary" : "secondary"}
                   onClick={() => setSpotlightMediaChoice("both")}
-                  style={fullButton(actionBtn(spotlightMediaChoice === "both" ? "primary" : "secondary"))}
+                  fullWidth
+                  debugId="shop-control.spotlight.media.both"
                 >
                   🖼️ + 🎬 Both
-                </button>
+                </StableButton>
               </div>
             </div>
 
@@ -2182,8 +2147,15 @@ export default function ShopControlPage() {
                 gap: 14,
               }}
             >
-              {spotlightMediaChoice !== "video" ? (
-                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+              <div
+                aria-hidden={spotlightMediaChoice === "video" || undefined}
+                style={{
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  visibility: spotlightMediaChoice === "video" ? "hidden" : "visible",
+                  pointerEvents: spotlightMediaChoice === "video" ? "none" : "auto",
+                  minHeight: 170,
+                }}
+              >
                   <div style={sectionLabel()}>🖼️ Picture</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Choose the picture people should notice first.
@@ -2206,11 +2178,17 @@ export default function ShopControlPage() {
                       </span>
                     </div>
                   ) : null}
-                </div>
-              ) : null}
+              </div>
 
-              {spotlightMediaChoice !== "image" ? (
-                <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+              <div
+                aria-hidden={spotlightMediaChoice === "image" || undefined}
+                style={{
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  visibility: spotlightMediaChoice === "image" ? "hidden" : "visible",
+                  pointerEvents: spotlightMediaChoice === "image" ? "none" : "auto",
+                  minHeight: 170,
+                }}
+              >
                   <div style={sectionLabel()}>🎬 Short video</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Use a short clip when movement explains the shop better.
@@ -2236,8 +2214,7 @@ export default function ShopControlPage() {
                       </span>
                     </div>
                   ) : null}
-                </div>
-              ) : null}
+              </div>
             </div>
 
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
@@ -2254,36 +2231,29 @@ export default function ShopControlPage() {
             </div>
 
             <div style={controlGrid(isCompact, 150)}>
-              <button
+              <PrimaryButton
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => setSpotlightFlowStep("preview")}
                 disabled={
                   preparingSpotlightImage ||
                   preparingSpotlightVideo ||
                   !spotlightCanContinueToPreview
                 }
-                style={fullButton(
-                  actionBtn(
-                    "primary",
-                    preparingSpotlightImage ||
-                      preparingSpotlightVideo ||
-                      !spotlightCanContinueToPreview
-                  )
-                )}
+                busy={preparingSpotlightImage || preparingSpotlightVideo}
+                busyLabel="Preparing media..."
+                fullWidth
+                debugId="shop-control.spotlight.upload.preview"
               >
-                {preparingSpotlightImage || preparingSpotlightVideo
-                  ? "Preparing media..."
-                  : "Preview spotlight"}
-              </button>
-              <button
+                Preview spotlight
+              </PrimaryButton>
+              <SecondaryButton
                 type="button"
-                {...buttonGuardProps()}
                 onClick={collapseSpotlightTools}
-                style={fullButton(actionBtn("secondary"))}
+                fullWidth
+                debugId="shop-control.spotlight.upload.cancel"
               >
                 Cancel spotlight
-              </button>
+              </SecondaryButton>
             </div>
           </>
         ) : (
@@ -2350,43 +2320,37 @@ export default function ShopControlPage() {
             </div>
 
             <div style={controlGrid(isCompact, 150)}>
-              <button
+              <SecondaryButton
                 type="button"
-                {...buttonGuardProps()}
                 onClick={() => setSpotlightFlowStep("upload")}
-                style={fullButton(actionBtn("secondary"))}
+                fullWidth
+                debugId="shop-control.spotlight.preview.back"
               >
                 Back to upload
-              </button>
-              <button
+              </SecondaryButton>
+              <PrimaryButton
                 type="button"
-                {...buttonGuardProps()}
-                onClick={() => {
-                  void handleCreateSpotlight();
-                }}
+                onClick={() => handleCreateSpotlight()}
                 disabled={creatingSpotlight}
-                aria-disabled={creatingSpotlight}
-                style={fullButton(
-                  actionBtn(
-                    "primary",
-                    creatingSpotlight
-                  )
-                )}
+                busy={creatingSpotlight}
+                busyLabel="Publishing..."
+                fullWidth
+                debugId="shop-control.spotlight.preview.publish"
               >
                 {shopActionsLocked && spotlightPriorityMode === "paid"
                   ? "Publish after identity review"
                   : creatingSpotlight
                   ? "Publishing..."
                   : "🚀 Publish spotlight"}
-              </button>
-              <button
+              </PrimaryButton>
+              <SecondaryButton
                 type="button"
-                {...buttonGuardProps()}
                 onClick={collapseSpotlightTools}
-                style={fullButton(actionBtn("secondary"))}
+                fullWidth
+                debugId="shop-control.spotlight.preview.cancel"
               >
                 Cancel spotlight
-              </button>
+              </SecondaryButton>
             </div>
           </>
         )}
@@ -2401,9 +2365,9 @@ export default function ShopControlPage() {
           sectionLabel="Shop Control"
           title="Shop Control"
           subtitle="Loading shop control..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/marketplace"
+          backTo={routes.marketplace}
           backLabel="Marketplace"
         />
         <section style={pageCard()}>
@@ -2420,9 +2384,9 @@ export default function ShopControlPage() {
           sectionLabel="Spotlight Portal"
           title={spotlightPortalTitle}
           subtitle={spotlightPortalSubtitle}
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/shop-control"
+          backTo={routes.shop}
           backLabel="Shop Control"
         />
         {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
@@ -2437,9 +2401,9 @@ export default function ShopControlPage() {
         sectionLabel="Focused Task"
         title="Shop Control"
         subtitle=""
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/marketplace"
+        backTo={routes.marketplace}
         backLabel="Marketplace"
       />
 
@@ -2500,11 +2464,13 @@ export default function ShopControlPage() {
               aria-label="Shop control shortcuts"
             >
               {shopHeroShortcuts.map((item) => (
-                <OriginLink
+                <StableCtaLink
                   key={item.label}
                   to={item.to}
+                  kind="soft"
+                  fullWidth
+                  debugId={`shop-control.hero-shortcut.${item.label.toLowerCase().replace(/\s+/g, "-")}`}
                   style={{
-                    ...fullButton(actionBtn("soft")),
                     minHeight: 44,
                     padding: "8px 9px",
                     border: "1px solid rgba(246,215,122,0.28)",
@@ -2518,7 +2484,7 @@ export default function ShopControlPage() {
                 >
                   <span aria-hidden="true">{item.icon}</span>
                   <span>{item.label}</span>
-                </OriginLink>
+                </StableCtaLink>
               ))}
             </div>
           </div>
@@ -2608,12 +2574,13 @@ export default function ShopControlPage() {
               </div>
             ) : null}
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void createVaultInstruction(1)}
+              <PrimaryButton
+                onClick={() => createVaultInstruction(1)}
                 disabled={shopActionsLocked || creatingVaultInstruction}
-                style={fullButton(actionBtn("primary", shopActionsLocked || creatingVaultInstruction))}
+                busy={creatingVaultInstruction}
+                busyLabel="Preparing..."
+                fullWidth
+                debugId="shop-control.vault.pay-1-slot"
               >
                 {paidToolActionLabel({
                   locked: shopActionsLocked,
@@ -2621,13 +2588,14 @@ export default function ShopControlPage() {
                   idle: "Pay 1 slot",
                   busyText: "Preparing...",
                 })}
-              </button>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void createVaultInstruction(6)}
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() => createVaultInstruction(6)}
                 disabled={shopActionsLocked || creatingVaultInstruction}
-                style={fullButton(actionBtn("secondary", shopActionsLocked || creatingVaultInstruction))}
+                busy={creatingVaultInstruction}
+                busyLabel="Preparing..."
+                fullWidth
+                debugId="shop-control.vault.pay-6-slots"
               >
                 {paidToolActionLabel({
                   locked: shopActionsLocked,
@@ -2635,23 +2603,26 @@ export default function ShopControlPage() {
                   idle: "Pay 6 slots",
                   busyText: "Preparing...",
                 })}
-              </button>
-              <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
+              </SecondaryButton>
+              <StableCtaLink
+                to={routes.shopAssets}
+                kind="secondary"
+                fullWidth
+                debugId="shop-control.vault.manage-offers"
+              >
                 Manage private offers
-              </OriginLink>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void createVaultViewingLink()}
+              </StableCtaLink>
+              <SubtleButton
+                onClick={() => createVaultViewingLink()}
                 disabled={
                   shopActionsLocked ||
                   creatingVaultLink ||
                   vaultProducts.length === 0
                 }
-                style={fullButton(actionBtn(
-                  "soft",
-                  shopActionsLocked || creatingVaultLink || vaultProducts.length === 0
-                ))}
+                busy={creatingVaultLink}
+                busyLabel="Creating link..."
+                fullWidth
+                debugId="shop-control.vault.create-link"
               >
                 {paidToolActionLabel({
                   locked: shopActionsLocked,
@@ -2659,7 +2630,7 @@ export default function ShopControlPage() {
                   idle: "Create access link",
                   busyText: "Creating link...",
                 })}
-              </button>
+              </SubtleButton>
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
               {vaultProofText}
@@ -2715,15 +2686,13 @@ export default function ShopControlPage() {
             <div style={{ marginTop: 10, ...helperText() }}>{merchantVerifyProofText}</div>
             <div style={{ marginTop: 12, ...helperText() }}>Start or renew verification</div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void createMerchantVerifyInstruction()}
+              <PrimaryButton
+                onClick={() => createMerchantVerifyInstruction()}
                 disabled={shopActionsLocked || creatingMerchantVerifyInstruction}
-                style={fullButton(actionBtn(
-                  "primary",
-                  shopActionsLocked || creatingMerchantVerifyInstruction
-                ))}
+                busy={creatingMerchantVerifyInstruction}
+                busyLabel="Preparing..."
+                fullWidth
+                debugId="shop-control.verify.pay"
               >
                 {paidToolActionLabel({
                   locked: shopActionsLocked,
@@ -2731,24 +2700,28 @@ export default function ShopControlPage() {
                   idle: "Pay verification",
                   busyText: "Preparing...",
                 })}
-              </button>
+              </PrimaryButton>
             </div>
             <div style={{ marginTop: 10, ...helperText() }}>Use verification pages</div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
-              <OriginLink to="/app/trust-slip" style={fullButton(actionBtn("secondary"))}>
+              <StableCtaLink
+                to={routes.trustSlip}
+                kind="secondary"
+                fullWidth
+                debugId="shop-control.verify.trust-slip"
+              >
                 Open TrustSlip
-              </OriginLink>
+              </StableCtaLink>
               {safeStr(trustSlipFeature?.public_verify_url) ? (
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <SecondaryButton
                   onClick={() =>
                     openExternalLink(String(trustSlipFeature?.public_verify_url))
                   }
-                  style={fullButton(actionBtn("secondary"))}
+                  fullWidth
+                  debugId="shop-control.verify.public"
                 >
                   Open public verification
-                </button>
+                </SecondaryButton>
               ) : null}
             </div>
           </div>
@@ -2827,12 +2800,11 @@ export default function ShopControlPage() {
               </div>
             </div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => navigate("/app/shop-control/subscription-spotlight")}
+              <PrimaryButton
+                onClick={() => navigate(routes.subscriptionSpotlight)}
                 disabled={shopActionsLocked}
-                style={fullButton(actionBtn("primary", shopActionsLocked))}
+                fullWidth
+                debugId="shop-control.subscription.open"
               >
                 {paidToolActionLabel({
                   locked: shopActionsLocked,
@@ -2840,15 +2812,14 @@ export default function ShopControlPage() {
                   idle: "Open Subscription Spotlight",
                   busyText: "Opening...",
                 })}
-              </button>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => navigate("/app/shop-control/subscription-spotlight")}
-                style={fullButton(actionBtn("secondary"))}
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() => navigate(routes.subscriptionSpotlight)}
+                fullWidth
+                debugId="shop-control.subscription.publisher"
               >
                 Open paid publisher
-              </button>
+              </SecondaryButton>
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
               {spotlightProofText}
@@ -2915,19 +2886,25 @@ export default function ShopControlPage() {
         </div>
 
         <div style={{ marginTop: 16, ...controlGrid(isCompact, 150) }}>
-          <button
-            type="button"
-            {...buttonGuardProps()}
-            onClick={() => void saveShopDetails()}
+          <PrimaryButton
+            onClick={() => saveShopDetails()}
             disabled={shopActionsLocked || savingShop}
-            style={fullButton(actionBtn("primary", shopActionsLocked || savingShop))}
+            busy={savingShop}
+            busyLabel="Saving..."
+            fullWidth
+            debugId="shop-control.details.save"
           >
-            {shopActionsLocked ? "Review Identity First" : savingShop ? "Saving..." : "Save Shop Details"}
-          </button>
+            {shopActionsLocked ? "Review Identity First" : "Save Shop Details"}
+          </PrimaryButton>
 
-          <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
+          <StableCtaLink
+            to={routes.shopAssets}
+            kind="secondary"
+            fullWidth
+            debugId="shop-control.details.manage-products"
+          >
             Manage Products
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
       ) : null}
@@ -3116,22 +3093,25 @@ export default function ShopControlPage() {
             </div>
 
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 160) }}>
-              <OriginLink to="/app/shop-assets" style={fullButton(actionBtn("secondary"))}>
+              <StableCtaLink
+                to={routes.shopAssets}
+                kind="secondary"
+                fullWidth
+                debugId="shop-control.vault-layer.manage-offers"
+              >
                 Manage private offers
-              </OriginLink>
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => void createVaultViewingLink()}
+              </StableCtaLink>
+              <PrimaryButton
+                onClick={() => createVaultViewingLink()}
                 disabled={
                   shopActionsLocked ||
                   creatingVaultLink ||
                   vaultProducts.length === 0
                 }
-                style={fullButton(actionBtn(
-                  "primary",
-                  shopActionsLocked || creatingVaultLink || vaultProducts.length === 0
-                ))}
+                busy={creatingVaultLink}
+                busyLabel="Creating..."
+                fullWidth
+                debugId="shop-control.vault-layer.create-link"
               >
                 {shopActionsLocked
                   ? "Review Identity First"
@@ -3140,7 +3120,7 @@ export default function ShopControlPage() {
                   : vaultProducts.length === 0
                     ? "Add private offer first"
                     : "Create viewing link"}
-              </button>
+              </PrimaryButton>
             </div>
           </div>
 
@@ -3179,62 +3159,47 @@ export default function ShopControlPage() {
                     Access ends: {safeDateTime(item?.expires_at) || "No expiry set"}
                   </div>
                   <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <SubtleButton
                       onClick={() =>
                         copyText(vaultLinkUrl(item), "Vault viewing link copied.", "shop-control-vault")
                       }
-                      style={fullButton(actionBtn("soft", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
+                      fullWidth
+                      debugId={`shop-control.vault-link.${item.id}.copy`}
                     >
                       Copy link
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    </SubtleButton>
+                    <SecondaryButton
                       onClick={() => openExternalLink(vaultLinkUrl(item), "shop-control-vault")}
-                      style={fullButton(actionBtn("secondary", !vaultLinkUrl(item)))}
                       disabled={!vaultLinkUrl(item)}
+                      fullWidth
+                      debugId={`shop-control.vault-link.${item.id}.open`}
                     >
                       Open link
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => void extendVaultViewingLink(item)}
-                      style={fullButton(
-                        actionBtn(
-                          "secondary",
-                          busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "extend"
-                        )
-                      )}
+                    </SecondaryButton>
+                    <SecondaryButton
+                      onClick={() => extendVaultViewingLink(item)}
                       disabled={busyVaultLinkId === Number(item.id)}
+                      busy={busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "extend"}
+                      busyLabel="Extending..."
+                      fullWidth
+                      debugId={`shop-control.vault-link.${item.id}.extend`}
                     >
-                      {busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "extend"
-                        ? "Extending..."
-                        : "Extend 72 hours"}
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => void revokeVaultViewingLink(item)}
-                      style={fullButton(
-                        actionBtn(
-                          "secondary",
-                          busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "revoke" ||
-                            firstTruthy(item?.status).toLowerCase() === "revoked"
-                        )
-                      )}
+                      Extend 72 hours
+                    </SecondaryButton>
+                    <SecondaryButton
+                      onClick={() => revokeVaultViewingLink(item)}
                       disabled={
                         busyVaultLinkId === Number(item.id) ||
                         firstTruthy(item?.status).toLowerCase() === "revoked"
                       }
+                      busy={busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "revoke"}
+                      busyLabel="Revoking..."
+                      fullWidth
+                      debugId={`shop-control.vault-link.${item.id}.revoke`}
                     >
-                      {busyVaultLinkId === Number(item.id) && busyVaultLinkAction === "revoke"
-                        ? "Revoking..."
-                        : "Revoke"}
-                    </button>
+                      Revoke
+                    </SecondaryButton>
                   </div>
                 </div>
               ))}

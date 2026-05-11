@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
+import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
 
 function pageShell(compact = false): React.CSSProperties {
@@ -70,22 +71,11 @@ function inputStyle(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function primaryBtn(disabled = false): React.CSSProperties {
   return {
     position: "relative",
     zIndex: 2,
     isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
     width: "100%",
     padding: "17px 18px",
     borderRadius: 999,
@@ -110,7 +100,9 @@ function primaryBtn(disabled = false): React.CSSProperties {
 
 function secondaryBtn(): React.CSSProperties {
   return {
-    ...stableTapStyle(),
+    position: "relative",
+    zIndex: 2,
+    isolation: "isolate",
     width: "100%",
     padding: "14px 18px",
     borderRadius: 999,
@@ -124,20 +116,6 @@ function secondaryBtn(): React.CSSProperties {
     textAlign: "center",
     boxShadow:
       "0 14px 28px rgba(0,8,18,0.18), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -6px 10px rgba(6,18,35,0.12)",
-  };
-}
-
-function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
   };
 }
 
@@ -225,6 +203,24 @@ function structuredErrorDetail(err: any): Record<string, any> | null {
   }
 }
 
+function joinRedirectFromLoginSearch(searchParams: URLSearchParams): string {
+  const inviteCode =
+    safeStr(searchParams.get("invite_code")) ||
+    safeStr(searchParams.get("invite")) ||
+    safeStr(searchParams.get("join_code")) ||
+    safeStr(searchParams.get("code"));
+
+  if (!inviteCode) return "";
+
+  const next = new URLSearchParams(searchParams);
+  next.delete("force");
+  next.delete("session");
+  next.set("invite_code", inviteCode);
+
+  const finalQuery = next.toString();
+  return finalQuery ? `/join?${finalQuery}` : "/join";
+}
+
 export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
@@ -251,8 +247,10 @@ export default function LoginPage() {
     if (routeState.from?.pathname && routeState.from.pathname !== "/login") {
       return `${routeState.from.pathname}${routeState.from.search || ""}`;
     }
+    const inviteTarget = joinRedirectFromLoginSearch(searchParams);
+    if (inviteTarget) return inviteTarget;
     return "/app/dashboard";
-  }, [routeState]);
+  }, [routeState, searchParams]);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -538,10 +536,11 @@ export default function LoginPage() {
                   zIndex: 1,
                 }}
               >
-                <button
-                  type="button"
+                <SecondaryButton
                   onClick={() => setGuideOpen(false)}
-                  {...buttonGuardProps()}
+                  minWidth="auto"
+                  stableHeight={44}
+                  debugId="login.guide.collapse"
                   style={{
                     ...secondaryBtn(),
                     width: "auto",
@@ -554,7 +553,7 @@ export default function LoginPage() {
                   }}
                 >
                   Collapse
-                </button>
+                </SecondaryButton>
               </div>
 
               <div style={{ display: "grid", gap: 18 }}>
@@ -745,14 +744,15 @@ export default function LoginPage() {
             <div style={{ marginBottom: 16, display: "grid", gap: 10 }}>
               <div style={noticeStyle("error")}>{err}</div>
               {activationPath ? (
-                <button
-                  type="button"
+                <SecondaryButton
                   onClick={openActivationRoute}
-                  {...buttonGuardProps()}
+                  minWidth={220}
+                  stableHeight={50}
+                  debugId="login.error.activate-membership"
                   style={secondaryBtn()}
                 >
                   Activate membership
-                </button>
+                </SecondaryButton>
               ) : null}
             </div>
           ) : null}
@@ -894,38 +894,44 @@ export default function LoginPage() {
                 justifyContent: "center",
               }}
             >
-              <button
+              <PrimaryButton
                 type="submit"
-                disabled={busy}
-                {...buttonGuardProps()}
+                busy={busy}
+                busyLabel="Signing in..."
+                fullWidth
+                stableHeight={58}
+                debugId="login.submit"
                 style={primaryBtn(busy)}
               >
-                {busy ? "Signing in..." : "Sign in to GSN"}
-              </button>
+                Sign in to GSN
+              </PrimaryButton>
             </div>
 
             <div style={{ marginTop: 14 }}>
-              <button
-                type="button"
+              <SecondaryButton
                 onClick={() => setGuideOpen(true)}
-                {...buttonGuardProps()}
+                disabled={busy}
+                fullWidth
+                stableHeight={50}
+                debugId="login.open-help"
                 style={secondaryBtn()}
               >
                 <span aria-hidden="true" style={{ marginRight: 8 }}>
                   💬
                 </span>
                 Open sign-in help
-              </button>
+              </SecondaryButton>
             </div>
             </div>
           </form>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={openCreateRoute}
-            {...buttonGuardProps()}
+            disabled={busy}
+            fullWidth
+            stableHeight={36}
+            debugId="login.start-community"
             style={{
-              ...stableTapStyle(),
               width: "100%",
               border: "none",
               background: "transparent",
@@ -941,7 +947,7 @@ export default function LoginPage() {
             <span style={{ color: "#F3D06A" }} aria-hidden="true">
               &gt;
             </span>
-          </button>
+          </SubtleButton>
 
           <div
             style={{
@@ -999,12 +1005,13 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={openActivationRoute}
-            {...buttonGuardProps()}
+            disabled={busy}
+            fullWidth
+            stableHeight={40}
+            debugId="login.activate-approved"
             style={{
-              ...stableTapStyle(),
               width: "100%",
               border: "1px solid rgba(243,208,106,0.18)",
               background: "rgba(255,255,255,0.035)",
@@ -1018,7 +1025,7 @@ export default function LoginPage() {
             }}
           >
             Already approved? Activate membership
-          </button>
+          </SubtleButton>
           </div>
         </div>
       </div>

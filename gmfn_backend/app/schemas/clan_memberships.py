@@ -4,7 +4,7 @@ from typing import Optional
 
 class ClanMemberCreate(BaseModel):
     user_id: int
-    role: Optional[str] = "member"
+    role: Optional[str] = "user"
 
 
 class ClanMemberOut(BaseModel):

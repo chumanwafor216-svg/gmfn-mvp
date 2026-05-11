@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { PrimaryButton } from "./StableButton";
 
 type Props = {
   storageKey?: string;
@@ -45,7 +46,7 @@ export default function PilotRiskDisclosureGate({ storageKey = DEFAULT_KEY, titl
         </label>
 
         <div style={{ marginTop: 12, display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
+          <PrimaryButton
             onClick={() => {
               if (!checked) return;
               try {
@@ -56,6 +57,8 @@ export default function PilotRiskDisclosureGate({ storageKey = DEFAULT_KEY, titl
               setAck(true);
             }}
             disabled={!checked}
+            stableHeight={42}
+            debugId="pilot-risk-disclosure.continue"
             style={{
               padding: "10px 12px",
               borderRadius: 12,
@@ -68,7 +71,7 @@ export default function PilotRiskDisclosureGate({ storageKey = DEFAULT_KEY, titl
             }}
           >
             Continue
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     ),

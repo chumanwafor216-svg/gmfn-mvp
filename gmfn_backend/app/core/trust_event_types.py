@@ -23,6 +23,7 @@ class TrustEventType:
     # -------------------------
     # Clan membership
     # -------------------------
+    CLAN_JOINED = "clan_joined"
     CLAN_JOIN_VIA_INVITE = "clan_join_via_invite"
 
     # -------------------------

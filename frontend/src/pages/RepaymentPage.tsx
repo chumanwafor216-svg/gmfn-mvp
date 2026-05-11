@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -14,9 +14,11 @@ import {
   getCurrentClan,
   getLoanSummary,
   getMe,
+  getSelectedClanId,
   listExpectedPayments,
   safeCopy,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type NoticeTone = "success" | "error";
 
@@ -182,81 +184,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function actionBtn(
-  variant: "primary" | "secondary" | "soft",
-  disabled = false
-): React.CSSProperties {
-  const primary = variant === "primary";
-  const soft = variant === "soft";
-
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 54,
-    minWidth: 132,
-    padding: "12px 16px",
-    borderRadius: 15,
-    border: soft
-      ? "1px solid rgba(124,154,196,0.18)"
-      : primary
-      ? "none"
-      : "1px solid rgba(124,154,196,0.18)",
-    background: disabled
-      ? "#CBD5E1"
-      : primary
-      ? "linear-gradient(180deg, #255FCE 0%, #1B4FBF 100%)"
-      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    color: disabled ? "#FFFFFF" : primary ? "#FFFFFF" : "#E6EEF8",
-    fontWeight: 1000,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: disabled
-      ? "none"
-      : primary
-      ? "0 14px 30px rgba(29,95,212,0.26)"
-      : "0 12px 24px rgba(15,23,42,0.06)",
-  };
-}
-
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   return {
     ...pageCard(tone === "error" ? "#FEF2F2" : "#F3FBF5"),
@@ -271,7 +198,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
 
 function collapseToggle(): React.CSSProperties {
   return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -347,6 +273,15 @@ function defaultCollapseState(): CollapseState {
   };
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { loanId?: number | string } = {}
+): string {
+  return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
+}
+
 export default function RepaymentPage() {
   const { loanId } = useParams<{ loanId?: string }>();
   const numericLoanId = Number(loanId || 0);
@@ -367,6 +302,22 @@ export default function RepaymentPage() {
   const [instruction, setInstruction] = useState<LoanInstruction | null>(null);
   const [paymentConfirmedAt, setPaymentConfirmedAt] = useState<string | null>(null);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRow[]>([]);
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const activeCommunityId = Number(summary?.clan_id || currentClan?.id || currentClan?.clan_id || selectedClanId || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", activeCommunityId, "repayment.route.dashboard"),
+      loans: routeTarget("loans", activeCommunityId, "repayment.route.loans"),
+      finance: routeTarget("finance", activeCommunityId, "repayment.route.finance"),
+      loanSummary:
+        numericLoanId > 0
+          ? routeTarget("loanSummary", activeCommunityId, "repayment.route.loan-summary", {
+              loanId: numericLoanId,
+            })
+          : routeTarget("loans", activeCommunityId, "repayment.route.loan-summary-fallback"),
+    }),
+    [activeCommunityId, numericLoanId]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -680,9 +631,9 @@ export default function RepaymentPage() {
           sectionLabel="Repayment"
           title="Loan Repayment"
           subtitle="Loading the repayment route..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/loans"
+          backTo={routes.loans}
           backLabel="Loans & Support"
         />
         <section style={pageCard("#FFFFFF")}>
@@ -699,9 +650,9 @@ export default function RepaymentPage() {
           sectionLabel="Repayment"
           title="Loan Repayment"
           subtitle="Repayment needs one visible support item."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/loans"
+          backTo={routes.loans}
           backLabel="Loans & Support"
         />
         <section style={pageCard("#FEF2F2")}>
@@ -720,9 +671,9 @@ export default function RepaymentPage() {
         sectionLabel="Repayment"
         title={`Loan Repayment #${numericLoanId}`}
         subtitle="Repayment is its own guided money stage. It stays tied to one support item from exact amount and reference through payment and reconciliation."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo={`/app/loan-summary/${numericLoanId}`}
+        backTo={routes.loanSummary}
         backLabel="Loan Summary"
       />
 
@@ -814,13 +765,15 @@ export default function RepaymentPage() {
               The core repayment facts stay visible in one place.
             </div>
           </div>
-          <button
+          <SubtleButton
             type="button"
             onClick={() => toggleSection("overview")}
+            stableHeight={46}
+            debugId="repayment.toggle-overview"
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -880,9 +833,15 @@ export default function RepaymentPage() {
               Generate the exact repayment reference for this support item.
             </div>
           </div>
-          <button type="button" onClick={() => toggleSection("instruction")} style={collapseToggle()}>
+          <SubtleButton
+            type="button"
+            onClick={() => toggleSection("instruction")}
+            stableHeight={46}
+            debugId="repayment.toggle-instruction"
+            style={collapseToggle()}
+          >
             {collapsed.instruction ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.instruction ? (
@@ -942,33 +901,37 @@ export default function RepaymentPage() {
             <div style={softCard("#FFFFFF")}>
               <div style={sectionLabel()}>Instruction actions</div>
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <button
+                <PrimaryButton
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() => void handleGenerateInstruction()}
                   disabled={generatingInstruction || !canRepay}
-                  style={actionBtn("primary", generatingInstruction || !canRepay)}
+                  busy={generatingInstruction}
+                  busyLabel="Generating..."
+                  stableHeight={54}
+                  debugId="repayment.generate-instruction"
                 >
-                  {generatingInstruction ? "Generating..." : "Generate Repayment Instruction"}
-                </button>
+                  Generate Repayment Instruction
+                </PrimaryButton>
 
-                  <button
+                  <SecondaryButton
                     type="button"
                     onClick={handleCopyReference}
                     disabled={!instruction}
-                    style={actionBtn("secondary", !instruction)}
+                    stableHeight={54}
+                    debugId="repayment.copy-reference"
                   >
                     Copy Reference
-                  </button>
+                  </SecondaryButton>
 
-                  <button
+                  <SecondaryButton
                     type="button"
                     onClick={handleCopyInstruction}
                     disabled={!instruction}
-                    style={actionBtn("secondary", !instruction)}
+                    stableHeight={54}
+                    debugId="repayment.copy-full-instruction"
                   >
                     Copy Full Instruction
-                </button>
+                </SecondaryButton>
               </div>
             </div>
           </div>
@@ -983,13 +946,15 @@ export default function RepaymentPage() {
               Stay on this route until repayment is clearly awaiting reconciliation or visibly confirmed elsewhere.
             </div>
           </div>
-          <button
+          <SubtleButton
             type="button"
             onClick={() => toggleSection("result")}
+            stableHeight={46}
+            debugId="repayment.toggle-result"
             style={collapseToggle()}
           >
             {collapsed.result ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.result ? (
@@ -1079,15 +1044,15 @@ export default function RepaymentPage() {
                 {repaymentTaskActive ? "Current route actions" : "Completion actions"}
               </div>
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                <button
+                <PrimaryButton
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={handleConfirmPaymentMade}
                   disabled={!instruction || Boolean(paymentConfirmedAt)}
-                  style={actionBtn("primary", !instruction || Boolean(paymentConfirmedAt))}
+                  stableHeight={54}
+                  debugId="repayment.confirm-paid"
                 >
                   {paymentConfirmedAt ? "Payment Declared" : "I Have Paid Using This Reference"}
-                </button>
+                </PrimaryButton>
 
                 {repaymentTaskActive ? (
                   <div style={innerCard("#F8FBFF")}>
@@ -1126,13 +1091,15 @@ export default function RepaymentPage() {
                 : "Related routes reopen after repayment has reached a visible conclusion."}
             </div>
           </div>
-          <button
+          <SubtleButton
             type="button"
             onClick={() => toggleSection("routes")}
+            stableHeight={46}
+            debugId="repayment.toggle-routes"
             style={collapseToggle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1156,15 +1123,30 @@ export default function RepaymentPage() {
                 gap: 12,
               }}
             >
-              <OriginLink to={`/app/loan-summary/${numericLoanId}`} style={actionBtn("primary")}>
+              <StableCtaLink
+                to={routes.loanSummary}
+                kind="primary"
+                stableHeight={54}
+                debugId="repayment.route.loan-summary"
+              >
                 Loan Summary
-              </OriginLink>
-              <OriginLink to="/app/finance" style={actionBtn("secondary")}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.finance}
+                kind="secondary"
+                stableHeight={54}
+                debugId="repayment.route.finance"
+              >
                 Finance
-              </OriginLink>
-              <OriginLink to="/app/loans" style={actionBtn("secondary")}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.loans}
+                kind="secondary"
+                stableHeight={54}
+                debugId="repayment.route.loans"
+              >
                 Loans & Support
-              </OriginLink>
+              </StableCtaLink>
             </div>
           )
         ) : null}

@@ -1,7 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import * as api from "../lib/api";
 import {
   getCommunityMoneySurface,
@@ -12,6 +17,7 @@ import {
   institutionalInnerCard,
   institutionalPageCard,
 } from "../lib/institutionalSurface";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 
 type CollapseState = {
@@ -519,131 +525,65 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function tapSafeButtonBase(): React.CSSProperties {
+function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    boxSizing: "border-box",
-    pointerEvents: "auto",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    appearance: "none",
-    WebkitAppearance: "none",
-    isolation: "isolate",
-    outlineOffset: 4,
-    lineHeight: 1.2,
+    minHeight: isCompact ? 120 : 144,
+    borderRadius: 22,
+    border: "1px solid rgba(19, 95, 209, 0.14)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EEF6FF 100%)",
+    boxShadow:
+      "0 14px 30px rgba(7,23,44,0.09), inset 0 1px 0 rgba(255,255,255,0.85)",
+    color: "#07172C",
+    display: "grid",
+    gap: 10,
+    justifyItems: "center",
+    alignContent: "center",
+    padding: isCompact ? 12 : 16,
+    textAlign: "center",
+    minWidth: 0,
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      ...tapSafeButtonBase(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 46,
-      padding: "11px 15px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled
-        ? "linear-gradient(180deg, #D5DEE8 0%, #C6D1DE 100%)"
-        : "linear-gradient(180deg, #2A6AF3 0%, #154EBB 100%)",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled
-        ? "none"
-        : "0 14px 28px rgba(21,78,187,0.24), inset 0 1px 0 rgba(255,255,255,0.22)",
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...tapSafeButtonBase(),
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 46,
-      padding: "10px 14px",
-      borderRadius: 12,
-      border: "1px solid rgba(121,149,190,0.20)",
-      background:
-        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-      color: disabled ? "#94A3B8" : "#E6EEF8",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled
-        ? "none"
-        : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
-    };
-  }
-
+function financeMiniToolButtonStyle(isCompact: boolean): React.CSSProperties {
   return {
-    ...tapSafeButtonBase(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "11px 15px",
-    borderRadius: 14,
+    minHeight: isCompact ? 82 : 76,
+    padding: isCompact ? "12px 10px" : "12px",
+    borderRadius: 20,
+    border: "1px solid rgba(216, 227, 238, 0.95)",
+    background:
+      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #F0F6FD 100%)",
+    boxShadow: "0 10px 22px rgba(7, 23, 44, 0.07)",
+    color: "#07172C",
+    textAlign: "left",
+    display: "block",
+    minWidth: 0,
+  };
+}
+
+function financeDarkButtonStyle(): React.CSSProperties {
+  return {
     border: "1px solid rgba(121,149,190,0.20)",
     background:
       "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    color: disabled ? "#94A3B8" : "#E6EEF8",
+    color: "#E6EEF8",
     fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow: disabled
-      ? "none"
-      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+    boxShadow:
+      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function financeCollapseButtonStyle(): React.CSSProperties {
   return {
-    ...tapSafeButtonBase(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 50,
-    minWidth: 124,
-    padding: "11px 18px",
     borderRadius: 999,
     border: "1px solid rgba(31,115,224,0.20)",
     background:
       "linear-gradient(180deg, #FFFFFF 0%, #F5F9FE 50%, #EAF3FF 100%)",
     color: "#0B4EA2",
     fontWeight: 900,
-    fontSize: 13.5,
-    cursor: "pointer",
-    textAlign: "center",
-    whiteSpace: "normal",
     boxShadow:
       "0 10px 22px rgba(7,23,44,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
   };
-}
-
-function stopFinanceTap(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
 }
 
 function helperText(): React.CSSProperties {
@@ -769,6 +709,10 @@ function communityRole(currentClan: any): string {
   );
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function FinancePage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -782,6 +726,20 @@ export default function FinancePage() {
   }, [location.search]);
   const selectedClanId =
     routeSelectedClanId || Number((api as any).getSelectedClanId?.() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "finance.route.dashboard"),
+      marketplace: routeTarget("marketplace", selectedClanId, "finance.route.marketplace"),
+      moneyIn: routeTarget("moneyIn", selectedClanId, "finance.route.money-in-target"),
+      moneyOut: routeTarget("moneyOut", selectedClanId, "finance.route.money-out-target"),
+      paymentRails: routeTarget("paymentRails", selectedClanId, "finance.route.payment-rails-target"),
+      payoutDetails: routeTarget("payoutDetails", selectedClanId, "finance.route.payout-details-target"),
+      loanReadiness: routeTarget("loanReadiness", selectedClanId, "finance.route.loan-readiness-target"),
+      trust: routeTarget("trust", selectedClanId, "finance.route.trust-target"),
+      loans: routeTarget("loans", selectedClanId, "finance.route.loans-target"),
+    }),
+    [selectedClanId]
+  );
   const financeRevealRef = useRef<number | null>(null);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
@@ -1464,9 +1422,9 @@ export default function FinancePage() {
           sectionLabel="Finance"
           title="Finance"
           subtitle="Loading finance record..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/marketplace"
+          backTo={routes.marketplace}
           backLabel="Marketplace"
         />
 
@@ -1493,9 +1451,9 @@ export default function FinancePage() {
         sectionLabel="Finance"
         title="Finance"
         subtitle="Finance turns money behaviour into a clear record across communities."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/marketplace"
+        backTo={routes.marketplace}
         backLabel="Marketplace"
       />
 
@@ -1734,7 +1692,7 @@ export default function FinancePage() {
               mark: "💳",
               label: "Money In",
               detail: "Create a payment instruction.",
-              action: () => openFinanceRoute("/app/payment/pool"),
+              action: () => openFinanceRoute(routes.moneyIn),
               color: "#135FD1",
             },
             {
@@ -1753,7 +1711,7 @@ export default function FinancePage() {
               mark: "🏦",
               label: "Payment Rails",
               detail: "See bank and transfer details.",
-              action: () => openFinanceRoute("/app/payment-rails"),
+              action: () => openFinanceRoute(routes.paymentRails),
               color: "#D6AA45",
             },
             {
@@ -1768,30 +1726,13 @@ export default function FinancePage() {
               color: "#5B3BC4",
             },
           ].map((item) => (
-            <button
+            <SecondaryButton
               key={item.id}
-              type="button"
-              onPointerDown={stopFinanceTap}
-              onMouseDown={stopFinanceTap}
               onClick={item.action}
-              style={{
-                ...tapSafeButtonBase(),
-                minHeight: isCompact ? 120 : 144,
-                borderRadius: 22,
-                border: "1px solid rgba(19, 95, 209, 0.14)",
-                background:
-                  "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EEF6FF 100%)",
-                boxShadow:
-                  "0 14px 30px rgba(7,23,44,0.09), inset 0 1px 0 rgba(255,255,255,0.85)",
-                color: "#07172C",
-                display: "grid",
-                gap: 10,
-                justifyItems: "center",
-                alignContent: "center",
-                padding: isCompact ? 12 : 16,
-                textAlign: "center",
-                cursor: "pointer",
-              }}
+              fullWidth
+              stableHeight={isCompact ? 120 : 144}
+              debugId={`finance.tool.${item.id}`}
+              style={financeToolButtonStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
@@ -1824,7 +1765,7 @@ export default function FinancePage() {
               >
                 {item.detail}
               </span>
-            </button>
+            </SecondaryButton>
           ))}
         </div>
         <div
@@ -1851,46 +1792,34 @@ export default function FinancePage() {
                 icon: "💸",
                 label: "Money Out",
                 detail: "Send or release money",
-                action: () => openFinanceRoute("/app/withdrawal-instructions"),
+                action: () => openFinanceRoute(routes.moneyOut),
               },
               {
                 icon: "🧾",
                 label: "Payout Details",
                 detail: "Confirm payout information",
-                action: () => openFinanceRoute("/app/payout-details"),
+                action: () => openFinanceRoute(routes.payoutDetails),
               },
               {
                 icon: "✅",
                 label: "Loan Readiness",
                 detail: "Check if you can request support",
-                action: () => openFinanceRoute("/app/loan-readiness"),
+                action: () => openFinanceRoute(routes.loanReadiness),
               },
               {
                 icon: "🛡️",
                 label: "Trust Passport",
                 detail: "See your trust record",
-                action: () => openFinanceRoute("/app/trust"),
+                action: () => openFinanceRoute(routes.trust),
               },
             ].map((tool) => (
-              <button
+              <SecondaryButton
                 key={tool.label}
-                type="button"
-                onPointerDown={stopFinanceTap}
-                onMouseDown={stopFinanceTap}
                 onClick={tool.action}
-                style={{
-                  ...tapSafeButtonBase(),
-                  minHeight: isCompact ? 82 : 76,
-                  padding: isCompact ? "12px 10px" : "12px",
-                  borderRadius: 20,
-                  border: "1px solid rgba(216, 227, 238, 0.95)",
-                  background:
-                    "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #F0F6FD 100%)",
-                  boxShadow: "0 10px 22px rgba(7, 23, 44, 0.07)",
-                  color: "#07172C",
-                  textAlign: "left",
-                  cursor: "pointer",
-                }}
+                fullWidth
+                stableHeight={isCompact ? 82 : 76}
+                debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                style={financeMiniToolButtonStyle(isCompact)}
               >
                 <span
                   style={{
@@ -1917,7 +1846,7 @@ export default function FinancePage() {
                 >
                   {tool.detail}
                 </span>
-              </button>
+              </SecondaryButton>
             ))}
           </div>
         </div>
@@ -2020,26 +1949,25 @@ export default function FinancePage() {
           }}
         >
           <div style={sectionLabel()}>🧾 Recent Finance Events</div>
-          <button
-            type="button"
-            onPointerDown={stopFinanceTap}
-            onMouseDown={stopFinanceTap}
+          <SubtleButton
             onClick={() => {
               setCollapsed((prev) => ({ ...prev, events: false }));
               revealFinanceSection("finance-events");
             }}
+            debugId="finance.events.view-all"
             style={{
-              ...tapSafeButtonBase(),
               border: "none",
               background: "transparent",
               color: "#135FD1",
               fontSize: 14,
               fontWeight: 950,
-              cursor: "pointer",
+              boxShadow: "none",
+              padding: "8px 0",
+              minWidth: 72,
             }}
           >
             View all
-          </button>
+          </SubtleButton>
         </div>
 
         <div style={{ marginTop: 12, display: "grid" }}>
@@ -2201,10 +2129,7 @@ export default function FinancePage() {
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          onPointerDown={stopFinanceTap}
-          onMouseDown={stopFinanceTap}
+        <PrimaryButton
           onClick={() => {
             setCollapsed((prev) => ({
               ...prev,
@@ -2214,16 +2139,16 @@ export default function FinancePage() {
             }));
             revealFinanceSection("finance-summary");
           }}
+          debugId="finance.view-signals"
+          minWidth={isCompact ? "100%" : 210}
           style={{
-            ...actionBtn("primary"),
             background:
               "linear-gradient(180deg, #FFE28A 0%, #D6AA45 70%, #B78321 100%)",
             color: "#07172C",
-            minWidth: isCompact ? "100%" : 210,
           }}
         >
           View Finance Signals
-        </button>
+        </PrimaryButton>
       </section>
 
       <section
@@ -2246,15 +2171,15 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onPointerDown={stopFinanceTap}
-            onMouseDown={stopFinanceTap}
+          <SubtleButton
             onClick={() => handleCollapseTap("overview")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={50}
+            debugId="finance.toggle-overview"
+            style={financeCollapseButtonStyle()}
           >
             {collapsed.overview ? "Show details" : "Hide details"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.overview ? (
@@ -2314,15 +2239,15 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onPointerDown={stopFinanceTap}
-            onMouseDown={stopFinanceTap}
+          <SubtleButton
             onClick={() => handleCollapseTap("reconciliation")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={50}
+            debugId="finance.toggle-reconciliation"
+            style={financeCollapseButtonStyle()}
           >
             {collapsed.reconciliation ? "Show payments" : "Hide payments"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.reconciliation ? (
@@ -2414,15 +2339,15 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onPointerDown={stopFinanceTap}
-            onMouseDown={stopFinanceTap}
+          <SubtleButton
             onClick={() => handleCollapseTap("borrower")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={50}
+            debugId="finance.toggle-borrower"
+            style={financeCollapseButtonStyle()}
           >
             {collapsed.borrower ? "Show support" : "Hide support"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.borrower ? (
@@ -2598,9 +2523,13 @@ export default function FinancePage() {
             </div>
 
             <div>
-              <OriginLink to="/app/loans" style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.loans}
+                debugId="finance.open-loans"
+                style={financeDarkButtonStyle()}
+              >
                 Open Loans & Support
-              </OriginLink>
+              </StableCtaLink>
             </div>
           </div>
         ) : null}
@@ -2626,15 +2555,15 @@ export default function FinancePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onPointerDown={stopFinanceTap}
-            onMouseDown={stopFinanceTap}
+          <SubtleButton
             onClick={() => handleCollapseTap("events")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={50}
+            debugId="finance.toggle-events"
+            style={financeCollapseButtonStyle()}
           >
             {collapsed.events ? "Show history" : "Hide history"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.events ? (

@@ -1,12 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import {
-  communityIdFromSearch,
-  withCommunityQuery,
-} from "../lib/communityRouteContext";
+import { SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -21,6 +18,7 @@ import {
   safeCopy,
   setSelectedClanId,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type GuarantorEarningItem = {
   loan_guarantor_id?: number;
@@ -207,27 +205,8 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function routeTileStyle(primary = false): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function routeTile(primary = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -242,58 +221,33 @@ function routeTile(primary = false): React.CSSProperties {
       : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
     textDecoration: "none",
+    textAlign: "left",
     boxShadow: primary
       ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
       : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
-function secondaryBtn(disabled = false): React.CSSProperties {
+function guarantorEarningsButtonStyle(disabled = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 48,
-    minWidth: 120,
     borderRadius: 14,
     border: "1px solid rgba(124,154,196,0.18)",
     background:
       "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     color: disabled ? "#94A3B8" : "#E6EEF8",
     fontWeight: 1000,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
     boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function guarantorEarningsCollapseStyle(): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    minWidth: 116,
-    padding: "9px 13px",
     borderRadius: 12,
     border: "1px solid rgba(124,154,196,0.18)",
     background:
       "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     color: "#E6EEF8",
     fontWeight: 800,
-    fontSize: 13,
-    textAlign: "center",
-    cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
     boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
@@ -467,6 +421,10 @@ function payableValue(row: GuarantorEarningItem): number {
   return isSettledStatus(safeStr(row?.status)) ? estimatedValue(row) : 0;
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function GuarantorEarningsPage() {
   const location = useLocation();
   const routeClanId = useMemo(
@@ -474,8 +432,16 @@ export default function GuarantorEarningsPage() {
     [location.search]
   );
   const selectedClanId = routeClanId || Number(getSelectedClanId() || 0);
-  const communityTo = useMemo(
-    () => (to: string) => withCommunityQuery(to, selectedClanId),
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "guarantor-earnings.route.dashboard"),
+      community: routeTarget("communityHome", selectedClanId, "guarantor-earnings.route.community"),
+      loans: routeTarget("loans", selectedClanId, "guarantor-earnings.route.loans"),
+      workbench: routeTarget("loanWorkbench", selectedClanId, "guarantor-earnings.route.workbench"),
+      suggestions: routeTarget("loanSuggestions", selectedClanId, "guarantor-earnings.route.suggestions"),
+      marketplace: routeTarget("marketplace", selectedClanId, "guarantor-earnings.route.marketplace"),
+      moneyOut: routeTarget("moneyOut", selectedClanId, "guarantor-earnings.route.money-out"),
+    }),
     [selectedClanId]
   );
 
@@ -663,7 +629,7 @@ export default function GuarantorEarningsPage() {
         tomorrow:
           "Your current community keeps support history and earnings easier to interpret.",
         ctaLabel: "Open Community Home",
-        ctaTo: communityTo("/app/community"),
+        ctaTo: routes.community,
       };
     }
 
@@ -679,7 +645,7 @@ export default function GuarantorEarningsPage() {
         tomorrow:
           "Settled support creates clearer earnings and stronger visible contribution.",
         ctaLabel: "Return to Loans & Support",
-        ctaTo: communityTo("/app/loans"),
+        ctaTo: routes.loans,
       };
     }
 
@@ -692,7 +658,7 @@ export default function GuarantorEarningsPage() {
         tomorrow:
           "Consistent guarantor support can strengthen both visible value and visible reputation over time.",
         ctaLabel: "Open Community Home",
-        ctaTo: communityTo("/app/community"),
+        ctaTo: routes.community,
       };
     }
 
@@ -704,9 +670,9 @@ export default function GuarantorEarningsPage() {
       tomorrow:
         "Visible earnings usually come after responsible support behaviour has had time to settle.",
       ctaLabel: "Return to Loans & Support",
-      ctaTo: communityTo("/app/loans"),
+      ctaTo: routes.loans,
     };
-  }, [selectedClanId, communityTo, totals.pendingCount, totals.total]);
+  }, [routes.community, routes.loans, selectedClanId, totals.pendingCount, totals.total]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -741,9 +707,9 @@ export default function GuarantorEarningsPage() {
         sectionLabel="Guarantor Earnings"
         title="Guarantor Earnings"
         subtitle="See pending and earned value from supporting successful community loans."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo={communityTo("/app/loans")}
+        backTo={routes.loans}
         backLabel="Loans & Support"
       />
 
@@ -901,13 +867,13 @@ export default function GuarantorEarningsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
+              <SecondaryButton
                 onClick={copySummary}
-                style={secondaryBtn(false)}
+                debugId="guarantor-earnings.copy-summary"
+                style={guarantorEarningsButtonStyle(false)}
               >
                 Copy Earnings Summary
-              </button>
+              </SecondaryButton>
             </div>
           </div>
 
@@ -992,13 +958,15 @@ export default function GuarantorEarningsPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
+              <SubtleButton
                 onClick={() => toggleSection("overview")}
-                style={collapseToggle()}
+                minWidth={116}
+                stableHeight={44}
+                debugId="guarantor-earnings.toggle-overview"
+                style={guarantorEarningsCollapseStyle()}
               >
                 {collapsed.overview ? "Open" : "Collapse"}
-              </button>
+              </SubtleButton>
             </div>
 
             <ExplainToggle
@@ -1095,13 +1063,15 @@ export default function GuarantorEarningsPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
+              <SubtleButton
                 onClick={() => toggleSection("meaning")}
-                style={collapseToggle()}
+                minWidth={116}
+                stableHeight={44}
+                debugId="guarantor-earnings.toggle-meaning"
+                style={guarantorEarningsCollapseStyle()}
               >
                 {collapsed.meaning ? "Open" : "Collapse"}
-              </button>
+              </SubtleButton>
             </div>
 
             {!collapsed.meaning ? (
@@ -1188,13 +1158,15 @@ export default function GuarantorEarningsPage() {
                     Latest: {safeDateTime(totals.latestDate.toISOString())}
                   </span>
                 ) : null}
-                <button
-                  type="button"
+                <SubtleButton
                   onClick={() => toggleSection("recent")}
-                  style={collapseToggle()}
+                  minWidth={116}
+                  stableHeight={44}
+                  debugId="guarantor-earnings.toggle-recent"
+                  style={guarantorEarningsCollapseStyle()}
                 >
                   {collapsed.recent ? "Open" : "Collapse"}
-                </button>
+                </SubtleButton>
               </div>
             </div>
 
@@ -1337,13 +1309,15 @@ export default function GuarantorEarningsPage() {
                 </div>
               </div>
 
-              <button
-                type="button"
+              <SubtleButton
                 onClick={() => toggleSection("routes")}
-                style={collapseToggle()}
+                minWidth={116}
+                stableHeight={44}
+                debugId="guarantor-earnings.toggle-routes"
+                style={guarantorEarningsCollapseStyle()}
               >
                 {collapsed.routes ? "Open" : "Collapse"}
-              </button>
+              </SubtleButton>
             </div>
 
             {!collapsed.routes ? (
@@ -1355,7 +1329,13 @@ export default function GuarantorEarningsPage() {
                   gap: 12,
                 }}
               >
-                <OriginLink to={nextStep.ctaTo} style={routeTile(true)}>
+                <StableCtaLink
+                  to={nextStep.ctaTo}
+                  debugId="guarantor-earnings.route.next"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(true)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1369,9 +1349,15 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     {nextStep.detail}
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/loan-workbench")} style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.workbench}
+                  debugId="guarantor-earnings.route.workbench"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1385,9 +1371,15 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when you need the deeper support work item behind the earnings result.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.suggestions}
+                  debugId="guarantor-earnings.route.suggestions"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1401,9 +1393,15 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when the next question is candidate fit rather than earnings history.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/community")} style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.community}
+                  debugId="guarantor-earnings.route.community"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1417,9 +1415,15 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Return to the wider community page.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/marketplace")} style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.marketplace}
+                  debugId="guarantor-earnings.route.marketplace"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1433,11 +1437,14 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Return to Marketplace only after this earnings reading is complete.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink
-                  to={communityTo("/app/withdrawal-instructions")}
-                  style={routeTile(false)}
+                <StableCtaLink
+                  to={routes.moneyOut}
+                  debugId="guarantor-earnings.route.money-out"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(false)}
                 >
                   <div
                     style={{
@@ -1452,7 +1459,7 @@ export default function GuarantorEarningsPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when the money question becomes a guided withdrawal question again.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
               </div>
             ) : null}
           </section>

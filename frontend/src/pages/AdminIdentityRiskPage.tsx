@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
+import { StableDisclosureSummary } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -26,38 +27,18 @@ function card(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function stopIdentityRiskTap(event: React.SyntheticEvent) {
-  event.stopPropagation();
-}
-
 function summaryToggle(): React.CSSProperties {
   return {
-    cursor: "pointer",
     fontWeight: 900,
     color: "#0B1F33",
     display: "inline-flex",
     alignItems: "center",
-    minHeight: 40,
     padding: "8px 14px",
     borderRadius: 14,
     border: "1px solid rgba(122,152,195,0.20)",
     background:
       "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     boxShadow: "0 14px 30px rgba(15,23,42,0.09)",
-    ...stableTapStyle(),
   };
 }
 
@@ -238,13 +219,12 @@ export default function AdminIdentityRiskPage() {
             </div>
 
             <details style={{ marginTop: 14 }}>
-              <summary
+              <StableDisclosureSummary
                 style={summaryToggle()}
-                onPointerDown={stopIdentityRiskTap}
-                onMouseDown={stopIdentityRiskTap}
+                debugId={`admin-identity-risk.${g.userId}.details`}
               >
                 Detailed identity signals
-              </summary>
+              </StableDisclosureSummary>
               <pre
                 style={{
                   marginTop: 12,

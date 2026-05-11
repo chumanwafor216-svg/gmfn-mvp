@@ -1,15 +1,26 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
-import OriginLink from "../components/OriginLink";
+import {
+  CardActionRow,
+  PrimaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import {
   activateApprovedMember,
   activateMembership,
+  getSelectedClanId,
   observeIdentityRisk,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 function pageShell(): React.CSSProperties {
@@ -75,57 +86,6 @@ function guideButtonShell(): React.CSSProperties {
   };
 }
 
-function guideAboutBtn(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 36,
-    minWidth: 36,
-    padding: "0 14px",
-    borderRadius: 999,
-    border: "1px solid rgba(214,226,239,0.28)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(228,236,246,0.94) 58%, rgba(211,223,237,0.92) 100%)",
-    boxShadow:
-      "0 14px 24px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.58), inset 0 -6px 10px rgba(77,96,118,0.10)",
-    fontSize: 10.5,
-    fontWeight: 900,
-    lineHeight: 1,
-    letterSpacing: 0.8,
-    color: "#123055",
-    textAlign: "center",
-    textTransform: "uppercase",
-    cursor: "pointer",
-    textShadow: "0 1px 0 rgba(255,255,255,0.56)",
-  };
-}
-
-function guideMainBtn(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    borderRadius: 999,
-    padding: "12px 20px",
-    border: "1px solid rgba(73,118,171,0.56)",
-    background:
-      "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
-    boxShadow:
-      "0 18px 30px rgba(0,0,0,0.24), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 14px rgba(8,25,43,0.16)",
-    whiteSpace: "nowrap",
-    color: "#FFFFFF",
-    fontSize: 14.5,
-    fontWeight: 900,
-    textAlign: "center",
-    cursor: "pointer",
-    textShadow: "none",
-  };
-}
-
 function inputStyle(readOnly = false): React.CSSProperties {
   return {
     width: "100%",
@@ -146,64 +106,24 @@ function inputStyle(readOnly = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function badgeStyle(): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    width: "min(100%, 60%)",
-    padding: "14px 18px",
-    borderRadius: 16,
-    border: disabled
-      ? "1px solid rgba(161,179,199,0.48)"
-      : "1px solid rgba(82,128,186,0.62)",
-    background: disabled
-      ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
-    color: disabled ? "#6B7B8D" : "#FFFFFF",
-    fontWeight: 1000,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 15,
-    opacity: disabled ? 0.82 : 1,
-    textAlign: "center",
-    boxShadow: disabled
-      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
-    textShadow: "none",
-  };
-}
-
-function secondaryBtn(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "12px 16px",
+    minHeight: 42,
+    padding: "10px 14px",
     borderRadius: 999,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(229,237,249,0.96) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(229,237,249,0.94) 100%)",
     color: "#123055",
-    textDecoration: "none",
     fontWeight: 900,
     border: "1px solid rgba(16,37,59,0.12)",
-    fontSize: 14,
+    fontSize: 13,
     textAlign: "center",
     boxShadow:
-      "0 14px 24px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
+      "0 10px 20px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
-    cursor: "pointer",
   };
 }
 
@@ -261,24 +181,28 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
 export default function MemberActivationPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "member-activation.route.dashboard"),
+      buildFirstCircle: routeTarget(
+        "buildFirstCircle",
+        selectedClanId,
+        "member-activation.route.build-first-circle"
+      ),
+      trust: routeTarget("trust", selectedClanId, "member-activation.route.trust"),
+      notifications: routeTarget(
+        "notifications",
+        selectedClanId,
+        "member-activation.route.notifications"
+      ),
+    }),
+    [selectedClanId]
+  );
 
   const state =
     (location.state as {
@@ -358,7 +282,7 @@ export default function MemberActivationPage() {
       setSuccess(
         "Membership activated successfully. Your starter trust, onboarding proofs, and identity observation are now available for review."
       );
-      navigate("/app/dashboard", { replace: true });
+      navigate(routes.dashboard, { replace: true });
     } catch (err: any) {
       setError(err?.message || "Activation failed.");
     } finally {
@@ -410,27 +334,42 @@ export default function MemberActivationPage() {
                     textTransform: "uppercase",
                     textShadow:
                       "0 1px 0 rgba(255,255,255,0.16), 0 10px 24px rgba(0,0,0,0.18)",
-                  }}
-                >
-                  GSN
-                </div>
+                }}
+              >
+                GSN
+              </div>
                 <div style={guideButtonShell()}>
-                  <button
+                  <SubtleButton
                     type="button"
-                    {...buttonGuardProps()}
                     onClick={() => setGuideOpen((current) => !current)}
-                    style={guideAboutBtn()}
+                    stableHeight={36}
+                    minWidth={36}
+                    style={{
+                      padding: "0 14px",
+                      borderRadius: 999,
+                      fontSize: 10.5,
+                      lineHeight: 1,
+                      letterSpacing: 0.8,
+                      textTransform: "uppercase",
+                    }}
+                    debugId="member-activation.about"
                   >
                     About
-                  </button>
-                  <button
+                  </SubtleButton>
+                  <PrimaryButton
                     type="button"
-                    {...buttonGuardProps()}
                     onClick={() => setGuideOpen((current) => !current)}
-                    style={guideMainBtn()}
+                    stableHeight={46}
+                    style={{
+                      borderRadius: 999,
+                      padding: "12px 20px",
+                      whiteSpace: "nowrap",
+                      fontSize: 14.5,
+                    }}
+                    debugId="member-activation.guide"
                   >
                     Activation Guide
-                  </button>
+                  </PrimaryButton>
                 </div>
               </div>
             </div>
@@ -488,12 +427,12 @@ export default function MemberActivationPage() {
                 {(initialGmfnId || initialRequestId) && (
                   <div style={{ marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {initialGmfnId ? (
-                      <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
+                      <div style={badgeStyle()}>
                         GMFN ID detected
                       </div>
                     ) : null}
                     {initialRequestId ? (
-                      <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
+                      <div style={badgeStyle()}>
                         Request ID: {initialRequestId}
                       </div>
                     ) : null}
@@ -552,30 +491,44 @@ export default function MemberActivationPage() {
                 </div>
 
                 <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
-                  <button
+                  <PrimaryButton
                     type="submit"
                     disabled={busy || activated}
-                    {...buttonGuardProps()}
-                    style={primaryBtn(busy || activated)}
+                    busy={busy}
+                    busyLabel="Finishing activation..."
+                    style={{ width: "min(100%, 60%)", padding: "14px 18px" }}
+                    debugId="member-activation.finish"
                   >
-                    {busy ? "Finishing activation..." : "Finish activation"}
-                  </button>
+                    Finish activation
+                  </PrimaryButton>
                 </div>
               </div>
             </form>
 
             {activated ? (
-              <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <OriginLink to="/app/build-first-circle" style={secondaryBtn()}>
+              <CardActionRow style={{ marginTop: 16 }}>
+                <StableCtaLink
+                  to={routes.buildFirstCircle}
+                  kind="secondary"
+                  debugId="member-activation.build-first-circle"
+                >
                   Build first circle
-                </OriginLink>
-                <OriginLink to="/app/trust" style={secondaryBtn()}>
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.trust}
+                  kind="secondary"
+                  debugId="member-activation.trust"
+                >
                   Open Trust Passport
-                </OriginLink>
-                <OriginLink to="/app/notifications" style={secondaryBtn()}>
+                </StableCtaLink>
+                <StableCtaLink
+                  to={routes.notifications}
+                  kind="secondary"
+                  debugId="member-activation.notifications"
+                >
                   Open Action Inbox
-                </OriginLink>
-              </div>
+                </StableCtaLink>
+              </CardActionRow>
             ) : null}
           </div>
         </div>

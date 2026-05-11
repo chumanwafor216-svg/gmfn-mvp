@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import { StableCtaLink } from "../components/StableButton";
 import {
   getVaultShopAccessView,
   recordVaultShopAccessOpen,
@@ -102,31 +102,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
         ? "1px solid rgba(239,68,68,0.16)"
         : "1px solid rgba(11,31,51,0.08)",
     color: tone === "error" ? "#991B1B" : "#24415C",
-  };
-}
-
-function actionBtn(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    padding: "10px 16px",
-    borderRadius: 14,
-    border: primary
-      ? "1px solid rgba(82,128,186,0.62)"
-      : "1px solid rgba(16,37,59,0.12)",
-    background: primary
-      ? "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(229,237,249,0.98) 100%)",
-    color: primary ? "#FFFFFF" : "#123055",
-    textDecoration: "none",
-    fontWeight: 900,
-    fontSize: 14,
-    textAlign: "center",
-    boxShadow: primary
-      ? "0 18px 32px rgba(1,13,32,0.24), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)"
-      : "0 14px 28px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
   };
 }
 
@@ -344,13 +319,23 @@ export default function ShopAccessPage() {
             </div>
             <div style={{ marginTop: 16 }}>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <OriginLink to="/welcome" style={actionBtn(false)}>
+                <StableCtaLink
+                  to="/welcome"
+                  kind="secondary"
+                  stableHeight={44}
+                  debugId="shop-access.invalid.back-welcome"
+                >
                   Back to Welcome
-                </OriginLink>
+                </StableCtaLink>
                 {publicShopRoute ? (
-                  <OriginLink to={publicShopRoute} style={actionBtn(true)}>
+                  <StableCtaLink
+                    to={publicShopRoute}
+                    kind="primary"
+                    stableHeight={44}
+                    debugId="shop-access.invalid.open-public-shop"
+                  >
                     Open public shop face
-                  </OriginLink>
+                  </StableCtaLink>
                 ) : null}
               </div>
             </div>
@@ -401,13 +386,23 @@ export default function ShopAccessPage() {
 
           <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
             {publicShopRoute ? (
-              <OriginLink to={publicShopRoute} style={actionBtn(false)}>
+              <StableCtaLink
+                to={publicShopRoute}
+                kind="secondary"
+                stableHeight={44}
+                debugId="shop-access.hero.open-public-shop"
+              >
                 Open public shop face
-              </OriginLink>
+              </StableCtaLink>
             ) : null}
-            <OriginLink to="/welcome" style={actionBtn(true)}>
+            <StableCtaLink
+              to="/welcome"
+              kind="primary"
+              stableHeight={44}
+              debugId="shop-access.hero.return-entry"
+            >
               Return to entry
-            </OriginLink>
+            </StableCtaLink>
           </div>
         </section>
 
@@ -592,13 +587,23 @@ export default function ShopAccessPage() {
           </div>
           <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
             {publicShopRoute ? (
-              <OriginLink to={publicShopRoute} style={actionBtn(false)}>
+              <StableCtaLink
+                to={publicShopRoute}
+                kind="secondary"
+                stableHeight={44}
+                debugId="shop-access.next.open-public-shop"
+              >
                 Open public shop face
-              </OriginLink>
+              </StableCtaLink>
             ) : null}
-            <OriginLink to="/welcome" style={actionBtn(true)}>
+            <StableCtaLink
+              to="/welcome"
+              kind="primary"
+              stableHeight={44}
+              debugId="shop-access.next.back-welcome"
+            >
               Back to Welcome
-            </OriginLink>
+            </StableCtaLink>
           </div>
         </section>
 

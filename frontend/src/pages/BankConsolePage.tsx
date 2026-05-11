@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -19,6 +19,7 @@ import {
   runBankReconciliation,
   safeCopy,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type CommunityLite = {
   id?: number;
@@ -94,37 +95,8 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function bankConsolePrimaryButtonStyle(disabled = false): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function stopBankTap(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
-function bankButtonGuardProps() {
-  return {
-    onPointerDown: stopBankTap,
-    onMouseDown: stopBankTap,
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 42,
     borderRadius: 14,
     border: "none",
     background: disabled ? "#CBD5E1" : "#0B63D1",
@@ -132,21 +104,12 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
-function secondaryBtn(disabled = false): React.CSSProperties {
+function bankConsoleSecondaryButtonStyle(disabled = false): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 42,
     borderRadius: 14,
     border: "1px solid rgba(122,152,195,0.20)",
     background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
@@ -154,11 +117,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
@@ -317,11 +276,20 @@ function reconciliationMessage(res: any): string {
     : `Reconciliation complete: ${resultLine}. No unmatched review item is visible from this run.`;
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 function renderStepAction(step: NextStepState) {
   return (
-    <OriginLink to={step.ctaTo} style={primaryBtn(false)}>
+    <StableCtaLink
+      to={step.ctaTo}
+      debugId="bank-console.next-step"
+      stableHeight={42}
+      style={bankConsolePrimaryButtonStyle(false)}
+    >
       {step.ctaLabel}
-    </OriginLink>
+    </StableCtaLink>
   );
 }
 
@@ -352,6 +320,19 @@ export default function BankConsolePage() {
   const [description, setDescription] = useState("");
 
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "bank-console.route.dashboard"),
+      commandCenter: routeTarget("adminCommand", selectedClanId, "bank-console.route.command-center"),
+      community: routeTarget("communityHome", selectedClanId, "bank-console.route.community"),
+      loans: routeTarget("loans", selectedClanId, "bank-console.route.loans"),
+      bankConsole: routeTarget("bankConsole", selectedClanId, "bank-console.route.self"),
+      paymentRails: routeTarget("paymentRails", selectedClanId, "bank-console.route.payment-rails"),
+      marketplace: routeTarget("marketplace", selectedClanId, "bank-console.route.marketplace"),
+      trust: routeTarget("trust", selectedClanId, "bank-console.route.trust"),
+    }),
+    [selectedClanId]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -522,7 +503,7 @@ export default function BankConsolePage() {
         tomorrow:
           "A clear community keeps operations disciplined and traceable.",
         ctaLabel: "Open Community Home",
-        ctaTo: "/app/community",
+        ctaTo: routes.community,
       };
     }
 
@@ -538,7 +519,7 @@ export default function BankConsolePage() {
         tomorrow:
           "Resolving unmatched events makes settlement cleaner and more defensible.",
         ctaLabel: "Run reconciliation below",
-        ctaTo: "/app/command-center/bank-console",
+        ctaTo: routes.bankConsole,
       };
     }
 
@@ -550,9 +531,9 @@ export default function BankConsolePage() {
       tomorrow:
         "Controlled ingest and reconciliation keeps the money path institutional.",
       ctaLabel: "Return to Loans & Support",
-      ctaTo: "/app/loans",
+      ctaTo: routes.loans,
     };
-  }, [selectedClanId, unmatched.length]);
+  }, [routes.bankConsole, routes.community, routes.loans, selectedClanId, unmatched.length]);
 
   function renderList(
     title: string,
@@ -715,7 +696,7 @@ export default function BankConsolePage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <button
+                  <SecondaryButton
                     onClick={() =>
                       safeCopy(
                         [
@@ -728,11 +709,12 @@ export default function BankConsolePage() {
                         ].join(" | ")
                       )
                     }
-                    style={secondaryBtn(false)}
-                    {...bankButtonGuardProps()}
+                    stableHeight={42}
+                    debugId={`bank-console.row.${safeStr(row.id || displayReference || i)}.copy`}
+                    style={bankConsoleSecondaryButtonStyle(false)}
                   >
                     Copy summary
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             );
@@ -748,18 +730,18 @@ export default function BankConsolePage() {
         sectionLabel="Bank Console"
         title="Bank Console"
         subtitle="Review bank events here, run reconciliation, and see what has matched or remained unmatched."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/command-center"
+        backTo={routes.commandCenter}
         backLabel="Command Center"
         nextLinks={[
-          { label: "Community Home", to: "/app/community" },
-          { label: "Loans & Support", to: "/app/loans" },
-          { label: "Payment Rails", to: "/app/payment-rails" },
+          { label: "Community Home", to: routes.community },
+          { label: "Loans & Support", to: routes.loans },
+          { label: "Payment Rails", to: routes.paymentRails },
         ]}
         utilityLinks={[
-          { label: "Marketplace", to: "/app/marketplace" },
-          { label: "Trust", to: "/app/trust" },
+          { label: "Marketplace", to: routes.marketplace },
+          { label: "Trust", to: routes.trust },
         ]}
       />
 
@@ -840,14 +822,15 @@ export default function BankConsolePage() {
               }}
             >
               {renderStepAction(nextStep)}
-              <button
+              <SecondaryButton
                 onClick={() => void loadAll()}
                 disabled={loading}
-                style={secondaryBtn(loading)}
-                {...bankButtonGuardProps()}
+                stableHeight={42}
+                debugId="bank-console.refresh"
+                style={bankConsoleSecondaryButtonStyle(loading)}
               >
                 {loading ? "Refreshing..." : "Refresh now"}
-              </button>
+              </SecondaryButton>
             </div>
           </div>
 
@@ -1038,23 +1021,25 @@ export default function BankConsolePage() {
             flexWrap: "wrap",
           }}
         >
-          <button
+          <PrimaryButton
             onClick={() => void ingestNow()}
             disabled={busyIngest}
-            style={primaryBtn(busyIngest)}
-            {...bankButtonGuardProps()}
+            stableHeight={42}
+            debugId="bank-console.ingest"
+            style={bankConsolePrimaryButtonStyle(busyIngest)}
           >
             {busyIngest ? "Ingesting..." : "Ingest event"}
-          </button>
+          </PrimaryButton>
 
-          <button
+          <SecondaryButton
             onClick={() => void reconcileNow()}
             disabled={busyReconcile}
-            style={secondaryBtn(busyReconcile)}
-            {...bankButtonGuardProps()}
+            stableHeight={42}
+            debugId="bank-console.reconcile"
+            style={bankConsoleSecondaryButtonStyle(busyReconcile)}
           >
             {busyReconcile ? "Reconciling..." : "Run reconciliation"}
-          </button>
+          </SecondaryButton>
         </div>
       </section>
 
@@ -1248,13 +1233,14 @@ export default function BankConsolePage() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <button
+                    <SecondaryButton
                       onClick={() => safeCopy(JSON.stringify(cfg, null, 2))}
-                      style={secondaryBtn(false)}
-                      {...bankButtonGuardProps()}
+                      stableHeight={42}
+                      debugId="bank-console.copy-config"
+                      style={bankConsoleSecondaryButtonStyle(false)}
                     >
                       Copy config snapshot
-                    </button>
+                    </SecondaryButton>
                   </div>
                 ) : null}
               </div>

@@ -1,12 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
-import {
-  communityIdFromSearch,
-  withCommunityQuery,
-} from "../lib/communityRouteContext";
+import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -22,6 +19,7 @@ import {
   safeCopy,
   setSelectedClanId,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type FilterKey = "pending" | "approved" | "declined" | "all";
 
@@ -174,46 +172,10 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function guarantorInboxRouteTileStyle(primary = false): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function routeTile(primary = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    minHeight: 104,
-    minWidth: 0,
     borderRadius: 18,
     border: primary
       ? "1px solid rgba(29,95,212,0.22)"
@@ -222,22 +184,15 @@ function routeTile(primary = false): React.CSSProperties {
       ? "linear-gradient(180deg, #184A96 0%, #133A74 100%)"
       : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
-    textDecoration: "none",
+    textAlign: "left",
     boxShadow: primary
       ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
       : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
-function primaryBtn(disabled = false): React.CSSProperties {
+function guarantorInboxPrimaryButtonStyle(disabled = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 48,
-    minWidth: 120,
     borderRadius: 14,
     border: "none",
     background: disabled
@@ -247,24 +202,13 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
     boxShadow: disabled ? "none" : "0 14px 30px rgba(29,95,212,0.26)",
   };
 }
 
-function secondaryBtn(disabled = false): React.CSSProperties {
+function guarantorInboxSecondaryButtonStyle(disabled = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "11px 14px",
-    minHeight: 48,
-    minWidth: 120,
     borderRadius: 14,
     border: "1px solid rgba(124,154,196,0.18)",
     background:
@@ -273,21 +217,13 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
     boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
-function filterBtn(active: boolean): React.CSSProperties {
+function guarantorInboxFilterButtonStyle(active: boolean): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    padding: "10px 12px",
-    minHeight: 46,
-    minWidth: 108,
     borderRadius: 14,
     border: active ? "1px solid #BFDBFE" : "1px solid rgba(148,163,184,0.16)",
     background: active
@@ -297,24 +233,14 @@ function filterBtn(active: boolean): React.CSSProperties {
     fontWeight: 1000,
     cursor: "pointer",
     fontSize: 14,
-    textAlign: "center",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
     boxShadow: active
       ? "0 10px 22px rgba(29,78,216,0.14)"
       : "0 8px 18px rgba(15,23,42,0.04)",
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function guarantorInboxCollapseButtonStyle(): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
-    minWidth: 116,
-    padding: "9px 13px",
     borderRadius: 12,
     border: "1px solid rgba(124,154,196,0.18)",
     background:
@@ -322,10 +248,7 @@ function collapseToggle(): React.CSSProperties {
     color: "#E6EEF8",
     fontWeight: 800,
     fontSize: 13,
-    textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
     boxShadow: "0 10px 22px rgba(15,23,42,0.06)",
   };
 }
@@ -539,6 +462,10 @@ function statusPill(status: string): React.CSSProperties {
   };
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function GuarantorInboxPage() {
   const location = useLocation();
   const routeClanId = useMemo(
@@ -546,8 +473,16 @@ export default function GuarantorInboxPage() {
     [location.search]
   );
   const selectedClanId = routeClanId || Number(getSelectedClanId() || 0);
-  const communityTo = useMemo(
-    () => (to: string) => withCommunityQuery(to, selectedClanId),
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "guarantor-inbox.route.dashboard"),
+      community: routeTarget("communityHome", selectedClanId, "guarantor-inbox.route.community"),
+      loans: routeTarget("loans", selectedClanId, "guarantor-inbox.route.loans"),
+      workbench: routeTarget("loanWorkbench", selectedClanId, "guarantor-inbox.route.workbench"),
+      suggestions: routeTarget("loanSuggestions", selectedClanId, "guarantor-inbox.route.suggestions"),
+      marketplace: routeTarget("marketplace", selectedClanId, "guarantor-inbox.route.marketplace"),
+      notifications: routeTarget("notifications", selectedClanId, "guarantor-inbox.route.notifications"),
+    }),
     [selectedClanId]
   );
 
@@ -704,7 +639,7 @@ export default function GuarantorInboxPage() {
         detail:
           "Incoming guarantor requests make more sense when they stay tied to your current community.",
         ctaLabel: "Open Community Home",
-        ctaTo: communityTo("/app/community"),
+        ctaTo: routes.community,
       };
     }
 
@@ -717,7 +652,7 @@ export default function GuarantorInboxPage() {
         detail:
           "This queue is only the intake page. Once you choose to continue, the deeper workbench should take over instead of leaving you halfway between routes.",
         ctaLabel: "Open Loan Workbench",
-        ctaTo: communityTo("/app/loan-workbench"),
+        ctaTo: routes.workbench,
       };
     }
 
@@ -727,7 +662,7 @@ export default function GuarantorInboxPage() {
         detail:
           "The next move is usually to continue the broader support flow rather than staying only in the queue.",
         ctaLabel: "Return to Loans & Support",
-        ctaTo: communityTo("/app/loans"),
+        ctaTo: routes.loans,
       };
     }
 
@@ -736,9 +671,9 @@ export default function GuarantorInboxPage() {
       detail:
         "That means nothing is directly waiting on your guarantor response inside this current queue view.",
       ctaLabel: "Open Loans & Support",
-      ctaTo: communityTo("/app/loans"),
+      ctaTo: routes.loans,
     };
-  }, [selectedClanId, communityTo, counts.pending, counts.approved]);
+  }, [counts.approved, counts.pending, routes.community, routes.loans, routes.workbench, selectedClanId]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -811,9 +746,9 @@ export default function GuarantorInboxPage() {
         sectionLabel="Incoming Guarantor Requests"
         title="Incoming Guarantor Requests"
         subtitle="Review requests that need your guarantor response in your current community."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo={communityTo("/app/loans")}
+        backTo={routes.loans}
         backLabel="Loans & Support"
       />
 
@@ -963,13 +898,13 @@ export default function GuarantorInboxPage() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
+              <SecondaryButton
                 onClick={copyQueueSummary}
-                style={secondaryBtn(false)}
+                debugId="guarantor-inbox.copy-queue"
+                style={guarantorInboxSecondaryButtonStyle(false)}
               >
                 Copy Queue Summary
-              </button>
+              </SecondaryButton>
             </div>
 
             <div style={{ marginTop: 12 }}>
@@ -1031,13 +966,15 @@ export default function GuarantorInboxPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("overview")}
-            style={collapseToggle()}
+            minWidth={116}
+            stableHeight={44}
+            debugId="guarantor-inbox.toggle-overview"
+            style={guarantorInboxCollapseButtonStyle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.overview ? (
@@ -1125,27 +1062,31 @@ export default function GuarantorInboxPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("queue")}
-            style={collapseToggle()}
+            minWidth={116}
+            stableHeight={44}
+            debugId="guarantor-inbox.toggle-queue"
+            style={guarantorInboxCollapseButtonStyle()}
           >
             {collapsed.queue ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.queue ? (
           <>
             <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
               {(["pending", "approved", "declined", "all"] as const).map((x) => (
-                <button
+                <SecondaryButton
                   key={x}
-                  type="button"
                   onClick={() => setFilter(x)}
-                  style={filterBtn(filter === x)}
+                  minWidth={108}
+                  stableHeight={46}
+                  debugId={`guarantor-inbox.filter.${x}`}
+                  style={guarantorInboxFilterButtonStyle(filter === x)}
                 >
                   {x[0].toUpperCase() + x.slice(1)}
-                </button>
+                </SecondaryButton>
               ))}
             </div>
 
@@ -1254,39 +1195,48 @@ export default function GuarantorInboxPage() {
                       <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
                         {safeStr(row.status).toLowerCase() === "pending" ? (
                           <>
-                            <button
-                              type="button"
-                              {...buttonGuardProps()}
+                            <PrimaryButton
                               onClick={() => void handleDecision(row, "approved")}
                               disabled={Boolean(busyDecisionKey)}
-                              style={primaryBtn(Boolean(busyDecisionKey))}
+                              minWidth={120}
+                              stableHeight={48}
+                              debugId={`guarantor-inbox.row.${row.id || row.loanId || i}.approve`}
+                              style={guarantorInboxPrimaryButtonStyle(Boolean(busyDecisionKey))}
                             >
                               {busyDecisionKey === `${row.loanId}-${row.id}-approved`
                                 ? "Approving..."
                                 : "Approve support"}
-                            </button>
-                            <button
-                              type="button"
-                              {...buttonGuardProps()}
+                            </PrimaryButton>
+                            <SecondaryButton
                               onClick={() => void handleDecision(row, "declined")}
                               disabled={Boolean(busyDecisionKey)}
-                              style={secondaryBtn(Boolean(busyDecisionKey))}
+                              minWidth={120}
+                              stableHeight={48}
+                              debugId={`guarantor-inbox.row.${row.id || row.loanId || i}.decline`}
+                              style={guarantorInboxSecondaryButtonStyle(Boolean(busyDecisionKey))}
                             >
                               {busyDecisionKey === `${row.loanId}-${row.id}-declined`
                                 ? "Declining..."
                                 : "Decline"}
-                            </button>
+                            </SecondaryButton>
                           </>
                         ) : null}
-                        <OriginLink
-                          to={communityTo("/app/loan-workbench")}
-                          style={secondaryBtn(false)}
+                        <StableCtaLink
+                          to={routes.workbench}
+                          debugId={`guarantor-inbox.row.${row.id || row.loanId || i}.workbench`}
+                          stableHeight={48}
+                          style={guarantorInboxSecondaryButtonStyle(false)}
                         >
                           Open workbench
-                        </OriginLink>
-                        <OriginLink to={communityTo("/app/loans")} style={secondaryBtn(false)}>
+                        </StableCtaLink>
+                        <StableCtaLink
+                          to={routes.loans}
+                          debugId={`guarantor-inbox.row.${row.id || row.loanId || i}.loans`}
+                          stableHeight={48}
+                          style={guarantorInboxSecondaryButtonStyle(false)}
+                        >
                           Loans & Support
-                        </OriginLink>
+                        </StableCtaLink>
                       </div>
                     </div>
                   );
@@ -1314,13 +1264,15 @@ export default function GuarantorInboxPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("guidance")}
-            style={collapseToggle()}
+            minWidth={116}
+            stableHeight={44}
+            debugId="guarantor-inbox.toggle-guidance"
+            style={guarantorInboxCollapseButtonStyle()}
           >
             {collapsed.guidance ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.guidance ? (
@@ -1386,13 +1338,15 @@ export default function GuarantorInboxPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("routes")}
-            style={collapseToggle()}
+            minWidth={116}
+            stableHeight={44}
+            debugId="guarantor-inbox.toggle-routes"
+            style={guarantorInboxCollapseButtonStyle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1404,7 +1358,13 @@ export default function GuarantorInboxPage() {
               gap: 12,
             }}
           >
-            <OriginLink to={nextStep.ctaTo} style={routeTile(true)}>
+            <StableCtaLink
+              to={nextStep.ctaTo}
+              debugId="guarantor-inbox.route.next"
+              stableHeight={104}
+              fullWidth
+              style={guarantorInboxRouteTileStyle(true)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1418,9 +1378,15 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {nextStep.detail}
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to={communityTo("/app/loan-workbench")} style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.workbench}
+              debugId="guarantor-inbox.route.workbench"
+              stableHeight={104}
+              fullWidth
+              style={guarantorInboxRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1434,9 +1400,15 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when you are continuing the deeper support decision.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.suggestions}
+              debugId="guarantor-inbox.route.suggestions"
+              stableHeight={104}
+              fullWidth
+              style={guarantorInboxRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1450,9 +1422,15 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the next question is candidate fit rather than queue state.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to={communityTo("/app/loans")} style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.loans}
+              debugId="guarantor-inbox.route.loans"
+              stableHeight={104}
+              fullWidth
+              style={guarantorInboxRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1466,9 +1444,15 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the broader support overview.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to={communityTo("/app/marketplace")} style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.marketplace}
+              debugId="guarantor-inbox.route.marketplace"
+              stableHeight={104}
+              fullWidth
+              style={guarantorInboxRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1482,9 +1466,15 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to Marketplace only after the current queue reading is complete.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/notifications" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.notifications}
+              debugId="guarantor-inbox.route.notifications"
+              stableHeight={104}
+              fullWidth
+              style={guarantorInboxRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1498,7 +1488,7 @@ export default function GuarantorInboxPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the broader notification picture matters around the support decision.
               </div>
-            </OriginLink>
+            </StableCtaLink>
           </div>
         ) : null}
       </section>

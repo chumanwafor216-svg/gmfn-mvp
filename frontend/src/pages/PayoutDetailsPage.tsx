@@ -1,7 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   getCurrentClan,
   getMe,
@@ -32,8 +35,6 @@ type NextStepState = {
   detail: string;
   today: string;
   tomorrow: string;
-  ctaLabel: string;
-  ctaTo: string;
 };
 
 type TrustEventFeedback = {
@@ -77,47 +78,8 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function payoutPrimaryButtonStyle(disabled = false): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(
-  event:
-    | React.PointerEvent<HTMLElement>
-    | React.MouseEvent<HTMLElement>
-    | React.TouchEvent<HTMLElement>
-) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps() {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "12px 16px",
-    minHeight: 48,
     borderRadius: 15,
     border: disabled
       ? "1px solid rgba(148,163,184,0.24)"
@@ -132,21 +94,12 @@ function primaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
-function secondaryBtn(disabled = false): React.CSSProperties {
+function payoutSecondaryButtonStyle(disabled = false): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "12px 16px",
-    minHeight: 48,
     borderRadius: 15,
     border: "1px solid rgba(121,149,190,0.20)",
     background:
@@ -158,11 +111,7 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
     fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
     opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
@@ -283,7 +232,30 @@ function getCommunityName(clan: CommunityLite | null): string {
   return safeStr(clan?.marketplace_name || clan?.name || "");
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 export default function PayoutDetailsPage() {
+  const location = useLocation();
+  const routeClanId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
+  const selectedClanId = routeClanId || Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "payout-details.nav.dashboard"),
+      moneyOut: routeTarget("moneyOut", selectedClanId, "payout-details.route.money-out"),
+      loans: routeTarget("loans", selectedClanId, "payout-details.route.loans"),
+    }),
+    [selectedClanId]
+  );
+
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -304,8 +276,6 @@ export default function PayoutDetailsPage() {
     country: "",
     currency: "NGN",
   });
-
-  const selectedClanId = Number(getSelectedClanId() || 0);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -404,8 +374,6 @@ export default function PayoutDetailsPage() {
         today: "Open Community Home and confirm the community you are working in.",
         tomorrow:
           "A clear community keeps payout movement easier to understand.",
-        ctaLabel: "Open Community Home",
-        ctaTo: "/app/community",
       };
     }
 
@@ -417,8 +385,6 @@ export default function PayoutDetailsPage() {
         today: "Complete the payout fields and save them for the withdrawal path.",
         tomorrow:
           "A clear payout destination reduces mistakes and delay when withdrawal begins.",
-        ctaLabel: "Open Withdrawal Instructions",
-        ctaTo: "/app/withdrawal-instructions",
       };
     }
 
@@ -429,8 +395,6 @@ export default function PayoutDetailsPage() {
       today: "Review the details and keep them accurate before initiating withdrawal.",
       tomorrow:
         "A stable payout destination keeps the money path calmer and more traceable.",
-      ctaLabel: "Open Withdrawal Instructions",
-      ctaTo: "/app/withdrawal-instructions",
     };
   }, [selectedClanId, isReady]);
 
@@ -515,9 +479,9 @@ export default function PayoutDetailsPage() {
         sectionLabel="Bank / Wallet Details"
         title="Bank / Wallet Details"
         subtitle="Choose where approved withdrawals should go after they leave the community settlement account."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/withdrawal-instructions"
+        backTo={routes.moneyOut}
         backLabel="Withdrawal Instructions"
       />
 
@@ -775,29 +739,31 @@ export default function PayoutDetailsPage() {
             flexWrap: "wrap",
           }}
         >
-          <button
-            {...buttonGuardProps()}
+          <PrimaryButton
             onClick={() => {
               void savePayout();
             }}
-            style={primaryBtn(false)}
+            debugId="payout-details.save"
+            style={payoutPrimaryButtonStyle(false)}
           >
             Save Payout Details
-          </button>
+          </PrimaryButton>
 
-          <button
+          <SecondaryButton
             onClick={copySummary}
-            style={secondaryBtn(false)}
+            debugId="payout-details.copy-summary"
+            style={payoutSecondaryButtonStyle(false)}
           >
             Copy Summary
-          </button>
+          </SecondaryButton>
 
-          <button
+          <SecondaryButton
             onClick={clearLocal}
-            style={secondaryBtn(false)}
+            debugId="payout-details.clear-local"
+            style={payoutSecondaryButtonStyle(false)}
           >
             Clear Local Details
-          </button>
+          </SecondaryButton>
         </div>
       </section>
 
@@ -869,12 +835,22 @@ export default function PayoutDetailsPage() {
             flexWrap: "wrap",
           }}
         >
-          <OriginLink to="/app/withdrawal-instructions" style={primaryBtn(false)}>
+          <StableCtaLink
+            to={routes.moneyOut}
+            debugId="payout-details.open-money-out"
+            stableHeight={48}
+            style={payoutPrimaryButtonStyle(false)}
+          >
             Open Withdrawal Instructions
-          </OriginLink>
-          <OriginLink to="/app/loans" style={secondaryBtn(false)}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.loans}
+            debugId="payout-details.open-loans"
+            stableHeight={48}
+            style={payoutSecondaryButtonStyle(false)}
+          >
             Return to Loans & Support
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
     </div>

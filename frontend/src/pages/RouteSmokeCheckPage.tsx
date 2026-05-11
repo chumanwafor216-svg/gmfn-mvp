@@ -72,14 +72,14 @@ const memberRoutes: SmokeRoute[] = [
   },
   {
     to: "/app/open-shop",
-    label: "Open Shop Alias",
-    note: "Should redirect into the live shop control route without breaking the shop handoff chain.",
+    label: "Owner Open Shop Alias",
+    note: "Internal owner alias only. Public share aliases with a GSN ID should land on the root /shop/:gmfnId public shop.",
   },
   { to: "/app/shop-assets", label: "Shop Assets" },
   {
     to: "/app/shop-gallery",
-    label: "Shop Gallery Alias",
-    note: "Should redirect into the current public shop/gallery route instead of landing on a dead alias page.",
+    label: "Owner Shop Gallery Alias",
+    note: "Internal owner alias only. Public /shop-gallery/:gmfnId aliases should redirect to the root /shop/:gmfnId public shop.",
   },
 ];
 

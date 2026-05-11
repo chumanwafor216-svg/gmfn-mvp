@@ -9,6 +9,10 @@
     "preview": "vite preview",
     "audit:link-contracts": "node tools/audit-link-contracts.mjs",
     "audit:entry-auth": "node tools/audit-entry-auth-contracts.mjs",
+    "audit:route-fallthrough": "node tools/audit-route-fallthrough.mjs",
+    "audit:spotlight-controls": "node tools/audit-spotlight-controls.mjs",
+    "audit:spotlight-quota": "node tools/audit-spotlight-quota-suspension.mjs",
+    "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"

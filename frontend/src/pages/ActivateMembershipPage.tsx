@@ -1,11 +1,17 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryGuideLauncher } from "../components/EntryControls";
+import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
   activateMembership,
   setAccessToken,
   setSelectedClanId,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
 
 function pageShell(): React.CSSProperties {
   return {
@@ -67,78 +73,24 @@ function inputStyle(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function badgeStyle(): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    width: "min(100%, 60%)",
-    padding: "14px 18px",
-    borderRadius: 16,
-    border: disabled
-      ? "1px solid rgba(161,179,199,0.48)"
-      : "1px solid rgba(82,128,186,0.62)",
-    background: disabled
-      ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
-    color: disabled ? "#6B7B8D" : "#FFFFFF",
-    fontWeight: 1000,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 15,
-    opacity: disabled ? 0.82 : 1,
-    textAlign: "center",
-    boxShadow: disabled
-      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
-    textShadow: "none",
-  };
-}
-
-function secondaryBtn(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    padding: "12px 16px",
+    minHeight: 42,
+    padding: "10px 14px",
     borderRadius: 999,
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(229,237,249,0.98) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(229,237,249,0.96) 100%)",
     color: "#123055",
-    textDecoration: "none",
     fontWeight: 900,
     border: "1px solid rgba(16,37,59,0.12)",
-    fontSize: 14,
+    fontSize: 13,
     textAlign: "center",
     boxShadow:
-      "0 14px 28px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.82), inset 0 -6px 10px rgba(120,142,170,0.10)",
+      "0 10px 20px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.78)",
     textShadow: "0 1px 0 rgba(255,255,255,0.52)",
-    cursor: "pointer",
-  };
-}
-
-function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
   };
 }
 
@@ -312,7 +264,9 @@ export default function ActivateMembershipPage() {
       }
 
       setMsg("Activation successful. Entering workspace...");
-      navigate("/app/dashboard", { replace: true });
+      navigate(routeTarget("dashboard", clanId, "activate-membership.route.dashboard"), {
+        replace: true,
+      });
     } catch (e: any) {
       setErr(String(e?.message || "Activation error"));
     } finally {
@@ -387,12 +341,12 @@ export default function ActivateMembershipPage() {
                   {(initialGmfnId || requestId) && (
                     <div style={{ marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {initialGmfnId ? (
-                        <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
+                        <div style={badgeStyle()}>
                           GMFN ID detected
                         </div>
                       ) : null}
                       {requestId ? (
-                        <div style={{ ...secondaryBtn(), width: "auto", cursor: "default" }}>
+                        <div style={badgeStyle()}>
                           Request ID: {requestId}
                         </div>
                       ) : null}
@@ -437,27 +391,28 @@ export default function ActivateMembershipPage() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
-                    <button
+                  <CardActionRow style={{ marginTop: 18, justifyContent: "center" }}>
+                    <PrimaryButton
                       type="submit"
                       disabled={!canSubmit}
-                      {...buttonGuardProps()}
-                      style={primaryBtn(!canSubmit)}
+                      busy={busy}
+                      busyLabel="Activating..."
+                      style={{ width: "min(100%, 60%)", padding: "14px 18px" }}
+                      debugId="activate-membership.activate"
                     >
-                      {busy ? "Activating..." : "Activate membership"}
-                    </button>
-                  </div>
+                      Activate membership
+                    </PrimaryButton>
+                  </CardActionRow>
 
-                  <div style={{ marginTop: 14, display: "flex", justifyContent: "center" }}>
-                    <button
+                  <CardActionRow style={{ marginTop: 14, justifyContent: "center" }}>
+                    <SecondaryButton
                       type="button"
                       onClick={clearForm}
-                      {...buttonGuardProps()}
-                      style={secondaryBtn()}
+                      debugId="activate-membership.clear-password"
                     >
                       Clear password fields
-                    </button>
-                  </div>
+                    </SecondaryButton>
+                  </CardActionRow>
                 </div>
               </form>
             </div>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { StableCtaLink } from "../components/StableButton";
 import { getAccessToken } from "../lib/api";
 
 type OpenApiSpec = {
@@ -95,12 +96,48 @@ export default function ApiPage() {
           placeholder="Search routes (e.g. /loans, /trust, invites)"
           style={{ width: 420, maxWidth: "100%", padding: 8 }}
         />
-        <a href="/docs" target="_blank" rel="noreferrer">
+        <StableCtaLink
+          to="/docs"
+          target="_blank"
+          rel="noreferrer"
+          stableHeight={32}
+          debugId="api.open-swagger"
+          style={{
+            minHeight: 32,
+            minWidth: 0,
+            padding: "4px 0",
+            border: "none",
+            borderRadius: 0,
+            background: "transparent",
+            boxShadow: "none",
+            color: "#2563EB",
+            fontWeight: 700,
+            textDecoration: "underline",
+          }}
+        >
           Swagger →
-        </a>
-        <a href="/api/openapi.json" target="_blank" rel="noreferrer">
+        </StableCtaLink>
+        <StableCtaLink
+          to="/api/openapi.json"
+          target="_blank"
+          rel="noreferrer"
+          stableHeight={32}
+          debugId="api.open-openapi-json"
+          style={{
+            minHeight: 32,
+            minWidth: 0,
+            padding: "4px 0",
+            border: "none",
+            borderRadius: 0,
+            background: "transparent",
+            boxShadow: "none",
+            color: "#2563EB",
+            fontWeight: 700,
+            textDecoration: "underline",
+          }}
+        >
           OpenAPI →
-        </a>
+        </StableCtaLink>
       </div>
 
       {loading && <div>Loading…</div>}

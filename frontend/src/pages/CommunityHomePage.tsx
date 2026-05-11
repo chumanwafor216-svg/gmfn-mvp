@@ -7,7 +7,9 @@ import NextActionGuide, {
   type NextActionGuideResolution,
 } from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
+import { StableButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   getMarketplaceBroadcasts,
@@ -37,11 +39,6 @@ import {
   SPOTLIGHT_PILOT_ROTATION_MS,
   SPOTLIGHT_PILOT_ROTATION_SECONDS_LABEL,
 } from "../lib/spotlightPilot";
-import {
-  actionTapGuardProps,
-  brandStableTapTarget,
-  stopActionTap,
-} from "../styles/gmfnBrand";
 
 type ClanItem = {
   id?: number;
@@ -185,18 +182,6 @@ function getClanId(clan: ClanItem | null | undefined): number {
   return Number(clan?.id || clan?.clan_id || 0);
 }
 
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = Number(clanId || 0);
-  if (!path || !Number.isFinite(safeClanId) || safeClanId <= 0) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
-}
-
 function getClanName(clan: ClanItem | null | undefined): string {
   return firstTruthy(
     clan?.name,
@@ -204,6 +189,19 @@ function getClanName(clan: ClanItem | null | undefined): string {
     clan?.marketplace_name,
     "Community"
   );
+}
+
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { hash?: string } = {}
+): string {
+  return resolveCtaTarget(intent, {
+    communityId,
+    debugId,
+    ...extra,
+  }).to as string;
 }
 
 function resolveMemberName(me: any): string {
@@ -446,12 +444,11 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
+function communityActionStyle(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   const stableActionLayer: React.CSSProperties = {
-    ...brandStableTapTarget(),
     position: "relative",
     zIndex: 60,
   };
@@ -555,7 +552,6 @@ function actionBtn(
 
 function collapseToggle(): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     position: "relative",
     zIndex: 30,
     display: "inline-flex",
@@ -630,7 +626,7 @@ function communityQuickActionButton(
   isCompact = false
 ): React.CSSProperties {
   return {
-    ...actionBtn("secondary"),
+    ...communityActionStyle("secondary"),
     width: "100%",
     minHeight: isCompact ? 104 : 108,
     justifyContent: "center",
@@ -676,7 +672,6 @@ function communityActionIcon(primary = false): React.CSSProperties {
 
 function communityToolRowStyle(): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     position: "relative",
     zIndex: 20,
     width: "100%",
@@ -1084,6 +1079,73 @@ export default function CommunityHomePage() {
 
   const selectedClanName = getClanName(selectedClan);
   const selectedClanId = getClanId(selectedClan);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget(
+        "dashboard",
+        selectedClanId,
+        "community-home.route.dashboard"
+      ),
+      clans: routeTarget("clans", selectedClanId, "community-home.route.clans"),
+      marketplace: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "community-home.route.marketplace"
+      ),
+      marketplaceOwnedLinks: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "community-home.route.marketplace-owned-links",
+        { hash: "marketplace-owned-links" }
+      ),
+      shop: routeTarget("shop", selectedClanId, "community-home.route.shop"),
+      shopSpotlight: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-home.route.shop-spotlight",
+        { hash: "shop-control-spotlight" }
+      ),
+      shopOwnerShortcuts: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-home.route.shop-owner-shortcuts",
+        { hash: "community-shop-control-owner-shortcuts" }
+      ),
+      freeSpotlight: routeTarget(
+        "freeSpotlight",
+        selectedClanId,
+        "community-home.route.free-spotlight"
+      ),
+      subscriptionSpotlight: routeTarget(
+        "subscriptionSpotlight",
+        selectedClanId,
+        "community-home.route.subscription-spotlight"
+      ),
+      vaultControl: routeTarget(
+        "vaultControl",
+        selectedClanId,
+        "community-home.route.vault-control"
+      ),
+      buildFirstCircle: routeTarget(
+        "buildFirstCircle",
+        selectedClanId,
+        "community-home.route.build-first-circle"
+      ),
+      finance: routeTarget(
+        "finance",
+        selectedClanId,
+        "community-home.route.finance"
+      ),
+      loans: routeTarget("loans", selectedClanId, "community-home.route.loans"),
+      trust: routeTarget("trust", selectedClanId, "community-home.route.trust"),
+      notifications: routeTarget(
+        "notifications",
+        selectedClanId,
+        "community-home.route.notifications"
+      ),
+    }),
+    [selectedClanId]
+  );
   const memberGlobalId = firstTruthy(
     me?.gmfn_id,
     me?.global_member_id,
@@ -1852,11 +1914,11 @@ export default function CommunityHomePage() {
     consumeCommunityButtonEvent(event);
     const hash =
       targetId === "community-shop-control-owner-shortcuts"
-        ? "#community-shop-control-owner-shortcuts"
+        ? routes.shopOwnerShortcuts
         : targetId === "shop-control-spotlight"
-        ? "#shop-control-spotlight"
-        : "";
-    navigateWithOrigin(navigate, `/app/shop-control${hash}`, location);
+        ? routes.shopSpotlight
+        : routes.shop;
+    navigateWithOrigin(navigate, hash, location);
   }
 
   async function handleSelectCommunity(clan: ClanItem, openAfter = false) {
@@ -1875,7 +1937,11 @@ export default function CommunityHomePage() {
       if (openAfter) {
         navigateWithOrigin(
           navigate,
-          withClanQuery("/app/marketplace", clanId),
+          routeTarget(
+            "marketplace",
+            clanId,
+            "community-home.select-community.marketplace"
+          ),
           location
         );
       } else {
@@ -1897,15 +1963,8 @@ export default function CommunityHomePage() {
   function consumeCommunityButtonEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
-    stopActionTap(event);
+    event?.stopPropagation();
   }
-
-function communityButtonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
-}
 
   function openCommunityRoute(
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -1997,10 +2056,10 @@ function communityButtonGuardProps(): Pick<
           break;
         }
         if (nextStep === "prepare-shop-first") {
-          openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
+          openCommunityRoute(event, routes.shopSpotlight);
           break;
         }
-        openCommunityRoute(event, "/app/shop-control/subscription-spotlight");
+        openCommunityRoute(event, routes.subscriptionSpotlight);
         break;
       case "spotlight-vault":
         if (nextStep === "cancel") {
@@ -2016,10 +2075,10 @@ function communityButtonGuardProps(): Pick<
           break;
         }
         if (nextStep === "prepare-shop-first") {
-          openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
+          openCommunityRoute(event, routes.shopSpotlight);
           break;
         }
-        openCommunityRoute(event, "/app/vault-control");
+        openCommunityRoute(event, routes.vaultControl);
         break;
       case "spotlight-shop-setup":
         if (nextStep === "choose-community") {
@@ -2030,10 +2089,10 @@ function communityButtonGuardProps(): Pick<
           );
           break;
         }
-        openCommunityRoute(event, "/app/shop-control#shop-control-spotlight");
+        openCommunityRoute(event, routes.shopSpotlight);
         break;
       case "finance":
-        openCommunityRoute(event, "/app/finance");
+        openCommunityRoute(event, routes.finance);
         break;
       case "support":
         if (nextStep === "choose-community") {
@@ -2044,13 +2103,13 @@ function communityButtonGuardProps(): Pick<
           );
           break;
         }
-        openCommunityRoute(event, "/app/loans");
+        openCommunityRoute(event, routes.loans);
         break;
       case "trust":
-        openCommunityRoute(event, "/app/trust");
+        openCommunityRoute(event, routes.trust);
         break;
       case "notifications":
-        openCommunityRoute(event, "/app/notifications");
+        openCommunityRoute(event, routes.notifications);
         break;
       default:
         consumeCommunityButtonEvent(event);
@@ -2087,7 +2146,7 @@ function communityButtonGuardProps(): Pick<
       await selectClan(selectedClanId);
       navigateWithOrigin(
         navigate,
-        withClanQuery("/app/marketplace", selectedClanId),
+        routes.marketplace,
         location
       );
     } catch (err: any) {
@@ -2134,14 +2193,7 @@ function communityButtonGuardProps(): Pick<
 
     try {
       await selectClan(selectedClanId);
-      navigateWithOrigin(
-        navigate,
-        withClanQuery(
-          "/app/marketplace#marketplace-owned-links",
-          selectedClanId
-        ),
-        location
-      );
+      navigateWithOrigin(navigate, routes.marketplaceOwnedLinks, location);
     } catch (err: any) {
       showNotice(
         "error",
@@ -2183,9 +2235,9 @@ function communityButtonGuardProps(): Pick<
             sectionLabel="Community Home"
             title="Community Home"
             subtitle="Loading your current community..."
-            homeTo="/app/dashboard"
+            homeTo={routes.dashboard}
             homeLabel="Dashboard"
-            backTo="/app/dashboard"
+            backTo={routes.dashboard}
           />
 
           <section style={communityBlockCard("quiet")}>
@@ -2207,9 +2259,9 @@ function communityButtonGuardProps(): Pick<
             sectionLabel="Community Home"
             title="Community Home"
             subtitle="Choose a working community here, confirm where you are, and move into the right community route."
-            homeTo="/app/dashboard"
+            homeTo={routes.dashboard}
             homeLabel="Dashboard"
-            backTo="/app/dashboard"
+            backTo={routes.dashboard}
           />
 
           <DomainIntroToggle
@@ -2271,32 +2323,29 @@ function communityButtonGuardProps(): Pick<
                 flexWrap: "wrap",
               }}
             >
-              <button
+              <StableButton
                 type="button"
-                {...communityButtonGuardProps()}
-                onClick={(event) => openCommunityRoute(event, "/app/clans")}
-                style={actionBtn("primary")}
+                onClick={(event) => openCommunityRoute(event, routes.clans)}
+                style={communityActionStyle("primary")}
               >
                 Create New Community
-              </button>
-              <button
+              </StableButton>
+              <StableButton
                 type="button"
-                {...communityButtonGuardProps()}
                 onClick={(event) =>
-                  openCommunityRoute(event, "/app/build-first-circle")
+                  openCommunityRoute(event, routes.buildFirstCircle)
                 }
-                style={actionBtn("secondary")}
+                style={communityActionStyle("secondary")}
               >
                 Build Your First Circle
-              </button>
-              <button
+              </StableButton>
+              <StableButton
                 type="button"
-                {...communityButtonGuardProps()}
-                onClick={(event) => openCommunityRoute(event, "/app/dashboard")}
-                style={actionBtn("secondary")}
+                onClick={(event) => openCommunityRoute(event, routes.dashboard)}
+                style={communityActionStyle("secondary")}
               >
                 Dashboard
-              </button>
+              </StableButton>
             </div>
           </section>
         </div>
@@ -2598,10 +2647,9 @@ function communityButtonGuardProps(): Pick<
                 ))}
               </div>
 
-              <button
+              <StableButton
                 type="button"
-                {...communityButtonGuardProps()}
-                onClick={(event) => openCommunityRoute(event, "/app/trust")}
+                onClick={(event) => openCommunityRoute(event, routes.trust)}
                 style={{
                   ...communityToolRowStyle(),
                   marginTop: isCompact ? 10 : 14,
@@ -2651,7 +2699,7 @@ function communityButtonGuardProps(): Pick<
                 <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
                   ›
                 </span>
-              </button>
+              </StableButton>
             </div>
           </div>
         </div>
@@ -2719,10 +2767,9 @@ function communityButtonGuardProps(): Pick<
                   title: "Grow circle",
                 },
               ].map((item, index) => (
-                <button
+                <StableButton
                   key={item.id}
                   type="button"
-                  {...communityButtonGuardProps()}
                   onClick={(event) => openCommunityNextAction(event, item.id)}
                   style={{
                     ...communityQuickActionButton(Boolean(item.primary), isCompact),
@@ -2748,7 +2795,7 @@ function communityButtonGuardProps(): Pick<
                       {item.title}
                     </span>
                   </span>
-                </button>
+                </StableButton>
               ))}
             </div>
           </div>
@@ -2777,16 +2824,15 @@ function communityButtonGuardProps(): Pick<
                 justifyContent: isCompact ? "stretch" : "flex-end",
               }}
             >
-              <button
+              <StableButton
                 type="button"
-                {...communityButtonGuardProps()}
                 onClick={() => {
                   setGuidedActionFamilyFocus(null);
                 }}
                 style={collapseHeaderButton(isCompact)}
               >
                 Collapse
-              </button>
+              </StableButton>
             </div>
           </div>
           <div
@@ -2848,15 +2894,14 @@ function communityButtonGuardProps(): Pick<
             }}
           >
             {spotlightHandleItems.map((item) => (
-              <button
+              <StableButton
                 key={item.id}
                 type="button"
-                {...communityButtonGuardProps()}
                 onClick={(event) => {
                   void handleSpotlightHandle(item, event);
                 }}
                 style={{
-                  ...actionBtn(item.tone || "secondary"),
+                  ...communityActionStyle(item.tone || "secondary"),
                   minHeight: isCompact ? 76 : 86,
                   flexDirection: "column",
                   alignItems: "flex-start",
@@ -2889,7 +2934,7 @@ function communityButtonGuardProps(): Pick<
                 >
                   {item.detail}
                 </span>
-              </button>
+              </StableButton>
             ))}
           </div>
           <div
@@ -2900,16 +2945,15 @@ function communityButtonGuardProps(): Pick<
               flexWrap: "wrap",
             }}
           >
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
               onClick={() => {
                 setGuidedActionFamilyFocus(null);
               }}
-              style={actionBtn("secondary")}
+              style={communityActionStyle("secondary")}
             >
               Back to Community Home
-            </button>
+            </StableButton>
           </div>
         </section>
       ) : null}
@@ -2934,7 +2978,7 @@ function communityButtonGuardProps(): Pick<
               detail:
                 "Open owner-side tools and permissions",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, "/app/clans"),
+                openCommunityRoute(event, routes.clans),
             },
             {
               icon: "🏪",
@@ -2952,7 +2996,7 @@ function communityButtonGuardProps(): Pick<
               detail:
                 "Paid private blocks, one link at a time",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, "/app/vault-control"),
+                openCommunityRoute(event, routes.vaultControl),
             },
             {
               icon: "🌟",
@@ -2975,10 +3019,7 @@ function communityButtonGuardProps(): Pick<
               detail:
                 "Control the paid priority spotlight lane",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(
-                  event,
-                  "/app/shop-control/subscription-spotlight"
-                ),
+                openCommunityRoute(event, routes.subscriptionSpotlight),
             },
             {
               icon: "🤝",
@@ -2987,7 +3028,7 @@ function communityButtonGuardProps(): Pick<
               detail:
                 "Invite trusted real-life people",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, "/app/build-first-circle"),
+                openCommunityRoute(event, routes.buildFirstCircle),
             },
             {
               icon: "📡",
@@ -3002,10 +3043,9 @@ function communityButtonGuardProps(): Pick<
                 ),
             },
           ].map((item, index) => (
-            <button
+            <StableButton
               key={item.title}
               type="button"
-              {...communityButtonGuardProps()}
               onClick={item.onClick}
               style={{
                 ...communityToolRowStyle(),
@@ -3082,7 +3122,7 @@ function communityButtonGuardProps(): Pick<
               >
                 ›
               </span>
-            </button>
+            </StableButton>
           ))}
         </div>
       </section>
@@ -3108,14 +3148,13 @@ function communityButtonGuardProps(): Pick<
           </div>
 
           <div style={collapseButtonRow()}>
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "tools")}
               style={collapseHeaderButton(isCompact)}
             >
               {collapsed.tools ? "Open owner actions" : "Collapse owner actions"}
-            </button>
+            </StableButton>
           </div>
         </div>
 
@@ -3130,20 +3169,18 @@ function communityButtonGuardProps(): Pick<
               gap: isCompact ? 8 : 10,
             }}
           >
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
-              onClick={(event) => openCommunityRoute(event, "/app/clans")}
-              style={actionBtn("primary")}
+              onClick={(event) => openCommunityRoute(event, routes.clans)}
+              style={communityActionStyle("primary")}
             >
               Create New Community
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
               onClick={(event) => void openSelectedMarketplaceLinks(event)}
-              style={actionBtn(
+              style={communityActionStyle(
                 "secondary",
                 !selectedClanId || changingClanId === selectedClanId
               )}
@@ -3152,11 +3189,10 @@ function communityButtonGuardProps(): Pick<
               {changingClanId === selectedClanId
                 ? "Opening..."
                 : "Open Marketplace Link Desk"}
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
               onClick={(event) =>
                 openCommunityHomeSection(
                   event,
@@ -3164,35 +3200,34 @@ function communityButtonGuardProps(): Pick<
                   "circle"
                 )
               }
-              style={actionBtn("secondary")}
+              style={communityActionStyle("secondary")}
             >
               Grow Trusted Circle
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
               onClick={openCommunityShopControl}
-              style={actionBtn("secondary")}
+              style={communityActionStyle("secondary")}
             >
               Open Shop Control
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
-              onClick={(event) => openCommunityRoute(event, "/app/notifications")}
-              style={actionBtn("secondary")}
+              onClick={(event) =>
+                openCommunityRoute(event, routes.notifications)
+              }
+              style={communityActionStyle("secondary")}
             >
               Notifications
-            </button>
+            </StableButton>
 
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
               onClick={(event) => void openSelectedMarketplace(event)}
               disabled={!selectedClanId || changingClanId === selectedClanId}
-              style={actionBtn(
+              style={communityActionStyle(
                 "secondary",
                 !selectedClanId || changingClanId === selectedClanId
               )}
@@ -3200,7 +3235,7 @@ function communityButtonGuardProps(): Pick<
               {changingClanId === selectedClanId
                 ? "Opening..."
                 : "Open Selected Marketplace"}
-            </button>
+            </StableButton>
           </div>
         ) : null}
       </section>
@@ -3229,14 +3264,13 @@ function communityButtonGuardProps(): Pick<
             </div>
           </div>
 
-          <button
+          <StableButton
             type="button"
-            {...communityButtonGuardProps()}
             onClick={(event) => toggleSectionFromButton(event, "circle")}
             style={collapseHeaderButton(isCompact)}
           >
             {collapsed.circle ? "Open" : "Collapse"}
-          </button>
+          </StableButton>
         </div>
 
         {!collapsed.circle ? (
@@ -3309,29 +3343,27 @@ function communityButtonGuardProps(): Pick<
                   flexWrap: "wrap",
                 }}
               >
-                <button
+                <StableButton
                   type="button"
-                  {...communityButtonGuardProps()}
                   onClick={(event) =>
-                    openCommunityRoute(event, "/app/build-first-circle")
+                    openCommunityRoute(event, routes.buildFirstCircle)
                   }
-                  style={actionBtn("primary")}
+                  style={communityActionStyle("primary")}
                 >
                   Open First Circle
-                </button>
+                </StableButton>
 
-                  <button
+                  <StableButton
                     type="button"
-                    {...communityButtonGuardProps()}
                     onClick={copyFirstCircleInviteBundle}
                     disabled={readyFirstCircleContacts.length === 0}
-                    style={actionBtn(
+                    style={communityActionStyle(
                     "secondary",
                     readyFirstCircleContacts.length === 0
                   )}
                 >
                   Copy Invite Bundle
-                </button>
+                </StableButton>
               </div>
             </div>
 
@@ -3431,16 +3463,15 @@ function communityButtonGuardProps(): Pick<
           </div>
 
           <div style={collapseButtonRow()}>
-            <button
+            <StableButton
               type="button"
-              {...communityButtonGuardProps()}
               onClick={(event) => toggleSectionFromButton(event, "spotlight")}
               style={collapseHeaderButton(isCompact)}
             >
               {collapsed.spotlight
                 ? "Open spotlight status"
                 : "Collapse spotlight status"}
-            </button>
+            </StableButton>
           </div>
         </div>
 
@@ -3643,16 +3674,15 @@ function communityButtonGuardProps(): Pick<
                 when you need message, picture, video, or publish controls.
               </div>
               <div style={{ marginTop: 14 }}>
-                <button
+                <StableButton
                   type="button"
-                  {...communityButtonGuardProps()}
                   onClick={(event) =>
                     openCommunityShopControl(event, "shop-control-spotlight")
                   }
-                  style={actionBtn("primary")}
+                  style={communityActionStyle("primary")}
                 >
                   Open Free Spotlight
-                </button>
+                </StableButton>
               </div>
             </div>
           </div>
@@ -3668,11 +3698,10 @@ function communityButtonGuardProps(): Pick<
           zIndex: 30,
         }}
       >
-        <button
+        <StableButton
           type="button"
           aria-expanded={!collapsed.communities}
           aria-controls="community-home-communities-panel"
-          {...communityButtonGuardProps()}
           onClick={toggleCommunitiesSectionFromHeader}
           onKeyDown={handleCommunitiesHeaderKeyDown}
           style={{
@@ -3710,7 +3739,7 @@ function communityButtonGuardProps(): Pick<
           <span aria-hidden="true" style={{ color: "#1E5D91", fontSize: 24 }}>
             {collapsed.communities ? "›" : "⌄"}
           </span>
-        </button>
+        </StableButton>
 
         {!collapsed.communities ? (
           <div
@@ -3806,21 +3835,20 @@ function communityButtonGuardProps(): Pick<
                         marginTop: isCompact ? 2 : 0,
                       }}
                     >
-                      <button
+                      <StableButton
                         type="button"
-                        {...communityButtonGuardProps()}
                         onClick={(event) => {
                           consumeCommunityButtonEvent(event);
                           void handleSelectCommunity(clan, true);
                         }}
                         disabled={working}
                         style={{
-                          ...actionBtn("primary", working),
+                          ...communityActionStyle("primary", working),
                           width: isCompact ? "100%" : undefined,
                         }}
                       >
                         {working ? "Opening..." : "Open Marketplace"}
-                      </button>
+                      </StableButton>
                     </div>
                   </div>
                 </div>

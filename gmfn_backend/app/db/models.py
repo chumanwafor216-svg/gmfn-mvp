@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 from sqlalchemy.sql import func
@@ -373,6 +374,17 @@ class ClanInvite(Base):
 
 class ClanJoinRequest(Base):
     __tablename__ = "clan_join_requests"
+
+    __table_args__ = (
+        Index(
+            "uq_clan_join_requests_pending_user_clan",
+            "clan_id",
+            "applicant_user_id",
+            unique=True,
+            sqlite_where=text("status = 'pending'"),
+            postgresql_where=text("status = 'pending'"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 

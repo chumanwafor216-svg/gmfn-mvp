@@ -27,6 +27,11 @@ class JoinByInviteOut(BaseModel):
     clan_name: Optional[str] = None
     joined_user_id: int
     message: str
+    gmfn_id: Optional[str] = None
+    membership_id: Optional[int] = None
+    result_status: str = "joined_successfully"
+    existing_identity: bool = True
+    identity_reused: bool = True
 
 
 class ActiveCommunityOut(BaseModel):

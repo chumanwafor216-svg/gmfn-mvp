@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableButton,
+  SubtleButton,
+} from "../components/StableButton";
 import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import * as firstCircle from "../lib/firstCircle";
 
 type FirstCircleContact = {
@@ -144,107 +151,8 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 10,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    transform: "none",
-    outlineOffset: 4,
-    appearance: "none",
-    WebkitAppearance: "none",
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  const stableTap = stableTapStyle();
-
-  if (kind === "primary") {
-    return {
-      ...stableTap,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "12px 15px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      lineHeight: 1.2,
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...stableTap,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 46,
-      padding: "11px 14px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      lineHeight: 1.2,
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  return {
-    ...stableTap,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 15px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    lineHeight: 1.2,
-    opacity: disabled ? 0.86 : 1,
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 44,
     padding: "10px 14px",
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
@@ -257,20 +165,6 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(event: React.SyntheticEvent) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
   };
 }
 
@@ -920,13 +814,22 @@ export default function BuildFirstCirclePage() {
     showNotice("success", "Invite bundle copied.");
   }
 
-  function resetDraft() {
+function resetDraft() {
     const next = defaultDraft();
     clearSavedDraft();
     setDraft(next);
     setManualForm(defaultManualForm());
     showNotice("success", "First-circle draft cleared.");
   }
+
+  function routeTarget(intent: CtaIntent, debugId: string): string {
+    return resolveCtaTarget(intent, { communityId: selectedClanId, debugId }).to as string;
+  }
+
+  const routes = {
+    dashboard: routeTarget("dashboard", "build-first-circle.route.dashboard"),
+    community: routeTarget("communityHome", "build-first-circle.route.community"),
+  };
 
   if (loading) {
     return (
@@ -943,9 +846,9 @@ export default function BuildFirstCirclePage() {
           sectionLabel="Focused task"
           title="First Circle"
           subtitle="Loading trusted people..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/community"
+          backTo={routes.community}
           backLabel="Community Home"
         />
 
@@ -972,9 +875,9 @@ export default function BuildFirstCirclePage() {
         sectionLabel="Focused task"
         title="First Circle"
         subtitle="Aim: add real people you already trust."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/community"
+        backTo={routes.community}
         backLabel="Community Home"
       />
 
@@ -1133,17 +1036,17 @@ export default function BuildFirstCirclePage() {
                 const active = safeStr(draft.memberRole) === role;
 
                 return (
-                  <button
+                  <StableButton
                     key={role}
-                    type="button"
-                    {...buttonGuardProps()}
+                    kind={active ? "primary" : "secondary"}
                     onClick={() => {
                       setRole(role);
                     }}
-                    style={active ? actionBtn("primary") : actionBtn("secondary")}
+                    stableHeight={48}
+                    debugId={`build-first-circle.role.${role}`}
                   >
                     {roleText(role)}
-                  </button>
+                  </StableButton>
                 );
               })}
             </div>
@@ -1315,27 +1218,25 @@ export default function BuildFirstCirclePage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <PrimaryButton
                     onClick={() => {
                       addManualContact();
                     }}
-                    style={actionBtn("primary")}
+                    stableHeight={48}
+                    debugId="build-first-circle.add-person"
                   >
                     Add Person
-                  </button>
+                  </PrimaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <SecondaryButton
                     onClick={() => {
                       setManualForm(defaultManualForm());
                     }}
-                    style={actionBtn("secondary")}
+                    stableHeight={48}
+                    debugId="build-first-circle.clear-form"
                   >
                     Clear Form
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             </div>
@@ -1348,17 +1249,18 @@ export default function BuildFirstCirclePage() {
               </div>
 
               <div style={{ marginTop: 14 }}>
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <SecondaryButton
                   onClick={() => {
                     void addFromPhoneContacts();
                   }}
                   disabled={pickingContacts}
-                  style={actionBtn("secondary", pickingContacts)}
+                  busy={pickingContacts}
+                  busyLabel="Opening..."
+                  stableHeight={48}
+                  debugId="build-first-circle.choose-phone-contacts"
                 >
-                  {pickingContacts ? "Opening..." : "Choose from Phone Contacts"}
-                </button>
+                  Choose from Phone Contacts
+                </SecondaryButton>
               </div>
 
               <div style={{ marginTop: 14, ...helperText(), fontSize: 13 }}>
@@ -1405,15 +1307,16 @@ export default function BuildFirstCirclePage() {
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(false)}>{draft.contacts.length} contacts</span>
-            <button
-              type="button"
+            <SubtleButton
               onClick={() => {
                 toggleSection("contacts");
               }}
+              stableHeight={44}
+              debugId="build-first-circle.toggle-contacts"
               style={collapseToggle()}
             >
               {collapsed.contacts ? "Open" : "Collapse"}
-            </button>
+            </SubtleButton>
           </div>
         </div>
 
@@ -1482,27 +1385,26 @@ export default function BuildFirstCirclePage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      <StableButton
+                        kind={item.selected ? "primary" : "secondary"}
                         onClick={() => {
                           toggleSelected(item.id);
                         }}
-                        style={item.selected ? actionBtn("primary") : actionBtn("secondary")}
+                        stableHeight={48}
+                        debugId={`build-first-circle.contact.${item.id}.toggle-selected`}
                       >
                         {item.selected ? "Included" : "Include"}
-                      </button>
+                      </StableButton>
 
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      <SubtleButton
                         onClick={() => {
                           removeContact(item.id);
                         }}
-                        style={actionBtn("soft")}
+                        stableHeight={46}
+                        debugId={`build-first-circle.contact.${item.id}.remove`}
                       >
                         Remove
-                      </button>
+                      </SubtleButton>
                     </div>
                   </div>
                 </div>
@@ -1529,15 +1431,16 @@ export default function BuildFirstCirclePage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => {
               toggleSection("invite");
             }}
+            stableHeight={44}
+            debugId="build-first-circle.toggle-invite"
             style={collapseToggle()}
           >
             {collapsed.invite ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.invite ? (
@@ -1591,27 +1494,26 @@ export default function BuildFirstCirclePage() {
                 </div>
 
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
+                    <PrimaryButton
                       onClick={() => {
                         copyInviteBundle();
                       }}
                       disabled={readyContacts.length === 0}
-                    style={actionBtn("primary", readyContacts.length === 0)}
+                      stableHeight={48}
+                      debugId="build-first-circle.copy-invite-bundle"
                   >
                     Copy Invite Bundle
-                  </button>
+                  </PrimaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <SecondaryButton
                     onClick={() => {
                       resetDraft();
                     }}
-                    style={actionBtn("secondary")}
+                    stableHeight={48}
+                    debugId="build-first-circle.reset"
                   >
                     Reset First Circle
-                  </button>
+                  </SecondaryButton>
                 </div>
 
                 <div style={{ ...helperText(), fontSize: 13 }}>

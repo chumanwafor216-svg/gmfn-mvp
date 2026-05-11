@@ -1,5 +1,5 @@
 import React from "react";
-import OriginLink from "./OriginLink";
+import { StableCtaLink } from "./StableButton";
 import type { TrustDocumentFamilyItem } from "../lib/trustDocumentFamilyMap";
 
 type Props = {
@@ -114,9 +114,14 @@ export default function TrustDocumentFamilyMap({
 
             {item.to && !item.disabled ? (
               <div style={{ marginTop: 12 }}>
-                <OriginLink to={item.to} style={linkStyle()}>
+                <StableCtaLink
+                  to={item.to}
+                  debugId={`trust-document-family.open.${item.id}`}
+                  stableHeight={40}
+                  style={linkStyle()}
+                >
                   Open {item.title}
-                </OriginLink>
+                </StableCtaLink>
               </div>
             ) : item.disabledReason ? (
               <div style={{ marginTop: 12, ...helperStyle(), color: "#64748B" }}>

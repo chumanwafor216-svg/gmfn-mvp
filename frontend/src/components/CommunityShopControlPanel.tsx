@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
 import * as api from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicShopPath, publicShopUrl } from "../lib/publicLinks";
-import {
-  actionTapGuardProps,
-  brandStableTapTarget,
-} from "../styles/gmfnBrand";
 
 type NoticeTone = "success" | "error";
 
@@ -54,18 +52,6 @@ function positiveNumber(value: any): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = positiveNumber(clanId);
-  if (!path || !safeClanId) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
-}
-
 function rowsOf<T = any>(input: any): T[] {
   if (Array.isArray(input)) return input as T[];
   if (Array.isArray(input?.items)) return input.items as T[];
@@ -109,6 +95,19 @@ function apiOrigin(): string {
   return typeof window !== "undefined"
     ? String(window.location.origin || "").trim().replace(/\/+$/, "")
     : "";
+}
+
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { hash?: string } = {}
+): string {
+  return resolveCtaTarget(intent, {
+    communityId,
+    debugId,
+    ...extra,
+  }).to as string;
 }
 
 function resolveImageSrc(raw: any): string {
@@ -306,27 +305,15 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
+function communityShopActionStyle(
   kind: "primary" | "secondary" = "secondary",
   disabled = false
 ): React.CSSProperties {
-  const stableTapLayer: React.CSSProperties = {
-    ...brandStableTapTarget(),
-    position: "relative",
-    zIndex: 20,
-  };
-
   if (kind === "primary") {
     return {
-      ...stableTapLayer,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
       minWidth: 0,
       maxWidth: "100%",
       boxSizing: "border-box",
-      minHeight: 48,
-      padding: "12px 14px",
       borderRadius: 14,
       border: disabled
         ? "1px solid rgba(148,163,184,0.45)"
@@ -338,7 +325,6 @@ function actionBtn(
       fontWeight: 900,
       fontSize: 14,
       textAlign: "center",
-      textDecoration: "none",
       alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
@@ -352,15 +338,9 @@ function actionBtn(
   }
 
   return {
-    ...stableTapLayer,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
     minWidth: 0,
     maxWidth: "100%",
     boxSizing: "border-box",
-      minHeight: 48,
-      padding: "12px 14px",
     borderRadius: 14,
     border: "1px solid rgba(11,31,51,0.10)",
     background:
@@ -369,7 +349,6 @@ function actionBtn(
     fontWeight: 800,
     fontSize: 14,
     textAlign: "center",
-    textDecoration: "none",
     alignContent: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
@@ -382,19 +361,27 @@ function actionBtn(
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function communityShopFixedButtonStyle(
+  kind: "primary" | "secondary" = "secondary",
+  disabled = false
+): React.CSSProperties {
+  return {
+    ...communityShopActionStyle(kind, disabled),
+    height: 52,
+    maxHeight: 52,
+    padding: "0 12px",
+    transition: "none",
+  };
+}
+
+function communityShopCollapseStyle(): React.CSSProperties {
   return {
     position: "relative",
     zIndex: 30,
     isolation: "isolate",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
     minWidth: 0,
     maxWidth: "100%",
     boxSizing: "border-box",
-    minHeight: 50,
-    padding: "12px 16px",
     borderRadius: 16,
     border: "1px solid rgba(16,37,59,0.14)",
     background:
@@ -426,7 +413,7 @@ function collapseHeaderText(align: "left" | "center" = "left"): React.CSSPropert
 
 function collapseHeaderButton(isCompact: boolean): React.CSSProperties {
   return {
-    ...collapseToggle(),
+    ...communityShopCollapseStyle(),
     justifySelf: isCompact ? "stretch" : "end",
     alignSelf: "start",
     width: isCompact ? "100%" : undefined,
@@ -458,19 +445,50 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function panelButtonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
-}
-
 export default function CommunityShopControlPanel({
   forceOpenSignal = 0,
 }: CommunityShopControlPanelProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const selectedClanId = Number(api.getSelectedClanId?.() || 0);
+  const routes = useMemo(
+    () => ({
+      marketplace: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "community-shop-control.route.marketplace"
+      ),
+      shopSummary: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-shop-control.route.shop-summary",
+        { hash: "shop-control-summary" }
+      ),
+      shopGallery: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-shop-control.route.shop-gallery",
+        { hash: "shop-control-gallery-tools" }
+      ),
+      shopSpotlight: routeTarget(
+        "shop",
+        selectedClanId,
+        "community-shop-control.route.shop-spotlight",
+        { hash: "shop-control-spotlight" }
+      ),
+      subscriptionSpotlight: routeTarget(
+        "subscriptionSpotlight",
+        selectedClanId,
+        "community-shop-control.route.subscription-spotlight"
+      ),
+      vaultControl: routeTarget(
+        "vaultControl",
+        selectedClanId,
+        "community-shop-control.route.vault-control"
+      ),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -657,14 +675,15 @@ export default function CommunityShopControlPanel({
         </div>
 
         <div style={collapseButtonRow()}>
-          <button
-            type="button"
-            {...panelButtonGuardProps()}
+          <SubtleButton
             onClick={() => togglePanelFromButton()}
+            stableHeight={50}
+            fullWidth={isCompact}
+            debugId="community-shop-control.toggle"
             style={collapseHeaderButton(isCompact)}
           >
             {open ? "Collapse owner shop control" : "Open owner shop control"}
-          </button>
+          </SubtleButton>
         </div>
       </div>
 
@@ -816,60 +835,63 @@ export default function CommunityShopControlPanel({
                       overflowAnchor: "none",
                     }}
                   >
-                <button
-                  type="button"
-                  {...panelButtonGuardProps()}
-                  onClick={() => openPanelRoute("/app/shop-control?section=summary")}
-                  style={{ ...actionBtn("primary"), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
-                >
+                    <PrimaryButton
+                      onClick={() => openPanelRoute(routes.shopSummary)}
+                      stableHeight={52}
+                      fullWidth
+                      debugId="community-shop-control.open-owner"
+                      style={communityShopFixedButtonStyle("primary")}
+                    >
                       Open Owner Shop Control
-                    </button>
+                    </PrimaryButton>
 
                     {publicShopTo ? (
-                      <button
-                        type="button"
-                        {...panelButtonGuardProps()}
+                      <SecondaryButton
                         onClick={() => openPanelRoute(publicShopTo)}
-                        style={{ ...actionBtn("secondary"), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
+                        stableHeight={52}
+                        fullWidth
+                        debugId="community-shop-control.open-public"
+                        style={communityShopFixedButtonStyle("secondary")}
                       >
                         Open Public Shop Face
-                      </button>
+                      </SecondaryButton>
                     ) : (
-                      <button
-                        type="button"
-                        {...panelButtonGuardProps()}
+                      <SecondaryButton
                         aria-disabled
                         onClick={() => {
                           setNotice({ tone: "error", text: "Public shop link is not ready yet." });
                         }}
-                        style={{ ...actionBtn("secondary", true), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
+                        stableHeight={52}
+                        fullWidth
+                        debugId="community-shop-control.open-public-missing"
+                        style={communityShopFixedButtonStyle("secondary", true)}
                       >
                         Open Public Shop Face
-                      </button>
+                      </SecondaryButton>
                     )}
 
-                      <button
-                        type="button"
-                        {...panelButtonGuardProps()}
-                        onClick={copyShopLink}
-                        aria-disabled={!publicShopTo}
-                        style={{ ...actionBtn("secondary", !publicShopTo), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
-                      >
-                        Copy Public Shop Link
-                    </button>
+                    <SecondaryButton
+                      onClick={copyShopLink}
+                      aria-disabled={!publicShopTo}
+                      stableHeight={52}
+                      fullWidth
+                      debugId="community-shop-control.copy-public-link"
+                      style={communityShopFixedButtonStyle("secondary", !publicShopTo)}
+                    >
+                      Copy Public Shop Link
+                    </SecondaryButton>
 
-                    <button
-                      type="button"
-                      {...panelButtonGuardProps()}
+                    <SecondaryButton
                       onClick={() =>
-                        openPanelRoute(
-                          withClanQuery("/app/marketplace", selectedClanId)
-                        )
+                        openPanelRoute(routes.marketplace)
                       }
-                      style={{ ...actionBtn("secondary"), height: 52, maxHeight: 52, padding: "0 12px", transition: "none" }}
+                      stableHeight={52}
+                      fullWidth
+                      debugId="community-shop-control.open-marketplace"
+                      style={communityShopFixedButtonStyle("secondary")}
                     >
                       Open Community Marketplace
-                    </button>
+                    </SecondaryButton>
                   </div>
                 </div>
               </div>
@@ -898,38 +920,42 @@ export default function CommunityShopControlPanel({
                   gap: 10,
                 }}
               >
-                <button
-                  type="button"
-                  {...panelButtonGuardProps()}
-                  onClick={() => openPanelRoute("/app/shop-control?section=picture-gallery")}
-                  style={actionBtn("secondary")}
+                <SecondaryButton
+                  onClick={() => openPanelRoute(routes.shopGallery)}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="community-shop-control.shortcut.pictures"
+                  style={communityShopActionStyle("secondary")}
                 >
                   Pictures & Products
-                </button>
-                <button
-                  type="button"
-                  {...panelButtonGuardProps()}
-                  onClick={() => openPanelRoute("/app/shop-control?section=spotlight")}
-                  style={actionBtn("secondary")}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => openPanelRoute(routes.shopSpotlight)}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="community-shop-control.shortcut.spotlight"
+                  style={communityShopActionStyle("secondary")}
                 >
                   Owner Spotlight
-                </button>
-                <button
-                  type="button"
-                  {...panelButtonGuardProps()}
-                  onClick={() => openPanelRoute("/app/shop-control/subscription-spotlight")}
-                  style={actionBtn("secondary")}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => openPanelRoute(routes.subscriptionSpotlight)}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="community-shop-control.shortcut.paid-spotlight"
+                  style={communityShopActionStyle("secondary")}
                 >
                   Paid Spotlight
-                </button>
-                <button
-                  type="button"
-                  {...panelButtonGuardProps()}
-                  onClick={() => openPanelRoute("/app/vault-control")}
-                  style={actionBtn("secondary")}
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => openPanelRoute(routes.vaultControl)}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="community-shop-control.shortcut.vault"
+                  style={communityShopActionStyle("secondary")}
                 >
                   Private Vault Access
-                </button>
+                </SecondaryButton>
               </div>
             </div>
           </div>

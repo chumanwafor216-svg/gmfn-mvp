@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -15,6 +16,7 @@ import {
   getSelectedClanId,
   safeCopy,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type NoticeTone = "success" | "error";
 
@@ -55,6 +57,30 @@ function safeStr(x: any): string {
 function positiveNumber(x: any): number {
   const n = Number(x);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function routeCommunityId(search: string): number {
+  const query = new URLSearchParams(search || "");
+  return positiveNumber(
+    query.get("clan_id") ||
+      query.get("community") ||
+      query.get("community_id")
+  );
+}
+
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { loanId?: number } = {}
+): string {
+  return String(
+    resolveCtaTarget(intent, {
+      communityId,
+      loanId: extra.loanId,
+      debugId,
+    }).to
+  );
 }
 
 function firstTruthy(...values: any[]): string {
@@ -189,41 +215,8 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
 function routeTile(primary = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -246,7 +239,6 @@ function routeTile(primary = false): React.CSSProperties {
 
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -274,7 +266,6 @@ function primaryBtn(disabled = false): React.CSSProperties {
 
 function secondaryBtn(disabled = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -300,7 +291,6 @@ function secondaryBtn(disabled = false): React.CSSProperties {
 
 function collapseToggle(): React.CSSProperties {
   return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -451,6 +441,7 @@ function detailPairs(allocation: RevenueAllocationView | null): Array<[string, s
 }
 
 export default function RevenueAllocationPage() {
+  const location = useLocation();
   const selectedClanId = Number(getSelectedClanId() || 0);
 
   const [collapsed, setCollapsed] = useState<CollapseState>(() =>
@@ -549,6 +540,48 @@ export default function RevenueAllocationPage() {
   }, [currentClan]);
 
   const currentLoanId = positiveNumber(loanId);
+  const activeCommunityId = positiveNumber(
+    allocation?.clanId || routeCommunityId(location.search) || selectedClanId
+  );
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget(
+        "dashboard",
+        activeCommunityId,
+        "revenue-allocation.nav.dashboard"
+      ),
+      workbench: routeTarget(
+        "loanWorkbench",
+        activeCommunityId,
+        "revenue-allocation.route.workbench"
+      ),
+      loanSummary: currentLoanId
+        ? routeTarget(
+            "loanSummary",
+            activeCommunityId,
+            "revenue-allocation.route.loan-summary",
+            { loanId: currentLoanId }
+          )
+        : routeTarget("loans", activeCommunityId, "revenue-allocation.route.loan-summary"),
+      finance: routeTarget(
+        "finance",
+        activeCommunityId,
+        "revenue-allocation.route.finance"
+      ),
+      loans: routeTarget("loans", activeCommunityId, "revenue-allocation.route.loans"),
+      marketplace: routeTarget(
+        "marketplace",
+        activeCommunityId,
+        "revenue-allocation.route.marketplace"
+      ),
+      moneyOut: routeTarget(
+        "moneyOut",
+        activeCommunityId,
+        "revenue-allocation.route.money-out"
+      ),
+    }),
+    [activeCommunityId, currentLoanId]
+  );
   const details = useMemo(() => detailPairs(allocation), [allocation]);
 
   async function load() {
@@ -631,9 +664,9 @@ export default function RevenueAllocationPage() {
         sectionLabel="Revenue Allocation"
         title="Revenue Allocation"
         subtitle="Inspect how a support item distributes fees, guarantor pool, platform revenue, and net disbursement."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/loan-workbench"
+        backTo={routes.workbench}
         backLabel="Loan Workbench"
       />
 
@@ -796,24 +829,29 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button
+                <PrimaryButton
                   type="button"
-                  {...buttonGuardProps()}
                   onClick={() => void load()}
                   disabled={busy}
+                  busy={busy}
+                  busyLabel="Loading..."
+                  stableHeight={48}
+                  debugId="revenue-allocation.load"
                   style={primaryBtn(busy)}
                 >
-                  {busy ? "Loading..." : "Load Allocation"}
-                </button>
+                  Load Allocation
+                </PrimaryButton>
 
-                <button
+                <SecondaryButton
                   type="button"
                   onClick={copySummary}
                   disabled={!allocation}
+                  stableHeight={48}
+                  debugId="revenue-allocation.copy-summary"
                   style={secondaryBtn(!allocation)}
                 >
                   Copy Summary
-                </button>
+                </SecondaryButton>
               </div>
             </div>
           </div>
@@ -837,13 +875,15 @@ export default function RevenueAllocationPage() {
             </div>
           </div>
 
-          <button
+          <SubtleButton
             type="button"
             onClick={() => toggleSection("summary")}
+            stableHeight={46}
+            debugId="revenue-allocation.toggle-summary"
             style={collapseToggle()}
           >
             {collapsed.summary ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1002,13 +1042,15 @@ export default function RevenueAllocationPage() {
             </div>
           </div>
 
-          <button
+          <SubtleButton
             type="button"
             onClick={() => toggleSection("details")}
+            stableHeight={46}
+            debugId="revenue-allocation.toggle-details"
             style={collapseToggle()}
           >
             {collapsed.details ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.details ? (
@@ -1076,13 +1118,15 @@ export default function RevenueAllocationPage() {
             </div>
           </div>
 
-          <button
+          <SubtleButton
             type="button"
             onClick={() => toggleSection("context")}
+            stableHeight={46}
+            debugId="revenue-allocation.toggle-context"
             style={collapseToggle()}
           >
             {collapsed.context ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.context ? (
@@ -1130,13 +1174,15 @@ export default function RevenueAllocationPage() {
             </div>
           </div>
 
-          <button
+          <SubtleButton
             type="button"
             onClick={() => toggleSection("routes")}
+            stableHeight={46}
+            debugId="revenue-allocation.toggle-routes"
             style={collapseToggle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1148,7 +1194,12 @@ export default function RevenueAllocationPage() {
               gap: 12,
             }}
           >
-            <OriginLink to={currentLoanId ? `/app/loan-summary/${currentLoanId}` : "/app/loans"} style={routeTile(true)}>
+            <StableCtaLink
+              to={routes.loanSummary}
+              stableHeight={104}
+              debugId="revenue-allocation.route.loan-summary"
+              style={routeTile(true)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1162,9 +1213,14 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the support item summary after reading the allocation.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.workbench}
+              stableHeight={104}
+              debugId="revenue-allocation.route.workbench"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1178,9 +1234,14 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when you need the deeper support work item behind the allocation.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/finance" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.finance}
+              stableHeight={104}
+              debugId="revenue-allocation.route.finance"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1194,9 +1255,14 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the next question is the broader money truth in your current community.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/loans" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.loans}
+              stableHeight={104}
+              debugId="revenue-allocation.route.loans"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1210,9 +1276,14 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to the broader support overview.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/marketplace" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.marketplace}
+              stableHeight={104}
+              debugId="revenue-allocation.route.marketplace"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1226,9 +1297,14 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to Marketplace only after the allocation reading is complete.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.moneyOut}
+              stableHeight={104}
+              debugId="revenue-allocation.route.money-out"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1242,7 +1318,7 @@ export default function RevenueAllocationPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the money question becomes a guided withdrawal question again.
               </div>
-            </OriginLink>
+            </StableCtaLink>
           </div>
         ) : null}
       </section>

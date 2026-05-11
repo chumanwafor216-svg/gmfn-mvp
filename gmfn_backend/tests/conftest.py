@@ -188,7 +188,7 @@ def seed_clan_member_membership():
             text(
                 """
             INSERT OR IGNORE INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
-            VALUES (1, 1, 1, 'member', 0)
+            VALUES (1, 1, 1, 'user', 0)
             """
             )
         )
@@ -212,14 +212,14 @@ def seed_user2_non_member():
 @pytest.fixture()
 def seed_user2_member_membership(seed_clan_admin_membership, seed_user2_non_member):
     """
-    Make user 2 a normal member of clan 1 (so they can be invited as guarantor).
+    Make user 2 a normal non-admin member of clan 1 (so they can be invited as guarantor).
     """
     with engine.begin() as conn:
         conn.execute(
             text(
                 """
             INSERT OR IGNORE INTO clan_memberships (clan_id, user_id, role, personal_pool_balance)
-            VALUES (1, 2, 'member', 0)
+            VALUES (1, 2, 'user', 0)
             """
             )
         )
@@ -275,7 +275,7 @@ def override_clan_ctx_admin():
 def override_clan_ctx_member():
     def fake_clan_ctx():
         clan = Obj(id=1)
-        membership = Obj(role="member", clan_id=1, user_id=1)
+        membership = Obj(role="user", clan_id=1, user_id=1)
         current_user = Obj(id=1, email="pytest@example.com")
         return clan, membership, current_user
 

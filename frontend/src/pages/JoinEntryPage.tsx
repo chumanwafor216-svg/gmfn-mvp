@@ -1,7 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
-import OriginLink from "../components/OriginLink";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+} from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -11,8 +16,11 @@ import {
   getJoinApprovalStatus,
   getJoinInvitePreview,
   getJoinInviteRequestStatus,
+  getMe,
+  isAuthenticated,
   submitJoinRequest,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import {
   ENTRY_INVITE_CODE_KEY,
   readStorage,
@@ -72,79 +80,6 @@ function textareaStyle(): React.CSSProperties {
   };
 }
 
-function primaryBtn(disabled = false): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "min(100%, 68%)",
-    padding: "14px 18px",
-    borderRadius: 16,
-    background: disabled
-      ? "linear-gradient(180deg, #D7DEE8 0%, #C8D2DF 100%)"
-      : "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)",
-    color: disabled ? "#6B7B8D" : "#FFFFFF",
-    textDecoration: "none",
-    fontWeight: 1000,
-    border: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 15,
-    opacity: disabled ? 0.82 : 1,
-    textAlign: "center",
-    boxShadow: disabled
-      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 18px 32px rgba(11,99,209,0.24), inset 0 1px 0 rgba(255,255,255,0.24)",
-    textShadow: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    appearance: "none",
-    WebkitAppearance: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function secondaryLink(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "12px 16px",
-    borderRadius: 999,
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
-    color: "#123055",
-    textDecoration: "none",
-    fontWeight: 900,
-    border: "1px solid rgba(16,37,59,0.12)",
-    fontSize: 14,
-    boxShadow:
-      "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
-    textShadow: "0 1px 0 rgba(255,255,255,0.52)",
-    cursor: "pointer",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    pointerEvents: "auto",
-    appearance: "none",
-    WebkitAppearance: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
 function mergeSearchIntoPath(to: string, currentSearch: string): string {
   const [basePath, baseQueryRaw = ""] = String(to || "").split("?");
   const merged = new URLSearchParams(baseQueryRaw);
@@ -158,16 +93,6 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
 
   const finalQuery = merged.toString();
   return finalQuery ? `${basePath}?${finalQuery}` : basePath;
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
 }
 
 function labelText(): React.CSSProperties {
@@ -396,6 +321,10 @@ function cleanText(value: any): string {
   return String(value || "").trim();
 }
 
+function ctaPath(target: CtaTarget): string {
+  return typeof target.to === "string" ? target.to : String(target.to);
+}
+
 function dialCodeForCountry(country: string): string {
   return COUNTRY_DIAL_CODES[cleanText(country)] || "";
 }
@@ -416,7 +345,28 @@ function buildWorkSummary(category: string, detail: string): string {
 
 function friendlyJoinError(value: any): string {
   const raw = cleanText(value);
+  try {
+    const parsed = JSON.parse(raw);
+    if (cleanText(parsed?.code).toLowerCase() === "existing_account_login_required") {
+      return (
+        cleanText(parsed?.message) ||
+        "This phone is already tied to an existing GMFN identity. Sign in first, then continue this join link with the same GMFN ID."
+      );
+    }
+  } catch {
+    // Keep the plain text handling below.
+  }
+
   const lower = raw.toLowerCase();
+
+  if (
+    lower.includes("existing_account_login_required") ||
+    lower.includes("already tied to an existing gmfn identity")
+  ) {
+    return (
+      "This phone is already tied to an existing GMFN identity. Sign in first, then continue this join link with the same GMFN ID."
+    );
+  }
 
   if (
     lower.includes("invitation not found") ||
@@ -764,6 +714,8 @@ export default function JoinEntryPage() {
   });
   const [invitePreview, setInvitePreview] = useState<any>(null);
   const [inviteChecking, setInviteChecking] = useState(false);
+  const [currentMember, setCurrentMember] = useState<any>(null);
+  const [currentMemberChecked, setCurrentMemberChecked] = useState(false);
 
   const resolvedCommunityName = useMemo(() => {
     const queryName = cleanText(communityName);
@@ -858,6 +810,35 @@ export default function JoinEntryPage() {
     };
   }, [inviteCode, communityCode]);
 
+  useEffect(() => {
+    let alive = true;
+
+    if (!isAuthenticated()) {
+      setCurrentMember(null);
+      setCurrentMemberChecked(true);
+      return;
+    }
+
+    setCurrentMemberChecked(false);
+    getMe()
+      .then((out) => {
+        if (!alive) return;
+        setCurrentMember(out || null);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setCurrentMember(null);
+      })
+      .finally(() => {
+        if (!alive) return;
+        setCurrentMemberChecked(true);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const effectiveInviteCode = useMemo(() => {
     return cleanText(invitePreview?.invite_code || inviteCode);
   }, [invitePreview, inviteCode]);
@@ -873,6 +854,13 @@ export default function JoinEntryPage() {
     invitePreviewMessage,
     inviteBlocked
   );
+  const currentGmfnId = cleanText(currentMember?.gmfn_id || "");
+  const hasAuthenticatedSession = isAuthenticated();
+  const usingExistingIdentity = Boolean(currentMember && currentGmfnId);
+  const lockedAuthenticatedWithoutGmfn =
+    currentMemberChecked && hasAuthenticatedSession && !usingExistingIdentity;
+  const canUseNewMemberForm =
+    currentMemberChecked && !hasAuthenticatedSession && !usingExistingIdentity;
 
   const canSubmit =
     !!effectiveInviteCode &&
@@ -887,6 +875,45 @@ export default function JoinEntryPage() {
   const submittedRequestId = cleanText(
     success?.request?.id || success?.request_id || ""
   );
+  const signInConflictCta = useMemo(
+    () =>
+      resolveCtaTarget("login", {
+        explicitTo: mergeSearchIntoPath("/login", location.search),
+        debugId: "join-entry.sign-in-conflict",
+      }),
+    [location.search]
+  );
+  const welcomeCta = useMemo(
+    () =>
+      resolveCtaTarget("welcome", {
+        debugId: "join-entry.back-welcome",
+      }),
+    []
+  );
+  const alreadyMemberCta = useMemo(
+    () =>
+      resolveCtaTarget("marketplace", {
+        communityId: cleanText(success?.community_id || ""),
+        debugId: "join-entry.open-community",
+      }),
+    [success]
+  );
+  const pendingCta = useMemo(
+    () =>
+      resolveCtaTarget("joinPending", {
+        requestId: submittedRequestId,
+        debugId: "join-entry.open-pending",
+      }),
+    [submittedRequestId]
+  );
+  const approvalStatusCta = useMemo(
+    () =>
+      resolveCtaTarget("joinPending", {
+        explicitTo: submittedRequestId ? `/join-approval/${submittedRequestId}` : undefined,
+        debugId: "join-entry.check-approval",
+      }),
+    [submittedRequestId]
+  );
 
   const continueExistingRequest = useCallback(
     (result: any): boolean => {
@@ -899,6 +926,32 @@ export default function JoinEntryPage() {
       if (!requestId) return false;
 
       if (status === "approved") {
+        const resultChannel = cleanText(result?.result_channel || "").toLowerCase();
+        const activationRequired = result?.activation_required !== false;
+
+        if (!activationRequired || resultChannel === "approved-existing-member") {
+          const communityId = cleanText(result?.community_id || "");
+          const openTo = mergeSearchIntoPath(
+            cleanText(result?.result_path || "") ||
+              (communityId
+                ? `/app/marketplace?community=${encodeURIComponent(communityId)}`
+                : "/app/community"),
+            location.search
+          );
+
+          navigate(openTo, {
+            replace: true,
+            state: {
+              request_id: requestId,
+              community_name: community,
+              clan_name: community,
+              status,
+              gmfn_id: cleanText(result?.gmfn_id || ""),
+            },
+          });
+          return true;
+        }
+
         const activationTo = activationRouteFor(result, location.search);
         if (!activationTo) return false;
 
@@ -1303,6 +1356,101 @@ export default function JoinEntryPage() {
     }
   }
 
+  async function requestJoinWithExistingIdentity() {
+    setBusy(true);
+    setErr(null);
+    setSuccess(null);
+
+    try {
+      const safeInviteCode = cleanText(effectiveInviteCode);
+
+      if (!safeInviteCode) {
+        throw new Error("Invite code is missing from this join link.");
+      }
+      if (inviteBlocked) {
+        throw new Error(invitePreviewMessage || "This invite link is not ready.");
+      }
+      if (inviteChecking) {
+        throw new Error("The app is still checking this invite link. Please wait a moment.");
+      }
+      if (!usingExistingIdentity) {
+        throw new Error("Sign in to your existing GSN account before joining with your current GMFN ID.");
+      }
+
+      const displayName = cleanText(currentMember?.display_name || currentMember?.nickname || "");
+      const [firstPart = "Existing", ...restParts] = displayName.split(/\s+/).filter(Boolean);
+      const res = await submitJoinRequest({
+        invite_code: safeInviteCode,
+        first_name: firstPart,
+        surname: restParts.join(" ") || "GMFN member",
+        phone_e164: cleanText(currentMember?.phone_e164 || "") || undefined,
+        country: "Existing GSN identity",
+      });
+
+      const existingRequest =
+        Boolean(res?.existing_request) ||
+        Boolean(res?.existing_pending_request) ||
+        /_request_exists$/.test(cleanText(res?.code).toLowerCase());
+
+      if (existingRequest) {
+        storeExistingRequest(res, cleanText(currentMember?.phone_e164 || ""));
+        if (continueExistingRequest(res)) {
+          return;
+        }
+      }
+
+      setSuccess(res);
+
+      const resultStatus = cleanText(res?.result_status || res?.code || "").toLowerCase();
+      if (resultStatus === "already_member") {
+        return;
+      }
+
+      const nextRequestId = cleanText(res?.request?.id || res?.request_id || "");
+      const nextCommunityName = cleanText(
+        res?.community_name || res?.request?.clan_name || resolvedCommunityName
+      );
+
+      if (nextRequestId) {
+        storeExistingRequest(
+          {
+            request_id: nextRequestId,
+            status: cleanText(res?.request?.status || res?.status || "pending"),
+            community_name: nextCommunityName,
+            submitted_at: cleanText(
+              res?.request?.created_at ||
+                res?.submitted_at ||
+                new Date().toISOString()
+            ),
+            pending_status_path: res?.pending_status_path || "",
+            gmfn_id: cleanText(res?.gmfn_id || currentGmfnId),
+          },
+          cleanText(currentMember?.phone_e164 || "")
+        );
+
+        const pendingTo = mergeSearchIntoPath(
+          `/pending-approval?request_id=${encodeURIComponent(nextRequestId)}`,
+          location.search
+        );
+
+        navigate(pendingTo, {
+          replace: true,
+          state: {
+            request_id: nextRequestId,
+            community_name: nextCommunityName,
+            clan_name: nextCommunityName,
+            status: cleanText(res?.request?.status || res?.status || "pending"),
+            gmfn_id: cleanText(res?.gmfn_id || currentGmfnId),
+          },
+        });
+      }
+    } catch (e: any) {
+      setErr(friendlyJoinError(e?.message));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function resumeStoredRequest() {
     const requestId = cleanText(storedRequest?.request_id || "");
     if (!requestId) return;
@@ -1458,32 +1606,24 @@ export default function JoinEntryPage() {
                       ? ` \u2022 Community: ${cleanText(storedRequest?.community_name || "")}`
                       : ""}
                   </div>
-                  <div
-                    style={{
-                      marginTop: 14,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <button
+                  <CardActionRow style={{ marginTop: 14 }}>
+                    <PrimaryButton
                       type="button"
-                      style={primaryBtn(resumeBusy)}
                       disabled={resumeBusy}
-                      {...buttonGuardProps()}
                       onClick={resumeStoredRequest}
+                      debugId="join-entry.resume-saved-request"
+                      style={{ width: "min(100%, 68%)" }}
                     >
                       {resumeBusy ? "Opening saved request..." : "Reopen saved request"}
-                    </button>
-                    <button
+                    </PrimaryButton>
+                    <SecondaryButton
                       type="button"
-                      style={secondaryLink()}
-                      {...buttonGuardProps()}
                       onClick={clearStoredRequest}
+                      debugId="join-entry.clear-saved-request"
                     >
                       Clear saved request
-                    </button>
-                  </div>
+                    </SecondaryButton>
+                  </CardActionRow>
                 </div>
               ) : null}
 
@@ -1552,7 +1692,63 @@ export default function JoinEntryPage() {
               protected.
             </div>
 
-            {showInviteLauncher ? (
+            {currentMemberChecked && usingExistingIdentity ? (
+              <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
+                <div style={labelText()}>Existing GMFN identity</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#0B1F33",
+                    fontWeight: 1000,
+                    fontSize: 18,
+                    lineHeight: 1.35,
+                  }}
+                >
+                  Join this community with your existing GMFN identity.
+                </div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  This adds a new community membership request for{" "}
+                  {resolvedCommunityName}. It does not create a new GMFN ID or a
+                  duplicate account. Community approval may still be required.
+                </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span style={badge(true)}>GMFN ID {currentGmfnId}</span>
+                  <span style={badge(false)}>
+                    {cleanText(currentMember?.email || "Signed in")}
+                  </span>
+                </div>
+                <div style={{ marginTop: 14 }}>
+                  <PrimaryButton
+                    type="button"
+                    disabled={!inviteReady || inviteBlocked || inviteChecking || busy}
+                    onClick={requestJoinWithExistingIdentity}
+                    debugId="join-entry.existing-identity"
+                    busy={busy}
+                    busyLabel="Sending request..."
+                    style={{ width: "min(100%, 68%)" }}
+                  >
+                    Join with existing GMFN ID
+                  </PrimaryButton>
+                </div>
+              </div>
+            ) : null}
+
+            {lockedAuthenticatedWithoutGmfn ? (
+              <div style={{ marginTop: 14, ...noticeStyle("info") }}>
+                Sign in again before using an existing GMFN identity for this
+                invite. The app will not create a second identity for a logged-in
+                member.
+              </div>
+            ) : null}
+
+            {showInviteLauncher && canUseNewMemberForm ? (
               <div
                 style={{
                   ...innerCard("#FFFFFF"),
@@ -1565,33 +1761,52 @@ export default function JoinEntryPage() {
                 }}
               >
                 <div>
-                  <div style={{ ...labelText(), marginBottom: 4 }}>Request form</div>
+                  <div style={{ ...labelText(), marginBottom: 4 }}>
+                    Choose how you are joining
+                  </div>
                   <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
-                    Open this when you are ready to return your request to the
-                    community.
+                    If you already have a GMFN ID, sign in first so this invite
+                    adds only a community membership. If you are new to GSN,
+                    open the request form.
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  disabled={!canOpenForm}
-                  {...buttonGuardProps()}
-                  onClick={() => {
-                    if (!canOpenForm) return;
-                    setFormOpen((prev) => !prev);
-                  }}
+                <div
                   style={{
-                    ...secondaryLink(),
-                    opacity: canOpenForm ? 1 : 0.62,
-                    cursor: canOpenForm ? "pointer" : "not-allowed",
+                    display: "flex",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    justifyContent: isCompact ? "stretch" : "flex-end",
                   }}
                 >
-                  {inviteChecking
-                    ? "Checking"
-                    : formOpen
-                    ? "Collapse form"
-                    : "Open request form"}
-                </button>
+                  <StableCtaLink
+                    to={ctaPath(signInConflictCta)}
+                    kind="secondary"
+                    debugId="join-entry.already-have-gmfn"
+                  >
+                    I already have a GMFN ID
+                  </StableCtaLink>
+
+                  <SecondaryButton
+                    type="button"
+                    disabled={!canOpenForm}
+                    onClick={() => {
+                      if (!canOpenForm) return;
+                      setFormOpen((prev) => !prev);
+                    }}
+                    debugId="join-entry.toggle-new-member-request-form"
+                    style={{
+                      opacity: canOpenForm ? 1 : 0.62,
+                      cursor: canOpenForm ? "pointer" : "not-allowed",
+                    }}
+                  >
+                    {inviteChecking
+                      ? "Checking"
+                      : formOpen
+                      ? "Close new-member form"
+                      : "I am new to GSN"}
+                  </SecondaryButton>
+                </div>
               </div>
             ) : null}
 
@@ -1620,6 +1835,17 @@ export default function JoinEntryPage() {
             {err ? (
               <div style={{ marginTop: 18, ...noticeStyle("error") }}>
                 {err}
+                {err.toLowerCase().includes("sign in first") ? (
+                  <div style={{ marginTop: 12 }}>
+                    <StableCtaLink
+                      to={ctaPath(signInConflictCta)}
+                      kind="secondary"
+                      debugId={signInConflictCta.debugId}
+                    >
+                      Sign in to continue
+                    </StableCtaLink>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 
@@ -1630,9 +1856,12 @@ export default function JoinEntryPage() {
                 </div>
 
                 <div>
-                  Your request has been sent for community review. Admission is
-                  not automatic. Once approval is reached, you will be able to
-                  proceed to activation with your GSN identity.
+                  {cleanText(success?.result_status || success?.code || "").toLowerCase() ===
+                  "already_member"
+                    ? "You already belong to this community. Your current GMFN identity stays the same."
+                    : success?.existing_identity || success?.identity_reused
+                    ? "Your request has been sent for community review using your existing GMFN identity. Admission is not automatic, and no new GMFN ID will be created."
+                    : "Your request has been sent for community review. Admission is not automatic. Once approval is reached, you will be able to proceed to activation with your GSN identity."}
                 </div>
 
                 <div style={{ marginTop: 12 }}>
@@ -1651,23 +1880,37 @@ export default function JoinEntryPage() {
                 </div>
 
                 <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  {submittedRequestId ? (
-                    <OriginLink
-                      to={`/join-approval/${submittedRequestId}`}
-                      style={secondaryLink()}
+                  {cleanText(success?.result_status || success?.code || "").toLowerCase() ===
+                  "already_member" ? (
+                    <StableCtaLink
+                      to={ctaPath(alreadyMemberCta)}
+                      kind="secondary"
+                      debugId={alreadyMemberCta.debugId}
+                    >
+                      Open this community
+                    </StableCtaLink>
+                  ) : submittedRequestId ? (
+                    <StableCtaLink
+                      to={ctaPath(approvalStatusCta)}
+                      kind="secondary"
+                      debugId={approvalStatusCta.debugId}
                     >
                       Check approval status
-                    </OriginLink>
+                    </StableCtaLink>
                   ) : (
-                    <OriginLink to="/join-request/pending" style={secondaryLink()}>
+                    <StableCtaLink
+                      to={ctaPath(pendingCta)}
+                      kind="secondary"
+                      debugId={pendingCta.debugId}
+                    >
                       Open pending page
-                    </OriginLink>
+                    </StableCtaLink>
                   )}
                 </div>
               </div>
             ) : null}
 
-            {formOpen && canOpenForm ? (
+            {formOpen && canOpenForm && canUseNewMemberForm ? (
             <form onSubmit={onSubmit}>
               <div
                 style={{
@@ -1801,14 +2044,16 @@ export default function JoinEntryPage() {
                   justifyItems: isCompact ? "stretch" : "center",
                 }}
               >
-                <button
+                <PrimaryButton
                   type="submit"
                   disabled={!canSubmit}
-                  {...buttonGuardProps()}
-                  style={primaryBtn(!canSubmit)}
+                  debugId="join-entry.submit-new-request"
+                  busy={busy}
+                  busyLabel="Submitting Request..."
+                  style={{ width: isCompact ? "100%" : "min(100%, 68%)" }}
                 >
-                  {busy ? "Submitting Request..." : "Submit Join Request"}
-                </button>
+                  Submit Join Request
+                </PrimaryButton>
               </div>
             </form>
             ) : null}
@@ -1823,9 +2068,13 @@ export default function JoinEntryPage() {
             flexWrap: "wrap",
           }}
         >
-          <OriginLink to="/welcome" style={secondaryLink()}>
+          <StableCtaLink
+            to={ctaPath(welcomeCta)}
+            kind="secondary"
+            debugId={welcomeCta.debugId}
+          >
             Back to Welcome
-          </OriginLink>
+          </StableCtaLink>
         </div>
         </div>
       </div>

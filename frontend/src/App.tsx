@@ -15,6 +15,9 @@ import {
   isSuspendedPublicFrontendHost,
   publicShopPath,
 } from "./lib/publicLinks";
+import { APP_ROUTES } from "./lib/appRoutes";
+import { getAccessToken } from "./lib/api";
+import { publishRecoveryTarget } from "./lib/publishRecovery";
 import { gmfnBrand } from "./styles/gmfnBrand";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
@@ -122,28 +125,7 @@ const JoinRequestPendingPage = React.lazy(
 
 type EntryMode = "general" | "create" | "invite" | "approved" | "existing";
 
-const APP_ROUTES = {
-  DASHBOARD: "/app/dashboard",
-  COMMUNITY: "/app/community",
-  LOANS: "/app/loans",
-  FINANCE: "/app/finance",
-  MONEY_IN: "/app/payment/pool",
-  MONEY_OUT: "/app/withdrawal-instructions",
-  LOAN_READINESS: "/app/loan-readiness",
-  LOAN_SUGGESTIONS: "/app/loan-suggestions",
-  LOAN_WORKBENCH: "/app/loan-workbench",
-  MARKETPLACE: "/app/marketplace",
-  DEMAND_BOX: "/app/demand-box",
-  TRUST: "/app/trust",
-  TRUST_SLIP: "/app/trust-slip",
-  CCI: "/app/identity",
-  NOTIFICATIONS: "/app/notifications",
-  PROFILE: "/app/my-gmfn-and-i",
-  GUIDE: "/app/my-gmfn-and-i",
-  SETTINGS: "/app/my-gmfn-and-i?tab=settings",
-  SHOP_ME: "/app/shop-control",
-  SHOP_ASSETS: "/app/shop-assets",
-} as const;
+const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";
 
 function RouteFallback() {
   return (
@@ -224,6 +206,140 @@ function PreserveRedirect(props: { to: string }) {
       replace
     />
   );
+}
+
+function currentRoutePath(location: Pick<ReturnType<typeof useLocation>, "pathname" | "search" | "hash">): string {
+  return `${location.pathname || ""}${location.search || ""}${location.hash || ""}`;
+}
+
+function rememberAuthenticatedAppPath(path: string): void {
+  try {
+    if (typeof window === "undefined") return;
+    if (!path.startsWith("/app/") && path !== "/app") return;
+    window.sessionStorage.setItem(LAST_AUTHENTICATED_APP_PATH_KEY, path);
+  } catch {
+    // Ignore storage failures; the redirect guard still has a dashboard fallback.
+  }
+}
+
+function lastAuthenticatedAppPath(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    const value = String(
+      window.sessionStorage.getItem(LAST_AUTHENTICATED_APP_PATH_KEY) || ""
+    ).trim();
+    return value.startsWith("/app/") || value === "/app" ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+function RememberAuthenticatedAppRoute() {
+  const location = useLocation();
+
+  React.useEffect(() => {
+    if (!getAccessToken()) return;
+    rememberAuthenticatedAppPath(currentRoutePath(location));
+  }, [location]);
+
+  return null;
+}
+
+function PublicEntryGuard(props: { children: React.ReactNode }) {
+  const location = useLocation();
+  const publishTarget = publishRecoveryTarget();
+  const token = getAccessToken();
+
+  if (publishTarget || token) {
+    return (
+      <Navigate
+        to={publishTarget || lastAuthenticatedAppPath() || APP_ROUTES.DASHBOARD}
+        replace
+        state={{ recoveredFrom: currentRoutePath(location) }}
+      />
+    );
+  }
+
+  return <>{props.children}</>;
+}
+
+const ROOT_APP_ROUTE_ALIASES: Record<string, string> = {
+  "app/free-spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "free-spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "app/spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  spotlight: APP_ROUTES.FREE_SPOTLIGHT,
+  "app/shop-spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "shop-spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "app/shop-control/spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "shop-control/spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "app/shop-control/free-spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "shop-control/free-spotlight": APP_ROUTES.FREE_SPOTLIGHT,
+  "app/paid-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "paid-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "app/subscription-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "subscription-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "app/shop-control/paid-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "shop-control/paid-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "app/shop-control/subscription-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "shop-control/subscription-spotlight": APP_ROUTES.SUBSCRIPTION_SPOTLIGHT,
+  "app/shop-control": APP_ROUTES.SHOP_ME,
+  "shop-control": APP_ROUTES.SHOP_ME,
+  "app/shop-manager": APP_ROUTES.SHOP_ME,
+  "shop-manager": APP_ROUTES.SHOP_ME,
+  "app/shop-assets": APP_ROUTES.SHOP_ASSETS,
+  "shop-assets": APP_ROUTES.SHOP_ASSETS,
+  "app/shop-gallery-control": "/app/shop-control#shop-control-gallery-tools",
+  "shop-gallery-control": "/app/shop-control#shop-control-gallery-tools",
+  "app/vault-control": APP_ROUTES.VAULT_CONTROL,
+  "vault-control": APP_ROUTES.VAULT_CONTROL,
+};
+
+function rootAppAliasTarget(pathname: string, search: string, hash: string): string {
+  const alias = String(pathname || "")
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase();
+  const target = ROOT_APP_ROUTE_ALIASES[alias];
+  return target ? mergeTargetWithCurrent(target, search, hash) : "";
+}
+
+function authenticatedFallbackTarget(pathname: string, search: string, hash: string): string {
+  const alias = String(pathname || "")
+    .trim()
+    .replace(/^\/+|\/+$/g, "")
+    .toLowerCase();
+
+  if (!alias.startsWith("app/")) return "";
+
+  if (alias.includes("shop-control") || alias.includes("spotlight")) {
+    if (alias.includes("paid") || alias.includes("subscription")) {
+      return mergeTargetWithCurrent(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, search, hash);
+    }
+
+    if (alias.includes("spotlight")) {
+      return mergeTargetWithCurrent(APP_ROUTES.FREE_SPOTLIGHT, search, hash);
+    }
+
+    return mergeTargetWithCurrent(APP_ROUTES.SHOP_ME, search, hash);
+  }
+
+  return mergeTargetWithCurrent(APP_ROUTES.DASHBOARD, search, hash);
+}
+
+function RedirectUnknownRoute() {
+  const location = useLocation();
+  const appAliasTarget = rootAppAliasTarget(
+    location.pathname,
+    location.search,
+    location.hash
+  );
+  const appFallbackTarget = authenticatedFallbackTarget(
+    location.pathname,
+    location.search,
+    location.hash
+  );
+
+  return <Navigate to={appAliasTarget || appFallbackTarget || "/cover"} replace />;
 }
 
 function RedirectToCover(props: {
@@ -318,11 +434,26 @@ export default function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <PublicHostRedirect />
+      <RememberAuthenticatedAppRoute />
       <Routes>
         <Route path="/" element={<Navigate to="/cover" replace />} />
 
-      <Route path="/cover" element={<CoverPage />} />
-      <Route path="/welcome" element={<WelcomePage />} />
+      <Route
+        path="/cover"
+        element={
+          <PublicEntryGuard>
+            <CoverPage />
+          </PublicEntryGuard>
+        }
+      />
+      <Route
+        path="/welcome"
+        element={
+          <PublicEntryGuard>
+            <WelcomePage />
+          </PublicEntryGuard>
+        }
+      />
       <Route path="/guide" element={<MyGMFNAndIPage />} />
       <Route path="/my-gmfn-and-i" element={<PreserveRedirect to="/guide" />} />
 
@@ -351,6 +482,18 @@ export default function App() {
       <Route path="/marketplace" element={<PreserveRedirect to={APP_ROUTES.MARKETPLACE} />} />
       <Route path="/market" element={<PreserveRedirect to={APP_ROUTES.MARKETPLACE} />} />
       <Route path="/open-marketplace" element={<PreserveRedirect to={APP_ROUTES.MARKETPLACE} />} />
+      <Route
+        path="/free-spotlight"
+        element={<PreserveRedirect to={APP_ROUTES.FREE_SPOTLIGHT} />}
+      />
+      <Route
+        path="/paid-spotlight"
+        element={<PreserveRedirect to={APP_ROUTES.SUBSCRIPTION_SPOTLIGHT} />}
+      />
+      <Route path="/shop-control" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
+      <Route path="/shop-manager" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
+      <Route path="/shop-assets" element={<PreserveRedirect to={APP_ROUTES.SHOP_ASSETS} />} />
+      <Route path="/vault-control" element={<PreserveRedirect to={APP_ROUTES.VAULT_CONTROL} />} />
 
       <Route path="/trust" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
       <Route path="/trust-passport" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
@@ -615,6 +758,30 @@ export default function App() {
 
         <Route path="shop-control" element={<ShopControlPage />} />
         <Route
+          path="spotlight"
+          element={<PreserveRedirect to={APP_ROUTES.FREE_SPOTLIGHT} />}
+        />
+        <Route
+          path="shop-spotlight"
+          element={<PreserveRedirect to={APP_ROUTES.FREE_SPOTLIGHT} />}
+        />
+        <Route
+          path="shop-control/spotlight"
+          element={<PreserveRedirect to={APP_ROUTES.FREE_SPOTLIGHT} />}
+        />
+        <Route
+          path="shop-control/free-spotlight"
+          element={<PreserveRedirect to={APP_ROUTES.FREE_SPOTLIGHT} />}
+        />
+        <Route
+          path="subscription-spotlight"
+          element={<PreserveRedirect to={APP_ROUTES.SUBSCRIPTION_SPOTLIGHT} />}
+        />
+        <Route
+          path="shop-control/paid-spotlight"
+          element={<PreserveRedirect to={APP_ROUTES.SUBSCRIPTION_SPOTLIGHT} />}
+        />
+        <Route
           path="shop-control/subscription-spotlight"
           element={<SubscriptionSpotlightPage />}
         />
@@ -794,7 +961,7 @@ export default function App() {
         />
       </Route>
 
-        <Route path="*" element={<Navigate to="/cover" replace />} />
+        <Route path="*" element={<RedirectUnknownRoute />} />
       </Routes>
     </Suspense>
   );

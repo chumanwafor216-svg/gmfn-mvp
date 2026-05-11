@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
-import { listMyLoans } from "../lib/api";
+import { getSelectedClanId, listMyLoans } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type LoanRow = {
   id?: number;
@@ -106,27 +107,8 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
 function actionLink(primary = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -201,8 +183,27 @@ function statusStyle(status: string): React.CSSProperties {
   };
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { loanId?: number | string } = {}
+): string {
+  return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
+}
+
 export default function LoanDecisionPage() {
   const [loans, setLoans] = useState<LoanRow[]>([]);
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "loan-decision.route.dashboard"),
+      loans: routeTarget("loans", selectedClanId, "loan-decision.route.loans"),
+      workbench: routeTarget("loanWorkbench", selectedClanId, "loan-decision.route.workbench"),
+      finance: routeTarget("finance", selectedClanId, "loan-decision.route.finance"),
+    }),
+    [selectedClanId]
+  );
 
   useEffect(() => {
     (async () => {
@@ -242,9 +243,9 @@ export default function LoanDecisionPage() {
         sectionLabel="Support Decisions"
         title="Support Decisions"
         subtitle="Read each support item in a calmer decision view before moving back into workbench action."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/loans"
+        backTo={routes.loans}
         backLabel="Loans & Support"
       />
 
@@ -378,18 +379,31 @@ export default function LoanDecisionPage() {
                   </div>
 
                   <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <OriginLink
-                      to={loanId > 0 ? `/app/loan-summary/${loanId}` : "/app/loans"}
+                    <StableCtaLink
+                      to={
+                        loanId > 0
+                          ? routeTarget(
+                              "loanSummary",
+                              selectedClanId,
+                              `loan-decision.${loanId || index}.summary`,
+                              { loanId }
+                            )
+                          : routes.loans
+                      }
+                      stableHeight={48}
+                      debugId={`loan-decision.${loanId || index}.summary`}
                       style={actionLink(true)}
                     >
                       Open Loan Summary
-                    </OriginLink>
-                    <OriginLink
-                      to="/app/loan-workbench"
+                    </StableCtaLink>
+                    <StableCtaLink
+                      to={routes.workbench}
+                      stableHeight={48}
+                      debugId={`loan-decision.${loanId || index}.workbench`}
                       style={actionLink(false)}
                     >
                       Open Workbench
-                    </OriginLink>
+                    </StableCtaLink>
                   </div>
                 </div>
               );
@@ -401,15 +415,30 @@ export default function LoanDecisionPage() {
       <section style={{ ...pageCard(), marginTop: 18 }}>
         <div style={sectionLabel()}>Next Doors</div>
         <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <OriginLink to="/app/loan-workbench" style={actionLink(true)}>
+          <StableCtaLink
+            to={routes.workbench}
+            stableHeight={48}
+            debugId="loan-decision.route.workbench"
+            style={actionLink(true)}
+          >
             Loan Workbench
-          </OriginLink>
-          <OriginLink to="/app/loans" style={actionLink(false)}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.loans}
+            stableHeight={48}
+            debugId="loan-decision.route.loans"
+            style={actionLink(false)}
+          >
             Return to Loans & Support
-          </OriginLink>
-          <OriginLink to="/app/finance" style={actionLink(false)}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.finance}
+            stableHeight={48}
+            debugId="loan-decision.route.finance"
+            style={actionLink(false)}
+          >
             Open Finance
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
 

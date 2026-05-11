@@ -7,13 +7,13 @@ from decimal import Decimal
 from typing import Any, List, Optional
 from urllib.parse import quote, urlencode, urlparse
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import HTMLResponse
 from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from app.services.notification_service import create_notification
-from app.core.auth import get_current_user, is_user_activation_pending
+from app.core.auth import get_current_user, is_user_activation_pending, oauth2_scheme
 from app.core.clan_auth import (
     _is_default_clan_name,
     ensure_membership,
@@ -21,6 +21,8 @@ from app.core.clan_auth import (
     list_visible_user_clans,
 )
 from app.core.dev_guard import require_dev_mode
+from app.core.security import decode_token
+from app.core.trust_event_types import TrustEventType
 from app.db.database import get_db
 from app.db.models import (
     Clan,
@@ -34,6 +36,8 @@ from app.services.invites_service import (
     api_join_link,
     create_clan_invite,
 )
+from app.services.global_identity_service import ensure_user_gmfn_id
+from app.services.trust_events_services import log_trust_event
 
 router = APIRouter(prefix="/clans", tags=["clans"])
 
@@ -144,10 +148,10 @@ class InviteSettingsUpdateIn(BaseModel):
 
 class JoinApplicationIn(BaseModel):
     invite_code: str = Field(..., min_length=3, max_length=128)
-    first_name: str = Field(..., min_length=1, max_length=80)
-    surname: str = Field(..., min_length=1, max_length=80)
-    phone_e164: str = Field(..., min_length=8, max_length=32)
-    country: str = Field(..., min_length=2, max_length=80)
+    first_name: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    surname: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    phone_e164: Optional[str] = Field(default=None, min_length=8, max_length=32)
+    country: Optional[str] = Field(default=None, min_length=2, max_length=80)
     business_name: Optional[str] = Field(default=None, max_length=160)
     note: Optional[str] = Field(default=None, max_length=500)
 
@@ -262,6 +266,29 @@ def _safe_str(value: Any, default: str = "") -> str:
         return default
     s = str(value).strip()
     return s if s else default
+
+
+def _optional_current_user(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(oauth2_scheme),
+) -> Optional[User]:
+    if not token:
+        return None
+
+    try:
+        payload = decode_token(token)
+    except Exception:
+        return None
+
+    subject = _safe_str(payload.get("sub") if isinstance(payload, dict) else "")
+    if not subject:
+        return None
+
+    return (
+        db.query(User)
+        .filter(or_(User.email == subject, User.gmfn_id == subject))
+        .first()
+    )
 
 
 def _member_display(user: Optional[User]) -> str:
@@ -524,22 +551,7 @@ def _clan_from_community_code(
     return None
 
 
-def _ensure_user_gmfn_id(db: Session, user: User) -> User:
-    current = str(getattr(user, "gmfn_id", "") or "").strip()
-    if current:
-        return user
-
-    for _ in range(20):
-        candidate = "GMFN-U-" + secrets.token_hex(4).upper()
-        exists = db.query(User).filter(User.gmfn_id == candidate).first()
-        if not exists:
-            user.gmfn_id = candidate
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            return user
-
-    raise HTTPException(status_code=500, detail="Could not generate unique GMFN ID")
+_ensure_user_gmfn_id = ensure_user_gmfn_id
 
 
 def _current_join_status(
@@ -663,6 +675,51 @@ def _pending_applicant_email(phone_e164: str) -> str:
     return f"{digits}@pending.gmfn.local"
 
 
+def _is_active_membership(
+    db: Session,
+    *,
+    clan_id: int,
+    user_id: int,
+) -> Optional[ClanMembership]:
+    return (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+
+
+def _already_member_join_payload(
+    db: Session,
+    *,
+    clan: Clan,
+    user: User,
+    membership: ClanMembership,
+) -> dict[str, Any]:
+    return {
+        "ok": True,
+        "result_status": "already_member",
+        "code": "already_member",
+        "message": (
+            "You already belong to this community. Your existing GMFN identity "
+            "was reused; no new identity was created."
+        ),
+        "community_id": int(clan.id),
+        "community_code": _community_code(clan.id, clan=clan),
+        "community_name": clan.name,
+        "marketplace_name": getattr(clan, "marketplace_name", None),
+        "user_id": int(user.id),
+        "gmfn_id": _safe_str(getattr(user, "gmfn_id", None)) or None,
+        "membership": _member_row(db, membership),
+        "request": None,
+        "existing_identity": True,
+        "identity_reused": True,
+    }
+
+
 def _join_request_status_payload(
     db: Session,
     request: Request,
@@ -682,21 +739,43 @@ def _join_request_status_payload(
     stats = _current_join_status(db, join_request=req)
 
     gmfn_id = getattr(applicant, "gmfn_id", None) if applicant else None
+    safe_status = str(req.status).lower()
+    existing_identity_marker = (
+        _safe_str(getattr(req, "activation_delivery_status", None)).lower()
+        == "not_required"
+    )
+    activation_not_required = (
+        safe_status == "approved"
+        and existing_identity_marker
+    )
+    activation_required = bool(safe_status == "approved" and not activation_not_required)
 
     saved_activation_link = _safe_str(getattr(req, "activation_link", None))
-    if not saved_activation_link and gmfn_id and str(req.status).lower() == "approved":
+    if (
+        activation_required
+        and not saved_activation_link
+        and gmfn_id
+        and str(req.status).lower() == "approved"
+    ):
         saved_activation_link = _frontend_activation_link(request, gmfn_id, int(req.id))
 
     saved_activation_path = _safe_str(getattr(req, "activation_path", None))
-    if not saved_activation_path and gmfn_id and str(req.status).lower() == "approved":
+    if (
+        activation_required
+        and not saved_activation_path
+        and gmfn_id
+        and str(req.status).lower() == "approved"
+    ):
         saved_activation_path = _frontend_activation_path(gmfn_id, int(req.id))
 
     request_id = int(req.id)
-    safe_status = str(req.status).lower()
     pending_status_path = f"/pending-approval?request_id={request_id}"
     approval_path = f"/join-approval/{request_id}"
 
-    if safe_status == "approved":
+    if safe_status == "approved" and not activation_required:
+        result_channel = "approved-existing-member"
+        result_path = f"/app/marketplace?community={int(req.clan_id)}"
+    elif safe_status == "approved":
         result_channel = "activation-ready"
         result_path = saved_activation_path or approval_path
     elif safe_status == "rejected":
@@ -724,6 +803,9 @@ def _join_request_status_payload(
         "activation_path": saved_activation_path or None,
         "activation_link": saved_activation_link or None,
         "activation_message": getattr(req, "activation_message", None),
+        "activation_required": activation_required,
+        "existing_identity": existing_identity_marker,
+        "identity_reused": existing_identity_marker,
         "activation_generated_at": (
             req.activation_generated_at.isoformat()
             if getattr(req, "activation_generated_at", None)
@@ -743,7 +825,9 @@ def _join_request_status_payload(
         "threshold_ratio": stats["threshold_ratio"],
         "eligible_reviewers": stats["eligible_reviewers"],
         "next_step": (
-            "activate-membership"
+            "open-community"
+            if safe_status == "approved" and not activation_required
+            else "activate-membership"
             if safe_status == "approved"
             else "review-decision"
             if safe_status == "rejected"
@@ -788,6 +872,12 @@ def _mark_activation_opened_if_needed(
     req: ClanJoinRequest,
 ) -> ClanJoinRequest:
     if str(getattr(req, "status", "")).lower() != "approved":
+        return req
+
+    if (
+        _safe_str(getattr(req, "activation_delivery_status", None)).lower()
+        == "not_required"
+    ):
         return req
 
     current_delivery = _safe_str(getattr(req, "activation_delivery_status", None)).lower()
@@ -1137,34 +1227,80 @@ def _approve_join_request(
 
     membership = ensure_membership(db=db, clan=clan, user=applicant, role="user")
 
-    activation = _build_activation_package(
-        request=request,
-        clan=clan,
-        applicant=applicant,
-        inviter=inviter,
-        join_request=join_request,
+    existing_identity = (
+        _safe_str(getattr(join_request, "activation_delivery_status", None)).lower()
+        == "not_required"
     )
 
     join_request.status = "approved"
     join_request.decided_at = datetime.now(timezone.utc)
-    join_request.activation_link = activation.get("activation_link")
-    join_request.activation_message = activation.get("activation_message")
-    join_request.activation_generated_at = datetime.now(timezone.utc)
-    join_request.activation_delivery_status = "pending"
+
+    if existing_identity:
+        join_request.activation_link = None
+        join_request.activation_message = None
+        join_request.activation_generated_at = None
+        join_request.activation_delivery_status = "not_required"
+    else:
+        activation = _build_activation_package(
+            request=request,
+            clan=clan,
+            applicant=applicant,
+            inviter=inviter,
+            join_request=join_request,
+        )
+        join_request.activation_link = activation.get("activation_link")
+        join_request.activation_message = activation.get("activation_message")
+        join_request.activation_generated_at = datetime.now(timezone.utc)
+        join_request.activation_delivery_status = "pending"
 
     db.add(join_request)
     db.commit()
     db.refresh(join_request)
 
-    create_notification(
-        db,
-        user_id=int(applicant.id),
-        kind="approval_success",
-        title="You were approved",
-        message="You can now activate your GMFN account.",
-        action_url=_safe_str(activation.get("activation_path"), "/activate-membership"),
-        action_label="Activate now",
-    )
+    if existing_identity:
+        create_notification(
+            db,
+            user_id=int(applicant.id),
+            kind="approval_success",
+            title="You were approved",
+            message=(
+                f"{clan.name} approved your request. Your existing GMFN ID was reused; "
+                "no new identity was created."
+            ),
+            action_url=f"/app/marketplace?community={int(clan.id)}",
+            action_label="Open community",
+        )
+        activation = {
+            "gmfn_id": applicant.gmfn_id,
+            "community_id": int(clan.id),
+            "community_code": _community_code(clan.id, clan=clan),
+            "community_name": clan.name,
+            "marketplace_name": _safe_str(getattr(clan, "marketplace_name", None)) or None,
+            "invited_by_user_id": int(join_request.invited_by_user_id) if join_request.invited_by_user_id else None,
+            "invited_by_email": (getattr(inviter, "email", None) if inviter else None),
+            "invited_by_display": (_member_display(inviter) if inviter else None),
+            "activation_path": None,
+            "activation_link": None,
+            "activation_message": None,
+            "lineage": {
+                "origin_community_id": int(clan.id),
+                "origin_community_code": _community_code(clan.id, clan=clan),
+                "origin_community_name": clan.name,
+                "inviter_user_id": int(join_request.invited_by_user_id) if join_request.invited_by_user_id else None,
+                "invite_id": int(join_request.invite_id) if join_request.invite_id else None,
+                "join_request_id": int(join_request.id),
+            },
+        }
+    else:
+        create_notification(
+            db,
+            user_id=int(applicant.id),
+            kind="approval_success",
+            title="You were approved",
+            message="You can now activate your GMFN account.",
+            action_url=_safe_str(activation.get("activation_path"), "/activate-membership"),
+            action_label="Activate now",
+        )
     
     create_notification(
         db,
@@ -1175,13 +1311,44 @@ def _approve_join_request(
         action_url="/app/trust",
         action_label="View Trust",
     )
+
+    log_trust_event(
+        db,
+        event_type=TrustEventType.CLAN_JOIN_VIA_INVITE,
+        clan_id=int(clan.id),
+        actor_user_id=int(applicant.id),
+        subject_user_id=int(applicant.id),
+        meta={
+            "reason": (
+                "existing_user_join_request_approved"
+                if existing_identity
+                else "new_applicant_join_request_approved"
+            ),
+            "join_request_id": int(join_request.id),
+            "invite_id": int(join_request.invite_id) if join_request.invite_id else None,
+            "invited_by_user_id": int(join_request.invited_by_user_id) if join_request.invited_by_user_id else None,
+            "membership_id": int(membership.id),
+            "user_id": int(applicant.id),
+            "gmfn_id": _safe_str(getattr(applicant, "gmfn_id", None)) or None,
+            "identity_reused": existing_identity,
+        },
+        dedupe_key=f"join-request-approved:{int(join_request.id)}",
+    )
+
     return {
         "ok": True,
         "status": "approved",
         "gmfn_id": applicant.gmfn_id,
         "user_id": int(applicant.id),
         "membership_id": int(membership.id),
-        "message": "Applicant approved and GMFN ID issued.",
+        "existing_identity": existing_identity,
+        "identity_reused": existing_identity,
+        "activation_required": not existing_identity,
+        "message": (
+            "Applicant approved with existing GMFN ID."
+            if existing_identity
+            else "Applicant approved and GMFN ID issued."
+        ),
         **activation,
         "activation_generated_at": join_request.activation_generated_at,
         "activation_delivery_status": join_request.activation_delivery_status,
@@ -1261,6 +1428,8 @@ def create_clan(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    current_user = _ensure_user_gmfn_id(db, current_user)
+
     existing = db.query(Clan).filter(Clan.name == payload.name).first()
     if existing:
         raise HTTPException(status_code=400, detail="Clan name already exists")
@@ -1291,14 +1460,7 @@ def create_clan(
     db.commit()
     db.refresh(clan)
 
-    m = ClanMembership(
-        clan_id=clan.id,
-        user_id=current_user.id,
-        role="admin",
-        personal_pool_balance=Decimal("0"),
-    )
-    db.add(m)
-    db.commit()
+    ensure_membership(db=db, clan=clan, user=current_user, role="admin")
 
     return _clan_out(clan)
 
@@ -1316,6 +1478,7 @@ def list_my_clans(
 @router.post("/{clan_id}/join", status_code=201, response_model=dict[str, Any])
 def join_clan(
     clan_id: int,
+    response: Response,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -1324,6 +1487,8 @@ def join_clan(
         raise HTTPException(status_code=404, detail="Clan not found")
     if _is_default_clan_name(getattr(clan, "name", None)):
         raise HTTPException(status_code=404, detail="Clan not found")
+
+    current_user = _ensure_user_gmfn_id(db, current_user)
 
     exists = (
         db.query(ClanMembership)
@@ -1335,7 +1500,37 @@ def join_clan(
         .first()
     )
     if exists:
-        raise HTTPException(status_code=409, detail="Already a member of this clan")
+        response.status_code = 200
+        log_trust_event(
+            db,
+            event_type=TrustEventType.CLAN_JOINED,
+            clan_id=int(clan_id),
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            meta={
+                "reason": "direct_join_already_member",
+                "membership_id": int(exists.id),
+                "user_id": int(current_user.id),
+                "gmfn_id": _safe_str(getattr(current_user, "gmfn_id", None)) or None,
+                "identity_reused": True,
+                "community_admission_status": "already_member",
+            },
+            dedupe_key=f"direct-join-already-member:{int(clan_id)}:{int(current_user.id)}",
+        )
+        return {
+            "ok": True,
+            "result_status": "already_member",
+            "code": "already_member",
+            "message": "You already belong to this community. Your existing GMFN identity was reused.",
+            "community_id": int(clan_id),
+            "community_code": _community_code(clan_id),
+            "community_name": clan.name,
+            "user_id": int(current_user.id),
+            "gmfn_id": _safe_str(getattr(current_user, "gmfn_id", None)) or None,
+            "existing_identity": True,
+            "identity_reused": True,
+            "membership": _member_row(db, exists),
+        }
 
     m = ClanMembership(
         clan_id=clan_id,
@@ -1347,9 +1542,35 @@ def join_clan(
     db.commit()
     db.refresh(m)
 
+    log_trust_event(
+        db,
+        event_type=TrustEventType.CLAN_JOINED,
+        clan_id=int(clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "reason": "direct_existing_user_membership_created",
+            "membership_id": int(m.id),
+            "user_id": int(current_user.id),
+            "gmfn_id": _safe_str(getattr(current_user, "gmfn_id", None)) or None,
+            "identity_reused": True,
+            "community_admission_status": "joined",
+        },
+        dedupe_key=f"direct-join-created:{int(m.id)}",
+    )
+
     return {
         "ok": True,
+        "result_status": "joined_successfully",
+        "code": "joined_successfully",
+        "message": "Community membership created using your existing GMFN identity.",
+        "community_id": int(clan_id),
         "community_code": _community_code(clan_id),
+        "community_name": clan.name,
+        "user_id": int(current_user.id),
+        "gmfn_id": _safe_str(getattr(current_user, "gmfn_id", None)) or None,
+        "existing_identity": True,
+        "identity_reused": True,
         "membership": _member_row(db, m),
     }
 
@@ -1396,8 +1617,16 @@ def select_clan(
     if _is_default_clan_name(getattr(clan, "name", None)):
         raise HTTPException(status_code=404, detail="Clan not found")
 
-    role = "admin" if (current_user.role or "").lower() == "admin" else "user"
-    membership = ensure_membership(db=db, clan=clan, user=current_user, role=role)
+    membership = _is_active_membership(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(current_user.id),
+    )
+    if membership is None:
+        raise HTTPException(
+            status_code=403,
+            detail="Join or be approved by this community before selecting it.",
+        )
 
     return {
         "ok": True,
@@ -1873,6 +2102,7 @@ def create_join_request(
     payload: JoinApplicationIn,
     request: Request,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(_optional_current_user),
 ):
     invite_code = (payload.invite_code or "").strip()
     if not invite_code:
@@ -1929,27 +2159,121 @@ def create_join_request(
 
         invited_by_user_id = int(inviter_membership.user_id) if inviter_membership else None
 
-    applicant_email = _pending_applicant_email(payload.phone_e164)
-
-    existing_user = db.query(User).filter(User.email == applicant_email).first()
-    if existing_user:
-        applicant_user = existing_user
-    else:
-        applicant_user = User(
-            email=applicant_email,
-            hashed_password="PENDING_APPROVAL",
-            role="user",
-        )
-        db.add(applicant_user)
-        db.commit()
-        db.refresh(applicant_user)
+    existing_identity_join = bool(
+        current_user is not None and not is_user_activation_pending(current_user)
+    )
 
     submitted_phone = _safe_str(payload.phone_e164)
-    if submitted_phone and _safe_str(getattr(applicant_user, "phone_e164", None)) != submitted_phone:
+    if existing_identity_join:
+        applicant_user = _ensure_user_gmfn_id(db, current_user)
+    else:
+        missing_fields = [
+            label
+            for label, value in (
+                ("first_name", payload.first_name),
+                ("surname", payload.surname),
+                ("phone_e164", payload.phone_e164),
+                ("country", payload.country),
+            )
+            if not _safe_str(value)
+        ]
+        if missing_fields:
+            raise HTTPException(
+                status_code=422,
+                detail={
+                    "code": "new_applicant_details_required",
+                    "message": "New applicants must provide basic join request details.",
+                    "missing_fields": missing_fields,
+                },
+            )
+
+        applicant_email = _pending_applicant_email(submitted_phone)
+        existing_identity_user = (
+            db.query(User)
+            .filter(User.phone_e164 == submitted_phone)
+            .first()
+        )
+        existing_identity_email = _safe_str(
+            getattr(existing_identity_user, "email", None)
+        ).lower()
+        if (
+            existing_identity_user is not None
+            and not existing_identity_email.endswith("@pending.gmfn.local")
+            and not is_user_activation_pending(existing_identity_user)
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "existing_account_login_required",
+                    "message": (
+                        "This phone number is already tied to an existing GMFN identity. "
+                        "Sign in to that account first, then continue this community join "
+                        "with the same GMFN ID."
+                    ),
+                    "login_path": "/login",
+                    "invite_code": invite_code,
+                    "community_id": int(clan.id),
+                    "community_code": _community_code(clan.id, clan=clan),
+                    "community_name": clan.name,
+                    "marketplace_name": getattr(clan, "marketplace_name", None),
+                    "gmfn_id": _safe_str(getattr(existing_identity_user, "gmfn_id", None)) or None,
+                },
+            )
+
+        existing_user = db.query(User).filter(User.email == applicant_email).first()
+        if existing_user:
+            applicant_user = existing_user
+        else:
+            applicant_user = User(
+                email=applicant_email,
+                hashed_password="PENDING_APPROVAL",
+                role="user",
+            )
+            db.add(applicant_user)
+            db.commit()
+            db.refresh(applicant_user)
+
+    if (
+        submitted_phone
+        and not _safe_str(getattr(applicant_user, "phone_e164", None))
+    ):
         applicant_user.phone_e164 = submitted_phone
         db.add(applicant_user)
         db.commit()
         db.refresh(applicant_user)
+
+    existing_membership = _is_active_membership(
+        db,
+        clan_id=int(clan.id),
+        user_id=int(applicant_user.id),
+    )
+    if existing_membership:
+        log_trust_event(
+            db,
+            event_type=TrustEventType.INVITE_ACCEPTED,
+            clan_id=int(clan.id),
+            actor_user_id=int(applicant_user.id),
+            subject_user_id=int(applicant_user.id),
+            meta={
+                "reason": "existing_user_invite_already_member",
+                "invite_code": invite_code,
+                "invite_id": int(invite_row.id) if invite_row else None,
+                "user_id": int(applicant_user.id),
+                "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+                "membership_id": int(existing_membership.id),
+                "identity_reused": True,
+            },
+            dedupe_key=(
+                "join-request-already-member:"
+                f"{int(clan.id)}:{int(applicant_user.id)}:{invite_code}"
+            ),
+        )
+        return _already_member_join_payload(
+            db,
+            clan=clan,
+            user=applicant_user,
+            membership=existing_membership,
+        )
 
     existing_request = (
         db.query(ClanJoinRequest)
@@ -1976,6 +2300,9 @@ def create_join_request(
         invite_id=(int(invite_row.id) if invite_row else None),
         invited_by_user_id=invited_by_user_id,
         status="pending",
+        activation_delivery_status=(
+            "not_required" if existing_identity_join else None
+        ),
         created_at=datetime.now(timezone.utc),
     )
     db.add(join_request)
@@ -1996,6 +2323,16 @@ def create_join_request(
     db.refresh(join_request)
 
     reviewers = _active_reviewer_memberships(db, clan_id=int(clan.id))
+    applicant_label = (
+        _member_display(applicant_user)
+        if existing_identity_join
+        else " ".join(
+            part
+            for part in (_safe_str(payload.first_name), _safe_str(payload.surname))
+            if part
+        )
+        or _member_display(applicant_user)
+    )
 
     notified_user_ids: set[int] = set()
     for reviewer, reviewer_user in reviewers:
@@ -2009,7 +2346,7 @@ def create_join_request(
             kind="approval_request",
             title="New join request",
             message=(
-                f"{payload.first_name} wants to join {clan.name} "
+                f"{applicant_label} wants to join {clan.name} "
                 f"({ _community_code(clan.id, clan=clan) })."
             ),
             action_url=(
@@ -2020,19 +2357,47 @@ def create_join_request(
             action_label="Review",
         )
 
+    log_trust_event(
+        db,
+        event_type=TrustEventType.INVITE_ACCEPTED,
+        clan_id=int(clan.id),
+        actor_user_id=int(applicant_user.id),
+        subject_user_id=int(applicant_user.id),
+        meta={
+            "reason": (
+                "existing_user_join_request_created"
+                if existing_identity_join
+                else "new_applicant_join_request_created"
+            ),
+            "invite_code": invite_code,
+            "invite_id": int(invite_row.id) if invite_row else None,
+            "join_request_id": int(join_request.id),
+            "user_id": int(applicant_user.id),
+            "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+            "identity_reused": existing_identity_join,
+            "community_admission_status": "pending",
+        },
+        dedupe_key=f"join-request-created:{int(join_request.id)}",
+    )
+
     return {
         "ok": True,
+        "result_status": "pending_request_created",
         "message": "Join request submitted. Admission is subject to community approval.",
         "community_id": int(clan.id),
         "community_code": _community_code(clan.id),
         "community_name": clan.name,
         "marketplace_name": getattr(clan, "marketplace_name", None),
+        "user_id": int(applicant_user.id),
+        "gmfn_id": _safe_str(getattr(applicant_user, "gmfn_id", None)) or None,
+        "existing_identity": existing_identity_join,
+        "identity_reused": existing_identity_join,
         "request": _join_request_out(db, join_request),
         "applicant_profile": {
-            "first_name": payload.first_name,
-            "surname": payload.surname,
-            "phone_e164": payload.phone_e164,
-            "country": payload.country,
+            "first_name": _safe_str(payload.first_name) or None,
+            "surname": _safe_str(payload.surname) or None,
+            "phone_e164": submitted_phone or None,
+            "country": _safe_str(payload.country) or None,
             "business_name": payload.business_name,
             "note": payload.note,
         },

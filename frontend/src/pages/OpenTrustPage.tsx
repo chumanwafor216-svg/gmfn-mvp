@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { CardActionRow, StableCtaLink } from "../components/StableButton";
 import {
   getCurrentClan,
   getMe,
@@ -11,6 +11,7 @@ import {
   institutionalInnerCard,
   institutionalPageCard,
 } from "../lib/institutionalSurface";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type TrustSlipRecord = {
   code?: string | null;
@@ -110,47 +111,6 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
-  };
-}
-
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    transform: "none",
-    lineHeight: 1.2,
-  };
-}
-
-function actionBtn(primary = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    position: "relative",
-    zIndex: 2,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    padding: "12px 16px",
-    borderRadius: 15,
-    border: primary
-      ? "1px solid rgba(9,83,176,0.24)"
-      : "1px solid rgba(124,153,196,0.22)",
-    background: primary
-      ? "linear-gradient(180deg, #1D75E8 0%, #0B63D1 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    fontSize: 15,
-    textDecoration: "none",
-    whiteSpace: "normal",
-    boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
   };
 }
 
@@ -351,8 +311,20 @@ function toneMeta(tone: ReadingState["tone"]) {
   return { bg: "#F8FAFC", border: "1px solid rgba(148,163,184,0.16)", text: "#334155" };
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function OpenTrustPage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "open-trust.route.dashboard"),
+      trust: routeTarget("trust", selectedClanId, "open-trust.route.trust"),
+      community: routeTarget("communityHome", selectedClanId, "open-trust.route.community"),
+    }),
+    [selectedClanId]
+  );
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -441,9 +413,9 @@ export default function OpenTrustPage() {
         sectionLabel="Open Trust"
         title="Open Trust"
         subtitle="Your immediate community trust reading without the wider Trust Passport bundle."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/dashboard"
+        backTo={routes.dashboard}
         backLabel="Dashboard"
       />
 
@@ -487,14 +459,14 @@ export default function OpenTrustPage() {
             <div style={{ marginTop: 10, ...helperText() }}>
               {loading ? "Loading the current community trust reading..." : openTrust.whyText}
             </div>
-            <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <OriginLink to="/app/trust" style={actionBtn(true)}>
+            <CardActionRow style={{ marginTop: 16 }}>
+              <StableCtaLink to={routes.trust} kind="primary" debugId="open-trust.trust">
                 Open Trust Passport
-              </OriginLink>
-              <OriginLink to="/app/community" style={actionBtn(false)}>
+              </StableCtaLink>
+              <StableCtaLink to={routes.community} debugId="open-trust.community">
                 Open Community
-              </OriginLink>
-            </div>
+              </StableCtaLink>
+            </CardActionRow>
           </div>
         </div>
       </section>

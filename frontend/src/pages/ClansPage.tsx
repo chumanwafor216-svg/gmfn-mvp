@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
+import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import { canonicalJoinInviteUrl, normalizedJoinInviteUrl } from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   createClan,
   createClanInvite,
@@ -271,16 +272,13 @@ function buildGuideFallbackUrl(): string {
   return publicFrontendUrl("/guide");
 }
 
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = Number(clanId || 0);
-  if (!path || !Number.isFinite(safeClanId) || safeClanId <= 0) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}community=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  extra: { explicitTo?: string } = {}
+): string {
+  return resolveCtaTarget(intent, { communityId, debugId, ...extra }).to as string;
 }
 
 function buildInviteState(
@@ -394,6 +392,24 @@ export default function ClansPage() {
   const selectedCommunityMemberCount = selectedCommunity
     ? extractMembers(selectedCommunity).length
     : 0;
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedCommunityId, "clans.route.dashboard"),
+      community: routeTarget("communityHome", selectedCommunityId, "clans.route.community"),
+      communityDetail: selectedCommunityId
+        ? routeTarget("communityDetail", selectedCommunityId, "clans.route.community-detail")
+        : routeTarget("communityHome", selectedCommunityId, "clans.route.community-fallback"),
+      buildFirstCircle: routeTarget(
+        "buildFirstCircle",
+        selectedCommunityId,
+        "clans.route.build-first-circle"
+      ),
+      demandBox: routeTarget("demandBox", selectedCommunityId, "clans.route.demand-box"),
+      shop: routeTarget("shop", selectedCommunityId, "clans.route.shop"),
+      marketplace: routeTarget("marketplace", selectedCommunityId, "clans.route.marketplace"),
+    }),
+    [selectedCommunityId]
+  );
 
   const senderName = safeStr(
     me?.display_name || me?.full_name || me?.nickname || me?.email || "Community member"
@@ -487,7 +503,7 @@ export default function ClansPage() {
       setInviteState(null);
 
       if (newId) {
-        navigateWithOrigin(navigate, "/app/build-first-circle", location, {
+        navigateWithOrigin(navigate, routes.buildFirstCircle, location, {
           replace: false,
           state: {
             created_clan_id: newId,
@@ -509,7 +525,11 @@ export default function ClansPage() {
   async function handleOpenMarketplace(clanId: number) {
     if (!clanId) return;
     await handleSelectCommunity(clanId);
-    navigateWithOrigin(navigate, withClanQuery("/app/marketplace", clanId), location);
+    navigateWithOrigin(
+      navigate,
+      routeTarget("marketplace", clanId, "clans.community.marketplace-target"),
+      location
+    );
   }
 
   return (
@@ -596,12 +616,21 @@ export default function ClansPage() {
                 flexWrap: "wrap",
               }}
             >
-              <OriginLink to="/app/community" style={btn(false)}>
+              <StableCtaLink
+                to={routes.community}
+                debugId="clans.quick.community"
+                style={btn(false)}
+              >
                 Community Home
-              </OriginLink>
-              <OriginLink to="/app/dashboard" style={btn(true)}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.dashboard}
+                kind="primary"
+                debugId="clans.quick.dashboard"
+                style={btn(true)}
+              >
                 Dashboard
-              </OriginLink>
+              </StableCtaLink>
             </div>
           </div>
         </div>
@@ -790,17 +819,24 @@ export default function ClansPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <button
+                <PrimaryButton
                   type="submit"
+                  busy={creatingCommunity}
+                  busyLabel="Creating..."
+                  debugId="clans.create-community"
                   style={btn(true, creatingCommunity || !safeStr(communityNameInput))}
                   disabled={creatingCommunity || !safeStr(communityNameInput)}
                 >
-                  {creatingCommunity ? "Creating..." : "Create community"}
-                </button>
+                  Create community
+                </PrimaryButton>
 
-                <OriginLink to="/app/community" style={btn(false)}>
+                <StableCtaLink
+                  to={routes.community}
+                  debugId="clans.create.open-community"
+                  style={btn(false)}
+                >
                   Open Community Home
-                </OriginLink>
+                </StableCtaLink>
               </div>
             </form>
           </div>
@@ -929,34 +965,34 @@ export default function ClansPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <OriginLink
-                    to={
-                      selectedCommunityId
-                        ? `/app/community/${encodeURIComponent(String(selectedCommunityId))}`
-                        : "/app/community"
-                    }
+                  <StableCtaLink
+                    to={routes.communityDetail}
+                    debugId="clans.next.community"
                     style={btn(false)}
                   >
                     Community Home
-                  </OriginLink>
-                  <OriginLink
-                    to={withClanQuery("/app/demand-box", selectedCommunityId)}
+                  </StableCtaLink>
+                  <StableCtaLink
+                    to={routes.demandBox}
+                    debugId="clans.next.demand-box"
                     style={btn(false)}
                   >
                     Demand Box
-                  </OriginLink>
-                  <OriginLink
-                    to={withClanQuery("/app/shop-control", selectedCommunityId)}
+                  </StableCtaLink>
+                  <StableCtaLink
+                    to={routes.shop}
+                    debugId="clans.next.shop-control"
                     style={btn(false)}
                   >
                     My Shop Tools
-                  </OriginLink>
-                  <OriginLink
-                    to={withClanQuery("/app/marketplace", selectedCommunityId)}
+                  </StableCtaLink>
+                  <StableCtaLink
+                    to={routes.marketplace}
+                    debugId="clans.next.marketplace"
                     style={btn(false)}
                   >
                     Marketplace
-                  </OriginLink>
+                  </StableCtaLink>
                 </div>
 
                 <div
@@ -1007,14 +1043,16 @@ export default function ClansPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <PrimaryButton
             style={btn(true, !selectedCommunityId || inviteLoading)}
             onClick={() => setInviteComposerOpen(true)}
             disabled={!selectedCommunityId || inviteLoading}
+            busy={inviteLoading}
+            busyLabel="Creating..."
+            debugId="clans.invite.open-form.top"
           >
-            {inviteLoading ? "Creating..." : "Open invite form"}
-          </button>
+            Open invite form
+          </PrimaryButton>
         </div>
 
         <div
@@ -1070,14 +1108,16 @@ export default function ClansPage() {
               </div>
 
               <div>
-                <button
-                  type="button"
+                <PrimaryButton
                   style={btn(true, !selectedCommunityId || inviteLoading)}
                   onClick={() => setInviteComposerOpen(true)}
                   disabled={!selectedCommunityId || inviteLoading}
+                  busy={inviteLoading}
+                  busyLabel="Creating..."
+                  debugId="clans.invite.open-form.summary"
                 >
-                  {inviteLoading ? "Creating..." : "Open invite form"}
-                </button>
+                  Open invite form
+                </PrimaryButton>
               </div>
             </div>
           </div>
@@ -1225,48 +1265,53 @@ export default function ClansPage() {
                       }}
                     >
                       {inviteState.link ? (
-                        <button
-                          type="button"
+                        <SecondaryButton
                           style={btn(false)}
                           onClick={() => copyText(inviteState.link || "", "link")}
+                          debugId="clans.invite.copy-link"
                         >
                           {copied === "link" ? "Copied link" : "Copy link"}
-                        </button>
+                        </SecondaryButton>
                       ) : null}
 
                       {inviteState.packagedShareText ? (
-                        <button
-                          type="button"
+                        <SecondaryButton
                           style={btn(false)}
                           onClick={() =>
                             copyText(inviteState.packagedShareText || "", "package")
                           }
+                          debugId="clans.invite.copy-package"
                         >
                           {copied === "package"
                             ? "Copied package"
                             : "Copy full package"}
-                        </button>
+                        </SecondaryButton>
                       ) : null}
 
                       {inviteState.guideUrl ? (
-                        <a
-                          href={inviteState.guideUrl}
-                          target="_blank"
-                          rel="noreferrer"
+                        <SecondaryButton
                           style={btn(false)}
+                          onClick={() => {
+                            window.open(
+                              inviteState.guideUrl || "",
+                              "_blank",
+                              "noopener,noreferrer"
+                            );
+                          }}
+                          debugId="clans.invite.open-guide"
                         >
                           Open guide
-                        </a>
+                        </SecondaryButton>
                       ) : null}
 
                       {inviteState.whatsappShareText ? (
-                        <button
-                          type="button"
+                        <PrimaryButton
                           style={btn(true)}
                           onClick={shareViaWhatsApp}
+                          debugId="clans.invite.share-whatsapp"
                         >
                           Share on WhatsApp
-                        </button>
+                        </PrimaryButton>
                       ) : null}
                     </div>
                   </div>
@@ -1425,22 +1470,24 @@ export default function ClansPage() {
                   justifyContent: "flex-end",
                 }}
               >
-                <button
-                  type="button"
+                <SecondaryButton
                   onClick={() => setInviteComposerOpen(false)}
                   style={btn(false)}
                   disabled={inviteLoading}
+                  debugId="clans.invite-modal.cancel"
                 >
                   Cancel
-                </button>
-                <button
-                  type="button"
+                </SecondaryButton>
+                <PrimaryButton
                   onClick={() => void handleCreateInvite()}
                   style={btn(true, inviteLoading || !selectedCommunityId)}
                   disabled={inviteLoading || !selectedCommunityId}
+                  busy={inviteLoading}
+                  busyLabel="Creating..."
+                  debugId="clans.invite-modal.create-package"
                 >
-                  {inviteLoading ? "Creating..." : "Create invite package"}
-                </button>
+                  Create invite package
+                </PrimaryButton>
               </div>
             </div>
           </div>
@@ -1473,9 +1520,14 @@ export default function ClansPage() {
             </div>
           </div>
 
-          <OriginLink to="/app/community" style={btn(true)}>
+          <StableCtaLink
+            to={routes.community}
+            kind="primary"
+            debugId="clans.existing.open-community"
+            style={btn(true)}
+          >
             Open Community Home
-          </OriginLink>
+          </StableCtaLink>
         </div>
 
         <div
@@ -1590,21 +1642,21 @@ export default function ClansPage() {
                         justifyContent: "flex-end",
                       }}
                     >
-                      <button
-                        type="button"
+                      <SecondaryButton
                         style={isActive ? btn(true) : btn(false)}
                         onClick={() => handleSelectCommunity(id)}
+                        debugId={`clans.community.${id}.select`}
                       >
                         {isActive ? "Selected" : "Select"}
-                      </button>
+                      </SecondaryButton>
 
-                      <button
-                        type="button"
+                      <SecondaryButton
                         style={btn(false)}
                         onClick={() => handleOpenMarketplace(id)}
+                        debugId={`clans.community.${id}.marketplace`}
                       >
                         Open Marketplace
-                      </button>
+                      </SecondaryButton>
                     </div>
                   </div>
                 </div>

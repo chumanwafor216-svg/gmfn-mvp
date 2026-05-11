@@ -22,7 +22,7 @@ def test_patch_member_pool_balance_admin_ok_contract(
 
 def test_patch_member_pool_balance_non_admin_forbidden_contract(
     client: TestClient,
-    override_clan_ctx_member,         # 👈 critical: membership role = member
+    override_clan_ctx_member,         # 👈 critical: membership role = user/non-admin
     override_current_user_user,       # 👈 user role = user
     seed_clan_member_membership,
 ):

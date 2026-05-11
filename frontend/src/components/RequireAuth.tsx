@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
+import { CardActionRow, StableCtaLink } from "./StableButton";
 import {
   getAccessToken,
   getCurrentClan,
   getMe,
   getMyIdentityRisk,
+  getSelectedClanId,
   observeIdentityRisk,
   setAccessToken,
   setSelectedClanId,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type Props = {
   children: React.ReactNode;
@@ -81,6 +84,10 @@ function hasClanAdminAccess(currentClan: any): boolean {
   return resolveClanRole(currentClan) === "admin";
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 function isContinuityProtectedRoute(pathname: string): boolean {
   const current = String(pathname || "").trim().toLowerCase();
   return CONTINUITY_PROTECTED_PREFIXES.some(
@@ -133,42 +140,6 @@ function denyCard(): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" = "secondary"
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-  };
-}
-
 function computeClientFingerprint(): string {
   try {
     const parts = [
@@ -192,6 +163,14 @@ function httpStatus(error: unknown): number | null {
 
 export default function RequireAuth({ children, requireRole }: Props) {
   const location = useLocation();
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = {
+    dashboard: routeTarget("dashboard", selectedClanId, "require-auth.route.dashboard"),
+    community: routeTarget("communityHome", selectedClanId, "require-auth.route.community"),
+    identity: routeTarget("cci", selectedClanId, "require-auth.route.identity"),
+    notifications: routeTarget("notifications", selectedClanId, "require-auth.route.notifications"),
+    trust: routeTarget("trust", selectedClanId, "require-auth.route.trust"),
+  };
 
   const [loading, setLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
@@ -373,21 +352,22 @@ export default function RequireAuth({ children, requireRole }: Props) {
               </div>
             </div>
 
-            <div
-              style={{
-                marginTop: 18,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <Link to="/app/dashboard" style={actionBtn("primary")}>
+            <CardActionRow style={{ marginTop: 18 }}>
+              <StableCtaLink
+                to={routes.dashboard}
+                kind="primary"
+                debugId="require-auth.admin-denied.dashboard"
+              >
                 Return to Dashboard
-              </Link>
-              <Link to="/app/community" style={actionBtn("secondary")}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.community}
+                kind="secondary"
+                debugId="require-auth.admin-denied.community"
+              >
                 Open Community Home
-              </Link>
-            </div>
+              </StableCtaLink>
+            </CardActionRow>
           </div>
         </div>
       );
@@ -473,27 +453,36 @@ export default function RequireAuth({ children, requireRole }: Props) {
             <div style={{ marginTop: 6 }}>{continuityBlock.action}</div>
           </div>
 
-          <div
-            style={{
-              marginTop: 18,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <Link to="/app/identity" style={actionBtn("primary")}>
+          <CardActionRow style={{ marginTop: 18 }}>
+            <StableCtaLink
+              to={routes.identity}
+              kind="primary"
+              debugId="require-auth.continuity.identity"
+            >
               Review Identity
-            </Link>
-            <Link to="/app/notifications" style={actionBtn("secondary")}>
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.notifications}
+              kind="secondary"
+              debugId="require-auth.continuity.notifications"
+            >
               Open Notifications
-            </Link>
-            <Link to="/app/trust" style={actionBtn("secondary")}>
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.trust}
+              kind="secondary"
+              debugId="require-auth.continuity.trust"
+            >
               Review Trust
-            </Link>
-            <Link to="/app/dashboard" style={actionBtn("secondary")}>
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.dashboard}
+              kind="secondary"
+              debugId="require-auth.continuity.dashboard"
+            >
               Return to Dashboard
-            </Link>
-          </div>
+            </StableCtaLink>
+          </CardActionRow>
         </div>
       </div>
     );

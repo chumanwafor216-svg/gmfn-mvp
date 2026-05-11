@@ -1,4 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableButton,
+  SubtleButton,
+} from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   createVaultShopAccessLink,
@@ -30,7 +36,6 @@ import {
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
 import {
-  actionTapGuardProps,
   brandActionButton,
   brandBadge,
   brandHelperText,
@@ -522,13 +527,6 @@ async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     return { raw: text } as T;
   }
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
 }
 
 function pageCard(bg?: string): React.CSSProperties {
@@ -1177,11 +1175,11 @@ export default function VaultControlPage() {
   ) {
     const open = openVaultPanels[panel];
     return (
-      <button
-        type="button"
-        {...buttonGuardProps()}
+      <StableButton
+        kind="soft"
         onClick={() => toggleVaultPanel(panel)}
         aria-expanded={open}
+        debugId={`vault-control.panel.${panel}.toggle`}
         style={{
           width: "100%",
           minHeight: 72,
@@ -1236,7 +1234,7 @@ export default function VaultControlPage() {
         >
           {open ? "Collapse" : "Open"}
         </span>
-      </button>
+      </StableButton>
     );
   }
 
@@ -1718,21 +1716,21 @@ export default function VaultControlPage() {
               {[1, 2, 3, 4, 5, 6].map((slot) => {
                 const selected = Number(paymentSlots) === slot;
                 return (
-                  <button
+                  <StableButton
                     key={slot}
-                    type="button"
+                    kind={selected ? "primary" : "secondary"}
                     role="radio"
                     aria-checked={selected}
-                    {...buttonGuardProps()}
                     onClick={() => {
                       setPaymentSlots(slot);
                       setConfirmedPaymentQuoteKey("");
                     }}
                     style={slotChoiceButton(selected)}
+                    debugId={`vault-control.payment-slot.${slot}`}
                   >
                     <span>{slot}</span>
                     <span style={{ fontSize: 11, fontWeight: 900, opacity: 0.9 }}>slot{slot === 1 ? "" : "s"}</span>
-                  </button>
+                  </StableButton>
                 );
               })}
             </div>
@@ -1755,21 +1753,18 @@ export default function VaultControlPage() {
             <div style={{ marginTop: 14, ...helperText() }}>
               Confirm this quote first. GSN will generate the payment code against this exact slot count and amount, then the bank rail can cross-check the code and amount before Vault opens.
             </div>
-            <button
-              type="button"
-              {...buttonGuardProps()}
+            <PrimaryButton
               onClick={() => {
                 setConfirmedPaymentQuoteKey(selectedVaultQuoteKey);
                 showNotice("success", `Vault quote confirmed: ${selectedVaultAgreementText}.`);
               }}
               style={{ ...brandActionButton("primary"), marginTop: 18, minHeight: 62, width: "100%" }}
+              debugId="vault-control.confirm-quote"
             >
               Agree: {selectedVaultAgreementText}
-            </button>
+            </PrimaryButton>
             {!activeVaultPayment ? (
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <SecondaryButton
                 onClick={() => {
                   if (!paymentQuoteConfirmed) {
                     showNotice("info", `Confirm this Vault quote first: ${selectedVaultAgreementText}.`);
@@ -1779,9 +1774,12 @@ export default function VaultControlPage() {
                 }}
                 disabled={creatingPayment || !shop?.id}
                 style={{ ...brandActionButton("secondary", creatingPayment || !shop?.id), marginTop: 10, minHeight: 54, width: "100%" }}
+                busy={creatingPayment}
+                busyLabel="Generating payment code..."
+                debugId="vault-control.generate-payment-code"
               >
                 {creatingPayment ? "Generating payment code..." : "🔐 Generate payment code"}
-              </button>
+              </SecondaryButton>
             ) : null}
             <div style={{ marginTop: 14, ...helperText(), fontWeight: 800 }}>
               Payment instructions expire {vaultPaymentDueDays} days after generation unless the bank rail returns a different due time.
@@ -1823,12 +1821,21 @@ export default function VaultControlPage() {
               ))}
             </div>
             <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
-              <button type="button" {...buttonGuardProps()} onClick={copyVaultPaymentInstruction} style={brandActionButton("secondary", vaultPaymentTransferLines.length === 0)} disabled={vaultPaymentTransferLines.length === 0}>
+              <SecondaryButton
+                onClick={copyVaultPaymentInstruction}
+                style={brandActionButton("secondary", vaultPaymentTransferLines.length === 0)}
+                disabled={vaultPaymentTransferLines.length === 0}
+                debugId="vault-control.copy-payment-details"
+              >
                 Copy payment details
-              </button>
-              <button type="button" {...buttonGuardProps()} onClick={() => void loadPage()} style={brandActionButton("soft")}>
+              </SecondaryButton>
+              <SubtleButton
+                onClick={() => void loadPage()}
+                style={brandActionButton("soft")}
+                debugId="vault-control.check-payment-status"
+              >
                 🔎 Check payment status
-              </button>
+              </SubtleButton>
             </div>
           </>
         ) : (
@@ -1863,10 +1870,9 @@ export default function VaultControlPage() {
               const selected = selectedSlot === slotNumber;
               const active = slotNumber <= confirmedVaultSlots;
               return (
-                <button
+                <StableButton
                   key={slotNumber}
-                  type="button"
-                  {...buttonGuardProps()}
+                  kind={selected ? "primary" : "secondary"}
                   onClick={() => {
                     setSelectedSlot(slotNumber);
                     if (!active) showNotice("info", `Vault block #${slotNumber} is locked. Activate paid slots before adding content there.`);
@@ -1881,10 +1887,11 @@ export default function VaultControlPage() {
                         ? "1px solid rgba(12,79,168,0.22)"
                         : "1px solid rgba(9,27,46,0.12)",
                   }}
+                  debugId={`vault-control.block-slot.${slotNumber}.select`}
                 >
                   <span>Block #{slotNumber}</span>
                   <span style={{ fontSize: 12, fontWeight: 900, opacity: 0.9 }}>{!active ? "Locked" : item ? "Private content" : "Empty"}</span>
-                </button>
+                </StableButton>
               );
             })}
           </div>
@@ -1922,14 +1929,41 @@ export default function VaultControlPage() {
           </div>
           <div style={{ marginTop: 14 }}>
             {!selectedSeatIsActive ? (
-              <button type="button" {...buttonGuardProps()} onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)} style={brandActionButton("secondary")}>Locked until paid</button>
+              <SecondaryButton
+                onClick={() => showNotice("info", `Activate Vault block #${selectedSlot} with the payment section above before adding content.`)}
+                style={brandActionButton("secondary")}
+                debugId="vault-control.selected-block.locked"
+              >
+                Locked until paid
+              </SecondaryButton>
             ) : selectedProduct ? (
               <div style={actionGrid(isCompact, 160)}>
-                <button type="button" {...buttonGuardProps()} onClick={() => startEdit(selectedProduct, selectedSlot)} style={brandActionButton("primary")}>Edit block #{selectedSlot}</button>
-                <button type="button" {...buttonGuardProps()} onClick={() => void hideProduct(selectedProduct)} disabled={savingProduct} style={brandActionButton("secondary", savingProduct)}>Hide block</button>
+                <PrimaryButton
+                  onClick={() => startEdit(selectedProduct, selectedSlot)}
+                  style={brandActionButton("primary")}
+                  debugId="vault-control.selected-block.edit"
+                >
+                  Edit block #{selectedSlot}
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={() => void hideProduct(selectedProduct)}
+                  disabled={savingProduct}
+                  busy={savingProduct}
+                  busyLabel="Hiding..."
+                  style={brandActionButton("secondary", savingProduct)}
+                  debugId="vault-control.selected-block.hide"
+                >
+                  Hide block
+                </SecondaryButton>
               </div>
             ) : (
-              <button type="button" {...buttonGuardProps()} onClick={() => startAdd(selectedSlot)} style={{ ...brandActionButton("primary"), width: "100%" }}>Add private offer</button>
+              <PrimaryButton
+                onClick={() => startAdd(selectedSlot)}
+                style={{ ...brandActionButton("primary"), width: "100%" }}
+                debugId="vault-control.selected-block.add"
+              >
+                Add private offer
+              </PrimaryButton>
             )}
           </div>
         </div>
@@ -1960,9 +1994,7 @@ export default function VaultControlPage() {
           </div>
         ) : null}
         <div style={{ marginTop: 14, ...actionGrid(isCompact, 150) }}>
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <PrimaryButton
             onClick={() => {
               if (identityBlocked) {
                 showNotice("info", "Complete identity review before sharing private Vault links.");
@@ -1979,29 +2011,48 @@ export default function VaultControlPage() {
               void createViewingLink();
             }}
             style={{ ...brandActionButton("primary", creatingLink), gridColumn: isCompact ? "auto" : "1 / -1" }}
+            busy={creatingLink}
+            busyLabel="Creating link..."
+            debugId="vault-control.link.create-or-replace"
           >
             {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "Replace block link" : "Create block link"}
-          </button>
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          </PrimaryButton>
+          <SubtleButton
             onClick={copySelectedBlockLink}
             disabled={!selectedBlockLinkUrl}
             style={brandActionButton("soft", !selectedBlockLinkUrl)}
+            debugId="vault-control.link.copy"
           >
             Copy block link
-          </button>
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          </SubtleButton>
+          <SecondaryButton
             onClick={openSelectedBlockLink}
             disabled={!selectedBlockLinkUrl}
             style={brandActionButton("secondary", !selectedBlockLinkUrl)}
+            debugId="vault-control.link.open-private-view"
           >
             Open private view
-          </button>
-          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}>Extend link</button>
-          <button type="button" {...buttonGuardProps()} onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")} disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"} style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}>Revoke link</button>
+          </SecondaryButton>
+          <SecondaryButton
+            onClick={() => selectedBlockPrimaryLink ? void extendLink(selectedBlockPrimaryLink) : showNotice("info", "Create this block link before extending it.")}
+            disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))}
+            busy={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))}
+            busyLabel="Extending..."
+            style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)))}
+            debugId="vault-control.link.extend"
+          >
+            Extend link
+          </SecondaryButton>
+          <SecondaryButton
+            onClick={() => selectedBlockPrimaryLink ? void revokeLink(selectedBlockPrimaryLink) : showNotice("info", "There is no link to revoke for this block yet.")}
+            disabled={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked"}
+            busy={Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id))}
+            busyLabel="Revoking..."
+            style={brandActionButton("secondary", Boolean(selectedBlockPrimaryLink && busyLinkId === firstTruthy(selectedBlockPrimaryLink.id)) || vaultLinkStatus(selectedBlockPrimaryLink) === "revoked")}
+            debugId="vault-control.link.revoke"
+          >
+            Revoke link
+          </SecondaryButton>
         </div>
         </>
         ) : null}
@@ -2055,23 +2106,23 @@ export default function VaultControlPage() {
                 <input value={productCurrency} onChange={(event) => setProductCurrency(event.target.value)} placeholder="Currency code" style={inputStyle()} />
                 <textarea value={productDescription} onChange={(event) => setProductDescription(event.target.value)} placeholder="Short private description" style={textAreaStyle()} />
                 <div style={actionGrid(isCompact, 160)}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <PrimaryButton
                     onClick={() => void submitProduct()}
                     disabled={savingProduct}
+                    busy={preparingImage || preparingVideo || savingProduct}
+                    busyLabel={preparingImage || preparingVideo ? "Preparing media..." : "Saving..."}
                     style={brandActionButton("primary", savingProduct)}
+                    debugId="vault-control.editor.save"
                   >
                     {preparingImage || preparingVideo ? "Preparing media..." : savingProduct ? "Saving..." : "💾 Save Vault block"}
-                  </button>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  </PrimaryButton>
+                  <SecondaryButton
                     onClick={() => { resetProductForm(); setEditorOpen(false); }}
                     style={brandActionButton("secondary")}
+                    debugId="vault-control.editor.close"
                   >
                     Close form
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             </div>

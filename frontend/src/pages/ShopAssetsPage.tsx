@@ -1,6 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   institutionalInnerCard,
@@ -8,6 +14,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   getMe,
   getSelectedClanId,
@@ -30,10 +37,6 @@ import {
   prepareSpotlightImageFile,
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
-import {
-  actionTapGuardProps,
-  brandStableTapTarget,
-} from "../styles/gmfnBrand";
 
 type ShopRecord = {
   id: number;
@@ -165,111 +168,12 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-const stableTapTarget: React.CSSProperties = {
-  ...brandStableTapTarget(),
-  zIndex: 10,
-  flexShrink: 0,
-};
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      ...stableTapTarget,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      textAlign: "center",
-      lineHeight: 1.2,
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...stableTapTarget,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(122,152,195,0.18)",
-      background: "linear-gradient(180deg, #F4F8FF 0%, #E2ECFB 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      overflowWrap: "anywhere",
-      textAlign: "center",
-      lineHeight: 1.2,
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  return {
-    ...stableTapTarget,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(122,152,195,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    textAlign: "center",
-    lineHeight: 1.2,
-    opacity: disabled ? 0.86 : 1,
-  };
-}
-
 function ownerActionGrid(isCompact: boolean): React.CSSProperties {
   return {
     display: "grid",
     gridTemplateColumns: isCompact ? "1fr" : "repeat(auto-fit, minmax(148px, 1fr))",
     gap: isCompact ? 12 : 10,
     alignItems: "stretch",
-  };
-}
-
-function ownerActionButton(
-  style: React.CSSProperties,
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    ...style,
-    width: "100%",
-    minHeight: isCompact ? 56 : style.minHeight ?? 48,
   };
 }
 
@@ -324,28 +228,6 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function collapseToggle(): React.CSSProperties {
-  return {
-    ...stableTapTarget,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "8px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(122,152,195,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: "#24415C",
-    fontWeight: 800,
-    fontSize: 13,
-    cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    textAlign: "center",
-    lineHeight: 1.2,
-  };
-}
-
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -373,6 +255,10 @@ function defaultCollapseState(): CollapseState {
     products: false,
     posted: true,
   };
+}
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 function normalizeCollapseState(raw: unknown): CollapseState {
@@ -641,6 +527,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [restoringProductId, setRestoringProductId] = useState<number | null>(null);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "shop-assets.route.dashboard"),
+      shop: routeTarget("shop", selectedClanId, "shop-assets.route.shop-control"),
+    }),
+    [selectedClanId]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1285,9 +1178,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             sectionLabel="Shop Control"
             title="Pictures & Products"
             subtitle="Loading shop picture and product lanes..."
-            homeTo="/app/dashboard"
+            homeTo={routes.dashboard}
             homeLabel="Dashboard"
-            backTo="/app/shop-control"
+            backTo={routes.shop}
             backLabel="Shop Control"
           />
         ) : null}
@@ -1313,9 +1206,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           sectionLabel="Shop Control"
           title="Pictures & Products"
           subtitle="Prepare the public shop face, then add public products or private Vault offers."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/shop-control"
+          backTo={routes.shop}
           backLabel="Shop Control"
         />
       ) : null}
@@ -1383,36 +1276,38 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 ...ownerActionGrid(isCompact),
               }}
             >
-              <OriginLink
-                to="/app/shop-control"
-                style={ownerActionButton(actionBtn("secondary"), isCompact)}
+              <StableCtaLink
+                to={routes.shop}
+                fullWidth
+                stableHeight={isCompact ? 56 : 48}
+                debugId="shop-assets.back-shop-control"
               >
                 Back to Shop Control
-              </OriginLink>
+              </StableCtaLink>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <PrimaryButton
                 onClick={() => {
                   if (shopLink) {
                     window.open(shopLink, "_blank", "noopener,noreferrer");
                   }
                 }}
-                style={ownerActionButton(actionBtn("primary", !shopLink), isCompact)}
                 disabled={!shopLink}
+                fullWidth
+                stableHeight={isCompact ? 56 : 48}
+                debugId="shop-assets.open-public-shop"
               >
                 Open public shop
-              </button>
+              </PrimaryButton>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
-                onClick={() => copyText(shopLink, "Shop gallery link copied.")}
-                style={ownerActionButton(actionBtn("secondary", !shopLink), isCompact)}
+              <SecondaryButton
+                onClick={() => copyText(shopLink, "Full public shop link copied.")}
                 disabled={!shopLink}
+                fullWidth
+                stableHeight={isCompact ? 56 : 48}
+                debugId="shop-assets.copy-public-link"
               >
                 Copy public link
-              </button>
+              </SecondaryButton>
             </div>
           </div>
 
@@ -1505,14 +1400,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("guidance")}
-            style={collapseToggle()}
+            debugId="shop-assets.toggle-guidance"
           >
             {collapsed.guidance ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.guidance ? (
@@ -1567,14 +1460,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("signboard")}
-            style={collapseToggle()}
+            debugId="shop-assets.toggle-signboard"
           >
             {collapsed.signboard ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.signboard ? (
@@ -1740,22 +1631,19 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 </div>
 
                 <div style={ownerActionGrid(isCompact)}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <PrimaryButton
                     onClick={() => void saveShopSignboard()}
                     disabled={savingShop || uploadingShopImage}
-                    style={ownerActionButton(
-                      actionBtn("primary", savingShop || uploadingShopImage),
-                      isCompact
-                    )}
+                    busy={savingShop || uploadingShopImage}
+                    busyLabel={savingShop ? "Saving..." : "Uploading..."}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.signboard.save"
                   >
-                    {savingShop ? "Saving..." : uploadingShopImage ? "Uploading..." : "Save picture"}
-                  </button>
+                    Save picture
+                  </PrimaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <SecondaryButton
                     onClick={() => {
                       setShopSelectedFile(null);
                       if (shopPreviewUrl.startsWith("blob:")) {
@@ -1764,14 +1652,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       setShopPreviewUrl(firstTruthy(shop?.image_url));
                       setShopImageUrlInput(firstTruthy(shop?.image_url));
                     }}
-                    style={ownerActionButton(actionBtn("secondary"), isCompact)}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.signboard.reset-preview"
                   >
                     Reset preview
-                  </button>
+                  </SecondaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <SecondaryButton
                     onClick={() =>
                       void saveShopSignboard({
                         clear_image: true,
@@ -1779,16 +1667,14 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       })
                     }
                     disabled={savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)}
-                    style={ownerActionButton(
-                      actionBtn(
-                        "secondary",
-                        savingShop || uploadingShopImage || !safeStr(shopPreviewUrl)
-                      ),
-                      isCompact
-                    )}
+                    busy={savingShop || uploadingShopImage}
+                    busyLabel={savingShop ? "Saving..." : "Uploading..."}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.signboard.remove-picture"
                   >
                     Remove picture
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             </div>
@@ -1839,13 +1725,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               const itemName = firstTruthy(item?.name, `Block #${slotNumber}`);
 
               return (
-                <button
+                <StableButton
                   key={slotNumber}
-                  type="button"
-                  {...buttonGuardProps()}
+                  kind="secondary"
                   onClick={() => setSelectedPublicSlot(slotNumber)}
                   style={{
-                    ...stableTapTarget,
                     minHeight: 104,
                     borderRadius: 18,
                     padding: 8,
@@ -1863,6 +1747,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     display: "grid",
                     gap: 6,
                   }}
+                  debugId={`shop-assets.public-slot.${slotNumber}.select`}
                   aria-label={`Select gallery block ${slotNumber}`}
                 >
                   <div
@@ -1943,7 +1828,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   >
                     {item ? itemName : "Ready for item"}
                   </div>
-                </button>
+                </StableButton>
               );
             })}
           </div>
@@ -2063,36 +1948,28 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               >
                 {selectedPublicProduct ? (
                   <>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <PrimaryButton
                       onClick={() => openEditForPublicSlot(selectedPublicProduct, selectedPublicSlot)}
-                      style={ownerActionButton(actionBtn("primary"), isCompact)}
+                      fullWidth
+                      stableHeight={isCompact ? 56 : 48}
+                      debugId={`shop-assets.public-slot.${selectedPublicSlot}.edit`}
                     >
                       Edit block #{selectedPublicSlot}
-                    </button>
+                    </PrimaryButton>
 
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <SecondaryButton
                       onClick={() => void deleteProduct(Number(selectedPublicProduct.id))}
                       disabled={deletingProductId === Number(selectedPublicProduct.id)}
-                      style={ownerActionButton(
-                        actionBtn(
-                          "secondary",
-                          deletingProductId === Number(selectedPublicProduct.id)
-                        ),
-                        isCompact
-                      )}
+                      busy={deletingProductId === Number(selectedPublicProduct.id)}
+                      busyLabel="Hiding..."
+                      fullWidth
+                      stableHeight={isCompact ? 56 : 48}
+                      debugId={`shop-assets.public-slot.${selectedPublicSlot}.hide`}
                     >
-                      {deletingProductId === Number(selectedPublicProduct.id)
-                        ? "Hiding..."
-                        : "Hide block"}
-                    </button>
+                      Hide block
+                    </SecondaryButton>
 
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <SubtleButton
                       onClick={() =>
                         copyText(
                           buildProductDeepLink(
@@ -2100,23 +1977,25 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                             Number(selectedPublicProduct.id),
                             selectedPublicSlot
                           ),
-                          "Block link copied."
+                          "Full public shop link copied. Mention this block in your message."
                         )
                       }
-                      style={ownerActionButton(actionBtn("soft"), isCompact)}
+                      fullWidth
+                      stableHeight={isCompact ? 56 : 48}
+                      debugId={`shop-assets.public-slot.${selectedPublicSlot}.copy-link`}
                     >
                       Copy shop link
-                    </button>
+                    </SubtleButton>
                   </>
                 ) : (
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <PrimaryButton
                     onClick={() => openAddForPublicSlot(selectedPublicSlot)}
-                    style={ownerActionButton(actionBtn("primary"), isCompact)}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId={`shop-assets.public-slot.${selectedPublicSlot}.add`}
                   >
                     Add item to block #{selectedPublicSlot}
-                  </button>
+                  </PrimaryButton>
                 )}
               </div>
             </div>
@@ -2146,9 +2025,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => {
               if (embedded) {
                 closeProductEditor();
@@ -2156,10 +2033,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 toggleSection("products");
               }
             }}
-            style={collapseToggle()}
+            debugId="shop-assets.toggle-products"
           >
             {embedded ? "Close form" : collapsed.products ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {(!collapsed.products || embedded) ? (
@@ -2317,48 +2194,42 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   ...ownerActionGrid(isCompact),
                 }}
               >
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <PrimaryButton
                   onClick={() => void submitProduct()}
-                  disabled={savingProduct}
-                  style={ownerActionButton(
-                    actionBtn(
-                      "primary",
-                      savingProduct || preparingProductImage || preparingProductVideo
-                    ),
-                    isCompact
-                  )}
-                >
-                  {preparingProductImage || preparingProductVideo
-                    ? "Preparing media..."
-                    : savingProduct
-                    ? editingProductId
+                  disabled={savingProduct || preparingProductImage || preparingProductVideo}
+                  busy={savingProduct || preparingProductImage || preparingProductVideo}
+                  busyLabel={
+                    preparingProductImage || preparingProductVideo
+                      ? "Preparing media..."
+                      : editingProductId
                       ? "Updating..."
                       : "Posting..."
-                    : editingProductId
-                    ? "Update item"
-                    : "Post item"}
-                </button>
+                  }
+                  fullWidth
+                  stableHeight={isCompact ? 56 : 48}
+                  debugId="shop-assets.product.submit"
+                >
+                  {editingProductId ? "Update item" : "Post item"}
+                </PrimaryButton>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <SecondaryButton
                   onClick={embedded ? closeProductEditor : resetProductForm}
-                  style={ownerActionButton(actionBtn("secondary"), isCompact)}
+                  fullWidth
+                  stableHeight={isCompact ? 56 : 48}
+                  debugId="shop-assets.product.clear-or-close"
                 >
                   {embedded ? "Close form" : "Clear form"}
-                </button>
+                </SecondaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={() => copyText(shopLink, "Shop gallery link copied.")}
-                    style={ownerActionButton(actionBtn("soft", !shopLink), isCompact)}
+                  <SubtleButton
+                    onClick={() => copyText(shopLink, "Full public shop link copied.")}
                     disabled={!shopLink}
+                    fullWidth
+                    stableHeight={isCompact ? 56 : 48}
+                    debugId="shop-assets.product.copy-shop-link"
                   >
                   Copy shop link
-                </button>
+                </SubtleButton>
               </div>
             </div>
           </div>
@@ -2526,14 +2397,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("posted")}
-            style={collapseToggle()}
+            debugId="shop-assets.toggle-posted"
           >
             {collapsed.posted ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.posted ? (
@@ -2703,52 +2572,56 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       ...ownerActionGrid(isCompact),
                     }}
                   >
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <StableButton
                       onClick={() => startEditProduct(item)}
-                      style={ownerActionButton(
-                        actionBtn(isHidden ? "secondary" : "primary"),
-                        isCompact
-                      )}
+                      kind={isHidden ? "secondary" : "primary"}
+                      fullWidth
+                      stableHeight={isCompact ? 56 : 48}
+                      debugId={`shop-assets.product.${item.id}.edit`}
                     >
                       Edit
-                    </button>
+                    </StableButton>
 
                     {isHidden ? (
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      <PrimaryButton
                         onClick={() => void restoreProduct(Number(item.id))}
                         disabled={isBusy}
-                        style={ownerActionButton(actionBtn("primary", isBusy), isCompact)}
+                        busy={restoringProductId === Number(item.id)}
+                        busyLabel="Restoring..."
+                        fullWidth
+                        stableHeight={isCompact ? 56 : 48}
+                        debugId={`shop-assets.product.${item.id}.restore`}
                       >
-                        {restoringProductId === Number(item.id) ? "Restoring..." : "Restore"}
-                      </button>
+                        Restore
+                      </PrimaryButton>
                     ) : (
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      <SecondaryButton
                         onClick={() => void deleteProduct(Number(item.id))}
                         disabled={isBusy}
-                        style={ownerActionButton(actionBtn("secondary", isBusy), isCompact)}
+                        busy={deletingProductId === Number(item.id)}
+                        busyLabel="Removing..."
+                        fullWidth
+                        stableHeight={isCompact ? 56 : 48}
+                        debugId={`shop-assets.product.${item.id}.delete`}
                       >
-                        {deletingProductId === Number(item.id) ? "Removing..." : "Delete"}
-                      </button>
+                        Delete
+                      </SecondaryButton>
                     )}
 
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
-                        onClick={() => copyText(productLink, "Item link copied.")}
-                        style={ownerActionButton(
-                          actionBtn("soft", !productLink || isHidden),
-                          isCompact
-                        )}
+                      <SubtleButton
+                        onClick={() =>
+                          copyText(
+                            productLink,
+                            "Full public shop link copied. Mention this item in your message."
+                          )
+                        }
                       disabled={!productLink || isHidden}
+                      fullWidth
+                      stableHeight={isCompact ? 56 : 48}
+                      debugId={`shop-assets.product.${item.id}.copy-link`}
                     >
                       Copy shop link
-                    </button>
+                    </SubtleButton>
                   </div>
                 </div>
               );

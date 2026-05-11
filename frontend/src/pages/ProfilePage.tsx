@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { CardActionRow, PrimaryButton, SecondaryButton } from "../components/StableButton";
 import { getMe } from "../lib/api";
 
 function card(): React.CSSProperties {
@@ -8,17 +9,6 @@ function card(): React.CSSProperties {
     padding: 14,
     background: "rgba(255,255,255,0.92)",
     boxShadow: "0 6px 18px rgba(0,0,0,0.06)",
-  };
-}
-
-function btn(): React.CSSProperties {
-  return {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid #e5e7eb",
-    background: "rgba(255,255,255,0.95)",
-    cursor: "pointer",
-    fontWeight: 900,
   };
 }
 
@@ -116,10 +106,25 @@ export default function ProfilePage() {
           />
         </div>
 
-        <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <button style={btn()} onClick={saveLocal}>Save</button>
-          <button style={btn()} onClick={load} disabled={loading}>{loading ? "Refreshing..." : "Refresh"}</button>
-        </div>
+        <CardActionRow style={{ marginTop: 12 }}>
+          <PrimaryButton
+            type="button"
+            onClick={saveLocal}
+            debugId="profile.save-local"
+          >
+            Save
+          </PrimaryButton>
+          <SecondaryButton
+            type="button"
+            onClick={() => void load()}
+            disabled={loading}
+            busy={loading}
+            busyLabel="Refreshing..."
+            debugId="profile.refresh"
+          >
+            Refresh
+          </SecondaryButton>
+        </CardActionRow>
 
         {note && <div style={{ marginTop: 10, color: "#166534", fontWeight: 900 }}>{note}</div>}
 

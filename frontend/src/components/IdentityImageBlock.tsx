@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { PrimaryButton, SecondaryButton } from "./StableButton";
 
 type Props = {
   title: string;
@@ -107,38 +108,42 @@ export default function IdentityImageBlock({
         </div>
       </div>
 
-      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button
-          type="button"
+      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", minHeight: 38 }}>
+        <PrimaryButton
           onClick={() => uploadInputRef.current?.click()}
+          stableHeight={38}
+          debugId="identity-image.upload"
           style={btn(true)}
         >
           Upload
-        </button>
+        </PrimaryButton>
 
-        <button
-          type="button"
+        <SecondaryButton
           onClick={() => cameraInputRef.current?.click()}
+          stableHeight={38}
+          debugId="identity-image.camera"
           style={btn(false)}
         >
           Take Picture
-        </button>
+        </SecondaryButton>
 
-        <button
-          type="button"
+        <SecondaryButton
           onClick={() => uploadInputRef.current?.click()}
+          stableHeight={38}
+          debugId="identity-image.change"
           style={btn(false)}
         >
           Change
-        </button>
+        </SecondaryButton>
 
-        <button
-          type="button"
+        <SecondaryButton
           onClick={removeImage}
+          stableHeight={38}
+          debugId="identity-image.remove"
           style={btn(false)}
         >
           Remove
-        </button>
+        </SecondaryButton>
       </div>
 
       <input

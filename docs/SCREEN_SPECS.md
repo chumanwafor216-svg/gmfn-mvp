@@ -292,6 +292,7 @@ Must show:
 - Owner Spotlight Status
 
 Rules:
-- Public shop link surfaces must show and copy the complete canonical public shop URL, including the public domain and `/shop/{GSN_ID}#shop-diaries`.
+- Ordinary public shop link surfaces must show and copy the complete canonical public shop root URL, including the public domain and `/shop/{GSN_ID}`. Do not add `#shop-diaries`, product, block, focus, or community query hints to ordinary public share links.
+- Explicit legacy/deep-link handling may still reveal a shelf or product after the full public shop loads, but it must be separate from default ordinary public sharing. Vault/private access links remain exact private targets such as `/vault/{token}`.
 - Join invite link surfaces must show and copy only canonical `/start/join/{code}` invite URLs. They must not fall back to unrelated app routes such as Finance, Dashboard, Trust, or Marketplace.
 - Marketplace link action buttons must keep fixed-height rows and avoid transition-driven layout movement.

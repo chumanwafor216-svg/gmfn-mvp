@@ -17,6 +17,7 @@ Thumbs.db
 
 # Local dev scripts
 scripts/
+.codex-phone/
 
 # Quarantine / local stores
 _QUARANTINE_STORE/
@@ -30,6 +31,7 @@ frontend/pytest-tmp*/
 frontend/tsconfig.tsbuildinfo
 frontend/dist/
 frontend/uploads/
+uploads/
 
 # Local upload artifacts
 gmfn_backend/uploads/

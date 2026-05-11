@@ -1,8 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+} from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -16,6 +21,7 @@ import {
   selectClan,
   voteOnJoinRequest,
 } from "../lib/api";
+import { navigateToCta, resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 
 type JoinRequestItem = {
   id: number;
@@ -102,72 +108,6 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = Number(clanId || 0);
-  if (!path || !Number.isFinite(safeClanId) || safeClanId <= 0) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}community=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
-}
-
-function consumeActionEvent(
-  event:
-    | React.MouseEvent<HTMLElement>
-    | React.PointerEvent<HTMLElement>
-    | React.TouchEvent<HTMLElement>
-) {
-  event.stopPropagation();
-}
-
-function actionBtn(primary = false, disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 16px",
-    borderRadius: 14,
-    border: primary
-      ? "1px solid rgba(11,80,170,0.22)"
-      : "1px solid rgba(37,78,119,0.20)",
-    background: disabled
-      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
-      : primary
-      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    textAlign: "center",
-    cursor: disabled ? "not-allowed" : "pointer",
-    textDecoration: "none",
-    opacity: disabled ? 0.78 : 1,
-    whiteSpace: "normal",
-    boxShadow: disabled
-      ? "none"
-      : primary
-      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
-      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
-    ...stableTapStyle(),
-  };
-}
-
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -203,6 +143,10 @@ function safeStr(x: any, fallback = ""): string {
   return s || fallback;
 }
 
+function ctaPath(target: CtaTarget): string {
+  return typeof target.to === "string" ? target.to : String(target.to);
+}
+
 function safeDateTime(x: any): string {
   const raw = String(x || "").trim();
   if (!raw) return "Not available yet";
@@ -231,6 +175,7 @@ function isExternalUrl(value: string): boolean {
 
 export default function CommunityJoinRequestsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { clanId } = useParams();
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -324,6 +269,24 @@ export default function CommunityJoinRequestsPage() {
     };
   }, [items]);
 
+  const communityHomeCta = useMemo(
+    () =>
+      resolveCtaTarget("communityHome", {
+        explicitTo: clanNum ? `/app/community/${clanNum}` : "/app/community",
+        communityId: clanNum,
+        debugId: "community-join-requests.community-home",
+      }),
+    [clanNum]
+  );
+  const marketplaceCta = useMemo(
+    () =>
+      resolveCtaTarget("marketplace", {
+        communityId: clanNum,
+        debugId: "community-join-requests.marketplace",
+      }),
+    [clanNum]
+  );
+
   async function handleVote(requestId: number, vote: "approve" | "reject") {
     try {
       setBusyId(requestId);
@@ -390,7 +353,7 @@ export default function CommunityJoinRequestsPage() {
   }
 
   function goBack() {
-    navigate(`/app/community/${clanNum}`);
+    navigateToCta(navigate, location, communityHomeCta);
   }
 
   return (
@@ -469,25 +432,32 @@ export default function CommunityJoinRequestsPage() {
           <span style={reviewerBadge(reviewerCanPilotApprove)}>
             Reviewer role: {safeStr(reviewerRole || "user")}
           </span>
-          <button type="button" onClick={goBack} style={actionBtn(false)}>
+          <SecondaryButton
+            type="button"
+            onClick={goBack}
+            debugId={communityHomeCta.debugId}
+          >
             Community Home
-          </button>
+          </SecondaryButton>
 
-          <OriginLink
-            to={withClanQuery("/app/marketplace", clanNum)}
-            style={actionBtn(false)}
+          <StableCtaLink
+            to={ctaPath(marketplaceCta)}
+            kind="secondary"
+            debugId={marketplaceCta.debugId}
           >
             Marketplace
-          </OriginLink>
+          </StableCtaLink>
 
-          <button
+          <PrimaryButton
             type="button"
             onClick={() => void load()}
-            style={actionBtn(true, loading)}
             disabled={loading}
+            busy={loading}
+            busyLabel="Refreshing..."
+            debugId="community-join-requests.refresh"
           >
-            {loading ? "Refreshing..." : "Refresh"}
-          </button>
+            Refresh
+          </PrimaryButton>
         </div>
       </div>
 
@@ -662,45 +632,37 @@ export default function CommunityJoinRequestsPage() {
             </pre>
           </div>
 
-          <div
-            style={{
-              display: "flex",
-              gap: 10,
-              marginTop: 14,
-              flexWrap: "wrap",
-            }}
-          >
-              <button
-                type="button"
-                style={actionBtn(true, !safeStr(activationPack.activation_message || ""))}
-                disabled={!safeStr(activationPack.activation_message || "")}
-                onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
-              >
-                Copy Activation Message
-              </button>
+          <CardActionRow style={{ marginTop: 14 }}>
+            <PrimaryButton
+              type="button"
+              disabled={!safeStr(activationPack.activation_message || "")}
+              onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
+              debugId="community-join-requests.copy-activation-message"
+            >
+              Copy Activation Message
+            </PrimaryButton>
 
-              <button
-                type="button"
-                style={actionBtn(false, !safeStr(activationPack.activation_link || ""))}
-                disabled={!safeStr(activationPack.activation_link || "")}
-                onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
-              >
-                Copy Activation Link
-              </button>
+            <SecondaryButton
+              type="button"
+              disabled={!safeStr(activationPack.activation_link || "")}
+              onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
+              debugId="community-join-requests.copy-activation-link"
+            >
+              Copy Activation Link
+            </SecondaryButton>
 
             {safeStr(activationPack.activation_link || "") ? (
-              <a
-                href={safeStr(activationPack.activation_link || "")}
+              <StableCtaLink
+                to={safeStr(activationPack.activation_link || "")}
+                kind="secondary"
                 target={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "_blank" : undefined}
                 rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noopener noreferrer" : undefined}
-                style={actionBtn(false)}
-                onPointerDown={consumeActionEvent}
-                onMouseDown={consumeActionEvent}
+                debugId="community-join-requests.open-activation"
               >
                 Open Activation Page
-              </a>
+              </StableCtaLink>
             ) : null}
-          </div>
+          </CardActionRow>
         </div>
       ) : null}
 
@@ -839,49 +801,42 @@ export default function CommunityJoinRequestsPage() {
                     </div>
                   ) : null}
 
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 10,
-                      marginTop: 14,
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <button
+                  <CardActionRow style={{ marginTop: 14 }}>
+                    <PrimaryButton
                       type="button"
-                      onPointerDown={consumeActionEvent}
-                      onMouseDown={consumeActionEvent}
                       onClick={() => handleVote(item.id, "approve")}
                       disabled={isBusy}
-                      style={actionBtn(true, isBusy)}
+                      busy={isBusy}
+                      busyLabel="Working..."
+                      debugId="community-join-requests.approve"
                     >
-                      {isBusy ? "Working..." : "Approve"}
-                    </button>
+                      Approve
+                    </PrimaryButton>
 
-                    <button
+                    <SecondaryButton
                       type="button"
-                      onPointerDown={consumeActionEvent}
-                      onMouseDown={consumeActionEvent}
                       onClick={() => handleVote(item.id, "reject")}
                       disabled={isBusy}
-                      style={actionBtn(false, isBusy)}
+                      busy={isBusy}
+                      busyLabel="Working..."
+                      debugId="community-join-requests.reject"
                     >
-                      {isBusy ? "Working..." : "Reject"}
-                    </button>
+                      Reject
+                    </SecondaryButton>
 
                     {reviewerCanPilotApprove ? (
-                      <button
+                      <SecondaryButton
                         type="button"
-                        onPointerDown={consumeActionEvent}
-                        onMouseDown={consumeActionEvent}
                         onClick={() => handlePilotApprove(item.id)}
                         disabled={isBusy}
-                        style={actionBtn(false, isBusy)}
+                        busy={isBusy}
+                        busyLabel="Working..."
+                        debugId="community-join-requests.pilot-approve"
                       >
-                        {isBusy ? "Working..." : "Approve now"}
-                      </button>
+                        Approve now
+                      </SecondaryButton>
                     ) : null}
-                  </div>
+                  </CardActionRow>
                 </>
               )}
             </div>

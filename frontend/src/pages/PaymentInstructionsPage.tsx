@@ -2,12 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import OriginLink from "../components/OriginLink";
+import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import * as api from "../lib/api";
-import {
-  communityIdFromSearch,
-  withCommunityQuery,
-} from "../lib/communityRouteContext";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   createPoolDepositInstruction,
   getCommunityMoneySurface,
@@ -35,18 +33,6 @@ type PersistedDepositTask = {
   paymentConfirmedAt?: string | null;
   updatedAt?: string | null;
 };
-
-const APP_TARGETS = {
-  DASHBOARD: "/app/dashboard",
-  MARKETPLACE: "/app/marketplace",
-  COMMUNITY: "/app/community",
-  FINANCE: "/app/finance",
-  MONEY_OUT: "/app/withdrawal-instructions",
-  PAYMENT_RAILS: "/app/payment-rails",
-  PAYOUT_DETAILS: "/app/payout-details",
-  LOANS: "/app/loans",
-  NOTIFICATIONS: "/app/notifications",
-} as const;
 
 const MONEY_IN_UI_STORAGE_KEY = "gmfn.moneyin.sections.v1";
 const MONEY_IN_TASK_STORAGE_KEY_PREFIX = "gmfn.moneyin.task.v1";
@@ -217,49 +203,12 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function actionBtn(
+function moneyInActionButtonStyle(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false
 ): React.CSSProperties {
   if (kind === "primary") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 48,
-      padding: "12px 16px",
       borderRadius: 15,
       border: disabled
         ? "1px solid rgba(148,163,184,0.24)"
@@ -273,22 +222,13 @@ function actionBtn(
         : "0 16px 32px rgba(29,95,212,0.28), inset 0 1px 0 rgba(255,255,255,0.22)",
       fontWeight: 1000,
       fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
     };
   }
 
   if (kind === "soft") {
     return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
       borderRadius: 13,
       border: "1px solid rgba(121,149,190,0.20)",
       background:
@@ -299,21 +239,12 @@ function actionBtn(
         : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
       fontWeight: 900,
       fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
       opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
     };
   }
 
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 16px",
     borderRadius: 15,
     border: "1px solid rgba(121,149,190,0.20)",
     background:
@@ -324,23 +255,13 @@ function actionBtn(
       : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     fontWeight: 900,
     fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
     opacity: disabled ? 0.86 : 1,
-    ...stableTapStyle(),
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function moneyInCollapseButtonStyle(): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    minWidth: 128,
-    padding: "11px 15px",
     borderRadius: 12,
     border: "1px solid rgba(124,154,196,0.20)",
     background:
@@ -351,9 +272,6 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
-    textAlign: "center",
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
@@ -550,6 +468,10 @@ function findMatchingDepositEvent(reference: string, recentEvents: any[]): any |
   return null;
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function PaymentInstructionsPage() {
   const location = useLocation();
   const routeClanId = useMemo(
@@ -558,8 +480,18 @@ export default function PaymentInstructionsPage() {
   );
   const selectedClanId =
     routeClanId || Number((api as any).getSelectedClanId?.() || 0);
-  const communityTo = useMemo(
-    () => (to: string) => withCommunityQuery(to, selectedClanId),
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "money-in.route.dashboard"),
+      marketplace: routeTarget("marketplace", selectedClanId, "money-in.route.marketplace-target"),
+      community: routeTarget("communityHome", selectedClanId, "money-in.route.community-target"),
+      finance: routeTarget("finance", selectedClanId, "money-in.route.finance-target"),
+      moneyOut: routeTarget("moneyOut", selectedClanId, "money-in.route.money-out-target"),
+      paymentRails: routeTarget("paymentRails", selectedClanId, "money-in.route.payment-rails-target"),
+      payoutDetails: routeTarget("payoutDetails", selectedClanId, "money-in.route.payout-details-target"),
+      loans: routeTarget("loans", selectedClanId, "money-in.route.loans-target"),
+      notifications: routeTarget("notifications", selectedClanId, "money-in.route.notifications-target"),
+    }),
     [selectedClanId]
   );
 
@@ -1074,9 +1006,9 @@ export default function PaymentInstructionsPage() {
           sectionLabel="Money In"
           title="Payment Instructions"
           subtitle="Loading the pay-in route..."
-          homeTo={APP_TARGETS.DASHBOARD}
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo={APP_TARGETS.MARKETPLACE}
+          backTo={routes.marketplace}
           backLabel="Marketplace"
         />
 
@@ -1103,9 +1035,9 @@ export default function PaymentInstructionsPage() {
         sectionLabel="Money In"
         title="Payment Instructions"
         subtitle="Money In stays on one route from context to instruction, payment confirmation, and reconciliation."
-        homeTo={APP_TARGETS.DASHBOARD}
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo={APP_TARGETS.MARKETPLACE}
+        backTo={routes.marketplace}
         backLabel="Marketplace"
       />
 
@@ -1254,13 +1186,15 @@ export default function PaymentInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("overview")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-in.toggle-overview"
+            style={moneyInCollapseButtonStyle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1364,13 +1298,15 @@ export default function PaymentInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("warning")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-in.toggle-warning"
+            style={moneyInCollapseButtonStyle()}
           >
             {collapsed.warning ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.warning ? (
@@ -1418,13 +1354,15 @@ export default function PaymentInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("amount")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-in.toggle-amount"
+            style={moneyInCollapseButtonStyle()}
           >
             {collapsed.amount ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.amount ? (
@@ -1467,25 +1405,23 @@ export default function PaymentInstructionsPage() {
                 </div>
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <PrimaryButton
                     onClick={() => void handleGenerateInstruction()}
                     disabled={generatingInstruction}
-                    style={actionBtn("primary", generatingInstruction)}
+                    debugId="money-in.generate-instruction"
+                    style={moneyInActionButtonStyle("primary", generatingInstruction)}
                   >
                     {generatingInstruction ? "Generating..." : "Generate Instruction"}
-                  </button>
+                  </PrimaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <SecondaryButton
                     onClick={() => void handleRefreshRoute()}
                     disabled={refreshingRoute}
-                    style={actionBtn("secondary", refreshingRoute)}
+                    debugId="money-in.refresh-route"
+                    style={moneyInActionButtonStyle("secondary", refreshingRoute)}
                   >
                     {refreshingRoute ? "Refreshing..." : "Refresh Route"}
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             </div>
@@ -1518,13 +1454,15 @@ export default function PaymentInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("instruction")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-in.toggle-instruction"
+            style={moneyInCollapseButtonStyle()}
           >
             {collapsed.instruction ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1616,30 +1554,29 @@ export default function PaymentInstructionsPage() {
                 <div style={sectionLabel()}>Instruction actions</div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                    <button
-                      type="button"
+                    <PrimaryButton
                       onClick={handleCopyReference}
-                      style={actionBtn("primary")}
+                      debugId="money-in.copy-reference"
+                      style={moneyInActionButtonStyle("primary")}
                     >
                       Copy Reference
-                    </button>
+                    </PrimaryButton>
 
-                    <button
-                      type="button"
+                    <SecondaryButton
                       onClick={handleCopyInstruction}
-                      style={actionBtn("secondary")}
+                      debugId="money-in.copy-instruction"
+                      style={moneyInActionButtonStyle("secondary")}
                     >
                     Copy Full Instruction
-                  </button>
+                  </SecondaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <SecondaryButton
                     onClick={handleConfirmPaymentMade}
-                    style={actionBtn("secondary")}
+                    debugId="money-in.confirm-paid"
+                    style={moneyInActionButtonStyle("secondary")}
                   >
                     I Have Paid Using This Reference
-                  </button>
+                  </SecondaryButton>
                 </div>
               </div>
             </div>
@@ -1664,13 +1601,15 @@ export default function PaymentInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("result")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-in.toggle-result"
+            style={moneyInCollapseButtonStyle()}
           >
             {collapsed.result ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1786,14 +1725,14 @@ export default function PaymentInstructionsPage() {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <SubtleButton
                   onClick={handleResetTask}
-                  style={actionBtn("soft")}
+                  stableHeight={42}
+                  debugId="money-in.reset-task"
+                  style={moneyInActionButtonStyle("soft")}
                 >
                   Reset Money In
-                </button>
+                </SubtleButton>
               </div>
             </div>
           </div>
@@ -1821,13 +1760,15 @@ export default function PaymentInstructionsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("routes")}
-            style={collapseToggle()}
+            minWidth={128}
+            stableHeight={46}
+            debugId="money-in.toggle-routes"
+            style={moneyInCollapseButtonStyle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1842,37 +1783,85 @@ export default function PaymentInstructionsPage() {
                 gap: 12,
               }}
             >
-              <OriginLink to={communityTo(APP_TARGETS.FINANCE)} style={actionBtn("primary")}>
+              <StableCtaLink
+                to={routes.finance}
+                debugId="money-in.route.finance"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("primary")}
+              >
                 Finance
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo(APP_TARGETS.MONEY_OUT)} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.moneyOut}
+                debugId="money-in.route.money-out"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("secondary")}
+              >
                 Money Out
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo(APP_TARGETS.PAYMENT_RAILS)} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.paymentRails}
+                debugId="money-in.route.payment-rails"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("secondary")}
+              >
                 Payment Rails
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo(APP_TARGETS.PAYOUT_DETAILS)} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.payoutDetails}
+                debugId="money-in.route.payout-details"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("secondary")}
+              >
                 Payout Details
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo(APP_TARGETS.LOANS)} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.loans}
+                debugId="money-in.route.loans"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("secondary")}
+              >
                 Loans
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo(APP_TARGETS.MARKETPLACE)} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.marketplace}
+                debugId="money-in.route.marketplace"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("secondary")}
+              >
                 Marketplace
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo(APP_TARGETS.COMMUNITY)} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.community}
+                debugId="money-in.route.community"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("secondary")}
+              >
                 Community Home
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to={communityTo(APP_TARGETS.NOTIFICATIONS)} style={actionBtn("secondary")}>
+              <StableCtaLink
+                to={routes.notifications}
+                debugId="money-in.route.notifications"
+                stableHeight={48}
+                fullWidth
+                style={moneyInActionButtonStyle("secondary")}
+              >
                 Action Inbox
-              </OriginLink>
+              </StableCtaLink>
             </div>
           ) : (
             <div style={{ marginTop: 16, display: "grid", gap: 10 }}>

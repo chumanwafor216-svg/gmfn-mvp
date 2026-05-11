@@ -436,7 +436,7 @@ def test_activate_membership_cannot_reset_already_activated_account(client):
             ClanMembership(
                 clan_id=int(clan.id),
                 user_id=int(user.id),
-                role="member",
+                role="user",
             )
         )
         db.commit()

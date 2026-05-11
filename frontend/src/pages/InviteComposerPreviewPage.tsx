@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { EntryBackLink } from "../components/EntryControls";
+import { PrimaryButton } from "../components/StableButton";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -289,9 +290,14 @@ export default function InviteComposerPreviewPage() {
               marginTop: 4,
             }}
           >
-            <button type="button" style={goldBtn()}>
+            <PrimaryButton
+              type="button"
+              stableHeight={42}
+              debugId="invite-composer-preview.create-package"
+              style={goldBtn()}
+            >
               Create invite package
-            </button>
+            </PrimaryButton>
           </div>
         </div>
       </div>

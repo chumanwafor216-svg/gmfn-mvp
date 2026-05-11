@@ -285,6 +285,14 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 
   "shop-control": "/app/shop-control",
   "shop-manager": "/app/shop-control",
+  spotlight: "/app/shop-control#shop-control-spotlight",
+  "shop-spotlight": "/app/shop-control#shop-control-spotlight",
+  "free-spotlight": "/app/shop-control#shop-control-spotlight",
+  "shop-control/spotlight": "/app/shop-control#shop-control-spotlight",
+  "shop-control/free-spotlight": "/app/shop-control#shop-control-spotlight",
+  "paid-spotlight": "/app/shop-control/subscription-spotlight",
+  "subscription-spotlight": "/app/shop-control/subscription-spotlight",
+  "shop-control/paid-spotlight": "/app/shop-control/subscription-spotlight",
 
   "command-center": GUIDANCE_TARGETS.COMMAND_CENTER,
   "trust-command-centre": GUIDANCE_TARGETS.COMMAND_CENTER,
@@ -326,8 +334,6 @@ const SAFE_STATIC_APP_PATHS = new Set([
   "shop-control/subscription-spotlight",
   "shop-gallery-control",
   "vault-control",
-  "free-spotlight",
-  "paid-spotlight",
   "shop-assets",
   "command-center",
   "command-center/bank-console",

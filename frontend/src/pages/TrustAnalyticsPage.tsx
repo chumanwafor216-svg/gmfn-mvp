@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -14,6 +14,7 @@ import {
   getSelectedClanId,
   listTrustEvents,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type TrustEventRow = {
   id?: number | string;
@@ -255,114 +256,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function stopAnalyticsTap(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function analyticsButtonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: stopAnalyticsTap,
-    onMouseDown: stopAnalyticsTap,
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 46,
-      padding: "12px 16px",
-      borderRadius: 15,
-      border: disabled
-        ? "1px solid rgba(148,163,184,0.24)"
-        : "1px solid rgba(18,77,176,0.22)",
-      background: disabled
-        ? "linear-gradient(180deg, #D9E2EC 0%, #C7D2DE 100%)"
-        : "linear-gradient(180deg, #2A6AF3 0%, #134FBF 100%)",
-      color: "#FFFFFF",
-      boxShadow: disabled ? "none" : "0 14px 28px rgba(19,79,191,0.22)",
-      fontWeight: 1000,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 40,
-      padding: "9px 13px",
-      borderRadius: 13,
-      border: "1px solid rgba(121,149,190,0.18)",
-      background: "linear-gradient(180deg, #FCFEFF 0%, #E4EEF8 100%)",
-      color: disabled ? "#94A3B8" : "#213D59",
-      boxShadow: disabled ? "none" : "0 10px 22px rgba(15,23,42,0.06)",
-      fontWeight: 900,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    padding: "12px 16px",
-    borderRadius: 15,
-    border: "1px solid rgba(121,149,190,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EAF2FB 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    boxShadow: disabled ? "none" : "0 12px 26px rgba(15,23,42,0.07)",
-    fontWeight: 1000,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    textAlign: "center",
-    opacity: disabled ? 0.86 : 1,
-    ...stableTapStyle(),
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -380,7 +273,6 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
-    ...stableTapStyle(),
   };
 }
 
@@ -432,8 +324,34 @@ function normalizeCollapseState(raw: any): CollapseState {
   };
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 export default function TrustAnalyticsPage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "trust-analytics.nav.dashboard"),
+      commandCenter: routeTarget(
+        "adminCommand",
+        selectedClanId,
+        "trust-analytics.route.command-center"
+      ),
+      systemOperations: routeTarget(
+        "systemOperations",
+        selectedClanId,
+        "trust-analytics.route.system-operations"
+      ),
+      exposure: routeTarget("exposureAdmin", selectedClanId, "trust-analytics.route.exposure"),
+      trustGraph: routeTarget("trustGraph", selectedClanId, "trust-analytics.route.trust-graph"),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -639,9 +557,9 @@ export default function TrustAnalyticsPage() {
           sectionLabel="Trust Analytics"
           title="Trust Analytics"
           subtitle="Loading the trust analytics page..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/command-center"
+          backTo={routes.commandCenter}
           backLabel="Command Center"
         />
 
@@ -668,9 +586,9 @@ export default function TrustAnalyticsPage() {
         sectionLabel="Trust Analytics"
         title="Trust Analytics"
         subtitle="Read the visible trust pattern, signal mix, and recent trend before stepping into deeper admin intervention."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/command-center"
+        backTo={routes.commandCenter}
         backLabel="Command Center"
       />
 
@@ -776,14 +694,14 @@ export default function TrustAnalyticsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...analyticsButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("overview")}
+            stableHeight={40}
+            debugId="trust-analytics.toggle.overview"
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.overview ? (
@@ -901,14 +819,14 @@ export default function TrustAnalyticsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...analyticsButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("mix")}
+            stableHeight={40}
+            debugId="trust-analytics.toggle.mix"
             style={collapseToggle()}
           >
             {collapsed.mix ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.mix ? (
@@ -1014,14 +932,14 @@ export default function TrustAnalyticsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...analyticsButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("timeline")}
+            stableHeight={40}
+            debugId="trust-analytics.toggle.timeline"
             style={collapseToggle()}
           >
             {collapsed.timeline ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.timeline ? (
@@ -1110,14 +1028,14 @@ export default function TrustAnalyticsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...analyticsButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("notes")}
+            stableHeight={40}
+            debugId="trust-analytics.toggle.notes"
             style={collapseToggle()}
           >
             {collapsed.notes ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.notes ? (
@@ -1173,18 +1091,34 @@ export default function TrustAnalyticsPage() {
             flexWrap: "wrap",
           }}
         >
-          <OriginLink to="/app/command-center/system-operations" style={actionBtn("primary")}>
+          <StableCtaLink
+            to={routes.systemOperations}
+            kind="primary"
+            debugId="trust-analytics.route.system-operations"
+          >
             System Operations
-          </OriginLink>
-          <OriginLink to="/app/command-center/exposure" style={actionBtn("secondary")}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.exposure}
+            kind="secondary"
+            debugId="trust-analytics.route.exposure"
+          >
             Exposure
-          </OriginLink>
-          <OriginLink to="/app/command-center/trust-graph" style={actionBtn("secondary")}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.trustGraph}
+            kind="secondary"
+            debugId="trust-analytics.route.trust-graph"
+          >
             Trust Graph
-          </OriginLink>
-          <OriginLink to="/app/command-center" style={actionBtn("soft")}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.commandCenter}
+            kind="soft"
+            debugId="trust-analytics.route.command-center"
+          >
             Command Center
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
     </div>

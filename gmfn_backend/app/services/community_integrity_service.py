@@ -4,12 +4,23 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from fastapi import HTTPException
+from sqlalchemy import inspect
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.db.models import Clan, ClanInvite, ClanMembership, User
+from app.db.models import Clan, ClanInvite, ClanMembership, User, UserSettings
+from app.services.global_identity_service import ensure_user_gmfn_id
 
 
 DEFAULT_INVITE_TTL_HOURS = 72
+_ACTIVE_CLAN_SELECTIONS: dict[int, int] = {}
+
+
+def _user_settings_table_exists(db: Session) -> bool:
+    try:
+        return bool(inspect(db.get_bind()).has_table("user_settings"))
+    except Exception:
+        return False
 
 
 def utc_now() -> datetime:
@@ -126,6 +137,54 @@ def require_admin_membership(
     return membership
 
 
+def _settings_active_clan_id(db: Session, *, user_id: int) -> Optional[int]:
+    if not _user_settings_table_exists(db):
+        return None
+
+    try:
+        settings = (
+            db.query(UserSettings)
+            .filter(UserSettings.user_id == int(user_id))
+            .first()
+        )
+    except OperationalError:
+        db.rollback()
+        return None
+    if settings is None:
+        return None
+    value = getattr(settings, "preferred_community_id", None)
+    try:
+        return int(value) if value else None
+    except Exception:
+        return None
+
+
+def _set_settings_active_clan_id(
+    db: Session,
+    *,
+    user_id: int,
+    clan_id: int,
+) -> bool:
+    if not _user_settings_table_exists(db):
+        return False
+
+    try:
+        settings = (
+            db.query(UserSettings)
+            .filter(UserSettings.user_id == int(user_id))
+            .first()
+        )
+        if settings is None:
+            settings = UserSettings(user_id=int(user_id))
+        settings.preferred_community_id = int(clan_id)
+        db.add(settings)
+        db.commit()
+        return True
+    except OperationalError:
+        db.rollback()
+        return False
+
+
 def set_active_clan_for_user(
     db: Session,
     *,
@@ -146,10 +205,21 @@ def set_active_clan_for_user(
     elif hasattr(user, "current_clan_id"):
         setattr(user, "current_clan_id", clan_id)
     else:
-        raise HTTPException(
-            status_code=500,
-            detail="User model missing active community field",
+        stored = _set_settings_active_clan_id(
+            db,
+            user_id=int(user.id),
+            clan_id=int(clan_id),
         )
+        if not stored:
+            _ACTIVE_CLAN_SELECTIONS[int(user.id)] = int(clan_id)
+            db.commit()
+        return {
+            "ok": True,
+            "active_clan_id": int(clan.id),
+            "active_clan_name": getattr(clan, "name", None),
+            "membership_role": getattr(membership, "role", None),
+            "message": "Active community updated",
+        }
 
     db.add(user)
     db.commit()
@@ -174,6 +244,12 @@ def get_active_clan_for_user(
         if hasattr(user, attr):
             active_clan_id = getattr(user, attr)
             break
+
+    if not active_clan_id:
+        active_clan_id = _settings_active_clan_id(db, user_id=int(user.id))
+
+    if not active_clan_id:
+        active_clan_id = _ACTIVE_CLAN_SELECTIONS.get(int(user.id))
 
     if not active_clan_id:
         first_membership = (
@@ -241,6 +317,7 @@ def join_clan_via_invite(
     code = str(invite_code or "").strip()
     if not code:
         raise HTTPException(status_code=400, detail="Invite code is required")
+    user = ensure_user_gmfn_id(db, user)
 
     invite = (
         db.query(ClanInvite)
@@ -264,10 +341,14 @@ def join_clan_via_invite(
         membership = ClanMembership(
             user_id=int(user.id),
             clan_id=int(clan.id),
-            role="member",
+            role="user",
         )
         db.add(membership)
         db.flush()
+        result_status = "joined_successfully"
+    else:
+        membership = existing
+        result_status = "already_member"
 
     set_active_clan_for_user(db, user=user, clan_id=int(clan.id))
 
@@ -276,7 +357,16 @@ def join_clan_via_invite(
         "clan_id": int(clan.id),
         "clan_name": getattr(clan, "name", None),
         "joined_user_id": int(user.id),
-        "message": "Joined community successfully",
+        "gmfn_id": getattr(user, "gmfn_id", None),
+        "membership_id": int(membership.id),
+        "result_status": result_status,
+        "existing_identity": True,
+        "identity_reused": True,
+        "message": (
+            "Already a member of this community"
+            if result_status == "already_member"
+            else "Joined community successfully"
+        ),
     }
 
 

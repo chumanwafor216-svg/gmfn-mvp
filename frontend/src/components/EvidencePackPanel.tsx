@@ -1,4 +1,5 @@
 import React from "react";
+import { SecondaryButton } from "./StableButton";
 
 type Props = {
   title?: string;
@@ -23,20 +24,24 @@ export default function EvidencePackPanel({
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 4 }}>{subtitle}</div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button
+          <SecondaryButton
             onClick={onDownloadFull}
             disabled={disabled}
-            style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "white" }}
+            stableHeight={40}
+            debugId="evidence-pack.download-full"
+            style={{ borderRadius: 10, border: "1px solid #ddd", background: "white" }}
           >
             Download Full
-          </button>
-          <button
+          </SecondaryButton>
+          <SecondaryButton
             onClick={onDownloadRedacted}
             disabled={disabled}
-            style={{ padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "white" }}
+            stableHeight={40}
+            debugId="evidence-pack.download-redacted"
+            style={{ borderRadius: 10, border: "1px solid #ddd", background: "white" }}
           >
             Download Redacted
-          </button>
+          </SecondaryButton>
         </div>
       </div>
 

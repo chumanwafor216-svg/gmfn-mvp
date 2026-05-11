@@ -48,7 +48,7 @@ def add_clan_member(
     row = ClanMembership(
         clan_id=clan_id,
         user_id=payload.user_id,
-        role=(payload.role or "member"),
+        role=(payload.role if payload.role in ("user", "admin") else "user"),
     )
     db.add(row)
 

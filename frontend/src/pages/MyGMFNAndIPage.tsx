@@ -4,16 +4,20 @@ import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+} from "../components/StableButton";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
-import { getCurrentClan, getMe, getMySettings } from "../lib/api";
+import { getCurrentClan, getMe, getMySettings, getSelectedClanId } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildGuidanceSnapshot } from "../lib/guidance";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import {
-  brandActionButton,
   brandBadge,
   brandHelperText,
   brandInnerCard,
@@ -115,13 +119,6 @@ function badge(primary = false): React.CSSProperties {
   return brandBadge(primary);
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  return brandActionButton(kind, disabled);
-}
-
 function helperText(): React.CSSProperties {
   return brandHelperText();
 }
@@ -140,27 +137,6 @@ function selectStyle(): React.CSSProperties {
     boxSizing: "border-box",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
-  };
-}
-
-function stableTapStyle(): React.CSSProperties {
-  return {
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-  };
-}
-
-function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.ButtonHTMLAttributes<HTMLButtonElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
   };
 }
 
@@ -185,6 +161,10 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
         : "1px solid rgba(239,68,68,0.16)",
     fontWeight: 800,
   };
+}
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 function publicGuideShell(): React.CSSProperties {
@@ -440,23 +420,21 @@ function PublicCapabilitiesGuidePage({
             marginBottom: 14,
           }}
         >
-          <button
-            type="button"
+          <SecondaryButton
             onClick={onClose}
-            {...buttonGuardProps()}
+            debugId="my-gmfn.public.close-top"
             style={publicCloseButton(false)}
           >
             Close
-          </button>
+          </SecondaryButton>
 
-          <button
-            type="button"
+          <PrimaryButton
             onClick={onClose}
-            {...buttonGuardProps()}
+            debugId="my-gmfn.public.continue-top"
             style={publicCloseButton(true)}
           >
             Continue
-          </button>
+          </PrimaryButton>
         </div>
 
         <section style={publicGuideHeader()}>
@@ -589,22 +567,20 @@ function PublicCapabilitiesGuidePage({
             marginTop: 18,
           }}
         >
-          <button
-            type="button"
+          <SecondaryButton
             onClick={onClose}
-            {...buttonGuardProps()}
+            debugId="my-gmfn.public.collapse-bottom"
             style={publicCloseButton(false)}
           >
             Collapse
-          </button>
-          <button
-            type="button"
+          </SecondaryButton>
+          <PrimaryButton
             onClick={onClose}
-            {...buttonGuardProps()}
+            debugId="my-gmfn.public.continue-bottom"
             style={publicCloseButton(true)}
           >
             Continue
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </main>
@@ -675,6 +651,20 @@ export default function MyGMFNAndIPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const isAppRoute = location.pathname.startsWith("/app/");
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "my-gmfn.route.dashboard-target"),
+      community: routeTarget("communityHome", selectedClanId, "my-gmfn.route.community-target"),
+      marketplace: routeTarget("marketplace", selectedClanId, "my-gmfn.route.marketplace-target"),
+      loans: routeTarget("loans", selectedClanId, "my-gmfn.route.loans-target"),
+      guide: routeTarget("profile", selectedClanId, "my-gmfn.route.guide-target"),
+      settings: routeTarget("settings", selectedClanId, "my-gmfn.route.settings-target"),
+      trust: routeTarget("trust", selectedClanId, "my-gmfn.route.trust-target"),
+      demandBox: routeTarget("demandBox", selectedClanId, "my-gmfn.route.demand-box-target"),
+    }),
+    [selectedClanId]
+  );
   const routeState = (location.state || {}) as { returnTo?: string };
   const publicReturnTo = safeStr(routeState.returnTo) || "/cover";
 
@@ -808,7 +798,7 @@ export default function MyGMFNAndIPage() {
 
   const nextBestStep = guidance?.nextBestStep || null;
   const capabilityCount = GMFN_CAPABILITY_COUNT;
-  const topNavHomeTo = isAppRoute ? "/app/dashboard" : "/cover";
+  const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
   const topNavTitle = isAppRoute ? "My GSN and I" : "GSN Guide";
   const topNavSubtitle = isAppRoute
@@ -1097,19 +1087,21 @@ export default function MyGMFNAndIPage() {
               flexWrap: "wrap",
             }}
           >
-            <OriginLink
-              to="/app/my-gmfn-and-i"
-              style={activeTab === "guide" ? actionBtn("primary") : actionBtn("secondary")}
+            <StableCtaLink
+              to={routes.guide}
+              kind={activeTab === "guide" ? "primary" : "secondary"}
+              debugId="my-gmfn.tab.guide"
             >
               Guide
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink
-              to="/app/my-gmfn-and-i?tab=settings"
-              style={activeTab === "settings" ? actionBtn("primary") : actionBtn("secondary")}
+            <StableCtaLink
+              to={routes.settings}
+              kind={activeTab === "settings" ? "primary" : "secondary"}
+              debugId="my-gmfn.tab.settings"
             >
               Settings
-            </OriginLink>
+            </StableCtaLink>
           </div>
         </section>
       ) : null}
@@ -1249,7 +1241,12 @@ export default function MyGMFNAndIPage() {
                   gap: 12,
                 }}
               >
-                <OriginLink to="/app/dashboard" style={routeTile(true)}>
+                <StableCtaLink
+                  to={routes.dashboard}
+                  kind="primary"
+                  debugId="my-gmfn.route.dashboard"
+                  style={routeTile(true)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1263,9 +1260,13 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Start here when you need the next right step.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/community" style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.community}
+                  debugId="my-gmfn.route.community"
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1279,9 +1280,13 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Community power, continuity, first-circle building, and private community control start here.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/marketplace" style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.marketplace}
+                  debugId="my-gmfn.route.marketplace"
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1295,9 +1300,13 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Buying, selling, spotlight visibility, reputation-based visibility, and one global shop become visible here.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/loans" style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.loans}
+                  debugId="my-gmfn.route.loans"
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1311,9 +1320,13 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     People-backed loans, supporting others, emergency support, and trust savings all run through the support flow here.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/my-gmfn-and-i" style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.guide}
+                  debugId="my-gmfn.route.my-gmfn"
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1329,9 +1342,13 @@ export default function MyGMFNAndIPage() {
                     live here. Open Focus Commitments from Dashboard when you need
                     the execution discipline layer.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/trust" style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.trust}
+                  debugId="my-gmfn.route.trust"
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1345,9 +1362,13 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Portable trust identity, reputation mobility, fraud reduction before action, and deeper trust explanation live here.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/demand-box" style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.demandBox}
+                  debugId="my-gmfn.route.demand-box"
+                  style={routeTile(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1361,7 +1382,7 @@ export default function MyGMFNAndIPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Demand Box is its own core capability and its own page.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
               </div>
             ) : (
               <NextActionGuide
@@ -1507,24 +1528,21 @@ export default function MyGMFNAndIPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <PrimaryButton
                   onClick={() => void saveSettings()}
-                  disabled={saving}
-                  style={{ ...actionBtn("primary", saving), ...stableTapStyle() }}
+                  busy={saving}
+                  busyLabel="Saving..."
+                  debugId="my-gmfn.settings.save"
                 >
-                  {saving ? "Saving..." : "Save Settings"}
-                </button>
+                  Save Settings
+                </PrimaryButton>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <SecondaryButton
                   onClick={resetSettings}
-                  style={{ ...actionBtn("secondary"), ...stableTapStyle() }}
+                  debugId="my-gmfn.settings.reset"
                 >
                   Reset Defaults
-                </button>
+                </SecondaryButton>
               </div>
             </div>
 

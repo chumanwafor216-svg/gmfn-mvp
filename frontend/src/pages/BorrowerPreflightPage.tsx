@@ -1,8 +1,10 @@
 // FILE: src/pages/BorrowerPreflightPage.tsx
-import React from "react";
+import React, { useMemo } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { StableCtaLink } from "../components/StableButton";
+import { getSelectedClanId } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -45,45 +47,17 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
 function actionLink(primary = false): React.CSSProperties {
   return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    minWidth: 158,
-    padding: "12px 16px",
     borderRadius: 14,
     border: primary ? "none" : "1px solid rgba(124,154,196,0.18)",
     background: primary
       ? "linear-gradient(180deg, #1C5FD2 0%, #1749B6 100%)"
       : "linear-gradient(180deg, #FFFFFF 0%, #F1F7FF 100%)",
     color: primary ? "#FFFFFF" : "#0B1F33",
-    textDecoration: "none",
     fontWeight: 1000,
     fontSize: 14,
     cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
     boxShadow: primary
       ? "0 14px 30px rgba(29,95,212,0.25)"
       : "0 12px 24px rgba(15,23,42,0.06)",
@@ -120,7 +94,35 @@ function helperText(): React.CSSProperties {
   };
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  hash?: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId, hash }).to);
+}
+
 export default function BorrowerPreflightPage() {
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "borrower-preflight.nav.dashboard"),
+      loans: routeTarget("loans", selectedClanId, "borrower-preflight.open-loans"),
+      readiness: routeTarget(
+        "loanReadiness",
+        selectedClanId,
+        "borrower-preflight.open-readiness"
+      ),
+      commitments: routeTarget(
+        "dashboard",
+        selectedClanId,
+        "borrower-preflight.open-commitments",
+        "focus-commitments"
+      ),
+    }),
+    [selectedClanId]
+  );
   const checks = [
     {
       ok: true,
@@ -153,9 +155,9 @@ export default function BorrowerPreflightPage() {
         sectionLabel="Support Readiness"
         title="Support Readiness"
         subtitle="Quickly check whether your visible signals are strong enough before you move toward a support request."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/loans"
+        backTo={routes.loans}
         backLabel="Loans & Support"
       />
 
@@ -257,18 +259,33 @@ export default function BorrowerPreflightPage() {
         </div>
 
         <div style={{ marginTop: 18, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <OriginLink to="/app/loans" style={actionLink(false)}>
+          <StableCtaLink
+            to={routes.loans}
+            minWidth={158}
+            stableHeight={48}
+            debugId="borrower-preflight.open-loans"
+            style={actionLink(false)}
+          >
             Open Loans & Support
-          </OriginLink>
-          <OriginLink to="/app/loan-readiness" style={actionLink(true)}>
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.readiness}
+            minWidth={158}
+            stableHeight={48}
+            debugId="borrower-preflight.open-readiness"
+            style={actionLink(true)}
+          >
             Check Loan Readiness
-          </OriginLink>
-          <OriginLink
-            to="/app/dashboard#focus-commitments"
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.commitments}
+            minWidth={158}
+            stableHeight={48}
+            debugId="borrower-preflight.open-commitments"
             style={actionLink(false)}
           >
             Open Commitment Builder
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
 

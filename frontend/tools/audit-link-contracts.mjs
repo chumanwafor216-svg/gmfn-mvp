@@ -71,6 +71,47 @@ function assertNotContains(file, pattern, message) {
   });
 }
 
+function assertWholeFileNotContains(file, pattern, message) {
+  const text = read(file);
+
+  if (pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: `File matched forbidden pattern ${pattern}.`,
+    });
+  }
+}
+
+function assertFunctionNotContains(file, functionName, pattern, message) {
+  const text = read(file);
+  const start = text.indexOf(`function ${functionName}(`);
+
+  if (start === -1) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: `Function ${functionName} was not found.`,
+    });
+    return;
+  }
+
+  const nextFunction = text.indexOf("\nfunction ", start + 1);
+  const body = text.slice(start, nextFunction === -1 ? text.length : nextFunction);
+  const startLine = text.slice(0, start).split(/\r?\n/).length;
+
+  if (pattern.test(body)) {
+    findings.push({
+      file,
+      line: startLine,
+      message,
+      text: `Function ${functionName} matched forbidden pattern ${pattern}.`,
+    });
+  }
+}
+
 const findings = [];
 const sourceFiles = listSourceFiles(sourceRoot);
 
@@ -78,6 +119,132 @@ assertContains(
   "src/lib/publicLinks.ts",
   /DEFAULT_PUBLIC_FRONTEND_ORIGIN\s*=\s*"https:\/\/gmfn-frontend\.onrender\.com"/,
   "Public links must fall back to the deployed public frontend domain."
+);
+
+assertContains(
+  "src/lib/appRoutes.ts",
+  /FREE_SPOTLIGHT:\s*"\/app\/shop-control#shop-control-spotlight"/,
+  "Current Free Spotlight CTAs must open the real Shop Control spotlight section directly, not the legacy redirect alias."
+);
+
+assertContains(
+  "src/lib/guidance.ts",
+  /"free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
+  "Guidance/notification aliases for spotlight must resolve to the real Shop Control spotlight targets, not legacy redirect aliases."
+);
+
+assertContains(
+  "src/lib/guidance.ts",
+  /"shop-control\/spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
+  "Guidance must normalize stale deep shop-control spotlight aliases to real publisher targets before they can fall back."
+);
+
+assertContains(
+  "src/pages/NotificationsPage.tsx",
+  /"free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
+  "Notifications must resolve spotlight aliases to the real Shop Control spotlight targets, not legacy redirect aliases."
+);
+
+assertContains(
+  "src/pages/NotificationsPage.tsx",
+  /"shop-control\/spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
+  "Notifications must normalize stale deep shop-control spotlight aliases to real publisher targets before they can fall back."
+);
+
+assertNotContains(
+  "src/lib/appRoutes.ts",
+  /FREE_SPOTLIGHT:\s*"\/app\/free-spotlight"/,
+  "The shared Free Spotlight route must not point at the legacy redirect alias."
+);
+
+assertWholeFileNotContains(
+  "src/lib/guidance.ts",
+  /SAFE_STATIC_APP_PATHS[\s\S]*?"free-spotlight"[\s\S]*?\]\)/,
+  "Guidance must not treat free-spotlight as a static app path; it must go through the exact alias to the real Shop Control section."
+);
+
+assertWholeFileNotContains(
+  "src/pages/NotificationsPage.tsx",
+  /SAFE_STATIC_APP_PATHS[\s\S]*?"free-spotlight"[\s\S]*?\]\)/,
+  "Notifications must not treat free-spotlight as a static app path; it must go through the exact alias to the real Shop Control section."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="free-spotlight"[\s\S]*?<PreserveRedirect to="\/app\/shop-control#shop-control-spotlight"/,
+  "The legacy /app/free-spotlight alias must still redirect old links to the real Shop Control spotlight section."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="\/free-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.FREE_SPOTLIGHT\}/,
+  "The top-level /free-spotlight alias must not fall through to Cover/Welcome; it must canonicalize to the real Shop Control spotlight section."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="\/paid-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT\}/,
+  "The top-level /paid-spotlight alias must not fall through to Cover/Welcome; it must canonicalize to the real Shop Control paid spotlight route."
+);
+
+assertContains(
+  "src/App.tsx",
+  /"app\/shop-control\/free-spotlight":\s*APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?"app\/shop-control\/paid-spotlight":\s*APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT/,
+  "The system fallback must catch stale /app/shop-control/free-spotlight and /app/shop-control/paid-spotlight URLs before Cover/Welcome."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="shop-control\/spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.FREE_SPOTLIGHT\}[\s\S]*?path="shop-control\/free-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.FREE_SPOTLIGHT\}/,
+  "Nested /app/shop-control spotlight aliases must redirect to the real Free Spotlight publisher instead of escaping to the public fallback."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="subscription-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT\}[\s\S]*?path="shop-control\/paid-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT\}/,
+  "Nested /app paid spotlight aliases must redirect to the real paid publisher instead of escaping to the public fallback."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="\/shop-control"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SHOP_ME\}/,
+  "The top-level /shop-control alias must not fall through to Cover/Welcome; it must canonicalize to the authenticated Shop Control route."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="\/shop-manager"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SHOP_ME\}/,
+  "The top-level /shop-manager alias must not fall through to Cover/Welcome; it must canonicalize to the authenticated Shop Control route."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="\/shop-assets"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SHOP_ASSETS\}/,
+  "The top-level /shop-assets alias must not fall through to Cover/Welcome; it must canonicalize to the authenticated Shop Assets route."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="\/vault-control"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.VAULT_CONTROL\}/,
+  "The top-level /vault-control alias must not fall through to Cover/Welcome; it must canonicalize to the authenticated Vault Control route."
+);
+
+assertContains(
+  "src/App.tsx",
+  /function authenticatedFallbackTarget\(pathname: string, search: string, hash: string\): string \{[\s\S]*?alias\.startsWith\("app\/"\)[\s\S]*?alias\.includes\("shop-control"\) \|\| alias\.includes\("spotlight"\)[\s\S]*?APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT[\s\S]*?APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?APP_ROUTES\.SHOP_ME[\s\S]*?APP_ROUTES\.DASHBOARD/,
+  "Unknown authenticated publish/shop routes must stay inside /app instead of falling into Cover/Welcome."
+);
+
+assertContains(
+  "src/App.tsx",
+  /import \{ publishRecoveryTarget \} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const publishTarget = publishRecoveryTarget\(\);[\s\S]*?if \(publishTarget \|\| token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
+  "Authenticated sessions or active publish attempts that reach Cover/Welcome must recover to the publisher/app route instead of staying in the public entry funnel."
+);
+
+assertContains(
+  "src/App.tsx",
+  /function RedirectUnknownRoute\(\)[\s\S]*?rootAppAliasTarget\([\s\S]*?location\.pathname,[\s\S]*?location\.search,[\s\S]*?location\.hash[\s\S]*?authenticatedFallbackTarget\([\s\S]*?location\.pathname,[\s\S]*?location\.search,[\s\S]*?location\.hash[\s\S]*?<Navigate to=\{appAliasTarget \|\| appFallbackTarget \|\| "\/cover"\} replace \/>[\s\S]*?<Route path="\*" element=\{<RedirectUnknownRoute \/>\} \/>/,
+  "The wildcard route must check system owner-commerce aliases and authenticated app fallback before falling back to Cover/Welcome."
 );
 
 assertContains(
@@ -106,14 +273,26 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /return\s+`\/shop\/\$\{encodeURIComponent\(ownerId\)\}#\$\{PUBLIC_SHOP_DIARIES_ANCHOR\}`;/,
-  "Public shop links must land on the whole shop diaries domain, not a private app route or one block."
+  /export function publicShopRootPath\(pathOrUrl: string\): string[\s\S]*?url\.search = "";[\s\S]*?url\.hash = "";[\s\S]*?return url\.pathname;[\s\S]*?const \[path\] = withoutHash\.split\("\?"\);[\s\S]*?export function publicShopRootUrl\(pathOrUrl: string\): string/,
+  "Public shop root normalization must strip all query strings and fragments for ordinary public shop sharing."
+);
+
+assertContains(
+  "src/lib/publicLinks.ts",
+  /export function publicShopPath\(gmfnId: string\): string \{[\s\S]*?return\s+`\/shop\/\$\{encodeURIComponent\(ownerId\)\}`;[\s\S]*?\}/,
+  "Canonical public shop links must land on the full public shop root, not the block shelf or a private app route."
 );
 
 assertContains(
   "src/lib/publicLinks.ts",
   /export function publicShopBlockPath[\s\S]*?return publicShopPath\(params\.gmfnId\);[\s\S]*?}/,
   "Product/block shares must resolve back to the complete public shop domain."
+);
+
+findPattern(
+  /publicShopDiaries(?:Path|Url)\(/,
+  "Do not expose diary-fragment public shop URL helpers; ordinary public shop sharing must use publicShopPath/publicShopUrl/publicShopRootUrl.",
+  sourceFiles
 );
 
 assertContains(
@@ -161,19 +340,26 @@ assertContains(
 assertContains(
   "src/App.tsx",
   /function RedirectPublicShopAlias\(\) \{[\s\S]*?to=\{gmfnId \? publicShopPath\(gmfnId\) : "\/cover"\}[\s\S]*?replace[\s\S]*?\}/,
-  "Public shop aliases must strip old product/community query strings and land on the canonical whole-shop diaries URL."
+  "Public shop aliases must strip old product/community query strings and land on the canonical whole-shop root URL."
+);
+
+assertFunctionNotContains(
+  "src/App.tsx",
+  "RedirectPublicShopAlias",
+  /mergeTargetWithCurrent|location\.search|location\.hash|useLocation/,
+  "Public shop aliases must not preserve legacy query strings, fragments, or route-local location state."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const target = to\.startsWith\("\/app\/"\)[\s\S]*?\? withClanQuery\(to, activeCommunityId\)[\s\S]*?: to;/,
+  /const target = to\.startsWith\("\/app\/"\)[\s\S]*?\? routeWithCommunity\(to, activeCommunityId\)[\s\S]*?: to;/,
   "Marketplace route handling must not attach community query strings to public shop links."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /href=\{publicShopViewLink\}[\s\S]*?\{publicShopViewLink\}/,
-  "Marketplace public shop card must visibly show the full public shop domain as a real public link."
+  /<StableCtaLink[\s\S]*?to=\{publicShopViewLink\}[\s\S]*?\{publicShopViewLink\}[\s\S]*?<\/StableCtaLink>/,
+  "Marketplace public shop card must visibly show the full public shop domain as a real public link through the shared stable link primitive."
 );
 
 assertContains(
@@ -226,6 +412,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
+  /publicShopRootUrl\(selectedDirect\)[\s\S]*?publicShopRootUrl\(direct\)[\s\S]*?const link = direct \? publicShopRootUrl\(direct\) : publicShopUrl\(gmfnId\);/,
+  "Marketplace workspace must normalize direct backend shop URLs to the full public shop root, not a block or diary fragment."
+);
+
+assertContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
   /\{shopViewLink \|\| "Public shop link not available yet\."\}/,
   "Marketplace workspace must visibly show the full public shop domain."
 );
@@ -261,6 +453,24 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /buildProductDeepLink\([\s\S]*?publicShopBlockUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?Full public shop link copied\.[\s\S]*?Full public shop link copied\. Mention this block in your message\.[\s\S]*?Full public shop link copied\. Mention this item in your message\./,
+  "Ordinary Shop Assets block/item copy actions must copy the full public shop root link and use wording that does not promise a block-only deep link."
+);
+
+assertNotContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /Shop gallery link copied\.|Block link copied\.|Item link copied\./,
+  "Ordinary Shop Assets public copy feedback must not imply a gallery-only, block-only, or item-only public link."
+);
+
+assertNotContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /publicShopDiariesUrl/,
+  "Marketplace workspace ordinary public shop sharing must not force visitors into the shop-diaries fragment."
+);
+
+assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopLink\);[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
   "Public Shop Gallery copy must block failed public-shop links and wait for clipboard success before reporting a valid copy."
@@ -268,32 +478,44 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /aria-disabled=\{shopLoadFailed\}[\s\S]*?onClick=\{copyShopLink\}[\s\S]*?\.\.\.secondaryBtn\(shopLoadFailed\)/,
+  /<SecondaryButton[\s\S]*?onClick=\{copyShopLink\}[\s\S]*?debugId="shop-gallery\.copy-shop-link"[\s\S]*?\.\.\.secondaryBtn\(shopLoadFailed\)/,
   "Public Shop Gallery Copy link button must visibly lock when the public shop load failed."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /absoluteShopLink && shopLoadFailed[\s\S]*?<span[\s\S]*?aria-disabled[\s\S]*?not active yet[\s\S]*?<\/span>[\s\S]*?: absoluteShopLink \? \([\s\S]*?<a[\s\S]*?href=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}[\s\S]*?<\/a>/,
+  /absoluteShopLink && shopLoadFailed[\s\S]*?<span[\s\S]*?aria-disabled[\s\S]*?not active yet[\s\S]*?<\/span>[\s\S]*?: absoluteShopLink \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}[\s\S]*?<\/StableCtaLink>/,
   "Public Shop Gallery must show failed public-shop URLs as locked text, not clickable links that recirculate stale shop URLs."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /href=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}/,
+  /to=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}/,
   "Public Shop Gallery must visibly show the complete public shop domain as a real link."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const shopLoadFailed = Boolean\(error\);[\s\S]*?const publicBlockText = shopLoadFailed[\s\S]*?"Shop not connected"[\s\S]*?const shopDiaryCounterText = shopLoadFailed[\s\S]*?"Needs refresh"/,
+  /const shopLoadFailed = Boolean\(error\);[\s\S]*?const publicBlockText = autoRefreshingShop[\s\S]*?"Reconnecting shop"[\s\S]*?: shopLoadFailed[\s\S]*?"Shop not connected"[\s\S]*?const shopDiaryCounterText = autoRefreshingShop[\s\S]*?"Refreshing"[\s\S]*?: shopLoadFailed[\s\S]*?"Needs refresh"/,
   "Public Shop Gallery must not show normal public-block status while the public shop failed to load."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
+  /const GALLERY_SLOTS_TOTAL = 12;[\s\S]*?const visibleProducts = useMemo\([\s\S]*?products\.slice\(0, GALLERY_SLOTS_TOTAL\)[\s\S]*?const overflowProductCount = Math\.max\(0, products\.length - GALLERY_SLOTS_TOTAL\);/,
+  "Public Shop Gallery must render the full approved 12 public-block shelf before any overflow control."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /className="public-shop-signboard"[\s\S]*?className="public-shop-status-strip"[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-vault-ad"[\s\S]*?id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}/,
+  "Public Shop Gallery must land as a whole public shop: signboard, trust/status cues, mini spotlight, Vault promo, then the public 12-block shelf."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
   /if \(loading\) return;[\s\S]*?const shouldRevealProduct = id !== PUBLIC_SHOP_DIARIES_ANCHOR;[\s\S]*?revealGalleryTarget\(id\);/,
-  "Public Shop Gallery must wait for the shelf to load and treat #shop-diaries as the whole-shop landing, not a product/block deep link."
+  "Public Shop Gallery must wait for the shelf to load and reserve hash/product reveals for intentional non-root links only."
 );
 
 assertContains(

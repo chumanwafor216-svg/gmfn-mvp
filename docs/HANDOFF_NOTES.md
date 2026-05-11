@@ -1,3 +1,23 @@
+### Dirty worktree cleanup snapshot (2026-05-11)
+
+- Cleaned the long-running GMFN/GSN worktree by separating real source work from local runtime noise.
+- Source bundle being committed:
+  - Frontend stable button/CTA route registry work, including `frontend/src/lib/appRoutes.ts`, `frontend/src/lib/ctaTargets.ts`, route-fallthrough/public-entry recovery guards, and expanded frontend auditors.
+  - Backend join-request / global identity work, including `gmfn_backend/app/services/global_identity_service.py`, the pending join-request uniqueness migration, and expanded join-request tests.
+  - `.gitignore` now ignores `.codex-phone/` and root `uploads/` so local helper scripts and runtime upload artifacts stop polluting `git status`.
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed after updating the public-shop status guard for the new owner-only auto-refresh state.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run audit:spotlight-quota` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\auth.py gmfn_backend\app\api\routes\clans.py gmfn_backend\app\services\global_identity_service.py gmfn_backend\app\services\community_integrity_service.py gmfn_backend\app\services\invites_service.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py` passed with 42 tests.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - This is a broad cleanup snapshot, not a tiny feature patch. It is being committed because leaving these verified source changes loose made every later task risky.
+  - Local runtime files under `.codex-phone/` and `uploads/` are preserved on disk but intentionally ignored by Git.
+
 ### Public Shop Diaries auto-refresh on owner visit (2026-05-11)
 
 - Followed up after the product owner asked the public Shop Diaries error state to refresh automatically instead of telling the owner to refresh manually.

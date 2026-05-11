@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -21,6 +21,7 @@ import {
   listRecentBankEvents,
   listUnmatchedBankEvents,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type RawSystemRow = {
   id: string;
@@ -102,33 +103,6 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function stopSystemTap(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function systemButtonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: stopSystemTap,
-    onMouseDown: stopSystemTap,
-  };
-}
-
 function routeTile(primary = false): React.CSSProperties {
   return {
     display: "flex",
@@ -147,7 +121,6 @@ function routeTile(primary = false): React.CSSProperties {
     boxShadow: primary
       ? "0 18px 38px rgba(29,95,212,0.12)"
       : "0 16px 32px rgba(15,23,42,0.065)",
-    ...stableTapStyle(),
   };
 }
 
@@ -177,75 +150,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(122,152,195,0.18)",
-      background: "linear-gradient(180deg, #F8FBFF 0%, #EAF2FF 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(122,152,195,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    textAlign: "center",
-    opacity: disabled ? 0.86 : 1,
-    ...stableTapStyle(),
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -262,7 +166,6 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
-    ...stableTapStyle(),
   };
 }
 
@@ -434,6 +337,14 @@ function identitySignalLevel(row: any): "high" | "medium" | "low" {
   return "low";
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 function makeSystemRow(input: Partial<RawSystemRow> & { id: string; title: string }): RawSystemRow {
   return {
     id: input.id,
@@ -441,7 +352,7 @@ function makeSystemRow(input: Partial<RawSystemRow> & { id: string; title: strin
     title: safeStr(input.title || "Admin signal"),
     detail: safeStr(input.detail || "Review this admin signal and move into the right admin page."),
     createdAt: safeStr(input.createdAt),
-    ctaTo: safeStr(input.ctaTo || "/app/command-center"),
+    ctaTo: safeStr(input.ctaTo || ""),
     ctaLabel: safeStr(input.ctaLabel || "Open Command Center"),
     level: input.level || "low",
   };
@@ -449,6 +360,37 @@ function makeSystemRow(input: Partial<RawSystemRow> & { id: string; title: strin
 
 export default function SystemOperationsPage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "system-operations.nav.dashboard"),
+      commandCenter: routeTarget(
+        "adminCommand",
+        selectedClanId,
+        "system-operations.nav.command-center"
+      ),
+      bankConsole: routeTarget(
+        "bankConsole",
+        selectedClanId,
+        "system-operations.route.bank-console"
+      ),
+      incompleteLoans: routeTarget(
+        "incompleteLoans",
+        selectedClanId,
+        "system-operations.route.incomplete-loans"
+      ),
+      identityRisk: routeTarget(
+        "identityRisk",
+        selectedClanId,
+        "system-operations.route.identity-risk"
+      ),
+      trustAnalytics: routeTarget(
+        "trustAnalytics",
+        selectedClanId,
+        "system-operations.route.trust-analytics"
+      ),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -782,7 +724,7 @@ export default function SystemOperationsPage() {
             .filter(Boolean)
             .join(" | "),
           createdAt: firstTruthy(row?.posted_at, row?.ingested_at),
-          ctaTo: "/app/command-center/bank-console",
+          ctaTo: routes.bankConsole,
           ctaLabel: "Open Bank Console",
           level: "high",
         })
@@ -806,7 +748,7 @@ export default function SystemOperationsPage() {
             .filter(Boolean)
             .join(" | "),
           createdAt: safeStr(row?.decision_at),
-          ctaTo: "/app/command-center/incomplete-loans",
+          ctaTo: routes.incompleteLoans,
           ctaLabel: "Open Incomplete Loans",
           level: remaining > 0 && remaining <= 60 ? "high" : "medium",
         })
@@ -827,7 +769,7 @@ export default function SystemOperationsPage() {
             .filter(Boolean)
             .join(" | "),
           createdAt: safeStr(row?.created_at),
-          ctaTo: "/app/command-center/bank-console",
+          ctaTo: routes.bankConsole,
           ctaLabel: "Open Bank Console",
           level: "medium",
         })
@@ -848,7 +790,7 @@ export default function SystemOperationsPage() {
             .filter(Boolean)
             .join(" | "),
           createdAt: safeStr(row?.created_at),
-          ctaTo: "/app/command-center/identity-risk",
+          ctaTo: routes.identityRisk,
           ctaLabel: "Open Identity Risk",
           level: identitySignalLevel(row),
         })
@@ -871,7 +813,7 @@ export default function SystemOperationsPage() {
             .filter(Boolean)
             .join(" | "),
           createdAt: firstTruthy(row?.due_at, row?.created_at),
-          ctaTo: "/app/command-center/bank-console",
+          ctaTo: routes.bankConsole,
           ctaLabel: "Open Bank Console",
           level: "medium",
         })
@@ -892,7 +834,7 @@ export default function SystemOperationsPage() {
             .filter(Boolean)
             .join(" | "),
           createdAt: firstTruthy(row?.posted_at, row?.ingested_at),
-          ctaTo: "/app/command-center/bank-console",
+          ctaTo: routes.bankConsole,
           ctaLabel: "Open Bank Console",
           level: "low",
         })
@@ -906,7 +848,7 @@ export default function SystemOperationsPage() {
         return bTime - aTime;
       })
       .slice(0, 10);
-  }, [bankRecent, bankUnmatched, expectedPayments, identityRisk, incompleteLoans, pendingPool]);
+  }, [bankRecent, bankUnmatched, expectedPayments, identityRisk, incompleteLoans, pendingPool, routes]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -930,9 +872,9 @@ export default function SystemOperationsPage() {
           sectionLabel="System Operations"
           title="System Operations"
           subtitle="Loading system operations..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/command-center"
+          backTo={routes.commandCenter}
           backLabel="Command Center"
         />
 
@@ -959,9 +901,9 @@ export default function SystemOperationsPage() {
         sectionLabel="System Operations"
         title="System Operations"
         subtitle="Review live operational reading, handle alerts, and move into the right admin or member page."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/command-center"
+        backTo={routes.commandCenter}
         backLabel="Command Center"
       />
 
@@ -1069,14 +1011,14 @@ export default function SystemOperationsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...systemButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("overview")}
+            stableHeight={38}
+            debugId="system-operations.toggle.overview"
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.overview ? (
@@ -1194,14 +1136,14 @@ export default function SystemOperationsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...systemButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("intake")}
+            stableHeight={38}
+            debugId="system-operations.toggle.intake"
             style={collapseToggle()}
           >
             {collapsed.intake ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         <ExplainToggle
@@ -1500,14 +1442,14 @@ export default function SystemOperationsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...systemButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("signals")}
+            stableHeight={38}
+            debugId="system-operations.toggle.signals"
             style={collapseToggle()}
           >
             {collapsed.signals ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.signals ? (
@@ -1568,9 +1510,13 @@ export default function SystemOperationsPage() {
                         {safeDateTime(row.createdAt)}
                       </div>
 
-                      <OriginLink to={row.ctaTo} style={actionBtn("secondary")}>
+                      <StableCtaLink
+                        to={row.ctaTo}
+                        kind="secondary"
+                        debugId={`system-operations.signal.${row.id}.route`}
+                      >
                         {row.ctaLabel}
-                      </OriginLink>
+                      </StableCtaLink>
                     </div>
                   </div>
                 );
@@ -1597,14 +1543,14 @@ export default function SystemOperationsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...systemButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("queues")}
+            stableHeight={38}
+            debugId="system-operations.toggle.queues"
             style={collapseToggle()}
           >
             {collapsed.queues ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.queues ? (
@@ -1692,14 +1638,14 @@ export default function SystemOperationsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...systemButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("routes")}
+            stableHeight={38}
+            debugId="system-operations.toggle.routes"
             style={collapseToggle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1713,7 +1659,12 @@ export default function SystemOperationsPage() {
               gap: 12,
             }}
           >
-            <OriginLink to="/app/command-center/bank-console" style={routeTile(true)}>
+            <StableCtaLink
+              to={routes.bankConsole}
+              kind="primary"
+              debugId="system-operations.route.bank-console"
+              style={routeTile(true)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1727,9 +1678,13 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the work is about reconciliation, unmatched bank events, pending pool confirmation, or expected payments.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/incomplete-loans" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.incompleteLoans}
+              debugId="system-operations.route.incomplete-loans"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1743,9 +1698,13 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when approval progress, locked coverage, or auto-cancel timing is driving the work.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/identity-risk" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.identityRisk}
+              debugId="system-operations.route.identity-risk"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1759,9 +1718,13 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the work is about risky identity overlap, repeated device matches, or account integrity intervention.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.trustAnalytics}
+              debugId="system-operations.route.trust-analytics"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1775,7 +1738,7 @@ export default function SystemOperationsPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the work is about trend reading after the urgent admin queues are under control.
               </div>
-            </OriginLink>
+            </StableCtaLink>
           </div>
         ) : null}
       </section>

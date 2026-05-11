@@ -1,26 +1,14 @@
 import React from "react";
-import OriginLink from "./OriginLink";
+import { StableButton, StableCtaLink } from "./StableButton";
 
 type EntryActionButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary";
+  debugId?: string;
 };
-
-function guardEntryButtonPress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function entryTapGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardEntryButtonPress,
-    onMouseDown: guardEntryButtonPress,
-  };
-}
 
 export function EntryActionButton({
   variant = "primary",
+  debugId,
   style,
   children,
   ...props
@@ -46,9 +34,6 @@ export function EntryActionButton({
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
     pointerEvents: "auto",
-    position: "relative",
-    zIndex: 1,
-    isolation: "isolate",
     transform: "none",
     overflowAnchor: "none",
     appearance: "none",
@@ -76,27 +61,24 @@ export function EntryActionButton({
         };
 
   return (
-    <button
+    <StableButton
       {...props}
-      onPointerDown={(event) => {
-        guardEntryButtonPress(event);
-        props.onPointerDown?.(event);
-      }}
-      onMouseDown={(event) => {
-        guardEntryButtonPress(event);
-        props.onMouseDown?.(event);
-      }}
+      kind={variant === "primary" ? "primary" : "secondary"}
+      stableHeight={variant === "primary" ? 54 : 50}
+      debugId={debugId}
       style={{ ...base, ...variantStyle, ...(style || {}) }}
     >
       {children}
-    </button>
+    </StableButton>
   );
 }
 
 export function EntryBackLink({ to }: { to: string }) {
   return (
-    <OriginLink
+    <StableCtaLink
       to={to}
+      kind="secondary"
+      debugId="entry-controls.back"
       style={{
         display: "inline-flex",
         alignItems: "center",
@@ -116,9 +98,6 @@ export function EntryBackLink({ to }: { to: string }) {
         WebkitTapHighlightColor: "transparent",
         userSelect: "none",
         pointerEvents: "auto",
-        position: "relative",
-        zIndex: 1,
-        isolation: "isolate",
         transform: "none",
         overflowAnchor: "none",
         outlineOffset: 4,
@@ -144,7 +123,7 @@ export function EntryBackLink({ to }: { to: string }) {
       >
         {"<-"}
       </span>
-    </OriginLink>
+    </StableCtaLink>
   );
 }
 
@@ -161,10 +140,12 @@ export function EntryGuideLauncher({
 }) {
   if (compact) {
     return (
-      <button
+      <StableButton
         type="button"
-        {...entryTapGuardProps()}
         onClick={onClick}
+        kind="secondary"
+        stableHeight={40}
+        debugId="entry-controls.guide-compact"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -190,9 +171,6 @@ export function EntryGuideLauncher({
           WebkitTapHighlightColor: "transparent",
           userSelect: "none",
           pointerEvents: "auto",
-          position: "relative",
-          zIndex: 1,
-          isolation: "isolate",
           transform: "none",
           overflowAnchor: "none",
           appearance: "none",
@@ -201,7 +179,7 @@ export function EntryGuideLauncher({
         }}
       >
         {text}
-      </button>
+      </StableButton>
     );
   }
 
@@ -213,10 +191,13 @@ export function EntryGuideLauncher({
         gap: 8,
       }}
     >
-      <button
+      <StableButton
         type="button"
-        {...entryTapGuardProps()}
         onClick={onClick}
+        kind="secondary"
+        stableHeight={40}
+        minWidth={40}
+        debugId="entry-controls.guide-label"
         style={{
           display: "inline-flex",
           alignItems: "center",
@@ -242,9 +223,6 @@ export function EntryGuideLauncher({
           WebkitTapHighlightColor: "transparent",
           userSelect: "none",
           pointerEvents: "auto",
-          position: "relative",
-          zIndex: 1,
-          isolation: "isolate",
           transform: "none",
           overflowAnchor: "none",
           appearance: "none",
@@ -253,11 +231,12 @@ export function EntryGuideLauncher({
         }}
       >
         {label}
-      </button>
+      </StableButton>
       <EntryActionButton
         type="button"
         onClick={onClick}
         variant="secondary"
+        debugId="entry-controls.guide-main"
         style={{
           minHeight: 46,
           borderRadius: 999,

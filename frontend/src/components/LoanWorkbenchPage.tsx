@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import LoanDecisionPanel from "../components/LoanDecisionPanel";
 import LoanSuggestionsPanel from "../components/LoanSuggestionsPanel";
+import { PrimaryButton } from "./StableButton";
 
 type Suggestion = {
   user_id: number;
@@ -133,13 +134,21 @@ export default function LoanWorkbenchPage() {
             />
           </div>
 
-          <button
+          <PrimaryButton
             onClick={loadWorkspace}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-white"
-            disabled={loading}
+            busy={loading}
+            busyLabel="Loading..."
+            stableHeight={40}
+            debugId="loan-workbench-legacy.load"
+            style={{
+              borderRadius: 12,
+              background: "#0F172A",
+              color: "#FFFFFF",
+              padding: "8px 16px",
+            }}
           >
-            {loading ? "Loading..." : "Load Workspace"}
-          </button>
+            Load Workspace
+          </PrimaryButton>
         </div>
 
         {error ? (

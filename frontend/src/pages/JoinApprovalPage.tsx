@@ -1,14 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+} from "../components/StableButton";
 import { getJoinApprovalStatus } from "../lib/api";
+import { navigateToCta, resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import {
   institutionalPageCard,
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
-import { navigateWithOrigin, withOriginState } from "../lib/nav";
 
 type ApprovalStatus = {
   request_id?: number | string;
@@ -59,60 +64,6 @@ function softCard(bg = "#F4F8FC"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function consumeActionEvent(
-  event:
-    | React.MouseEvent<HTMLElement>
-    | React.PointerEvent<HTMLElement>
-    | React.TouchEvent<HTMLElement>
-) {
-  event.stopPropagation();
-}
-
-function actionBtn(primary = false, disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 16px",
-    borderRadius: 14,
-    border: primary
-      ? "1px solid rgba(11,80,170,0.22)"
-      : "1px solid rgba(37,78,119,0.20)",
-    background: disabled
-      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
-      : primary
-      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    textAlign: "center",
-    cursor: disabled ? "not-allowed" : "pointer",
-    textDecoration: "none",
-    opacity: disabled ? 0.75 : 1,
-    boxShadow: disabled
-      ? "none"
-      : primary
-      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
-      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
-    whiteSpace: "normal",
-    ...stableTapStyle(),
-  };
-}
-
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -154,6 +105,10 @@ function badge(primary = false): React.CSSProperties {
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
+}
+
+function ctaPath(target: CtaTarget): string {
+  return typeof target.to === "string" ? target.to : String(target.to);
 }
 
 function safeDateTime(value: any): string {
@@ -384,6 +339,44 @@ export default function JoinApprovalPage() {
 
     return mergeSearchIntoPath("/activate-membership", location.search);
   }, [data, location.search]);
+  const activationCta = useMemo(
+    () =>
+      resolveCtaTarget("joinPending", {
+        explicitTo: continueActivationTo,
+        debugId: "join-approval.activation",
+      }),
+    [continueActivationTo]
+  );
+  const pendingCta = useMemo(
+    () =>
+      resolveCtaTarget("joinPending", {
+        explicitTo: mergeSearchIntoPath(
+          requestId
+            ? `/join-request/pending?request_id=${encodeURIComponent(requestId)}`
+            : "/join-request/pending",
+          location.search
+        ),
+        requestId,
+        debugId: "join-approval.pending",
+      }),
+    [location.search, requestId]
+  );
+  const welcomeCta = useMemo(
+    () =>
+      resolveCtaTarget("welcome", {
+        explicitTo: mergeSearchIntoPath("/welcome", location.search),
+        debugId: "join-approval.welcome",
+      }),
+    [location.search]
+  );
+  const guideCta = useMemo(
+    () =>
+      resolveCtaTarget("welcome", {
+        explicitTo: "/guide",
+        debugId: "join-approval.guide",
+      }),
+    []
+  );
 
   return (
     <div
@@ -446,15 +439,13 @@ export default function JoinApprovalPage() {
             </div>
           </div>
 
-          <button
+          <SecondaryButton
             type="button"
-            onPointerDown={consumeActionEvent}
-            onMouseDown={consumeActionEvent}
             onClick={goBack}
-            style={actionBtn(false)}
+            debugId="join-approval.back"
           >
             Back
-          </button>
+          </SecondaryButton>
         </div>
 
         <ExplainToggle
@@ -695,25 +686,15 @@ export default function JoinApprovalPage() {
                   : "Return to entry or try again later."}
               </div>
 
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
+              <CardActionRow style={{ marginTop: 16 }}>
                 {status === "approved" ? (
-                  <button
+                  <PrimaryButton
                     type="button"
-                    onPointerDown={consumeActionEvent}
-                    onMouseDown={consumeActionEvent}
-                    style={actionBtn(true)}
                     onClick={() =>
-                      navigateWithOrigin(
+                      navigateToCta(
                         navigate,
-                        continueActivationTo,
                         location,
+                        activationCta,
                         {
                           state: {
                             gmfn_id: gmfnId,
@@ -722,27 +703,30 @@ export default function JoinApprovalPage() {
                         }
                       )
                     }
+                    debugId={activationCta.debugId}
                   >
                     Open activation
-                  </button>
+                  </PrimaryButton>
                 ) : null}
 
                 {status === "pending" ? (
-                  <OriginLink
-                    to={mergeSearchIntoPath("/join-request/pending", location.search)}
-                    style={actionBtn(false)}
+                  <StableCtaLink
+                    to={ctaPath(pendingCta)}
+                    kind="secondary"
+                    debugId={pendingCta.debugId}
                   >
                     Open pending status
-                  </OriginLink>
+                  </StableCtaLink>
                 ) : null}
 
-                <OriginLink
-                  to={mergeSearchIntoPath("/welcome", location.search)}
-                  style={actionBtn(false)}
+                <StableCtaLink
+                  to={ctaPath(welcomeCta)}
+                  kind="secondary"
+                  debugId={welcomeCta.debugId}
                 >
                   Return to Welcome
-                </OriginLink>
-              </div>
+                </StableCtaLink>
+              </CardActionRow>
             </div>
 
             <div style={pageCard()}>
@@ -759,32 +743,25 @@ export default function JoinApprovalPage() {
                 guide before you continue.
               </div>
 
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <OriginLink
-                  to="/guide"
+              <CardActionRow style={{ marginTop: 16 }}>
+                <StableCtaLink
+                  to={ctaPath(guideCta)}
+                  kind="secondary"
                   preserveSearch
-                  state={withOriginState(location)}
-                  style={actionBtn(false)}
+                  debugId={guideCta.debugId}
                 >
                   Open full GSN guide
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink
-                  to="/guide"
+                <StableCtaLink
+                  to={ctaPath(guideCta)}
+                  kind="secondary"
                   preserveSearch
-                  state={withOriginState(location)}
-                  style={actionBtn(false)}
+                  debugId="join-approval.focus-guide"
                 >
                   Read about Focus Commitments first
-                </OriginLink>
-              </div>
+                </StableCtaLink>
+              </CardActionRow>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 // frontend/src/components/PaymentInstructionsPanel.tsx
 import React, { useMemo, useState } from "react";
+import { SecondaryButton } from "./StableButton";
 import { copy as C, copyText } from "../lib/copy";
 
 type Props = {
@@ -48,7 +49,9 @@ export default function PaymentInstructionsPanel({ loanId, borrowerUserId, curre
       <div style={{ marginTop: 12, padding: 12, borderRadius: 12, border: "1px solid #fde68a", background: "#fffbeb" }}>
         <div style={{ fontWeight: 800 }}>Reference (very important)</div>
         <div style={{ marginTop: 6, fontFamily: "monospace" }}>{reference}</div>
-        <button
+        <SecondaryButton
+          stableHeight={38}
+          debugId="payment-instructions-panel.copy-reference"
           style={{ marginTop: 10, padding: "8px 12px", borderRadius: 10, border: "1px solid #ddd", background: "white" }}
           onClick={async () => {
             await copyText(reference);
@@ -57,7 +60,7 @@ export default function PaymentInstructionsPanel({ loanId, borrowerUserId, curre
           }}
         >
           Copy reference
-        </button>
+        </SecondaryButton>
       </div>
 
       <div style={{ marginTop: 12, fontSize: 12, color: "#6b7280" }}>

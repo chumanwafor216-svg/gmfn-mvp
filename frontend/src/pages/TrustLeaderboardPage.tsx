@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
-import OriginLink from "../components/OriginLink";
+import { useEffect, useMemo, useState } from "react";
 import PageTopNav from "../components/PageTopNav";
+import { CardActionRow, StableCtaLink } from "../components/StableButton";
+import { getSelectedClanId } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type TrustRow = {
   user_id: number;
@@ -42,45 +44,23 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    transform: "none",
-    lineHeight: 1.2,
-  };
-}
-
-function actionBtn(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 18px",
-    borderRadius: 16,
-    fontWeight: 900,
-    fontSize: 15,
-    textDecoration: "none",
-    whiteSpace: "normal",
-    border: "1px solid rgba(124,153,196,0.22)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF4FF 100%)",
-    color: "#0B1F33",
-    boxShadow: "0 12px 28px rgba(15,23,42,0.10)",
-  };
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 export default function TrustLeaderboardPage() {
   const [items, setItems] = useState<TrustRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      trust: routeTarget("trust", selectedClanId, "trust-leaderboard.route.trust"),
+      trustSlip: routeTarget("trustSlip", selectedClanId, "trust-leaderboard.route.trust-slip"),
+      openTrust: routeTarget("openTrust", selectedClanId, "trust-leaderboard.route.open-trust"),
+    }),
+    [selectedClanId]
+  );
 
   useEffect(() => {
     setItems([]);
@@ -129,17 +109,20 @@ export default function TrustLeaderboardPage() {
             Timeline, and Trust Passport instead of pushing a public ranking
             surface right now.
           </div>
-          <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <OriginLink to="/app/trust" style={actionBtn()}>
+          <CardActionRow style={{ marginTop: 16 }}>
+            <StableCtaLink to={routes.trust} debugId="trust-leaderboard.trust">
               Open Trust
-            </OriginLink>
-            <OriginLink to="/app/trust-slip" style={actionBtn()}>
+            </StableCtaLink>
+            <StableCtaLink to={routes.trustSlip} debugId="trust-leaderboard.trust-slip">
               Open Trust Slip
-            </OriginLink>
-            <OriginLink to="/app/open-trust-reading" style={actionBtn()}>
+            </StableCtaLink>
+            <StableCtaLink
+              to={routes.openTrust}
+              debugId="trust-leaderboard.open-trust"
+            >
               Open Trust Reading
-            </OriginLink>
-          </div>
+            </StableCtaLink>
+          </CardActionRow>
           <div style={{ marginTop: 16, ...helperText(), color: "#991B1B" }}>
             {error}
           </div>

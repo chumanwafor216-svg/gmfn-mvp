@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
+import { PrimaryButton, StableCtaLink } from "../components/StableButton";
 import { getInvitePreview } from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
 
@@ -160,37 +160,6 @@ function pill(kind: "blue" | "green" | "red" | "gray"): React.CSSProperties {
     color: "#334155",
     background: "#f8fafc",
     borderColor: "#e2e8f0",
-  };
-}
-
-function actionBtn(primary = false, disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "14px 18px",
-    borderRadius: 14,
-    border: primary
-      ? "1px solid rgba(11,80,170,0.22)"
-      : "1px solid rgba(37,78,119,0.20)",
-    background: disabled
-      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
-      : primary
-      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(241,247,253,0.98) 62%, rgba(224,234,244,0.98) 100%)",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    cursor: disabled ? "not-allowed" : "pointer",
-    textDecoration: "none",
-    opacity: disabled ? 0.8 : 1,
-    minHeight: 46,
-    whiteSpace: "normal",
-    textAlign: "center",
-    boxShadow: disabled
-      ? "none"
-      : primary
-      ? "0 16px 30px rgba(11,99,209,0.22), inset 0 1px 0 rgba(255,255,255,0.24)"
-      : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
 }
 
@@ -562,26 +531,43 @@ export default function InviteLandingPage() {
                   gap: 12,
                 }}
               >
-                <button
-                  type="button"
+                <PrimaryButton
                   onClick={continueFounderRoute}
                   disabled={!canContinue || continuing}
-                  style={actionBtn(true, !canContinue || continuing)}
+                  busy={continuing}
+                  busyLabel="Opening..."
+                  stableHeight={46}
+                  debugId="invite-landing.open-founder-entry"
                 >
-                  {continuing ? "Opening..." : "Open founder entry"}
-                </button>
+                  Open founder entry
+                </PrimaryButton>
 
-                <OriginLink to="/guide" style={actionBtn(false)}>
+                <StableCtaLink
+                  to="/guide"
+                  kind="secondary"
+                  stableHeight={46}
+                  debugId="invite-landing.open-guide"
+                >
                   Open full GSN guide
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/guide" style={actionBtn(false)}>
+                <StableCtaLink
+                  to="/guide"
+                  kind="secondary"
+                  stableHeight={46}
+                  debugId="invite-landing.open-focus-guide"
+                >
                   Read about Focus Commitments first
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/welcome" style={actionBtn(false)}>
+                <StableCtaLink
+                  to="/welcome"
+                  kind="secondary"
+                  stableHeight={46}
+                  debugId="invite-landing.open-welcome"
+                >
                   Open Welcome
-                </OriginLink>
+                </StableCtaLink>
               </div>
             </div>
           </>

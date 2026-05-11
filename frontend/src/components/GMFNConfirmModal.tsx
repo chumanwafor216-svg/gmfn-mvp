@@ -1,5 +1,6 @@
 // src/components/GMFNConfirmModal.tsx
 import { useState } from "react";
+import { PrimaryButton, SecondaryButton } from "./StableButton";
 
 export type GMFNConfirmResult = {
   reason?: string;
@@ -109,12 +110,24 @@ export default function GMFNConfirmModal({
         />
 
         <div style={actions}>
-          <button onClick={onClose} disabled={loading}>
+          <SecondaryButton
+            onClick={onClose}
+            disabled={loading}
+            stableHeight={40}
+            debugId="gmfn-confirm.cancel"
+          >
             {cancelLabel}
-          </button>
-          <button onClick={handleConfirm} disabled={loading}>
+          </SecondaryButton>
+          <PrimaryButton
+            onClick={handleConfirm}
+            disabled={loading}
+            busy={loading}
+            busyLabel="Working..."
+            stableHeight={40}
+            debugId="gmfn-confirm.confirm"
+          >
             {loading ? "Working…" : confirmLabel}
-          </button>
+          </PrimaryButton>
         </div>
       </div>
     </div>

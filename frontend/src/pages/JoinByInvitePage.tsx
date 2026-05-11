@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
+import { PrimaryButton, StableCtaLink } from "../components/StableButton";
 
 type Preview = {
   code: string;
@@ -171,29 +171,6 @@ function btn(primary = false, disabled = false): React.CSSProperties {
       : "0 12px 24px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.84)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
-  };
-}
-
-function stableTapStyle(): React.CSSProperties {
-  return {
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-  };
-}
-
-function guardButtonPress(
-  event:
-    | React.PointerEvent<HTMLElement>
-    | React.TouchEvent<HTMLElement>
-    | React.MouseEvent<HTMLElement>
-): void {
-  event.stopPropagation();
-}
-
-function buttonGuardProps() {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
   };
 }
 
@@ -575,30 +552,40 @@ export default function JoinByInvitePage() {
                   flexWrap: "wrap",
                 }}
               >
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <PrimaryButton
                   onClick={continueInviteFlow}
                   disabled={!canContinue || continuing}
-                  style={{
-                    ...btn(true, !canContinue || continuing),
-                    ...stableTapStyle(),
-                  }}
+                  busy={continuing}
+                  busyLabel="Opening..."
+                  debugId="join-by-invite.open-invited-entry"
+                  style={btn(true, !canContinue || continuing)}
                 >
-                  {continuing ? "Opening..." : "Open invited entry"}
-                </button>
+                  Open invited entry
+                </PrimaryButton>
 
-                <OriginLink to="/guide" style={btn(false)}>
+                <StableCtaLink
+                  to="/guide"
+                  debugId="join-by-invite.open-guide"
+                  style={btn(false)}
+                >
                   Open full GSN guide
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/guide" style={btn(false)}>
+                <StableCtaLink
+                  to="/guide"
+                  debugId="join-by-invite.open-focus-guide"
+                  style={btn(false)}
+                >
                   Read about Focus Commitments first
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/welcome" style={btn(false)}>
+                <StableCtaLink
+                  to="/welcome"
+                  debugId="join-by-invite.open-welcome"
+                  style={btn(false)}
+                >
                   Open Welcome
-                </OriginLink>
+                </StableCtaLink>
               </div>
 
               <div style={{ marginTop: 12, ...helperText() }}>

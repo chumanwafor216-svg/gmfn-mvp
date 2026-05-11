@@ -18,6 +18,7 @@ from app.core.dev_guard import require_dev_mode
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.db.database import get_db
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
+from app.services.global_identity_service import ensure_user_gmfn_id
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -166,26 +167,7 @@ def authenticate_user_by_identity(db: Session, identity: str, password: str) -> 
     return user
 
 
-def _generate_gmfn_id() -> str:
-    return "GMFN-U-" + secrets.token_hex(4).upper()
-
-
-def _ensure_user_gmfn_id(db: Session, user: User) -> User:
-    current = str(getattr(user, "gmfn_id", "") or "").strip()
-    if current:
-        return user
-
-    for _ in range(20):
-        candidate = _generate_gmfn_id()
-        exists = db.query(User).filter(User.gmfn_id == candidate).first()
-        if not exists:
-            user.gmfn_id = candidate
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            return user
-
-    raise HTTPException(status_code=500, detail="Could not generate unique GMFN ID.")
+_ensure_user_gmfn_id = ensure_user_gmfn_id
 
 
 def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:

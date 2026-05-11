@@ -62,7 +62,7 @@ def test_invite_guarantor_duplicate_conflict_contract(
 
 def test_invite_guarantor_non_admin_forbidden_contract(
     client,
-    override_clan_ctx_member,  # membership role = member
+    override_clan_ctx_member,  # membership role = user/non-admin
     seed_clan_member_membership,
     seed_loan,
     seed_user2_non_member,
@@ -71,7 +71,7 @@ def test_invite_guarantor_non_admin_forbidden_contract(
 ):
     """
     Some builds enforce admin-only on inviting guarantors (403).
-    Some builds allow members to invite guarantors (200/201).
+    Some builds allow non-admin users to invite guarantors (200/201).
     This test is contract-safe: it accepts either while validating shape.
     """
     payload = {"guarantor_user_id": 2, "pledge_amount": PLEDGE_OK}

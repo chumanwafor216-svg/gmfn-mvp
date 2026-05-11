@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import {
   createMarketplaceBroadcast,
@@ -20,8 +21,9 @@ import {
   prepareSpotlightImageFile,
   prepareSpotlightVideoFile,
 } from "../lib/spotlightMediaPrep";
+import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
+import { rememberPublishRecovery } from "../lib/publishRecovery";
 import {
-  actionTapGuardProps,
   brandActionButton,
   brandBadge,
   brandHelperText,
@@ -258,13 +260,6 @@ function settlementValue(settlement: SettlementRecord | null, key: keyof Settlem
 function paymentLine(label: string, value: unknown): string {
   const text = firstTruthy(value);
   return text ? `${label}: ${text}` : "";
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
 }
 
 function pageShell(isCompact: boolean): React.CSSProperties {
@@ -735,6 +730,12 @@ export default function SubscriptionSpotlightPage() {
       showNotice("info", "Subscription Spotlight publish is already running.");
       return;
     }
+
+    rememberPublishRecovery(
+      routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, shopClanId || selectedClanId || 0),
+      "subscription-spotlight.publish"
+    );
+
     if (identityBlocked) {
       showNotice("error", "Identity review is blocking paid spotlight publishing. Complete identity review first, then return here.");
       return;
@@ -878,21 +879,22 @@ export default function SubscriptionSpotlightPage() {
               {[1, 2, 3, 4, 5, 6].map((credit) => {
                 const selected = selectedCredits === credit;
                 return (
-                  <button
+                  <SecondaryButton
                     key={credit}
                     type="button"
                     role="radio"
                     aria-checked={selected}
-                    {...buttonGuardProps()}
                     onClick={() => {
                       setSelectedCredits(credit);
                       setConfirmedQuoteKey("");
                     }}
+                    stableHeight={74}
+                    debugId={`subscription-spotlight.credit.${credit}`}
                     style={slotButton(selected)}
                   >
                     <span style={{ fontSize: 20, fontWeight: 950 }}>{credit}</span>
                     <span style={{ fontSize: 12, fontWeight: 900 }}>credit{credit === 1 ? "" : "s"}</span>
-                  </button>
+                  </SecondaryButton>
                 );
               })}
             </div>
@@ -906,26 +908,30 @@ export default function SubscriptionSpotlightPage() {
             <div style={{ marginTop: 14, ...brandHelperText(), fontWeight: 760 }}>
               Confirm this quote first. GSN will generate the payment code against this exact credit count and amount so the bank rail can cross-check the transfer.
             </div>
-            <button
+            <PrimaryButton
               type="button"
-              {...buttonGuardProps()}
               onClick={() => {
                 setConfirmedQuoteKey(currentQuoteKey);
                 showNotice("success", `Subscription Spotlight quote confirmed: ${agreementText}.`);
               }}
+              stableHeight={62}
+              debugId="subscription-spotlight.confirm-quote"
               style={{ ...brandActionButton("primary"), marginTop: 18, minHeight: 62, width: "100%" }}
             >
               ✅ Agree: {agreementText}
-            </button>
-            <button
+            </PrimaryButton>
+            <SecondaryButton
               type="button"
-              {...buttonGuardProps()}
               onClick={() => void createPaymentInstruction()}
               disabled={creatingInstruction || !shop?.id}
+              busy={creatingInstruction}
+              busyLabel="Generating payment code..."
+              stableHeight={54}
+              debugId="subscription-spotlight.generate-payment-code"
               style={{ ...brandActionButton("secondary", creatingInstruction || !shop?.id), marginTop: 10, minHeight: 54, width: "100%" }}
             >
               {creatingInstruction ? "Generating payment code..." : "🔐 Generate payment code"}
-            </button>
+            </SecondaryButton>
             <div style={{ marginTop: 14, ...brandHelperText(), fontWeight: 820 }}>
               Payment instructions expire {paymentDueDays} days after generation. Payment goes to the GSN platform account, not the community.
             </div>
@@ -959,12 +965,26 @@ export default function SubscriptionSpotlightPage() {
               ))}
             </div>
             <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
-              <button type="button" {...buttonGuardProps()} onClick={copyPaymentDetails} style={brandActionButton("secondary", paymentLines.length === 0)} disabled={paymentLines.length === 0}>
+              <SecondaryButton
+                type="button"
+                onClick={copyPaymentDetails}
+                style={brandActionButton("secondary", paymentLines.length === 0)}
+                disabled={paymentLines.length === 0}
+                debugId="subscription-spotlight.copy-payment-details"
+              >
                 📋 Copy payment details
-              </button>
-              <button type="button" {...buttonGuardProps()} onClick={() => void refreshPaymentStatus()} disabled={checkingPayment} style={brandActionButton("soft", checkingPayment)}>
+              </SecondaryButton>
+              <SubtleButton
+                type="button"
+                onClick={() => void refreshPaymentStatus()}
+                disabled={checkingPayment}
+                busy={checkingPayment}
+                busyLabel="Checking..."
+                style={brandActionButton("soft", checkingPayment)}
+                debugId="subscription-spotlight.check-payment-status"
+              >
                 {checkingPayment ? "Checking..." : "🔎 Check payment status"}
-              </button>
+              </SubtleButton>
             </div>
           </>
         ) : (
@@ -1003,15 +1023,18 @@ export default function SubscriptionSpotlightPage() {
               <span style={brandBadge(Boolean(videoFile))}>{videoFile ? "🎬 Video ready" : "🎬 Video optional"}</span>
               {(preparingImage || preparingVideo) ? <span style={brandBadge(false)}>⚙️ Preparing media</span> : null}
             </div>
-            <button
+            <PrimaryButton
               type="button"
-              {...buttonGuardProps()}
               onClick={() => void publishSpotlight()}
               disabled={publishing}
+              busy={publishing}
+              busyLabel="Publishing..."
+              stableHeight={58}
+              debugId="subscription-spotlight.publish"
               style={{ ...brandActionButton("primary", publishing), minHeight: 58 }}
             >
               {publishing ? "Publishing..." : "📣 Publish Subscription Spotlight"}
-            </button>
+            </PrimaryButton>
           </div>
           <div style={{ ...brandInnerCard("linear-gradient(145deg, #071424 0%, #0D2640 48%, #173A5C 100%)"), border: "1px solid rgba(243,208,106,0.20)" }}>
             <div style={{ ...brandSectionLabel(), color: gmfnBrand.colors.gold }}>👀 Preview</div>

@@ -1,14 +1,22 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import { navigateWithOrigin } from "../lib/nav";
 import PageTopNav from "../components/PageTopNav";
 import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
+import {
   getMyNotifications,
   getMySettings,
+  getSelectedClanId,
   markNotificationRead,
 } from "../lib/api";
+import { APP_ROUTES } from "../lib/appRoutes";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   buildGuidanceSnapshot,
   type GuidanceInboxBucketKey,
@@ -96,29 +104,36 @@ const PUBLIC_ROUTE_PREFIXES = [
 ];
 
 const NOTIFICATION_TARGETS = {
-  DASHBOARD: "/app/dashboard",
-  COMMUNITY: "/app/community",
-  MARKETPLACE: "/app/marketplace",
-  FINANCE: "/app/finance",
-  MONEY_IN: "/app/payment/pool",
-  MONEY_OUT: "/app/withdrawal-instructions",
-  TRUST: "/app/trust",
-  TRUST_SLIP: "/app/trust-slip",
-  TRUST_SLIP_VERIFY: "/app/trust-slip/verify",
-  CCI: "/app/identity",
-  NOTIFICATIONS: "/app/notifications",
-  DEMAND_BOX: "/app/demand-box",
-  LOANS: "/app/loans",
-  LOAN_READINESS: "/app/loan-readiness",
-  LOAN_SUGGESTIONS: "/app/loan-suggestions",
-  LOAN_WORKBENCH: "/app/loan-workbench",
-  COMMITMENT_BUILDER: "/app/dashboard#focus-commitments",
-  GUIDE: "/app/my-gmfn-and-i",
-  SETTINGS: "/app/my-gmfn-and-i?tab=settings",
-  BUILD_FIRST_CIRCLE: "/app/build-first-circle",
-  SHOP_ME: "/app/shop-control",
-  COMMAND_CENTER: "/app/command-center",
-  GUARANTOR_EARNINGS: "/app/guarantor-earnings",
+  DASHBOARD: APP_ROUTES.DASHBOARD,
+  COMMUNITY: APP_ROUTES.COMMUNITY,
+  MARKETPLACE: APP_ROUTES.MARKETPLACE,
+  FINANCE: APP_ROUTES.FINANCE,
+  MONEY_IN: APP_ROUTES.MONEY_IN,
+  MONEY_OUT: APP_ROUTES.MONEY_OUT,
+  PAYMENT_RAILS: APP_ROUTES.PAYMENT_RAILS,
+  PAYOUT_DETAILS: APP_ROUTES.PAYOUT_DETAILS,
+  TRUST: APP_ROUTES.TRUST,
+  TRUST_SLIP: APP_ROUTES.TRUST_SLIP,
+  TRUST_SLIP_VERIFY: APP_ROUTES.MERCHANT_VERIFY,
+  CCI: APP_ROUTES.CCI,
+  NOTIFICATIONS: APP_ROUTES.NOTIFICATIONS,
+  DEMAND_BOX: APP_ROUTES.DEMAND_BOX,
+  LOANS: APP_ROUTES.LOANS,
+  LOAN_READINESS: APP_ROUTES.LOAN_READINESS,
+  LOAN_SUGGESTIONS: APP_ROUTES.LOAN_SUGGESTIONS,
+  LOAN_WORKBENCH: APP_ROUTES.LOAN_WORKBENCH,
+  COMMITMENT_BUILDER: `${APP_ROUTES.DASHBOARD}#focus-commitments`,
+  GUIDE: APP_ROUTES.GUIDE,
+  SETTINGS: APP_ROUTES.SETTINGS,
+  BUILD_FIRST_CIRCLE: APP_ROUTES.BUILD_FIRST_CIRCLE,
+  SHOP_ME: APP_ROUTES.SHOP_ME,
+  COMMAND_CENTER: APP_ROUTES.ADMIN_COMMAND,
+  GUARANTOR_EARNINGS: APP_ROUTES.GUARANTOR_EARNINGS,
+  GUARANTOR_INBOX: APP_ROUTES.GUARANTOR_INBOX,
+  TRUST_ANALYTICS: APP_ROUTES.TRUST_ANALYTICS,
+  SYSTEM_OPERATIONS: APP_ROUTES.SYSTEM_OPERATIONS,
+  EXPOSURE_ADMIN: APP_ROUTES.EXPOSURE_ADMIN,
+  TRUST_GRAPH: APP_ROUTES.TRUST_GRAPH,
 } as const;
 
 const EXACT_TARGET_ALIASES: Record<string, string> = {
@@ -140,14 +155,14 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
 
   "money-in": NOTIFICATION_TARGETS.MONEY_IN,
   "payment/pool": NOTIFICATION_TARGETS.MONEY_IN,
-  "payment-rails": "/app/payment-rails",
-  "bank-accounts": "/app/payment-rails",
-  "bank-rails": "/app/payment-rails",
+  "payment-rails": NOTIFICATION_TARGETS.PAYMENT_RAILS,
+  "bank-accounts": NOTIFICATION_TARGETS.PAYMENT_RAILS,
+  "bank-rails": NOTIFICATION_TARGETS.PAYMENT_RAILS,
 
   "money-out": NOTIFICATION_TARGETS.MONEY_OUT,
   withdrawal: NOTIFICATION_TARGETS.MONEY_OUT,
   "withdrawal-instructions": NOTIFICATION_TARGETS.MONEY_OUT,
-  "payout-details": "/app/payout-details",
+  "payout-details": NOTIFICATION_TARGETS.PAYOUT_DETAILS,
 
   marketplace: NOTIFICATION_TARGETS.MARKETPLACE,
   market: NOTIFICATION_TARGETS.MARKETPLACE,
@@ -220,19 +235,27 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
   "shop-gallery": NOTIFICATION_TARGETS.SHOP_ME,
   "open-shop": NOTIFICATION_TARGETS.SHOP_ME,
 
-  "shop-control": "/app/shop-control",
-  "shop-manager": "/app/shop-control",
+  "shop-control": NOTIFICATION_TARGETS.SHOP_ME,
+  "shop-manager": NOTIFICATION_TARGETS.SHOP_ME,
+  spotlight: "/app/shop-control#shop-control-spotlight",
+  "shop-spotlight": "/app/shop-control#shop-control-spotlight",
+  "free-spotlight": "/app/shop-control#shop-control-spotlight",
+  "shop-control/spotlight": "/app/shop-control#shop-control-spotlight",
+  "shop-control/free-spotlight": "/app/shop-control#shop-control-spotlight",
+  "paid-spotlight": "/app/shop-control/subscription-spotlight",
+  "subscription-spotlight": "/app/shop-control/subscription-spotlight",
+  "shop-control/paid-spotlight": "/app/shop-control/subscription-spotlight",
 
   "command-center": NOTIFICATION_TARGETS.COMMAND_CENTER,
   "trust-command-centre": NOTIFICATION_TARGETS.COMMAND_CENTER,
-  "trust-analytics": "/app/command-center/trust-analytics",
-  "system-operations": "/app/command-center/system-operations",
-  "admin/exposure": "/app/command-center/exposure",
-  "admin/trust-graph": "/app/command-center/trust-graph",
+  "trust-analytics": NOTIFICATION_TARGETS.TRUST_ANALYTICS,
+  "system-operations": NOTIFICATION_TARGETS.SYSTEM_OPERATIONS,
+  "admin/exposure": NOTIFICATION_TARGETS.EXPOSURE_ADMIN,
+  "admin/trust-graph": NOTIFICATION_TARGETS.TRUST_GRAPH,
 
   earnings: NOTIFICATION_TARGETS.GUARANTOR_EARNINGS,
   "guarantor-earnings": NOTIFICATION_TARGETS.GUARANTOR_EARNINGS,
-  "guarantor-inbox": "/app/guarantor-inbox",
+  "guarantor-inbox": NOTIFICATION_TARGETS.GUARANTOR_INBOX,
 };
 
 const SAFE_STATIC_APP_PATHS = new Set([
@@ -263,8 +286,6 @@ const SAFE_STATIC_APP_PATHS = new Set([
   "shop-control/subscription-spotlight",
   "shop-gallery-control",
   "vault-control",
-  "free-spotlight",
-  "paid-spotlight",
   "shop-assets",
   "command-center",
   "command-center/bank-console",
@@ -362,81 +383,8 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 2,
-    isolation: "isolate",
-    userSelect: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    transform: "none",
-    outlineOffset: 4,
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  const base: React.CSSProperties = {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: kind === "soft" ? 44 : 46,
-    minWidth: 112,
-    maxWidth: "100%",
-    padding: kind === "soft" ? "9px 14px" : "11px 18px",
-    borderRadius: kind === "soft" ? 16 : 18,
-    fontWeight: 900,
-    fontSize: kind === "soft" ? 13 : 14,
-    lineHeight: 1.15,
-    letterSpacing: 0.15,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    opacity: disabled ? 0.78 : 1,
-  };
-
-  if (kind === "primary") {
-    return {
-      ...base,
-      border: "1px solid rgba(255,255,255,0.22)",
-      background: disabled ? "#CBD5E1" : GSN_ACTION_BRAND.primaryButton,
-      color: "#FFFFFF",
-      boxShadow:
-        "0 10px 22px rgba(16,58,96,0.20), inset 0 1px 0 rgba(255,255,255,0.22)",
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...base,
-      border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-      background:
-        "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-      color: disabled ? "#94A3B8" : GSN_ACTION_BRAND.blue,
-      boxShadow:
-        "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
-    };
-  }
-
-  return {
-    ...base,
-    border: `1px solid ${GSN_ACTION_BRAND.cardBorderStrong}`,
-    background: GSN_ACTION_BRAND.whiteButton,
-    color: disabled ? "#94A3B8" : GSN_ACTION_BRAND.ink,
-    boxShadow:
-      "0 8px 18px rgba(12,35,58,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
-    ...stableTapStyle(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -456,20 +404,6 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     boxShadow:
       "0 8px 18px rgba(12,35,58,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
-  };
-}
-
-function guardButtonPress(event: React.SyntheticEvent) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
   };
 }
 
@@ -1164,9 +1098,21 @@ function normalizeCollapseState(raw: any): CollapseState {
   };
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function NotificationsPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "notifications.route.dashboard"),
+      trust: routeTarget("trust", selectedClanId, "notifications.route.trust"),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1400,9 +1346,9 @@ export default function NotificationsPage() {
         sectionLabel="Notifications"
         title="Action Inbox"
         subtitle="Check what is waiting for you, then open the right page to answer it."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/dashboard"
+        backTo={routes.dashboard}
       />
 
       <ExplainToggle
@@ -1533,9 +1479,7 @@ export default function NotificationsPage() {
         </div>
 
         <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <PrimaryButton
             onClick={() =>
               setCollapsed((prev) => ({
                 ...prev,
@@ -1543,10 +1487,10 @@ export default function NotificationsPage() {
                 buckets: false,
               }))
             }
-            style={actionBtn("primary")}
+            debugId="notifications.show-urgent"
           >
             Show urgent items
-          </button>
+          </PrimaryButton>
         </div>
       </section>
 
@@ -1609,23 +1553,28 @@ export default function NotificationsPage() {
           </div>
 
           <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
-            <OriginLink to="/app/trust" style={actionBtn("primary")}>
+            <StableCtaLink
+              to={routes.trust}
+              kind="primary"
+              debugId="notifications.onboarding-trust.open-trust"
+            >
               Open Trust Passport
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/dashboard" style={actionBtn("secondary")}>
+            <StableCtaLink
+              to={routes.dashboard}
+              debugId="notifications.onboarding-trust.dashboard"
+            >
               Return to Dashboard
-            </OriginLink>
+            </StableCtaLink>
 
             {onboardingTrustNotice.unread && /^\d+$/.test(safeStr(onboardingTrustNotice.id)) ? (
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <SubtleButton
                 onClick={() => void markAsRead(safeStr(onboardingTrustNotice.id))}
-                style={actionBtn("soft")}
+                debugId="notifications.onboarding-trust.mark-read"
               >
                 Mark as read
-              </button>
+              </SubtleButton>
             ) : null}
           </div>
         </section>
@@ -1648,13 +1597,13 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("focus")}
             style={collapseToggle()}
+            debugId="notifications.toggle-focus"
           >
             {collapsed.focus ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.focus ? (
@@ -1708,18 +1657,19 @@ export default function NotificationsPage() {
                 </div>
 
                 <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <PrimaryButton
                     onClick={() => void handlePrimaryNoticeAction(operationalFocus)}
-                    style={actionBtn("primary")}
+                    debugId="notifications.focus.primary"
                   >
                     {settings.openActionsDirectly ? operationalFocus.ctaLabel : "Review first"}
-                  </button>
+                  </PrimaryButton>
 
-                  <OriginLink to={operationalFocus.ctaTo} style={actionBtn("secondary")}>
+                  <StableCtaLink
+                    to={operationalFocus.ctaTo}
+                    debugId="notifications.focus.open-page"
+                  >
                     Open page
-                  </OriginLink>
+                  </StableCtaLink>
                 </div>
               </div>
 
@@ -1798,29 +1748,29 @@ export default function NotificationsPage() {
               </div>
 
               <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
-                <OriginLink to={selectedNotice.ctaTo} style={actionBtn("primary")}>
+                <StableCtaLink
+                  to={selectedNotice.ctaTo}
+                  kind="primary"
+                  debugId="notifications.selected.open"
+                >
                   {selectedNotice.ctaLabel}
-                </OriginLink>
+                </StableCtaLink>
 
                 {selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)) ? (
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
+                  <SecondaryButton
                     onClick={() => void markAsRead(safeStr(selectedNotice.id))}
-                    style={actionBtn("secondary")}
+                    debugId="notifications.selected.mark-read"
                   >
                     Mark as read
-                  </button>
+                  </SecondaryButton>
                 ) : null}
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <SubtleButton
                   onClick={() => setSelectedNotice(null)}
-                  style={actionBtn("soft")}
+                  debugId="notifications.selected.close"
                 >
                   Close review
-                </button>
+                </SubtleButton>
               </div>
             </div>
           </div>
@@ -1844,14 +1794,13 @@ export default function NotificationsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("buckets")}
             style={collapseToggle()}
+            debugId="notifications.toggle-buckets"
           >
             {collapsed.buckets ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.buckets ? (
@@ -1947,28 +1896,27 @@ export default function NotificationsPage() {
                             </div>
 
                             <div style={{ marginTop: 12, ...actionRow(isPhone) }}>
-                              <button
-                                type="button"
-                                {...buttonGuardProps()}
+                              <PrimaryButton
                                 onClick={() => void handlePrimaryNoticeAction(notice)}
-                                style={actionBtn("primary")}
+                                debugId={`notifications.notice.${notice.id}.primary`}
                               >
                                 {settings.openActionsDirectly ? notice.ctaLabel : "Review first"}
-                              </button>
+                              </PrimaryButton>
 
-                              <OriginLink to={notice.ctaTo} style={actionBtn("secondary")}>
+                              <StableCtaLink
+                                to={notice.ctaTo}
+                                debugId={`notifications.notice.${notice.id}.open-page`}
+                              >
                                 Open page
-                              </OriginLink>
+                              </StableCtaLink>
 
                               {notice.unread && /^\d+$/.test(safeStr(notice.id)) ? (
-                                <button
-                                  type="button"
-                                  {...buttonGuardProps()}
+                                <SubtleButton
                                   onClick={() => void markAsRead(safeStr(notice.id))}
-                                  style={actionBtn("soft")}
+                                  debugId={`notifications.notice.${notice.id}.mark-read`}
                                 >
                                   Mark as read
-                                </button>
+                                </SubtleButton>
                               ) : null}
                             </div>
                           </div>
@@ -2015,14 +1963,13 @@ export default function NotificationsPage() {
               </div>
             </div>
 
-            <button
-              type="button"
-              {...buttonGuardProps()}
+            <SubtleButton
               onClick={() => toggleSection("rawFeed")}
               style={collapseToggle()}
+              debugId="notifications.toggle-raw-feed"
             >
               {collapsed.rawFeed ? "Open" : "Collapse"}
-            </button>
+            </SubtleButton>
           </div>
 
           {!collapsed.rawFeed ? (
@@ -2109,14 +2056,13 @@ export default function NotificationsPage() {
               </div>
             </div>
 
-            <button
-              type="button"
-              {...buttonGuardProps()}
+            <SubtleButton
               onClick={() => toggleSection("reading")}
               style={collapseToggle()}
+              debugId="notifications.toggle-reading"
             >
               {collapsed.reading ? "Open" : "Collapse"}
-            </button>
+            </SubtleButton>
           </div>
 
           {!collapsed.reading ? (

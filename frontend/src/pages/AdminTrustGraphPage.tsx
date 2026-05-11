@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -9,6 +9,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import * as api from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type CollapseState = {
   overview: boolean;
@@ -131,34 +132,18 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function routeTile(primary = false): React.CSSProperties {
+function adminTrustGraphRouteTileStyle(primary = false): React.CSSProperties {
   return {
-    display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
-    minHeight: 104,
     borderRadius: 18,
     border: primary
       ? "1px solid rgba(29,95,212,0.24)"
       : "1px solid rgba(122,152,195,0.20)",
     background: primary ? "linear-gradient(180deg, #F8FCFF 0%, #E5F0FF 100%)" : "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
     padding: 16,
-    textDecoration: "none",
+    textAlign: "left",
     boxShadow: primary ? "0 18px 38px rgba(29,95,212,0.12)" : "0 16px 32px rgba(15,23,42,0.065)",
-    ...stableTapStyle(),
-  };
-}
-
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 0,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 2,
   };
 }
 
@@ -188,13 +173,8 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function collapseToggle(): React.CSSProperties {
+function adminTrustGraphCollapseStyle(): React.CSSProperties {
   return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 38,
-    padding: "8px 12px",
     borderRadius: 12,
     border: "1px solid rgba(122,152,195,0.20)",
     background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
@@ -202,20 +182,6 @@ function collapseToggle(): React.CSSProperties {
     fontWeight: 800,
     fontSize: 13,
     cursor: "pointer",
-    whiteSpace: "normal",
-    textAlign: "center",
-    ...stableTapStyle(),
-  };
-}
-
-function stopGraphTap(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
-function graphButtonGuardProps() {
-  return {
-    onPointerDown: stopGraphTap,
-    onMouseDown: stopGraphTap,
   };
 }
 
@@ -480,8 +446,38 @@ function fallbackSignalsFromEvents(events: TrustEventRow[]): GraphSignal[] {
   });
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 export default function AdminTrustGraphPage() {
   const selectedClanId = Number(api.getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "admin-trust-graph.nav.dashboard"),
+      commandCenter: routeTarget(
+        "adminCommand",
+        selectedClanId,
+        "admin-trust-graph.route.command-center"
+      ),
+      analytics: routeTarget(
+        "trustAnalytics",
+        selectedClanId,
+        "admin-trust-graph.route.analytics"
+      ),
+      systemOperations: routeTarget(
+        "systemOperations",
+        selectedClanId,
+        "admin-trust-graph.route.system-operations"
+      ),
+      exposure: routeTarget("exposureAdmin", selectedClanId, "admin-trust-graph.route.exposure"),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -689,9 +685,9 @@ export default function AdminTrustGraphPage() {
           sectionLabel="Trust Graph"
           title="Trust Graph"
           subtitle="Loading the trust graph..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/command-center"
+          backTo={routes.commandCenter}
           backLabel="Command Center"
         />
 
@@ -718,9 +714,9 @@ export default function AdminTrustGraphPage() {
         sectionLabel="Trust Graph"
         title="Trust Graph"
         subtitle="Read connectedness, structural concentration, and relationship-based trust shape from the admin workspace."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/command-center"
+        backTo={routes.commandCenter}
         backLabel="Command Center"
       />
 
@@ -826,14 +822,14 @@ export default function AdminTrustGraphPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("overview")}
-            style={collapseToggle()}
-            {...graphButtonGuardProps()}
+            stableHeight={38}
+            debugId="admin-trust-graph.toggle-overview"
+            style={adminTrustGraphCollapseStyle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.overview ? (
@@ -937,14 +933,14 @@ export default function AdminTrustGraphPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("structure")}
-            style={collapseToggle()}
-            {...graphButtonGuardProps()}
+            stableHeight={38}
+            debugId="admin-trust-graph.toggle-structure"
+            style={adminTrustGraphCollapseStyle()}
           >
             {collapsed.structure ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.structure ? (
@@ -1086,14 +1082,14 @@ export default function AdminTrustGraphPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("signals")}
-            style={collapseToggle()}
-            {...graphButtonGuardProps()}
+            stableHeight={38}
+            debugId="admin-trust-graph.toggle-signals"
+            style={adminTrustGraphCollapseStyle()}
           >
             {collapsed.signals ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.signals ? (
@@ -1174,14 +1170,14 @@ export default function AdminTrustGraphPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("routes")}
-            style={collapseToggle()}
-            {...graphButtonGuardProps()}
+            stableHeight={38}
+            debugId="admin-trust-graph.toggle-routes"
+            style={adminTrustGraphCollapseStyle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1195,7 +1191,13 @@ export default function AdminTrustGraphPage() {
               gap: 12,
             }}
           >
-            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(true)}>
+            <StableCtaLink
+              to={routes.analytics}
+              debugId="admin-trust-graph.route.analytics"
+              stableHeight={104}
+              fullWidth
+              style={adminTrustGraphRouteTileStyle(true)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1209,9 +1211,15 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the next step is broader pattern reading rather than structure-only interpretation.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/system-operations" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.systemOperations}
+              debugId="admin-trust-graph.route.system-operations"
+              stableHeight={104}
+              fullWidth
+              style={adminTrustGraphRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1225,9 +1233,15 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the structural signal now needs live handling.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/exposure" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.exposure}
+              debugId="admin-trust-graph.route.exposure"
+              stableHeight={104}
+              fullWidth
+              style={adminTrustGraphRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1241,9 +1255,15 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when relationship shape is contributing to concentration or pressure.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.commandCenter}
+              debugId="admin-trust-graph.route.command-center"
+              stableHeight={104}
+              fullWidth
+              style={adminTrustGraphRouteTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1257,7 +1277,7 @@ export default function AdminTrustGraphPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Return to Command Center when you need to choose another admin path.
               </div>
-            </OriginLink>
+            </StableCtaLink>
           </div>
         ) : null}
       </section>

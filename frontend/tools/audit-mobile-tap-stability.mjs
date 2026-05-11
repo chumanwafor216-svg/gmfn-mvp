@@ -89,6 +89,15 @@ const marketplaceWorkspaceLines = readFileSync(
   "utf8"
 ).split(/\r?\n/);
 const marketplaceWorkspaceSource = marketplaceWorkspaceLines.join("\n");
+const communityMarketplaceSpotlightPath = join(
+  sourceRoot,
+  "components",
+  "CommunityMarketplaceSpotlight.tsx"
+);
+const communityMarketplaceSpotlightSource = readFileSync(
+  communityMarketplaceSpotlightPath,
+  "utf8"
+);
 const indexCssPath = join(sourceRoot, "index.css");
 const indexCssSource = readFileSync(indexCssPath, "utf8");
 let insideOwnedLinksSection = false;
@@ -99,7 +108,10 @@ marketplaceLines.forEach((line, index) => {
     insideOwnedLinksSection = true;
   }
 
-  if (line.trim().startsWith("disabled=")) {
+  if (
+    line.trim().startsWith("disabled=") &&
+    !marketplaceSource.includes('import { StableButton, StableCtaLink } from "../components/StableButton";')
+  ) {
     findings.push({
       file: relative(frontendRoot, marketplacePagePath),
       line: index + 1,
@@ -127,18 +139,14 @@ marketplaceWorkspaceLines.forEach((line, index) => {
 });
 
 marketplaceLines.forEach((line, index) => {
-  if (!line.includes("<button")) return;
+  if (!line.includes("<StableButton")) return;
   marketplaceButtonCount += 1;
-  const block = marketplaceLines.slice(index, index + 16).join("\n");
-  if (
-    !block.includes("marketplacePointerGuardProps") &&
-    !block.includes("marketplaceButtonGuardProps")
-  ) {
+  if (!marketplaceSource.includes('import { StableButton, StableCtaLink } from "../components/StableButton";')) {
     findings.push({
       file: relative(frontendRoot, marketplacePagePath),
       line: index + 1,
       label:
-        "Every Marketplace button must use the shared Marketplace tap guard so taps cannot bubble to a neighboring route",
+        "Every Marketplace button must use the shared stable primitive so taps cannot bubble to a neighboring route",
       text: line.trim(),
     });
   }
@@ -173,7 +181,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace action buttons must not create stacking layers that can drift over neighboring mobile controls",
     pattern:
-      /function actionBtn\([\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?overflow: "hidden",[\s\S]*?function maskedLinkCode/,
+      /function marketplaceActionStyle\([\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?overflow: "hidden",[\s\S]*?function maskedLinkCode/,
   },
   {
     label:
@@ -185,7 +193,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Public shop face actions must use one lock flag and one in-flight ref so refresh/copy/email/open cannot double-fire while the card is reflowing",
     pattern:
-      /publicShopPrepareInFlightRef = useRef\(false\)[\s\S]*?const publicShopActionsLocked =[\s\S]*?!currentGmfnId \|\| !activeCommunityId \|\| preparingPublicShopLink[\s\S]*?publicShopPrepareInFlightRef\.current[\s\S]*?publicShopPrepareInFlightRef\.current = true[\s\S]*?publicShopPrepareInFlightRef\.current = false[\s\S]*?aria-disabled=\{publicShopActionsLocked\}[\s\S]*?aria-disabled=\{publicShopActionsLocked\}[\s\S]*?aria-disabled=\{publicShopActionsLocked\}[\s\S]*?aria-disabled=\{publicShopActionsLocked\}/,
+      /publicShopPrepareInFlightRef = useRef\(false\)[\s\S]*?const publicShopActionsLocked =[\s\S]*?!currentGmfnId \|\| !activeCommunityId \|\| preparingPublicShopLink[\s\S]*?publicShopPrepareInFlightRef\.current[\s\S]*?publicShopPrepareInFlightRef\.current = true[\s\S]*?publicShopPrepareInFlightRef\.current = false[\s\S]*?disabled=\{publicShopActionsLocked\}[\s\S]*?disabled=\{publicShopActionsLocked\}[\s\S]*?disabled=\{publicShopActionsLocked\}[\s\S]*?disabled=\{publicShopActionsLocked\}/,
   },
   {
     label:
@@ -195,15 +203,15 @@ const marketplaceActionSystemChecks = [
   },
   {
     label:
-      "Marketplace async support buttons must expose inactive state with aria-disabled",
+      "Marketplace async support buttons must expose inactive state through stable disabled props",
     pattern:
-      /aria-disabled=\{startingLoanDraft\}[\s\S]*?aria-disabled=\{loadingSuggestions\}[\s\S]*?aria-disabled=\{cancellingLoanDraft\}/,
+      /disabled=\{startingLoanDraft\}[\s\S]*?disabled=\{loadingSuggestions\}[\s\S]*?disabled=\{cancellingLoanDraft\}/,
   },
   {
     label:
       "Marketplace guarantor request button must use one shared blocked flag",
     pattern:
-      /const guarantorRequestsBlocked =[\s\S]*?aria-disabled=\{guarantorRequestsBlocked\}[\s\S]*?actionBtn\([\s\S]*?guarantorRequestsBlocked/,
+      /const guarantorRequestsBlocked =[\s\S]*?disabled=\{guarantorRequestsBlocked\}[\s\S]*?marketplaceActionStyle\([\s\S]*?guarantorRequestsBlocked/,
   },
   {
     label:
@@ -213,9 +221,9 @@ const marketplaceActionSystemChecks = [
   },
   {
     label:
-      "Marketplace visible public shop URL anchor must use shared tap guard",
+      "Marketplace visible public shop URL link must use the shared stable link primitive",
     pattern:
-      /<a[\s\S]{0,80}\{\.\.\.marketplacePointerGuardProps\(\)\}[\s\S]{0,220}href=\{publicShopViewLink\}/,
+      /<StableCtaLink[\s\S]{0,160}to=\{publicShopViewLink\}/,
   },
 ];
 
@@ -233,15 +241,15 @@ for (const check of marketplaceActionSystemChecks) {
 const marketplaceWorkspaceChecks = [
   {
     label:
-      "Community Access Desk button helper must not create local stacking layers around mobile buttons",
+      "Community Access Desk must use shared stable CTA primitives instead of a page-local button helper",
     pattern:
-      /function btn\([\s\S]*?WebkitAppearance: "none",(?![\s\S]{0,180}(?:zIndex|isolation|position):)[\s\S]*?transition: "none",/,
+      /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";(?![\s\S]*?function btn\()/,
   },
   {
     label:
-      "Community Access Desk public shop actions must use guarded aria-disabled controls",
+      "Community Access Desk public shop actions must keep stable shared copy controls tied to the live shopViewLink",
     pattern:
-      /aria-disabled=\{!shopViewLink\}[\s\S]*?Copy Public Shop Link[\s\S]*?aria-disabled=\{!shopViewLink\}[\s\S]*?Copy Public Shop Message/,
+      /debugId="marketplace-workspace\.copy-public-shop-link"[\s\S]*?style=\{!shopViewLink \?[\s\S]*?Copy Public Shop Link[\s\S]*?debugId="marketplace-workspace\.copy-public-shop-message"[\s\S]*?style=\{!shopViewLink \?[\s\S]*?Copy Public Shop Message/,
   },
 ];
 
@@ -252,6 +260,32 @@ for (const check of marketplaceWorkspaceChecks) {
       line: 1,
       label: check.label,
       text: "Expected Community Access Desk tap-stability pattern was not found.",
+    });
+  }
+}
+
+const communityMarketplaceSpotlightChecks = [
+  {
+    label:
+      "Community Marketplace Spotlight must route the live spotlight CTA through the shared resolved primaryCta",
+    pattern:
+      /const primaryCta = gmfnId[\s\S]*?resolveCtaTarget\("shop"[\s\S]*?publicShopPath\(gmfnId\)[\s\S]*?resolveCtaTarget\("marketplace"[\s\S]*?primaryCta[\s\S]*?to=\{ctaPath\(activeItemView\.primaryCta\)\}/,
+  },
+  {
+    label:
+      "Community Marketplace Spotlight must use shared stable controls instead of local buttons or OriginLink",
+    pattern:
+      /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\/StableButton";(?![\s\S]*?(?:function btn\(|<button|OriginLink))/,
+  },
+];
+
+for (const check of communityMarketplaceSpotlightChecks) {
+  if (!check.pattern.test(communityMarketplaceSpotlightSource)) {
+    findings.push({
+      file: relative(frontendRoot, communityMarketplaceSpotlightPath),
+      line: 1,
+      label: check.label,
+      text: "Expected Community Marketplace Spotlight dynamic CTA stability pattern was not found.",
     });
   }
 }

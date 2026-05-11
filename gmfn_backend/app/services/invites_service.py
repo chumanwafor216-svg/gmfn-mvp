@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.core.trust_event_types import TrustEventType
 from app.db.models import Clan, ClanInvite, ClanMembership, User
+from app.services.global_identity_service import ensure_user_gmfn_id
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_score_service import recompute_trust_for_user_id
 from app.services.trust_service import log_invite_accepted_event
@@ -261,6 +262,7 @@ def revoke_invite(db: Session, *, code: str, user: User) -> ClanInvite:
 
 
 def join_clan_by_invite_code(db: Session, *, code: str, user: User):
+    user = ensure_user_gmfn_id(db, user)
     _rate_limit_join(int(user.id), limit=10, window_seconds=600)
 
     invite = db.query(ClanInvite).filter(ClanInvite.code == code).first()
@@ -298,6 +300,11 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
             "clan_id": clan.id,
             "clan_name": clan.name,
             "membership_id": existing.id,
+            "user_id": int(user.id),
+            "gmfn_id": getattr(user, "gmfn_id", None),
+            "result_status": "already_member",
+            "existing_identity": True,
+            "identity_reused": True,
         }
 
     inviter_id = int(invite.created_by_user_id) if invite.created_by_user_id else None
@@ -329,6 +336,11 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
                 "clan_id": clan.id,
                 "clan_name": clan.name,
                 "membership_id": existing2.id,
+                "user_id": int(user.id),
+                "gmfn_id": getattr(user, "gmfn_id", None),
+                "result_status": "already_member",
+                "existing_identity": True,
+                "identity_reused": True,
             }
         raise HTTPException(status_code=409, detail="Membership already exists")
 
@@ -399,4 +411,9 @@ def join_clan_by_invite_code(db: Session, *, code: str, user: User):
         "clan_id": clan.id,
         "clan_name": clan.name,
         "membership_id": membership.id,
+        "user_id": int(user.id),
+        "gmfn_id": getattr(user, "gmfn_id", None),
+        "result_status": "joined_successfully",
+        "existing_identity": True,
+        "identity_reused": True,
     }

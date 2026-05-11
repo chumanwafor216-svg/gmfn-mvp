@@ -91,6 +91,23 @@ def ensure_membership(*, db: Session, clan: Clan, user: User, role: str = "user"
     return m
 
 
+def require_clan_admin(*, clan_id: int, db: Session, current_user: User) -> ClanMembership:
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if membership is None:
+        raise HTTPException(status_code=403, detail="Clan admin role required")
+    if (membership.role or "").lower() != "admin":
+        raise HTTPException(status_code=403, detail="Clan admin role required")
+    return membership
+
+
 def get_current_clan_membership(
     x_clan_id: Optional[int] = Header(default=None, alias="X-Clan-Id"),
     db: Session = Depends(get_db),

@@ -837,10 +837,10 @@ export async function listClanMembers(clanId: number): Promise<any> {
 
 export async function submitJoinRequest(payload: {
   invite_code: string;
-  first_name: string;
-  surname: string;
-  phone_e164: string;
-  country: string;
+  first_name?: string | null;
+  surname?: string | null;
+  phone_e164?: string | null;
+  country?: string | null;
   business_name?: string | null;
   note?: string | null;
 }): Promise<any> {
@@ -891,6 +891,9 @@ export async function submitJoinRequest(payload: {
         activation_link: (detail as any).activation_link,
         activation_delivery_status: (detail as any).activation_delivery_status,
         activation_delivered_at: (detail as any).activation_delivered_at,
+        activation_required: (detail as any).activation_required,
+        existing_identity: (detail as any).existing_identity,
+        identity_reused: (detail as any).identity_reused,
         result_channel: (detail as any).result_channel,
         result_path: (detail as any).result_path,
         gmfn_id: (detail as any).gmfn_id,

@@ -1,6 +1,8 @@
 import React from "react";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { StableCtaLink } from "../components/StableButton";
+import { getSelectedClanId } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -66,73 +68,25 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    textAlign: "center",
-    opacity: disabled ? 0.86 : 1,
-  };
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 export default function LockManagementPage() {
+  const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = React.useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "lock-management.route.dashboard"),
+      workbench: routeTarget("loanWorkbench", selectedClanId, "lock-management.route.workbench"),
+      systemOperations: routeTarget(
+        "systemOperations",
+        selectedClanId,
+        "lock-management.route.system-operations"
+      ),
+    }),
+    [selectedClanId]
+  );
+
   return (
     <div
       style={{
@@ -147,9 +101,9 @@ export default function LockManagementPage() {
         sectionLabel="Lock Management"
         title="Guarantee Lock Management"
         subtitle="This is intentionally read-only in the MVP because the backend does not expose a guarantee lock-release endpoint yet."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/dashboard"
+        backTo={routes.dashboard}
       />
 
       <section
@@ -322,20 +276,32 @@ export default function LockManagementPage() {
             flexWrap: "wrap",
           }}
         >
-          <OriginLink to="/app/loan-workbench" style={actionBtn("primary")}>
+          <StableCtaLink
+            to={routes.workbench}
+            kind="primary"
+            stableHeight={42}
+            debugId="lock-management.open-workbench"
+          >
             Open Loan Workbench
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink
-            to="/app/command-center/system-operations"
-            style={actionBtn("secondary")}
+          <StableCtaLink
+            to={routes.systemOperations}
+            kind="secondary"
+            stableHeight={42}
+            debugId="lock-management.open-system-operations"
           >
             Open System Operations
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to="/app/dashboard" style={actionBtn("soft")}>
+          <StableCtaLink
+            to={routes.dashboard}
+            kind="soft"
+            stableHeight={38}
+            debugId="lock-management.back-dashboard"
+          >
             Back to Dashboard
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
     </div>

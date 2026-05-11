@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
+import { useLocation } from "react-router-dom";
+import { StableCtaLink } from "../components/StableButton";
 
 import Mark from "../assets/gmfn-mark.svg";
 import Wordmark from "../assets/gmfn-wordmark.svg";
@@ -117,7 +117,6 @@ function FeatureCard(props: { title: string; text: string }) {
 }
 
 export default function IntroductionPage() {
-  const nav = useNavigate();
   const location = useLocation();
   const pattern = topPattern();
 
@@ -316,21 +315,38 @@ export default function IntroductionPage() {
           </div>
 
           <div style={{ display: "grid", gap: 12 }}>
-            <button onClick={() => nav(welcomeTo)} style={actionButton(true)}>
+            <StableCtaLink
+              to={welcomeTo}
+              kind="primary"
+              debugId="introduction.continue-welcome"
+              style={actionButton(true)}
+            >
               Continue to Welcome
-            </button>
+            </StableCtaLink>
 
-            <button onClick={() => nav(guideTo)} style={actionButton(false)}>
+            <StableCtaLink
+              to={guideTo}
+              debugId="introduction.open-guide"
+              style={actionButton(false)}
+            >
               Open My GSN and I
-            </button>
+            </StableCtaLink>
 
-            <button onClick={() => nav(commitmentTo)} style={actionButton(false)}>
+            <StableCtaLink
+              to={commitmentTo}
+              debugId="introduction.open-commitment"
+              style={actionButton(false)}
+            >
               Open Commitment Builder
-            </button>
+            </StableCtaLink>
 
-            <button onClick={() => nav(loginTo)} style={actionButton(false)}>
+            <StableCtaLink
+              to={loginTo}
+              debugId="introduction.existing-access"
+              style={actionButton(false)}
+            >
               Existing access
-            </button>
+            </StableCtaLink>
           </div>
         </div>
 
@@ -342,17 +358,32 @@ export default function IntroductionPage() {
             gap: 10,
           }}
         >
-          <OriginLink to={welcomeTo} style={secondaryLinkStyle()}>
+          <StableCtaLink
+            to={welcomeTo}
+            debugId="introduction.footer.welcome"
+            stableHeight={40}
+            style={secondaryLinkStyle()}
+          >
             Welcome
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={guideTo} style={secondaryLinkStyle()}>
+          <StableCtaLink
+            to={guideTo}
+            debugId="introduction.footer.guide"
+            stableHeight={40}
+            style={secondaryLinkStyle()}
+          >
             My GSN and I
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={commitmentTo} style={secondaryLinkStyle()}>
+          <StableCtaLink
+            to={commitmentTo}
+            debugId="introduction.footer.commitment"
+            stableHeight={40}
+            style={secondaryLinkStyle()}
+          >
             Commitment Builder
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </div>
     </div>

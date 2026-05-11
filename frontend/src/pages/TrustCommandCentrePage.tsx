@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -24,6 +24,7 @@ import {
   listUnmatchedBankEvents,
 } from "../lib/api";
 import { getClanLiquiditySummary } from "../lib/communityMoney";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type CollapseState = {
   executive: boolean;
@@ -315,25 +316,11 @@ function routeTile(primary = false): React.CSSProperties {
     boxShadow: primary
       ? "0 16px 34px rgba(134,98,20,0.12), inset 0 1px 0 rgba(255,255,255,0.9)"
       : "0 12px 26px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
-    WebkitTapHighlightColor: "transparent",
-    touchAction: "manipulation",
-    position: "relative",
-    zIndex: 2,
   };
 }
 
-function stopCommandTap(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function commandButtonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: stopCommandTap,
-    onMouseDown: stopCommandTap,
-  };
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 function sectionLabel(): React.CSSProperties {
@@ -367,101 +354,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 46,
-      minWidth: 112,
-      padding: "11px 16px",
-      borderRadius: 999,
-      border: disabled ? "1px solid rgba(148,163,184,0.42)" : "1px solid rgba(132,94,12,0.28)",
-      background: disabled
-        ? "linear-gradient(180deg, #E2E8F0, #CBD5E1)"
-        : "linear-gradient(180deg, #F8E49E 0%, #F4D36E 48%, #D9A941 100%)",
-      color: disabled ? "#64748B" : "#0B1F33",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow: disabled
-        ? "none"
-        : "0 14px 28px rgba(134,98,20,0.18), inset 0 1px 0 rgba(255,255,255,0.68)",
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
-      touchAction: "manipulation",
-      position: "relative",
-      zIndex: 2,
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 44,
-      minWidth: 104,
-      padding: "10px 14px",
-      borderRadius: 999,
-      border: "1px solid rgba(193,207,222,0.66)",
-      background:
-        "linear-gradient(180deg, rgba(255,255,255,0.995), rgba(229,238,248,0.94))",
-      color: disabled ? "#94A3B8" : "#213D59",
-      fontWeight: 800,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      boxShadow:
-        "0 10px 20px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
-      WebkitTapHighlightColor: "transparent",
-      userSelect: "none",
-      touchAction: "manipulation",
-      position: "relative",
-      zIndex: 2,
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    minWidth: 112,
-    padding: "11px 16px",
-    borderRadius: 999,
-    border: "1px solid rgba(193,207,222,0.66)",
-    background:
-      "linear-gradient(180deg, rgba(255,255,255,0.995), rgba(233,242,251,0.95))",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    textAlign: "center",
-    opacity: disabled ? 0.86 : 1,
-    boxShadow:
-      "0 10px 20px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    touchAction: "manipulation",
-    position: "relative",
-    zIndex: 2,
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -482,11 +374,6 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     boxShadow:
       "0 10px 20px rgba(5,16,38,0.055), inset 0 1px 0 rgba(255,255,255,0.86)",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    touchAction: "manipulation",
-    position: "relative",
-    zIndex: 2,
   };
 }
 
@@ -609,6 +496,21 @@ function normalizeCollapseState(raw: any): CollapseState {
 
 export default function TrustCommandCentrePage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "trust-command.route.dashboard"),
+      trustAnalytics: routeTarget("trustAnalytics", selectedClanId, "trust-command.route.trust-analytics"),
+      trustEvents: routeTarget("trustEvents", selectedClanId, "trust-command.route.trust-events"),
+      systemOperations: routeTarget("systemOperations", selectedClanId, "trust-command.route.system-operations"),
+      trustGraph: routeTarget("trustGraph", selectedClanId, "trust-command.route.trust-graph"),
+      identityRisk: routeTarget("identityRisk", selectedClanId, "trust-command.route.identity-risk"),
+      incompleteLoans: routeTarget("incompleteLoans", selectedClanId, "trust-command.route.incomplete-loans"),
+      exposure: routeTarget("exposureAdmin", selectedClanId, "trust-command.route.exposure"),
+      bankConsole: routeTarget("bankConsole", selectedClanId, "trust-command.route.bank-console"),
+      revenueAllocation: routeTarget("revenueAllocation", selectedClanId, "trust-command.route.revenue-allocation"),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -963,35 +865,35 @@ export default function TrustCommandCentrePage() {
       cards.push(
         {
           label: "Trust Analytics",
-          to: "/app/command-center/trust-analytics",
+          to: routes.trustAnalytics,
           detail: "Read trend, movement, and higher-level trust patterns.",
           primary: true,
         },
         {
           label: "Trust Events",
-          to: "/app/command-center/trust-events",
+          to: routes.trustEvents,
           detail:
             "Review recent trust-event records for evidence, oversight, and explainability.",
         },
         {
           label: "System Operations",
-          to: "/app/command-center/system-operations",
+          to: routes.systemOperations,
           detail: "Review live system activity and operational health.",
         },
         {
           label: "Trust Graph",
-          to: "/app/command-center/trust-graph",
+          to: routes.trustGraph,
           detail: "Read network structure and relationship-based trust shape.",
         },
         {
           label: "Identity Risk",
-          to: "/app/command-center/identity-risk",
+          to: routes.identityRisk,
           detail:
             "Review device overlap, account clusters, and identity pressure signals.",
         },
         {
           label: "Incomplete Loans",
-          to: "/app/command-center/incomplete-loans",
+          to: routes.incompleteLoans,
           detail:
             "Inspect the unresolved loan queue and active items still in motion.",
         }
@@ -1001,48 +903,70 @@ export default function TrustCommandCentrePage() {
     cards.push(
       {
         label: "Exposure",
-        to: "/app/command-center/exposure",
+        to: routes.exposure,
         detail: "Review concentration, balance, and exposure pressure.",
         primary: !isPlatformAdmin,
       },
       {
         label: "Bank Console",
-        to: "/app/command-center/bank-console",
+        to: routes.bankConsole,
         detail:
           "Ingest bank events, run reconciliation, and review matched or unmatched movement.",
       },
       {
         label: "Revenue Allocation",
-        to: "/app/command-center/revenue-allocation",
+        to: routes.revenueAllocation,
         detail:
           "Review service fee, platform revenue, guarantor pool, and net disbursed reading.",
       }
     );
 
     return cards;
-  }, [isPlatformAdmin]);
+  }, [
+    isPlatformAdmin,
+    routes.bankConsole,
+    routes.exposure,
+    routes.identityRisk,
+    routes.incompleteLoans,
+    routes.revenueAllocation,
+    routes.systemOperations,
+    routes.trustAnalytics,
+    routes.trustEvents,
+    routes.trustGraph,
+  ]);
 
   const whereNextActions = useMemo(() => {
     if (isPlatformAdmin) {
       return [
-        { label: "Trust Analytics", to: "/app/command-center/trust-analytics", kind: "primary" as const },
-        { label: "Trust Events", to: "/app/command-center/trust-events", kind: "secondary" as const },
-        { label: "Identity Risk", to: "/app/command-center/identity-risk", kind: "secondary" as const },
-        { label: "Incomplete Loans", to: "/app/command-center/incomplete-loans", kind: "secondary" as const },
-        { label: "Bank Console", to: "/app/command-center/bank-console", kind: "secondary" as const },
-        { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation", kind: "secondary" as const },
-        { label: "System Operations", to: "/app/command-center/system-operations", kind: "secondary" as const },
-        { label: "Exposure", to: "/app/command-center/exposure", kind: "secondary" as const },
-        { label: "Trust Graph", to: "/app/command-center/trust-graph", kind: "secondary" as const },
+        { label: "Trust Analytics", to: routes.trustAnalytics, kind: "primary" as const },
+        { label: "Trust Events", to: routes.trustEvents, kind: "secondary" as const },
+        { label: "Identity Risk", to: routes.identityRisk, kind: "secondary" as const },
+        { label: "Incomplete Loans", to: routes.incompleteLoans, kind: "secondary" as const },
+        { label: "Bank Console", to: routes.bankConsole, kind: "secondary" as const },
+        { label: "Revenue Allocation", to: routes.revenueAllocation, kind: "secondary" as const },
+        { label: "System Operations", to: routes.systemOperations, kind: "secondary" as const },
+        { label: "Exposure", to: routes.exposure, kind: "secondary" as const },
+        { label: "Trust Graph", to: routes.trustGraph, kind: "secondary" as const },
       ];
     }
 
     return [
-      { label: "Exposure", to: "/app/command-center/exposure", kind: "primary" as const },
-      { label: "Bank Console", to: "/app/command-center/bank-console", kind: "secondary" as const },
-      { label: "Revenue Allocation", to: "/app/command-center/revenue-allocation", kind: "secondary" as const },
+      { label: "Exposure", to: routes.exposure, kind: "primary" as const },
+      { label: "Bank Console", to: routes.bankConsole, kind: "secondary" as const },
+      { label: "Revenue Allocation", to: routes.revenueAllocation, kind: "secondary" as const },
     ];
-  }, [isPlatformAdmin]);
+  }, [
+    isPlatformAdmin,
+    routes.bankConsole,
+    routes.exposure,
+    routes.identityRisk,
+    routes.incompleteLoans,
+    routes.revenueAllocation,
+    routes.systemOperations,
+    routes.trustAnalytics,
+    routes.trustEvents,
+    routes.trustGraph,
+  ]);
 
   const pilotChecks = useMemo(
     () => rowsOf<any>(executiveReading.pilotReadiness?.checks),
@@ -1124,7 +1048,7 @@ export default function TrustCommandCentrePage() {
       return {
         title: "Check system health first",
         detail: "The backend health check is not clean yet. Confirm database and service health before reading deeper admin views.",
-        to: "/app/command-center/system-operations",
+        to: routes.systemOperations,
         cta: "Open System Operations",
       };
     }
@@ -1133,7 +1057,7 @@ export default function TrustCommandCentrePage() {
       return {
         title: "Review readiness gaps",
         detail: "Readiness is not yet in the near-ready state. Check the readiness breakdown before relying on downstream admin pages.",
-        to: "/app/command-center/system-operations",
+        to: routes.systemOperations,
         cta: "Review readiness",
       };
     }
@@ -1142,7 +1066,7 @@ export default function TrustCommandCentrePage() {
       return {
         title: "Confirm clan-admin exposure access",
         detail: "Exposure summary could not be loaded for the current community. Verify the active community context and admin access before relying on exposure pressure.",
-        to: "/app/command-center/exposure",
+        to: routes.exposure,
         cta: "Open Exposure",
       };
     }
@@ -1155,7 +1079,7 @@ export default function TrustCommandCentrePage() {
             : `${identityInterventionCount} identity-risk cases need intervention`,
         detail:
           "Severe identity overlap is visible right now. Review the grouped high-risk users before moving into softer trend reading.",
-        to: "/app/command-center/identity-risk",
+        to: routes.identityRisk,
         cta: "Open Identity Risk",
       };
     }
@@ -1168,7 +1092,7 @@ export default function TrustCommandCentrePage() {
             : `${bankUnmatchedRows.length} bank events are still unmatched`,
         detail:
           "The money path needs reconciliation attention before you trust downstream finance or support readings.",
-        to: "/app/command-center/bank-console",
+        to: routes.bankConsole,
         cta: "Open Bank Console",
       };
     }
@@ -1181,7 +1105,7 @@ export default function TrustCommandCentrePage() {
             : `${urgentIncompleteCount} incomplete loans are nearing auto-cancel`,
         detail:
           "The unresolved loan queue now has items running short on time. Review approval progress and coverage before they fall out of the active path.",
-        to: "/app/command-center/incomplete-loans",
+        to: routes.incompleteLoans,
         cta: "Open Incomplete Loans",
       };
     }
@@ -1191,7 +1115,7 @@ export default function TrustCommandCentrePage() {
         title: "Review recent trust-event pressure",
         detail:
           "Recent trust events already show weakened or repair-needed signals. Read the event trail before assuming the current environment is calm.",
-        to: "/app/command-center/trust-events",
+        to: routes.trustEvents,
         cta: "Open Trust Events",
       };
     }
@@ -1201,7 +1125,7 @@ export default function TrustCommandCentrePage() {
         title: "Use the community-admin route that matches the current risk",
         detail:
           "Start from the executive reading below, then move into Exposure, Bank Console, or Revenue Allocation when the summary shows the area that needs attention.",
-        to: "/app/command-center/exposure",
+        to: routes.exposure,
         cta: "Open Exposure",
       };
     }
@@ -1210,7 +1134,7 @@ export default function TrustCommandCentrePage() {
       title: "Use the route that matches the current risk",
       detail:
         "Start from the executive reading below, then move into Trust Analytics, System Operations, Exposure, or Trust Events only when the summary shows the area that needs attention.",
-      to: "/app/command-center/trust-analytics",
+      to: routes.trustAnalytics,
       cta: "Open Trust Analytics",
     };
   }, [
@@ -1219,6 +1143,13 @@ export default function TrustCommandCentrePage() {
     identityInterventionCount,
     isPlatformAdmin,
     pilotOverall,
+    routes.bankConsole,
+    routes.exposure,
+    routes.identityRisk,
+    routes.incompleteLoans,
+    routes.systemOperations,
+    routes.trustAnalytics,
+    routes.trustEvents,
     selectedClanId,
     systemOk,
     trustEventMix.repair,
@@ -1282,9 +1213,9 @@ export default function TrustCommandCentrePage() {
             sectionLabel="Command Center"
             title="Trust Command Centre"
             subtitle="Loading the command center..."
-            homeTo="/app/dashboard"
+            homeTo={routes.dashboard}
             homeLabel="Dashboard"
-            backTo="/app/dashboard"
+            backTo={routes.dashboard}
           />
 
           <section style={pageCard("#FFFFFF")}>
@@ -1304,9 +1235,9 @@ export default function TrustCommandCentrePage() {
           sectionLabel="Command Center"
           title="Trust Command Centre"
           subtitle="Review trust and community operations here, then move into the admin page required for the current task."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
+          backTo={routes.dashboard}
         />
 
       <ExplainToggle
@@ -1398,14 +1329,14 @@ export default function TrustCommandCentrePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...commandButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("executive")}
+            stableHeight={44}
+            debugId="trust-command.toggle.executive"
             style={collapseToggle()}
           >
             {collapsed.executive ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         <ExplainToggle
@@ -1435,21 +1366,37 @@ export default function TrustCommandCentrePage() {
               <div style={{ marginTop: 10, ...helperText() }}>{executiveNextAction.detail}</div>
 
               <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <OriginLink to={executiveNextAction.to} style={actionBtn("primary")}>
+                <StableCtaLink
+                  to={executiveNextAction.to}
+                  kind="primary"
+                  debugId="trust-command.executive.next-action"
+                >
                   {executiveNextAction.cta}
-                </OriginLink>
+                </StableCtaLink>
                 {isPlatformAdmin ? (
-                  <OriginLink to="/app/command-center/system-operations" style={actionBtn("secondary")}>
+                  <StableCtaLink
+                    to={routes.systemOperations}
+                    kind="secondary"
+                    debugId="trust-command.executive.system-operations"
+                  >
                     System Operations
-                  </OriginLink>
+                  </StableCtaLink>
                 ) : (
-                  <OriginLink to="/app/command-center/bank-console" style={actionBtn("secondary")}>
+                  <StableCtaLink
+                    to={routes.bankConsole}
+                    kind="secondary"
+                    debugId="trust-command.executive.bank-console"
+                  >
                     Bank Console
-                  </OriginLink>
+                  </StableCtaLink>
                 )}
-                <OriginLink to="/app/command-center/exposure" style={actionBtn("soft")}>
+                <StableCtaLink
+                  to={routes.exposure}
+                  kind="soft"
+                  debugId="trust-command.executive.exposure"
+                >
                   Exposure
-                </OriginLink>
+                </StableCtaLink>
               </div>
             </div>
 
@@ -1601,14 +1548,14 @@ export default function TrustCommandCentrePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...commandButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("pilot")}
+            stableHeight={44}
+            debugId="trust-command.toggle.pilot"
             style={collapseToggle()}
           >
             {collapsed.pilot ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         <ExplainToggle
@@ -1926,14 +1873,14 @@ export default function TrustCommandCentrePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...commandButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("overview")}
+            stableHeight={44}
+            debugId="trust-command.toggle.overview"
             style={collapseToggle()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         <ExplainToggle
@@ -2162,14 +2109,14 @@ export default function TrustCommandCentrePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...commandButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("routes")}
+            stableHeight={44}
+            debugId="trust-command.toggle.routes"
             style={collapseToggle()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.routes ? (
@@ -2184,7 +2131,13 @@ export default function TrustCommandCentrePage() {
             }}
           >
             {routeCards.map((card) => (
-              <OriginLink key={card.to} to={card.to} style={routeTile(Boolean(card.primary))}>
+              <StableCtaLink
+                key={card.to}
+                to={card.to}
+                kind={card.primary ? "primary" : "secondary"}
+                debugId={`trust-command.route.${card.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+                style={routeTile(Boolean(card.primary))}
+              >
                 <div
                   style={{
                     color: "#0B1F33",
@@ -2198,7 +2151,7 @@ export default function TrustCommandCentrePage() {
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {card.detail}
                 </div>
-              </OriginLink>
+              </StableCtaLink>
             ))}
           </div>
         ) : null}
@@ -2221,14 +2174,14 @@ export default function TrustCommandCentrePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...commandButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("workflows")}
+            stableHeight={44}
+            debugId="trust-command.toggle.workflows"
             style={collapseToggle()}
           >
             {collapsed.workflows ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.workflows ? (
@@ -2278,14 +2231,14 @@ export default function TrustCommandCentrePage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...commandButtonGuardProps()}
+          <SecondaryButton
             onClick={() => toggleSection("notes")}
+            stableHeight={44}
+            debugId="trust-command.toggle.notes"
             style={collapseToggle()}
           >
             {collapsed.notes ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.notes ? (
@@ -2342,9 +2295,14 @@ export default function TrustCommandCentrePage() {
           }}
         >
           {whereNextActions.map((item) => (
-            <OriginLink key={item.to} to={item.to} style={actionBtn(item.kind)}>
+            <StableCtaLink
+              key={item.to}
+              to={item.to}
+              kind={item.kind}
+              debugId={`trust-command.next.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
+            >
               {item.label}
-            </OriginLink>
+            </StableCtaLink>
           ))}
         </div>
         </section>

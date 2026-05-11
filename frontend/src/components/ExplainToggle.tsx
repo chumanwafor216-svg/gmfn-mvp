@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { SubtleButton } from "./StableButton";
 
 // Shared rollback switch: hide helper explain surfaces globally while we
 // stabilize route behavior and reduce UI noise.
@@ -151,15 +152,12 @@ export default function ExplainToggle(props: ExplainToggleProps) {
           </div>
         </div>
 
-        <button
-          type="button"
+        <SubtleButton
           onClick={() => setOpen((prev) => !prev)}
+          stableHeight={38}
+          debugId="explain-toggle.toggle"
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
             gap: 8,
-            minHeight: 38,
             padding: "8px 12px",
             borderRadius: 999,
             fontSize: 13,
@@ -171,7 +169,7 @@ export default function ExplainToggle(props: ExplainToggleProps) {
           }}
         >
           {open ? "Collapse guide" : "Open guide"}
-        </button>
+        </SubtleButton>
       </div>
 
       {open ? (

@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { SecondaryButton, SubtleButton } from "./StableButton";
 
 export type PictureFrameToolAction = {
   label: string;
@@ -110,21 +111,22 @@ export default function PictureFrameToolsControl({
             }}
           >
             {actions.map((action) => (
-              <button
+              <SecondaryButton
                 key={action.label}
-                type="button"
                 aria-disabled={Boolean(action.disabled)}
-                onPointerDown={stopFrameToolEvent}
-                onMouseDown={stopFrameToolEvent}
+                disabled={Boolean(action.disabled)}
                 onClick={(event) => {
                   stopFrameToolEvent(event);
                   if (action.disabled) return;
                   action.onClick(event);
                 }}
+                stableHeight={44}
+                fullWidth
+                debugId={`picture-frame-tools.action.${action.label}`}
                 style={action.style}
               >
                 {action.label}
-              </button>
+              </SecondaryButton>
             ))}
           </div>,
           document.body
@@ -145,21 +147,20 @@ export default function PictureFrameToolsControl({
         isolation: "isolate",
       }}
     >
-      <button
-        type="button"
+      <SubtleButton
         aria-label={ariaLabel || label}
         aria-controls={railId}
         aria-expanded={open}
-        onPointerDown={stopFrameToolEvent}
-        onMouseDown={stopFrameToolEvent}
         onClick={(event) => {
           stopFrameToolEvent(event);
           onToggle(event);
         }}
+        stableHeight={44}
+        debugId="picture-frame-tools.toggle"
         style={buttonStyle}
       >
         {label}
-      </button>
+      </SubtleButton>
       {rail}
     </div>
   );

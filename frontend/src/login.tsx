@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { PrimaryButton } from "./components/StableButton";
 
 type LocationState = {
   from?: { pathname?: string };
@@ -79,9 +80,16 @@ export default function Login() {
 
         {error && <p style={{ color: "red", marginTop: 12 }}>{error}</p>}
 
-        <button type="submit" disabled={loading} style={{ marginTop: 20 }}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
+        <PrimaryButton
+          type="submit"
+          busy={loading}
+          busyLabel="Logging in..."
+          stableHeight={48}
+          debugId="legacy-login.submit"
+          style={{ marginTop: 20 }}
+        >
+          Login
+        </PrimaryButton>
       </form>
     </div>
   );

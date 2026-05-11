@@ -2,8 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide from "../components/NextActionGuide";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
@@ -24,6 +30,7 @@ import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import { buildIdentityActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
@@ -222,85 +229,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 0,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 2,
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(11,31,51,0.08)",
-      background: "#F8FBFF",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.10)",
-    background: "#FFFFFF",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
-    ...stableTapStyle(),
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -316,18 +244,6 @@ function collapseToggle(): React.CSSProperties {
     fontSize: 13,
     cursor: "pointer",
     whiteSpace: "normal",
-    ...stableTapStyle(),
-  };
-}
-
-function stopIdentityTap(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
-function identityButtonGuardProps() {
-  return {
-    onPointerDown: stopIdentityTap,
-    onMouseDown: stopIdentityTap,
   };
 }
 
@@ -387,6 +303,10 @@ function defaultCollapseState(): CollapseState {
     timeline: true,
     next: false,
   };
+}
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
 function normalizeCollapseState(raw: any): CollapseState {
@@ -892,6 +812,19 @@ export default function IdentityIntegrityPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "identity-integrity.route.dashboard"),
+      trust: routeTarget("trust", selectedClanId, "identity-integrity.route.trust"),
+      trustSlip: routeTarget("trustSlip", selectedClanId, "identity-integrity.route.trust-slip"),
+      notifications: routeTarget(
+        "notifications",
+        selectedClanId,
+        "identity-integrity.route.notifications"
+      ),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1310,7 +1243,7 @@ export default function IdentityIntegrityPage() {
   const nextMoveTo = safeStr(
     guidance?.recoveryPath?.ctaTo ||
       guidance?.weeklyFocus?.ctaTo ||
-      "/app/trust"
+      routes.trust
   );
 
   const nextMoveLabel = safeStr(
@@ -1388,9 +1321,9 @@ export default function IdentityIntegrityPage() {
           sectionLabel="Identity & Integrity"
           title="Identity & Integrity"
           subtitle="Loading your identity and integrity page..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
+          backTo={routes.dashboard}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1416,9 +1349,9 @@ export default function IdentityIntegrityPage() {
         sectionLabel="Identity & Integrity"
         title="Identity & Integrity"
         subtitle="Your stable GSN identity, your integrity reading across communities, what strengthened it, what weakened it, and the next clean repair or continuity step."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/dashboard"
+        backTo={routes.dashboard}
       />
 
       <ExplainToggle
@@ -1517,47 +1450,34 @@ export default function IdentityIntegrityPage() {
               </span>
             </div>
 
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                type="button"
+            <CardActionRow style={{ marginTop: 16 }}>
+              <PrimaryButton
                 onClick={copyGmfnId}
                 disabled={!gmfnId || gmfnId === "Pending"}
-                style={actionBtn("primary", !gmfnId || gmfnId === "Pending")}
-                {...identityButtonGuardProps()}
+                debugId="identity-integrity.copy-gmfn-id"
               >
                 Copy GMFN ID
-              </button>
+              </PrimaryButton>
 
-              <button
-                type="button"
+              <SecondaryButton
                 onClick={copyTrustSlipCode}
                 disabled={!trustSlipCode}
-                style={actionBtn("secondary", !trustSlipCode)}
-                {...identityButtonGuardProps()}
+                debugId="identity-integrity.copy-trust-slip-code"
               >
                 Copy TrustSlip Code
-              </button>
+              </SecondaryButton>
 
-              <button
-                type="button"
+              <SubtleButton
                 onClick={copyIdentitySnapshot}
-                style={actionBtn("soft")}
-                {...identityButtonGuardProps()}
+                debugId="identity-integrity.copy-snapshot"
               >
                 Copy identity snapshot
-              </button>
+              </SubtleButton>
 
-              <OriginLink to="/app/trust" style={actionBtn("secondary")}>
+              <StableCtaLink to={routes.trust} debugId="identity-integrity.open-trust">
                 Open Trust Passport
-              </OriginLink>
-            </div>
+              </StableCtaLink>
+            </CardActionRow>
           </div>
         </div>
       </section>
@@ -1579,14 +1499,13 @@ export default function IdentityIntegrityPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("summary")}
             style={collapseToggle()}
-            {...identityButtonGuardProps()}
+            debugId="identity-integrity.toggle-summary"
           >
             {collapsed.summary ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.summary ? (
@@ -1899,14 +1818,14 @@ export default function IdentityIntegrityPage() {
             ))}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
+              <PrimaryButton
                 type="submit"
-                style={actionBtn("primary", recoveryBusy)}
-                disabled={recoveryBusy}
-                {...identityButtonGuardProps()}
+                busy={recoveryBusy}
+                busyLabel="Saving..."
+                debugId="identity-integrity.recovery-save"
               >
-                {recoveryBusy ? "Saving..." : "Save private recovery challenge"}
-              </button>
+                Save private recovery challenge
+              </PrimaryButton>
             </div>
           </form>
         ) : null}
@@ -1947,14 +1866,15 @@ export default function IdentityIntegrityPage() {
             ))}
 
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
+              <PrimaryButton
                 type="submit"
-                style={actionBtn("primary", recoveryBusy)}
-                disabled={recoveryBusy || recovery.locked}
-                {...identityButtonGuardProps()}
+                busy={recoveryBusy}
+                busyLabel="Checking..."
+                disabled={recovery.locked}
+                debugId="identity-integrity.recovery-verify"
               >
-                {recoveryBusy ? "Checking..." : "Verify private recovery challenge"}
-              </button>
+                Verify private recovery challenge
+              </PrimaryButton>
             </div>
           </form>
         ) : null}
@@ -1977,14 +1897,13 @@ export default function IdentityIntegrityPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("reasons")}
             style={collapseToggle()}
-            {...identityButtonGuardProps()}
+            debugId="identity-integrity.toggle-reasons"
           >
             {collapsed.reasons ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.reasons ? (
@@ -2103,14 +2022,13 @@ export default function IdentityIntegrityPage() {
             <span style={badge(false)}>
               {timelineRows.length} recent event{timelineRows.length === 1 ? "" : "s"}
             </span>
-            <button
-              type="button"
+            <SubtleButton
               onClick={() => toggleSection("timeline")}
               style={collapseToggle()}
-              {...identityButtonGuardProps()}
+              debugId="identity-integrity.toggle-timeline"
             >
               {collapsed.timeline ? "Open" : "Collapse"}
-            </button>
+            </SubtleButton>
           </div>
         </div>
 
@@ -2200,14 +2118,13 @@ export default function IdentityIntegrityPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("next")}
             style={collapseToggle()}
-            {...identityButtonGuardProps()}
+            debugId="identity-integrity.toggle-next"
           >
             {collapsed.next ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.next ? (
@@ -2236,26 +2153,29 @@ export default function IdentityIntegrityPage() {
                 {nextMoveDetail}
               </div>
 
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <OriginLink to={nextMoveTo} style={actionBtn("primary")}>
+              <CardActionRow style={{ marginTop: 16 }}>
+                <StableCtaLink
+                  to={nextMoveTo}
+                  kind="primary"
+                  debugId="identity-integrity.next-move"
+                >
                   {nextMoveLabel}
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/trust-slip" style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.trustSlip}
+                  debugId="identity-integrity.open-trust-slip"
+                >
                   TrustSlip
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to="/app/notifications" style={actionBtn("secondary")}>
+                <StableCtaLink
+                  to={routes.notifications}
+                  debugId="identity-integrity.open-notifications"
+                >
                   Action Inbox
-                </OriginLink>
-              </div>
+                </StableCtaLink>
+              </CardActionRow>
             </div>
 
             <div style={softCard("#F8FBFF")}>

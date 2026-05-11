@@ -2,14 +2,21 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide from "../components/NextActionGuide";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicApiUrl } from "../lib/publicLinks";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
@@ -350,132 +357,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-const stableTapTarget: React.CSSProperties = {
-  position: "relative",
-  zIndex: 10,
-  isolation: "isolate",
-  pointerEvents: "auto",
-  WebkitTapHighlightColor: "transparent",
-  touchAction: "manipulation",
-  userSelect: "none",
-  appearance: "none",
-  WebkitAppearance: "none",
-  boxSizing: "border-box",
-  outlineOffset: 4,
-  transform: "none",
-};
-
-function guardButtonPress(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
-  };
-}
-
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      ...stableTapTarget,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 46,
-      padding: "12px 16px",
-      borderRadius: 15,
-      border: disabled
-        ? "1px solid rgba(148,163,184,0.24)"
-        : "1px solid rgba(18,77,176,0.22)",
-      background: disabled
-        ? "linear-gradient(180deg, #D9E2EC 0%, #C7D2DE 100%)"
-        : "linear-gradient(180deg, #2A6AF3 0%, #134FBF 100%)",
-      color: "#FFFFFF",
-      boxShadow: disabled ? "none" : "0 14px 28px rgba(19,79,191,0.22)",
-      fontWeight: 1000,
-      fontSize: 14,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      ...stableTapTarget,
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 40,
-      padding: "9px 13px",
-      borderRadius: 13,
-      border: "1px solid rgba(121,149,190,0.18)",
-      background: "linear-gradient(180deg, #FBFDFF 0%, #EAF3FF 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
-      boxShadow: disabled ? "none" : "0 10px 22px rgba(15,23,42,0.06)",
-      fontWeight: 900,
-      fontSize: 13,
-      textAlign: "center",
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  return {
-    ...stableTapTarget,
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 46,
-    padding: "12px 16px",
-    borderRadius: 15,
-    border: "1px solid rgba(121,149,190,0.18)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F2F7FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    boxShadow: disabled ? "none" : "0 12px 26px rgba(15,23,42,0.07)",
-    fontWeight: 1000,
-    fontSize: 14,
-    textAlign: "center",
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    opacity: disabled ? 0.86 : 1,
-    ...stableTapStyle(),
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -493,7 +374,6 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
@@ -712,10 +592,23 @@ async function callFirstAvailable<T = any>(
   return null;
 }
 
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
+  return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
 export default function TrustSlipPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "trust-slip.route.dashboard"),
+      verify: routeTarget("merchantVerify", selectedClanId, "trust-slip.route.verify"),
+      trust: routeTarget("trust", selectedClanId, "trust-slip.route.trust"),
+      guide: routeTarget("profile", selectedClanId, "trust-slip.route.guide"),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1050,9 +943,9 @@ export default function TrustSlipPage() {
           sectionLabel="TrustSlip"
           title="TrustSlip"
           subtitle="Loading the TrustSlip summary..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
+          backTo={routes.dashboard}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -1105,9 +998,9 @@ export default function TrustSlipPage() {
           sectionLabel="TrustSlip"
           title="TrustSlip"
           subtitle="Use TrustSlip to review the public trust summary. Open TrustSlip Verify when you need to confirm the current public reading."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
+          backTo={routes.dashboard}
         />
       </div>
 
@@ -1219,17 +1112,8 @@ export default function TrustSlipPage() {
               <span style={badge(false)}>Current step: Review portable trust summary</span>
             </div>
 
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <button
-                type="button"
-                {...buttonGuardProps()}
+            <CardActionRow style={{ marginTop: 16 }}>
+              <PrimaryButton
                 onClick={() =>
                   handleCopy(
                     trustSlipCode,
@@ -1237,15 +1121,13 @@ export default function TrustSlipPage() {
                     "TrustSlip code is not ready yet."
                   )
                 }
-                style={actionBtn("primary", !trustSlipCode)}
                 disabled={!trustSlipCode}
+                debugId="trust-slip.copy-code"
               >
                 Copy TrustSlip Code
-              </button>
+              </PrimaryButton>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <SecondaryButton
                 onClick={() =>
                   handleCopy(
                     verifyUrl,
@@ -1253,15 +1135,13 @@ export default function TrustSlipPage() {
                     "Verify link is not ready yet."
                   )
                 }
-                style={actionBtn("secondary", !verifyUrl)}
                 disabled={!verifyUrl}
+                debugId="trust-slip.copy-verify-link"
               >
                 Copy Verify Link
-              </button>
+              </SecondaryButton>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <SecondaryButton
                 onClick={() =>
                   handleCopy(
                     gmfnId,
@@ -1269,34 +1149,30 @@ export default function TrustSlipPage() {
                     "GMFN ID is not ready yet."
                   )
                 }
-                style={actionBtn("secondary", !gmfnId || gmfnId === "Awaiting issue")}
                 disabled={!gmfnId || gmfnId === "Awaiting issue"}
+                debugId="trust-slip.copy-gmfn-id"
               >
                 Copy GMFN ID
-              </button>
+              </SecondaryButton>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <SubtleButton
                 onClick={() => {
                   if (typeof window !== "undefined" && typeof window.print === "function") {
                     window.print();
                   }
                 }}
-                style={actionBtn("soft")}
+                debugId="trust-slip.print"
               >
                 Print TrustSlip
-              </button>
+              </SubtleButton>
 
-              <button
-                type="button"
-                {...buttonGuardProps()}
+              <SubtleButton
                 onClick={copyTrustSlipSnapshot}
-                style={actionBtn("soft")}
+                debugId="trust-slip.copy-snapshot"
               >
                 Copy TrustSlip snapshot
-              </button>
-            </div>
+              </SubtleButton>
+            </CardActionRow>
           </div>
 
           <div
@@ -1460,14 +1336,13 @@ export default function TrustSlipPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("merchantVerify")}
             style={collapseToggle()}
+            debugId="trust-slip.toggle-merchant-verify"
           >
             {collapsed.merchantVerify ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.merchantVerify ? (
@@ -1607,21 +1482,16 @@ export default function TrustSlipPage() {
                 </div>
               </div>
 
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <OriginLink to="/app/trust-slip/verify" style={actionBtn("primary")}>
+              <CardActionRow style={{ marginTop: 14 }}>
+                <StableCtaLink
+                  to={routes.verify}
+                  kind="primary"
+                  debugId="trust-slip.open-verify"
+                >
                   Open TrustSlip Verify
-                </OriginLink>
+                </StableCtaLink>
 
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <SecondaryButton
                   onClick={() =>
                     handleCopy(
                       verifyUrl,
@@ -1630,22 +1500,23 @@ export default function TrustSlipPage() {
                     )
                   }
                   disabled={!verifyUrl}
-                  style={actionBtn("secondary", !verifyUrl)}
+                  debugId="trust-slip.copy-verify-link-merchant"
                 >
                   Copy Verify Link
-                </button>
+                </SecondaryButton>
 
                 {verifyUrl ? (
-                  <a
-                    href={verifyUrl}
+                  <StableCtaLink
+                    to={verifyUrl}
                     target="_blank"
                     rel="noreferrer"
-                    style={actionBtn("soft")}
+                    kind="soft"
+                    debugId="trust-slip.open-merchant-verify"
                   >
                     Open Merchant Verify
-                  </a>
+                  </StableCtaLink>
                 ) : null}
-              </div>
+              </CardActionRow>
             </div>
           </div>
         ) : null}
@@ -1668,14 +1539,13 @@ export default function TrustSlipPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("merchantView")}
             style={collapseToggle()}
+            debugId="trust-slip.toggle-merchant-view"
           >
             {collapsed.merchantView ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.merchantView ? (
@@ -1797,14 +1667,13 @@ export default function TrustSlipPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("evidence")}
             style={collapseToggle()}
+            debugId="trust-slip.toggle-evidence"
           >
             {collapsed.evidence ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.evidence ? (
@@ -1917,14 +1786,13 @@ export default function TrustSlipPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            {...buttonGuardProps()}
+          <SubtleButton
             onClick={() => toggleSection("notes")}
             style={collapseToggle()}
+            debugId="trust-slip.toggle-notes"
           >
             {collapsed.notes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.notes ? (
@@ -1972,9 +1840,9 @@ export default function TrustSlipPage() {
               </div>
 
               <div style={{ marginTop: 12 }}>
-                <OriginLink to="/app/trust" style={actionBtn("secondary")}>
+                <StableCtaLink to={routes.trust} debugId="trust-slip.open-trust">
                   Open Trust Passport
-                </OriginLink>
+                </StableCtaLink>
               </div>
             </div>
 
@@ -2000,18 +1868,22 @@ export default function TrustSlipPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <a
-                  href={GMFN_EXEC_SUMMARY_URL}
+                <StableCtaLink
+                  to={GMFN_EXEC_SUMMARY_URL}
                   target="_blank"
                   rel="noreferrer"
-                  style={actionBtn("secondary")}
+                  debugId="trust-slip.open-executive-summary"
                 >
                   Open Executive Summary
-                </a>
+                </StableCtaLink>
 
-                <OriginLink to="/app/my-gmfn-and-i" style={actionBtn("soft")}>
+                <StableCtaLink
+                  to={routes.guide}
+                  kind="soft"
+                  debugId="trust-slip.open-guide"
+                >
                   Open Guide
-                </OriginLink>
+                </StableCtaLink>
               </div>
             </div>
           </div>

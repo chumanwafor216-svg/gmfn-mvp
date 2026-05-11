@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { SecondaryButton } from "./StableButton";
 
 type SpotlightMediaFrameProps = {
   imageUrl?: string | null;
@@ -80,10 +81,6 @@ export default function SpotlightMediaFrame(
 
   function stopMediaControlEvent(event?: React.SyntheticEvent) {
     event?.preventDefault();
-    event?.stopPropagation();
-  }
-
-  function stopMediaPointerEvent(event?: React.SyntheticEvent) {
     event?.stopPropagation();
   }
 
@@ -217,17 +214,11 @@ export default function SpotlightMediaFrame(
     ) : null;
 
   const audioUnlockButton = shouldShowAudioUnlock ? (
-    <button
-      type="button"
+    <SecondaryButton
       data-media-control="true"
-      onPointerDown={stopMediaPointerEvent}
-      onMouseDown={stopMediaPointerEvent}
-      onPointerUp={stopMediaPointerEvent}
       onClick={toggleAudio}
-      onKeyDown={(event) => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        toggleAudio(event);
-      }}
+      stableHeight={42}
+      debugId="spotlight-media-frame.toggle-audio"
       style={{
         position: "absolute",
         right: 14,
@@ -257,7 +248,7 @@ export default function SpotlightMediaFrame(
       {audioUnlocked
         ? "Sound off"
         : audioError || props.audioUnlockLabel || "Sound on"}
-    </button>
+    </SecondaryButton>
   ) : null;
 
   if (videoSrc && !videoFailed) {

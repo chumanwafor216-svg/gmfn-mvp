@@ -1,9 +1,10 @@
 // src/components/ShareActions.tsx
 import React, { useMemo } from "react";
+import { CardActionRow, PrimaryButton, SecondaryButton } from "./StableButton";
 import { safeCopy } from "../lib/api";
 
 /**
- * ShareActions — unified share block (Copy / WhatsApp)
+ * ShareActions - unified share block (Copy / WhatsApp)
  *
  * MVP policy:
  * - QR is REMOVED to avoid dependency + build instability.
@@ -26,25 +27,6 @@ export type ShareActionsProps = {
   mode?: ShareMode;
   qrSize?: number;
 };
-
-function btnStyle(): React.CSSProperties {
-  return {
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid #e5e7eb",
-    background: "rgba(255,255,255,0.95)",
-    fontWeight: 900,
-    cursor: "pointer",
-  };
-}
-
-function btnPrimaryStyle(): React.CSSProperties {
-  return {
-    ...btnStyle(),
-    background: "rgba(59,130,246,0.12)",
-    border: "1px solid rgba(59,130,246,0.35)",
-  };
-}
 
 function smallNoteStyle(): React.CSSProperties {
   return { marginTop: 6, color: "#64748b", fontSize: 12 };
@@ -83,21 +65,36 @@ export default function ShareActions(props: ShareActionsProps) {
 
   return (
     <div style={{ marginTop: 10 }}>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <button style={btnPrimaryStyle()} onClick={doCopy} disabled={!canShare}>
+      <CardActionRow>
+        <PrimaryButton
+          type="button"
+          onClick={doCopy}
+          disabled={!canShare}
+          debugId="share-actions.copy-link"
+        >
           {copyLabel}
-        </button>
+        </PrimaryButton>
 
-        <button style={btnStyle()} onClick={doWhatsApp} disabled={!canShare}>
+        <SecondaryButton
+          type="button"
+          onClick={doWhatsApp}
+          disabled={!canShare}
+          debugId="share-actions.whatsapp"
+        >
           {whatsappLabel}
-        </button>
-      </div>
+        </SecondaryButton>
+      </CardActionRow>
 
       <div style={smallNoteStyle()}>
-        <b>Tip (low-end phones):</b> WhatsApp the link, open it, and screenshot the “VALID / NOT VALID” page.
+        <b>Tip (low-end phones):</b> WhatsApp the link, open it, and screenshot
+        the "VALID / NOT VALID" page.
       </div>
 
-      {!canShare && <div style={{ marginTop: 8, color: "#64748b", fontSize: 12 }}>Generate the link first.</div>}
+      {!canShare ? (
+        <div style={{ marginTop: 8, color: "#64748b", fontSize: 12 }}>
+          Generate the link first.
+        </div>
+      ) : null}
     </div>
   );
 }

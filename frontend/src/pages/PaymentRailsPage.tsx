@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
   institutionalSoftCard,
 } from "../lib/institutionalSurface";
 import { getPaymentRails } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type RailItem = {
   key: string;
@@ -70,50 +72,20 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function paymentRailsSoftButtonStyle(): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function softBtn(disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "10px 14px",
-    minHeight: 42,
     borderRadius: 13,
     border: "1px solid rgba(121,149,190,0.20)",
     background: "linear-gradient(180deg, #FCFEFF 0%, #E4EEF8 100%)",
-    color: disabled ? "#94A3B8" : "#213D59",
-    boxShadow: disabled
-      ? "none"
-      : "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
-    textDecoration: "none",
+    color: "#213D59",
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
     fontWeight: 900,
     fontSize: 13,
-    textAlign: "center",
-    cursor: disabled ? "not-allowed" : "pointer",
-    opacity: disabled ? 0.72 : 1,
-    whiteSpace: "normal",
-    ...stableTapStyle(),
   };
 }
 
-function routeTile(primary = false): React.CSSProperties {
+function routeTileStyle(primary = false): React.CSSProperties {
   return {
     display: "flex",
     flexDirection: "column",
@@ -128,10 +100,10 @@ function routeTile(primary = false): React.CSSProperties {
       : "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(234,243,251,0.986) 100%)",
     padding: 16,
     textDecoration: "none",
+    textAlign: "left",
     boxShadow: primary
       ? "0 18px 38px rgba(29,95,212,0.12)"
       : "0 16px 32px rgba(15,23,42,0.065)",
-    ...stableTapStyle(),
   };
 }
 
@@ -186,6 +158,27 @@ function helperText(): React.CSSProperties {
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
+}
+
+function positiveNumber(value: any): number {
+  const n = Number(value || 0);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function routeCommunityId(search: string): number {
+  const query = new URLSearchParams(search || "");
+  return positiveNumber(
+    query.get("clan_id") ||
+      query.get("community") ||
+      query.get("community_id")
+  );
+}
+
+function routeTarget(intent: CtaIntent, communityId: number, debugId: string) {
+  return String(resolveCtaTarget(intent, {
+    communityId,
+    debugId,
+  }).to);
 }
 
 function firstTruthy(...values: any[]): string {
@@ -514,6 +507,7 @@ function extractRails(payload: any): RailItem[] {
 }
 
 export default function PaymentRailsPage() {
+  const location = useLocation();
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -523,6 +517,40 @@ export default function PaymentRailsPage() {
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(true);
   const [showRaw, setShowRaw] = useState(false);
+  const activeCommunityId = useMemo(
+    () => routeCommunityId(location.search),
+    [location.search]
+  );
+
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", activeCommunityId, "payment-rails.nav.dashboard"),
+      loans: routeTarget("loans", activeCommunityId, "payment-rails.nav.loans"),
+      moneyIn: routeTarget("moneyIn", activeCommunityId, "payment-rails.route.money-in"),
+      moneyOut: routeTarget("moneyOut", activeCommunityId, "payment-rails.route.money-out"),
+      loanReadiness: routeTarget(
+        "loanReadiness",
+        activeCommunityId,
+        "payment-rails.route.readiness"
+      ),
+      loanWorkbench: routeTarget(
+        "loanWorkbench",
+        activeCommunityId,
+        "payment-rails.route.workbench"
+      ),
+      marketplace: routeTarget(
+        "marketplace",
+        activeCommunityId,
+        "payment-rails.route.marketplace"
+      ),
+      community: routeTarget(
+        "communityHome",
+        activeCommunityId,
+        "payment-rails.route.community"
+      ),
+    }),
+    [activeCommunityId]
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -674,9 +702,9 @@ export default function PaymentRailsPage() {
         sectionLabel="Payment Rails"
         title="Payment Rails"
         subtitle="Read-only intelligence about inbound and outbound rails. Money actions should still happen on the guided pages."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/loans"
+        backTo={routes.loans}
         backLabel="Loans & Support"
       />
 
@@ -922,13 +950,14 @@ export default function PaymentRailsPage() {
                 flexWrap: "wrap",
               }}
             >
-              <button
-                type="button"
+              <SubtleButton
                 onClick={() => setShowRaw((prev) => !prev)}
-                style={softBtn(false)}
+                stableHeight={42}
+                debugId="payment-rails.toggle-raw"
+                style={paymentRailsSoftButtonStyle()}
               >
                 {showRaw ? "Hide raw response" : "Show raw response"}
-              </button>
+              </SubtleButton>
             </div>
           </div>
         </div>
@@ -1128,7 +1157,13 @@ export default function PaymentRailsPage() {
             gap: 12,
           }}
         >
-          <OriginLink to="/app/payment/pool" style={routeTile(true)}>
+          <StableCtaLink
+            to={routes.moneyIn}
+            debugId="payment-rails.route.money-in"
+            stableHeight={100}
+            fullWidth
+            style={routeTileStyle(true)}
+          >
             <div
               style={{
                 color: "#0B1F33",
@@ -1142,9 +1177,15 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Open this when you are actively paying into the pool.
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to="/app/withdrawal-instructions" style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.moneyOut}
+            debugId="payment-rails.route.money-out"
+            stableHeight={100}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <div
               style={{
                 color: "#0B1F33",
@@ -1158,9 +1199,15 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Open this when you are actively withdrawing or checking payout route readiness.
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to="/app/loan-readiness" style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.loanReadiness}
+            debugId="payment-rails.route.readiness"
+            stableHeight={100}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <div
               style={{
                 color: "#0B1F33",
@@ -1174,9 +1221,15 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Open this when the money question has already become a support-continuation question.
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to="/app/loan-workbench" style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.loanWorkbench}
+            debugId="payment-rails.route.workbench"
+            stableHeight={100}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <div
               style={{
                 color: "#0B1F33",
@@ -1190,9 +1243,15 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Open this when the support flow is already deep and operational.
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to="/app/marketplace" style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.marketplace}
+            debugId="payment-rails.route.marketplace"
+            stableHeight={100}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <div
               style={{
                 color: "#0B1F33",
@@ -1206,9 +1265,15 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Go back to your community page after the current money reading is complete.
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to="/app/community" style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.community}
+            debugId="payment-rails.route.community"
+            stableHeight={100}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <div
               style={{
                 color: "#0B1F33",
@@ -1222,7 +1287,7 @@ export default function PaymentRailsPage() {
             <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
               Return to the wider community page.
             </div>
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
     </div>

@@ -1,13 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import * as api from "../lib/api";
-import {
-  communityIdFromSearch,
-  withCommunityQuery,
-} from "../lib/communityRouteContext";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -317,27 +315,8 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function routeTileStyle(primary = false): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function routeTile(primary = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
@@ -352,6 +331,7 @@ function routeTile(primary = false): React.CSSProperties {
       : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
     padding: 16,
     textDecoration: "none",
+    textAlign: "left",
     boxShadow: primary
       ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
       : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
@@ -384,31 +364,6 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
-  };
-}
-
-function collapseToggle(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    minWidth: 124,
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(121,149,190,0.20)",
-    background:
-      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    color: "#E6EEF8",
-    fontWeight: 800,
-    fontSize: 13,
-    textAlign: "center",
-    cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    boxShadow:
-      "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -531,6 +486,15 @@ function communityImageSrc(currentClan: any): string {
   return resolveMediaUrl(raw);
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  hash?: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId, hash }).to);
+}
+
 export default function LoanReadinessPage() {
   const location = useLocation();
   const routeClanId = useMemo(
@@ -539,8 +503,49 @@ export default function LoanReadinessPage() {
   );
   const selectedClanId =
     routeClanId || Number((api as any).getSelectedClanId?.() || 0);
-  const communityTo = useMemo(
-    () => (to: string) => withCommunityQuery(to, selectedClanId),
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "loan-readiness.nav.dashboard"),
+      community: routeTarget(
+        "communityHome",
+        selectedClanId,
+        "loan-readiness.route.community"
+      ),
+      moneyOut: routeTarget("moneyOut", selectedClanId, "loan-readiness.nav.money-out"),
+      startSupport: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "loan-readiness.route.recommended",
+        "marketplace-loans-support"
+      ),
+      suggestions: routeTarget(
+        "loanSuggestions",
+        selectedClanId,
+        "loan-readiness.route.suggestions"
+      ),
+      workbench: routeTarget(
+        "loanWorkbench",
+        selectedClanId,
+        "loan-readiness.route.workbench"
+      ),
+      commitments: routeTarget(
+        "dashboard",
+        selectedClanId,
+        "loan-readiness.route.commitments",
+        "focus-commitments"
+      ),
+      guarantorInbox: routeTarget(
+        "guarantorInbox",
+        selectedClanId,
+        "loan-readiness.route.guarantor-inbox"
+      ),
+      loans: routeTarget("loans", selectedClanId, "loan-readiness.route.loans"),
+      notifications: routeTarget(
+        "notifications",
+        selectedClanId,
+        "loan-readiness.route.notifications"
+      ),
+    }),
     [selectedClanId]
   );
 
@@ -903,7 +908,7 @@ export default function LoanReadinessPage() {
         title: "Choose the community first.",
         detail:
           "Support readiness is clearer once your current community is in place.",
-        ctaTo: communityTo("/app/community"),
+        ctaTo: routes.community,
         ctaLabel: "Open Community Home",
       };
     }
@@ -913,7 +918,7 @@ export default function LoanReadinessPage() {
         title: "Start or continue the borrower-side support draft.",
         detail:
           "Money Out has already handed off into support continuation. Open the support start page and carry the withdrawal need forward.",
-        ctaTo: communityTo("/app/marketplace#marketplace-loans-support"),
+        ctaTo: routes.startSupport,
         ctaLabel: "Open Support Start Page",
       };
     }
@@ -923,7 +928,7 @@ export default function LoanReadinessPage() {
         title: "Respond to waiting guarantor requests first.",
         detail:
           "Someone is waiting directly on your support decision. Clear that queue before creating new support pressure.",
-        ctaTo: communityTo("/app/guarantor-inbox"),
+        ctaTo: routes.guarantorInbox,
         ctaLabel: "Open Incoming Guarantor Requests",
       };
     }
@@ -933,7 +938,7 @@ export default function LoanReadinessPage() {
         title: "Continue into fit suggestions for the current borrower-side support item.",
         detail:
           "The borrower-side support item is already visible, so the next clean step is usually fit reading.",
-        ctaTo: communityTo("/app/loan-suggestions"),
+        ctaTo: routes.suggestions,
         ctaLabel: "Open Loan Suggestions",
       };
     }
@@ -943,7 +948,7 @@ export default function LoanReadinessPage() {
         title: "Review your guarantor-side commitments before expanding further.",
         detail:
           "Existing guarantor-side responsibility should remain visible before another support load is added.",
-        ctaTo: communityTo("/app/loans"),
+        ctaTo: routes.loans,
         ctaLabel: "Open Loans & Support",
       };
     }
@@ -952,12 +957,12 @@ export default function LoanReadinessPage() {
       title: "You can begin the next support movement when ready.",
       detail:
         "No visible pressure is blocking the next step right now.",
-      ctaTo: communityTo("/app/marketplace#marketplace-loans-support"),
+      ctaTo: routes.startSupport,
       ctaLabel: "Open Support Start Page",
     };
   }, [
     selectedClanId,
-    communityTo,
+    routes,
     cameFromWithdrawalSupport,
     activeBorrowerLoan,
     guarantorInbox.length,
@@ -1008,9 +1013,9 @@ export default function LoanReadinessPage() {
           sectionLabel="Loan Readiness"
           title="Support Readiness"
           subtitle="Loading the support-readiness page..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo={communityTo("/app/withdrawal-instructions")}
+          backTo={routes.moneyOut}
           backLabel="Money Out"
         />
 
@@ -1037,9 +1042,9 @@ export default function LoanReadinessPage() {
         sectionLabel="Loan Readiness"
         title="Support Readiness"
         subtitle="Use this stage to see whether the next support move is clean enough to continue, especially after Money Out has already determined that support is needed."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo={communityTo("/app/withdrawal-instructions")}
+        backTo={routes.moneyOut}
         backLabel="Money Out"
       />
 
@@ -1196,13 +1201,22 @@ export default function LoanReadinessPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("overview")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={48}
+            debugId="loan-readiness.toggle-overview"
+            style={{
+              borderRadius: 12,
+              border: "1px solid rgba(121,149,190,0.20)",
+              background:
+                "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+              color: "#E6EEF8",
+              fontWeight: 800,
+            }}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1395,13 +1409,22 @@ export default function LoanReadinessPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("reading")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={48}
+            debugId="loan-readiness.toggle-reading"
+            style={{
+              borderRadius: 12,
+              border: "1px solid rgba(121,149,190,0.20)",
+              background:
+                "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+              color: "#E6EEF8",
+              fontWeight: 800,
+            }}
           >
             {collapsed.reading ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         <ExplainToggle
@@ -1516,13 +1539,22 @@ export default function LoanReadinessPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("blockers")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={48}
+            debugId="loan-readiness.toggle-blockers"
+            style={{
+              borderRadius: 12,
+              border: "1px solid rgba(121,149,190,0.20)",
+              background:
+                "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+              color: "#E6EEF8",
+              fontWeight: 800,
+            }}
           >
             {collapsed.blockers ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.blockers ? (
@@ -1648,13 +1680,22 @@ export default function LoanReadinessPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("routes")}
-            style={collapseToggle()}
+            minWidth={124}
+            stableHeight={48}
+            debugId="loan-readiness.toggle-routes"
+            style={{
+              borderRadius: 12,
+              border: "1px solid rgba(121,149,190,0.20)",
+              background:
+                "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+              color: "#E6EEF8",
+              fontWeight: 800,
+            }}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1668,7 +1709,13 @@ export default function LoanReadinessPage() {
               gap: 12,
             }}
           >
-            <OriginLink to={recommendedNext.ctaTo} style={routeTile(true)}>
+            <StableCtaLink
+              to={recommendedNext.ctaTo}
+              debugId="loan-readiness.route.recommended"
+              stableHeight={104}
+              fullWidth
+              style={routeTileStyle(true)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1685,9 +1732,15 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 {recommendedNext.detail}
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.suggestions}
+              debugId="loan-readiness.route.suggestions"
+              stableHeight={104}
+              fullWidth
+              style={routeTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1701,9 +1754,15 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the next question is candidate fit after readiness is clear.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to={communityTo("/app/loan-workbench")} style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.workbench}
+              debugId="loan-readiness.route.workbench"
+              stableHeight={104}
+              fullWidth
+              style={routeTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1717,9 +1776,15 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this for deeper support handling once readiness is clear.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/dashboard#focus-commitments" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.commitments}
+              debugId="loan-readiness.route.focus-commitments"
+              stableHeight={104}
+              fullWidth
+              style={routeTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1734,12 +1799,15 @@ export default function LoanReadinessPage() {
                 Open the Dashboard focus section when readiness depends on steadier
                 repayment follow-through, savings discipline, or a clearer action plan.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
             {(!readinessSupportActive || !activeBorrowerLoan) ? (
-              <OriginLink
-                to={communityTo("/app/marketplace#marketplace-loans-support")}
-                style={routeTile(false)}
+              <StableCtaLink
+                to={routes.startSupport}
+                debugId="loan-readiness.route.support-start"
+                stableHeight={104}
+                fullWidth
+                style={routeTileStyle(false)}
               >
                 <div
                   style={{
@@ -1754,10 +1822,16 @@ export default function LoanReadinessPage() {
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   Return here when the draft itself must be started or resumed.
                 </div>
-              </OriginLink>
+              </StableCtaLink>
             ) : null}
 
-            <OriginLink to={communityTo("/app/guarantor-inbox")} style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.guarantorInbox}
+              debugId="loan-readiness.route.guarantor-inbox"
+              stableHeight={104}
+              fullWidth
+              style={routeTileStyle(false)}
+            >
               <div
                 style={{
                   color: "#F8FBFF",
@@ -1771,13 +1845,16 @@ export default function LoanReadinessPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open the queue if someone is waiting directly on your decision.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
             {!readinessSupportActive ? (
               <>
-                <OriginLink
-                  to={communityTo("/app/withdrawal-instructions")}
-                  style={routeTile(false)}
+                <StableCtaLink
+                  to={routes.moneyOut}
+                  debugId="loan-readiness.route.money-out"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(false)}
                 >
                   <div
                     style={{
@@ -1792,9 +1869,15 @@ export default function LoanReadinessPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Return to the originating withdrawal path only when you need to verify the handoff source.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
 
-                <OriginLink to={communityTo("/app/notifications")} style={routeTile(false)}>
+                <StableCtaLink
+                  to={routes.notifications}
+                  debugId="loan-readiness.route.notifications"
+                  stableHeight={104}
+                  fullWidth
+                  style={routeTileStyle(false)}
+                >
                   <div
                     style={{
                       color: "#F8FBFF",
@@ -1808,7 +1891,7 @@ export default function LoanReadinessPage() {
                   <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                     Open this when the broader waiting picture matters around support response.
                   </div>
-                </OriginLink>
+                </StableCtaLink>
               </>
             ) : null}
           </div>

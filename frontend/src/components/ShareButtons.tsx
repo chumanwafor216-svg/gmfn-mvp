@@ -1,6 +1,12 @@
 // src/components/ShareButtons.tsx
 import React, { useMemo, useState } from "react";
 import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  SubtleButton,
+} from "./StableButton";
+import {
   buildQrImageUrl,
   buildShareText,
   buildWhatsAppUrl,
@@ -27,32 +33,17 @@ export default function ShareButtons({
   const shareText = useMemo(() => buildShareText({ ...target, url }), [target, url]);
   const qrImg = useMemo(() => buildQrImageUrl(url, 240), [url]);
 
-  function btnStyle(primary = false): React.CSSProperties {
-    const pad = small ? "8px 10px" : "10px 12px";
+  function actionRowStyle(): React.CSSProperties {
     return {
-      padding: pad,
-      borderRadius: 12,
-      border: "1px solid #e5e7eb",
-      background: primary ? "#111" : "rgba(255,255,255,0.95)",
-      color: primary ? "#fff" : "#111",
-      fontWeight: 900,
-      cursor: "pointer",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 8,
-      whiteSpace: "normal",
-      textAlign: "center",
+      flexDirection: variant === "stack" ? "column" : "row",
+      alignItems: variant === "stack" ? "stretch" : "center",
     };
   }
 
-  function wrapStyle(): React.CSSProperties {
+  function actionButtonStyle(): React.CSSProperties {
     return {
-      display: "flex",
-      flexDirection: variant === "stack" ? "column" : "row",
-      gap: 10,
-      flexWrap: "wrap",
-      alignItems: variant === "stack" ? "stretch" : "center",
+      padding: small ? "8px 10px" : undefined,
+      minHeight: small ? 40 : undefined,
     };
   }
 
@@ -77,38 +68,46 @@ export default function ShareButtons({
 
   return (
     <div style={{ marginTop: 10 }}>
-      <div style={wrapStyle()}>
-        <button style={btnStyle(true)} onClick={onCopyLink} type="button">
+      <CardActionRow style={actionRowStyle()} align={variant === "stack" ? "stretch" : "start"}>
+        <PrimaryButton
+          onClick={onCopyLink}
+          type="button"
+          style={actionButtonStyle()}
+          debugId="share-buttons.copy-link"
+        >
           Copy link
-        </button>
+        </PrimaryButton>
 
-        <button
-          style={btnStyle(false)}
+        <SecondaryButton
           onClick={onWhatsApp}
           type="button"
           title="Opens WhatsApp with a prefilled message"
+          style={actionButtonStyle()}
+          debugId="share-buttons.whatsapp"
         >
           WhatsApp text
-        </button>
+        </SecondaryButton>
 
-        <button
-          style={btnStyle(false)}
+        <SecondaryButton
           onClick={onCopyText}
           type="button"
           title="Copies the WhatsApp text to clipboard"
+          style={actionButtonStyle()}
+          debugId="share-buttons.copy-text"
         >
           Copy text
-        </button>
+        </SecondaryButton>
 
-        <button
-          style={btnStyle(false)}
+        <SubtleButton
           onClick={() => setQrOpen(true)}
           type="button"
           title="Shows a QR code you can screenshot"
+          style={actionButtonStyle()}
+          debugId="share-buttons.qr"
         >
           QR
-        </button>
-      </div>
+        </SubtleButton>
+      </CardActionRow>
 
       {toast ? (
         <div
@@ -160,13 +159,14 @@ export default function ShareButtons({
               }}
             >
               <div style={{ fontWeight: 1000 }}>QR (screenshot and share)</div>
-              <button
-                style={btnStyle(false)}
+              <SecondaryButton
                 onClick={() => setQrOpen(false)}
                 type="button"
+                style={actionButtonStyle()}
+                debugId="share-buttons.close-qr"
               >
                 Close
-              </button>
+              </SecondaryButton>
             </div>
 
             <div style={{ marginTop: 12, fontSize: 13, color: "#334155" }}>

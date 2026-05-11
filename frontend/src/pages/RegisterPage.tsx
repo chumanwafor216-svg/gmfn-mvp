@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
+import { PrimaryButton, StableCtaLink } from "../components/StableButton";
 
 import Mark from "../assets/gmfn-mark.svg";
 import Wordmark from "../assets/gmfn-wordmark.svg";
@@ -278,21 +278,37 @@ export default function RegisterPage() {
             </div>
 
             <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
-              <button onClick={continueToLogin} style={button(true)}>
+              <PrimaryButton
+                onClick={continueToLogin}
+                debugId="register.continue-login"
+                style={button(true)}
+              >
                 Continue to Sign In
-              </button>
+              </PrimaryButton>
 
-              <OriginLink to="/activate-membership" style={button(false)}>
+              <StableCtaLink
+                to="/activate-membership"
+                debugId="register.activate-membership"
+                style={button(false)}
+              >
                 Activate Approved Membership
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to="/create" style={button(false)}>
+              <StableCtaLink
+                to="/create"
+                debugId="register.create-entry"
+                style={button(false)}
+              >
                 Back to Create Entry
-              </OriginLink>
+              </StableCtaLink>
 
-              <OriginLink to="/welcome" style={button(false)}>
+              <StableCtaLink
+                to="/welcome"
+                debugId="register.welcome"
+                style={button(false)}
+              >
                 Back to Welcome
-              </OriginLink>
+              </StableCtaLink>
             </div>
 
             <div

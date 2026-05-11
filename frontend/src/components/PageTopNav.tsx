@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import OriginLink from "./OriginLink";
-import { brandStableTapTarget } from "../styles/gmfnBrand";
+import { StableCtaLink } from "./StableButton";
 
 type NavItem = {
   label: string;
@@ -55,14 +54,13 @@ function helperText(compact = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
+function navActionStyle(
   kind: "primary" | "secondary" | "soft" = "secondary",
   disabled = false,
   compact = false
 ): React.CSSProperties {
   const compactAction: React.CSSProperties = compact
     ? {
-        ...brandStableTapTarget(),
         flex: "0 0 auto",
         minHeight: kind === "soft" ? 42 : 44,
         minWidth: kind === "soft" ? 84 : 96,
@@ -71,13 +69,10 @@ function actionBtn(
         fontSize: kind === "soft" ? 12 : 12.5,
         whiteSpace: "nowrap",
       }
-    : {
-        ...brandStableTapTarget(),
-      };
+    : {};
 
   if (kind === "primary") {
     return {
-      ...brandStableTapTarget(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -104,7 +99,6 @@ function actionBtn(
 
   if (kind === "soft") {
     return {
-      ...brandStableTapTarget(),
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
@@ -129,7 +123,6 @@ function actionBtn(
   }
 
   return {
-    ...brandStableTapTarget(),
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -173,17 +166,21 @@ function renderNavRow(
     >
       {items.map((item, index) =>
         item.disabled ? (
-          <span key={`${item.label}-${index}`} style={actionBtn(kind, true, compact)}>
+          <span key={`${item.label}-${index}`} style={navActionStyle(kind, true, compact)}>
             {item.label}
           </span>
         ) : (
-          <OriginLink
+          <StableCtaLink
             key={`${item.label}-${index}`}
             to={item.to}
-            style={actionBtn(kind, false, compact)}
+            kind={kind}
+            style={navActionStyle(kind, false, compact)}
+            debugId={`page-top-nav.${kind}.${item.label
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")}`}
           >
             {item.label}
-          </OriginLink>
+          </StableCtaLink>
         )
       )}
     </div>

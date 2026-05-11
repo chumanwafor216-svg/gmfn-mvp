@@ -160,7 +160,7 @@ export function canonicalPublicFrontendUrl(pathOrUrl: string): string {
   return `${publicOrigin}${path}`;
 }
 
-export function publicShopDiariesPath(pathOrUrl: string): string {
+export function publicShopRootPath(pathOrUrl: string): string {
   const raw = cleanText(pathOrUrl);
   if (!raw) return "";
 
@@ -171,39 +171,26 @@ export function publicShopDiariesPath(pathOrUrl: string): string {
       "https://public-shop.local"
     );
 
-    url.searchParams.delete("product_id");
-    url.searchParams.delete("product");
-    url.searchParams.delete("block");
-    url.searchParams.delete("clan_id");
-    url.searchParams.delete("community");
-    url.searchParams.delete("community_id");
-    url.hash = PUBLIC_SHOP_DIARIES_ANCHOR;
+    url.search = "";
+    url.hash = "";
 
     if (isAbsolute) return url.toString();
-    return `${url.pathname}${url.search}${url.hash}`;
+    return url.pathname;
   } catch {
     const [withoutHash] = raw.split("#");
-    const [path, search = ""] = withoutHash.split("?");
-    const params = new URLSearchParams(search);
-    params.delete("product_id");
-    params.delete("product");
-    params.delete("block");
-    params.delete("clan_id");
-    params.delete("community");
-    params.delete("community_id");
-    const query = params.toString();
-    return `${path || "/"}${query ? `?${query}` : ""}#${PUBLIC_SHOP_DIARIES_ANCHOR}`;
+    const [path] = withoutHash.split("?");
+    return path || "/";
   }
 }
 
-export function publicShopDiariesUrl(pathOrUrl: string): string {
-  return canonicalPublicFrontendUrl(publicShopDiariesPath(pathOrUrl));
+export function publicShopRootUrl(pathOrUrl: string): string {
+  return canonicalPublicFrontendUrl(publicShopRootPath(pathOrUrl));
 }
 
 export function publicShopPath(gmfnId: string): string {
   const ownerId = cleanText(gmfnId);
   if (!ownerId) return "";
-  return `/shop/${encodeURIComponent(ownerId)}#${PUBLIC_SHOP_DIARIES_ANCHOR}`;
+  return `/shop/${encodeURIComponent(ownerId)}`;
 }
 
 export function publicShopUrl(gmfnId: string): string {

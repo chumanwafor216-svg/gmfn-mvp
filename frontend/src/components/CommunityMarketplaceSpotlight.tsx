@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import OriginLink from "./OriginLink";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+} from "./StableButton";
 import SpotlightMediaFrame from "./SpotlightMediaFrame";
 import {
   getMarketplaceBroadcasts,
   getSelectedClanId,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaTarget } from "../lib/ctaTargets";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
@@ -42,23 +48,6 @@ function card(): React.CSSProperties {
   };
 }
 
-function btn(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: primary ? "none" : "1px solid rgba(11,99,209,0.12)",
-    background: primary ? "#1D4ED8" : "#FDFEFF",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 1000,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: "pointer",
-  };
-}
-
 function tinyText(): React.CSSProperties {
   return {
     color: "#64748B",
@@ -77,18 +66,6 @@ function formatWhen(value?: string | null): string {
 function positiveNumber(value: unknown): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function withClanQuery(path: string, clanId: number): string {
-  const safeClanId = positiveNumber(clanId);
-  if (!path || !safeClanId) return path;
-
-  const [baseWithQuery, hash = ""] = path.split("#");
-  const separator = baseWithQuery.includes("?") ? "&" : "?";
-  const next = `${baseWithQuery}${separator}clan_id=${encodeURIComponent(
-    String(safeClanId)
-  )}`;
-  return hash ? `${next}#${hash}` : next;
 }
 
 function apiOrigin(): string {
@@ -155,6 +132,10 @@ function spotlightFeedSortValue(item: MarketplaceFeedItem | null): number {
   return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
+function ctaPath(target: CtaTarget): string {
+  return typeof target.to === "string" ? target.to : String(target.to);
+}
+
 export default function CommunityMarketplaceSpotlight() {
   const [feed, setFeed] = useState<MarketplaceFeedItem[]>([]);
   const [err, setErr] = useState("");
@@ -164,6 +145,14 @@ export default function CommunityMarketplaceSpotlight() {
   const spotlightIndexRef = useRef(0);
 
   const selectedClanId = positiveNumber(getSelectedClanId());
+  const communityHomeCta = useMemo(
+    () =>
+      resolveCtaTarget("communityHome", {
+        communityId: selectedClanId,
+        debugId: "community-marketplace-spotlight.community-home",
+      }),
+    [selectedClanId]
+  );
 
   async function loadSpotlight() {
     setErr("");
@@ -296,6 +285,11 @@ export default function CommunityMarketplaceSpotlight() {
 
   const activeItemView = useMemo(() => {
     if (!activeItem) {
+      const marketplaceCta = resolveCtaTarget("marketplace", {
+        communityId: selectedClanId,
+        debugId: "community-marketplace-spotlight.empty-marketplace",
+      });
+
       return {
         kind: "empty" as const,
         title: "",
@@ -308,7 +302,7 @@ export default function CommunityMarketplaceSpotlight() {
         priceLine: "",
         metaLines: [] as string[],
         primaryLabel: "Open Marketplace",
-        primaryTo: withClanQuery("/app/marketplace", selectedClanId),
+        primaryCta: marketplaceCta,
       };
     }
 
@@ -319,6 +313,17 @@ export default function CommunityMarketplaceSpotlight() {
         activeItem.feed?.source_marketplace_id ||
         activeItem.feed?.marketplace_id
     );
+    const primaryCta = gmfnId
+      ? resolveCtaTarget("shop", {
+          explicitTo: publicShopPath(gmfnId),
+          communityId: sourceClanId || selectedClanId,
+          debugId: "community-marketplace-spotlight.seller-shop",
+        })
+      : resolveCtaTarget("marketplace", {
+          communityId: sourceClanId || selectedClanId,
+          debugId: "community-marketplace-spotlight.broadcast-marketplace",
+        });
+
     return {
       kind: "broadcast" as const,
       title: activeItem.feed?.source_shop_name || "Community Spotlight",
@@ -335,9 +340,7 @@ export default function CommunityMarketplaceSpotlight() {
         `Posted: ${formatWhen(activeItem.feed?.created_at)}`,
       ],
       primaryLabel: gmfnId ? "Open seller shop" : "Open Marketplace",
-      primaryTo: gmfnId
-        ? publicShopPath(gmfnId)
-        : withClanQuery("/app/marketplace", sourceClanId || selectedClanId),
+      primaryCta,
     };
   }, [activeItem, selectedClanId]);
 
@@ -407,18 +410,25 @@ export default function CommunityMarketplaceSpotlight() {
             <div style={{ marginTop: 8, fontWeight: 700, lineHeight: 1.7 }}>
               {err}
             </div>
-            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button
+            <CardActionRow style={{ marginTop: 10 }}>
+              <PrimaryButton
                 type="button"
                 onClick={() => void loadSpotlight()}
-                style={btn(true)}
+                disabled={loading}
+                busy={loading}
+                busyLabel="Retrying..."
+                debugId="community-marketplace-spotlight.retry"
               >
                 Retry spotlight
-              </button>
-              <OriginLink to="/app/community" style={btn(false)}>
+              </PrimaryButton>
+              <StableCtaLink
+                to={ctaPath(communityHomeCta)}
+                kind="secondary"
+                debugId={communityHomeCta.debugId}
+              >
                 Open Community Home
-              </OriginLink>
-            </div>
+              </StableCtaLink>
+            </CardActionRow>
           </div>
         ) : null}
 
@@ -565,11 +575,15 @@ export default function CommunityMarketplaceSpotlight() {
                   </div>
                 ))}
 
-                <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <OriginLink to={activeItemView.primaryTo} style={btn(true)}>
+                <CardActionRow style={{ marginTop: 14 }}>
+                  <StableCtaLink
+                    to={ctaPath(activeItemView.primaryCta)}
+                    kind="primary"
+                    debugId={activeItemView.primaryCta.debugId}
+                  >
                     {activeItemView.primaryLabel}
-                  </OriginLink>
-                </div>
+                  </StableCtaLink>
+                </CardActionRow>
               </>
             )}
           </div>
@@ -589,13 +603,16 @@ export default function CommunityMarketplaceSpotlight() {
             Community ID: {selectedClanId || "No active community selected"}
           </div>
 
-          <button
-            onClick={loadSpotlight}
-            style={btn(false)}
+          <SecondaryButton
+            onClick={() => void loadSpotlight()}
+            disabled={loading}
+            busy={loading}
+            busyLabel="Refreshing..."
+            debugId="community-marketplace-spotlight.refresh"
             type="button"
           >
             Refresh Spotlight
-          </button>
+          </SecondaryButton>
         </div>
       </div>
     </div>

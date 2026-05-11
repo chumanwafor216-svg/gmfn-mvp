@@ -1,5 +1,8 @@
 # tests/test_clan_members.py
 
+from app.routers import clans as legacy_clans_router
+from app.schemas.clan_memberships import ClanMemberCreate
+
 def _extract_items(payload):
     if isinstance(payload, list):
         return payload
@@ -53,3 +56,9 @@ def test_remove_member_admin_ok(client, override_current_user, seed_clan_admin_m
     if r2.status_code == 200:
         j = r2.json()
         assert j.get("ok") is True
+
+
+def test_legacy_clan_member_schema_defaults_to_user_role():
+    assert legacy_clans_router.router is not None
+    payload = ClanMemberCreate(user_id=2)
+    assert payload.role == "user"

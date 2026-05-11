@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
+import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
   clearPublicEntryState,
   confirmEntryPhoneVerification,
@@ -213,20 +214,6 @@ function feedbackCard(success = false): React.CSSProperties {
     background: success ? "#ECFDF5" : "#FEF2F2",
     color: success ? "#065F46" : "#991B1B",
     fontWeight: 900,
-  };
-}
-
-function guardButtonPress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardButtonPress,
-    onMouseDown: guardButtonPress,
   };
 }
 
@@ -741,9 +728,11 @@ export default function CreateEntryPage() {
           </div>
         </div>
 
-        <button
-          type="button"
+        <SecondaryButton
           onClick={() => setExistingMemberOpen((current) => !current)}
+          minWidth={220}
+          stableHeight={44}
+          debugId="create-entry.existing-member.toggle"
           style={{
             ...secondaryBtn(),
             minHeight: 44,
@@ -751,7 +740,7 @@ export default function CreateEntryPage() {
           }}
         >
           {existingMemberOpen ? "Collapse sign-in help" : "Open sign-in help"}
-        </button>
+        </SecondaryButton>
       </div>
 
       {existingMemberOpen ? (
@@ -780,10 +769,11 @@ export default function CreateEntryPage() {
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              type="button"
+            <PrimaryButton
               onClick={handleExistingMemberLogin}
-              {...buttonGuardProps()}
+              minWidth={178}
+              stableHeight={52}
+              debugId="create-entry.existing-member.sign-in"
               style={{
                 ...primaryBtn(false),
                 width: "auto",
@@ -792,17 +782,19 @@ export default function CreateEntryPage() {
               }}
             >
               Open sign in instead
-            </button>
-            <button
-              type="button"
+            </PrimaryButton>
+            <SecondaryButton
               onClick={() => setExistingMemberOpen(false)}
+              minWidth={112}
+              stableHeight={44}
+              debugId="create-entry.existing-member.stay"
               style={{
                 ...secondaryBtn(),
                 minWidth: 112,
               }}
             >
               Stay here
-            </button>
+            </SecondaryButton>
           </div>
         </div>
       ) : null}
@@ -1540,9 +1532,11 @@ export default function CreateEntryPage() {
                     zIndex: 1,
                   }}
                 >
-                  <button
-                    type="button"
+                  <SecondaryButton
                     onClick={() => setProcedureOpen(false)}
+                    minWidth="auto"
+                    stableHeight={44}
+                    debugId="create-entry.guide.collapse"
                     style={{
                       ...secondaryBtn(),
                       border: "1px solid rgba(16,37,59,0.12)",
@@ -1553,7 +1547,7 @@ export default function CreateEntryPage() {
                     }}
                   >
                     Collapse
-                  </button>
+                  </SecondaryButton>
                 </div>
                 <div style={{ display: "grid", gap: 18 }}>
                   <div
@@ -1614,9 +1608,11 @@ export default function CreateEntryPage() {
                     abnormal changes if someone else tries to take over your flow.
                   </div>
                   </div>
-                  <button
-                    type="button"
+                  <PrimaryButton
                     onClick={handleGuideDone}
+                    fullWidth
+                    stableHeight={54}
+                    debugId="create-entry.guide.done"
                     style={{
                       ...primaryBtn(false),
                       width: "100%",
@@ -1626,7 +1622,7 @@ export default function CreateEntryPage() {
                     }}
                   >
                     Done, start Block 1
-                  </button>
+                  </PrimaryButton>
                 </div>
               </div>
             ) : null}
@@ -1680,8 +1676,7 @@ export default function CreateEntryPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
+                <SecondaryButton
                   onClick={() =>
                     !guideDone
                       ? setProcedureOpen(true)
@@ -1689,6 +1684,9 @@ export default function CreateEntryPage() {
                       ? setOpenPanel(null)
                       : handleOpenPanel("details")
                   }
+                  minWidth={190}
+                  stableHeight={48}
+                  debugId="create-entry.details.toggle"
                   style={stageToggleBtn(guideDone && openPanel === "details")}
                 >
                   {!guideDone
@@ -1696,7 +1694,7 @@ export default function CreateEntryPage() {
                     : openPanel === "details"
                     ? "Collapse details step"
                     : "Open details step"}
-                </button>
+                </SecondaryButton>
               </div>
 
               <div
@@ -1809,28 +1807,32 @@ export default function CreateEntryPage() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <SecondaryButton
                       onClick={clearDetailsBlock}
+                      minWidth={116}
+                      stableHeight={44}
+                      debugId="create-entry.details.clear"
                       style={{ ...secondaryBtn(), minWidth: 116 }}
                     >
                       Clear
-                    </button>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    </SecondaryButton>
+                    <PrimaryButton
                       onClick={handleStartVerification}
+                      busy={busy}
+                      busyLabel="Sending..."
+                      disabled={!canContinueDetails}
+                      minWidth={180}
+                      stableHeight={52}
+                      debugId="create-entry.details.submit"
                       style={{
                         ...primaryBtn(!canContinueDetails || busy),
                         width: "auto",
                         minWidth: 180,
                         flex: "1 1 220px",
                       }}
-                      disabled={!canContinueDetails || busy}
                     >
-                      {busy ? "Sending..." : "Submit Block 1"}
-                    </button>
+                      Submit Block 1
+                    </PrimaryButton>
                   </div>
                 </div>
               ) : null}
@@ -1876,20 +1878,22 @@ export default function CreateEntryPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
+                <SecondaryButton
                   onClick={() =>
                     openPanel === "verification"
                       ? setOpenPanel(null)
                       : handleOpenPanel("verification")
                   }
-                  style={stageToggleBtn(openPanel === "verification")}
                   disabled={!canOpenVerification}
+                  minWidth={220}
+                  stableHeight={48}
+                  debugId="create-entry.verification.toggle"
+                  style={stageToggleBtn(openPanel === "verification")}
                 >
                   {openPanel === "verification"
                     ? "Collapse verification step"
                     : "Open verification step"}
-                </button>
+                </SecondaryButton>
               </div>
 
               <div
@@ -2199,28 +2203,32 @@ export default function CreateEntryPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      <SecondaryButton
                         onClick={clearVerificationBlock}
+                        minWidth={116}
+                        stableHeight={44}
+                        debugId="create-entry.verification.clear-code"
                         style={{ ...secondaryBtn(), minWidth: 116 }}
                       >
                         Clear
-                      </button>
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      </SecondaryButton>
+                      <PrimaryButton
                         onClick={handleConfirmVerification}
+                        busy={busy}
+                        busyLabel="Verifying..."
+                        disabled={!canConfirmOtp}
+                        minWidth={180}
+                        stableHeight={52}
+                        debugId="create-entry.verification.confirm-code"
                         style={{
                           ...primaryBtn(!canConfirmOtp || busy),
                           width: "auto",
                           minWidth: 180,
                           flex: "1 1 220px",
                         }}
-                        disabled={!canConfirmOtp || busy}
                       >
-                        {busy ? "Verifying..." : "Confirm phone code"}
-                      </button>
+                        Confirm phone code
+                      </PrimaryButton>
                     </div>
                   </div>
                 ) : (
@@ -2409,28 +2417,32 @@ export default function CreateEntryPage() {
                         flexWrap: "wrap",
                       }}
                     >
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      <SecondaryButton
                         onClick={clearVerificationBlock}
+                        minWidth={116}
+                        stableHeight={44}
+                        debugId="create-entry.bank.clear"
                         style={{ ...secondaryBtn(), minWidth: 116 }}
                       >
                         Clear
-                      </button>
-                      <button
-                        type="button"
-                        {...buttonGuardProps()}
+                      </SecondaryButton>
+                      <PrimaryButton
                         onClick={handleSaveBankDetails}
+                        busy={busy}
+                        busyLabel="Saving..."
+                        disabled={!canContinueBank}
+                        minWidth={180}
+                        stableHeight={52}
+                        debugId="create-entry.bank.save"
                         style={{
                           ...primaryBtn(!canContinueBank || busy),
                           width: "auto",
                           minWidth: 180,
                           flex: "1 1 220px",
                         }}
-                        disabled={!canContinueBank || busy}
                       >
-                        {busy ? "Saving..." : "Save bank and wallet details"}
-                      </button>
+                        Save bank and wallet details
+                      </PrimaryButton>
                     </div>
                   </div>
                 )
@@ -2464,20 +2476,22 @@ export default function CreateEntryPage() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
+                <SecondaryButton
                   onClick={() =>
                     openPanel === "community"
                       ? setOpenPanel(null)
                       : handleOpenPanel("community")
                   }
-                  style={stageToggleBtn(openPanel === "community")}
                   disabled={!canOpenCommunity}
+                  minWidth={220}
+                  stableHeight={48}
+                  debugId="create-entry.community.toggle"
+                  style={stageToggleBtn(openPanel === "community")}
                 >
                   {openPanel === "community"
                     ? "Collapse community step"
                     : "Open community step"}
-                </button>
+                </SecondaryButton>
               </div>
 
               <div
@@ -2524,27 +2538,32 @@ export default function CreateEntryPage() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
+                    <SecondaryButton
                       onClick={clearCommunityBlock}
+                      minWidth={116}
+                      stableHeight={44}
+                      debugId="create-entry.community.clear"
                       style={{ ...secondaryBtn(), minWidth: 116 }}
                     >
                       Clear
-                    </button>
-                    <button
+                    </SecondaryButton>
+                    <PrimaryButton
                       type="submit"
-                      {...buttonGuardProps()}
+                      busy={busy}
+                      busyLabel="Continuing..."
+                      disabled={!canContinue}
+                      minWidth={220}
+                      stableHeight={52}
+                      debugId="create-entry.community.submit"
                       style={{
                         ...primaryBtn(!canContinue || busy),
                         width: "auto",
                         minWidth: 220,
                         flex: "1 1 260px",
                       }}
-                      disabled={!canContinue || busy}
                     >
-                      {busy ? "Continuing..." : "Final submit"}
-                    </button>
+                      Final submit
+                    </PrimaryButton>
                   </div>
                 </form>
               ) : null}

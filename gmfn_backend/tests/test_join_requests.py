@@ -4,9 +4,13 @@ import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from app.api.routes import clans as clans_route
 from app.core import auth
 from app.core import clan_auth
+from app.core.security import create_access_token
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanInvite, ClanJoinRequest, ClanMembership, User
 from app.db.notification_models import Notification
@@ -483,6 +487,871 @@ def test_public_join_request_creates_pending_activation_identity(client):
         )
         assert applicant is not None
         assert applicant.hashed_password == "PENDING_APPROVAL"
+
+
+def test_public_join_request_existing_phone_requires_login_instead_of_duplicate(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="existing-phone@example.com",
+                phone_e164="+2349071733533",
+                gmfn_id="GMFN-U-PHONEEXISTS",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    res = client.post("/clans/join-requests", json=_join_payload("package-code"))
+
+    assert res.status_code == 409, res.text
+    detail = res.json()["detail"]
+    assert detail["code"] == "existing_account_login_required"
+    assert detail["gmfn_id"] == "GMFN-U-PHONEEXISTS"
+    assert detail["login_path"] == "/login"
+
+    with SessionLocal() as db:
+        assert db.query(User).count() == 2
+        assert (
+            db.query(User)
+            .filter(User.email == "2349071733533@pending.gmfn.local")
+            .first()
+            is None
+        )
+        assert db.query(ClanJoinRequest).count() == 0
+
+
+def test_logged_in_existing_member_join_request_reuses_global_identity(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="owner-a@example.com",
+            phone_e164="+2348000000002",
+            gmfn_id="GMFN-U-OWNERA",
+            hashed_password="hashed",
+            role="user",
+        )
+        own_clan = Clan(
+            id=2,
+            name="Owner A Community",
+            marketplace_name="Owner A Marketplace",
+            invite_code="owner-a-code",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        db.add_all([existing_user, own_clan])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=2,
+                user_id=2,
+                role="admin",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "owner-a@example.com"})
+    res = client.post(
+        "/clans/join-requests",
+        json={"invite_code": "package-code"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["existing_identity"] is True
+    assert data["identity_reused"] is True
+    assert data["user_id"] == 2
+    assert data["gmfn_id"] == "GMFN-U-OWNERA"
+    assert data["request"]["applicant_user_id"] == 2
+    assert data["request"]["applicant_gmfn_id"] == "GMFN-U-OWNERA"
+
+    with SessionLocal() as db:
+        assert db.query(User).count() == 2
+        assert (
+            db.query(User)
+            .filter(User.email == "2348000000002@pending.gmfn.local")
+            .first()
+            is None
+        )
+        request = db.query(ClanJoinRequest).first()
+        invite = db.get(ClanInvite, 1)
+        assert request is not None
+        assert request.applicant_user_id == 2
+        assert invite is not None
+        assert invite.uses == 1
+
+
+def test_logged_in_existing_member_repeated_join_request_is_idempotent(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="existing@example.com",
+                phone_e164="+2348000000003",
+                gmfn_id="GMFN-U-EXISTING",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "existing@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    first = client.post("/clans/join-requests", json={"invite_code": "package-code"}, headers=headers)
+    assert first.status_code == 201, first.text
+
+    second = client.post("/clans/join-requests", json={"invite_code": "package-code"}, headers=headers)
+    assert second.status_code == 409, second.text
+    detail = second.json()["detail"]
+    assert detail["code"] == "pending_request_exists"
+    assert detail["request_id"] == first.json()["request"]["id"]
+    assert detail["gmfn_id"] == "GMFN-U-EXISTING"
+    assert detail["existing_identity"] is True
+    assert detail["identity_reused"] is True
+
+    with SessionLocal() as db:
+        assert db.query(ClanJoinRequest).count() == 1
+        invite = db.get(ClanInvite, 1)
+        assert invite is not None
+        assert invite.uses == 1
+
+
+def test_database_rejects_duplicate_pending_join_request_for_same_user_and_clan(client):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="pending-db-guard@example.com",
+                phone_e164="+2348000000010",
+                gmfn_id="GMFN-U-PENDING-GUARD",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+        db.add(
+            ClanJoinRequest(
+                id=2,
+                clan_id=1,
+                applicant_user_id=2,
+                status="pending",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        with pytest.raises(IntegrityError):
+            db.commit()
+
+
+def test_logged_in_existing_member_invite_returns_already_member_without_duplicate(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="member@example.com",
+                phone_e164="+2348000000004",
+                gmfn_id="GMFN-U-MEMBER",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="package-code",
+                is_active=True,
+                max_uses=3,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "member@example.com"})
+    res = client.post(
+        "/clans/join-requests",
+        json={"invite_code": "package-code"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert res.status_code == 201, res.text
+    data = res.json()
+    assert data["result_status"] == "already_member"
+    assert data["gmfn_id"] == "GMFN-U-MEMBER"
+    assert data["membership"]["user_id"] == 2
+
+    with SessionLocal() as db:
+        assert db.query(ClanJoinRequest).count() == 0
+        invite = db.get(ClanInvite, 1)
+        assert invite is not None
+        assert invite.uses == 0
+
+
+def test_select_community_requires_existing_membership(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(
+            User(
+                id=2,
+                email="outsider@example.com",
+                phone_e164="+2348000000006",
+                gmfn_id="GMFN-U-OUTSIDER",
+                hashed_password="hashed",
+                role="user",
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "outsider@example.com"})
+    res = client.post(
+        "/clans/1/select",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert res.status_code == 403, res.text
+    assert "Join or be approved" in res.json()["detail"]
+
+    with SessionLocal() as db:
+        membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == 1, ClanMembership.user_id == 2)
+            .first()
+        )
+        assert membership is None
+
+
+def test_existing_member_can_switch_active_community_without_identity_change(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        user = User(
+            id=2,
+            email="multi@example.com",
+            phone_e164="+2348000000007",
+            gmfn_id="GMFN-U-MULTI",
+            hashed_password="hashed",
+            role="user",
+        )
+        second_clan = Clan(
+            id=2,
+            name="Second Community",
+            marketplace_name="Second Marketplace",
+            invite_code="second-code",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        db.add_all([user, second_clan])
+        db.flush()
+        db.add_all(
+            [
+                ClanMembership(
+                    id=2,
+                    clan_id=1,
+                    user_id=2,
+                    role="user",
+                    personal_pool_balance=0,
+                ),
+                ClanMembership(
+                    id=3,
+                    clan_id=2,
+                    user_id=2,
+                    role="admin",
+                    personal_pool_balance=0,
+                ),
+            ]
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "multi@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    switch_res = client.post(
+        "/community/active",
+        json={"clan_id": 2},
+        headers=headers,
+    )
+    assert switch_res.status_code == 200, switch_res.text
+    switch_body = switch_res.json()
+    assert switch_body["active_clan_id"] == 2
+    assert switch_body["membership_role"] == "admin"
+
+    active_res = client.get("/community/active", headers=headers)
+    assert active_res.status_code == 200, active_res.text
+    active_body = active_res.json()
+    assert active_body["active_clan_id"] == 2
+    assert active_body["membership_role"] == "admin"
+
+    clans_res = client.get("/clans/me", headers=headers)
+    assert clans_res.status_code == 200, clans_res.text
+    clan_ids = {int(row["id"]) for row in clans_res.json()["items"]}
+    assert clan_ids == {1, 2}
+
+    me_res = client.get("/auth/me", headers=headers)
+    assert me_res.status_code == 200, me_res.text
+    assert me_res.json()["gmfn_id"] == "GMFN-U-MULTI"
+
+    with SessionLocal() as db:
+        assert db.get(User, 2).gmfn_id == "GMFN-U-MULTI"
+
+
+def test_existing_member_creates_second_community_without_new_identity(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="community-builder@example.com",
+            phone_e164="+2348000000011",
+            gmfn_id="GMFN-U-BUILDER",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(existing_user)
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="user",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "community-builder@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    create_res = client.post(
+        "/clans/",
+        json={
+            "name": "Builder Second Community",
+            "description": "Second community owned by an existing member",
+        },
+        headers=headers,
+    )
+    assert create_res.status_code == 201, create_res.text
+    new_clan = create_res.json()
+    assert new_clan["name"] == "Builder Second Community"
+    new_clan_id = int(new_clan["id"])
+
+    clans_res = client.get("/clans/me", headers=headers)
+    assert clans_res.status_code == 200, clans_res.text
+    clan_ids = {int(row["id"]) for row in clans_res.json()["items"]}
+    assert clan_ids == {1, new_clan_id}
+
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.id == 2).count() == 1
+        assert db.get(User, 2).gmfn_id == "GMFN-U-BUILDER"
+        memberships = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.user_id == 2)
+            .order_by(ClanMembership.clan_id.asc())
+            .all()
+        )
+        assert [int(row.clan_id) for row in memberships] == [1, new_clan_id]
+        assert [row.role for row in memberships] == ["user", "admin"]
+
+
+def test_direct_clan_join_reuses_existing_identity_and_is_idempotent(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="direct-clan-existing@example.com",
+            phone_e164="+2348000000009",
+            gmfn_id="GMFN-U-DIRECT-CLAN",
+            hashed_password="hashed",
+            role="user",
+        )
+        own_clan = Clan(
+            id=2,
+            name="Direct Clan Owner",
+            marketplace_name="Direct Clan Owner Marketplace",
+            invite_code="direct-clan-owner-code",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        db.add_all([existing_user, own_clan])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=2,
+                user_id=2,
+                role="admin",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "direct-clan-existing@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    first = client.post("/clans/1/join", headers=headers)
+    assert first.status_code == 201, first.text
+    first_body = first.json()
+    assert first_body["result_status"] == "joined_successfully"
+    assert first_body["user_id"] == 2
+    assert first_body["gmfn_id"] == "GMFN-U-DIRECT-CLAN"
+    assert first_body["identity_reused"] is True
+    assert first_body["membership"]["role"] == "user"
+
+    second = client.post("/clans/1/join", headers=headers)
+    assert second.status_code == 200, second.text
+    second_body = second.json()
+    assert second_body["result_status"] == "already_member"
+    assert second_body["user_id"] == 2
+    assert second_body["gmfn_id"] == "GMFN-U-DIRECT-CLAN"
+    assert second_body["membership"]["role"] == "user"
+
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.id == 2).count() == 1
+        memberships = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.user_id == 2)
+            .order_by(ClanMembership.clan_id.asc())
+            .all()
+        )
+        assert [int(row.clan_id) for row in memberships] == [1, 2]
+        assert [row.role for row in memberships] == ["user", "admin"]
+        assert db.get(User, 2).gmfn_id == "GMFN-U-DIRECT-CLAN"
+
+
+def test_two_community_owners_can_mutually_join_without_duplicate_identity(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        owner_a = User(
+            id=2,
+            email="mutual-owner-a@example.com",
+            phone_e164="+2348000000012",
+            gmfn_id="GMFN-U-MUTUAL-A",
+            hashed_password="hashed",
+            role="user",
+        )
+        owner_b = User(
+            id=3,
+            email="mutual-owner-b@example.com",
+            phone_e164="+2348000000013",
+            gmfn_id="GMFN-U-MUTUAL-B",
+            hashed_password="hashed",
+            role="user",
+        )
+        community_a = Clan(
+            id=2,
+            name="Mutual Community A",
+            marketplace_name="Mutual Marketplace A",
+            invite_code="mutual-a-legacy",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        community_b = Clan(
+            id=3,
+            name="Mutual Community B",
+            marketplace_name="Mutual Marketplace B",
+            invite_code="mutual-b-legacy",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        invite_a = ClanInvite(
+            id=1,
+            clan_id=2,
+            created_by_user_id=2,
+            code="mutual-a-invite",
+            is_active=True,
+            max_uses=3,
+            uses=0,
+            created_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        invite_b = ClanInvite(
+            id=2,
+            clan_id=3,
+            created_by_user_id=3,
+            code="mutual-b-invite",
+            is_active=True,
+            max_uses=3,
+            uses=0,
+            created_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        db.add_all([owner_a, owner_b, community_a, community_b, invite_a, invite_b])
+        db.flush()
+        db.add_all(
+            [
+                ClanMembership(
+                    id=2,
+                    clan_id=2,
+                    user_id=2,
+                    role="admin",
+                    personal_pool_balance=0,
+                ),
+                ClanMembership(
+                    id=3,
+                    clan_id=3,
+                    user_id=3,
+                    role="admin",
+                    personal_pool_balance=0,
+                ),
+            ]
+        )
+        db.commit()
+
+    token_a = create_access_token({"sub": "mutual-owner-a@example.com"})
+    token_b = create_access_token({"sub": "mutual-owner-b@example.com"})
+
+    a_joins_b = client.post(
+        "/community/join-by-invite",
+        json={"invite_code": "mutual-b-invite"},
+        headers={"Authorization": f"Bearer {token_a}"},
+    )
+    assert a_joins_b.status_code == 200, a_joins_b.text
+    assert a_joins_b.json()["joined_user_id"] == 2
+    assert a_joins_b.json()["gmfn_id"] == "GMFN-U-MUTUAL-A"
+    assert a_joins_b.json()["result_status"] == "joined_successfully"
+
+    b_joins_a = client.post(
+        "/community/join-by-invite",
+        json={"invite_code": "mutual-a-invite"},
+        headers={"Authorization": f"Bearer {token_b}"},
+    )
+    assert b_joins_a.status_code == 200, b_joins_a.text
+    assert b_joins_a.json()["joined_user_id"] == 3
+    assert b_joins_a.json()["gmfn_id"] == "GMFN-U-MUTUAL-B"
+    assert b_joins_a.json()["result_status"] == "joined_successfully"
+
+    with SessionLocal() as db:
+        assert db.query(User).filter(User.id.in_([2, 3])).count() == 2
+        assert db.get(User, 2).gmfn_id == "GMFN-U-MUTUAL-A"
+        assert db.get(User, 3).gmfn_id == "GMFN-U-MUTUAL-B"
+
+        memberships_a = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.user_id == 2)
+            .order_by(ClanMembership.clan_id.asc())
+            .all()
+        )
+        memberships_b = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.user_id == 3)
+            .order_by(ClanMembership.clan_id.asc())
+            .all()
+        )
+
+        assert [(int(row.clan_id), row.role) for row in memberships_a] == [
+            (2, "admin"),
+            (3, "user"),
+        ]
+        assert [(int(row.clan_id), row.role) for row in memberships_b] == [
+            (2, "user"),
+            (3, "admin"),
+        ]
+
+
+def test_direct_invite_join_sets_active_context_and_reuses_identity(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="direct-existing@example.com",
+            phone_e164="+2348000000008",
+            gmfn_id="GMFN-U-DIRECT",
+            hashed_password="hashed",
+            role="user",
+        )
+        own_clan = Clan(
+            id=2,
+            name="Direct Existing Owner",
+            marketplace_name="Direct Owner Marketplace",
+            invite_code="direct-owner-code",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        invite = ClanInvite(
+            id=1,
+            clan_id=1,
+            created_by_user_id=1,
+            code="direct-package-code",
+            is_active=True,
+            max_uses=3,
+            uses=0,
+            created_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        db.add_all([existing_user, own_clan, invite])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=2,
+                user_id=2,
+                role="admin",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "direct-existing@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    join_res = client.post(
+        "/community/join-by-invite",
+        json={"invite_code": "direct-package-code"},
+        headers=headers,
+    )
+    assert join_res.status_code == 200, join_res.text
+    join_body = join_res.json()
+    assert join_body["joined_user_id"] == 2
+    assert join_body["gmfn_id"] == "GMFN-U-DIRECT"
+    assert join_body["result_status"] == "joined_successfully"
+    assert join_body["identity_reused"] is True
+
+    active_res = client.get("/community/active", headers=headers)
+    assert active_res.status_code == 200, active_res.text
+    assert active_res.json()["active_clan_id"] == 1
+
+    with SessionLocal() as db:
+        assert db.query(User).count() == 2
+        memberships = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.user_id == 2)
+            .order_by(ClanMembership.clan_id.asc())
+            .all()
+        )
+        assert [int(row.clan_id) for row in memberships] == [1, 2]
+        assert [row.role for row in memberships] == ["user", "admin"]
+        assert db.get(User, 2).gmfn_id == "GMFN-U-DIRECT"
+
+
+def test_direct_invite_join_issues_one_missing_global_id_for_same_existing_user(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="legacy-direct-existing@example.com",
+            phone_e164="+2348000000018",
+            gmfn_id=None,
+            hashed_password="hashed",
+            role="user",
+        )
+        own_clan = Clan(
+            id=2,
+            name="Legacy Direct Existing Owner",
+            marketplace_name="Legacy Direct Marketplace",
+            invite_code="legacy-direct-owner-code",
+            invite_created_at=datetime.now(timezone.utc),
+            invite_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            invite_uses=0,
+        )
+        invite = ClanInvite(
+            id=1,
+            clan_id=1,
+            created_by_user_id=1,
+            code="legacy-direct-package-code",
+            is_active=True,
+            max_uses=3,
+            uses=0,
+            created_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        db.add_all([existing_user, own_clan, invite])
+        db.flush()
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=2,
+                user_id=2,
+                role="admin",
+                personal_pool_balance=0,
+            )
+        )
+        db.commit()
+
+    token = create_access_token({"sub": "legacy-direct-existing@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    join_res = client.post(
+        "/community/join-by-invite",
+        json={"invite_code": "legacy-direct-package-code"},
+        headers=headers,
+    )
+    assert join_res.status_code == 200, join_res.text
+    join_body = join_res.json()
+    assert join_body["joined_user_id"] == 2
+    assert join_body["gmfn_id"].startswith("GMFN-U-")
+    assert join_body["result_status"] == "joined_successfully"
+    assert join_body["identity_reused"] is True
+
+    with SessionLocal() as db:
+        user = db.get(User, 2)
+        assert db.query(User).count() == 2
+        assert user.gmfn_id == join_body["gmfn_id"]
+        memberships = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.user_id == 2)
+            .order_by(ClanMembership.clan_id.asc())
+            .all()
+        )
+        assert [int(row.clan_id) for row in memberships] == [1, 2]
+        assert [row.role for row in memberships] == ["user", "admin"]
+
+
+def test_legacy_invites_join_issues_one_missing_global_id_for_same_existing_user(client):
+    os.environ["GMFN_SECRET_KEY"] = "pytest-secret"
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        existing_user = User(
+            id=2,
+            email="legacy-invites-existing@example.com",
+            phone_e164="+2348000000019",
+            gmfn_id=None,
+            hashed_password="hashed",
+            role="user",
+        )
+        invite = ClanInvite(
+            id=1,
+            clan_id=1,
+            created_by_user_id=1,
+            code="legacy-invites-package-code",
+            is_active=True,
+            max_uses=3,
+            uses=0,
+            created_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        )
+        db.add_all([existing_user, invite])
+        db.commit()
+
+    token = create_access_token({"sub": "legacy-invites-existing@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    join_res = client.post(
+        "/invites/join",
+        json={"code": "legacy-invites-package-code"},
+        headers=headers,
+    )
+    assert join_res.status_code == 200, join_res.text
+    join_body = join_res.json()
+    assert join_body["user_id"] == 2
+    assert join_body["gmfn_id"].startswith("GMFN-U-")
+    assert join_body["result_status"] == "joined_successfully"
+    assert join_body["identity_reused"] is True
+
+    second_res = client.post(
+        "/invites/join",
+        json={"code": "legacy-invites-package-code"},
+        headers=headers,
+    )
+    assert second_res.status_code == 200, second_res.text
+    assert second_res.json()["result_status"] == "already_member"
+    assert second_res.json()["gmfn_id"] == join_body["gmfn_id"]
+
+    with SessionLocal() as db:
+        user = db.get(User, 2)
+        assert db.query(User).count() == 2
+        assert user.gmfn_id == join_body["gmfn_id"]
+        memberships = db.query(ClanMembership).filter(ClanMembership.user_id == 2).all()
+        assert len(memberships) == 1
+        assert int(memberships[0].clan_id) == 1
+        assert memberships[0].role == "user"
 
 
 def test_pending_activation_member_cannot_vote_on_join_request(
@@ -1051,6 +1920,78 @@ def test_admin_can_pilot_approve_join_request_without_waiting_for_threshold(
 
         assert approval_notice is not None
         assert approval_notice.action_url == f"/activate-membership?gmfn_id={applicant.gmfn_id}&request_id=1"
+
+
+def test_approving_existing_member_join_request_does_not_create_activation(
+    client,
+    override_clan_ctx_admin,
+    override_current_user,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="existing-approved@example.com",
+            phone_e164="+2348000000005",
+            gmfn_id="GMFN-U-APPROVED-EXISTING",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="pending",
+                activation_delivery_status="not_required",
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    res = client.post(
+        "/clans/1/join-requests/1/pilot-approve",
+        headers={"X-Clan-Id": "1"},
+    )
+
+    assert res.status_code == 200, res.text
+    approval = res.json()["approval_result"]
+    assert approval["status"] == "approved"
+    assert approval["user_id"] == 2
+    assert approval["gmfn_id"] == "GMFN-U-APPROVED-EXISTING"
+    assert approval["existing_identity"] is True
+    assert approval["identity_reused"] is True
+    assert approval["activation_required"] is False
+    assert approval["activation_link"] is None
+    assert approval["activation_path"] is None
+    assert approval["activation_delivery_status"] == "not_required"
+
+    status_res = client.get("/clans/join-requests/1/status")
+    assert status_res.status_code == 200, status_res.text
+    status = status_res.json()
+    assert status["status"] == "approved"
+    assert status["result_channel"] == "approved-existing-member"
+    assert status["next_step"] == "open-community"
+    assert status["activation_required"] is False
+    assert status["gmfn_id"] == "GMFN-U-APPROVED-EXISTING"
+
+    with SessionLocal() as db:
+        applicant = db.get(User, 2)
+        request = db.get(ClanJoinRequest, 1)
+        membership = (
+            db.query(ClanMembership)
+            .filter(ClanMembership.clan_id == 1, ClanMembership.user_id == 2)
+            .first()
+        )
+        assert applicant is not None
+        assert applicant.gmfn_id == "GMFN-U-APPROVED-EXISTING"
+        assert request is not None
+        assert request.activation_delivery_status == "not_required"
+        assert membership is not None
 
 
 def test_activate_approved_member_accepts_request_id_path(

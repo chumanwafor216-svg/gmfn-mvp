@@ -5,16 +5,11 @@ import {
   getDashboardAppUsageEntryFromLocation,
   recordDashboardAppUsage,
 } from "../lib/dashboardAppUsage";
+import { StableButton, StableCtaLink } from "../components/StableButton";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
-import OriginLink from "../components/OriginLink";
 import { publicShopPath } from "../lib/publicLinks";
-import {
-  actionTapGuardProps,
-  brandStableTapTarget,
-  gmfnBrand,
-  stopActionTap,
-} from "../styles/gmfnBrand";
+import { gmfnBrand } from "../styles/gmfnBrand";
 
 type NavLinkItem = {
   label: string;
@@ -874,7 +869,6 @@ function groupCard(): React.CSSProperties {
 
 function groupHeader(active = false): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     width: "100%",
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
@@ -908,7 +902,6 @@ function groupHint(): React.CSSProperties {
 
 function navItem(active = false, disabled = false): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -962,7 +955,6 @@ function mobileTopBar(): React.CSSProperties {
 
 function mobileIconButton(): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     width: "100%",
     minHeight: 44,
     borderRadius: 12,
@@ -1048,7 +1040,6 @@ function drawerHeader(): React.CSSProperties {
 
 function overlayCloseButton(dark = false): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     width: 34,
     height: 34,
     borderRadius: 11,
@@ -1075,7 +1066,6 @@ function drawerSectionTitle(): React.CSSProperties {
 
 function drawerLink(active = false, disabled = false): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1141,7 +1131,6 @@ function actionsTitle(): React.CSSProperties {
 
 function actionsLink(active = false, disabled = false): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1191,7 +1180,6 @@ function bottomNav(): React.CSSProperties {
 
 function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   return {
-    ...brandStableTapTarget(),
     flex: "0 0 auto",
     minWidth: 62,
     display: "flex",
@@ -1220,27 +1208,6 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
       : "0 8px 18px rgba(15,23,42,0.08)",
     opacity: disabled ? 0.7 : 1,
   };
-}
-
-function layoutTapGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
-}
-
-function handleDisabledNavClick(
-  event: React.MouseEvent<HTMLElement>,
-  disabled: boolean,
-  action?: () => void
-) {
-  if (disabled) {
-    event.preventDefault();
-    event.stopPropagation();
-    return;
-  }
-
-  action?.();
 }
 
 export default function AppLayout() {
@@ -1674,9 +1641,22 @@ export default function AppLayout() {
     <div style={isMobile ? mobileShell() : desktopShell()}>
       {!isMobile ? (
         <aside style={sidebar()}>
-          <OriginLink
+          <StableCtaLink
             to="/app/dashboard"
-            style={{ textDecoration: "none", color: "inherit" }}
+            kind="soft"
+            fullWidth
+            debugId="app-layout.brand.dashboard"
+            style={{
+              display: "block",
+              padding: 0,
+              minHeight: 0,
+              border: "none",
+              background: "transparent",
+              boxShadow: "none",
+              textDecoration: "none",
+              color: "inherit",
+              textAlign: "left",
+            }}
           >
             <div style={brandCard()}>
               <div style={brandEyebrow()}>GSN</div>
@@ -1686,7 +1666,7 @@ export default function AppLayout() {
                 finance, trust, identity, and support.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
           <div style={noteCard()}>
             <div style={noteTitle()}>
@@ -1708,18 +1688,18 @@ export default function AppLayout() {
 
               return (
                 <div key={group.key} style={groupCard()}>
-                  <button
-                    type="button"
-                    {...layoutTapGuardProps()}
+                  <StableButton
                     onClick={() => toggleGroup(group.key)}
                     aria-expanded={expanded}
+                    kind="soft"
+                    debugId={`app-layout.desktop-group.${group.key}.toggle`}
                     style={groupHeader(groupActive)}
                   >
                     <span>{group.label}</span>
                     <span style={{ fontSize: 16, lineHeight: 1 }}>
                       {expanded ? "-" : "+"}
                     </span>
-                  </button>
+                  </StableButton>
 
                   {expanded ? (
                     <>
@@ -1736,22 +1716,19 @@ export default function AppLayout() {
                         }}
                       >
                         {group.items.map((item) => (
-                          <OriginLink
+                          <StableCtaLink
                             key={`${group.key}-${item.label}-${item.to}`}
                             to={item.to}
-                            aria-disabled={item.disabled || undefined}
-                            tabIndex={item.disabled ? -1 : undefined}
-                            {...layoutTapGuardProps()}
-                            onClick={(event) =>
-                              handleDisabledNavClick(event, !!item.disabled)
-                            }
+                            kind="soft"
+                            disabled={!!item.disabled}
+                            debugId={`app-layout.desktop-nav.${group.key}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                             style={navItem(
                               isItemActive(item, location.pathname, location.search),
                               !!item.disabled
                             )}
                           >
                             {item.label}
-                          </OriginLink>
+                          </StableCtaLink>
                         ))}
                       </div>
                     </>
@@ -1762,15 +1739,15 @@ export default function AppLayout() {
           </nav>
 
           <div style={{ marginTop: "auto", paddingTop: 16 }}>
-            <button
-              type="button"
-              {...layoutTapGuardProps()}
+            <StableButton
               onClick={handleLogout}
+              kind="soft"
+              debugId="app-layout.desktop.logout"
               style={groupHeader(false)}
             >
               <span>Log out</span>
               <span style={{ fontSize: 16, lineHeight: 1 }}>&rarr;</span>
-            </button>
+            </StableButton>
             <div style={groupHint()}>
               Leave the workspace cleanly and return to the sign-in screen.
             </div>
@@ -1779,30 +1756,30 @@ export default function AppLayout() {
       ) : (
         <>
           <header style={mobileTopBar()}>
-            <button
-              type="button"
-              {...layoutTapGuardProps()}
+            <StableButton
               onClick={openDrawer}
               aria-label="Open navigation"
+              kind="secondary"
+              debugId="app-layout.mobile.open-navigation"
               style={mobileIconButton()}
             >
               ☰ Menu
-            </button>
+            </StableButton>
 
             <div style={mobileTopMeta()}>
               <div style={mobileTopEyebrow()}>{routeMeta.section}</div>
               <div style={mobileTopTitle()}>{routeMeta.page}</div>
             </div>
 
-            <button
-              type="button"
-              {...layoutTapGuardProps()}
+            <StableButton
               onClick={openActions}
               aria-label="Open page actions"
+              kind="secondary"
+              debugId="app-layout.mobile.open-tools"
               style={mobileIconButton()}
             >
               🛠 Tools
-            </button>
+            </StableButton>
           </header>
 
           <div
@@ -1826,15 +1803,15 @@ export default function AppLayout() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                {...layoutTapGuardProps()}
+              <StableButton
                 onClick={closeDrawer}
                 aria-label="Close navigation"
+                kind="soft"
+                debugId="app-layout.mobile.close-navigation"
                 style={overlayCloseButton(true)}
               >
                 x
-              </button>
+              </StableButton>
             </div>
 
             <div style={drawerBrandCard()}>
@@ -1871,23 +1848,20 @@ export default function AppLayout() {
 
                 <div style={drawerLinkGrid(group.items.length === 1)}>
                   {group.items.map((item) => (
-                    <OriginLink
+                    <StableCtaLink
                       key={`${group.title}-${item.label}-${item.to}`}
                       to={item.to}
-                      aria-disabled={item.disabled || undefined}
-                      tabIndex={item.disabled ? -1 : undefined}
-                      onPointerDown={stopActionTap}
-                      onMouseDown={stopActionTap}
-                      onClick={(event) =>
-                        handleDisabledNavClick(event, !!item.disabled, closeDrawer)
-                      }
+                      kind="soft"
+                      disabled={!!item.disabled}
+                      onClick={() => closeDrawer()}
+                      debugId={`app-layout.drawer.${group.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                       style={drawerLink(
                         isItemActive(item, location.pathname, location.search),
                         !!item.disabled
                       )}
                     >
                       {item.label}
-                    </OriginLink>
+                    </StableCtaLink>
                   ))}
                 </div>
               </div>
@@ -1895,14 +1869,14 @@ export default function AppLayout() {
 
             <div style={{ marginTop: 18 }}>
               <div style={drawerSectionTitle()}>Session</div>
-              <button
-                type="button"
-                {...layoutTapGuardProps()}
+              <StableButton
                 onClick={handleLogout}
+                kind="soft"
+                debugId="app-layout.drawer.logout"
                 style={drawerLink(false, false)}
               >
                 Log out
-              </button>
+              </StableButton>
             </div>
           </aside>
 
@@ -1944,15 +1918,15 @@ export default function AppLayout() {
                 </div>
               </div>
 
-              <button
-                type="button"
-                {...layoutTapGuardProps()}
+              <StableButton
                 onClick={closeActions}
                 aria-label="Close page actions"
+                kind="soft"
+                debugId="app-layout.mobile.close-tools"
                 style={overlayCloseButton(false)}
               >
                 x
-              </button>
+              </StableButton>
             </div>
 
             <div
@@ -1970,32 +1944,29 @@ export default function AppLayout() {
 
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               {pageActions.map((item) => (
-                <OriginLink
+                <StableCtaLink
                   key={`page-action-${item.label}-${item.to}`}
                   to={item.to}
-                  aria-disabled={item.disabled || undefined}
-                  tabIndex={item.disabled ? -1 : undefined}
-                  onPointerDown={stopActionTap}
-                  onMouseDown={stopActionTap}
-                  onClick={(event) =>
-                    handleDisabledNavClick(event, !!item.disabled, closeActions)
-                  }
+                  kind="secondary"
+                  disabled={!!item.disabled}
+                  onClick={() => closeActions()}
+                  debugId={`app-layout.page-action.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                   style={actionsLink(
                     isItemActive(item, location.pathname, location.search),
                     !!item.disabled
                   )}
                 >
                   {item.label}
-                </OriginLink>
+                </StableCtaLink>
               ))}
-              <button
-                type="button"
-                {...layoutTapGuardProps()}
+              <StableButton
                 onClick={handleLogout}
+                kind="secondary"
+                debugId="app-layout.page-action.logout"
                 style={actionsLink(false, false)}
               >
                 Log out
-              </button>
+              </StableButton>
             </div>
           </div>
         </>
@@ -2012,27 +1983,24 @@ export default function AppLayout() {
       {isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname)) ? (
         <nav ref={mobileBottomNavRef} style={bottomNav()}>
           {mobileBottomItems.map((item) => (
-            <OriginLink
+            <StableCtaLink
               key={`bottom-${item.label}-${item.to}`}
               to={item.to}
-              aria-disabled={item.disabled || undefined}
+              kind="soft"
+              disabled={!!item.disabled}
               data-bottom-nav-active={
                 isItemActive(item, location.pathname, location.search)
                   ? "true"
                   : "false"
               }
-              tabIndex={item.disabled ? -1 : undefined}
-              {...layoutTapGuardProps()}
-              onClick={(event) =>
-                handleDisabledNavClick(event, !!item.disabled)
-              }
+              debugId={`app-layout.bottom-nav.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
               style={bottomNavItem(
                 isItemActive(item, location.pathname, location.search),
                 !!item.disabled
               )}
             >
               {item.label}
-            </OriginLink>
+            </StableCtaLink>
           ))}
         </nav>
       ) : null}

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { StableButton } from "./StableButton";
 
 export type NextActionGuideTone = "primary" | "secondary" | "soft";
 
@@ -528,32 +529,34 @@ export default function NextActionGuide({
           }}
         >
           {branchItem ? (
-            <button
-              type="button"
+            <StableButton
               {...guidePressProps("guide-back-one-step", () => {
                 setBranchItem(null);
                 setSelection(null);
                 setQuery("");
                 setNotice("");
               })}
+              stableHeight={48}
+              debugId="next-action-guide.back-one-step"
               style={guideButtonStyle("soft")}
             >
               Back one step
-            </button>
+            </StableButton>
           ) : null}
-          <button
-            type="button"
+          <StableButton
             aria-expanded={open}
             {...guidePressProps("guide-open-close", () => {
               setOpen((value) => !value);
             })}
+            stableHeight={48}
+            debugId="next-action-guide.open-close"
             style={{
               ...guideButtonStyle("soft"),
               justifySelf: compact ? "stretch" : "end",
             }}
           >
             {open ? "Collapse" : "Open"}
-          </button>
+          </StableButton>
         </div>
       </div>
 
@@ -590,14 +593,15 @@ export default function NextActionGuide({
               style={inputStyle()}
             />
 
-            <button
+            <StableButton
               type="submit"
-              onPointerDown={stopGuideEvent}
-              onMouseDown={stopGuideEvent}
+              kind="primary"
+              stableHeight={54}
+              debugId="next-action-guide.find-action"
               style={guideButtonStyle("primary")}
             >
               {matchedItem ? `Open ${matchedItem.label}` : "Find action"}
-            </button>
+            </StableButton>
           </form>
 
           <div
@@ -631,13 +635,16 @@ export default function NextActionGuide({
             }}
           >
             {activeItems.map((item) => (
-              <button
+              <StableButton
                 key={item.id}
-                type="button"
+                kind={item.tone || "secondary"}
                 disabled={item.disabled}
                 {...guidePressProps(`guide-item-${item.id}`, (event) => {
                   void chooseItem(item, event, { requireConfirmation: true });
                 })}
+                stableHeight={compact ? 56 : 60}
+                fullWidth
+                debugId={`next-action-guide.item.${item.id}`}
                 style={{
                   ...guideButtonStyle(item.tone || "secondary", item.disabled),
                   minHeight: compact ? 56 : 60,
@@ -676,7 +683,7 @@ export default function NextActionGuide({
                 >
                   {item.detail}
                 </span>
-              </button>
+              </StableButton>
             ))}
           </div>
 
@@ -727,8 +734,8 @@ export default function NextActionGuide({
                   flexWrap: "wrap",
                 }}
               >
-                <button
-                  type="button"
+                <StableButton
+                  kind={selection.resolution?.continueTone || "primary"}
                   {...guidePressProps(
                     `guide-continue-${selection.item.id}`,
                     (event) => {
@@ -736,22 +743,25 @@ export default function NextActionGuide({
                     setSelection(null);
                     }
                   )}
+                  stableHeight={54}
+                  debugId={`next-action-guide.continue.${selection.item.id}`}
                   style={guideButtonStyle(
                     selection.resolution?.continueTone || "primary"
                   )}
                 >
                   {selection.resolution?.continueLabel ||
                     `Continue to ${selection.item.label}`}
-                </button>
-                <button
-                  type="button"
+                </StableButton>
+                <StableButton
                   {...guidePressProps("guide-choose-something-else", () => {
                     setSelection(null);
                   })}
+                  stableHeight={48}
+                  debugId="next-action-guide.choose-something-else"
                   style={guideButtonStyle("soft")}
                 >
                   Choose something else
-                </button>
+                </StableButton>
               </div>
             </div>
           ) : null}

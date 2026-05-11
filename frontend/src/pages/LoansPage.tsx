@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { StableCtaLink, SubtleButton } from "../components/StableButton";
 import * as api from "../lib/api";
-import {
-  communityIdFromSearch,
-  withCommunityQuery,
-} from "../lib/communityRouteContext";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   buildGuidanceSnapshot,
   type GuidanceSnapshot,
@@ -238,27 +236,8 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function stableTapStyle(): React.CSSProperties {
+function routeTileStyle(primary = false): React.CSSProperties {
   return {
-    position: "relative",
-    zIndex: 20,
-    isolation: "isolate",
-    pointerEvents: "auto",
-    boxSizing: "border-box",
-    appearance: "none",
-    WebkitAppearance: "none",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 4,
-    lineHeight: 1.2,
-  };
-}
-
-function routeTile(primary = false): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
     display: "grid",
     gridTemplateColumns: "44px minmax(0, 1fr)",
     alignItems: "center",
@@ -274,6 +253,8 @@ function routeTile(primary = false): React.CSSProperties {
       : "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
     padding: 12,
     textDecoration: "none",
+    textAlign: "left",
+    justifyContent: "stretch",
     boxShadow: primary
       ? "0 16px 34px rgba(19,95,209,0.14), inset 0 1px 0 rgba(255,255,255,0.90)"
       : "0 12px 28px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
@@ -306,31 +287,6 @@ function badge(primary = false): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
-  };
-}
-
-function collapseToggle(): React.CSSProperties {
-  return {
-    ...stableTapStyle(),
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    minWidth: 126,
-    padding: "10px 16px",
-    borderRadius: 999,
-    border: "1px solid rgba(184,201,220,0.92)",
-    background:
-      "linear-gradient(180deg, #ffffff 0%, #eef6ff 100%)",
-    color: "#0B4EB3",
-    fontWeight: 900,
-    fontSize: 13,
-    textAlign: "center",
-    cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-    boxShadow:
-      "0 10px 22px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.90)",
   };
 }
 
@@ -412,6 +368,15 @@ function normalizeCollapseState(raw: any): CollapseState {
   };
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string,
+  hash?: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId, hash }).to);
+}
+
 export default function LoansPage() {
   const location = useLocation();
   const routeClanId = useMemo(
@@ -420,8 +385,44 @@ export default function LoansPage() {
   );
   const selectedClanId =
     routeClanId || Number((api as any).getSelectedClanId?.() || 0);
-  const communityTo = useMemo(
-    () => (to: string) => withCommunityQuery(to, selectedClanId),
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "loans.nav.dashboard"),
+      startSupport: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "loans.route.start-support",
+        "marketplace-loans-support"
+      ),
+      moneyIn: routeTarget("moneyIn", selectedClanId, "loans.route.money-in"),
+      moneyOut: routeTarget("moneyOut", selectedClanId, "loans.route.money-out"),
+      readiness: routeTarget(
+        "loanReadiness",
+        selectedClanId,
+        "loans.route.readiness"
+      ),
+      suggestions: routeTarget(
+        "loanSuggestions",
+        selectedClanId,
+        "loans.route.suggestions"
+      ),
+      guarantorInbox: routeTarget(
+        "guarantorInbox",
+        selectedClanId,
+        "loans.route.guarantor-inbox"
+      ),
+      notifications: routeTarget(
+        "notifications",
+        selectedClanId,
+        "loans.route.notifications"
+      ),
+      guarantorEarnings: routeTarget(
+        "guarantorEarnings",
+        selectedClanId,
+        "loans.route.guarantor-earnings"
+      ),
+      marketplace: routeTarget("marketplace", selectedClanId, "loans.route.marketplace"),
+    }),
     [selectedClanId]
   );
 
@@ -643,9 +644,9 @@ export default function LoansPage() {
           sectionLabel="Focused Task"
           title="Loans & Support"
           subtitle="Loading the support page..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/dashboard"
+          backTo={routes.dashboard}
         />
 
         <section style={pageCard("#FFFFFF")}>
@@ -670,9 +671,9 @@ export default function LoansPage() {
       <PageTopNav
         sectionLabel="Focused Task"
         title="Loans & Support"
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/dashboard"
+        backTo={routes.dashboard}
       />
 
       <section
@@ -809,13 +810,15 @@ export default function LoansPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SubtleButton
             onClick={() => toggleSection("overview")}
-            style={collapseToggle()}
+            minWidth={126}
+            stableHeight={48}
+            debugId="loans.toggle-overview"
+            style={{ borderRadius: 999 }}
           >
             {collapsed.overview ? "View details" : "View details ›"}
-          </button>
+          </SubtleButton>
         </div>
 
         {!collapsed.overview ? (
@@ -967,9 +970,12 @@ export default function LoansPage() {
             gap: 12,
           }}
         >
-          <OriginLink
-            to={communityTo("/app/marketplace#marketplace-loans-support")}
-            style={routeTile(true)}
+          <StableCtaLink
+            to={routes.startSupport}
+            debugId="loans.route.start-support"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(true)}
           >
             <span style={routeIconCircle(true)}>▶️</span>
             <div>
@@ -978,9 +984,15 @@ export default function LoansPage() {
                 Begin or continue the borrower-side flow.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={communityTo("/app/payment/pool")} style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.moneyIn}
+            debugId="loans.route.money-in"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <span style={routeIconCircle(false)}>⬇️</span>
             <div>
               <div style={routeTitleStyle()}>Money In</div>
@@ -988,11 +1000,14 @@ export default function LoansPage() {
                 Use when the next step is payment into the pool.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink
-            to={communityTo("/app/withdrawal-instructions")}
-            style={routeTile(false)}
+          <StableCtaLink
+            to={routes.moneyOut}
+            debugId="loans.route.money-out"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
           >
             <span style={routeIconCircle(false)}>⬆️</span>
             <div>
@@ -1001,9 +1016,15 @@ export default function LoansPage() {
                 Use when the next step is withdrawal handling.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={communityTo("/app/loan-readiness")} style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.readiness}
+            debugId="loans.route.readiness"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <span style={routeIconCircle(false)}>🛡️</span>
             <div>
               <div style={routeTitleStyle()}>Loan Readiness</div>
@@ -1011,9 +1032,15 @@ export default function LoansPage() {
                 Check whether the support flow looks ready.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={communityTo("/app/loan-suggestions")} style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.suggestions}
+            debugId="loans.route.suggestions"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <span style={routeIconCircle(false)}>💡</span>
             <div>
               <div style={routeTitleStyle()}>Loan Suggestions</div>
@@ -1021,9 +1048,15 @@ export default function LoansPage() {
                 Open when you need suggestions.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={communityTo("/app/guarantor-inbox")} style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.guarantorInbox}
+            debugId="loans.route.guarantor-inbox"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <span style={routeIconCircle(false)}>👥</span>
             <div>
               <div style={routeTitleStyle()}>Incoming Guarantor Requests</div>
@@ -1031,9 +1064,15 @@ export default function LoansPage() {
                 Open the guarantor decision queue.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={communityTo("/app/notifications")} style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.notifications}
+            debugId="loans.route.notifications"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <span style={routeIconCircle(false)}>🔔</span>
             <div>
               <div style={routeTitleStyle()}>Action Inbox</div>
@@ -1041,9 +1080,15 @@ export default function LoansPage() {
                 Open when someone is waiting on your response.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={communityTo("/app/guarantor-earnings")} style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.guarantorEarnings}
+            debugId="loans.route.guarantor-earnings"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <span style={routeIconCircle(false)}>🏆</span>
             <div>
               <div style={routeTitleStyle()}>Guarantor Earnings</div>
@@ -1051,9 +1096,15 @@ export default function LoansPage() {
                 Read the guarantor reward side separately.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
 
-          <OriginLink to={communityTo("/app/marketplace")} style={routeTile(false)}>
+          <StableCtaLink
+            to={routes.marketplace}
+            debugId="loans.route.marketplace"
+            stableHeight={88}
+            fullWidth
+            style={routeTileStyle(false)}
+          >
             <span style={routeIconCircle(false)}>🏪</span>
             <div>
               <div style={routeTitleStyle()}>Marketplace</div>
@@ -1061,7 +1112,7 @@ export default function LoansPage() {
                 Return to your community page.
               </div>
             </div>
-          </OriginLink>
+          </StableCtaLink>
         </div>
       </section>
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import { SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -18,6 +18,7 @@ import {
   listMarketplaceRequests,
   listUnmatchedBankEvents,
 } from "../lib/api";
+import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
 type CollapseState = {
   overview: boolean;
@@ -189,20 +190,6 @@ function routeTile(primary = false): React.CSSProperties {
     padding: 16,
     textDecoration: "none",
     boxShadow: primary ? "0 18px 38px rgba(29,95,212,0.12)" : "0 16px 32px rgba(15,23,42,0.065)",
-    ...stableTapStyle(),
-  };
-}
-
-function stableTapStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 0,
-    isolation: "isolate",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    transform: "none",
-    outlineOffset: 2,
   };
 }
 
@@ -232,75 +219,6 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-function actionBtn(
-  kind: "primary" | "secondary" | "soft" = "secondary",
-  disabled = false
-): React.CSSProperties {
-  if (kind === "primary") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 42,
-      padding: "10px 14px",
-      borderRadius: 14,
-      border: "none",
-      background: disabled ? "#CBD5E1" : "#0B63D1",
-      color: "#FFFFFF",
-      fontWeight: 900,
-      fontSize: 14,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  if (kind === "soft") {
-    return {
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      minHeight: 38,
-      padding: "8px 12px",
-      borderRadius: 12,
-      border: "1px solid rgba(122,152,195,0.18)",
-      background: "linear-gradient(180deg, #F8FBFF 0%, #EAF2FF 100%)",
-      color: disabled ? "#94A3B8" : "#24415C",
-      fontWeight: 800,
-      fontSize: 13,
-      textDecoration: "none",
-      cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
-      textAlign: "center",
-      opacity: disabled ? 0.86 : 1,
-      ...stableTapStyle(),
-    };
-  }
-
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 42,
-    padding: "10px 14px",
-    borderRadius: 14,
-    border: "1px solid rgba(122,152,195,0.20)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF5FF 100%)",
-    color: disabled ? "#94A3B8" : "#0B1F33",
-    fontWeight: 800,
-    fontSize: 14,
-    textDecoration: "none",
-    cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
-    textAlign: "center",
-    opacity: disabled ? 0.86 : 1,
-    ...stableTapStyle(),
-  };
-}
-
 function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -317,18 +235,6 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     textAlign: "center",
-    ...stableTapStyle(),
-  };
-}
-
-function stopExposureTap(e: React.SyntheticEvent) {
-  e.stopPropagation();
-}
-
-function exposureButtonGuardProps() {
-  return {
-    onPointerDown: stopExposureTap,
-    onMouseDown: stopExposureTap,
   };
 }
 
@@ -380,8 +286,53 @@ function normalizeCollapseState(raw: any): CollapseState {
   };
 }
 
+function routeTarget(
+  intent: CtaIntent,
+  communityId: number,
+  debugId: string
+): string {
+  return String(resolveCtaTarget(intent, { communityId, debugId }).to);
+}
+
 export default function ExposureAdminPage() {
   const selectedClanId = Number(getSelectedClanId() || 0);
+  const routes = useMemo(
+    () => ({
+      dashboard: routeTarget("dashboard", selectedClanId, "exposure-admin.nav.dashboard"),
+      commandCenter: routeTarget(
+        "adminCommand",
+        selectedClanId,
+        "exposure-admin.nav.command-center"
+      ),
+      systemOperations: routeTarget(
+        "systemOperations",
+        selectedClanId,
+        "exposure-admin.route.system-operations"
+      ),
+      trustAnalytics: routeTarget(
+        "trustAnalytics",
+        selectedClanId,
+        "exposure-admin.route.trust-analytics"
+      ),
+      trustGraph: routeTarget(
+        "trustGraph",
+        selectedClanId,
+        "exposure-admin.route.trust-graph"
+      ),
+      bankConsole: routeTarget(
+        "bankConsole",
+        selectedClanId,
+        "exposure-admin.route.bank-console"
+      ),
+      incompleteLoans: routeTarget(
+        "incompleteLoans",
+        selectedClanId,
+        "exposure-admin.route.incomplete-loans"
+      ),
+      demandBox: routeTarget("demandBox", selectedClanId, "exposure-admin.route.demand-box"),
+    }),
+    [selectedClanId]
+  );
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -629,7 +580,7 @@ export default function ExposureAdminPage() {
       ]
         .filter(Boolean)
         .join(" | "),
-      route: "/app/command-center/trust-graph",
+      route: routes.trustGraph,
       routeLabel: "Open Trust Graph",
     }));
 
@@ -645,7 +596,7 @@ export default function ExposureAdminPage() {
       ]
         .filter(Boolean)
         .join(" | "),
-      route: "/app/command-center/incomplete-loans",
+      route: routes.incompleteLoans,
       routeLabel: "Open Incomplete Loans",
     }));
 
@@ -659,7 +610,7 @@ export default function ExposureAdminPage() {
       ]
         .filter(Boolean)
         .join(" | "),
-      route: "/app/command-center/bank-console",
+      route: routes.bankConsole,
       routeLabel: "Open Bank Console",
     }));
 
@@ -672,7 +623,7 @@ export default function ExposureAdminPage() {
       ]
         .filter(Boolean)
         .join(" | "),
-      route: "/app/demand-box",
+      route: routes.demandBox,
       routeLabel: "Open Demand Box",
     }));
 
@@ -686,12 +637,12 @@ export default function ExposureAdminPage() {
       ]
         .filter(Boolean)
         .join(" | "),
-      route: "/app/command-center/bank-console",
+      route: routes.bankConsole,
       routeLabel: "Open Bank Console",
     }));
 
     return [...bankQueue, ...incompleteQueue, ...exposureQueue, ...poolQueue, ...demandQueue].slice(0, 8);
-  }, [bankUnmatched, exposedMembersAtRisk, incompleteLoans, pendingPool, staleDemands]);
+  }, [bankUnmatched, exposedMembersAtRisk, incompleteLoans, pendingPool, routes, staleDemands]);
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -715,9 +666,9 @@ export default function ExposureAdminPage() {
           sectionLabel="Exposure"
           title="Exposure"
           subtitle="Loading the exposure reading..."
-          homeTo="/app/dashboard"
+          homeTo={routes.dashboard}
           homeLabel="Dashboard"
-          backTo="/app/command-center"
+          backTo={routes.commandCenter}
           backLabel="Command Center"
         />
 
@@ -744,9 +695,9 @@ export default function ExposureAdminPage() {
         sectionLabel="Exposure"
         title="Exposure"
         subtitle="Read concentration, queue pressure, and visible operational load before choosing a deeper intervention path."
-        homeTo="/app/dashboard"
+        homeTo={routes.dashboard}
         homeLabel="Dashboard"
-        backTo="/app/command-center"
+        backTo={routes.commandCenter}
         backLabel="Command Center"
       />
 
@@ -855,14 +806,14 @@ export default function ExposureAdminPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SecondaryButton
             onClick={() => toggleSection("overview")}
+            stableHeight={38}
+            debugId="exposure-admin.toggle.overview"
             style={collapseToggle()}
-            {...exposureButtonGuardProps()}
           >
             {collapsed.overview ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.overview ? (
@@ -980,14 +931,14 @@ export default function ExposureAdminPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SecondaryButton
             onClick={() => toggleSection("pressure")}
+            stableHeight={38}
+            debugId="exposure-admin.toggle.pressure"
             style={collapseToggle()}
-            {...exposureButtonGuardProps()}
           >
             {collapsed.pressure ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.pressure ? (
@@ -1088,14 +1039,14 @@ export default function ExposureAdminPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SecondaryButton
             onClick={() => toggleSection("queues")}
+            stableHeight={38}
+            debugId="exposure-admin.toggle.queues"
             style={collapseToggle()}
-            {...exposureButtonGuardProps()}
           >
             {collapsed.queues ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.queues ? (
@@ -1126,9 +1077,13 @@ export default function ExposureAdminPage() {
                       {row.title}
                     </div>
 
-                    <OriginLink to={row.route} style={actionBtn("secondary")}>
+                    <StableCtaLink
+                      to={row.route}
+                      kind="secondary"
+                      debugId={`exposure-admin.queue.${row.key}.route`}
+                    >
                       {row.routeLabel}
-                    </OriginLink>
+                    </StableCtaLink>
                   </div>
 
                   <div style={{ marginTop: 8, ...helperText() }}>{row.detail}</div>
@@ -1156,14 +1111,14 @@ export default function ExposureAdminPage() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <SecondaryButton
             onClick={() => toggleSection("routes")}
+            stableHeight={38}
+            debugId="exposure-admin.toggle.routes"
             style={collapseToggle()}
-            {...exposureButtonGuardProps()}
           >
             {collapsed.routes ? "Open" : "Collapse"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {!collapsed.routes ? (
@@ -1177,7 +1132,12 @@ export default function ExposureAdminPage() {
               gap: 12,
             }}
           >
-            <OriginLink to="/app/command-center/system-operations" style={routeTile(true)}>
+            <StableCtaLink
+              to={routes.systemOperations}
+              kind="primary"
+              debugId="exposure-admin.route.system-operations"
+              style={routeTile(true)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1191,9 +1151,13 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the work needs live handling and immediate intervention.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/trust-analytics" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.trustAnalytics}
+              debugId="exposure-admin.route.trust-analytics"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1207,9 +1171,13 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the work is pattern reading rather than exposure-heavy handling.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/trust-graph" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.trustGraph}
+              debugId="exposure-admin.route.trust-graph"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1223,9 +1191,13 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the work is structural relationship analysis behind concentration or pressure.
               </div>
-            </OriginLink>
+            </StableCtaLink>
 
-            <OriginLink to="/app/command-center/bank-console" style={routeTile(false)}>
+            <StableCtaLink
+              to={routes.bankConsole}
+              debugId="exposure-admin.route.bank-console"
+              style={routeTile(false)}
+            >
               <div
                 style={{
                   color: "#0B1F33",
@@ -1239,7 +1211,7 @@ export default function ExposureAdminPage() {
               <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                 Open this when the work is about unmatched bank events, pending pool confirmation, or expected money-path cleanup.
               </div>
-            </OriginLink>
+            </StableCtaLink>
           </div>
         ) : null}
       </section>

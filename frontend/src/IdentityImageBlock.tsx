@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { CardActionRow, DangerButton, PrimaryButton, SecondaryButton } from "./components/StableButton";
 
 type Props = {
   title: string;
@@ -18,7 +19,7 @@ function card(): React.CSSProperties {
   };
 }
 
-function btn(primary = false): React.CSSProperties {
+function imageActionStyle(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
@@ -99,39 +100,47 @@ export default function IdentityImageBlock({
         </div>
       </div>
 
-      <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <button
-          type="button"
+      <CardActionRow minHeight={40} style={{ marginTop: 14 }}>
+        <PrimaryButton
           onClick={() => fileInputRef.current?.click()}
-          style={btn(true)}
+          minWidth={82}
+          stableHeight={40}
+          debugId="identity-image.upload"
+          style={imageActionStyle(true)}
         >
           Upload
-        </button>
+        </PrimaryButton>
 
-        <button
-          type="button"
+        <SecondaryButton
           onClick={() => cameraInputRef.current?.click()}
-          style={btn(false)}
+          minWidth={104}
+          stableHeight={40}
+          debugId="identity-image.camera"
+          style={imageActionStyle(false)}
         >
           Take Picture
-        </button>
+        </SecondaryButton>
 
-        <button
-          type="button"
+        <SecondaryButton
           onClick={() => fileInputRef.current?.click()}
-          style={btn(false)}
+          minWidth={82}
+          stableHeight={40}
+          debugId="identity-image.change"
+          style={imageActionStyle(false)}
         >
           Change
-        </button>
+        </SecondaryButton>
 
-        <button
-          type="button"
+        <DangerButton
           onClick={removeImage}
-          style={btn(false)}
+          minWidth={82}
+          stableHeight={40}
+          debugId="identity-image.remove"
+          style={imageActionStyle(false)}
         >
           Remove
-        </button>
-      </div>
+        </DangerButton>
+      </CardActionRow>
 
       <input
         ref={fileInputRef}
