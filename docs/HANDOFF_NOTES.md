@@ -1,3 +1,22 @@
+### Shop Diaries media origin fix (2026-05-11)
+
+- Followed up after the product owner reported all pictures and videos in Shop Diaries were gone.
+- Truth/devil's advocate:
+  - The public shop data path still returns product media fields, but `ShopGalleryPage` had its own API-origin resolver that was weaker than the shared API client.
+  - On local ports like `5174`, relative `/uploads/...` media could resolve against the frontend dev server instead of the backend upload server, making the diary media appear gone even when the product rows still existed.
+- Frontend change:
+  - `frontend/src/pages/ShopGalleryPage.tsx` now normalizes `VITE_API_BASE_URL` the same way the API client does for media assets.
+  - When running locally from non-5173 dev ports, `/uploads/...` now resolves to `http://127.0.0.1:8012/uploads/...` instead of the frontend port.
+  - Absolute API bases ending in `/api` now resolve media against the backend origin, not the `/api` path.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - This fixes wrong frontend-origin media URLs. If Render itself has physically lost uploaded files from non-persistent storage, no frontend patch can recreate those bytes; the product rows would need re-upload or persistent storage.
+
 ### Public shop stale-link reconnect retries after owner sign-in (2026-05-11)
 
 - Followed up after the product owner still saw the public Shop Diaries stale-link message:

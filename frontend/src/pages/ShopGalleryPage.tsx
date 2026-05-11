@@ -374,7 +374,33 @@ function apiBase(): string {
       (import.meta as any).env.VITE_API_BASE_URL) ||
     "/api";
 
-  return String(raw || "").trim().replace(/\/+$/, "");
+  const base = String(raw || "").trim().replace(/\/+$/, "");
+  if (!base) return "";
+
+  if (base.startsWith("http://") || base.startsWith("https://")) {
+    try {
+      const url = new URL(base);
+      if (url.pathname.replace(/\/+$/, "").toLowerCase() === "/api") {
+        return url.origin;
+      }
+    } catch {
+      return base;
+    }
+  }
+
+  if (base === "/api" && typeof window !== "undefined") {
+    const hostname = safeStr(window.location?.hostname).toLowerCase();
+    const port = safeStr(window.location?.port);
+    if (
+      port &&
+      port !== "5173" &&
+      ["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(hostname)
+    ) {
+      return "http://127.0.0.1:8012";
+    }
+  }
+
+  return base;
 }
 
 function apiOrigin(): string {
