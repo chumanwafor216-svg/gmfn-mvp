@@ -22868,3 +22868,25 @@ GSN-branded invite composer and invite-entry continuity.
   - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
 - Remaining truth:
   - This is a frontend route-continuation fix. It does not verify the existing account itself; the backend still remains the source of truth when the joined invite is submitted after login.
+
+### Deep cleanup guardrails (2026-05-11)
+
+- Cleaned the generated-artifact boundary after the marketplace public-shop and button-stability work.
+- Updated `frontend/eslint.config.js`:
+  - added top-level ignores for generated/runtime folders and local artifacts: `.vite`, `dist`, `node_modules`, `pytest-tmp*`, `uploads`, logs, errors, and `validation_output.txt`.
+  - this prevents lint from failing when local pytest/browser/runtime folders exist under `frontend`.
+- Updated `frontend/.gitignore`:
+  - added `.vite` so Vite's local cache stays out of the worktree.
+- Removed previously generated local pytest temp folders after verifying they were inside this repo:
+  - `pytest-tmp`;
+  - `frontend/pytest-tmp-shop-gallery-global`;
+  - `frontend/pytest-tmp-spotlight-subscription`;
+  - `frontend/pytest-tmp-vault-rail`.
+- Verification after recovery:
+  - `npm run lint` passed.
+  - `python -m pytest -q gmfn_backend\tests --basetemp C:\tmp\gmfn_mvp_pytest_deep_clean_final` passed: 130 tests, 16 warnings.
+  - `npm run build` passed after escalation because sandboxed Vite/esbuild still hits the local `spawn EPERM` issue.
+  - Earlier in the cleanup pass, these also passed: `npm run audit:button-stability`, `npm run audit:route-fallthrough`, `npm run audit:link-contracts`, `npm run audit:spotlight-controls`, `npm run audit:spotlight-quota`, `npm run audit:tap-stability`, and `python -m compileall -q gmfn_backend\app gmfn_backend\tests`.
+- Remaining truth:
+  - I made one bad cleanup command during this pass: a broad PowerShell `Get-ChildItem -Include` removal matched many tracked files. I immediately restored the tracked worktree with `git restore --worktree -- .`, reapplied only the intended safe config changes, and reran the checks above.
+  - This cleanup does not remove all ignored local runtime state. Local DB files, uploads, runtime logs, dependencies, and other ignored development artifacts may still exist because deleting them would be higher risk and was not necessary for the requested cleaning.

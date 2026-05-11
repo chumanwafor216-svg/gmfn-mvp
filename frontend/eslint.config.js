@@ -5,6 +5,18 @@ import reactHooks from "eslint-plugin-react-hooks";
 import unusedImports from "eslint-plugin-unused-imports";
 
 export default [
+  {
+    ignores: [
+      ".vite/**",
+      "dist/**",
+      "node_modules/**",
+      "pytest-tmp*/**",
+      "uploads/**",
+      "*.log",
+      "*.err",
+      "validation_output.txt",
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
