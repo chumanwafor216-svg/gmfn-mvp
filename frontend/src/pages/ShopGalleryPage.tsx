@@ -743,6 +743,7 @@ export default function ShopGalleryPage() {
   const miniSpotlightIndexRef = useRef(0);
   const galleryRevealFrameRef = useRef<number | null>(null);
   const galleryRevealTargetRef = useRef("");
+  const autoRevealDiariesKeyRef = useRef("");
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [openProductId, setOpenProductId] = useState<number | null>(null);
   const [brokenProductMediaUrls, setBrokenProductMediaUrls] = useState<
@@ -1141,6 +1142,30 @@ export default function ShopGalleryPage() {
       telegram: firstMeaningful(shop?.telegram),
     };
   }, [shop, broadcast, gmfnId, currentClan]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (loading || error) return;
+    if (location.hash) return;
+
+    const revealKey = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    if (!revealKey || autoRevealDiariesKeyRef.current === revealKey) return;
+
+    autoRevealDiariesKeyRef.current = revealKey;
+    revealGalleryTarget(PUBLIC_SHOP_DIARIES_ANCHOR);
+
+    return () => {
+      cancelPendingGalleryReveal();
+    };
+  }, [
+    cancelPendingGalleryReveal,
+    effectiveShop?.gmfnId,
+    error,
+    gmfnId,
+    loading,
+    location.hash,
+    revealGalleryTarget,
+  ]);
 
   useEffect(() => {
     if (products.length <= GALLERY_SLOTS_TOTAL && showAllProducts) {

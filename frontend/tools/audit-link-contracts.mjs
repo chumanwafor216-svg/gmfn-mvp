@@ -520,6 +520,12 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
+  /if \(loading \|\| error\) return;[\s\S]*?if \(location\.hash\) return;[\s\S]*?revealGalleryTarget\(PUBLIC_SHOP_DIARIES_ANCHOR\);/,
+  "Public shop root links must automatically bring visitors to Shop Diaries after the full shop loads."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
   /if \(attempt < 60\)/,
   "Public Shop Gallery hash landing must retry long enough for mobile/API-loaded shop sections to mount."
 );

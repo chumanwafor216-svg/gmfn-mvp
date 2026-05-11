@@ -1,3 +1,22 @@
+### Public shop root links reveal Shop Diaries (2026-05-11)
+
+- Followed up after the product owner clarified that the public home is inside Marketplace and asked whether the shop link can show Shop Diaries after two days on this lane.
+- Truth/devil's advocate:
+  - Ordinary public shop links still must stay as the canonical root `/shop/{GSN_ID}`. Reintroducing `#shop-diaries` into copied Marketplace/Shop links would violate the current screen spec and make public sharing brittle again.
+  - The safer fix is page behavior: when a root public shop link loads successfully with no hash/deep link, the public shop page now automatically reveals the `Shop Diaries` shelf after the full shop data is loaded.
+- Frontend change:
+  - `frontend/src/pages/ShopGalleryPage.tsx` now remembers the loaded shop identity and auto-scrolls no-hash `/shop/{GSN_ID}` visits to `PUBLIC_SHOP_DIARIES_ANCHOR` once loading has completed and no public-shop error is active.
+  - Explicit hash/product deep-link reveals still win, and failed/stale public-shop states do not pretend that the diaries loaded.
+- Guardrail:
+  - `frontend/tools/audit-link-contracts.mjs` now checks that root public shop visits auto-reveal Shop Diaries without changing the ordinary public shop link contract.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx tools\audit-link-contracts.mjs` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `git diff --check -- frontend\src\pages\ShopGalleryPage.tsx frontend\tools\audit-link-contracts.mjs docs\HANDOFF_NOTES.md` passed with Windows line-ending warnings only.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+
 ### Dirty worktree cleanup snapshot (2026-05-11)
 
 - Cleaned the long-running GMFN/GSN worktree by separating real source work from local runtime noise.
