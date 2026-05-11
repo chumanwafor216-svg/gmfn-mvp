@@ -1,3 +1,18 @@
+### Public shop face block anti-jump follow-up (2026-05-11)
+
+- Followed up after the product owner reported the Marketplace `Public shop face` block was still jumping.
+- Truth/devil's advocate:
+  - The earlier patch stabilized the shared button rows, but this block still had its own lane-level risk: the public-shop lane could resize around the visible URL/link-ready state.
+  - The visible URL still uses the shared `StableCtaLink` primitive because the mobile tap auditor requires it, but its style is flattened into inline text inside the reserved URL area.
+- Frontend change:
+  - `frontend/src/pages/MarketplacePage.tsx` now wraps the `Public shop face` lane in `publicShopFaceCardStyle(...)`, reserving desktop lane height, stretching the card, opting it out of scroll anchoring, and containing its layout/paint.
+  - The visible public shop URL link now overrides the stable-link shell down to inline text sizing inside the existing fixed URL reserve.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+
 ### Marketplace and shop button-jump hardening (2026-05-11)
 
 - Followed up after the product owner asked to continue until the checked jumpy-button parameters were corrected across Marketplace, Shop Control, Shop Assets, Community Home, and Marketplace Workspace.

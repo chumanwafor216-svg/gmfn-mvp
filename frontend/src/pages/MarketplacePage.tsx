@@ -1395,6 +1395,16 @@ function linkReserveTextStyle(): React.CSSProperties {
   };
 }
 
+function publicShopFaceCardStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...innerCard("#FFFFFF"),
+    minHeight: isCompact ? 0 : 330,
+    alignSelf: "stretch",
+    overflowAnchor: "none",
+    contain: "layout paint",
+  };
+}
+
 function joinLinkReserveTextStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...linkReserveTextStyle(),
@@ -4638,7 +4648,7 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                <div style={innerCard("#FFFFFF")}>
+                <div style={publicShopFaceCardStyle(isCompact)}>
                   <div style={sectionLabel()}>Public shop face</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Share the one-shop storefront that follows your GSN ID.
@@ -4665,7 +4675,11 @@ export default function MarketplacePage() {
                         target="_blank"
                         rel="noreferrer"
                         style={{
+                          display: "inline",
+                          width: "auto",
+                          minWidth: 0,
                           minHeight: 0,
+                          height: "auto",
                           padding: 0,
                           border: "0",
                           background: "transparent",
@@ -4677,6 +4691,7 @@ export default function MarketplacePage() {
                           touchAction: "manipulation",
                           overflowWrap: "anywhere",
                           wordBreak: "break-word",
+                          lineHeight: 1.45,
                         }}
                       >
                         {publicShopViewLink}
