@@ -22890,3 +22890,29 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - I made one bad cleanup command during this pass: a broad PowerShell `Get-ChildItem -Include` removal matched many tracked files. I immediately restored the tracked worktree with `git restore --worktree -- .`, reapplied only the intended safe config changes, and reran the checks above.
   - This cleanup does not remove all ignored local runtime state. Local DB files, uploads, runtime logs, dependencies, and other ignored development artifacts may still exist because deleting them would be higher risk and was not necessary for the requested cleaning.
+
+### Public shop HTTP 404 recovery (2026-05-11)
+
+- Owner reported `Http 404` after the public-shop cleanup.
+- Live checks confirmed:
+  - `https://gmfn-frontend.onrender.com/shop/GSN-U-9867079C` returned `200`, so the public React route itself was reachable.
+  - `https://gmfn-api.onrender.com/marketplace/public/shop/GSN-U-9867079C?product_limit=100&broadcast_limit=24` returned `404` with `{"detail":"Seller identity not found"}`.
+  - `https://gmfn-api.onrender.com/` also returned `404`, which is confusing when someone opens the API host directly.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - if a public shop link fails with a disconnected/missing-shop 404 and the viewer is signed in as an owner, the page now creates/refreshes the owner's active shop and reloads the public shop using the current signed-in GSN/GMFN identity;
+  - if the stale link identity differs from the current signed-in owner identity, the browser address is replaced with the current canonical `/shop/{GSN_ID}` route before showing Shop Diaries.
+- Updated `gmfn_backend/app/main.py`:
+  - added a helpful API root response at `/` instead of a raw 404;
+  - added backend-host redirects for `/shop/{gmfn_id}`, `/shop-gallery/{gmfn_id}`, and `/open-shop/{gmfn_id}` to the canonical frontend public shop route, so API-host shop links are no longer dead ends.
+- Added `gmfn_backend/tests/test_public_api_landing.py` for the API root and public-shop redirect aliases.
+- Verification:
+  - `python -m pytest -q gmfn_backend\tests\test_public_api_landing.py --basetemp C:\tmp\gmfn_mvp_pytest_api_landing` passed: 3 tests.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py gmfn_backend\tests\test_public_api_landing.py --basetemp C:\tmp\gmfn_mvp_pytest_public_shop_404` passed: 14 tests, 10 warnings.
+  - `npm run lint` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed after escalation.
+- Remaining truth:
+  - This does not manufacture a missing production seller identity for anonymous visitors. If a public link points to a GSN/GMFN ID that does not exist in the live database, anonymous visitors still cannot see that nonexistent owner's Shop Diaries.
+  - The automatic recovery works for the signed-in owner because the app can read the current owner identity and refresh/create that owner's shop record.

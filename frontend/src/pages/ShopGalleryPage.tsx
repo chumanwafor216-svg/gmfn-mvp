@@ -118,6 +118,15 @@ function isDisconnectedPublicShopError(message: any): boolean {
   );
 }
 
+function replacePublicShopAddress(gmfnId: string): void {
+  if (typeof window === "undefined") return;
+
+  const path = publicShopPath(gmfnId);
+  if (!path || window.location.pathname === path) return;
+
+  window.history.replaceState(window.history.state, "", path);
+}
+
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
@@ -870,8 +879,8 @@ export default function ShopGalleryPage() {
       const meRes = await getMe().catch(() => null);
       const ownerGmfnId = firstMeaningful(meRes?.gmfn_id, meRes?.gmfnId);
 
-      if (!identityMatches(ownerGmfnId, cleanedGmfnId)) {
-        return false;
+      if (!ownerGmfnId) {
+        return "";
       }
 
       const clanId = positiveNumber(clanRes?.id || clanRes?.clan_id);
@@ -892,7 +901,7 @@ export default function ShopGalleryPage() {
         description: "Public GSN shop face for trusted products.",
       });
 
-      return true;
+      return ownerGmfnId;
     }
 
     (async () => {
@@ -902,6 +911,7 @@ export default function ShopGalleryPage() {
 
       try {
         const cleanedGmfnId = safeStr(gmfnId || "");
+        let effectiveGmfnId = cleanedGmfnId;
         const clanRes = await getCurrentClan().catch(() => null);
         let publicShopRes: any = null;
 
@@ -926,19 +936,23 @@ export default function ShopGalleryPage() {
             });
           }
 
-          const refreshed = await refreshOwnerShop(cleanedGmfnId, clanRes);
-          if (!refreshed) throw err;
+          const refreshedGmfnId = await refreshOwnerShop(cleanedGmfnId, clanRes);
+          if (!refreshedGmfnId) throw err;
 
-          publicShopRes = await loadPublicShop(cleanedGmfnId);
+          effectiveGmfnId = refreshedGmfnId;
+          replacePublicShopAddress(refreshedGmfnId);
+          publicShopRes = await loadPublicShop(effectiveGmfnId);
           if (alive) {
             setNotice({
               tone: "success",
-              text: "Public shop reconnected. Shop Diaries is ready.",
+              text: identityMatches(refreshedGmfnId, cleanedGmfnId)
+                ? "Public shop reconnected. Shop Diaries is ready."
+                : "Stale shop link refreshed to your current GSN shop.",
             });
           }
         }
 
-        applyPublicShop(publicShopRes, clanRes, cleanedGmfnId);
+        applyPublicShop(publicShopRes, clanRes, effectiveGmfnId);
       } catch (err: any) {
         if (!alive) return;
         const message = safeStr(err?.message);
