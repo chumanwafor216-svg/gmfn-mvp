@@ -1,8 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
-import OriginLink from "../components/OriginLink";
 import PageTopNav from "../components/PageTopNav";
+import {
+  CardActionRow,
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  SubtleButton,
+} from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -17,10 +23,15 @@ import {
   setSelectedClanId,
 } from "../lib/api";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
-import { navigateWithOrigin } from "../lib/nav";
+import {
+  navigateToCta,
+  resolveCtaTarget,
+  type CtaTarget,
+  type CtaIntent,
+} from "../lib/ctaTargets";
 import {
   publicFrontendUrl,
-  publicShopDiariesUrl,
+  publicShopRootUrl,
   publicShopUrl,
 } from "../lib/publicLinks";
 
@@ -33,20 +44,8 @@ function safeNum(x: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function withClanQuery(path: string, clanId: number): string {
-  const target = safeStr(path);
-  const selectedId = safeNum(clanId);
-  if (!target || selectedId <= 0) return target;
-  const [pathAndSearch, hash = ""] = target.split("#");
-  const [pathname, search = ""] = pathAndSearch.split("?");
-  const query = new URLSearchParams(search);
-  if (!query.has("clan_id") && !query.has("community")) {
-    query.set("clan_id", String(selectedId));
-  }
-  const nextSearch = query.toString();
-  return `${pathname}${nextSearch ? `?${nextSearch}` : ""}${
-    hash ? `#${hash}` : ""
-  }`;
+function ctaPath(target: CtaTarget): string {
+  return typeof target.to === "string" ? target.to : String(target.to);
 }
 
 function apiBase(): string {
@@ -115,67 +114,11 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function btn(primary = false, disabled = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 48,
-    padding: "12px 16px",
-    borderRadius: 14,
-    border: primary
-      ? "1px solid rgba(11,80,170,0.24)"
-      : "1px solid rgba(37,78,119,0.20)",
-    background: disabled
-      ? "linear-gradient(180deg, #CBD5E1 0%, #B8C4D4 100%)"
-      : primary
-      ? "linear-gradient(180deg, #1A6BE1 0%, #0B63D1 58%, #09479C 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(236,244,251,0.984) 62%, rgba(221,231,241,0.98) 100%)",
-    color: primary ? "#FFFFFF" : "#0B1F33",
-    fontWeight: 900,
-    cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 14,
-    textDecoration: "none",
-    gap: 8,
-    opacity: disabled ? 0.72 : 1,
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    appearance: "none",
-    WebkitAppearance: "none",
-    transform: "none",
-    transition: "none",
-    flexShrink: 0,
-    overflow: "hidden",
-    overflowAnchor: "none",
-    outlineOffset: 4,
-    boxShadow: disabled
-      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : primary
-      ? "0 16px 30px rgba(11,99,209,0.20), inset 0 1px 0 rgba(255,255,255,0.20)"
-      : "0 16px 30px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.88)",
-  };
-}
-
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalInnerCard(bg),
     border: "1px solid rgba(37,78,119,0.16)",
     padding: 14,
-  };
-}
-
-function guardWorkspacePress(event: React.SyntheticEvent<HTMLElement>) {
-  event.stopPropagation();
-}
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return {
-    onPointerDown: guardWorkspacePress,
-    onMouseDown: guardWorkspacePress,
   };
 }
 
@@ -371,8 +314,8 @@ export default function MarketplaceWorkspacePage() {
   const [moneyOpen, setMoneyOpen] = useState(true);
   const [alertsOpen, setAlertsOpen] = useState(true);
   const [membersOpen, setMembersOpen] = useState(false);
-  const alertsSectionRef = useRef<HTMLElement | null>(null);
-  const membersSectionRef = useRef<HTMLElement | null>(null);
+  const alertsSectionRef = useRef<HTMLDivElement | null>(null);
+  const membersSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [inviteInfo, setInviteInfo] = useState<any>(null);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
@@ -390,9 +333,18 @@ export default function MarketplaceWorkspacePage() {
     attempt = 0
   ) {
     if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      const viewportHeight =
+        window.innerHeight || document.documentElement.clientHeight || 0;
+      const alreadyComfortablyVisible =
+        rect.top >= 16 && rect.bottom <= Math.max(viewportHeight - 16, 16);
+
+      if (alreadyComfortablyVisible) return;
+
       ref.current.scrollIntoView({
         behavior: "auto",
         block: "start",
+        inline: "nearest",
       });
       return;
     }
@@ -408,7 +360,9 @@ export default function MarketplaceWorkspacePage() {
       ref: React.RefObject<HTMLElement | null>
     ) => {
       setter(true);
-      scrollToWorkspaceSection(ref);
+      window.requestAnimationFrame(() => {
+        scrollToWorkspaceSection(ref);
+      });
     },
     [scrollToWorkspaceSection]
   );
@@ -534,7 +488,7 @@ export default function MarketplaceWorkspacePage() {
         selectedMember?.public_shop_url ||
         ""
     );
-    if (selectedDirect) return publicShopDiariesUrl(selectedDirect);
+    if (selectedDirect) return publicShopRootUrl(selectedDirect);
 
     const selectedGmfnId = safeStr(
       selectedMember?.owner_gmfn_id ||
@@ -552,7 +506,7 @@ export default function MarketplaceWorkspacePage() {
         inviteInfo?.public_shop_url ||
         ""
     );
-    if (direct) return publicShopDiariesUrl(direct);
+    if (direct) return publicShopRootUrl(direct);
 
     return "";
   }, [inviteInfo, selectedMember]);
@@ -576,15 +530,67 @@ export default function MarketplaceWorkspacePage() {
     [communityTrust.tone]
   );
 
-  const communityHomeLink = useMemo(() => {
-    return activeClanId ? `/app/community/${activeClanId}` : "/app/community";
-  }, [activeClanId]);
-  const marketplaceLink = useMemo(() => {
-    return withClanQuery("/app/marketplace", activeClanId);
-  }, [activeClanId]);
-  const demandBoxLink = useMemo(() => {
-    return withClanQuery("/app/demand-box", activeClanId);
-  }, [activeClanId]);
+  const communityHomeCta = useMemo(
+    () =>
+      resolveCtaTarget("communityHome", {
+        communityId: activeClanId,
+        explicitTo: activeClanId ? `/app/community/${activeClanId}` : undefined,
+        debugId: "marketplace-workspace.community-home",
+      }),
+    [activeClanId]
+  );
+  const communityListCta = useMemo(
+    () =>
+      resolveCtaTarget("communityHome", {
+        debugId: "marketplace-workspace.community-list",
+      }),
+    []
+  );
+  const marketplaceCta = useMemo(
+    () =>
+      resolveCtaTarget("marketplace", {
+        communityId: activeClanId,
+        debugId: "marketplace-workspace.marketplace",
+      }),
+    [activeClanId]
+  );
+  const demandBoxCta = useMemo(
+    () =>
+      resolveCtaTarget("demandBox", {
+        communityId: activeClanId,
+        debugId: "marketplace-workspace.demand-box",
+      }),
+    [activeClanId]
+  );
+  const joinRequestsCta = useMemo(
+    () =>
+      resolveCtaTarget("communityHome", {
+        explicitTo: activeClanId
+          ? `/app/community/${activeClanId}/join-requests`
+          : "/app/community",
+        debugId: "marketplace-workspace.join-requests",
+      }),
+    [activeClanId]
+  );
+  const moneyCtas = useMemo(
+    () =>
+      [
+        ["Money In", "moneyIn"],
+        ["Money Out", "moneyOut"],
+        ["Loans", "loans"],
+        ["Readiness", "loanReadiness"],
+        ["Workbench", "loanWorkbench"],
+        ["Earnings", "guarantorEarnings"],
+        ["Suggestions", "loanSuggestions"],
+      ].map(([label, intent]) => ({
+        label,
+        target: resolveCtaTarget(intent as CtaIntent, {
+          communityId: activeClanId,
+          debugId: `marketplace-workspace.${intent}`,
+        }),
+      })),
+    [activeClanId]
+  );
 
   const memberRows = useMemo(() => {
     return members.map((member: any, idx: number) => {
@@ -711,7 +717,7 @@ export default function MarketplaceWorkspacePage() {
         member?.user?.gmfn_id ||
         ""
     );
-    const link = direct ? publicShopDiariesUrl(direct) : publicShopUrl(gmfnId);
+    const link = direct ? publicShopRootUrl(direct) : publicShopUrl(gmfnId);
     if (!link) {
       setMsg("This member does not yet have a public shop identity.");
       return;
@@ -874,24 +880,29 @@ export default function MarketplaceWorkspacePage() {
                 "This keeps one community's owner-side invite, alert, member, and shop-facing visibility tasks together without turning this desk into the full Marketplace."}
             </div>
 
-            <div
-              style={{
-                marginTop: 16,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
-              <OriginLink to={communityHomeLink} style={btn(false)}>
+            <CardActionRow style={{ marginTop: 16 }}>
+              <StableCtaLink
+                to={ctaPath(communityHomeCta)}
+                kind="secondary"
+                debugId={communityHomeCta.debugId}
+              >
                 Open Community Home
-              </OriginLink>
-              <OriginLink to={marketplaceLink} style={btn(false)}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={ctaPath(marketplaceCta)}
+                kind="secondary"
+                debugId={marketplaceCta.debugId}
+              >
                 Open Marketplace
-              </OriginLink>
-              <OriginLink to="/app/community" style={btn(false)}>
+              </StableCtaLink>
+              <StableCtaLink
+                to={ctaPath(communityListCta)}
+                kind="secondary"
+                debugId={communityListCta.debugId}
+              >
                 Community List
-              </OriginLink>
-            </div>
+              </StableCtaLink>
+            </CardActionRow>
           </div>
         </div>
       </div>
@@ -957,26 +968,26 @@ export default function MarketplaceWorkspacePage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
+          <CardActionRow>
+            <SecondaryButton
               type="button"
               onClick={() => revealWorkspaceSection(setAlertsOpen, alertsSectionRef)}
-              style={btn(false)}
+              debugId="marketplace-workspace.open-alerts-section"
             >
               Open Alerts
-            </button>
-            <button
+            </SecondaryButton>
+            <SecondaryButton
               type="button"
               onClick={() => revealWorkspaceSection(setMembersOpen, membersSectionRef)}
-              style={btn(false)}
+              debugId="marketplace-workspace.open-members-section"
             >
               Open Members
-            </button>
-          </div>
+            </SecondaryButton>
+          </CardActionRow>
         </div>
       </div>
 
-      <section ref={alertsSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
+      <section style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
             display: "flex",
@@ -987,14 +998,13 @@ export default function MarketplaceWorkspacePage() {
           }}
         >
           <div style={sectionTitle()}>Access & sharing</div>
-          <button
+          <SubtleButton
             type="button"
-            {...buttonGuardProps()}
             onClick={() => setInviteOpen((v) => !v)}
-            style={btn(false)}
+            debugId="marketplace-workspace.toggle-invite"
           >
             {inviteOpen ? "Hide" : "Open"}
-          </button>
+          </SubtleButton>
         </div>
 
         {inviteOpen ? (
@@ -1052,42 +1062,39 @@ export default function MarketplaceWorkspacePage() {
                   </div>
                 </div>
 
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={() => {
-                        if (!inviteLink) {
-                          setMsg("Community invite link is not available yet.");
-                          return;
-                        }
-                        safeCopy(inviteLink);
-                        setMsg("Community invite link copied.");
-                      }}
-                    style={btn(true, !inviteLink)}
-                    aria-disabled={!inviteLink}
+                <CardActionRow>
+                  <PrimaryButton
+                    type="button"
+                    onClick={() => {
+                      if (!inviteLink) {
+                        setMsg("Community invite link is not available yet.");
+                        return;
+                      }
+                      safeCopy(inviteLink);
+                      setMsg("Community invite link copied.");
+                    }}
+                    debugId="marketplace-workspace.copy-join-link"
+                    style={!inviteLink ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
                   >
                     Copy Join Link
-                  </button>
+                  </PrimaryButton>
 
-                    <button
-                      type="button"
-                      {...buttonGuardProps()}
-                      onClick={copyInviteMessage}
-                      style={btn(false)}
-                    >
-                      Copy Join Message
-                  </button>
-
-                  <button
+                  <SecondaryButton
                     type="button"
-                    {...buttonGuardProps()}
+                    onClick={copyInviteMessage}
+                    debugId="marketplace-workspace.copy-join-message"
+                  >
+                    Copy Join Message
+                  </SecondaryButton>
+
+                  <SecondaryButton
+                    type="button"
                     onClick={shareWhatsAppJoin}
-                    style={btn(false)}
+                    debugId="marketplace-workspace.whatsapp-join"
                   >
                     Send via WhatsApp
-                  </button>
-                </div>
+                  </SecondaryButton>
+                </CardActionRow>
               </div>
             </div>
 
@@ -1107,24 +1114,29 @@ export default function MarketplaceWorkspacePage() {
                 This desk does not replace Marketplace.
               </div>
 
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <OriginLink to={demandBoxLink} style={btn(false)}>
+              <CardActionRow style={{ marginTop: 10 }}>
+                <StableCtaLink
+                  to={ctaPath(demandBoxCta)}
+                  kind="secondary"
+                  debugId={demandBoxCta.debugId}
+                >
                   Open Demand Box
-                </OriginLink>
-                <OriginLink to={marketplaceLink} style={btn(false)}>
+                </StableCtaLink>
+                <StableCtaLink
+                  to={ctaPath(marketplaceCta)}
+                  kind="secondary"
+                  debugId={marketplaceCta.debugId}
+                >
                   Open Marketplace
-                </OriginLink>
-                <OriginLink to={communityHomeLink} style={btn(false)}>
+                </StableCtaLink>
+                <StableCtaLink
+                  to={ctaPath(communityHomeCta)}
+                  kind="secondary"
+                  debugId={communityHomeCta.debugId}
+                >
                   Open Community Home
-                </OriginLink>
-              </div>
+                </StableCtaLink>
+              </CardActionRow>
             </div>
 
             <div style={innerCard("#F8FBFF")}>
@@ -1154,40 +1166,31 @@ export default function MarketplaceWorkspacePage() {
                 {shopViewLink || "Public shop link not available yet."}
               </div>
 
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={copyShopViewLink}
-                    style={btn(false, !shopViewLink)}
-                    aria-disabled={!shopViewLink}
-                  >
+              <CardActionRow style={{ marginTop: 12 }}>
+                <SecondaryButton
+                  type="button"
+                  onClick={copyShopViewLink}
+                  debugId="marketplace-workspace.copy-public-shop-link"
+                  style={!shopViewLink ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
+                >
                   Copy Public Shop Link
-                </button>
+                </SecondaryButton>
 
-                  <button
-                    type="button"
-                    {...buttonGuardProps()}
-                    onClick={copyShopViewMessage}
-                    style={btn(false, !shopViewLink)}
-                    aria-disabled={!shopViewLink}
-                  >
+                <SecondaryButton
+                  type="button"
+                  onClick={copyShopViewMessage}
+                  debugId="marketplace-workspace.copy-public-shop-message"
+                  style={!shopViewLink ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
+                >
                   Copy Public Shop Message
-                </button>
-              </div>
+                </SecondaryButton>
+              </CardActionRow>
             </div>
           </div>
         ) : null}
       </section>
 
-      <section ref={membersSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
+      <section style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
             display: "flex",
@@ -1198,81 +1201,28 @@ export default function MarketplaceWorkspacePage() {
           }}
         >
           <div style={sectionTitle()}>Money & support handoff</div>
-          <button
+          <SubtleButton
             type="button"
             onClick={() => setMoneyOpen((v) => !v)}
-            style={btn(false)}
+            debugId="marketplace-workspace.toggle-money"
           >
             {moneyOpen ? "Hide" : "Open"}
-          </button>
+          </SubtleButton>
         </div>
 
         {moneyOpen ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              style={btn(false)}
-              onClick={() => navigateWithOrigin(navigate, "/app/payment/pool", location)}
-            >
-              Money In
-            </button>
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              style={btn(false)}
-              onClick={() => navigateWithOrigin(navigate, "/app/withdrawal-instructions", location)}
-            >
-              Money Out
-            </button>
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              style={btn(false)}
-              onClick={() => navigateWithOrigin(navigate, "/app/loans", location)}
-            >
-              Loans
-            </button>
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              style={btn(false)}
-              onClick={() => navigateWithOrigin(navigate, "/app/loan-readiness", location)}
-            >
-              Readiness
-            </button>
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              style={btn(false)}
-              onClick={() => navigateWithOrigin(navigate, "/app/loan-workbench", location)}
-            >
-              Workbench
-            </button>
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              style={btn(false)}
-              onClick={() => navigateWithOrigin(navigate, "/app/guarantor-earnings", location)}
-            >
-              Earnings
-            </button>
-            <button
-              type="button"
-              {...buttonGuardProps()}
-              style={btn(false)}
-              onClick={() => navigateWithOrigin(navigate, "/app/loan-suggestions", location)}
-            >
-              Suggestions
-            </button>
-          </div>
+          <CardActionRow style={{ marginTop: 16 }}>
+            {moneyCtas.map((item) => (
+              <SecondaryButton
+                key={item.label}
+                type="button"
+                onClick={() => navigateToCta(navigate, location, item.target)}
+                debugId={item.target.debugId}
+              >
+                {item.label}
+              </SecondaryButton>
+            ))}
+          </CardActionRow>
         ) : null}
       </section>
 
@@ -1294,7 +1244,7 @@ export default function MarketplaceWorkspacePage() {
         </div>
       ) : null}
 
-      <div style={{ ...pageCard(), marginTop: 18 }}>
+      <div ref={alertsSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
             display: "flex",
@@ -1305,13 +1255,13 @@ export default function MarketplaceWorkspacePage() {
           }}
         >
           <div style={sectionTitle()}>Community alerts</div>
-          <button
+          <SubtleButton
             type="button"
             onClick={() => setAlertsOpen((v) => !v)}
-            style={btn(false)}
+            debugId="marketplace-workspace.toggle-alerts"
           >
             {alertsOpen ? "Hide" : "Open"}
-          </button>
+          </SubtleButton>
         </div>
 
         {alertsOpen ? (
@@ -1339,14 +1289,15 @@ export default function MarketplaceWorkspacePage() {
                       </div>
                     </div>
 
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <OriginLink
-                        to={`/app/community/${activeClanId}/join-requests`}
-                        style={btn(true)}
+                    <CardActionRow minHeight={50}>
+                      <StableCtaLink
+                        to={ctaPath(joinRequestsCta)}
+                        kind="primary"
+                        debugId={joinRequestsCta.debugId}
                       >
                         Open Requests
-                      </OriginLink>
-                    </div>
+                      </StableCtaLink>
+                    </CardActionRow>
                   </div>
                 </div>
               ))
@@ -1355,7 +1306,7 @@ export default function MarketplaceWorkspacePage() {
         ) : null}
       </div>
 
-      <div style={{ ...pageCard(), marginTop: 18 }}>
+      <div ref={membersSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
         <div
           style={{
             display: "flex",
@@ -1366,13 +1317,13 @@ export default function MarketplaceWorkspacePage() {
           }}
         >
           <div style={sectionTitle()}>Members to shop mapping</div>
-          <button
+          <SubtleButton
             type="button"
             onClick={() => setMembersOpen((v) => !v)}
-            style={btn(false)}
+            debugId="marketplace-workspace.toggle-members"
           >
             {membersOpen ? "Hide" : "Open"}
-          </button>
+          </SubtleButton>
         </div>
 
         {membersOpen ? (
@@ -1421,25 +1372,23 @@ export default function MarketplaceWorkspacePage() {
                     </div>
                   </div>
 
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button
+                  <CardActionRow minHeight={50}>
+                    <SecondaryButton
                       type="button"
-                      {...buttonGuardProps()}
                       onClick={() => setSelectedMember(member.raw)}
-                      style={btn(false)}
+                      debugId="marketplace-workspace.view-member-row"
                     >
                       View Row
-                    </button>
+                    </SecondaryButton>
 
-                    <button
+                    <PrimaryButton
                       type="button"
-                      {...buttonGuardProps()}
                       onClick={() => openShopForMember(member.raw)}
-                      style={btn(true)}
+                      debugId="marketplace-workspace.open-member-shop"
                     >
                       Shop Gallery
-                    </button>
-                  </div>
+                    </PrimaryButton>
+                  </CardActionRow>
                 </div>
               ))
             )}

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from sqlalchemy import text
 
+from app.api.routes import marketplace as marketplace_routes
 from app.db.database import engine
 from app.db.models import (
     FeatureEntitlement,
@@ -30,6 +31,37 @@ def _write_upload(root: Path, relative_path: str, content: bytes = b"ok") -> str
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(content)
     return f"/uploads/{relative_path.replace(chr(92), '/')}"
+
+
+def test_spotlight_capacity_pilot_override_is_active_for_test_week(monkeypatch):
+    monkeypatch.setattr(
+        marketplace_routes,
+        "SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL",
+        datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc),
+    )
+
+    assert marketplace_routes._spotlight_capacity_pilot_override_active(
+        datetime(2026, 5, 10, 12, 0, 0, tzinfo=timezone.utc)
+    )
+    assert marketplace_routes._spotlight_capacity_pilot_override_active(
+        datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc)
+    )
+    assert not marketplace_routes._spotlight_capacity_pilot_override_active(
+        datetime(2026, 5, 18, 0, 0, 0, tzinfo=timezone.utc)
+    )
+
+
+def test_spotlight_capacity_pilot_override_ignores_stale_force_off_env(monkeypatch):
+    monkeypatch.setenv("GMFN_SPOTLIGHT_CAPACITY_OVERRIDE", "0")
+    monkeypatch.setattr(
+        marketplace_routes,
+        "SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL",
+        datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc),
+    )
+
+    assert marketplace_routes._spotlight_capacity_pilot_override_active(
+        datetime(2026, 5, 10, 12, 0, 0, tzinfo=timezone.utc)
+    )
 
 
 def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypatch, tmp_path):
@@ -140,6 +172,79 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     alias_body = gsn_alias.json()
     assert alias_body["item"]["gmfn_id"] == "GMFN-U-TESTSHOP"
     assert [item["name"] for item in alias_body["products"]] == ["Fresh Rice"]
+
+
+def test_refresh_public_shop_link_reactivates_stale_owner_shop(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-STALESHOP'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Golden boys', 'Golden boys Marketplace', 'STALESHOP1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Dormant shop', 'Old hidden shop', 0
+                )
+                """
+            )
+        )
+
+    stale_public = client.get("/marketplace/public/shop/GMFN-U-STALESHOP")
+    assert stale_public.status_code == 404
+
+    refresh = client.post(
+        "/marketplace/shops",
+        json={
+            "clan_id": 1,
+            "name": "Reconnected public shop",
+            "description": "Public GSN shop face for active shop blocks.",
+        },
+    )
+    assert refresh.status_code == 200, refresh.text
+    refreshed_body = refresh.json()
+    assert refreshed_body["detail"] == "Existing canonical shop reactivated."
+    assert refreshed_body["item"]["id"] == 1
+    assert refreshed_body["item"]["is_active"] is True
+    assert refreshed_body["item"]["name"] == "Reconnected public shop"
+
+    public_shop = client.get("/marketplace/public/shop/GMFN-U-STALESHOP")
+    assert public_shop.status_code == 200, public_shop.text
+    public_body = public_shop.json()
+    assert public_body["is_public_shop_face"] is True
+    assert public_body["item"]["id"] == 1
+    assert public_body["item"]["name"] == "Reconnected public shop"
+    assert public_body["item"]["gmfn_id"] == "GMFN-U-STALESHOP"
 
 
 def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_path):
@@ -466,6 +571,96 @@ def test_shop_spotlight_publish_ignores_stale_requested_clan_for_owned_shop(
 
     assert body["ok"] is True
     assert body["propagated_clan_ids"] == [1]
+
+
+def test_free_spotlight_capacity_reached_is_suspended_for_test_week(
+    client,
+    override_current_user_user,
+    monkeypatch,
+):
+    _ensure_marketplace_tables()
+    fixed_now = datetime(2026, 5, 10, 12, 0, 0, tzinfo=timezone.utc)
+    monkeypatch.setenv("GMFN_SPOTLIGHT_CAPACITY_OVERRIDE", "0")
+    monkeypatch.setattr(marketplace_routes, "_now_utc", lambda: fixed_now)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-SPOTLIGHT'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (3, 'Clan Three', 'Clan Three Marketplace', 'SPOTLIGHT3')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 3, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 3, 1, 'CHUMA INTERNATIONAL SHOP', 'All kinds of goods', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message, image_url,
+                    priority_mode, visibility_scope, expires_at, created_at
+                ) VALUES (
+                    1, 3, 1, 1, 'Already live', '/uploads/marketplace/images/live.jpg',
+                    'free', 'direct_communities', :expires_at, :created_at
+                )
+                """
+            ),
+            {
+                "expires_at": datetime(2026, 5, 11, 12, 0, 0, tzinfo=timezone.utc),
+                "created_at": fixed_now,
+            },
+        )
+
+    res = client.post(
+        "/marketplace/broadcasts",
+        json={
+            "clan_id": 3,
+            "shop_id": 1,
+            "message": "Test-week free spotlight",
+            "image_url": "/uploads/marketplace/images/test-week.jpg",
+            "priority_mode": "free",
+            "visibility_scope": "direct_communities",
+        },
+    )
+    assert res.status_code == 200, res.text
+    assert "Spotlight capacity reached" not in res.text
+    assert res.json()["ok"] is True
+
+    with engine.begin() as conn:
+        broadcast_count = conn.execute(
+            text("SELECT COUNT(*) FROM marketplace_broadcasts WHERE clan_id = 3")
+        ).scalar_one()
+
+    assert int(broadcast_count) == 2
 
 
 def test_paid_spotlight_requires_unused_subscription_credit(

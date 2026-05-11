@@ -55,13 +55,11 @@ SPOTLIGHT_PAID = "paid"
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
 
-# Temporary pilot override requested during live testing on 2026-04-23.
-# It is now opt-in and date-limited so expired demo support cannot silently
-# bypass spotlight capacity rules in production.
-SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED = str(
-    os.getenv("GMFN_SPOTLIGHT_CAPACITY_OVERRIDE") or ""
-).strip().lower() in {"1", "true", "yes", "on"}
-SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 4, 24, 23, 59, 59, tzinfo=timezone.utc)
+# Temporary pilot override requested during live testing.
+# Product owner extended this on 2026-05-10 for one week so testers can publish
+# Free Spotlight runs without the community-capacity quota blocking the flow.
+# Keep this date-limited and visible; do not turn it into an open-ended bypass.
+SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc)
 
 SHOP_IMAGE_ATTRS = (
     "image_url",
@@ -78,8 +76,6 @@ def _now_utc() -> datetime:
 
 
 def _spotlight_capacity_pilot_override_active(now: Optional[datetime] = None) -> bool:
-    if not SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_ENABLED:
-        return False
     current_time = now or _now_utc()
     return current_time <= SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL
 
@@ -1138,6 +1134,62 @@ def create_marketplace_shop(
             "ok": True,
             "item": _shop_out(db, existing_shop),
             "detail": "Existing canonical shop returned.",
+        }
+
+    dormant_shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.owner_user_id == int(current_user.id))
+        .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
+        .first()
+    )
+    if dormant_shop:
+        dormant_shop.is_active = True
+        dormant_shop.clan_id = int(resolved_clan_id)
+
+        if _safe_str(payload.name):
+            dormant_shop.name = _safe_str(payload.name)
+
+        if payload.description is not None:
+            dormant_shop.description = _safe_str(payload.description) or None
+
+        if payload.whatsapp_number is not None:
+            dormant_shop.whatsapp_number = _safe_str(payload.whatsapp_number) or None
+
+        if payload.telegram_handle is not None:
+            dormant_shop.telegram_handle = _safe_str(payload.telegram_handle) or None
+
+        if payload.image_url is not None:
+            _set_shop_image_value(
+                dormant_shop,
+                _safe_str(payload.image_url) or None,
+            )
+
+        db.add(dormant_shop)
+        db.commit()
+        db.refresh(dormant_shop)
+
+        log_trust_event(
+            db,
+            event_type="marketplace.shop.updated",
+            clan_id=resolved_clan_id,
+            actor_user_id=int(current_user.id),
+            subject_user_id=int(current_user.id),
+            loan_id=None,
+            guarantor_id=None,
+            meta={
+                "shop_id": int(dormant_shop.id),
+                "shop_name": getattr(dormant_shop, "name", None),
+                "reason": "marketplace_shop_reactivated_via_public_link_refresh",
+            },
+            commit=False,
+            refresh=False,
+        )
+        db.commit()
+
+        return {
+            "ok": True,
+            "item": _shop_out(db, dormant_shop),
+            "detail": "Existing canonical shop reactivated.",
         }
 
     shop = MarketplaceShop(

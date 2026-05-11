@@ -1,3 +1,1000 @@
+### Public shop refresh reactivates stale shop rows (2026-05-11)
+
+- Followed up after the product owner saw the public Shop Diaries page show:
+  - `Needs refresh`
+  - `Public shop could not be loaded.`
+  - `This public shop link is not connected to an active shop yet.`
+- Truth/devil's advocate:
+  - The public route was correctly reaching `ShopGalleryPage`; this was not just a bad frontend link.
+  - The backend refresh path had a real stale-row weakness: `POST /marketplace/shops` looked only for an active canonical shop, while the database enforces one global shop per owner. If an owner already had an inactive shop row, refresh could not reliably reconnect the public `/shop/{GMFN_ID}` face.
+- Backend change:
+  - `gmfn_backend/app/api/routes/marketplace.py` now reactivates an existing inactive owner shop during `POST /marketplace/shops`, updates its selected community/name/description/contact/media fields, logs a `marketplace.shop.updated` trust event, and returns `Existing canonical shop reactivated.`
+- Test coverage:
+  - Added `test_refresh_public_shop_link_reactivates_stale_owner_shop` in `gmfn_backend/tests/test_marketplace_public_shop.py`.
+  - The test proves a stale inactive shop returns 404 from `/marketplace/public/shop/{GMFN_ID}`, then owner refresh reactivates the same shop row, then the public shop route returns 200.
+- Verification:
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "reactivates_stale_owner_shop"` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py` passed.
+  - `git diff --check -- gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py` passed.
+  - A broader focused run including the older media-upload public-shop test hit the known Windows pytest temp-folder `PermissionError: [WinError 5] Access is denied` before reaching app code; the new stale-shop regression passed in that same run.
+- Remaining truth:
+  - This fixes stale inactive shop rows. If public Shop Diaries still says refresh after deployment, inspect the exact `/marketplace/public/shop/{GMFN_ID}` response: `Seller identity not found` means the URL ID does not match any user; `Shop not found` after this patch means the deployed backend is stale or refresh was not called after deploy.
+
+### Publish Welcome recovery marker (2026-05-11)
+
+- Followed up after the product owner reported the publish tap was still sometimes landing on Welcome even after authenticated route fallback and token-based public-entry recovery were added.
+- Truth/devil's advocate:
+  - The earlier fixes were necessary but not strong enough. If `getAccessToken()` is temporarily unreadable, cleared, or not hydrated at the exact bad hop, the token-only Welcome guard can still miss.
+  - The publish buttons still do not intentionally navigate to Welcome. The safer repair is to write a short-lived publish recovery marker before publish validation/API work begins, then let Cover/Welcome honor that marker even if token recovery is momentarily unavailable.
+- Frontend change:
+  - Added `frontend/src/lib/publishRecovery.ts`.
+  - Free Spotlight publish now calls `rememberPublishRecovery(routes.freeSpotlight, "shop-control.spotlight.preview.publish")` before local validation and upload work.
+  - Subscription Spotlight publish now calls `rememberPublishRecovery(routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, ...), "subscription-spotlight.publish")` before local validation and API work.
+  - `PublicEntryGuard` in `frontend/src/App.tsx` now checks `publishRecoveryTarget()` first, then falls back to the last authenticated app route, then Dashboard.
+  - Publish recovery markers are session-only, limited to safe `/app...` targets, consumed after the first valid recovery read, and expire after five minutes if unused.
+- Auditor changes:
+  - `frontend/tools/audit-spotlight-controls.mjs` now requires both publish handlers to register publish recovery markers.
+  - `frontend/tools/audit-route-fallthrough.mjs` and `frontend/tools/audit-link-contracts.mjs` now require `PublicEntryGuard` to honor `publishRecoveryTarget()` before the normal authenticated fallback.
+- Verification:
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm exec -- eslint src\App.tsx src\lib\publishRecovery.ts src\pages\ShopControlPage.tsx src\pages\SubscriptionSpotlightPage.tsx tools\audit-route-fallthrough.mjs tools\audit-link-contracts.mjs tools\audit-spotlight-controls.mjs` passed.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - If a deployed browser still rests on Welcome after this patch, check whether the deployed bundle is stale and inspect `sessionStorage.gmfn_publish_recovery`.
+  - If the marker is absent, the browser is leaving before the React publish handler runs or the tested bundle does not contain this patch.
+  - If the marker is present but Welcome does not recover, the issue is now specifically in public-entry route rendering/hydration, not in the publish button target.
+
+### Authenticated publish/shop route fallback hardening (2026-05-11)
+
+- Investigated the report that the Spotlight publish button was still landing on the Welcome page, with two lane auditors checking publish-button source and route/fallback normalization.
+- Confirmed facts:
+  - Current Free Spotlight CTA resolution points to `/app/shop-control#shop-control-spotlight`.
+  - Free Spotlight and Subscription Spotlight publish buttons are explicit `type="button"` handlers and do not intentionally navigate to Welcome.
+  - The remaining brittle layer was the app wildcard fallback: after exact alias checks, missed `/app/...` routes could still fall to `/cover`, which presents the public Welcome funnel.
+- Frontend change:
+  - `frontend/src/App.tsx` now adds `authenticatedFallbackTarget(...)`.
+  - Unknown `/app/...shop-control...` routes stay in Shop Control.
+  - Unknown `/app/...spotlight...` routes stay in Free Spotlight, or Subscription Spotlight when the path includes `paid` or `subscription`.
+  - Other unknown `/app/...` routes fall back to Dashboard instead of `/cover`.
+  - Public unknown routes still fall back to `/cover`.
+- Auditor changes:
+  - `frontend/tools/audit-route-fallthrough.mjs` now requires the authenticated app fallback before Cover.
+  - `frontend/tools/audit-link-contracts.mjs` now locks the same Welcome-regression guard.
+- Verification:
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm exec -- eslint src\App.tsx tools\audit-route-fallthrough.mjs tools\audit-link-contracts.mjs` passed.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - If a live browser still lands on Welcome after this build is deployed, capture the exact final URL and `data-cta-id`; a stale deployed bundle or an unobserved root-level slug such as `/publish` remains possible.
+
+### Authenticated public-entry recovery guard (2026-05-11)
+
+- Followed up after the product owner reported the publish tap still landed on Welcome roughly one out of three tries.
+- Truth: the publish handlers still do not intentionally navigate to Welcome, so the safer fix is to make Welcome/Cover unable to trap an authenticated user after an app-side route leak or tap race.
+- Frontend change:
+  - `frontend/src/App.tsx` now remembers the last authenticated `/app/...` path in `sessionStorage` under `gmfn_last_authenticated_app_path`.
+  - `/cover` and `/welcome` are wrapped in `PublicEntryGuard`.
+  - If an access token exists, Cover/Welcome immediately redirect to the last remembered app route, or Dashboard if no remembered route exists.
+  - This keeps pre-auth screens public for unauthenticated users while stopping authenticated publish/shop sessions from being stranded in Welcome.
+- Auditor changes:
+  - `frontend/tools/audit-route-fallthrough.mjs` now requires the authenticated public-entry recovery guard.
+  - `frontend/tools/audit-link-contracts.mjs` now locks the same guard.
+- Verification:
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm exec -- eslint src\App.tsx tools\audit-route-fallthrough.mjs tools\audit-link-contracts.mjs` passed.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - If the browser still visibly rests on Welcome after this, either the deployed bundle is stale or the access token is being cleared/absent at the moment of the jump. That would move the bug from routing into auth/session loss.
+
+### Free Spotlight quota suspension route-level repair (2026-05-10)
+
+- Repaired the quota suspension after live publish still returned `{"detail":"Spotlight capacity reached for clan 3. Wait for an active spotlight to expire."}`.
+- Truth: the previous change made the test-week override default-on but still allowed `GMFN_SPOTLIGHT_CAPACITY_OVERRIDE=0` to force the capacity block back on. That was too weak for the product owner's explicit one-week test suspension.
+- Backend change:
+  - `gmfn_backend/app/api/routes/marketplace.py` now makes `_spotlight_capacity_pilot_override_active(...)` purely date-window based through `2026-05-17 23:59:59 UTC`.
+  - The Free Spotlight community-capacity branch remains the only bypassed quota branch.
+  - Paid Spotlight entitlement and one-active-paid-spotlight checks remain enforced.
+- Test/audit changes:
+  - `gmfn_backend/tests/test_marketplace_public_shop.py` now proves stale `GMFN_SPOTLIGHT_CAPACITY_OVERRIDE=0` does not disable the approved test-week suspension.
+  - Added `test_free_spotlight_capacity_reached_is_suspended_for_test_week`, which seeds clan 3 at full active Spotlight capacity and verifies posting another Free Spotlight returns 200 instead of the exact capacity error.
+  - `frontend/tools/audit-spotlight-quota-suspension.mjs` now rejects reintroducing an env force-off switch for the approved suspension window and requires the route-level capacity-reached regression test.
+- Verification:
+  - Focused pytest passed for the three quota tests.
+  - `npm run audit:spotlight-quota` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py` passed.
+  - `npm exec -- eslint tools\audit-spotlight-quota-suspension.mjs` passed.
+  - `git diff --check -- gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py frontend\tools\audit-spotlight-quota-suspension.mjs docs\HANDOFF_NOTES.md` passed with line-ending normalization warnings only.
+- Remaining truth:
+  - Running backend instances must be restarted or redeployed before this repair can affect live requests. A still-running old backend can continue returning the capacity error.
+
+### Spotlight deep-route fallthrough repair (2026-05-10)
+
+- Fixed another system-level route leak where stale/deep owner-commerce URLs such as `/app/shop-control/free-spotlight`, `/app/shop-control/spotlight`, `/app/subscription-spotlight`, and `/app/shop-control/paid-spotlight` could miss the authenticated nested route table and then fall through to the public Cover/Welcome fallback.
+- Frontend route changes:
+  - `frontend/src/App.tsx` now includes explicit nested `/app/...` aliases for the stale Free/Paid Spotlight paths before the wildcard fallback.
+  - The root fallback alias map also recognizes `app/...` owner-commerce aliases, so even if the wildcard receives one of those paths it canonicalizes to Shop Control instead of `/cover`.
+  - Current Free Spotlight still lands on `/app/shop-control#shop-control-spotlight`; Paid Spotlight still lands on `/app/shop-control/subscription-spotlight`.
+- Target-normalization changes:
+  - `frontend/src/lib/guidance.ts` and `frontend/src/pages/NotificationsPage.tsx` now normalize `spotlight`, `shop-spotlight`, `shop-control/spotlight`, `shop-control/free-spotlight`, `subscription-spotlight`, and `shop-control/paid-spotlight` to the real publisher targets.
+  - These aliases stay out of `SAFE_STATIC_APP_PATHS`, so they do not become raw `/app/...` pass-through paths again.
+- Auditor updates:
+  - `frontend/tools/audit-route-fallthrough.mjs` now locks both root `app/...` aliases and explicit nested `/app/...` spotlight aliases.
+  - `frontend/tools/audit-link-contracts.mjs` now locks guidance/notification deep spotlight aliases and the fallback route map.
+- Verification:
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm exec -- eslint src\App.tsx src\lib\guidance.ts src\pages\NotificationsPage.tsx tools\audit-route-fallthrough.mjs tools\audit-link-contracts.mjs tools\audit-spotlight-controls.mjs` passed.
+  - `git diff --check -- frontend\src\App.tsx frontend\src\lib\guidance.ts frontend\src\pages\NotificationsPage.tsx frontend\tools\audit-route-fallthrough.mjs frontend\tools\audit-link-contracts.mjs docs\HANDOFF_NOTES.md` passed with line-ending normalization warnings only.
+  - `npm run build` failed in the sandbox with the known Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - This fixes the identified route leak into Welcome. If a button still lands incorrectly after this, the next likely source is a runtime-generated URL not represented in current frontend aliases, not the visible Free Spotlight button component itself.
+
+### Free Spotlight quota suspension for testing (2026-05-10)
+
+- Temporarily suspended the Free Spotlight community-capacity quota for one week of testing, from 2026-05-10 through 2026-05-17 23:59:59 UTC.
+- Backend change:
+  - `gmfn_backend/app/api/routes/marketplace.py` now defaults the spotlight capacity pilot override on until `SPOTLIGHT_CAPACITY_PILOT_OVERRIDE_UNTIL = datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc)`.
+  - The override applies only to the free/community-capacity branch in `create_marketplace_broadcast(...)`.
+  - Paid Spotlight entitlement checks and the one-active-paid-run guard remain enforced.
+  - `GMFN_SPOTLIGHT_CAPACITY_OVERRIDE=0` / `false` / `no` / `off` can force the override off before the expiry date; `1` / `true` / `yes` / `on` can force it on, still bounded by the expiry date.
+- Test/audit coverage:
+  - Added `gmfn_backend/tests/test_marketplace_public_shop.py` coverage for the active 2026-05-10 to 2026-05-17 window and for the force-off env override.
+  - Added `frontend/tools/audit-spotlight-quota-suspension.mjs` and `npm run audit:spotlight-quota` to line-audit the expiry date, env override contract, and the fact that the bypass stays on the free-capacity branch.
+- Verification:
+  - `npm run audit:spotlight-quota` passed.
+  - `npm exec -- eslint tools\audit-spotlight-quota-suspension.mjs` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py` passed.
+  - Focused pytest for the two quota tests passed.
+  - Full `gmfn_backend\tests\test_marketplace_public_shop.py` did not complete because pytest hit Windows `PermissionError: [WinError 5] Access is denied` while creating/cleaning temp folders for existing `tmp_path` tests. The quota tests ran before that failure and passed; the temp failure is environmental, not a quota assertion failure.
+- Remaining truth:
+  - This is an intentional temporary bypass. It should be removed or flipped off after the test week unless the product owner explicitly extends it again.
+
+### Free Spotlight direct-route and tap-stability follow-up (2026-05-10)
+
+- Tightened the Free Spotlight handoff so `freeSpotlight` CTA resolution now opens the real publisher target directly at `/app/shop-control#shop-control-spotlight` instead of first landing on the legacy `/app/free-spotlight` redirect.
+- Kept the legacy `/app/free-spotlight` route alias in `App.tsx` for old links, but removed that extra hop from current CTA protocol to reduce stale query/hash carryover and visible route jump.
+- Hardened `frontend/src/components/StableButton.tsx` so shared stable buttons prevent native/default behavior for custom click actions and locked controls, while preserving plain `type="submit"` form buttons and avoiding native `disabled` dead-control behavior.
+- Updated `frontend/src/pages/ShopControlPage.tsx` async owner actions, including Free Spotlight setup/publish, to return their promises to `StableButton`; this lets the shared in-flight lock catch rapid repeat taps immediately.
+- Smoothed `frontend/src/pages/MarketplaceWorkspacePage.tsx` section reveal by deferring the scroll one animation frame after opening and using `inline: "nearest"`.
+- Continuation:
+  - Locked the direct Free Spotlight route in `frontend/tools/audit-link-contracts.mjs`, including a guard that current CTA resolution must not point back at `/app/free-spotlight`.
+  - Locked the `StableButton` default-action prevention in `frontend/tools/audit-button-stability.mjs`.
+  - Fixed the second still-bad route source: guidance and notification target normalization no longer treat `free-spotlight` or `paid-spotlight` as static app paths, and now resolve them through exact aliases to the real Shop Control targets.
+  - Repaired the `StableButton` regression risk from the first pass so plain form submit buttons still submit instead of being swallowed by the tap guard.
+  - Added top-level `/free-spotlight`, `/paid-spotlight`, `/shop-control`, `/shop-manager`, `/shop-assets`, and `/vault-control` route aliases so stale/root-level owner-commerce links cannot fall through to `/cover` and then land the user on Welcome.
+  - Replaced the direct wildcard `* -> /cover` fallback with `RedirectUnknownRoute`, which line-audits root owner-commerce aliases before allowing the public Cover/Welcome fallback.
+  - Added `frontend/tools/audit-route-fallthrough.mjs` and `npm run audit:route-fallthrough` to lock this specific Welcome regression at line level.
+  - Hardened the Free Spotlight video selector and publish controls in `ShopControlPage.tsx` with explicit `type="button"` actions and stable mounted picture/video upload slots so media-choice taps do not reflow the surface under the pointer.
+  - Added `frontend/tools/audit-spotlight-controls.mjs` and `npm run audit:spotlight-controls` to line-audit the video/publish controls and prevent returning to conditional media-slot unmounts.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx src/lib/appRoutes.ts src/pages/ShopControlPage.tsx src/pages/MarketplaceWorkspacePage.tsx` passed.
+  - `npm exec -- eslint tools/audit-button-stability.mjs tools/audit-link-contracts.mjs src/components/StableButton.tsx src/lib/appRoutes.ts src/pages/ShopControlPage.tsx src/pages/MarketplaceWorkspacePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check -- frontend/src/lib/appRoutes.ts frontend/src/components/StableButton.tsx frontend/src/pages/ShopControlPage.tsx frontend/src/pages/MarketplaceWorkspacePage.tsx` passed with line-ending normalization warnings only.
+  - `npm run build` failed in the sandbox with the known Vite/esbuild `spawn EPERM`, then passed with the approved escalation.
+- Remaining risk:
+  - Truth: this fixes the route and tap protocol layer. It does not prove the backend publish request succeeds for every account state; API/auth failures will still surface as errors from the existing publish handler.
+
+### Existing-ID invite join hardening follow-up (2026-05-10)
+
+- Continued the GMFN/GSN existing-member cross-community join protocol through the remaining mounted direct invite services.
+- Backend changes:
+  - Added `gmfn_backend/app/services/global_identity_service.py` with `ensure_user_gmfn_id(...)` so route services can preserve an existing user's GMFN ID or issue exactly one missing GMFN ID on the same user record.
+  - Replaced the duplicated auth/clan route-local GMFN ID generator bodies with aliases to the shared helper, preserving the existing private `_ensure_user_gmfn_id(...)` call sites.
+  - Hardened `gmfn_backend/app/services/community_integrity_service.py` `/community/join-by-invite` so authenticated direct invite joins always return/persist a GMFN ID for the existing user before creating or reusing membership.
+  - Hardened `gmfn_backend/app/services/invites_service.py` `/invites/join` the same way, including already-member/idempotent responses.
+  - The helper merges detached/current-user objects into the route DB session before writing, because `/invites/join` can otherwise receive a `User` from a different SQLAlchemy session than the route session.
+- Test coverage:
+  - Added regression coverage for legacy existing users with `gmfn_id=None` joining through `/community/join-by-invite`.
+  - Added regression coverage for legacy existing users with `gmfn_id=None` joining and retrying through `/invites/join`.
+- Verification:
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py -q` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_entry_create.py gmfn_backend\tests\test_clan_pool.py gmfn_backend\tests\test_guarantor_invite_list.py gmfn_backend\tests\test_clan_members.py gmfn_backend\tests\test_join_requests.py -q` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\auth.py gmfn_backend\app\api\routes\clans.py gmfn_backend\app\services\global_identity_service.py gmfn_backend\app\services\community_integrity_service.py gmfn_backend\app\services\invites_service.py` passed.
+- Remaining risk:
+  - Truth: the central helper now owns GMFN ID issuance for the traced auth/clan/invite paths, but it still follows the existing project pattern of committing immediately when it fills a missing ID. That matches current behavior but is not a pure unit-of-work design.
+
+### Marketplace button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through `frontend/src/pages/MarketplacePage.tsx`.
+- Frontend changes:
+  - Replaced Marketplace native `<button>` controls with shared `StableButton`.
+  - Replaced the member/shop route `OriginLink` and the public shop URL anchor with shared `StableCtaLink`.
+  - Removed page-local Marketplace pointer/button guard props and the now-unused pointer guard function.
+  - Renamed the page-local visual helper from `actionBtn` to `marketplaceActionStyle` so the remaining helper is clearly style-only, with click mechanics handled by shared primitives.
+  - Converted Marketplace action inactive states from `aria-disabled`-only to the shared primitive `disabled` prop. The shared primitive still avoids native dead-button behavior while giving busy/disabled state one controlled path.
+  - Preserved existing origin-aware route behavior through `openMarketplaceRoute`, `openFinance`, `openMarketplaceSection`, and `navigateWithOrigin`.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Marketplace against raw button/link primitives, old page-local tap guards, and aria-only disabled action controls.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now recognizes Marketplace's shared stable primitives, stable disabled props, and `StableCtaLink` public shop URL link.
+- Verification:
+  - Targeted ESLint passed for `frontend/src/pages/MarketplacePage.tsx`, `frontend/tools/audit-button-stability.mjs`, and `frontend/tools/audit-mobile-tap-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` passed with the approved escalation.
+  - Additional Marketplace glyph sanity scan passed.
+- Remaining risk:
+  - Truth: Marketplace now uses shared button mechanics, but it still has local visual style overrides because the page has dense custom action rows. This is a system-stability migration, not a full design-token simplification.
+  - Broad CTA scan now reports only `DashboardPage.tsx` plus likely native-disclosure false positives in `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx`. Dashboard needs frozen-area caution before any next pass.
+
+### Community Home button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through `frontend/src/pages/CommunityHomePage.tsx`.
+- Frontend changes:
+  - Replaced Community Home native `<button>` controls with shared `StableButton`.
+  - Removed page-local `actionTapGuardProps`, `brandStableTapTarget`, `stopActionTap`, `communityButtonGuardProps`, and raw button tap-guard wiring from Community Home.
+  - Preserved Community Home's custom row/card visual layout by keeping page-specific style overrides on top of the shared stable primitive.
+  - Preserved origin-aware navigation through existing `navigateWithOrigin` / `openCommunityRoute` behavior.
+  - Preserved community selection, active-community opening, owner tool routes, first-circle actions, spotlight controls, and community-list expand/collapse behavior.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Community Home against raw button/link primitives and old local tap guards.
+- Verification:
+  - Targeted ESLint passed for `frontend/src/pages/CommunityHomePage.tsx` and `frontend/tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` passed with the approved escalation.
+  - Additional glyph sanity scan passed after repairing a PowerShell rewrite mojibake issue caught during diff review.
+- Remaining risk:
+  - Truth: Community Home now uses shared button mechanics, but it still has local visual style overrides because its action rows are highly custom. That is a stability improvement, not a full visual-system simplification.
+  - Broad CTA scan now reports `MarketplacePage.tsx`, `DashboardPage.tsx`, and likely native-disclosure false positives in `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx`. Dashboard still needs frozen-area caution; Marketplace is the next clean large target.
+
+### Trust/support local-action cleanup follow-up (2026-05-10)
+
+- Continued the system-level button stability migration by removing leftover local `actionBtn` helpers from already-migrated trust/support pages.
+- Frontend changes:
+  - `frontend/src/pages/ShopAccessPage.tsx`: removed local `actionBtn`; Vault access recovery/return links now use `StableCtaLink` `kind` and stable height directly.
+  - `frontend/src/pages/RepaymentPage.tsx`: removed local `actionBtn`; repayment generation/copy/confirmation controls and next-route links now rely on shared button primitive defaults/kinds.
+  - `frontend/src/pages/TrustAnalyticsPage.tsx`: removed local `actionBtn`; command-route links now use `StableCtaLink` kinds directly.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`: removed local `actionBtn`; public nav, copy, print, snapshot, and trust/guide route actions now use shared primitive defaults/kinds.
+  - `frontend/src/pages/TrustCommandCentrePage.tsx`: removed local `actionBtn`; executive and where-next route links now use shared `StableCtaLink` kinds directly.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now forbids `actionBtn(` in the five cleaned pages above.
+- Verification:
+  - Targeted ESLint passed for `frontend/src/pages/ShopAccessPage.tsx`, `frontend/src/pages/RepaymentPage.tsx`, `frontend/src/pages/TrustAnalyticsPage.tsx`, `frontend/src/pages/TrustSlipVerifyPage.tsx`, `frontend/src/pages/TrustCommandCentrePage.tsx`, `frontend/src/layout/AppLayout.tsx`, and `frontend/tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` still fails inside the sandbox with the known Vite/esbuild `spawn EPERM` condition, then passes when rerun with the approved escalation.
+- Remaining risk:
+  - Truth: this cleanup changes visual button styling on those pages from page-local styles to the shared primitive defaults. That is intentional for the protocol, but it can subtly alter visual weight. Broad CTA scan still needs to be rerun before picking the next page cluster; the likely large remaining clusters are `CommunityHomePage.tsx`, `MarketplacePage.tsx`, and frozen/noisy `DashboardPage.tsx`.
+
+### AppLayout shell button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through the global authenticated app shell `frontend/src/layout/AppLayout.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>` controls, `layoutTapGuardProps`, `handleDisabledNavClick`, `actionTapGuardProps`, `brandStableTapTarget`, and `stopActionTap` from the shell.
+  - Replaced the desktop brand route, desktop group toggles, desktop nav items, desktop logout, mobile menu/tools buttons, drawer close/session actions, drawer links, page-action links, page-action logout, and mobile bottom-nav links with shared `StableButton` / `StableCtaLink`.
+  - Preserved existing route lists, active matching rules, drawer closing behavior, disabled nav behavior, bottom-nav active data attributes, and mobile scroll-centering logic.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks `AppLayout.tsx` against raw button/link primitives and local tap/action guards.
+- Verification:
+  - Targeted ESLint passed for `AppLayout.tsx` and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: this touched global navigation, so it is higher-risk than route-local pages even though the build passed. The broad text scan now reports `CommunityHomePage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `RepaymentPage.tsx`, `ShopAccessPage.tsx`, `TrustAnalyticsPage.tsx`, `TrustCommandCentrePage.tsx`, and `TrustSlipVerifyPage.tsx`, plus known native-disclosure false positives in `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx`. The largest true clusters remain `CommunityHomePage.tsx`, `MarketplacePage.tsx`, and `DashboardPage.tsx`; Dashboard still needs frozen-area caution.
+
+### Small admin/local-action cleanup follow-up (2026-05-10)
+
+- Continued the system-level button stability migration by removing leftover local `actionBtn` style helpers from already-migrated small pages.
+- Frontend changes:
+  - `frontend/src/pages/LockManagementPage.tsx`: removed local `actionBtn`; route actions now rely directly on `StableCtaLink` `kind` and stable height.
+  - `frontend/src/pages/SystemOperationsPage.tsx`: removed local `actionBtn`; live signal route action now uses `StableCtaLink kind="secondary"`.
+  - `frontend/src/pages/ExposureAdminPage.tsx`: removed local `actionBtn`; queue route action now uses `StableCtaLink kind="secondary"`.
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`: removed local `actionBtn`; role/contact selected states now use shared `StableButton` with dynamic `kind`, and other actions use shared primitive defaults.
+  - `frontend/src/pages/InviteLandingPage.tsx`: removed local `actionBtn`; founder and guide route actions now use shared primitive sizing/kinds directly.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now forbids `actionBtn(` in the five cleaned pages above.
+- Verification:
+  - Targeted ESLint passed for `LockManagementPage.tsx`, `SystemOperationsPage.tsx`, `ExposureAdminPage.tsx`, `BuildFirstCirclePage.tsx`, `InviteLandingPage.tsx`, `ShopControlPage.tsx`, and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: this was a cleanup slice, not a full app finish. The broad text scan now reports `AppLayout.tsx`, `CommunityHomePage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `RepaymentPage.tsx`, `ShopAccessPage.tsx`, `TrustAnalyticsPage.tsx`, `TrustCommandCentrePage.tsx`, and `TrustSlipVerifyPage.tsx`, plus known native-disclosure false positives in `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx`. The larger true clusters still live mainly in `AppLayout.tsx`, `CommunityHomePage.tsx`, `MarketplacePage.tsx`, and `DashboardPage.tsx`, with Dashboard frozen areas requiring extra caution.
+
+### Shop Control button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through `frontend/src/pages/ShopControlPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>` controls, page-local `buttonGuardProps`, `actionTapGuardProps`, `brandStableTapTarget`, `stableTapTarget`, `actionBtn`, and `fullButton`.
+  - Replaced Spotlight setup, lane choice, media choice, upload preview, and publish/cancel actions with shared `PrimaryButton`, `SecondaryButton`, and `StableButton`.
+  - Replaced owner hero shortcuts and internal shop routes with shared `StableCtaLink`.
+  - Replaced Vault, merchant verification, paid Spotlight, shop details, and Vault access-link actions with shared stable primitives while preserving existing busy and disabled behavior.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Shop Control against reintroducing raw button/link primitives or local tap/action helpers.
+- Verification:
+  - Targeted ESLint passed for `ShopControlPage.tsx` and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide protocol is still not complete. After this Shop Control pass, broad text scanning still reports remaining surfaces including `AppLayout.tsx`, `CommunityHomePage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `BuildFirstCirclePage.tsx`, `ExposureAdminPage.tsx`, `InviteLandingPage.tsx`, `LockManagementPage.tsx`, `RepaymentPage.tsx`, `ShopAccessPage.tsx`, `SystemOperationsPage.tsx`, `TrustAnalyticsPage.tsx`, `TrustCommandCentrePage.tsx`, and `TrustSlipVerifyPage.tsx`. Some are expected external anchors or native disclosure false positives, but the large true clusters still need controlled follow-up slices. `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx` remain broad-scan false positives because native disclosure summaries intentionally use the shared stable tap-target helper.
+
+### Vault Control button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through `frontend/src/pages/VaultControlPage.tsx`.
+- Frontend changes:
+  - Removed page-local `buttonGuardProps` and `actionTapGuardProps`, and removed raw `<button>` controls from the Vault owner page.
+  - Replaced Vault panel headers with shared `StableButton` while preserving the existing full-row header visual treatment.
+  - Replaced payment slot choices and private block slot choices with shared `StableButton`.
+  - Replaced quote confirmation, payment-code generation, payment copy/status actions, selected-block actions, access-link actions, and editor save/close actions with shared `PrimaryButton`, `SecondaryButton`, and `SubtleButton`.
+  - Preserved Vault payment generation, slot selection, private block editing, access-link creation/extension/revocation, media preparation, and backend API behavior.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Vault Control against reintroducing raw button/link primitives or local tap guard helpers.
+- Verification:
+  - Targeted ESLint passed for `VaultControlPage.tsx` and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide protocol is still not complete. The broad scan now leaves important raw/local clusters in `AppLayout.tsx`, `CommunityHomePage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, and `ShopControlPage.tsx`. `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx` remain broad-scan false positives because native disclosure summaries intentionally use the shared stable tap-target helper.
+
+### Shop Assets button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through `frontend/src/pages/ShopAssetsPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>` controls, page-local `buttonGuardProps`, `actionTapGuardProps`, `brandStableTapTarget`, `stableTapTarget`, `actionBtn`, `collapseToggle`, and `ownerActionButton`.
+  - Replaced owner route and public-shop actions with shared `StableCtaLink`, `PrimaryButton`, and `SecondaryButton`.
+  - Replaced guidance/signboard/products/posted collapse controls with shared `SubtleButton`.
+  - Replaced signboard save/reset/remove controls with shared button primitives while preserving upload/save busy labels.
+  - Replaced public gallery slot selection with shared `StableButton` while preserving the custom slot-card visual treatment.
+  - Replaced selected public-slot actions and product form actions with shared button primitives.
+  - Replaced posted item edit/restore/delete/copy-link controls with shared button primitives, preserving busy labels and disabled states.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Shop Assets against reintroducing raw button/link primitives or local tap/action helpers.
+- Verification:
+  - Targeted ESLint passed for `ShopAssetsPage.tsx` and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide protocol is still not complete. The broad scan now leaves important raw/local clusters in `AppLayout.tsx`, `CommunityHomePage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `ShopControlPage.tsx`, and `VaultControlPage.tsx`. `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx` remain broad-scan false positives because native disclosure summaries intentionally use the shared stable tap-target helper.
+
+### Loan Summary button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through `frontend/src/pages/LoanSummaryPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>` controls, page-local `stableTapStyle`, `guardButtonPress`, `buttonGuardProps`, `primaryBtn`, `secondaryBtn`, and `collapseToggle`.
+  - Replaced loan summary copy actions with shared `SecondaryButton`.
+  - Replaced section expand/collapse controls with shared `SubtleButton`.
+  - Replaced per-guarantor approve/decline controls with shared `PrimaryButton` and `SecondaryButton`, preserving busy labels and guarded disabled behavior.
+  - Replaced disabled bulk-action placeholders with shared `SecondaryButton`.
+  - Replaced revenue and next-route cards with shared `StableCtaLink`, preserving the existing route-card visual style through a route-local style helper.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Loan Summary against reintroducing raw button/link primitives or local tap guard helpers.
+- Verification:
+  - Targeted ESLint passed for `LoanSummaryPage.tsx` and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide protocol is still not complete. The broad scan now leaves important raw/local clusters in `AppLayout.tsx`, `CommunityHomePage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `ShopAssetsPage.tsx`, `ShopControlPage.tsx`, and `VaultControlPage.tsx`. `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx` still appear in the broad text scan only because native disclosure summaries intentionally use the shared stable tap-target helper, not because they still have raw button/link controls.
+
+### Repayment/revenue/trust verification button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through support-money and trust-verification surfaces.
+- Frontend changes:
+  - Migrated `frontend/src/pages/RepaymentPage.tsx` from raw buttons, `OriginLink`, and page-local tap guards to shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `StableCtaLink` for collapse controls, repayment instruction generation, reference copy actions, payment declaration, and next-route links.
+  - Migrated `frontend/src/pages/RevenueAllocationPage.tsx` to shared stable primitives for allocation loading, summary copy, collapse controls, and support/finance/marketplace/money-out route tiles.
+  - Migrated `frontend/src/pages/TrustSlipVerifyPage.tsx` to shared stable primitives for public navigation, TrustSlip code/link/GMFN copy actions, print action, verification snapshot copy, and Trust Passport / guide route actions.
+  - Migrated `frontend/src/pages/SubscriptionSpotlightPage.tsx` to shared stable primitives for paid-credit selection, quote confirmation, payment code generation, payment detail copy, status refresh, and publish action.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks all four pages above against reintroducing raw button/link primitives and local tap guard helpers where applicable.
+- Verification:
+  - Targeted ESLint passed for `RepaymentPage.tsx`, `RevenueAllocationPage.tsx`, `TrustSlipVerifyPage.tsx`, `SubscriptionSpotlightPage.tsx`, and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide protocol is still not complete. A fresh raw/local control scan still finds important remaining surfaces in `CommunityHomePage.tsx`, `CoverPage.tsx`, `CreateEntryPage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `ShopControlPage.tsx`, `ShopAssetsPage.tsx`, `ShopGalleryPage.tsx`, `VaultControlPage.tsx`, `LoanSummaryPage.tsx`, `TrustCommandCentrePage.tsx`, `TrustAnalyticsPage.tsx`, `SystemOperationsPage.tsx`, `ExposureAdminPage.tsx`, `LoginPage.tsx`, plus shared `uiKit.tsx`. `OriginLink.tsx` and `StableButton.tsx` remain expected shared primitives.
+
+### Exposure/demo/preview button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through a small admin/demo/preview slice.
+- Frontend changes:
+  - Migrated `frontend/src/pages/ExposurePage.tsx` from `react-router-dom` `Link`, raw `<button>` controls, and page-local tap guard helpers to shared `SecondaryButton` and `StableCtaLink`.
+  - Exposure admin actions now have stable shared busy/disabled handling and debug IDs for overdue detection, exposure refresh, CCI loading, Trust Analytics navigation, loan drilldowns, borrower drilldowns, and dashboard return.
+  - Migrated `frontend/src/pages/SeedDemoPage.tsx` to shared `PrimaryButton` for the demo seed action, preserving its busy label and disabled state.
+  - Migrated `frontend/src/pages/InviteComposerPreviewPage.tsx` to shared `PrimaryButton` for the visible invite package action. Truth: this remains a preview/no-op action in the existing page; this pass stabilizes the primitive but does not implement invite creation.
+  - Migrated `frontend/src/pages/LoanDecisionPage.tsx` to shared `StableCtaLink` for loan-summary drilldowns, workbench row actions, and next-door routes.
+  - Migrated `frontend/src/pages/LockManagementPage.tsx` to shared `StableCtaLink` for workbench, system operations, and dashboard route actions while preserving the page's read-only MVP truth.
+  - Migrated `frontend/src/pages/ShopAccessPage.tsx` to shared `StableCtaLink` for invalid-link recovery, public shop handoff, entry return, and next-step routes.
+  - Migrated `frontend/src/pages/ApiPage.tsx` to shared `StableCtaLink` for Swagger and OpenAPI document links.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks all pages above against reintroducing raw button/link primitives or local tap guards where applicable.
+- Verification:
+  - Targeted ESLint passed for `ExposurePage.tsx`, `SeedDemoPage.tsx`, `InviteComposerPreviewPage.tsx`, `LoanDecisionPage.tsx`, `LockManagementPage.tsx`, `ShopAccessPage.tsx`, `ApiPage.tsx`, and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide button protocol is still not complete. A fresh raw/local control scan still finds important remaining surfaces in `CommunityHomePage.tsx`, `CoverPage.tsx`, `CreateEntryPage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `ShopControlPage.tsx`, `ShopAssetsPage.tsx`, `ShopGalleryPage.tsx`, `VaultControlPage.tsx`, `LoanSummaryPage.tsx`, `RepaymentPage.tsx`, `RevenueAllocationPage.tsx`, `TrustCommandCentrePage.tsx`, `TrustAnalyticsPage.tsx`, `TrustSlipVerifyPage.tsx`, `SystemOperationsPage.tsx`, `ExposureAdminPage.tsx`, `SubscriptionSpotlightPage.tsx`, `LoginPage.tsx`, plus shared `uiKit.tsx`. `OriginLink.tsx` and `StableButton.tsx` are expected shared primitives, not migration targets by themselves.
+
+### Community entry and invite-facing button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through the community creation / invitation entry path.
+- Frontend changes:
+  - Migrated `frontend/src/pages/ClansPage.tsx` to shared `PrimaryButton`, `SecondaryButton`, and `StableCtaLink` for community creation, current-community next routes, invite form opening, invite copy/share/open-guide actions, invite modal actions, existing-community selection, and marketplace handoff.
+  - Migrated `frontend/src/pages/BuildFirstCirclePage.tsx` to shared `PrimaryButton`, `SecondaryButton`, and `SubtleButton` for role choices, manual add/clear actions, phone-contact import, section toggles, contact include/remove actions, invite-bundle copy, and reset.
+  - Migrated shared trust guide components `frontend/src/components/TrustDocumentUseCases.tsx` and `frontend/src/components/TrustDocumentFamilyMap.tsx` to shared `StableCtaLink`.
+  - Migrated pre-auth / invite-facing pages `frontend/src/pages/RegisterPage.tsx`, `frontend/src/pages/IntroductionPage.tsx`, `frontend/src/pages/InviteLandingPage.tsx`, and `frontend/src/pages/JoinByInvitePage.tsx` to shared stable button/link primitives.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks every surface above against reintroducing raw button/link primitives and, where applicable, local tap guard helpers.
+- Verification:
+  - Targeted ESLint passed for all newly touched frontend files and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide protocol is still not done. A broad raw-button scan still shows large clusters in `CommunityHomePage.tsx`, `CreateEntryPage.tsx`, `CoverPage.tsx`, `DashboardPage.tsx`, `MarketplacePage.tsx`, `ShopControlPage.tsx`, `ShopAssetsPage.tsx`, `ShopGalleryPage.tsx`, `VaultControlPage.tsx`, `LoanSummaryPage.tsx`, `RepaymentPage.tsx`, `RevenueAllocationPage.tsx`, `TrustCommandCentrePage.tsx`, `TrustAnalyticsPage.tsx`, `SystemOperationsPage.tsx`, `ExposureAdminPage.tsx`, `TrustSlipVerifyPage.tsx`, and smaller demo/preview pages. These need controlled follow-up slices; saying the whole system is stable now would be false.
+
+### Button stability shared-widget and Community Shop Control follow-up (2026-05-10)
+
+- Continued the system-level button stability migration after the finance/admin/loan passes.
+- Frontend changes:
+  - Migrated `frontend/src/pages/BorrowerPreflightPage.tsx` to shared `StableCtaLink` for support, readiness, and commitment routes.
+  - Migrated `frontend/src/pages/AppearancePage.tsx` to shared `StableCtaLink` and `SecondaryButton` for settings shortcuts and theme choices.
+  - Migrated `frontend/src/components/CompanionLayer.tsx` to shared `PrimaryButton`, `SecondaryButton`, and `SubtleButton` for toast open/dismiss actions.
+  - Migrated `frontend/src/components/CompanionSettingsPanel.tsx` to shared `SecondaryButton` for mode, audible, voice, and push option controls.
+  - Migrated `frontend/src/components/CommunityShopControlPanel.tsx` to shared `PrimaryButton`, `SecondaryButton`, and `SubtleButton` for the owner panel toggle, owner shop launch, public shop action, copy action, marketplace action, and owner shortcuts. The public shop URL itself remains a plain external `<a>` because it is displayed content, not an in-app CTA.
+  - Migrated shared widgets `IdentityImageBlock.tsx`, `ExplainToggle.tsx`, `PaymentInstructionsPanel.tsx`, `LoanWorkbenchPage.tsx`, `PictureFrameToolsControl.tsx`, `NextActionGuide.tsx`, `PilotRiskDisclosureGate.tsx`, and `SpotlightMediaFrame.tsx` to shared stable button primitives.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks every surface above against reintroducing raw button/link primitives or local tap/action helpers where applicable.
+- Verification:
+  - Targeted ESLint passed for all newly touched frontend components/pages and `tools/audit-button-stability.mjs`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the app-wide button protocol is still not complete. A broad scan still finds raw/local button systems in large or entry-critical surfaces including `DashboardPage.tsx`, `CommunityHomePage.tsx`, `MarketplacePage.tsx`, `ShopControlPage.tsx`, `ShopAssetsPage.tsx`, `ShopGalleryPage.tsx`, `CreateEntryPage.tsx`, `BuildFirstCirclePage.tsx`, `ClansPage.tsx`, `LoginPage.tsx`, `CoverPage.tsx`, `VaultControlPage.tsx`, and several command/loan/trust subpages. These should be migrated in controlled slices; claiming global completion now would be false.
+
+### Finance, Money In/Out, payout, and guarantor button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration through the finance/payment/support-adjacent slice.
+- Also removed the page-local tap helper from `frontend/src/pages/AdminIdentityRiskPage.tsx`; its native disclosure summary now uses shared `brandStableTapTarget()`.
+- Continued into the admin command cluster:
+  - Migrated `frontend/src/pages/AdminTrustEventsPage.tsx` to shared `SecondaryButton`, `SubtleButton`, and `StableCtaLink` for command routes, event copy, and raw-event toggles.
+  - Migrated `frontend/src/pages/AdminIncompleteLoansPage.tsx` to shared `SecondaryButton` and `StableCtaLink` for queue copy, command routes, loan copy, and loan summary links.
+  - Migrated `frontend/src/pages/AdminTrustGraphPage.tsx` to shared `SubtleButton` and `StableCtaLink` for graph collapse controls and admin next-route tiles.
+  - Migrated `frontend/src/pages/BankConsolePage.tsx` to shared `PrimaryButton`, `SecondaryButton`, and `StableCtaLink` for next-step, row copy, refresh, ingest, reconcile, and config-copy actions.
+  - Migrated shared components `frontend/src/components/EvidencePackPanel.tsx`, `frontend/src/components/GMFNConfirmModal.tsx`, and `frontend/src/components/DomainIntroToggle.tsx` to shared stable button primitives.
+- Frontend changes:
+  - Migrated `frontend/src/pages/FinancePage.tsx` to shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `StableCtaLink` for finance tool cards, mini tools, event controls, signal actions, collapses, and support route actions.
+  - Migrated `frontend/src/pages/PaymentRailsPage.tsx` to shared `SubtleButton` and `StableCtaLink` for the raw response toggle and next-route tiles.
+  - Migrated `frontend/src/pages/GuarantorEarningsPage.tsx` to shared `SecondaryButton`, `SubtleButton`, and `StableCtaLink` for copy, collapse, and earnings next-route actions.
+  - Migrated `frontend/src/pages/PayoutDetailsPage.tsx` to shared `PrimaryButton`, `SecondaryButton`, and `StableCtaLink` for save/copy/clear and onward route actions.
+  - Migrated `frontend/src/pages/GuarantorInboxPage.tsx` to shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `StableCtaLink` for copy, filters, approve/decline decisions, row actions, collapses, and next routes.
+  - Migrated `frontend/src/pages/PaymentInstructionsPage.tsx` to shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `StableCtaLink` for Money In generation, refresh, copy/confirm, reset, collapses, and route actions.
+  - Migrated `frontend/src/pages/WithdrawalInstructionsPage.tsx` to shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `StableCtaLink` for direct/support decisions, payout destination saving, community rail actions, refresh, collapses, and route actions.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks all pages above against local/raw button, link, route-tile, guard, and tap primitives.
+  - The audit also locks `AdminIdentityRiskPage.tsx` against reintroducing a page-local stable tap helper.
+  - The audit now locks `AdminTrustEventsPage.tsx`, `AdminIncompleteLoansPage.tsx`, `AdminTrustGraphPage.tsx`, and `BankConsolePage.tsx` against local/raw button/link/tap primitives.
+  - The audit now locks `EvidencePackPanel.tsx`, `GMFNConfirmModal.tsx`, and `DomainIntroToggle.tsx` against raw button/link primitives.
+- Verification so far:
+  - `npm exec -- eslint src\pages\FinancePage.tsx src\pages\PaymentRailsPage.tsx src\pages\GuarantorEarningsPage.tsx src\pages\PayoutDetailsPage.tsx src\pages\GuarantorInboxPage.tsx src\pages\PaymentInstructionsPage.tsx src\pages\WithdrawalInstructionsPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm exec -- eslint src\pages\AdminTrustEventsPage.tsx src\pages\AdminIncompleteLoansPage.tsx src\pages\AdminTrustGraphPage.tsx src\pages\BankConsolePage.tsx src\components\EvidencePackPanel.tsx src\components\GMFNConfirmModal.tsx src\components\DomainIntroToggle.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: this does not finish the whole app-wide button protocol. A broad scan still finds local/raw button systems in `CommunityHomePage.tsx`, `CommunityShopControlPanel.tsx`, `ClansPage.tsx`, `BuildFirstCirclePage.tsx`, and companion/settings widgets. Those need separate migrations rather than being hand-waved as done.
+
+### Loan Workbench button migration follow-up (2026-05-10)
+
+- Completed the current lending-area shared-button pass in `frontend/src/pages/LoanWorkbenchPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>` elements, local `stableTapStyle`, `guardButtonPress`, `buttonGuardProps`, `actionBtn`, and `collapseToggle`.
+  - Replaced Refresh Workbench and Copy Loan ID with shared `SecondaryButton` / `SubtleButton`.
+  - Replaced loan selection actions with shared `PrimaryButton` / `SecondaryButton`.
+  - Replaced selection, summary, supporters, and route collapse controls with shared `SubtleButton`.
+  - Replaced next-route tiles with shared `StableCtaLink` while preserving existing community query behavior and dark tile layout.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Loan Workbench against local/raw button, link, and tap primitives.
+- Verification so far:
+  - `npm exec -- eslint src\pages\LoanWorkbenchPage.tsx src\pages\LoanSuggestionsPage.tsx src\pages\LoanReadinessPage.tsx src\pages\LoansPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: the main lending cluster is now migrated, but finance/payment-adjacent pages such as `FinancePage.tsx`, `PaymentInstructionsPage.tsx`, `WithdrawalInstructionsPage.tsx`, and guarantor-specific pages still need their own button-stability passes.
+
+### Loan Suggestions button migration follow-up (2026-05-10)
+
+- Continued the lending-area button migration into `frontend/src/pages/LoanSuggestionsPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>` elements, local `stableTapStyle`, `guardButtonPress`, `buttonGuardProps`, `actionBtn`, and `collapseToggle`.
+  - Replaced Refresh Fit Check with shared `SecondaryButton`.
+  - Replaced suggestion summary, reading, suggested supporters, and route collapse controls with shared `SubtleButton`.
+  - Replaced next-route tiles with shared `StableCtaLink` while preserving existing dark tile layout and community query behavior.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Loan Suggestions against local/raw button, link, and tap primitives.
+- Verification so far:
+  - `npm exec -- eslint src\pages\LoanSuggestionsPage.tsx src\pages\LoanReadinessPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+- Remaining risk:
+  - Truth: `LoanWorkbenchPage.tsx` is still the remaining lending subpage with local `OriginLink`, raw button, action button, route tile, and tap-helper patterns.
+
+### Loan Readiness button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration one layer deeper into the lending area with `frontend/src/pages/LoanReadinessPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw collapse `<button>` elements, local `stableTapStyle`, and local `collapseToggle`.
+  - Replaced readiness summary, reading, blockers, and routes collapse controls with shared `SubtleButton`.
+  - Replaced all next-route tiles with shared `StableCtaLink` while preserving the dark readiness tile layout and existing community query behavior.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Loan Readiness against local/raw button, link, and tap primitives.
+- Verification so far:
+  - `npm exec -- eslint src\pages\LoanReadinessPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+- Remaining risk:
+  - Truth: Loan Readiness is now on shared primitives, but `LoanSuggestionsPage.tsx` and `LoanWorkbenchPage.tsx` still have local `OriginLink`, raw button, route tile, action button, and tap-helper patterns.
+
+### Loans landing button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration into `frontend/src/pages/LoansPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>`, local `stableTapStyle`, and local `collapseToggle`.
+  - Replaced the support-summary collapse control with shared `SubtleButton`.
+  - Replaced all lending route tiles with shared `StableCtaLink` while preserving the existing tile layout and community query behavior.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks the Loans landing page against local/raw button/link/tap primitives.
+- Verification so far:
+  - `npm exec -- eslint src\pages\LoansPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: this cleans the Loans landing page only. `LoanReadinessPage.tsx`, `LoanSuggestionsPage.tsx`, and `LoanWorkbenchPage.tsx` still have local `OriginLink`, raw button, and tap-helper patterns and need their own passes.
+
+### Demand Box button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration into `frontend/src/pages/DemandBoxPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>` CTAs, local `guardButtonPress`, `buttonGuardProps`, `primaryBtn`, `secondaryBtn`, `subtleBtn`, `whiteActionBtn`, and `communityChoiceBtn`.
+  - Replaced missing-community recovery links, community choice buttons, create-demand action, post-demand action, notifications link, demand status updates, and bottom return/dashboard links with shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `StableCtaLink`.
+  - Kept the optional-details `<summary>` as native disclosure UI, but moved its tap-stability styling to shared `brandStableTapTarget()` instead of a page-local tap target.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Demand Box against local/raw button and link primitives.
+- Verification so far:
+  - `npm exec -- eslint src\pages\DemandBoxPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` passed with line-ending normalization warnings only.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining risk:
+  - Truth: Demand Box route/action surfaces are now on shared primitives, but the broader app is still not fully system-guaranteed. Major remaining local-button surfaces include Community Home, Marketplace, Finance, Loans, and some admin/shop areas.
+
+### Notifications button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration into `frontend/src/pages/NotificationsPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>`, local `actionBtn`, `stableTapStyle`, `guardButtonPress`, and `buttonGuardProps`.
+  - Replaced urgent-show action, onboarding trust actions, focus notice actions, selected notice actions, bucket notice actions, and collapse toggles with shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `StableCtaLink`.
+  - Dynamic notice actions now bind shared CTA primitives directly to the current `notice` object and include per-notice `debugId` values.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Notifications against local/raw button/link/tap primitives.
+- Verification:
+  - `npm exec -- eslint src\pages\NotificationsPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - Truth: `NotificationsPage.tsx` still owns a large local route alias/normalization table. The click layer is now shared, but its target-resolution rules should eventually move into `frontend/src/lib/ctaTargets.ts` or another shared resolver to fully satisfy the route-registry protocol.
+  - Other major local-button surfaces remain: Demand Box, Community Home, Marketplace, Finance, and Loans.
+
+### Identity & Integrity button migration follow-up (2026-05-10)
+
+- Continued the long-haul system-level button migration into `frontend/src/pages/IdentityIntegrityPage.tsx`.
+- Frontend changes:
+  - Removed `OriginLink`, raw `<button>`, local `actionBtn`, `stableTapStyle`, `stopIdentityTap`, and `identityButtonGuardProps`.
+  - Replaced GMFN/TrustSlip/snapshot copy actions and Trust Passport link with shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, `StableCtaLink`, and `CardActionRow`.
+  - Replaced private recovery setup/verify submit buttons with shared `PrimaryButton` while preserving form submit behavior and busy/locked state.
+  - Replaced summary/reasons/timeline/next collapse toggles with shared `SubtleButton`.
+  - Replaced next-step route links with shared `StableCtaLink`.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Identity & Integrity against local/raw button/link/tap primitives.
+- Verification:
+  - `npm exec -- eslint src\pages\IdentityIntegrityPage.tsx src\pages\TrustSlipPage.tsx src\pages\MyGMFNAndIPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `rg -n "OriginLink|function .*Btn|function actionBtn|function stableTapStyle|buttonGuardProps|identityButtonGuardProps|<button|<a\s" frontend\src\pages\IdentityIntegrityPage.tsx frontend\src\pages\TrustSlipPage.tsx frontend\src\pages\MyGMFNAndIPage.tsx` returned no matches.
+- Remaining risk:
+  - Truth: the trust/profile document family is now mostly migrated, but broader app-wide stability still depends on later passes through Notifications, Demand Box, Community Home, Marketplace, Finance, and Loans.
+
+### My GSN and TrustSlip button migration follow-up (2026-05-10)
+
+- Continued the long-haul system-level button stability migration into two large trust/profile surfaces:
+  - `frontend/src/pages/MyGMFNAndIPage.tsx`
+  - `frontend/src/pages/TrustSlipPage.tsx`
+- My GSN and I changes:
+  - Removed `OriginLink`, local `actionBtn`, `stableTapStyle`, and `buttonGuardProps`.
+  - Replaced public guide Close/Continue/Collapse controls with shared `PrimaryButton` and `SecondaryButton`.
+  - Replaced Guide/Settings tab links and app route tiles with shared `StableCtaLink`.
+  - Replaced Save Settings and Reset Defaults with shared `PrimaryButton` and `SecondaryButton`.
+- TrustSlip changes:
+  - Removed `OriginLink`, raw `<button>`, raw `<a>`, local `actionBtn`, `stableTapStyle`, `stableTapTarget`, `guardButtonPress`, and `buttonGuardProps`.
+  - Replaced top copy/print/snapshot actions with shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `CardActionRow`.
+  - Replaced merchant verification links/actions with shared `StableCtaLink`, `SecondaryButton`, and `CardActionRow`.
+  - Replaced section collapse toggles with shared `SubtleButton`.
+  - Replaced support links for Trust Passport, executive summary, and guide with shared `StableCtaLink`.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks My GSN and I and TrustSlip against regressing to local/raw button/link/tap primitives.
+- Verification so far:
+  - `npm exec -- eslint src\pages\TrustSlipPage.tsx src\pages\MyGMFNAndIPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+- Remaining risk:
+  - Truth: the trust/profile cluster is much cleaner, but `IdentityIntegrityPage.tsx` still has local button/link/tap primitives. Outside this cluster, major local-button surfaces remain: Notifications, Demand Box, Community Home, Marketplace, Finance, and the loan pages.
+
+### Trust Score button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration into `frontend/src/pages/TrustScorePage.tsx`.
+- Frontend changes:
+  - Removed page-local `actionBtn`, `tapSafeButtonBase`, and `stopTrustTap`.
+  - Replaced Trust Passport surface-card navigation actions with shared `PrimaryButton` / `SubtleButton`.
+  - Replaced Refresh Trust Reading, Copy Snapshot, Open TrustSlip Verify, and Review what needs care actions with shared `PrimaryButton`, `SecondaryButton`, and `DangerButton`.
+  - Refresh busy state now flows through the shared button primitive instead of local disabled styling.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Trust Score against regressing to local button/tap primitives or raw buttons.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - Truth: `TrustSlipPage.tsx` and `MyGMFNAndIPage.tsx` are still large button-risk surfaces with many local controls and should be migrated in deliberately scoped passes.
+
+### Trust Timeline button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration into `frontend/src/pages/TrustTimelinePage.tsx`.
+- Frontend changes:
+  - Removed page-local `OriginLink`, `stableTapStyle`, and `actionBtn`.
+  - Removed the nested `OriginLink` + child `<button>` pattern on the TrustSlip return action.
+  - Replaced TrustSlip return, Refresh, Download Timeline PDF, Copy Pack ID, and Download Evidence Pack actions with shared `StableCtaLink`, `PrimaryButton`, `SecondaryButton`, `SubtleButton`, and `CardActionRow`.
+  - Pack ID disabled behavior now flows through the shared button primitive instead of local disabled styling.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Trust Timeline against local link/button/tap primitives.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustTimelinePage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - Truth: the larger trust-document surfaces still need focused passes, especially `TrustSlipPage.tsx`, `TrustScorePage.tsx`, and `MyGMFNAndIPage.tsx`.
+
+### Trust reading button migration follow-up (2026-05-10)
+
+- Continued the system-level button stability migration into three compact trust-reading/recovery surfaces:
+  - `frontend/src/pages/OpenTrustPage.tsx`
+  - `frontend/src/pages/CCIReadingPage.tsx`
+  - `frontend/src/pages/TrustLeaderboardPage.tsx`
+- Frontend changes:
+  - Removed page-local `OriginLink`, `stableTapStyle`, and `actionBtn` usage from all three pages.
+  - Replaced Open Trust route actions with shared `StableCtaLink` and `CardActionRow`.
+  - Replaced CCI route/copy actions with shared `StableCtaLink`, `SecondaryButton`, and `CardActionRow`.
+  - Replaced Trust Leaderboard disabled-state recovery links with shared `StableCtaLink` and `CardActionRow`.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks these pages against regressing back to page-local button/link/tap primitives.
+- Verification:
+  - `npm exec -- eslint src\pages\OpenTrustPage.tsx src\pages\CCIReadingPage.tsx src\pages\TrustLeaderboardPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+- Remaining risk:
+  - Truth: this is still not a whole-app guarantee. `TrustTimelinePage`, `TrustSlipPage`, `TrustScorePage`, `MyGMFNAndIPage`, Main Marketplace, Community Home, Shop/Vault/Assets, Demand/Notifications, Loans/Finance, and admin command surfaces still need their own migration/audit passes.
+
+### System-level button stability foundation (2026-05-10)
+
+- Owner protocol: stop page-by-page button fixes; important CTAs need shared route targets, origin-aware navigation, stable primitives, duplicate-click protection, and audit coverage.
+- Truth/devil's advocate:
+  - The repo already had partial pieces (`APP_ROUTES` inside `App.tsx`, `OriginLink`, `navigateWithOrigin`, `brandStableTapTarget`, tap/link audits).
+  - Many pages still define local `primaryBtn`, `secondaryBtn`, `actionBtn`, and `buttonGuardProps` helpers. This pass does not honestly complete a whole-app migration; it creates the shared layer and migrates the identity-critical join-entry buttons first.
+- Frontend foundation added:
+  - `frontend/src/lib/appRoutes.ts` is now the shared route registry for Dashboard, Community, Marketplace, Shop, Money In/Out, Finance, Demand Box, Trust, CCI, TrustSlip, Merchant Verify, Loans, Notifications, Settings/Profile, Admin Command, Login/Welcome, and pending join routes.
+  - `frontend/src/lib/ctaTargets.ts` adds shared CTA intent resolution, origin-aware navigation through `navigateWithOrigin`, and opt-in debug logging via `localStorage.gmfn_debug_cta = "1"`.
+  - `frontend/src/components/StableButton.tsx` adds `StableButton`, `StableCtaLink`, `PrimaryButton`, `SecondaryButton`, `SubtleButton`, `DangerButton`, and `CardActionRow` with stable sizing, propagation control, busy/disabled state, and duplicate async click protection.
+  - `frontend/src/App.tsx` now imports `APP_ROUTES` from the shared registry instead of keeping a local duplicate.
+  - `frontend/tools/audit-button-stability.mjs` plus `npm run audit:button-stability` lock the new shared route/CTA/button foundation and the Join Entry migration.
+- First migrated screen:
+  - `frontend/src/pages/JoinEntryPage.tsx` no longer has local `primaryBtn`, `secondaryLink`, or `buttonGuardProps`; its saved-request, existing-GMFN join, sign-in conflict, success-state, submit, and welcome CTAs now use shared stable primitives.
+  - Join Entry result/back/login links now call `resolveCtaTarget` for the migrated route decisions, so the new resolver is used by a real surface instead of only existing as a placeholder.
+- Verification:
+  - `npm exec -- eslint src\lib\appRoutes.ts src\lib\ctaTargets.ts src\components\StableButton.tsx src\App.tsx src\pages\JoinEntryPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` first hit the known sandbox `spawn EPERM`, then passed outside sandbox after escalation.
+- Remaining risk / next work:
+  - Full guarantee requires migrating remaining high-value surfaces off page-local button helpers in priority order: Marketplace/Public Shop/Shop Control/Vault, Demand/Notifications dynamic CTAs, Loans/Finance action buttons, Community Home owner rows, and admin command CTAs.
+  - The audit currently proves the foundation exists and protects the first migrated Join Entry surface; it does not yet ban every local button helper because doing so now would fail honestly on many existing pages.
+
+### Community Access Desk button migration follow-up (2026-05-10)
+
+- Continued the system-level button protocol into `frontend/src/pages/MarketplaceWorkspacePage.tsx`, the public/community access surface currently active in the editor.
+- Frontend changes:
+  - Removed the page-local `btn()` and `buttonGuardProps()` helpers from Marketplace Workspace.
+  - Replaced route handoff links, section toggles, copy/share actions, money/support route buttons, request links, and member row actions with shared `PrimaryButton`, `SecondaryButton`, `SubtleButton`, `StableCtaLink`, and `CardActionRow`.
+  - Replaced hardcoded route handoff construction with `resolveCtaTarget` for Community Home, Community List, Marketplace, Demand Box, Join Requests, Money In, Money Out, Loans, Readiness, Workbench, Earnings, and Suggestions.
+  - Added `guarantorEarnings` / `GUARANTOR_EARNINGS` to the shared route registry and CTA resolver because Marketplace Workspace had a real support handoff for that route.
+- Audit updates:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks that Community Access Desk uses shared stable CTA primitives instead of preserving the old page-local button helper.
+  - `frontend/tools/audit-button-stability.mjs` now locks that Marketplace Workspace uses shared stable CTA primitives and shared CTA target resolution.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplaceWorkspacePage.tsx src\lib\appRoutes.ts src\lib\ctaTargets.ts tools\audit-mobile-tap-stability.mjs tools\audit-button-stability.mjs` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` first hit the known sandbox `spawn EPERM`, then passed outside sandbox after escalation.
+- Remaining risk:
+  - This migrates Join Entry and Marketplace Workspace onto the new button system. It does not yet migrate MarketplacePage, CommunityHomePage, ShopControl/Vault/ShopAssets, Demand/Notifications, Loans/Finance, or admin command surfaces.
+
+### Join-result button migration follow-up (2026-05-10)
+
+- Continued the same shared-button migration through the join-result path after Join Entry:
+  - `frontend/src/pages/JoinRequestPendingPage.tsx`
+  - `frontend/src/pages/JoinApprovalPage.tsx`
+- Frontend changes:
+  - Removed page-local `actionBtn` from Join Request Pending.
+  - Removed page-local `actionBtn`, `stableTapStyle`, and `consumeActionEvent` from Join Approval.
+  - Replaced pending/approval/welcome/guide/activation CTAs with shared `StableCtaLink`, `PrimaryButton`, `SecondaryButton`, and `CardActionRow`.
+  - Routed pending, approval, guide, welcome, and activation targets through `resolveCtaTarget`; activation still preserves the backend-provided activation path when present.
+  - Join Approval now preserves `request_id` when returning to the pending status surface instead of depending only on ambient search params.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Join Pending and Join Approval against reverting to local button helpers.
+- Verification:
+  - `npm exec -- eslint src\pages\JoinRequestPendingPage.tsx src\pages\JoinApprovalPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` first hit the known sandbox `spawn EPERM`, then passed outside sandbox after escalation.
+- Current migrated shared-button surfaces:
+  - Join Entry
+  - Join Request Pending
+  - Join Approval
+  - Marketplace Workspace / Community Access Desk
+- Remaining risk:
+  - Main Marketplace, Community Home, Shop/Vault/Assets, Demand/Notifications, Loans/Finance, and admin command surfaces still have local button helpers and should be migrated in later passes.
+
+### Community Join Requests reviewer-side button migration follow-up (2026-05-10)
+
+- Continued the shared-button migration into `frontend/src/pages/CommunityJoinRequestsPage.tsx`, the reviewer-side surface where community admins approve, reject, or pilot-approve incoming join requests.
+- Frontend changes:
+  - Removed page-local `actionBtn`, `stableTapStyle`, `consumeActionEvent`, and `withClanQuery`.
+  - Replaced Community Home, Marketplace, Refresh, activation copy/open, Approve, Reject, and Approve now actions with shared `PrimaryButton`, `SecondaryButton`, `StableCtaLink`, and `CardActionRow`.
+  - Routed Community Home and Marketplace targets through `resolveCtaTarget`; Community Home back navigation now uses `navigateToCta` so origin-aware behavior stays centralized.
+  - Preserved reviewer approval/reject/admin-approve busy and disabled behavior through shared button primitives instead of local style state.
+  - Activation package actions now use shared primitives while preserving external activation-link behavior when the backend returns a full URL.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Community Join Requests against reverting to local button/tap/route helper primitives.
+- Verification:
+  - `npm exec -- eslint src\pages\CommunityJoinRequestsPage.tsx src\components\StableButton.tsx src\lib\ctaTargets.ts` passed.
+  - `npm exec -- eslint src\pages\CommunityJoinRequestsPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` first hit the known Windows sandbox `spawn EPERM`, then passed outside sandbox after escalation.
+- Current migrated shared-button surfaces:
+  - Join Entry
+  - Join Request Pending
+  - Join Approval
+  - Community Join Requests
+  - Marketplace Workspace / Community Access Desk
+- Remaining risk:
+  - Main Marketplace, Community Home, Shop/Vault/Assets, Demand/Notifications, Loans/Finance, and admin command surfaces still have local button helpers. The shared system is real, but the app-wide migration is not complete yet.
+
+### Shared nav and dynamic spotlight button migration follow-up (2026-05-10)
+
+- Continued the system-level button migration into two shared/dynamic frontend surfaces:
+  - `frontend/src/components/CommunityMarketplaceSpotlight.tsx`
+  - `frontend/src/components/PageTopNav.tsx`
+- Frontend changes:
+  - Community Marketplace Spotlight no longer uses local `btn`, local `withClanQuery`, raw `<button>`, or `OriginLink`.
+  - The rotating spotlight's image/title/copy and primary CTA now come from the same `activeItemView.primaryCta`, resolved through `resolveCtaTarget`, so a refreshed spotlight item cannot keep an old shop/marketplace link underneath the new visual.
+  - Spotlight retry, refresh, community-home, and primary open actions now use shared `PrimaryButton`, `SecondaryButton`, `StableCtaLink`, and `CardActionRow`.
+  - PageTopNav now renders route links through `StableCtaLink` while preserving its dark compact visual treatment.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks Community Marketplace Spotlight and PageTopNav against reverting to local button/link primitives.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks the dynamic spotlight CTA binding pattern.
+- Verification:
+  - `npm exec -- eslint src\components\PageTopNav.tsx src\components\CommunityMarketplaceSpotlight.tsx tools\audit-button-stability.mjs` passed.
+  - `npm exec -- eslint src\components\CommunityMarketplaceSpotlight.tsx tools\audit-button-stability.mjs tools\audit-mobile-tap-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - This improves shared nav and a dynamic Spotlight surface, but it still does not complete the full app migration. Main Marketplace, Community Home, Shop/Vault/Assets, Demand/Notifications, Loans/Finance, and admin command pages still need focused passes.
+
+### Shared share/copy button migration and StableButton disabled hardening (2026-05-10)
+
+- Continued the system-level button migration into shared share/copy controls:
+  - `frontend/src/components/ShareActions.tsx`
+  - `frontend/src/components/ShareButtons.tsx`
+  - `frontend/src/components/StableButton.tsx`
+- Frontend changes:
+  - ShareActions now uses shared `CardActionRow`, `PrimaryButton`, and `SecondaryButton` for Copy Link and WhatsApp actions.
+  - ShareButtons now uses shared `CardActionRow`, `PrimaryButton`, `SecondaryButton`, and `SubtleButton` for Copy link, WhatsApp text, Copy text, QR, and QR modal close.
+  - Removed local share button style helpers and raw `<button>` usage from both share components.
+  - StableButton no longer renders native `disabled={locked}`. Locked buttons now keep the shared visual disabled state, expose `aria-disabled`, leave tap handling inside the shared click guard, and use `tabIndex={-1}` while locked. This avoids creating native-disabled dead targets where a parent card or nearby route control can win the tap.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks ShareActions and ShareButtons against reverting to local button primitives.
+  - The same audit now rejects native `disabled={locked}` inside StableButton.
+- Verification:
+  - `npm exec -- eslint src\components\StableButton.tsx src\components\ShareActions.tsx src\components\ShareButtons.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - This hardens the shared primitive and shared copy/share controls, but old page-local buttons outside migrated surfaces still need their own passes.
+
+### Live activation and auth-gate button migration follow-up (2026-05-10)
+
+- Continued the system-level button migration into live activation/auth recovery surfaces:
+  - `frontend/src/pages/MemberActivationPage.tsx`
+  - `frontend/src/components/RequireAuth.tsx`
+- Frontend changes:
+  - MemberActivationPage is the live `/activate-membership` route; the older `ActivateMembershipPage.tsx` still exists but is not the route wired in `App.tsx`.
+  - MemberActivationPage no longer uses `OriginLink`, raw `<button>`, local `primaryBtn`, `secondaryBtn`, `stableTapStyle`, `buttonGuardProps`, `guideAboutBtn`, or `guideMainBtn`.
+  - Activation guide, submit, and post-activation route actions now use shared `SubtleButton`, `PrimaryButton`, `StableCtaLink`, and `CardActionRow`.
+  - Existing GMFN/request ID chips are now plain badges, not button-styled pseudo-actions.
+  - RequireAuth admin-denied and identity-continuity recovery actions now use `StableCtaLink` and `CardActionRow` instead of local `actionBtn` plus React Router `Link`.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks MemberActivationPage and RequireAuth against reverting to local button/tap/link primitives.
+- Verification:
+  - `npm exec -- eslint src\components\RequireAuth.tsx src\pages\MemberActivationPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:entry-auth` passed.
+- Remaining risk:
+  - `frontend/src/pages/ActivateMembershipPage.tsx` still has local button helpers, but it is not currently wired as `/activate-membership`. If this legacy page is still reachable through another route later, migrate or delete it deliberately rather than assuming it is harmless.
+
+### Legacy activation button migration follow-up (2026-05-10)
+
+- Closed the loose end from the live activation pass:
+  - `frontend/src/pages/ActivateMembershipPage.tsx`
+- Truth:
+  - `App.tsx` currently wires `/activate-membership` to `MemberActivationPage`, not `ActivateMembershipPage`.
+  - Even so, leaving a second activation screen with local button/tap helpers was unnecessary risk if a future route swap or import brought it back.
+- Frontend changes:
+  - Removed local `primaryBtn`, `secondaryBtn`, `stableTapStyle`, and `buttonGuardProps`.
+  - Replaced activation and clear-password actions with shared `PrimaryButton`, `SecondaryButton`, and `CardActionRow`.
+  - Converted GMFN/request ID pseudo-buttons into plain badges.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks the legacy activation page against reverting to local button/tap primitives.
+- Verification:
+  - `npm exec -- eslint src\pages\ActivateMembershipPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:entry-auth` passed.
+- Remaining risk:
+  - The page still appears unused by the router. A later cleanup pass can remove it if confirmed unused across production/history, but this pass avoided deleting code only because it looked stale.
+
+### Entry controls shared-button migration follow-up (2026-05-10)
+
+- Continued the system-level button migration into the shared entry control layer:
+  - `frontend/src/components/EntryControls.tsx`
+- Frontend changes:
+  - EntryActionButton now renders through `StableButton` while preserving the entry-flow gold/white visual treatment.
+  - EntryBackLink now renders through `StableCtaLink` instead of `OriginLink`.
+  - EntryGuideLauncher compact and full modes now render through shared stable buttons.
+  - Removed local entry tap guards, raw `<button>`, `OriginLink`, and local stacking-layer styles (`zIndex`/`isolation`) from EntryControls.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks EntryControls against reverting to local button/link/tap primitives or stacking layers.
+- Verification:
+  - `npm exec -- eslint src\components\EntryControls.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - CreateEntryPage still has many raw buttons/local actions of its own. Migrating EntryControls improves the shared pieces used by create/join/activation flows, but it does not migrate every Create Entry local control.
+
+### Profile and Trust page button migration follow-up (2026-05-10)
+
+- Continued the system-level button migration into smaller authenticated main-tab surfaces:
+  - `frontend/src/pages/ProfilePage.tsx`
+  - `frontend/src/pages/TrustPage.tsx`
+- Frontend changes:
+  - ProfilePage no longer uses a local `btn()` helper or raw `<button>` controls for Save/Refresh.
+  - Profile Save/Refresh now use shared `PrimaryButton`, `SecondaryButton`, and `CardActionRow`.
+  - TrustPage no longer uses local `actionBtn` or raw `<button>` controls for Refresh Trust, Export CSV, Show/Hide explainability, Copy explainability JSON, Apply filters, or Clear filters.
+  - TrustPage actions now use shared `PrimaryButton`, `SecondaryButton`, and `CardActionRow`; busy/disabled state stays on shared primitives.
+- Audit updates:
+  - `frontend/tools/audit-button-stability.mjs` now locks ProfilePage and TrustPage against reverting to local button/link primitives.
+- Verification:
+  - `npm exec -- eslint src\pages\ProfilePage.tsx src\pages\TrustPage.tsx tools\audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining risk:
+  - `MyGMFNAndIPage.tsx` is the larger profile/settings destination and still has local buttons/routes. This pass only migrates the smaller `ProfilePage` and the Trust page actions.
+
+### Existing-member cross-community join hardening (2026-05-10)
+
+- Owner protocol: one global GMFN/GSN identity, many community memberships; existing members must not be treated as brand-new people when joining another community.
+- Backend correction:
+  - `POST /clans/join-requests` now checks an optional auth token.
+  - If a real logged-in user is present, the join request is tied to that existing `users.id` and `gmfn_id`; it does not create a pending placeholder user from phone/email.
+  - Existing logged-in member retries are idempotent:
+    - already in target community returns `result_status: "already_member"` and creates no request.
+    - repeated pending request returns the existing `pending_request_exists` lineage and creates no duplicate request.
+  - Existing-identity join requests are marked with `activation_delivery_status="not_required"` so approval creates/reuses the membership without sending the user to activation or issuing another GMFN ID.
+  - `POST /clans/{clan_id}/select` now requires an existing active membership and no longer creates membership merely by selecting a community.
+  - Direct invite join response schemas/services now expose `gmfn_id`, `user_id`, `result_status`, `existing_identity`, and `identity_reused`.
+  - `/community/active` now works even when the `User` model has no selected/active clan field. It uses a user field if present, `user_settings.preferred_community_id` if that table exists, and a guarded process-local fallback if the table is absent.
+  - Direct `/community/join-by-invite` now commits the existing user's new membership before storing active context, preserving the same `gmfn_id`.
+  - Flow B is explicit: if an unauthenticated public join request uses a phone number already tied to a real activated GMFN account, `/clans/join-requests` returns `existing_account_login_required` and does not create a pending placeholder user or join request. Pending applicant placeholders under `@pending.gmfn.local` still return their existing request lineage.
+- Frontend correction:
+  - `frontend/src/pages/JoinEntryPage.tsx` detects a signed-in user via `/auth/me`.
+  - Logged-in GMFN holders see "Join this community with your existing GMFN identity" and reassurance that this creates no duplicate ID/account.
+  - The logged-in path submits only the invite with existing identity context; the new-person form stays for unauthenticated/new applicants.
+  - Approved existing-member status routes to the community/marketplace context instead of activation.
+- Verification:
+  - `python -m pytest -q tests\test_join_requests.py --basetemp C:\tmp\pytest-existing-member-join` passed: 33 passed.
+  - Follow-up `python -m pytest -q tests\test_join_requests.py --basetemp C:\tmp\pytest-existing-member-join-2` passed: 35 passed.
+  - Flow-B follow-up `python -m pytest -q tests\test_join_requests.py --basetemp C:\tmp\pytest-existing-member-join-3` passed: 36 passed.
+  - `python -m py_compile app\api\routes\clans.py app\services\invites_service.py app\services\community_integrity_service.py app\schemas\invites.py app\schemas\community_integrity.py` passed.
+  - `python -m py_compile app\services\community_integrity_service.py app\api\routes\community_integrity.py` passed.
+  - `python -m py_compile app\api\routes\clans.py` passed after Flow B hardening.
+  - `npm exec -- eslint src\pages\JoinEntryPage.tsx src\lib\api.ts` passed.
+  - `npm run build` first hit the known sandbox `spawn EPERM`, then passed outside sandbox after escalation.
+- Remaining risk:
+  - No database partial unique index was added for pending `(user_id, clan_id)` join requests because schema/migration work is frozen/high-risk. The route-level guard is covered by tests, but a future migration should add a true DB constraint for scale/concurrency.
+  - Durable backend active-community persistence depends on whether the deployed DB has `user_settings`. The current test migration set does not, so the backend has a safe fallback and the frontend selected-community local storage remains the main durable client-side context.
+
 ### Suspended host early migration guard (2026-05-09)
 
 - Owner screenshots showed the newest failed-shop copy guard live, but the phone browser still stayed on suspended `frontend.onrender.com`.
@@ -21231,3 +22228,604 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - if the phone address bar still shows `frontend.onrender.com`, that old Render host is still serving or caching the old app despite the redirect guards in source.
   - all shareable links generated by the current helpers should point to `https://gmfn-frontend.onrender.com`, but already-open old-host browser tabs may need to be closed or manually moved to the canonical host.
+
+### Button stability long-haul entry/shared slice (2026-05-10)
+
+- Owner asked to continue the system-level button stability protocol rather than patching isolated pages.
+- Continued the shared primitive migration and added audit locks for the newly migrated surfaces.
+- Updated `frontend/src/pages/CoverPage.tsx`:
+  - replaced the public entry `Continue` and `About GSN & I` raw buttons with `PrimaryButton` / `SecondaryButton`.
+  - removed local `stableTapStyle`, `guardButtonPress`, and `buttonGuardProps`.
+  - preserved the entry-route behavior and busy copy while moving duplicate-click/event shielding into the shared primitive.
+- Updated `frontend/src/pages/LoginPage.tsx`:
+  - replaced guide collapse, activation recovery, submit, help, create-community, and activation-route raw buttons with shared stable primitives.
+  - removed local tap guard helpers.
+  - kept submit as a real `type="submit"` action and verified TypeScript/build.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - migrated the create-community entry funnel's existing-member escape, guide controls, stage toggles, clear actions, verification actions, bank-save action, and final submit to `PrimaryButton` / `SecondaryButton`.
+  - removed the local tap guard helper so this pre-auth path now uses the same shared event ownership as the rest of the entry system.
+- Updated shared/root surfaces:
+  - `frontend/src/components/uiKit.tsx` now delegates legacy `Button` / `ButtonPrimary` exports to `StableButton` / `PrimaryButton`.
+  - `frontend/src/IdentityImageBlock.tsx` now uses `CardActionRow`, `PrimaryButton`, `SecondaryButton`, and `DangerButton` for upload/camera/change/remove controls.
+  - `frontend/src/login.tsx` legacy submit now uses `PrimaryButton`.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - added assertions forbidding raw buttons/local tap guards in Cover, Login, Create Entry, legacy login, IdentityImageBlock, and uiKit.
+  - added required debug IDs for migrated CTA families.
+- Verification:
+  - `npm exec -- eslint src/pages/CoverPage.tsx src/pages/LoginPage.tsx src/pages/CreateEntryPage.tsx src/IdentityImageBlock.tsx src/login.tsx src/components/uiKit.tsx tools/audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` reported only existing line-ending warnings, no whitespace errors.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`; rerunning outside the sandbox passed.
+- Remaining truth:
+  - This does not complete the whole app. Remaining raw/local control-heavy areas still include `AppLayout`, `CommunityHomePage`, `DashboardPage`, `MarketplacePage`, `ShopAssetsPage`, `ShopControlPage`, `ShopGalleryPage`, `LoanSummaryPage`, `ExposureAdminPage`, `SystemOperationsPage`, `TrustAnalyticsPage`, `TrustCommandCentrePage`, and `VaultControlPage`.
+  - `OriginLink` and `StableButton` still contain raw `<a>` / `<button>` internally by design because they are the shared primitives.
+  - `TrustGraphAdminPage` still appears in broad grep because it uses the migrated uiKit `<Button>` abstraction, not because it has raw HTML buttons.
+
+### Button stability command-center/admin slice (2026-05-10)
+
+- Continued the system-level button stability protocol through smaller command-center/admin routes before tackling the large product surfaces.
+- Updated `frontend/src/pages/TrustAnalyticsPage.tsx`:
+  - replaced section collapse raw buttons with `SecondaryButton`.
+  - replaced command route `OriginLink` instances with `StableCtaLink`.
+  - removed local `stableTapStyle`, `analyticsButtonGuardProps`, and local tap-stop helpers.
+- Updated `frontend/src/pages/SystemOperationsPage.tsx`:
+  - replaced overview/intake/signals/queues/routes collapse buttons with `SecondaryButton`.
+  - replaced live signal and next-route `OriginLink` instances with `StableCtaLink`.
+  - removed local tap guard helpers and local `stableTapStyle` spreads from route/action styles.
+- Updated `frontend/src/pages/ExposureAdminPage.tsx`:
+  - replaced overview/pressure/queues/routes collapse buttons with `SecondaryButton`.
+  - replaced queue and next-route `OriginLink` instances with `StableCtaLink`.
+  - removed local tap guard helpers and page-local tap/stacking style from route/action styles.
+- Updated `frontend/src/pages/TrustCommandCentrePage.tsx`:
+  - replaced executive/pilot/overview/routes/workflows/notes collapse buttons with `SecondaryButton`.
+  - replaced executive next actions, route cards, and where-next links with `StableCtaLink`.
+  - removed local `OriginLink`, `commandButtonGuardProps`, `stopCommandTap`, and route/action stacking/tap CSS (`WebkitTapHighlightColor`, `touchAction`, local `position: relative`, local `zIndex: 2`) from command CTA styles.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - added assertions locking Trust Analytics, System Operations, Exposure Admin, and Trust Command Centre to shared stable primitives.
+  - added guards against reintroducing raw buttons/anchors, `OriginLink`, local tap guards, and command-centre route/action stacking styles.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustAnalyticsPage.tsx src/pages/SystemOperationsPage.tsx src/pages/ExposureAdminPage.tsx src/pages/TrustCommandCentrePage.tsx tools/audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - First `npm run build` caught a TypeScript issue in the new `TrustCommandCentrePage` link-kind expression; fixed it.
+  - Second `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`; rerunning outside the sandbox passed.
+- Remaining truth:
+  - Broad raw/local control scan now drops the command-center/admin pages above.
+  - Remaining large clusters: `AppLayout`, `CommunityHomePage`, `DashboardPage`, `MarketplacePage`, `ShopAssetsPage`, `ShopControlPage`, `ShopGalleryPage`, `LoanSummaryPage`, and `VaultControlPage`.
+  - Dashboard remains high-risk because Market Wisdom and dashboard profile picture-frame tools are frozen. Any dashboard pass must avoid those frozen areas or explicitly scope the smallest safe edit.
+
+### Button stability Shop Gallery slice (2026-05-10)
+
+- Continued the system-level button stability protocol through the public Shop Gallery surface.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - replaced public shop action buttons (`GSN repost`, `Share shop`, `Copy link`) with `PrimaryButton` / `SecondaryButton`.
+  - replaced the visible absolute public shop URL raw anchor with `StableCtaLink` while preserving the failed-load locked `<span>` path so stale shop URLs do not remain clickable.
+  - replaced Spotlight preview, Vault access, Vault copy-link, product open/close, product share, and show-more controls with shared stable button primitives.
+  - removed local `actionTapGuardProps`, `brandStableTapTarget`, `stableTapTarget`, and `buttonGuardProps`.
+  - kept blocked public-shop actions callable so the existing handlers still show the owner-refresh notice instead of silently doing nothing.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs` now locks Shop Gallery against reintroducing raw buttons/anchors or local tap guard primitives.
+  - `frontend/tools/audit-link-contracts.mjs` now recognizes the shared `StableCtaLink` implementation while still requiring failed public-shop URLs to render as locked text and valid public-shop URLs to visibly show the complete public shop domain.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx tools/audit-button-stability.mjs tools/audit-link-contracts.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed after updating the contract for `StableCtaLink`.
+  - `npm run audit:entry-auth` passed.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`; rerunning outside the sandbox passed.
+- Remaining truth:
+  - Broad raw/local control scan now drops `ShopGalleryPage.tsx`.
+  - Remaining large clusters: `AppLayout`, `CommunityHomePage`, `DashboardPage`, `MarketplacePage`, `ShopAssetsPage`, `ShopControlPage`, `LoanSummaryPage`, and `VaultControlPage`.
+  - `LoanSummaryPage.tsx` was inspected but not migrated in this slice; it should be handled deliberately as the next smaller money-support page rather than half-patched.
+
+### Button stability Dashboard follow-up (2026-05-10)
+
+- Continued the system-level button stability protocol through the Dashboard surface after the App Layout, Community Home, and Marketplace button migrations.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - replaced native dashboard buttons with the shared `StableButton` primitive.
+  - removed the page-local `dashboardButtonGuardProps` helper and the `actionTapGuardProps`, `brandStableTapTarget`, and `stopActionTap` imports from `gmfnBrand`.
+  - kept existing dashboard route behavior and visual style helpers in place.
+  - touched the frozen `/app/dashboard` Market Wisdom area only as a mechanical primitive migration; no copy, layout model, or interaction intent redesign was made.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs` now locks Dashboard against reintroducing raw buttons, raw links, `OriginLink`, or page-local tap guard primitives.
+  - `frontend/tools/audit-link-contracts.mjs` now recognizes the Marketplace public shop URL as a visible public `StableCtaLink` after the Marketplace shared-link migration, while preserving the full-domain visibility contract.
+- Verification:
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `npx eslint --no-warn-ignored src/pages/DashboardPage.tsx tools/audit-button-stability.mjs tools/audit-link-contracts.mjs` passed from `frontend`.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - Dashboard/Marketplace replacement-character scan passed.
+  - `npm run build` passed from `frontend` outside the sandbox.
+- Remaining truth:
+  - Broad raw/local control scan now drops `DashboardPage.tsx`.
+  - The remaining broad scan hits are `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx`; both were inspected as native disclosure/surface `brandStableTapTarget` usage rather than obvious raw CTA button clusters.
+  - Dashboard still deserves browser visual QA because it is high-density and contains a frozen Market Wisdom presentation. The code/build checks passed, but they do not prove pixel-level visual parity.
+
+### Button stability PageTopNav cleanup (2026-05-10)
+
+- Continued the shared-system cleanup into the reusable top navigation surface.
+- Updated `frontend/src/components/PageTopNav.tsx`:
+  - kept all route links on `StableCtaLink`.
+  - removed the leftover direct `brandStableTapTarget` import and local tap-target spreads from top-nav action styling.
+  - preserved existing dimensions, colors, labels, origin-aware back behavior, and disabled span rendering.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - strengthened the PageTopNav assertion so the component cannot reintroduce raw link/button primitives or direct local `brandStableTapTarget` usage.
+- Verification:
+  - `npx eslint --no-warn-ignored src/components/PageTopNav.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run build` passed from `frontend` outside the sandbox.
+- Remaining truth:
+  - Shared component scan now only shows expected primitive internals (`OriginLink`, `StableButton`) plus the two page-level disclosure/surface cases in `AdminIdentityRiskPage.tsx` and `DemandBoxPage.tsx`.
+  - Those two remaining hits are not raw CTA clusters, but they are still native clickable disclosure surfaces; future work should either formalize a shared disclosure-summary primitive or explicitly document why summaries are exempt from CTA button migration.
+
+### Button stability disclosure-summary primitive (2026-05-10)
+
+- Closed the last non-primitive broad scan hits by treating clickable `<summary>` disclosure controls as part of the shared stable-control system.
+- Updated `frontend/src/components/StableButton.tsx`:
+  - added `StableDisclosureSummary`, a shared summary primitive with the same stable tap target foundation and parent-click propagation guard used by the CTA system.
+  - kept native `<summary>` semantics so existing `<details>` open/close behavior remains browser-native.
+- Updated routed surfaces:
+  - `frontend/src/pages/AdminIdentityRiskPage.tsx` now uses `StableDisclosureSummary` for detailed identity signals and no longer imports `brandStableTapTarget` directly.
+  - `frontend/src/pages/DemandBoxPage.tsx` now uses `StableDisclosureSummary` for the "More detail" disclosure and no longer imports `brandStableTapTarget` directly.
+  - `frontend/src/pages/DashboardPage.tsx` now uses `StableDisclosureSummary` for the small "More trust detail" disclosure; this was a mechanical primitive migration, not a Dashboard/Market Wisdom redesign.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - shared primitive assertion now requires `StableDisclosureSummary`.
+  - Dashboard, Demand Box, and Admin Identity Risk assertions now reject raw summaries and local tap-target helpers where these disclosures were migrated.
+- Verification:
+  - Broad control scan across `frontend/src/components`, `frontend/src/layout`, and `frontend/src/pages` now reports only expected primitive internals in `OriginLink` and `StableButton`.
+  - `npx eslint --no-warn-ignored src/components/StableButton.tsx src/components/PageTopNav.tsx src/pages/AdminIdentityRiskPage.tsx src/pages/DemandBoxPage.tsx src/pages/DashboardPage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - Disclosure-control replacement-character scan passed.
+  - `npm run build` passed from `frontend` outside the sandbox.
+- Remaining truth:
+  - This materially improves the system-level code guarantee: raw page/component buttons, anchors, summaries, and local tap-target helpers are now absent from the broad scan outside the shared primitives.
+  - It still does not replace real browser QA. Dynamic/live-button fidelity, pointer stability, and visual parity on dense routes like Dashboard and Marketplace should still be checked in-browser on desktop and narrow/mobile widths.
+
+### Button stability Marketplace route-registry slice (2026-05-10)
+
+- Continued the system-level button protocol from raw control primitives into shared route/CTA resolution on the main Marketplace surface.
+- Updated shared route/CTA registry:
+  - `frontend/src/lib/appRoutes.ts` now includes `PAYMENT_RAILS` and applies community query context to it.
+  - `frontend/src/lib/ctaTargets.ts` now includes the `paymentRails` CTA intent.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - marketplace intent-search items now carry shared CTA intents for Money In, Money Out, Finance, Trust, CCI/Identity, TrustSlip, Demand Box, Community Home, and Notifications instead of local `/app/...` route strings.
+  - route buttons for Community Home, Dashboard, Payment Rails, Demand Box, Money In, Money Out, Finance, Shop, Loan Readiness, Loan Suggestions, Loan Workbench, and Loans now call `openMarketplaceCta`, which resolves through `resolveCtaTarget` and navigates through `navigateToCta`.
+  - removed the page-local `withClanQuery` route helper and replaced its remaining generic route use with shared `routeWithCommunity`.
+  - preserved public/non-app shop links through the existing `openMarketplaceRoute` + `navigateWithOrigin` path so public shop URLs do not receive community query strings.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs` now requires Marketplace to import/use shared CTA resolution and rejects local hard-coded app route CTAs such as `openMarketplaceRoute(event, "/app...")` or `to: "/app..."`.
+  - `frontend/tools/audit-link-contracts.mjs` now recognizes `routeWithCommunity` as the Marketplace app-route context helper while still protecting public shop links from community query strings.
+- Verification:
+  - `npx eslint --no-warn-ignored src/pages/MarketplacePage.tsx src/lib/appRoutes.ts src/lib/ctaTargets.ts tools/audit-button-stability.mjs tools/audit-link-contracts.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - Marketplace route-registry replacement-character scan passed.
+  - `npm run build` passed from `frontend` outside the sandbox.
+- Remaining truth:
+  - This improves Marketplace route consistency but does not mean every route in the app is fully resolver-driven.
+  - `MarketplacePage.tsx` still has an escape hatch, `openMarketplaceRoute`, for public/non-app links and any future non-registry destination. That is intentional for public shop links, but it should stay tightly audited.
+  - The next useful long-haul slice is a repo-wide scan for important `StableButton`/`StableCtaLink` actions that still hard-code `/app/...` instead of using `resolveCtaTarget`/`appRoute`.
+
+### Button stability Payment Rails route-registry slice (2026-05-10)
+
+- Continued route/CTA stabilization into `frontend/src/pages/PaymentRailsPage.tsx`.
+- Updated `PaymentRailsPage.tsx`:
+  - imports `useLocation` and reads `clan_id`, `community`, or `community_id` from the current query string.
+  - resolves PageTopNav `homeTo` / `backTo` and all six next-route tiles through `resolveCtaTarget`.
+  - preserves active community context for Money In, Money Out, Loan Readiness, Loan Workbench, Marketplace, Community Home, and Loans when the page is opened with a community query.
+  - removed direct route strings from the Payment Rails next-route tiles and nav props.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - Payment Rails assertion now requires shared CTA resolution.
+  - Payment Rails guard now rejects hard-coded `to="/app..."`, `homeTo="/app..."`, and `backTo="/app..."` on that page.
+- Verification:
+  - `npx eslint --no-warn-ignored src/pages/PaymentRailsPage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - Payment Rails route replacement-character scan passed.
+  - `npm run build` passed from `frontend` outside the sandbox.
+- Remaining truth:
+  - The repo still has many hard-coded `/app/...` links, especially PageTopNav props and older route tiles on admin, trust, loan, finance, and profile surfaces.
+  - This slice proves the pattern works for a bounded money route, not that the entire navigation layer is fully centralized yet.
+
+### Button stability Revenue Allocation route-registry slice (2026-05-10)
+
+- Continued route/CTA stabilization into `frontend/src/pages/RevenueAllocationPage.tsx`.
+- Updated shared route/CTA registry:
+  - `frontend/src/lib/appRoutes.ts` now includes `LOAN_SUMMARY` and supports `loanId` in `AppRouteContext`.
+  - `frontend/src/lib/ctaTargets.ts` now includes the `loanSummary` CTA intent.
+- Updated `RevenueAllocationPage.tsx`:
+  - imports `useLocation` and reads `clan_id`, `community`, or `community_id` from the current query string.
+  - chooses active community context from the loaded allocation `clanId`, then route query, then selected clan storage.
+  - resolves PageTopNav `homeTo` / `backTo` and next-route tiles through `resolveCtaTarget`.
+  - resolves dynamic Loan Summary URLs through the shared `loanSummary` intent with `loanId`.
+  - removed direct hard-coded `/app/...` props from the page.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - route registry assertion now requires `LOAN_SUMMARY`.
+  - Revenue Allocation assertion now requires shared CTA resolution.
+  - Revenue Allocation guard now rejects hard-coded `to="/app..."`, `homeTo="/app..."`, and `backTo="/app..."` on that page.
+- Verification:
+  - `npx eslint --no-warn-ignored src/lib/appRoutes.ts src/lib/ctaTargets.ts src/pages/RevenueAllocationPage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - Revenue Allocation route replacement-character scan passed.
+  - `npm run build` passed from `frontend` outside the sandbox.
+- Remaining truth:
+  - Withdrawal Instructions and Payout Details still have direct `/app/...` route props in the withdrawal/payout family.
+  - The next bounded money-flow continuation should migrate those two together or one at a time, then tighten their audit blocks.
+
+### Button stability withdrawal/payout + small-route resolver slices (2026-05-10)
+
+- Continued the route/CTA stabilization work from Payment Rails and Revenue Allocation into the remaining bounded money-flow pair and several compact route surfaces.
+- Updated shared route/CTA registry:
+  - `frontend/src/lib/appRoutes.ts` now includes `PAYOUT_DETAILS` and applies community query context to it.
+  - `frontend/src/lib/ctaTargets.ts` now includes the `payoutDetails` CTA intent.
+- Updated `frontend/src/pages/WithdrawalInstructionsPage.tsx`:
+  - removed the page-local `communityTo("/app/...")` route helper from important CTAs.
+  - resolves PageTopNav routes, support-continuation navigation, rail actions, result actions, and next-route tiles through `resolveCtaTarget`.
+  - preserves active community context for Marketplace, Finance, Payout Details, Payment Rails, Loan Readiness, Loan Suggestions, Loan Workbench, Loans, and Notifications.
+- Updated `frontend/src/pages/PayoutDetailsPage.tsx`:
+  - reads community context from the current query string before falling back to selected clan storage.
+  - resolves PageTopNav routes and the Money Out / Loans next actions through `resolveCtaTarget`.
+  - removed unused hard-coded `ctaTo: "/app/..."` fields from local next-step state.
+- Updated compact route surfaces:
+  - `frontend/src/pages/AppearancePage.tsx` now resolves Settings shortcut routes for Payout Details, Notifications, and CCI/Identity through the shared CTA resolver.
+  - `frontend/src/pages/CCIReadingPage.tsx` now resolves Dashboard, CCI/Identity, and Trust routes through the shared CTA resolver.
+  - `frontend/src/pages/BorrowerPreflightPage.tsx` now resolves Dashboard, Loans, Loan Readiness, and the anchored Dashboard commitment route through the shared CTA resolver.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - route-registry assertion now requires `PAYOUT_DETAILS`.
+  - Withdrawal Instructions, Payout Details, Appearance, CCI Reading, and Borrower Preflight assertions now require shared CTA resolution.
+  - those pages now reject hard-coded `to="/app..."`, `homeTo="/app..."`, and `backTo="/app..."` route props where applicable.
+- Verification:
+  - `npx eslint --no-warn-ignored src/lib/appRoutes.ts src/lib/ctaTargets.ts src/pages/WithdrawalInstructionsPage.tsx src/pages/PayoutDetailsPage.tsx src/pages/AppearancePage.tsx src/pages/CCIReadingPage.tsx src/pages/BorrowerPreflightPage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - Replacement-character scan passed for the touched route-registry pages and audit file.
+  - `npm run build` passed from `frontend` after the withdrawal/payout slice and again after the Appearance / CCI Reading / Borrower Preflight compact-route slices.
+- Remaining truth:
+  - A broad scan still finds many direct `/app/...` route strings across routed pages, especially admin, Demand Box, Community Home, Dashboard, trust, loan, finance, and profile surfaces.
+  - The current scan count after this slice was 200 broad matches for direct app routes using `to="/app`, `homeTo="/app`, `backTo="/app`, `ctaTo: "/app`, or direct navigate patterns.
+  - The shared route/CTA system is real and expanding, but the full app is not yet completely resolver-driven. Do not claim the button protocol is finished until the remaining direct-route clusters are migrated or explicitly documented as safe exceptions.
+
+### Button stability Demand Box / support route resolver slice (2026-05-10)
+
+- Continued the route/CTA stabilization into the Demand Box and borrower support route family.
+- Confirmed `frontend/src/pages/MarketplaceWorkspacePage.tsx` was already using shared CTA resolution and did not show direct `/app/...` route props in the focused scan.
+- Updated shared route/CTA registry:
+  - `frontend/src/lib/appRoutes.ts` now includes `GUARANTOR_INBOX` and applies community query context to it.
+  - `frontend/src/lib/ctaTargets.ts` now includes the `guarantorInbox` CTA intent.
+- Updated `frontend/src/pages/DemandBoxPage.tsx`:
+  - resolves Dashboard, Community Home, Marketplace fallback, and Notifications through `resolveCtaTarget`.
+  - preserves origin-aware return behavior when the page was opened from a specific source, while the default Marketplace fallback is now resolver-driven.
+- Updated support pages:
+  - `frontend/src/pages/LoansPage.tsx` now resolves Dashboard, Marketplace support-start hash, Money In, Money Out, Loan Readiness, Loan Suggestions, Guarantor Inbox, Notifications, Guarantor Earnings, and Marketplace through `resolveCtaTarget`.
+  - `frontend/src/pages/LoanReadinessPage.tsx` now resolves state-derived recommendation CTAs, PageTopNav routes, and route tiles through `resolveCtaTarget`.
+  - `frontend/src/pages/LoanSuggestionsPage.tsx` now resolves state-derived next-route CTAs, PageTopNav routes, and route tiles through `resolveCtaTarget`.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - route-registry assertion now requires `GUARANTOR_INBOX`.
+  - Demand Box, Loans, Loan Readiness, and Loan Suggestions assertions now require shared CTA resolution.
+  - those pages now reject hard-coded `to="/app..."`, `homeTo="/app..."`, `backTo="/app..."`, and old `communityTo("/app...")` patterns where applicable.
+- Verification:
+  - `npx eslint --no-warn-ignored src/lib/appRoutes.ts src/lib/ctaTargets.ts src/pages/DemandBoxPage.tsx src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `git diff --check` reported only repo line-ending warnings, no whitespace errors.
+  - Replacement-character scan passed for the touched route-registry/support files and audit file.
+  - `npm run build` passed from `frontend`.
+- Remaining truth:
+  - Broad direct-route scan count moved from 200 to 182 after this slice.
+  - Remaining hard-coded app routes are still present across admin, Community Home, Dashboard, trust, finance, profile, and other older route surfaces.
+  - Dashboard remains a special caution area because Market Wisdom and profile picture frame tools are explicitly frozen.
+
+### Button stability admin command route resolver slice (2026-05-10)
+
+- Continued the system-level button stability work into the admin command-center route family.
+- Updated shared route/CTA registry:
+  - `frontend/src/lib/appRoutes.ts` now includes `SYSTEM_OPERATIONS`, `BANK_CONSOLE`, `INCOMPLETE_LOANS`, `IDENTITY_RISK`, `TRUST_ANALYTICS`, `TRUST_EVENTS`, `TRUST_GRAPH`, `EXPOSURE_ADMIN`, and `REVENUE_ALLOCATION`.
+  - `frontend/src/lib/ctaTargets.ts` now includes matching CTA intents for those admin destinations.
+- Updated command/admin pages:
+  - `SystemOperationsPage.tsx`, `ExposureAdminPage.tsx`, `TrustAnalyticsPage.tsx`, and `AdminTrustGraphPage.tsx` were already migrated earlier in this admin slice.
+  - `BankConsolePage.tsx` now resolves PageTopNav routes, next-step CTAs, and utility links through `resolveCtaTarget`.
+  - `AdminIncompleteLoansPage.tsx` now resolves PageTopNav routes, command routes, and loan-summary links through `resolveCtaTarget`.
+  - `AdminTrustEventsPage.tsx` now resolves PageTopNav routes and admin route CTAs through `resolveCtaTarget`.
+  - `TrustCommandCentrePage.tsx` now resolves command route cards, where-next actions, executive next action, PageTopNav, and auxiliary executive links through `resolveCtaTarget`.
+  - `ExposurePage.tsx` now resolves Trust Analytics and Dashboard return through `resolveCtaTarget` instead of hard-coded command-center and root routes.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - admin command, trust events, incomplete loans, bank console, command centre, and exposure assertions now require shared CTA resolution.
+  - those pages now reject hard-coded `to="/app..."`, `homeTo="/app..."`, and `backTo="/app..."` route props where applicable.
+- Verification:
+  - `npx eslint --no-warn-ignored src/lib/appRoutes.ts src/lib/ctaTargets.ts src/pages/TrustCommandCentrePage.tsx src/pages/ExposurePage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - Focused eslint also passed for `AdminTrustEventsPage.tsx`, `BankConsolePage.tsx`, and `AdminIncompleteLoansPage.tsx`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `git diff --check` on touched files reported only repo line-ending warnings, no whitespace errors.
+  - `npm run build` passed from `frontend`.
+- Remaining truth:
+  - Broad routed-page direct app-route CTA scan count is 146 after this slice.
+  - Remaining direct route clusters still exist in Build First Circle, Community Home, Finance, Guarantor Inbox/Earnings, Identity Integrity, Loan Decision/Summary/Workbench, Lock Management, Shop Control/Assets, Repayment, trust surfaces, profile, notifications, Dashboard, and route smoke/dev pages.
+  - Dashboard and Community Home need extra caution because some areas are frozen or high-risk shared navigation surfaces. Do not claim the app-wide button protocol is finished yet.
+
+### Button stability loan, money-in, identity, shop-assets, and activation continuation (2026-05-10)
+
+- Continued the system-level CTA route migration after the admin/support/trust slices.
+- Updated shared route/CTA registry:
+  - `frontend/src/lib/appRoutes.ts` now includes `REPAYMENT` for `/app/payment/loans/:loanId` and `BUILD_FIRST_CIRCLE`.
+  - `frontend/src/lib/ctaTargets.ts` now includes `repayment` and `buildFirstCircle` intents.
+  - repayment and loan summary dynamic ids are now assembled through the route registry rather than page-local string interpolation.
+- Updated loan support pages:
+  - `LoanWorkbenchPage.tsx` now resolves PageTopNav, next-route state, Loan Summary, Revenue/Finance, Payment Instructions, Readiness, Suggestions, and Loans routes through `resolveCtaTarget`.
+  - `LoanSummaryPage.tsx` now resolves PageTopNav, Workbench, Suggestions, Readiness, Revenue/Finance, Repayment, and Loans routes through `resolveCtaTarget`, using the loaded loan community id when available.
+- Updated money and trust pages:
+  - `PaymentInstructionsPage.tsx` removed its local `APP_TARGETS`/`communityTo` routing layer and now resolves Money In next-route tiles through the shared CTA resolver.
+  - `FinancePage.tsx` now resolves PageTopNav, Money In, Money Out, Payment Rails, Payout Details, Loan Readiness, Trust Passport, and Loans through the shared CTA resolver.
+  - `IdentityIntegrityPage.tsx` now resolves PageTopNav, Trust Passport, TrustSlip, Action Inbox, and its fallback next move through the shared CTA resolver.
+- Updated shop/activation pages:
+  - `BuildFirstCirclePage.tsx` now resolves Dashboard and Community Home PageTopNav routes through the shared CTA resolver.
+  - `ShopAssetsPage.tsx` now resolves Dashboard and Shop Control routes through the shared CTA resolver.
+  - `MemberActivationPage.tsx` now resolves post-activation redirect and post-activation route CTAs through the shared CTA resolver.
+  - `ActivateMembershipPage.tsx` now resolves its activation redirect through the shared CTA resolver.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - added/strengthened resolver assertions for the pages above.
+  - added regression guards against hard-coded `to="/app..."`, `homeTo="/app..."`, `backTo="/app..."`, direct activation `navigate("/app...")`, and legacy local route helpers in these migrated pages.
+- Verification:
+  - Focused eslint passed for each touched slice.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` initially failed inside the sandbox with Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining truth:
+  - The app-wide button protocol is materially stronger but still not fully complete.
+  - A blunt `/app/` scan still returns 248 raw strings across pages/components. Many are route catalogs, smoke checks, public URL builders, or non-CTA route classifiers, but important direct CTA clusters still remain.
+  - Focused remaining direct CTA clusters include `ClansPage.tsx`, `CommunityHomePage.tsx`, `MyGMFNAndIPage.tsx`, `NotificationsPage.tsx`, `ShopControlPage.tsx`, `TrustScorePage.tsx`, and `RequireAuth.tsx`.
+  - `DashboardPage.tsx` still has many local route constants and dynamic CTA builders. Treat it with extra caution because the Market Wisdom presentation and profile picture frame tools are explicitly frozen.
+  - `CommunityHomePage.tsx` is also high-risk because it is a central authenticated landing surface with many event-driven route handlers.
+  - Next recommended continuation: migrate `NotificationsPage.tsx` and `MyGMFNAndIPage.tsx` first because they have small, visible direct CTA clusters; then handle `ClansPage.tsx`; then carefully plan `ShopControlPage.tsx`, `CommunityHomePage.tsx`, `RequireAuth.tsx`, and Dashboard-specific route constants.
+
+### Button stability direct-CTA completion slice (2026-05-10)
+
+- Completed the remaining visible direct-CTA route migration from the button stability long-haul pass.
+- Updated shared route/CTA registry:
+  - `frontend/src/lib/appRoutes.ts` now includes `COMMUNITY_DETAIL`, `COMMUNITY_JOIN_REQUESTS`, `CLANS`, `SHOP_ASSETS`, `VAULT_CONTROL`, `FREE_SPOTLIGHT`, `SUBSCRIPTION_SPOTLIGHT`, and `CCI_READING`.
+  - `frontend/src/lib/ctaTargets.ts` now includes matching intents for those destinations.
+- Migrated remaining page/component route clusters through `resolveCtaTarget`:
+  - `NotificationsPage.tsx` now resolves PageTopNav and onboarding trust/dashboard CTAs through shared CTA resolution while keeping its notification-target normalization table.
+  - `MyGMFNAndIPage.tsx` now resolves authenticated route tiles and tab links through shared CTA resolution.
+  - `ClansPage.tsx` now resolves dashboard, community, community detail, first-circle, demand, shop, and marketplace CTAs through shared CTA resolution.
+  - `TrustScorePage.tsx` now resolves PageTopNav, surface cards, notification fallback, TrustSlip, CCI, and verify routes through shared CTA resolution.
+  - `RequireAuth.tsx` now uses stable CTA links and shared CTA resolution for admin-denied and continuity recovery actions.
+  - `CommunityHomePage.tsx` now resolves Dashboard, Clans, Marketplace, Shop Control hashes, Free/Subscription Spotlight, Vault, First Circle, Finance, Loans, Trust, and Notifications through shared CTA resolution.
+  - `ShopControlPage.tsx` now resolves hero shortcuts, PageTopNav routes, paid spotlight route, Shop Assets, TrustSlip, Vault, Free Spotlight, and Subscription Spotlight through shared CTA resolution.
+  - `CommunityShopControlPanel.tsx` now resolves owner panel shortcuts, marketplace, gallery, spotlight, subscription spotlight, and vault through shared CTA resolution.
+  - `DashboardPage.tsx` received the smallest possible route-only patch for attention trust-journey and community join-request CTAs, preserving the frozen Market Wisdom presentation.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - strengthened assertions for the migrated pages/components to require shared CTA resolution, not just shared button primitives.
+  - added regression guards against direct `to="/app..."`, `homeTo="/app..."`, `backTo="/app..."`, direct `navigate("/app...")`, direct `navigateWithOrigin(navigate, "/app...")`, local `withClanQuery("/app...")`, direct `openPanelRoute("/app...")`, and direct `ctaTo` app-route patterns on the migrated surfaces.
+- Verification:
+  - `npx eslint --no-warn-ignored src/lib/appRoutes.ts src/lib/ctaTargets.ts src/pages/NotificationsPage.tsx src/pages/MyGMFNAndIPage.tsx src/pages/ClansPage.tsx src/pages/TrustScorePage.tsx src/components/RequireAuth.tsx src/pages/CommunityHomePage.tsx src/pages/ShopControlPage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npx eslint --no-warn-ignored src/lib/appRoutes.ts src/lib/ctaTargets.ts src/pages/DashboardPage.tsx src/components/CommunityShopControlPanel.tsx src/pages/CommunityHomePage.tsx src/pages/ShopControlPage.tsx tools/audit-button-stability.mjs` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - Strict direct-CTA scan across `frontend/src/pages` and `frontend/src/components` for the common bad patterns returned `0`.
+  - `npm run build` still fails inside the sandbox with Vite/esbuild `spawn EPERM`, then passes outside the sandbox after escalation.
+- Remaining truth:
+  - This completes the visible direct-CTA hard-coded route sweep for the common button/nav patterns, not a formal proof that every raw string in the codebase is semantically centralized.
+  - `DashboardPage.tsx` still has a large local `DASHBOARD_TARGETS` alias/normalization layer. The remaining raw `/app/...` strings there are mostly route catalog/normalizer constants and frozen/high-risk dashboard route logic. Do not broadly rewrite it without a separate dashboard-specific plan.
+  - Backend invite/existing-member protocol work remains separate from this frontend button-stability pass unless already completed in another slice.
+
+### Public shop root-link protocol (2026-05-10)
+
+- Corrected the ordinary public shop sharing contract so normal shop/block/item copy actions open the whole public shop root, not the `#shop-diaries` shelf or an isolated block target.
+- Updated `frontend/src/lib/publicLinks.ts`:
+  - `publicShopPath(gmfnId)` now returns `/shop/:gmfnId`.
+  - Added `publicShopRootPath()` / `publicShopRootUrl()` to strip all query strings and fragments from direct backend shop URLs before ordinary sharing.
+  - Removed the exported `publicShopDiariesPath()` / `publicShopDiariesUrl()` helpers entirely. The `PUBLIC_SHOP_DIARIES_ANCHOR` constant remains only for the public page's internal section id/reveal behavior.
+- Updated ordinary sharing surfaces:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx` now normalizes direct backend public shop URLs through `publicShopRootUrl(...)` before copy/share.
+  - `frontend/src/pages/ShopAssetsPage.tsx` block/item copy actions still use the shared public-shop URL helper, but the copied link is now the full shop root and the confirmation copy says to mention the block/item in the message.
+- Strengthened `frontend/tools/audit-link-contracts.mjs`:
+  - asserts canonical public shop links are root links.
+  - asserts ordinary marketplace workspace sharing does not force `publicShopDiariesUrl`.
+  - rejects stale Shop Assets copy feedback such as "Shop gallery link copied", "Block link copied", or "Item link copied" for ordinary public share actions.
+  - asserts `RedirectPublicShopAlias` does not preserve legacy query strings, hash fragments, or `useLocation` state when redirecting `/open-shop/:gmfnId` and `/shop-gallery/:gmfnId` aliases.
+  - scans all frontend source files and fails if `publicShopDiariesPath(...)` or `publicShopDiariesUrl(...)` helpers are reintroduced or called.
+  - asserts public shop gallery still renders the full shop composition: signboard, status/trust cues, mini spotlight, Vault promo, then the approved 12-block shelf.
+- Updated `docs/SCREEN_SPECS.md` so the current source spec says ordinary public shop links use root `/shop/{GSN_ID}` and reserve `#shop-diaries`/product reveal behavior for explicit legacy or deep-link handling after the full shop loads.
+- Updated `frontend/src/pages/RouteSmokeCheckPage.tsx` wording so `/app/open-shop` and `/app/shop-gallery` are described as internal owner aliases, while public ID-bearing aliases are described as redirecting to root `/shop/:gmfnId`.
+- Vault/private links were not rerouted. `/vault/:token` and shop-access aliases remain exact private targets governed by Vault rules.
+- Verification:
+  - `npx eslint --no-warn-ignored src/lib/publicLinks.ts src/pages/MarketplaceWorkspacePage.tsx src/pages/ShopAssetsPage.tsx tools/audit-link-contracts.mjs` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp .pytest_tmp\public_shop` passed outside the sandbox: 7 passed, 8 warnings. The sandboxed attempts failed on pytest temp-directory permissions, not public-shop assertions.
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild sandbox `spawn EPERM` issue.
+  - Follow-up alias/spec hardening passed `npm run audit:link-contracts` and `npx eslint --no-warn-ignored tools/audit-link-contracts.mjs`.
+  - Follow-up source-wide diary-helper guard and smoke wording passed `npm run audit:link-contracts` and `npx eslint --no-warn-ignored src/pages/RouteSmokeCheckPage.tsx tools/audit-link-contracts.mjs`.
+  - Follow-up diary-helper removal passed `npm run audit:link-contracts` and `npx eslint --no-warn-ignored src/lib/publicLinks.ts tools/audit-link-contracts.mjs`.
+  - Follow-up root-normalizer tightening passed `npm run audit:link-contracts` and `npx eslint --no-warn-ignored src/lib/publicLinks.ts tools/audit-link-contracts.mjs`.
+- Remaining truth:
+  - Backend public-shop behavior already hid Vault-private products and returned full public shop data; this slice mainly fixed the ordinary frontend share target and locked the contract with audits.
+  - Legacy or explicit hash links can still reveal a shelf/product after full page load. That is acceptable as intentional/legacy deep-link behavior, but ordinary public share must stay on `/shop/:gmfnId`.
+
+### Existing-GMFN community join protocol hardening (2026-05-10)
+
+- Hardened the existing-member join path without creating a second invite-link family or a parallel identity model.
+- Confirmed the main `/clans/join-requests` backend route already follows the core protocol:
+  - authenticated users are treated as existing-identity applicants;
+  - `_ensure_user_gmfn_id(...)` preserves/ensures the same global ID;
+  - existing active membership returns `already_member`;
+  - repeated pending requests return `pending_request_exists`;
+  - approval for existing identities creates membership and does not create an activation package.
+- Updated `frontend/src/pages/JoinEntryPage.tsx`:
+  - logged-in users with an existing GMFN ID see “Join this community with your existing GMFN identity” and submit the invite as an existing-user join request;
+  - logged-out users now see the explicit branch “I already have a GMFN ID” versus “I am new to GSN”;
+  - the new-person form is only available to logged-out users who choose the new-member path;
+  - logged-in users with unclear identity state are blocked from falling through to new-person signup copy.
+- Updated `gmfn_backend/app/api/routes/clans.py` direct `/clans/{clan_id}/join` route:
+  - reuses/ensures the authenticated user’s GMFN ID before creating membership;
+  - returns `joined_successfully` with `user_id`, `gmfn_id`, `existing_identity`, and `identity_reused`;
+  - repeated clicks now return `already_member` with the same identity/membership instead of a hard duplicate-membership error;
+  - logs direct existing-user join and already-member outcomes through `log_trust_event`.
+- Updated `gmfn_backend/app/core/trust_event_types.py` with `CLAN_JOINED = "clan_joined"` so the direct membership route does not reuse the invite-specific event name.
+- Updated `gmfn_backend/tests/test_join_requests.py` with `test_direct_clan_join_reuses_existing_identity_and_is_idempotent`.
+- Updated `frontend/tools/audit-entry-auth-contracts.mjs`:
+  - requires the logged-out invite branch;
+  - requires logged-in existing-identity reassurance;
+  - requires the logged-in/no-GMFN guard;
+  - refreshed the activation success assertion to match the current shared `routeTarget("dashboard")` contract.
+- Verification:
+  - `python -m pytest -q gmfn_backend/tests/test_join_requests.py -q` passed: 37 tests.
+  - Focused join protocol tests passed: 4 passed.
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `npx eslint src/pages/JoinEntryPage.tsx tools/audit-entry-auth-contracts.mjs` passed from `frontend`.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining truth:
+  - The direct `/clans/{clan_id}/join` route is now idempotent for active memberships, but it is still a direct membership route. Community-governed admission should continue to use `/clans/join-requests` or `/community/join-by-invite` where voting/approval is required.
+
+### Pending join request database guard (2026-05-10)
+
+- Closed the schema-level gap left by the existing-GMFN join hardening pass.
+- Updated `gmfn_backend/app/db/models.py`:
+  - `ClanJoinRequest` now declares a partial unique index named `uq_clan_join_requests_pending_user_clan`;
+  - the index covers `(clan_id, applicant_user_id)` only when `status = 'pending'`;
+  - this lets a user have historical approved/rejected requests while preventing duplicate active pending requests for the same community.
+- Added Alembic migration `gmfn_backend/alembic/versions/20260510_add_pending_join_request_unique_guard.py`:
+  - revises current head `20260504_add_vault_domain_tables`;
+  - defensively skips if the table or index already exists;
+  - refuses to create the guard if duplicate pending rows already exist, so production data is not silently deleted or rewritten;
+  - creates the partial unique index for PostgreSQL and SQLite;
+  - leaves route-level idempotency as the guard for unsupported dialects.
+- Updated `gmfn_backend/tests/test_join_requests.py`:
+  - added a direct database regression that attempts to insert two pending join requests for the same `(clan_id, applicant_user_id)` and expects an `IntegrityError`.
+- Verification:
+  - `python -m pytest -q gmfn_backend/tests/test_join_requests.py::test_database_rejects_duplicate_pending_join_request_for_same_user_and_clan gmfn_backend/tests/test_join_requests.py::test_logged_in_existing_member_repeated_join_request_is_idempotent` passed: 2 tests.
+  - `python -m pytest -q gmfn_backend/tests/test_join_requests.py -q` passed: 38 tests.
+  - `python -m compileall -q gmfn_backend/app/db/models.py gmfn_backend/alembic/versions/20260510_add_pending_join_request_unique_guard.py gmfn_backend/app/core/trust_event_types.py gmfn_backend/app/api/routes/clans.py` passed.
+  - `python -m alembic heads` from `gmfn_backend` reports `20260510_add_pending_join_request_unique_guard (head)`.
+- Remaining truth:
+  - This DB guard is implemented for PostgreSQL/SQLite partial-index dialects. If deployment ever moves to a dialect without partial unique indexes, the migration intentionally skips the schema guard and the route-level idempotency remains the practical protection.
+  - Existing production duplicates, if any, must be resolved deliberately before applying this migration. The migration will stop rather than guess which pending request to keep.
+
+### Multi-community identity acceptance scenarios (2026-05-10)
+
+- Continued the existing-GMFN join hardening with explicit acceptance coverage for the real-life cases the protocol calls out.
+- Updated `gmfn_backend/app/api/routes/clans.py` community creation:
+  - `create_clan(...)` now calls `_ensure_user_gmfn_id(db, current_user)` before creating the community owner membership;
+  - owner membership creation now goes through `ensure_membership(...)`, matching the shared membership helper and archived-membership behavior.
+- Updated `gmfn_backend/tests/test_join_requests.py`:
+  - `test_existing_member_creates_second_community_without_new_identity` proves a user who already belongs to one community can create another community, keep the same `gmfn_id`, keep one user row, and gain an admin membership in the new community.
+  - `test_two_community_owners_can_mutually_join_without_duplicate_identity` proves two owners can mutually join each other's communities, each keeping one global GMFN ID while roles remain local: admin in their own community and member in the other community.
+- Verification:
+  - Focused acceptance tests passed: 3 tests.
+  - `python -m pytest -q gmfn_backend/tests/test_join_requests.py -q` passed: 40 tests.
+  - `python -m compileall -q gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py` passed.
+  - `git diff --check -- gmfn_backend/app/api/routes/clans.py gmfn_backend/tests/test_join_requests.py docs/HANDOFF_NOTES.md` passed.
+- Remaining truth:
+  - The mutual-owner test uses the direct invite acceptance path (`/community/join-by-invite`), not the voting join-request path. The join-request path is separately covered for existing identity reuse, pending idempotency, approval without activation, and duplicate pending DB rejection.
+  - Direct invite join still assigns role `"member"` while direct `/clans/{id}/join` assigns role `"user"`. That is existing local-role vocabulary drift, not a duplicate-identity problem. Standardizing role names would be a separate product/schema cleanup.
+
+### Membership role vocabulary cleanup (2026-05-10)
+
+- Standardized the direct invite acceptance path to create ordinary non-admin community memberships with role `"user"` instead of `"member"`.
+- Updated `gmfn_backend/app/services/community_integrity_service.py`:
+  - `join_clan_via_invite(...)` now creates `ClanMembership(..., role="user")`;
+  - this matches `/clans/{clan_id}/join`, join-request approval, and admin member-add normalization in `gmfn_backend/app/api/routes/clans.py`.
+- Updated `gmfn_backend/tests/test_join_requests.py`:
+  - mutual owner join assertions now expect local roles `admin` in the owned community and `user` in the joined community;
+  - direct invite join now asserts the existing member keeps roles `["user", "admin"]` across the two communities.
+- Verification:
+  - Focused role/identity tests passed: 3 tests.
+  - `python -m pytest -q gmfn_backend/tests/test_join_requests.py -q` passed: 40 tests.
+  - `python -m pytest -q gmfn_backend/tests/test_community_integrity_service.py gmfn_backend/tests/test_clan_members.py gmfn_backend/tests/test_clan_pool.py gmfn_backend/tests/test_guarantor_invite_list.py -q` passed: 15 tests.
+  - `python -m compileall -q gmfn_backend/app/services/community_integrity_service.py gmfn_backend/tests/test_join_requests.py` passed.
+  - `git diff --check -- gmfn_backend/app/services/community_integrity_service.py gmfn_backend/tests/test_join_requests.py docs/HANDOFF_NOTES.md` passed.
+- Remaining truth:
+  - Some older test fixtures still use `"member"` as a generic non-admin role to prove non-admin behavior. Runtime join paths now create `"user"` for ordinary non-admin members, but the permission system still treats anything other than `"admin"` as non-admin.
+
+### Legacy clan member route compatibility cleanup (2026-05-10)
+
+- Cleaned up the stale role default in the older `gmfn_backend/app/routers/clans.py` compatibility router even though the active app router is `app.api.routes.clans`.
+- Updated `gmfn_backend/app/core/clan_auth.py`:
+  - restored a small `require_clan_admin(...)` compatibility helper so the legacy router can import cleanly if a future entrypoint touches it.
+- Updated `gmfn_backend/app/schemas/clan_memberships.py`:
+  - `ClanMemberCreate.role` now defaults to `"user"` instead of `"member"`.
+- Updated `gmfn_backend/app/routers/clans.py`:
+  - member add fallback now normalizes to `"user"` and only preserves `"admin"` when explicitly requested.
+- Updated tests:
+  - `gmfn_backend/tests/test_clan_members.py` now imports the legacy router and verifies the schema default is `"user"`.
+  - `gmfn_backend/tests/test_entry_create.py` now uses role `"user"` for the already-active account fixture.
+- Verification:
+  - `python -m pytest -q gmfn_backend/tests/test_clan_members.py gmfn_backend/tests/test_join_requests.py -q` passed: 45 tests.
+  - `python -m pytest -q gmfn_backend/tests/test_entry_create.py gmfn_backend/tests/test_clan_members.py gmfn_backend/tests/test_join_requests.py -q` passed: 65 tests.
+  - `python -m compileall -q gmfn_backend/app/core/clan_auth.py gmfn_backend/app/schemas/clan_memberships.py gmfn_backend/app/routers/clans.py gmfn_backend/tests/test_clan_members.py` passed.
+  - `python -m compileall -q gmfn_backend/tests/test_entry_create.py` passed.
+- Remaining truth:
+  - The only remaining `"member"` string hits in backend tests are non-admin override fixture names/comments and one fake object in `conftest.py`, not runtime membership creation paths.
+
+### Test role fixture normalization (2026-05-10)
+
+- Finished the role vocabulary cleanup by normalizing backend test fixtures that still seeded `"member"` as a role value.
+- Updated `gmfn_backend/tests/conftest.py`:
+  - `seed_clan_member_membership` now inserts role `"user"`;
+  - `seed_user2_member_membership` now inserts role `"user"`;
+  - `override_clan_ctx_member` now returns a fake membership with role `"user"`;
+  - comments now describe these as non-admin members instead of implying `"member"` is the canonical role value.
+- Updated comments in:
+  - `gmfn_backend/tests/test_clan_pool.py`;
+  - `gmfn_backend/tests/test_guarantor_invite_list.py`.
+- Verification:
+  - `python -m pytest -q gmfn_backend/tests/test_clan_pool.py gmfn_backend/tests/test_guarantor_invite_list.py gmfn_backend/tests/test_clan_members.py gmfn_backend/tests/test_join_requests.py -q` passed: 54 tests.
+  - `python -m pytest -q gmfn_backend/tests/test_entry_create.py gmfn_backend/tests/test_clan_pool.py gmfn_backend/tests/test_guarantor_invite_list.py gmfn_backend/tests/test_clan_members.py gmfn_backend/tests/test_join_requests.py -q` passed: 74 tests.
+  - `python -m compileall -q gmfn_backend/tests/conftest.py gmfn_backend/tests/test_clan_pool.py gmfn_backend/tests/test_guarantor_invite_list.py` passed.
+  - Source scan for `role="member"`, `role = "member"`, `role=\"member\"`, `Optional[str] = "member"`, and `payload.role or "member"` across `gmfn_backend/app` and `gmfn_backend/tests` returned no matches.
+- Remaining truth:
+  - The word "member" still appears as a normal English noun in route names, fixture names, comments, and user-facing/community membership concepts. That is fine. The canonical stored ordinary role value is now `"user"` across active join paths and test role seeds.
+
+### Existing-GMFN invite login continuation (2026-05-10)
+
+- Fixed the logged-out existing-GMFN branch so invite context survives sign-in.
+- Updated `frontend/src/pages/LoginPage.tsx`:
+  - added `joinRedirectFromLoginSearch(...)`;
+  - when `/login` is opened with `invite_code`, `invite`, `join_code`, or `code`, successful login now redirects back to `/join?...` with `invite_code` normalized;
+  - login-only query keys `force` and `session` are stripped before returning to the join flow;
+  - protected-route `location.state.from` still wins when present, so normal auth guards keep their origin-aware behavior.
+- Updated `frontend/tools/audit-entry-auth-contracts.mjs`:
+  - requires invite-aware login continuation;
+  - requires `/join?...` to be preferred before dashboard fallback when invite query context is present.
+- Verification:
+  - `npm run audit:entry-auth` passed from `frontend`.
+  - `npx eslint src/pages/LoginPage.tsx tools/audit-entry-auth-contracts.mjs` passed from `frontend`.
+  - `npm run build` failed inside the sandbox with the known Vite/esbuild `spawn EPERM`, then passed outside the sandbox after escalation.
+- Remaining truth:
+  - This is a frontend route-continuation fix. It does not verify the existing account itself; the backend still remains the source of truth when the joined invite is submitted after login.
