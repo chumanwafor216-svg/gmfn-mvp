@@ -29,7 +29,36 @@ function normalizeApiBaseUrl(raw: unknown): string {
   return base;
 }
 
-const API_BASE_URL = normalizeApiBaseUrl(API_BASE_URL_RAW);
+function localBackendOrigin(): string {
+  if (typeof window === "undefined") return "";
+
+  const hostname = String(window.location?.hostname || "").trim().toLowerCase();
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "0.0.0.0" ||
+    hostname === "::1"
+  ) {
+    return "http://127.0.0.1:8012";
+  }
+
+  return "";
+}
+
+function resolveApiBaseUrl(raw: unknown): string {
+  const normalized = normalizeApiBaseUrl(raw);
+
+  if (normalized === "/api" && typeof window !== "undefined") {
+    const port = String(window.location?.port || "").trim();
+    if (port && port !== "5173") {
+      return localBackendOrigin() || normalized;
+    }
+  }
+
+  return normalized;
+}
+
+const API_BASE_URL = resolveApiBaseUrl(API_BASE_URL_RAW);
 
 export type EntryMode =
   | "general"

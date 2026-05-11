@@ -60,8 +60,14 @@ assertContains(
 
 assertContains(
   "src/lib/api.ts",
-  /function normalizeApiBaseUrl\(raw: unknown\): string \{[\s\S]*?if \(path\.toLowerCase\(\) === "\/api"\) \{[\s\S]*?return url\.origin;[\s\S]*?const API_BASE_URL = normalizeApiBaseUrl\(API_BASE_URL_RAW\);/,
+  /function normalizeApiBaseUrl\(raw: unknown\): string \{[\s\S]*?if \(path\.toLowerCase\(\) === "\/api"\) \{[\s\S]*?return url\.origin;[\s\S]*?function resolveApiBaseUrl\(raw: unknown\): string \{[\s\S]*?const normalized = normalizeApiBaseUrl\(raw\);/,
   "Production API bases such as https://gmfn-api.onrender.com/api must normalize to the backend origin before login appends /auth/login."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /function resolveApiBaseUrl\(raw: unknown\): string \{[\s\S]*?normalized === "\/api"[\s\S]*?port !== "5173"[\s\S]*?return localBackendOrigin\(\) \|\| normalized;[\s\S]*?const API_BASE_URL = resolveApiBaseUrl\(API_BASE_URL_RAW\);/,
+  "Local frontend ports without the Vite proxy, such as 5174, must call the local FastAPI backend directly instead of dead-ending at /api/auth/login."
 );
 
 assertContains(

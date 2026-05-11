@@ -22966,3 +22966,23 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This is a frontend production API-base fix. If the password/account itself is wrong or inactive, login should no longer say `HTTP 404`; it should show the real backend response such as invalid credentials or activation required.
   - Render still needs to deploy the new frontend bundle before the phone sees this fix.
+
+### Local 5174 login HTTP 404 correction (2026-05-11)
+
+- Owner clarified the `HTTP 404` sign-in failure was on local `http://127.0.0.1:5174`, while Render was okay.
+- Local checks confirmed:
+  - `POST http://127.0.0.1:8012/auth/login` reaches FastAPI and returns `401` for intentionally bad credentials.
+  - `POST http://127.0.0.1:5174/api/auth/login` returns blank `404`.
+  - Therefore local `5174` is serving the frontend without the Vite `/api` proxy that exists on the configured `5173` dev server.
+- Updated `frontend/src/lib/api.ts`:
+  - `resolveApiBaseUrl(...)` keeps relative `/api` for proxied local `5173`;
+  - when the app is opened from another local port such as `5174`, it routes API calls directly to `http://127.0.0.1:8012`.
+- Updated `frontend/tools/audit-entry-auth-contracts.mjs`:
+  - added a guard for local no-proxy ports such as `5174`.
+- Verification:
+  - `npm run audit:entry-auth` passed.
+  - `npm run lint` passed.
+  - `npm run build` passed after escalation.
+- Remaining truth:
+  - This expects the backend to be running locally on `127.0.0.1:8012`.
+  - If the active local backend moves to a different port, the frontend dev URL or `VITE_API_BASE_URL` should be adjusted rather than guessing.
