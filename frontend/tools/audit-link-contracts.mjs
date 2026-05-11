@@ -406,20 +406,20 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /const selectedGmfnId = safeStr\([\s\S]*?selectedMember\?\.gmfn_id[\s\S]*?selectedMember\?\.member_gmfn_id[\s\S]*?selectedMember\?\.user\?\.gmfn_id[\s\S]*?if \(selectedGmfnId\) return publicShopUrl\(selectedGmfnId\);/,
-  "Marketplace workspace must turn the selected member GSN ID into the canonical whole public shop domain."
+  /getMarketplaceShops\([\s\S]*?only_active:\s*true[\s\S]*?getShopForMember\(member,\s*shops\)[\s\S]*?shopLinkForRecord\(shop\)/,
+  "Marketplace workspace must load backend-visible shops and only build public shop links from confirmed shop records."
 );
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /publicShopRootUrl\(selectedDirect\)[\s\S]*?publicShopRootUrl\(direct\)[\s\S]*?const link = direct \? publicShopRootUrl\(direct\) : publicShopUrl\(gmfnId\);/,
-  "Marketplace workspace must normalize direct backend shop URLs to the full public shop root, not a block or diary fragment."
+  /function shopLinkForRecord\(shop: any\): string \{[\s\S]*?publicShopRootUrl\(direct\)[\s\S]*?return gmfnId \? publicShopUrl\(gmfnId\) : "";/,
+  "Marketplace workspace must normalize confirmed shop URLs to the full public shop root, not a block or diary fragment."
 );
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /\{shopViewLink \|\| "Public shop link not available yet\."\}/,
-  "Marketplace workspace must visibly show the full public shop domain."
+  /\{shopViewLink \|\|[\s\S]*?"No backend-confirmed public shop link is available for the selected member yet\."\}/,
+  "Marketplace workspace must visibly show the full public shop domain only after a backend-confirmed shop exists."
 );
 
 assertContains(

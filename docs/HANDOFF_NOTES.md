@@ -22916,3 +22916,32 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This does not manufacture a missing production seller identity for anonymous visitors. If a public link points to a GSN/GMFN ID that does not exist in the live database, anonymous visitors still cannot see that nonexistent owner's Shop Diaries.
   - The automatic recovery works for the signed-in owner because the app can read the current owner identity and refresh/create that owner's shop record.
+
+### Marketplace public shop link source correction (2026-05-11)
+
+- Owner challenged whether the previous `Http 404` work followed protocol closely enough, especially because the failing user was logged out.
+- Re-read the marketplace blueprint and Shop Gallery freeze notes before continuing.
+- Corrected the actual logged-out 404 source in `frontend/src/pages/MarketplaceWorkspacePage.tsx`:
+  - Community Access Desk now loads backend-visible active shops for the selected community through `getMarketplaceShops(...)`.
+  - member rows now map members to confirmed visible shop records by owner GSN/GMFN ID or owner user id.
+  - public shop copy/open actions no longer fall back from a raw member GSN/GMFN ID to `/shop/{id}` unless a backend-visible shop record exists.
+  - empty/blocked copy now says no backend-confirmed public shop link is available for the selected member yet.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - replaced the old audit requirement that raw member GSN IDs become public shop links;
+  - added the safer requirement that Marketplace Workspace public shop links come from confirmed shop records.
+- Reverted the broad backend app-entry change from the previous commit in the follow-up worktree:
+  - removed the added `gmfn_backend/app/main.py` API root and backend-host shop redirects from the active diff;
+  - removed `gmfn_backend/tests/test_public_api_landing.py`;
+  - reason: that was global routing, and the logged-out 404 problem belongs to stale/unconfirmed public shop link generation, not a new backend root route.
+- Verification:
+  - `npm run lint` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp C:\tmp\gmfn_mvp_pytest_workspace_shop_links` passed: 11 tests, 10 warnings.
+  - `python -m compileall -q gmfn_backend\app\main.py` passed.
+  - `npm run build` passed after escalation.
+- Remaining truth:
+  - This prevents the Community Access Desk from creating new logged-out public shop 404 links from unconfirmed member IDs.
+  - It does not repair already-copied stale links in somebody's phone history. Those old links need to be replaced by a newly copied confirmed public shop link after deploy.

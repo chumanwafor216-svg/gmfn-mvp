@@ -6,11 +6,10 @@ import traceback
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Optional
-from urllib.parse import quote, urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import distinct
 from sqlalchemy.orm import Session
@@ -27,8 +26,6 @@ import app.db.verification_models  # noqa: F401
 
 from app.db.bank_models import BankEvent
 from app.services.reconciliation_service import reconcile_batch
-
-PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
 
 
 def _truthy(value: str | None) -> bool:
@@ -78,19 +75,6 @@ def _cors_settings() -> tuple[list[str], Optional[str]]:
 def _uploads_dir() -> Path:
     raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
     return Path(raw or "uploads").expanduser()
-
-
-def _public_frontend_origin() -> str:
-    for key in ("PUBLIC_FRONTEND_URL", "GMFN_FRONTEND_BASE_URL", "FRONTEND_BASE_URL"):
-        raw = str(os.getenv(key, "") or "").strip().rstrip("/")
-        if not raw:
-            continue
-
-        parsed = urlsplit(raw)
-        if parsed.scheme in {"http", "https"} and parsed.netloc:
-            return f"{parsed.scheme}://{parsed.netloc}"
-
-    return PUBLIC_FRONTEND_ORIGIN
 
 
 def _reconcile_all_clans_once() -> None:
@@ -218,30 +202,6 @@ if _dev_mode():
 app.include_router(api_router)
 
 
-@app.get("/", tags=["system"])
-def root():
-    return {
-        "ok": True,
-        "service": "GMFN API",
-        "health": "/health",
-        "frontend": _public_frontend_origin(),
-    }
-
-
 @app.get("/health", tags=["system"])
 def health():
     return {"ok": True, "dev_mode": _dev_mode()}
-
-
-@app.get("/shop/{gmfn_id}", include_in_schema=False)
-@app.get("/shop-gallery/{gmfn_id}", include_in_schema=False)
-@app.get("/open-shop/{gmfn_id}", include_in_schema=False)
-def redirect_public_shop_alias(gmfn_id: str):
-    owner_id = quote(str(gmfn_id or "").strip(), safe="")
-    if not owner_id:
-        return RedirectResponse(f"{_public_frontend_origin()}/cover", status_code=307)
-
-    return RedirectResponse(
-        f"{_public_frontend_origin()}/shop/{owner_id}",
-        status_code=307,
-    )

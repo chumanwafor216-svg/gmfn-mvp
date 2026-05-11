@@ -16,6 +16,7 @@ import {
 } from "../lib/institutionalSurface";
 import {
   getClanInviteLink,
+  getMarketplaceShops,
   getSelectedClanId,
   listClanMembers,
   listJoinRequests,
@@ -44,8 +45,71 @@ function safeNum(x: any): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+function rowsOf(input: any): any[] {
+  if (Array.isArray(input)) return input;
+  if (Array.isArray(input?.items)) return input.items;
+  if (Array.isArray(input?.data?.items)) return input.data.items;
+  if (Array.isArray(input?.results)) return input.results;
+  return [];
+}
+
 function ctaPath(target: CtaTarget): string {
   return typeof target.to === "string" ? target.to : String(target.to);
+}
+
+function memberGmfnId(member: any): string {
+  return safeStr(
+    member?.owner_gmfn_id ||
+      member?.gmfn_id ||
+      member?.member_gmfn_id ||
+      member?.user?.gmfn_id ||
+      ""
+  );
+}
+
+function memberUserId(member: any): number {
+  return safeNum(member?.user_id || member?.owner_user_id || member?.id || 0);
+}
+
+function shopOwnerGmfnId(shop: any): string {
+  return safeStr(shop?.owner_gmfn_id || shop?.gmfn_id || shop?.seller_gmfn_id || "");
+}
+
+function shopOwnerUserId(shop: any): number {
+  return safeNum(shop?.owner_user_id || shop?.seller_user_id || shop?.user_id || 0);
+}
+
+function shopDirectUrl(shop: any): string {
+  return safeStr(
+    shop?.shop_view_url ||
+      shop?.shop_link ||
+      shop?.shop_profile_url ||
+      shop?.public_shop_url ||
+      ""
+  );
+}
+
+function shopLinkForRecord(shop: any): string {
+  const direct = shopDirectUrl(shop);
+  if (direct) return publicShopRootUrl(direct);
+
+  const gmfnId = shopOwnerGmfnId(shop);
+  return gmfnId ? publicShopUrl(gmfnId) : "";
+}
+
+function getShopForMember(member: any, shops: any[]): any | null {
+  const gmfnId = memberGmfnId(member).toUpperCase();
+  const userId = memberUserId(member);
+
+  return (
+    shops.find((shop) => {
+      const shopGmfn = shopOwnerGmfnId(shop).toUpperCase();
+      const shopUserId = shopOwnerUserId(shop);
+
+      if (gmfnId && shopGmfn && gmfnId === shopGmfn) return true;
+      return userId > 0 && shopUserId > 0 && userId === shopUserId;
+    }) || null
+  );
 }
 
 function apiBase(): string {
@@ -320,6 +384,7 @@ export default function MarketplaceWorkspacePage() {
   const [inviteInfo, setInviteInfo] = useState<any>(null);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
+  const [shops, setShops] = useState<any[]>([]);
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
 
   useEffect(() => {
@@ -380,10 +445,16 @@ export default function MarketplaceWorkspacePage() {
       setPrivateBlocksLocked(false);
 
       try {
-        const [inviteRes, joinRes, membersRes] = await Promise.allSettled([
+        const [inviteRes, joinRes, membersRes, shopsRes] = await Promise.allSettled([
           getClanInviteLink(activeClanId),
           listJoinRequests(activeClanId),
           listClanMembers(activeClanId),
+          getMarketplaceShops({
+            clan_id: activeClanId,
+            header_clan_id: activeClanId,
+            only_active: true,
+            limit: 100,
+          }),
         ]);
 
         if (inviteRes.status === "fulfilled") {
@@ -413,6 +484,13 @@ export default function MarketplaceWorkspacePage() {
           );
         } else {
           setMembers([]);
+          setPrivateBlocksLocked(true);
+        }
+
+        if (shopsRes.status === "fulfilled") {
+          setShops(rowsOf(shopsRes.value));
+        } else {
+          setShops([]);
           setPrivateBlocksLocked(true);
         }
       } catch (e: any) {
@@ -480,24 +558,13 @@ export default function MarketplaceWorkspacePage() {
     );
   }, [selectedMember]);
 
-  const shopViewLink = useMemo(() => {
-    const selectedDirect = safeStr(
-      selectedMember?.shop_view_url ||
-        selectedMember?.shop_link ||
-        selectedMember?.shop_profile_url ||
-        selectedMember?.public_shop_url ||
-        ""
-    );
-    if (selectedDirect) return publicShopRootUrl(selectedDirect);
+  const selectedMemberShop = useMemo(() => {
+    return selectedMember ? getShopForMember(selectedMember, shops) : null;
+  }, [selectedMember, shops]);
 
-    const selectedGmfnId = safeStr(
-      selectedMember?.owner_gmfn_id ||
-        selectedMember?.gmfn_id ||
-        selectedMember?.member_gmfn_id ||
-        selectedMember?.user?.gmfn_id ||
-        ""
-    );
-    if (selectedGmfnId) return publicShopUrl(selectedGmfnId);
+  const shopViewLink = useMemo(() => {
+    const selectedLink = shopLinkForRecord(selectedMemberShop);
+    if (selectedLink) return selectedLink;
 
     const direct = safeStr(
       inviteInfo?.shop_view_url ||
@@ -509,7 +576,7 @@ export default function MarketplaceWorkspacePage() {
     if (direct) return publicShopRootUrl(direct);
 
     return "";
-  }, [inviteInfo, selectedMember]);
+  }, [inviteInfo, selectedMemberShop]);
 
   const guideUrl = useMemo(() => {
     return publicFrontendUrl("/guide");
@@ -594,6 +661,7 @@ export default function MarketplaceWorkspacePage() {
 
   const memberRows = useMemo(() => {
     return members.map((member: any, idx: number) => {
+      const shop = getShopForMember(member, shops);
       const displayName =
         safeStr(
           member?.display_name ||
@@ -602,17 +670,15 @@ export default function MarketplaceWorkspacePage() {
             member?.email
         ) || `Member ${idx + 1}`;
 
-      const gmfnId = safeStr(
-        member?.gmfn_id ||
-          member?.member_gmfn_id ||
-          member?.user?.gmfn_id
-      );
+      const gmfnId = memberGmfnId(member);
 
       const shopName = safeStr(
-        member?.shop_name ||
+        shop?.name ||
+          member?.shop_name ||
           member?.marketplace_shop_name ||
           member?.shop?.name
       );
+      const shopLink = shopLinkForRecord(shop);
 
       return {
         raw: member,
@@ -620,10 +686,12 @@ export default function MarketplaceWorkspacePage() {
         displayName,
         gmfnId,
         shopName,
+        shopLink,
+        hasVisibleShop: Boolean(shopLink),
         role: safeStr(member?.role || member?.membership_role || "member"),
       };
     });
-  }, [members]);
+  }, [members, shops]);
 
   function copyInviteMessage() {
     const title = safeStr(communityName || "this community");
@@ -703,23 +771,9 @@ export default function MarketplaceWorkspacePage() {
   }
 
   function openShopForMember(member: any) {
-    const direct = safeStr(
-      member?.shop_view_url ||
-        member?.shop_link ||
-        member?.shop_profile_url ||
-        member?.public_shop_url ||
-        ""
-    );
-    const gmfnId = safeStr(
-      member?.owner_gmfn_id ||
-        member?.gmfn_id ||
-        member?.member_gmfn_id ||
-        member?.user?.gmfn_id ||
-        ""
-    );
-    const link = direct ? publicShopRootUrl(direct) : publicShopUrl(gmfnId);
+    const link = shopLinkForRecord(getShopForMember(member, shops));
     if (!link) {
-      setMsg("This member does not yet have a public shop identity.");
+      setMsg("This member does not have a backend-confirmed visible public shop yet.");
       return;
     }
     window.open(link, "_blank", "noopener,noreferrer");
@@ -1151,8 +1205,9 @@ export default function MarketplaceWorkspacePage() {
                   lineHeight: 1.7,
                 }}
               >
-                Select a member row below, then share the complete public
-                shop-face domain for that member.
+                Select a member row below. A public shop link appears only
+                when that member has a backend-confirmed visible shop in this
+                community.
               </div>
 
               <div
@@ -1163,7 +1218,8 @@ export default function MarketplaceWorkspacePage() {
                   wordBreak: "break-word",
                 }}
               >
-                {shopViewLink || "Public shop link not available yet."}
+                {shopViewLink ||
+                  "No backend-confirmed public shop link is available for the selected member yet."}
               </div>
 
               <CardActionRow style={{ marginTop: 12 }}>
@@ -1355,7 +1411,9 @@ export default function MarketplaceWorkspacePage() {
                     </div>
 
                     <div style={{ marginTop: 6, ...muted() }}>
-                      {member.shopName ? `Shop: ${member.shopName}` : "No shop yet"}
+                      {member.hasVisibleShop
+                        ? `Shop: ${member.shopName || "Visible shop"}`
+                        : "No visible public shop in this community yet"}
                     </div>
 
                     <div
@@ -1385,6 +1443,7 @@ export default function MarketplaceWorkspacePage() {
                       type="button"
                       onClick={() => openShopForMember(member.raw)}
                       debugId="marketplace-workspace.open-member-shop"
+                      style={!member.hasVisibleShop ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
                     >
                       Shop Gallery
                     </PrimaryButton>
