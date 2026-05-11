@@ -4,9 +4,32 @@ const API_BASE_URL_RAW: string =
     (import.meta as any).env.VITE_API_BASE_URL) ||
   "/api";
 
-const API_BASE_URL = String(API_BASE_URL_RAW || "")
-  .trim()
-  .replace(/\/+$/, "");
+function normalizeApiBaseUrl(raw: unknown): string {
+  const base = String(raw || "").trim().replace(/\/+$/, "");
+  if (!base) return "";
+
+  if (/^https?:\/\//i.test(base)) {
+    try {
+      const url = new URL(base);
+      const path = url.pathname.replace(/\/+$/, "");
+
+      if (path.toLowerCase() === "/api") {
+        return url.origin;
+      }
+
+      url.search = "";
+      url.hash = "";
+      url.pathname = path;
+      return url.toString().replace(/\/+$/, "");
+    } catch {
+      return base;
+    }
+  }
+
+  return base;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(API_BASE_URL_RAW);
 
 export type EntryMode =
   | "general"
@@ -68,6 +91,9 @@ function buildUrl(path: string): string {
   const p = String(path || "").startsWith("/")
     ? String(path)
     : `/${String(path || "")}`;
+
+  if (!API_BASE_URL) return p;
+
   return `${API_BASE_URL}${p}`;
 }
 

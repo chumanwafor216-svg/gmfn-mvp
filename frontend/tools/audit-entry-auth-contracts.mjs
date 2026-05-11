@@ -59,6 +59,12 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/api.ts",
+  /function normalizeApiBaseUrl\(raw: unknown\): string \{[\s\S]*?if \(path\.toLowerCase\(\) === "\/api"\) \{[\s\S]*?return url\.origin;[\s\S]*?const API_BASE_URL = normalizeApiBaseUrl\(API_BASE_URL_RAW\);/,
+  "Production API bases such as https://gmfn-api.onrender.com/api must normalize to the backend origin before login appends /auth/login."
+);
+
+assertContains(
   "src/pages/CoverPage.tsx",
   /const storedMatch = matchEntryMode\(normalizeValue\(readStorage\(ENTRY_MODE_KEY\)\)\);[\s\S]*if \(storedMatch\) return storedMatch;/,
   "Plain cover visits must preserve stored create/invite/approved intent instead of overwriting it as general."

@@ -22945,3 +22945,24 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This prevents the Community Access Desk from creating new logged-out public shop 404 links from unconfirmed member IDs.
   - It does not repair already-copied stale links in somebody's phone history. Those old links need to be replaced by a newly copied confirmed public shop link after deploy.
+
+### Live login HTTP 404 API-base correction (2026-05-11)
+
+- Owner reported being stuck logged out on the Sign In screen with `HTTP 404`.
+- Live checks confirmed:
+  - `POST https://gmfn-api.onrender.com/auth/login` reaches the backend login route and returns `401` for intentionally bad credentials, which proves the route exists.
+  - `POST https://gmfn-api.onrender.com/api/auth/login` returns `404`.
+  - Therefore the live frontend was very likely using an absolute `VITE_API_BASE_URL` ending in `/api`, then appending `/auth/login`, producing the nonexistent `/api/auth/login` route.
+- Updated `frontend/src/lib/api.ts`:
+  - added `normalizeApiBaseUrl(...)`;
+  - absolute API bases ending exactly in `/api` now normalize to the backend origin before frontend routes append `/auth/login`, `/auth/me`, etc.;
+  - local relative `/api` behavior is preserved for Vite proxy development.
+- Updated `frontend/tools/audit-entry-auth-contracts.mjs`:
+  - locks the API-base normalization so the login path cannot regress back to `https://gmfn-api.onrender.com/api/auth/login`.
+- Verification:
+  - `npm run audit:entry-auth` passed.
+  - `npm run lint` passed.
+  - `npm run build` passed after escalation.
+- Remaining truth:
+  - This is a frontend production API-base fix. If the password/account itself is wrong or inactive, login should no longer say `HTTP 404`; it should show the real backend response such as invalid credentials or activation required.
+  - Render still needs to deploy the new frontend bundle before the phone sees this fix.
