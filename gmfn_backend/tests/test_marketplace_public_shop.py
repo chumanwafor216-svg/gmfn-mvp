@@ -318,9 +318,10 @@ def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_pat
     assert res.status_code == 200, res.text
     body = res.json()
 
-    assert body["products"][0]["image_url"] is None
+    assert body["products"][0]["image_url"] == "/uploads/marketplace/images/missing.jpg"
     assert body["products"][0]["image_url_available"] is False
-    assert body["primary_broadcast"]["image_url"] is None
+    assert body["primary_broadcast"]["image_url"] == "/uploads/marketplace/images/missing-spotlight.jpg"
+    assert body["primary_broadcast"]["image_url_available"] is False
 
 
 def test_shop_gallery_products_follow_owner_across_membership_communities(

@@ -131,6 +131,15 @@ def _available_media_url(media_url: Any) -> Optional[str]:
     return value if _local_upload_exists(value) else None
 
 
+def _stored_media_url(media_url: Any) -> Optional[str]:
+    value = _safe_str(media_url)
+    return value or None
+
+
+def _media_url_available(media_url: Any) -> bool:
+    return bool(_local_upload_exists(media_url))
+
+
 def _safe_int(value: Any, default: int = 0) -> int:
     try:
         return int(value)
@@ -654,8 +663,8 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         getattr(product, "visibility_mode", None),
         VISIBILITY_COMMUNITY,
     )
-    image_url = _available_media_url(getattr(product, "image_url", None))
-    video_url = _available_media_url(getattr(product, "video_url", None))
+    image_url = _stored_media_url(getattr(product, "image_url", None))
+    video_url = _stored_media_url(getattr(product, "video_url", None))
     vault_block = None
     if visibility_mode == VISIBILITY_VAULT:
         vault_block = find_vault_block_for_product(db, product_id=int(product.id))
@@ -672,8 +681,8 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "currency": product.currency,
         "image_url": image_url,
         "video_url": video_url,
-        "image_url_available": bool(image_url),
-        "video_url_available": bool(video_url),
+        "image_url_available": _media_url_available(image_url),
+        "video_url_available": _media_url_available(video_url),
         "visibility_mode": visibility_mode,
         "vault_slot_number": (
             int(vault_block.slot_number)
@@ -761,8 +770,10 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "author_gmfn_id": author_gmfn_id,
         "shop_id": int(item.shop_id) if getattr(item, "shop_id", None) is not None else None,
         "message": item.message,
-        "image_url": _available_media_url(getattr(item, "image_url", None)),
-        "video_url": _available_media_url(getattr(item, "video_url", None)),
+        "image_url": _stored_media_url(getattr(item, "image_url", None)),
+        "video_url": _stored_media_url(getattr(item, "video_url", None)),
+        "image_url_available": _media_url_available(getattr(item, "image_url", None)),
+        "video_url_available": _media_url_available(getattr(item, "video_url", None)),
         "priority_mode": _safe_str(getattr(item, "priority_mode", None), SPOTLIGHT_FREE),
         "visibility_scope": _safe_str(
             getattr(item, "visibility_scope", None),

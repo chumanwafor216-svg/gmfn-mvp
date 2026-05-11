@@ -1,3 +1,23 @@
+### Public shop media URLs preserved when local files are missing (2026-05-11)
+
+- Followed up after the product owner confirmed Shop Diaries media was still missing on local `5174`.
+- Confirmed facts:
+  - `gmfn_backend/gmfn.db` still has product media paths such as `/uploads/marketplace/images/...` and `/uploads/marketplace/videos/...`.
+  - The local public-shop API on `8012` was returning those product media fields as `null` because `_available_media_url(...)` hid any local `/uploads/...` path whose file was not present under the backend upload directory.
+  - The expected local upload files are not present in `gmfn_backend/uploads`, repo-root `uploads`, the checked backup zip, or under the searched user workspace path. The `5174` response for one image path was Vite's `index.html`, not the image bytes.
+- Backend change:
+  - `gmfn_backend/app/api/routes/marketplace.py` now preserves stored `image_url` / `video_url` values for public products and broadcasts.
+  - Availability is now reported separately through `image_url_available` / `video_url_available`.
+  - This keeps the API truthful without erasing the stored media path, which helps fallback rendering and diagnosis.
+- Test coverage:
+  - Updated `test_public_shop_face_hides_missing_media_links` in `gmfn_backend/tests/test_marketplace_public_shop.py` to assert that missing local media paths are still returned while availability is `false`.
+- Verification:
+  - `python -m compileall -q gmfn_backend\app\api\routes\marketplace.py gmfn_backend\tests\test_marketplace_public_shop.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k "hides_missing_media_links" --basetemp .pytest-tmp` passed with approved escalation because normal Windows pytest temp paths were permission-blocked.
+- Remaining truth:
+  - This does not recreate missing media files. If the actual upload bytes are gone from local/Render storage, old images and videos must be recovered from the original upload location or re-uploaded.
+  - The next structural fix should be persistent object storage or a persistent Render disk for `/uploads`.
+
 ### Shop Diaries media origin fix (2026-05-11)
 
 - Followed up after the product owner reported all pictures and videos in Shop Diaries were gone.
