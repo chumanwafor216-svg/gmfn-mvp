@@ -1,3 +1,22 @@
+### Public Shop Diaries auto-refresh on owner visit (2026-05-11)
+
+- Followed up after the product owner asked the public Shop Diaries error state to refresh automatically instead of telling the owner to refresh manually.
+- Truth/devil's advocate:
+  - The public visitor route must not mutate shop state by itself; otherwise any unauthenticated visitor could wake or rewrite a stale shop.
+  - The implemented auto-refresh is therefore owner-only: it checks the signed-in `/auth/me` identity against the GMFN/GSN ID in the public link before calling the authenticated shop refresh path.
+- Frontend change:
+  - `frontend/src/pages/ShopGalleryPage.tsx` now catches stale public-shop load errors, confirms the signed-in owner matches the public link, calls `createMarketplaceShop(...)`, and then retries the public Shop Diaries fetch.
+  - The page shows `Refreshing` / `Reconnecting public shop and loading Shop Diaries...` while the reconnect is in progress.
+  - If the viewer is not the matching signed-in owner, the error now explains that signing in as the owner and opening the same link will reconnect Shop Diaries automatically.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - This frontend depends on the already-pushed backend stale-shop reactivation behavior in `POST /marketplace/shops`.
+  - If a non-owner opens a stale public link, the page still cannot safely reconnect it; the owner must be signed in in that browser.
+
 ### Public shop refresh reactivates stale shop rows (2026-05-11)
 
 - Followed up after the product owner saw the public Shop Diaries page show:

@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
+  createMarketplaceShop,
   getCurrentClan,
+  getMe,
   getPublicMarketplaceShopByGmfnId,
   safeCopy,
 } from "../lib/api";
@@ -17,10 +20,6 @@ import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
-import {
-  actionTapGuardProps,
-  brandStableTapTarget,
-} from "../styles/gmfnBrand";
 
 type ShopProfile = {
   id?: number;
@@ -96,6 +95,27 @@ function firstMeaningful(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function identityKeys(value: any): string[] {
+  const text = safeStr(value).toUpperCase();
+  if (!text) return [];
+
+  const keys = new Set<string>([text]);
+  if (text.startsWith("GMFN-")) keys.add(`GSN-${text.slice(5)}`);
+  if (text.startsWith("GSN-")) keys.add(`GMFN-${text.slice(4)}`);
+  return Array.from(keys);
+}
+
+function identityMatches(left: any, right: any): boolean {
+  const rightKeys = new Set(identityKeys(right));
+  return identityKeys(left).some((key) => rightKeys.has(key));
+}
+
+function isDisconnectedPublicShopError(message: any): boolean {
+  return /seller identity|shop not found|not connected|active shop|404/i.test(
+    safeStr(message)
+  );
 }
 
 function positiveNumber(value: any): number {
@@ -628,22 +648,8 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
-const stableTapTarget: React.CSSProperties = {
-  ...brandStableTapTarget(),
-  zIndex: 10,
-  flexShrink: 0,
-};
-
-function buttonGuardProps(): Pick<
-  React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
-> {
-  return actionTapGuardProps();
-}
-
 function primaryBtn(disabled = false): React.CSSProperties {
   return {
-    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -672,7 +678,6 @@ function primaryBtn(disabled = false): React.CSSProperties {
 
 function secondaryBtn(disabled = false): React.CSSProperties {
   return {
-    ...stableTapTarget,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -740,6 +745,8 @@ export default function ShopGalleryPage() {
     null
   );
   const [error, setError] = useState<string>("");
+  const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
+  const autoRefreshAttemptedRef = useRef("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -767,111 +774,184 @@ export default function ShopGalleryPage() {
   useEffect(() => {
     let alive = true;
 
+    function applyPublicShop(publicShopRes: any, clanRes: any, cleanedGmfnId: string) {
+      const normalizedShop = normalizeShop(
+        publicShopRes?.item || publicShopRes,
+        cleanedGmfnId,
+        {
+          marketplace_name: firstMeaningful(
+            publicShopRes?.community_name,
+            clanRes?.marketplace_name,
+            clanRes?.name
+          ),
+        }
+      );
+
+      const normalizedProducts = rowsOf<any>(publicShopRes?.products)
+        .filter((row) => {
+          const src = row?.item || row?.product || row?.data || row;
+          const mode = firstMeaningful(
+            src?.visibility_mode,
+            "community_visible"
+          ).toLowerCase();
+          return mode !== "vault_private";
+        })
+        .map((row, index) => normalizeProduct(row, index + 1))
+        .filter(Boolean) as ShopProduct[];
+
+      const relevantGmfnId = firstMeaningful(
+        normalizedShop?.gmfnId,
+        cleanedGmfnId
+      );
+
+      const publicBroadcasts = rowsOf<any>(publicShopRes?.broadcasts);
+
+      const relevantBroadcast =
+        (publicShopRes?.primary_broadcast
+          ? normalizeBroadcast(publicShopRes?.primary_broadcast)
+          : null) ||
+        publicBroadcasts
+          .map((row) => normalizeBroadcast(row))
+          .filter(Boolean)
+          .find((row) => {
+            const authorGmfnId = safeStr(row?.authorGmfnId);
+            return Boolean(
+              relevantGmfnId &&
+                authorGmfnId &&
+                authorGmfnId.toUpperCase() === relevantGmfnId.toUpperCase()
+            );
+          }) || null;
+
+      if (!alive) return;
+      const normalizedBroadcasts = publicBroadcasts
+        .map((row) => normalizeBroadcast(row))
+        .filter(Boolean)
+        .sort((a, b) => {
+          const timeDelta =
+            spotlightBroadcastSortValue(b) - spotlightBroadcastSortValue(a);
+          if (timeDelta !== 0) return timeDelta;
+          return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
+        }) as ShopBroadcast[];
+      const currentSpotlight =
+        communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
+        communitySpotlightsRef.current[0] ||
+        null;
+      const currentKey = spotlightBroadcastKey(currentSpotlight);
+      const matchedSpotlightIndex = currentKey
+        ? normalizedBroadcasts.findIndex(
+            (item) => spotlightBroadcastKey(item) === currentKey
+          )
+        : -1;
+
+      setCurrentClan(clanRes || null);
+      setShop(normalizedShop);
+      setProducts(normalizedProducts);
+      setBroadcast(relevantBroadcast);
+      setCommunitySpotlights(normalizedBroadcasts);
+      setMiniSpotlightIndex(
+        normalizedBroadcasts.length <= 0
+          ? 0
+          : matchedSpotlightIndex >= 0
+          ? matchedSpotlightIndex
+          : 0
+      );
+    }
+
+    async function loadPublicShop(cleanedGmfnId: string) {
+      return cleanedGmfnId
+        ? getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
+            product_limit: 100,
+            broadcast_limit: 24,
+          })
+        : null;
+    }
+
+    async function refreshOwnerShop(cleanedGmfnId: string, clanRes: any) {
+      const meRes = await getMe().catch(() => null);
+      const ownerGmfnId = firstMeaningful(meRes?.gmfn_id, meRes?.gmfnId);
+
+      if (!identityMatches(ownerGmfnId, cleanedGmfnId)) {
+        return false;
+      }
+
+      const clanId = positiveNumber(clanRes?.id || clanRes?.clan_id);
+      const ownerName = firstMeaningful(
+        meRes?.display_name,
+        meRes?.nickname,
+        ownerGmfnId,
+        "GSN owner"
+      );
+      await createMarketplaceShop({
+        clan_id: clanId || null,
+        name: firstMeaningful(
+          clanRes?.marketplace_name,
+          clanRes?.name ? `${clanRes.name} Shop` : "",
+          `${ownerName} Shop`,
+          "GSN Shop"
+        ),
+        description: "Public GSN shop face for trusted products.",
+      });
+
+      return true;
+    }
+
     (async () => {
       setLoading(true);
       setError("");
+      setAutoRefreshingShop(false);
 
       try {
         const cleanedGmfnId = safeStr(gmfnId || "");
         const clanRes = await getCurrentClan().catch(() => null);
+        let publicShopRes: any = null;
 
-        const publicShopRes = cleanedGmfnId
-          ? await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
-              product_limit: 100,
-              broadcast_limit: 24,
-            })
-          : null;
+        try {
+          publicShopRes = await loadPublicShop(cleanedGmfnId);
+        } catch (err: any) {
+          const message = safeStr(err?.message);
+          const refreshKey = cleanedGmfnId.toUpperCase();
+          const canAttemptRefresh =
+            cleanedGmfnId &&
+            isDisconnectedPublicShopError(message) &&
+            autoRefreshAttemptedRef.current !== refreshKey;
 
-        const normalizedShop = normalizeShop(
-          publicShopRes?.item || publicShopRes,
-          cleanedGmfnId,
-          {
-            marketplace_name: firstMeaningful(
-              publicShopRes?.community_name,
-              clanRes?.marketplace_name,
-              clanRes?.name
-            ),
+          if (!canAttemptRefresh) throw err;
+
+          autoRefreshAttemptedRef.current = refreshKey;
+          if (alive) {
+            setAutoRefreshingShop(true);
+            setNotice({
+              tone: "success",
+              text: "Reconnecting your public shop link...",
+            });
           }
-        );
 
-        const normalizedProducts = rowsOf<any>(publicShopRes?.products)
-          .filter((row) => {
-            const src = row?.item || row?.product || row?.data || row;
-            const mode = firstMeaningful(
-              src?.visibility_mode,
-              "community_visible"
-            ).toLowerCase();
-            return mode !== "vault_private";
-          })
-          .map((row, index) => normalizeProduct(row, index + 1))
-          .filter(Boolean) as ShopProduct[];
+          const refreshed = await refreshOwnerShop(cleanedGmfnId, clanRes);
+          if (!refreshed) throw err;
 
-        const relevantGmfnId = firstMeaningful(
-          normalizedShop?.gmfnId,
-          cleanedGmfnId
-        );
+          publicShopRes = await loadPublicShop(cleanedGmfnId);
+          if (alive) {
+            setNotice({
+              tone: "success",
+              text: "Public shop reconnected. Shop Diaries is ready.",
+            });
+          }
+        }
 
-        const publicBroadcasts = rowsOf<any>(publicShopRes?.broadcasts);
-
-        const relevantBroadcast =
-          (publicShopRes?.primary_broadcast
-            ? normalizeBroadcast(publicShopRes?.primary_broadcast)
-            : null) ||
-          publicBroadcasts
-            .map((row) => normalizeBroadcast(row))
-            .filter(Boolean)
-            .find((row) => {
-              const authorGmfnId = safeStr(row?.authorGmfnId);
-              return Boolean(
-                relevantGmfnId &&
-                  authorGmfnId &&
-                  authorGmfnId.toUpperCase() === relevantGmfnId.toUpperCase()
-              );
-            }) || null;
-
-        if (!alive) return;
-        const normalizedBroadcasts = publicBroadcasts
-          .map((row) => normalizeBroadcast(row))
-          .filter(Boolean)
-          .sort((a, b) => {
-            const timeDelta =
-              spotlightBroadcastSortValue(b) - spotlightBroadcastSortValue(a);
-            if (timeDelta !== 0) return timeDelta;
-            return spotlightBroadcastKey(a).localeCompare(spotlightBroadcastKey(b));
-          }) as ShopBroadcast[];
-        const currentSpotlight =
-          communitySpotlightsRef.current[miniSpotlightIndexRef.current] ||
-          communitySpotlightsRef.current[0] ||
-          null;
-        const currentKey = spotlightBroadcastKey(currentSpotlight);
-        const matchedSpotlightIndex = currentKey
-          ? normalizedBroadcasts.findIndex(
-              (item) => spotlightBroadcastKey(item) === currentKey
-            )
-          : -1;
-
-        setCurrentClan(clanRes || null);
-        setShop(normalizedShop);
-        setProducts(normalizedProducts);
-        setBroadcast(relevantBroadcast);
-        setCommunitySpotlights(normalizedBroadcasts);
-        setMiniSpotlightIndex(
-          normalizedBroadcasts.length <= 0
-            ? 0
-            : matchedSpotlightIndex >= 0
-            ? matchedSpotlightIndex
-            : 0
-        );
+        applyPublicShop(publicShopRes, clanRes, cleanedGmfnId);
       } catch (err: any) {
         if (!alive) return;
         const message = safeStr(err?.message);
         setError(
-          /seller identity|shop not found|404/i.test(message)
-            ? "This public shop link is not connected to an active shop yet. Ask the owner to refresh and send the full public shop link again."
+          isDisconnectedPublicShopError(message)
+            ? "This public shop link is not connected to an active shop yet. If you are the owner, sign in and open this same link again; Shop Diaries will reconnect automatically."
             : message || "Shop gallery could not be loaded right now."
         );
       } finally {
-        if (alive) setLoading(false);
+        if (alive) {
+          setAutoRefreshingShop(false);
+          setLoading(false);
+        }
       }
     })();
 
@@ -1128,7 +1208,9 @@ export default function ShopGalleryPage() {
   const shopLoadFailed = Boolean(error);
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
-    shopLoadFailed
+    autoRefreshingShop
+      ? "This public shop link is reconnecting to the owner's active shop so Shop Diaries can load."
+      : shopLoadFailed
       ? "This public shop link has reached the shop page, but the backend has not connected it to an active owner shop yet."
       : effectiveShop?.description ||
           "Public shop face for trusted products. Private Vault offers open only through a trust link."
@@ -1138,19 +1220,25 @@ export default function ShopGalleryPage() {
   const shopWhatsAppText = safeStr(effectiveShop?.whatsapp);
   const shopTelegramText = safeStr(effectiveShop?.telegram);
   const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
-  const publicBlockText = shopLoadFailed
+  const publicBlockText = autoRefreshingShop
+    ? "Reconnecting shop"
+    : shopLoadFailed
     ? "Shop not connected"
     : publicBlockCount === 1
       ? "1 public block live"
       : `${publicBlockCount} public blocks live`;
-  const shopDiaryCounterText = shopLoadFailed
+  const shopDiaryCounterText = autoRefreshingShop
+    ? "Refreshing"
+    : shopLoadFailed
     ? "Needs refresh"
     : `${publicBlockCount}/${GALLERY_SLOTS_TOTAL}`;
   const shopLocationText = firstMeaningful(
     shopCommunityText,
     "GSN public marketplace"
   );
-  const shopContactText = shopLoadFailed
+  const shopContactText = autoRefreshingShop
+    ? "Owner refresh running"
+    : shopLoadFailed
     ? "Owner refresh needed"
     : firstMeaningful(
         shopWhatsAppText ? `WhatsApp ${shopWhatsAppText}` : "",
@@ -1589,11 +1677,11 @@ export default function ShopGalleryPage() {
             gap: isCompact ? 7 : 10,
           }}
         >
-          <button
-            type="button"
-            {...buttonGuardProps()}
-            aria-disabled={shopLoadFailed}
+          <PrimaryButton
             onClick={repostShop}
+            minWidth={0}
+            stableHeight={isCompact ? 40 : 52}
+            debugId="shop-gallery.repost-shop"
             style={{
               ...primaryBtn(shopLoadFailed),
               minHeight: isCompact ? 40 : 52,
@@ -1606,12 +1694,12 @@ export default function ShopGalleryPage() {
             }}
           >
             {isCompact ? "GSN repost" : "GSN repost"}
-          </button>
-          <button
-            type="button"
-            {...buttonGuardProps()}
-            aria-disabled={shopLoadFailed}
+          </PrimaryButton>
+          <PrimaryButton
             onClick={shareShop}
+            minWidth={0}
+            stableHeight={isCompact ? 40 : 52}
+            debugId="shop-gallery.share-shop"
             style={{
               ...primaryBtn(shopLoadFailed),
               minHeight: isCompact ? 40 : 52,
@@ -1624,12 +1712,12 @@ export default function ShopGalleryPage() {
             }}
           >
             {isCompact ? "Share" : "Share shop"}
-          </button>
-          <button
-            type="button"
-            {...buttonGuardProps()}
-            aria-disabled={shopLoadFailed}
+          </PrimaryButton>
+          <SecondaryButton
             onClick={copyShopLink}
+            minWidth={0}
+            stableHeight={isCompact ? 40 : 52}
+            debugId="shop-gallery.copy-shop-link"
             style={{
               ...secondaryBtn(shopLoadFailed),
               minHeight: isCompact ? 40 : 52,
@@ -1642,7 +1730,7 @@ export default function ShopGalleryPage() {
             }}
           >
             {isCompact ? "Copy link" : "Copy link"}
-          </button>
+          </SecondaryButton>
         </div>
 
         {absoluteShopLink && shopLoadFailed ? (
@@ -1655,7 +1743,6 @@ export default function ShopGalleryPage() {
               })
             }
             style={{
-              ...stableTapTarget,
               display: "block",
               minHeight: 42,
               padding: isCompact ? "8px 10px" : "10px 12px",
@@ -1677,13 +1764,12 @@ export default function ShopGalleryPage() {
             {absoluteShopLink}
           </span>
         ) : absoluteShopLink ? (
-          <a
-            {...buttonGuardProps()}
-            href={absoluteShopLink}
+          <StableCtaLink
+            to={absoluteShopLink}
             target="_blank"
             rel="noreferrer"
+            debugId="shop-gallery.absolute-shop-link"
             style={{
-              ...stableTapTarget,
               display: "block",
               minHeight: 42,
               padding: isCompact ? "8px 10px" : "10px 12px",
@@ -1701,7 +1787,7 @@ export default function ShopGalleryPage() {
             }}
           >
             {absoluteShopLink}
-          </a>
+          </StableCtaLink>
         ) : null}
 
         <div
@@ -1756,10 +1842,11 @@ export default function ShopGalleryPage() {
                 >
                   Shops in this marketplace can highlight new items, updates, and offers here.
                 </div>
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <PrimaryButton
                   onClick={openSpotlightPreview}
+                  minWidth="auto"
+                  stableHeight={isCompact ? 34 : 44}
+                  debugId="shop-gallery.open-spotlight-preview"
                   style={{
                     ...primaryBtn(false),
                     marginTop: isCompact ? 10 : 16,
@@ -1773,7 +1860,7 @@ export default function ShopGalleryPage() {
                   }}
                 >
                   View shop blocks
-                </button>
+                </PrimaryButton>
               </div>
               <div
                 style={{
@@ -1901,10 +1988,11 @@ export default function ShopGalleryPage() {
                   marginTop: isCompact ? 9 : 16,
                 }}
               >
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                <PrimaryButton
                   onClick={askForVaultAccess}
+                  minWidth={0}
+                  stableHeight={isCompact ? 34 : 48}
+                  debugId="shop-gallery.ask-vault-access"
                   style={{
                     ...primaryBtn(false),
                     minHeight: isCompact ? 34 : 48,
@@ -1917,11 +2005,12 @@ export default function ShopGalleryPage() {
                   }}
                 >
                   {isCompact ? "Vault access" : "Ask for Vault access"}
-                </button>
-                <button
-                  type="button"
-                  {...buttonGuardProps()}
+                </PrimaryButton>
+                <SecondaryButton
                   onClick={copyShopLink}
+                  minWidth={0}
+                  stableHeight={isCompact ? 34 : 48}
+                  debugId="shop-gallery.copy-vault-shop-link"
                   style={{
                     ...secondaryBtn(false),
                     minHeight: isCompact ? 34 : 48,
@@ -1934,7 +2023,7 @@ export default function ShopGalleryPage() {
                   }}
                 >
                   Copy shop link
-                </button>
+                </SecondaryButton>
               </div>
             </div>
             <div
@@ -1992,7 +2081,11 @@ export default function ShopGalleryPage() {
           </div>
 
           {loading ? (
-            <div style={{ ...helperText(), padding: 16 }}>Loading shop gallery...</div>
+            <div style={{ ...helperText(), padding: 16 }}>
+              {autoRefreshingShop
+                ? "Reconnecting public shop and loading Shop Diaries..."
+                : "Loading shop gallery..."}
+            </div>
           ) : error ? (
             <div style={{ ...innerCard("#F8FBFF") }}>
               <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 18 }}>
@@ -2313,15 +2406,17 @@ export default function ShopGalleryPage() {
                           overflow: "hidden",
                         }}
                       >
-                        <button
-                          type="button"
-                          {...buttonGuardProps()}
-                          onClick={(event) => {
-                            event.stopPropagation();
+                        <SecondaryButton
+                          onClick={() => {
                             setOpenProductId((current) =>
                               current === productOpenId ? null : productOpenId
                             );
                           }}
+                          minWidth={0}
+                          stableHeight={
+                            isProductOpen ? (isCompact ? 38 : 40) : isCompact ? 30 : 34
+                          }
+                          debugId={`shop-gallery.product.${productOpenId}.toggle`}
                           style={{
                             ...secondaryBtn(false),
                             width: "100%",
@@ -2359,14 +2454,16 @@ export default function ShopGalleryPage() {
                           }}
                         >
                           {isProductOpen ? "Close" : "Open"}
-                        </button>
-                        <button
-                          type="button"
-                          {...buttonGuardProps()}
-                          onClick={(event) => {
-                            event.stopPropagation();
+                        </SecondaryButton>
+                        <SecondaryButton
+                          onClick={() => {
                             shareProduct(product);
                           }}
+                          minWidth={0}
+                          stableHeight={
+                            isProductOpen ? (isCompact ? 38 : 40) : isCompact ? 30 : 34
+                          }
+                          debugId={`shop-gallery.product.${productOpenId}.share`}
                           style={{
                             ...secondaryBtn(false),
                             width: "100%",
@@ -2404,7 +2501,7 @@ export default function ShopGalleryPage() {
                           }}
                         >
                           Share shop
-                        </button>
+                        </SecondaryButton>
                       </div>
                     </div>
                   </article>
@@ -2414,10 +2511,11 @@ export default function ShopGalleryPage() {
           )}
 
           {overflowProductCount > 0 ? (
-            <button
-              type="button"
-              {...buttonGuardProps()}
+            <SecondaryButton
               onClick={() => setShowAllProducts((current) => !current)}
+              fullWidth
+              stableHeight={48}
+              debugId="shop-gallery.toggle-all-products"
               style={{
                 ...secondaryBtn(false),
                 width: "100%",
@@ -2425,7 +2523,7 @@ export default function ShopGalleryPage() {
               }}
             >
               {showAllProducts ? "Show first 12 blocks" : `Show ${overflowProductCount} more`}
-            </button>
+            </SecondaryButton>
           ) : null}
         </section>
       </section>
