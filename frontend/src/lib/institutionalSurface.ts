@@ -87,6 +87,8 @@ export function institutionalPageCard(bg = "#FFFFFF"): CSSProperties {
     boxShadow:
       "0 30px 62px rgba(7,20,36,0.12), 0 8px 18px rgba(7,20,36,0.045), inset 0 1px 0 rgba(255,255,255,0.88), inset 0 -14px 28px rgba(18,52,86,0.06)",
     overflow: "hidden",
+    overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -98,6 +100,7 @@ export function institutionalSoftCard(bg = "#F8FBFF"): CSSProperties {
     padding: 16,
     boxShadow:
       "0 18px 38px rgba(7,20,36,0.08), inset 0 1px 0 rgba(255,255,255,0.84)",
+    overflowAnchor: "none",
   };
 }
 
@@ -109,6 +112,7 @@ export function institutionalInnerCard(bg = "#FFFFFF"): CSSProperties {
     padding: 14,
     boxShadow:
       "0 16px 30px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
+    overflowAnchor: "none",
   };
 }
 
@@ -123,6 +127,7 @@ export function institutionalStatTile(
     padding: 14,
     boxShadow:
       "0 14px 28px rgba(7,20,36,0.055), inset 0 1px 0 rgba(255,255,255,0.80)",
+    overflowAnchor: "none",
   };
 }
 
@@ -146,5 +151,6 @@ export function institutionalBlueRailShell(
     border: "1px solid rgba(16,45,74,0.24)",
     boxShadow:
       "0 34px 78px rgba(7,20,36,0.16), inset 18px 0 32px rgba(7,20,36,0.16), inset -18px 0 32px rgba(7,20,36,0.16), inset 0 1px 0 rgba(255,255,255,0.30)",
+    overflowAnchor: "none",
   };
 }

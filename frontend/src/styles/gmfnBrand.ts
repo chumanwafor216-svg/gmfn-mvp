@@ -61,6 +61,8 @@ export function brandPageCard(
     padding: 20,
     boxShadow: gmfnBrand.shadows.card,
     overflow: "hidden",
+    overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -77,6 +79,7 @@ export function brandSoftCard(
     padding: 16,
     boxShadow:
       "0 16px 36px rgba(7,20,36,0.065), inset 0 1px 0 rgba(255,255,255,0.86)",
+    overflowAnchor: "none",
   };
 }
 
@@ -93,6 +96,7 @@ export function brandInnerCard(
     padding: 14,
     boxShadow:
       "0 12px 28px rgba(7,20,36,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
+    overflowAnchor: "none",
   };
 }
 
@@ -149,6 +153,8 @@ export function brandStableTapTarget(): React.CSSProperties {
     backfaceVisibility: "visible",
     transform: "none",
     overflowAnchor: "none",
+    contain: "layout paint",
+    transition: "none",
     outlineOffset: 4,
   };
 }
@@ -177,9 +183,7 @@ export function brandActionButton(
     alignContent: "center",
     overflowWrap: "anywhere",
     lineHeight: 1.18,
-    transitionProperty: "background, border-color, box-shadow, color, opacity",
-    transitionDuration: "120ms",
-    transitionTimingFunction: "ease-out",
+    transition: "none",
   };
 
   if (kind === "primary") {

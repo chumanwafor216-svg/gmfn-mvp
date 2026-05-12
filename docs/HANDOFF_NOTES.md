@@ -1,3 +1,25 @@
+### Shared phone anti-jump hardening across main domains (2026-05-12)
+
+- Followed up after the product owner confirmed Marketplace/Community Home improved but still showed some smaller jump/click drift, and asked for the same tightening across the main app domains before a school defense/demo.
+- Truth/devil's advocate:
+  - The broadest safe fix is in shared frontend surface/action primitives, not manually redesigning every page.
+  - Found that `frontend/src/index.css` had a global `contain: none !important` rule on buttons/links, which could neutralize route-local containment added in the previous pass.
+  - This pass reduces browser scroll anchoring, tap-highlight, transition, and action containment drift across domains. It still cannot promise zero movement when a page intentionally opens/closes large content, but it removes a shared cause of small phone jumps.
+- Frontend change:
+  - `frontend/src/index.css` now disables scroll anchoring at the document/root level, contains vertical overscroll, and gives interactive controls `contain: layout paint` plus no transition timing.
+  - `frontend/src/styles/gmfnBrand.ts` now applies no-anchor containment to shared brand cards and stable tap targets, and removes residual shared button transitions.
+  - `frontend/src/lib/institutionalSurface.ts` now applies no-anchor containment to shared institutional cards, stat tiles, and blue rail shells.
+- Coverage impact:
+  - Broadly affects shared UI behavior across Dashboard, Community Home, Marketplace, Marketplace Workspace, Shop Control/Assets/Gallery, Finance, Loans/Support, Trust/TrustSlip/CCI, Demand Box, Notifications, entry flows, and admin pages where they use shared brand/institutional/stable controls.
+  - No backend, route contract, auth, schema, or frozen Dashboard Market Wisdom structure was changed.
+- Verification:
+  - `npm exec -- eslint src\styles\gmfnBrand.ts src\lib\institutionalSurface.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+
 ### Marketplace and Community Home phone jump minimization (2026-05-12)
 
 - Followed up after the product owner reported the remaining phone jumping/click-alignment problem was reduced but still visible, especially around Marketplace, Community Home, and the Marketplace Workspace/access desk.
