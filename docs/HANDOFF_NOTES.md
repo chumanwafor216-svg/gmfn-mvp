@@ -23183,3 +23183,25 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This pass reduces phone hit-box/layout drift on shared surfaces and route tiles. It is not a visual redesign and does not remove intentional page/content expansion.
   - A real phone walkthrough is still the best final proof because the problem is tactile and viewport-specific.
+
+### Final pre-defence phone anchor pass (2026-05-12)
+
+- Owner reported a major improvement and asked for one more guided-test readiness check before the school defence.
+- Removed decorative transform compositor hints from the two highest-use phone surfaces:
+  - `frontend/src/pages/CommunityHomePage.tsx`: Community Home aura layer no longer animates/transforms or advertises `willChange: "transform, opacity"`.
+  - `frontend/src/pages/MarketplacePage.tsx`: Marketplace aura layer no longer animates/transforms or advertises `willChange: "transform, opacity"`.
+- Tightened `frontend/tools/audit-mobile-tap-stability.mjs` so any `willChange` value containing `transform` is now caught, not only the exact string `willChange: "transform"`.
+- Verification:
+  - no remaining literal `willChange: "transform...` matches in `frontend/src`.
+  - no `behavior: "smooth"`, touch handlers, or `translateZ(0)` matches in `frontend/src`.
+  - targeted ESLint on the touched files passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run lint` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run build` passed after escalation for the known sandbox Vite/esbuild `spawn EPERM`.
+- Remaining truth:
+  - This intentionally trades a small amount of decorative motion for steadier phone testing. It should help the app feel calmer and less jumpy during guided review.
+  - Dashboard's frozen Market Wisdom/profile-frame areas were not modified.

@@ -32,7 +32,7 @@ const forbiddenPatterns = [
   },
   {
     label: "Transform will-change can keep tappable controls on unstable layers",
-    pattern: /willChange\s*:\s*["']transform["']|will-change\s*:\s*transform/,
+    pattern: /willChange\s*:\s*["'][^"']*transform[^"']*["']|will-change\s*:\s*[^;]*transform/,
   },
   {
     label: "Offscreen legacy copy fields can make mobile browsers re-anchor after tap",

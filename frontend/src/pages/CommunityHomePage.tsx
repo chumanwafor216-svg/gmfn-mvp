@@ -248,9 +248,9 @@ function communityAuraStyle(isCompact: boolean): React.CSSProperties {
     pointerEvents: "none",
     opacity: 0,
     background: "transparent",
-    transform: "translate3d(0,0,0)",
-    animation: "communityHomeAuraShift 20s ease-in-out infinite alternate",
-    willChange: "transform, opacity",
+    transform: "none",
+    animation: "none",
+    willChange: "auto",
   };
 }
 

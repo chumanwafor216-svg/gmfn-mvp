@@ -1037,9 +1037,9 @@ function marketplaceAuraStyle(isCompact: boolean): React.CSSProperties {
     opacity: isCompact ? 0.62 : 0.56,
     background:
       "radial-gradient(circle at 16% 14%, rgba(33,163,101,0.12) 0%, rgba(33,163,101,0.00) 30%), radial-gradient(circle at 76% 20%, rgba(214,170,69,0.08) 0%, rgba(214,170,69,0.00) 26%), radial-gradient(circle at 58% 8%, rgba(31,115,224,0.07) 0%, rgba(31,115,224,0.00) 22%), radial-gradient(circle at 18% 46%, rgba(33,163,101,0.08) 0%, rgba(33,163,101,0.00) 30%), radial-gradient(circle at 84% 62%, rgba(214,170,69,0.06) 0%, rgba(214,170,69,0.00) 26%)",
-    transform: "translate3d(0,0,0)",
-    animation: "marketplaceAuraShift 22s ease-in-out infinite alternate",
-    willChange: "transform, opacity",
+    transform: "none",
+    animation: "none",
+    willChange: "auto",
   };
 }
 
