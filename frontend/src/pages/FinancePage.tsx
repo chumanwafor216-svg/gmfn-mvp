@@ -2153,7 +2153,7 @@ export default function FinancePage() {
 
       <section
         id="finance-summary"
-        style={collapsed.overview ? { display: "none" } : pageCard("#FFFFFF")}
+        style={pageCard("#FFFFFF")}
       >
         <div
           style={{
@@ -2221,7 +2221,7 @@ export default function FinancePage() {
 
       <section
         id="finance-reconciliation"
-        style={collapsed.reconciliation ? { display: "none" } : pageCard("#FFFFFF")}
+        style={pageCard("#FFFFFF")}
       >
         <div
           style={{
@@ -2322,7 +2322,7 @@ export default function FinancePage() {
         ) : null}
       </section>
 
-      <section style={collapsed.borrower ? { display: "none" } : pageCard("#FFFFFF")}>
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
             display: "flex",
@@ -2537,7 +2537,7 @@ export default function FinancePage() {
 
       <section
         id="finance-events"
-        style={collapsed.events ? { display: "none" } : pageCard("#FFFFFF")}
+        style={pageCard("#FFFFFF")}
       >
         <div
           style={{

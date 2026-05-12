@@ -2272,6 +2272,10 @@ export default function ShopGalleryPage() {
                 );
                 const productOpenId = product.id ?? product.slotNumber;
                 const isProductOpen = openProductId === productOpenId;
+                const diaryActionHeight = isCompact ? 38 : 40;
+                const diaryActionPadding = isCompact ? "7px 9px" : "8px 12px";
+                const diaryActionFontSize = isCompact ? 12 : 13;
+                const diaryMediaControlHeight = isCompact ? 32 : 36;
 
                 return (
                   <article
@@ -2301,6 +2305,8 @@ export default function ShopGalleryPage() {
                       maxWidth: "100%",
                       boxSizing: "border-box",
                       isolation: "isolate",
+                      overflowAnchor: "none",
+                      contain: "layout paint",
                       minHeight: isProductOpen
                         ? isCompact
                           ? 430
@@ -2343,42 +2349,14 @@ export default function ShopGalleryPage() {
                           showAudioUnlock={hasVideoStory}
                           audioUnlockLabel="Sound on"
                           audioUnlockStyle={{
-                            top: isProductOpen
-                              ? isCompact
-                                ? 9
-                                : 12
-                              : isCompact
-                              ? 7
-                              : 10,
-                            right: isProductOpen
-                              ? isCompact
-                                ? 9
-                                : 12
-                              : isCompact
-                              ? 7
-                              : 10,
-                            minHeight: isProductOpen
-                              ? isCompact
-                                ? 30
-                                : 36
-                              : isCompact
-                              ? 26
-                              : 30,
-                            padding: isProductOpen
-                              ? isCompact
-                                ? "6px 9px"
-                                : "8px 11px"
-                              : isCompact
-                              ? "5px 7px"
-                              : "6px 9px",
-                            fontSize: isProductOpen
-                              ? isCompact
-                                ? 10.5
-                                : 12
-                              : isCompact
-                              ? 9.2
-                              : 10.5,
+                            top: isCompact ? 9 : 12,
+                            right: isCompact ? 9 : 12,
+                            minHeight: diaryMediaControlHeight,
+                            padding: isCompact ? "6px 9px" : "8px 11px",
+                            fontSize: isCompact ? 10.5 : 12,
                             boxShadow: "0 10px 18px rgba(2, 12, 27, 0.24)",
+                            overflowAnchor: "none",
+                            contain: "layout paint",
                           }}
                           maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                           frameStyle={{
@@ -2531,18 +2509,18 @@ export default function ShopGalleryPage() {
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: isProductOpen
-                            ? "repeat(2, minmax(92px, 118px))"
-                            : "repeat(2, minmax(0, 1fr))",
-                          gap: isProductOpen ? (isCompact ? 8 : 10) : isCompact ? 5 : 6,
+                          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                          gap: isCompact ? 8 : 10,
                           width: "100%",
-                          maxWidth: isProductOpen ? 260 : "100%",
+                          maxWidth: "100%",
                           minWidth: 0,
-                          justifyContent: isProductOpen ? "flex-start" : "stretch",
+                          justifyContent: "stretch",
                           justifyItems: "stretch",
                           alignItems: "center",
                           boxSizing: "border-box",
                           overflow: "hidden",
+                          overflowAnchor: "none",
+                          contain: "layout paint",
                         }}
                       >
                         <SecondaryButton
@@ -2552,42 +2530,24 @@ export default function ShopGalleryPage() {
                             );
                           }}
                           minWidth={0}
-                          stableHeight={
-                            isProductOpen ? (isCompact ? 38 : 40) : isCompact ? 30 : 34
-                          }
+                          stableHeight={diaryActionHeight}
                           debugId={`shop-gallery.product.${productOpenId}.toggle`}
                           style={{
                             ...secondaryBtn(false),
                             width: "100%",
                             maxWidth: "100%",
                             minWidth: 0,
-                            minHeight: isProductOpen
-                              ? isCompact
-                                ? 38
-                                : 40
-                              : isCompact
-                              ? 30
-                              : 34,
-                            padding: isProductOpen
-                              ? isCompact
-                                ? "7px 12px"
-                                : "8px 14px"
-                              : isCompact
-                              ? "4px 3px"
-                              : "5px 10px",
+                            minHeight: diaryActionHeight,
+                            padding: diaryActionPadding,
                             borderRadius: 999,
-                            fontSize: isProductOpen
-                              ? isCompact
-                                ? 13
-                                : 14
-                              : isCompact
-                              ? 10.2
-                              : 12.5,
+                            fontSize: diaryActionFontSize,
                             lineHeight: 1,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             overflowWrap: "normal",
+                            overflowAnchor: "none",
+                            contain: "layout paint",
                             background:
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
@@ -2599,42 +2559,24 @@ export default function ShopGalleryPage() {
                             shareProduct(product);
                           }}
                           minWidth={0}
-                          stableHeight={
-                            isProductOpen ? (isCompact ? 38 : 40) : isCompact ? 30 : 34
-                          }
+                          stableHeight={diaryActionHeight}
                           debugId={`shop-gallery.product.${productOpenId}.share`}
                           style={{
                             ...secondaryBtn(false),
                             width: "100%",
                             maxWidth: "100%",
                             minWidth: 0,
-                            minHeight: isProductOpen
-                              ? isCompact
-                                ? 38
-                                : 40
-                              : isCompact
-                              ? 30
-                              : 34,
-                            padding: isProductOpen
-                              ? isCompact
-                                ? "7px 12px"
-                                : "8px 14px"
-                              : isCompact
-                              ? "4px 3px"
-                              : "5px 10px",
+                            minHeight: diaryActionHeight,
+                            padding: diaryActionPadding,
                             borderRadius: 999,
-                            fontSize: isProductOpen
-                              ? isCompact
-                                ? 13
-                                : 14
-                              : isCompact
-                              ? 10.2
-                              : 12.5,
+                            fontSize: diaryActionFontSize,
                             lineHeight: 1,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             overflowWrap: "normal",
+                            overflowAnchor: "none",
+                            contain: "layout paint",
                             background:
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}

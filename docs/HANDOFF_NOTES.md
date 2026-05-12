@@ -23139,3 +23139,22 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This expects the backend to be running locally on `127.0.0.1:8012`.
   - If the active local backend moves to a different port, the frontend dev URL or `VITE_API_BASE_URL` should be adjusted rather than guessing.
+
+### Marketplace inner-page button stability pass (2026-05-12)
+
+- Owner asked to check Marketplace inner pages for remaining jumpy buttons after the broader phone-stability work.
+- Rechecked the Marketplace-adjacent inner routes for collapse/action patterns:
+  - Shop Control, Shop Assets, Shop Gallery, Demand Box, Vault Control, Finance, Loans & Support, payment/withdrawal instructions, loan readiness/suggestions/workbench.
+- Fixed two concrete remaining risks:
+  - `frontend/src/pages/FinancePage.tsx`: Finance summary, reconciliation, borrower/support, and recent-history sections no longer switch the whole section to `display: none` when collapsed. The shell and toggle button remain mounted; only section content collapses.
+  - `frontend/src/pages/ShopGalleryPage.tsx`: public Shop Diary product action buttons now keep a stable grid, height, padding, and font size across open/closed states. The media sound-unlock control also keeps stable sizing and opts out of scroll anchoring.
+- Verification:
+  - `npm exec -- eslint src\pages\FinancePage.tsx src\pages\ShopGalleryPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run build` passed after escalation for the known sandbox esbuild `spawn EPERM`.
+- Remaining truth:
+  - Product diary cards still intentionally expand/collapse as content; this pass stabilizes the controls inside that behavior, not the full card size.
+  - Browser/device confirmation is still useful because the reported issue is visual and touch-feel based.
