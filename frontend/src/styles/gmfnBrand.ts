@@ -80,6 +80,7 @@ export function brandSoftCard(
     boxShadow:
       "0 16px 36px rgba(7,20,36,0.065), inset 0 1px 0 rgba(255,255,255,0.86)",
     overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -97,6 +98,7 @@ export function brandInnerCard(
     boxShadow:
       "0 12px 28px rgba(7,20,36,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
     overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 

@@ -23158,3 +23158,28 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - Product diary cards still intentionally expand/collapse as content; this pass stabilizes the controls inside that behavior, not the full card size.
   - Browser/device confirmation is still useful because the reported issue is visual and touch-feel based.
+
+### Cross-domain phone control stability pass (2026-05-12)
+
+- Owner asked to extend the same phone-screen button-alignment cleanup across the main domains and inner pages before live phone use.
+- Kept Dashboard's frozen Market Wisdom and dashboard picture-frame behavior untouched.
+- Strengthened shared surface isolation:
+  - `frontend/src/lib/institutionalSurface.ts`: soft cards, inner cards, stat tiles, and blue rail shells now opt into layout/paint containment.
+  - `frontend/src/styles/gmfnBrand.ts`: brand soft/inner cards now opt into layout/paint containment.
+  - `frontend/src/components/StableButton.tsx`: shared `CardActionRow` now has stable box sizing, overflow anchoring, containment, and no transition movement.
+- Strengthened route-tile tap surfaces on key inner domains:
+  - Loans & Support: `LoansPage`, `LoanReadinessPage`, `LoanSuggestionsPage`, `LoanWorkbenchPage`, `LoanSummaryPage`, `GuarantorEarningsPage`.
+  - Finance/rails/admin finance: `PaymentRailsPage`, `RevenueAllocationPage`, `ExposureAdminPage`, `SystemOperationsPage`.
+  - Trust/profile command surfaces: `TrustCommandCentrePage`, `MyGMFNAndIPage`.
+- Verification so far:
+  - targeted ESLint on touched frontend files passed.
+  - `npm run lint` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run build` passed after escalation for the known sandbox Vite/esbuild `spawn EPERM`.
+- Remaining truth:
+  - This pass reduces phone hit-box/layout drift on shared surfaces and route tiles. It is not a visual redesign and does not remove intentional page/content expansion.
+  - A real phone walkthrough is still the best final proof because the problem is tactile and viewport-specific.

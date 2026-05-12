@@ -231,6 +231,13 @@ function routeTile(primary = false): React.CSSProperties {
       : "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(234,243,251,0.986) 100%)",
     padding: 16,
     textDecoration: "none",
+    boxSizing: "border-box",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    overflowAnchor: "none",
+    contain: "layout paint",
+    transition: "none",
+    flexShrink: 0,
     boxShadow: primary
       ? "0 18px 38px rgba(29,95,212,0.12)"
       : "0 16px 32px rgba(15,23,42,0.065)",

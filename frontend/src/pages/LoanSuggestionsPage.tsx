@@ -414,6 +414,13 @@ function routeTileStyle(primary = false): React.CSSProperties {
     padding: 16,
     textDecoration: "none",
     textAlign: "left",
+    boxSizing: "border-box",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    overflowAnchor: "none",
+    contain: "layout paint",
+    transition: "none",
+    flexShrink: 0,
     boxShadow: primary
       ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
       : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",

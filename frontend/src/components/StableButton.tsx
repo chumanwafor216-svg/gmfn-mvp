@@ -212,7 +212,10 @@ export function CardActionRow({
         justifyContent:
           align === "center" ? "center" : align === "end" ? "flex-end" : "flex-start",
         minHeight,
+        boxSizing: "border-box",
         overflowAnchor: "none",
+        contain: "layout paint",
+        transition: "none",
         ...style,
       }}
     >

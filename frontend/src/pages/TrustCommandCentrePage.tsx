@@ -313,6 +313,11 @@ function routeTile(primary = false): React.CSSProperties {
       : "radial-gradient(circle at 14% 10%, rgba(201,154,39,0.10) 0%, rgba(201,154,39,0) 28%), radial-gradient(circle at 86% 14%, rgba(38,96,171,0.12) 0%, rgba(38,96,171,0) 28%), linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(241,247,253,0.985) 60%, rgba(227,236,245,0.973) 100%)",
     padding: 16,
     textDecoration: "none",
+    boxSizing: "border-box",
+    overflowAnchor: "none",
+    contain: "layout paint",
+    transition: "none",
+    flexShrink: 0,
     boxShadow: primary
       ? "0 16px 34px rgba(134,98,20,0.12), inset 0 1px 0 rgba(255,255,255,0.9)"
       : "0 12px 26px rgba(7,20,36,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
