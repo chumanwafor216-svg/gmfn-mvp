@@ -167,6 +167,8 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     border: "1px solid rgba(37,78,119,0.20)",
     padding: 18,
     overflow: "hidden",
+    overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -175,6 +177,7 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     ...institutionalSoftCard(bg),
     border: "1px solid rgba(37,78,119,0.18)",
     padding: 14,
+    overflowAnchor: "none",
   };
 }
 
@@ -183,6 +186,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalInnerCard(bg),
     border: "1px solid rgba(37,78,119,0.16)",
     padding: 14,
+    overflowAnchor: "none",
   };
 }
 
@@ -840,7 +844,7 @@ export default function MarketplaceWorkspacePage() {
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: "0.9fr 1.1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))",
             gap: 16,
             alignItems: "stretch",
           }}

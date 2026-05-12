@@ -376,6 +376,8 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     boxShadow:
       "0 12px 28px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
     overflow: "hidden",
+    overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -392,6 +394,7 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     padding: "clamp(12px, 3vw, 16px)",
     boxShadow:
       "0 10px 24px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+    overflowAnchor: "none",
   };
 }
 
@@ -408,6 +411,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: "clamp(9px, 2.6vw, 12px)",
     boxShadow:
       "0 10px 22px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+    overflowAnchor: "none",
   };
 }
 
@@ -451,6 +455,15 @@ function communityActionStyle(
   const stableActionLayer: React.CSSProperties = {
     position: "relative",
     zIndex: 60,
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    flexShrink: 0,
+    overflowAnchor: "none",
+    transform: "none",
+    transition: "none",
+    contain: "layout paint",
   };
 
   if (kind === "primary") {

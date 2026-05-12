@@ -988,6 +988,8 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     boxShadow: "var(--shadow-card)",
     backdropFilter: "blur(8px)",
     overflow: "hidden",
+    overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -1130,6 +1132,7 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
     padding: 15,
     boxShadow: "var(--shadow-soft)",
     backdropFilter: "blur(6px)",
+    overflowAnchor: "none",
   };
 }
 
@@ -1141,6 +1144,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: 13,
     boxShadow: "var(--shadow-soft)",
     backdropFilter: "blur(5px)",
+    overflowAnchor: "none",
   };
 }
 
@@ -1252,7 +1256,7 @@ function marketplaceActionStyle(
       transform: "none",
       flexShrink: 0,
       overflowAnchor: "none",
-      transition: "box-shadow 100ms ease, border-color 100ms ease",
+      transition: "none",
     };
   }
 
@@ -1290,7 +1294,7 @@ function marketplaceActionStyle(
       transform: "none",
       flexShrink: 0,
       overflowAnchor: "none",
-      transition: "box-shadow 100ms ease, border-color 100ms ease",
+      transition: "none",
     };
   }
 
@@ -1327,7 +1331,7 @@ function marketplaceActionStyle(
     transform: "none",
     flexShrink: 0,
     overflowAnchor: "none",
-    transition: "box-shadow 100ms ease, border-color 100ms ease",
+    transition: "none",
   };
 }
 
@@ -1876,6 +1880,8 @@ export default function MarketplacePage() {
 
   const [sectionsOpen, setSectionsOpen] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
+  const [sectionsTouched, setSectionsTouched] =
+    useState<SectionState>(DEFAULT_SECTION_STATE);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [intentQuery, setIntentQuery] = useState("");
   const [intentGuideOpen, setIntentGuideOpen] = useState(false);
@@ -1983,6 +1989,10 @@ export default function MarketplacePage() {
   }
 
   function toggleSection(key: keyof SectionState) {
+    setSectionsTouched((prev) => ({
+      ...prev,
+      [key]: true,
+    }));
     setSectionsOpen((prev) => ({
       ...prev,
       [key]: !prev[key],
@@ -3917,7 +3927,7 @@ export default function MarketplacePage() {
         </div>
       </section>
 
-      {sectionsOpen.money ? (
+      {sectionsOpen.money || sectionsTouched.money ? (
       <section
         id="marketplace-money-routes"
         style={{ ...pageCard("#FFFFFF"), order: 8 }}
@@ -4192,7 +4202,7 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
-      {sectionsOpen.tools ? (
+      {sectionsOpen.tools || sectionsTouched.tools ? (
       <section
         id="marketplace-owned-links"
         style={{ ...pageCard("#FFFFFF"), order: 4 }}
@@ -4841,7 +4851,7 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
-      {sectionsOpen.members ? (
+      {sectionsOpen.members || sectionsTouched.members ? (
       <section
         id="marketplace-members-shops"
         style={{ ...pageCard("#FFFFFF"), order: 3 }}
@@ -5033,7 +5043,7 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
-      {sectionsOpen.support ? (
+      {sectionsOpen.support || sectionsTouched.support ? (
       <section
         id="marketplace-loans-support"
         ref={supportSectionRef}

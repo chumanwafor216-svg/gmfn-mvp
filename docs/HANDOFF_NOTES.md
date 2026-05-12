@@ -1,3 +1,20 @@
+### Marketplace and Community Home phone jump minimization (2026-05-12)
+
+- Followed up after the product owner reported the remaining phone jumping/click-alignment problem was reduced but still visible, especially around Marketplace, Community Home, and the Marketplace Workspace/access desk.
+- Truth/devil's advocate:
+  - The shared stable button/tap primitives were already passing audit, so the remaining risk was around the surrounding layout: scroll anchoring on cards, residual button transitions, and Marketplace detail sections disappearing completely after their own `Collapse` button was tapped.
+  - This is a minimization patch, not a promise that every browser scroll movement is impossible. Phone browsers may still adjust when large content is opened/closed, but the tapped controls should now be less likely to vanish or shift under the finger.
+- Frontend change:
+  - `frontend/src/pages/MarketplacePage.tsx` now opts Marketplace cards out of scroll anchoring, removes residual action-button transitions, and keeps a collapsed detail-section shell after the section has been opened once so the collapse control remains available instead of the whole section disappearing.
+  - `frontend/src/pages/CommunityHomePage.tsx` now applies no-anchor/no-transition touch containment to Community Home cards and custom action styles.
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx` now applies no-anchor containment and changes the fixed two-column community profile grid to an auto-fit responsive grid for phone viewing.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx src\pages\CommunityHomePage.tsx src\pages\MarketplaceWorkspacePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+
 ### Public shop media URLs preserved when local files are missing (2026-05-11)
 
 - Followed up after the product owner confirmed Shop Diaries media was still missing on local `5174`.
