@@ -16,7 +16,7 @@ import {
   publicShopPath,
 } from "./lib/publicLinks";
 import { APP_ROUTES } from "./lib/appRoutes";
-import { getAccessToken } from "./lib/api";
+import { getAccessToken, logout } from "./lib/api";
 import { publishRecoveryTarget } from "./lib/publishRecovery";
 import { gmfnBrand } from "./styles/gmfnBrand";
 
@@ -234,6 +234,51 @@ function lastAuthenticatedAppPath(): string {
   }
 }
 
+function hasPublicSessionReset(search: string): boolean {
+  try {
+    const params = new URLSearchParams(search);
+    const value = String(params.get("reset") || "").trim().toLowerCase();
+    return value === "1" || value === "true" || value === "yes";
+  } catch {
+    return false;
+  }
+}
+
+function clearLocalBrowserSession(): void {
+  try {
+    logout();
+  } catch {
+    // Keep the reset route best-effort.
+  }
+
+  try {
+    window.localStorage.clear();
+  } catch {
+    // Some mobile browsers can block storage access.
+  }
+
+  try {
+    window.sessionStorage.clear();
+  } catch {
+    // Some mobile browsers can block storage access.
+  }
+}
+
+function PublicSessionReset() {
+  const [done, setDone] = React.useState(false);
+
+  React.useLayoutEffect(() => {
+    clearLocalBrowserSession();
+    setDone(true);
+  }, []);
+
+  if (!done) {
+    return <RouteFallback />;
+  }
+
+  return <Navigate to="/cover" replace />;
+}
+
 function RememberAuthenticatedAppRoute() {
   const location = useLocation();
 
@@ -247,6 +292,11 @@ function RememberAuthenticatedAppRoute() {
 
 function PublicEntryGuard(props: { children: React.ReactNode }) {
   const location = useLocation();
+
+  if (hasPublicSessionReset(location.search)) {
+    return <PublicSessionReset />;
+  }
+
   const publishTarget = publishRecoveryTarget();
   const token = getAccessToken();
 

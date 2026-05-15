@@ -1,3 +1,20 @@
+### Render parity and phone reset handoff (2026-05-15)
+
+- Followed up after the product owner confirmed the local phone URL finally opened, but Render did not match the local phone arrangement needed for a possible online/Zoom school review.
+- Truth/devil's advocate:
+  - Local phone is now the immediate visual reference.
+  - Render was confirmed online but stale: live `https://gmfn-frontend.onrender.com/cover` served `/assets/index-CwK66BRp.js` with `last-modified: Tue, 12 May 2026 05:33:13 UTC`.
+  - The current branch was already ahead of `origin/feature/vault-shops` by 5 commits before this pass, which likely explains why Render looked behind the local phone build.
+  - Render backend health is live at `https://gmfn-api.onrender.com/health` and returned `{"ok":true,"dev_mode":false}`.
+- Frontend change:
+  - `frontend/src/App.tsx` now supports `/cover?reset=1` as a local/public session reset escape hatch.
+  - The reset path clears GSN local/session browser state and returns to `/cover`, preventing stale phone browser state from forcing `/cover` into `/app/community` and getting stuck on `Loading workspace...`.
+- Verification:
+  - `npm exec -- eslint src\App.tsx` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Deployment note:
+  - Push `feature/vault-shops` after committing this note and `frontend/src/App.tsx`; then verify Render's live HTML points to the newly built `index-*.js` bundle rather than the stale `index-CwK66BRp.js`.
+
 ### Shared phone anti-jump hardening across main domains (2026-05-12)
 
 - Followed up after the product owner confirmed Marketplace/Community Home improved but still showed some smaller jump/click drift, and asked for the same tightening across the main app domains before a school defense/demo.
