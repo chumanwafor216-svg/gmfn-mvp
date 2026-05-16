@@ -30,8 +30,166 @@ def _has_index(bind, table_name: str, index_name: str) -> bool:
     return any(idx["name"] == index_name for idx in inspector.get_indexes(table_name))
 
 
+def _create_index_if_missing(
+    bind,
+    index_name: str,
+    table_name: str,
+    columns: list[str],
+    *,
+    unique: bool = False,
+) -> None:
+    if _has_table(bind, table_name) and not _has_index(bind, table_name, index_name):
+        op.create_index(index_name, table_name, columns, unique=unique)
+
+
+def _ensure_marketplace_domain_tables(bind) -> None:
+    """Create missing marketplace tables before Vault adds foreign keys.
+
+    Render Postgres applies real foreign-key checks while SQLite permits a
+    reference to a table that does not exist yet. The Vault migration depends on
+    the shop/product marketplace tables, so this deploy-safe backfill must run
+    before vault_orders/vault_blocks are created.
+    """
+
+    if not _has_table(bind, "marketplace_shops"):
+        op.create_table(
+            "marketplace_shops",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("clan_id", sa.Integer(), nullable=True),
+            sa.Column("owner_user_id", sa.Integer(), nullable=False),
+            sa.Column("shop_name", sa.String(length=120), nullable=False),
+            sa.Column("description", sa.Text(), nullable=True),
+            sa.Column("whatsapp_number", sa.String(length=32), nullable=True),
+            sa.Column("telegram_handle", sa.String(length=64), nullable=True),
+            sa.Column("image_url", sa.Text(), nullable=True),
+            sa.Column("is_active", sa.Boolean(), server_default="1", nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["clan_id"], ["clans.id"], ondelete="SET NULL"),
+            sa.ForeignKeyConstraint(["owner_user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+            sa.UniqueConstraint("owner_user_id", name="uq_marketplace_shop_owner_global"),
+        )
+
+    _create_index_if_missing(bind, "ix_marketplace_shops_id", "marketplace_shops", ["id"])
+    _create_index_if_missing(bind, "ix_marketplace_shops_clan_id", "marketplace_shops", ["clan_id"])
+    _create_index_if_missing(bind, "ix_marketplace_shops_owner_user_id", "marketplace_shops", ["owner_user_id"])
+    _create_index_if_missing(bind, "ix_marketplace_shops_shop_name", "marketplace_shops", ["shop_name"])
+    _create_index_if_missing(bind, "ix_marketplace_shops_is_active", "marketplace_shops", ["is_active"])
+    _create_index_if_missing(bind, "ix_marketplace_shops_created_at", "marketplace_shops", ["created_at"])
+
+    if not _has_table(bind, "marketplace_products"):
+        op.create_table(
+            "marketplace_products",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("clan_id", sa.Integer(), nullable=False),
+            sa.Column("shop_id", sa.Integer(), nullable=False),
+            sa.Column("seller_user_id", sa.Integer(), nullable=False),
+            sa.Column("title", sa.String(length=160), nullable=False),
+            sa.Column("description", sa.Text(), nullable=True),
+            sa.Column("price", sa.String(length=32), nullable=True),
+            sa.Column("currency", sa.String(length=8), server_default="NGN", nullable=True),
+            sa.Column("image_url", sa.Text(), nullable=True),
+            sa.Column("video_url", sa.Text(), nullable=True),
+            sa.Column("visibility_mode", sa.String(length=32), server_default="community_visible", nullable=False),
+            sa.Column("is_active", sa.Boolean(), server_default="1", nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["clan_id"], ["clans.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["seller_user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["shop_id"], ["marketplace_shops.id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+
+    _create_index_if_missing(bind, "ix_marketplace_products_id", "marketplace_products", ["id"])
+    _create_index_if_missing(bind, "ix_marketplace_products_clan_id", "marketplace_products", ["clan_id"])
+    _create_index_if_missing(bind, "ix_marketplace_products_shop_id", "marketplace_products", ["shop_id"])
+    _create_index_if_missing(bind, "ix_marketplace_products_seller_user_id", "marketplace_products", ["seller_user_id"])
+    _create_index_if_missing(bind, "ix_marketplace_products_title", "marketplace_products", ["title"])
+    _create_index_if_missing(bind, "ix_marketplace_products_visibility_mode", "marketplace_products", ["visibility_mode"])
+    _create_index_if_missing(bind, "ix_marketplace_products_is_active", "marketplace_products", ["is_active"])
+    _create_index_if_missing(bind, "ix_marketplace_products_created_at", "marketplace_products", ["created_at"])
+
+    if not _has_table(bind, "marketplace_broadcasts"):
+        op.create_table(
+            "marketplace_broadcasts",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("clan_id", sa.Integer(), nullable=False),
+            sa.Column("author_user_id", sa.Integer(), nullable=False),
+            sa.Column("shop_id", sa.Integer(), nullable=True),
+            sa.Column("message", sa.Text(), nullable=False),
+            sa.Column("image_url", sa.Text(), nullable=True),
+            sa.Column("video_url", sa.Text(), nullable=True),
+            sa.Column("priority_mode", sa.String(length=20), server_default="free", nullable=False),
+            sa.Column("visibility_scope", sa.String(length=32), server_default="direct_communities", nullable=False),
+            sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["author_user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["clan_id"], ["clans.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["shop_id"], ["marketplace_shops.id"], ondelete="SET NULL"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_id", "marketplace_broadcasts", ["id"])
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_clan_id", "marketplace_broadcasts", ["clan_id"])
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_author_user_id", "marketplace_broadcasts", ["author_user_id"])
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_shop_id", "marketplace_broadcasts", ["shop_id"])
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_priority_mode", "marketplace_broadcasts", ["priority_mode"])
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_visibility_scope", "marketplace_broadcasts", ["visibility_scope"])
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_expires_at", "marketplace_broadcasts", ["expires_at"])
+    _create_index_if_missing(bind, "ix_marketplace_broadcasts_created_at", "marketplace_broadcasts", ["created_at"])
+
+    if not _has_table(bind, "marketplace_reviews"):
+        op.create_table(
+            "marketplace_reviews",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("clan_id", sa.Integer(), nullable=False),
+            sa.Column("product_id", sa.Integer(), nullable=True),
+            sa.Column("shop_id", sa.Integer(), nullable=True),
+            sa.Column("reviewer_user_id", sa.Integer(), nullable=False),
+            sa.Column("merchant_user_id", sa.Integer(), nullable=False),
+            sa.Column("rating", sa.Integer(), nullable=False),
+            sa.Column("review_text", sa.Text(), nullable=True),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["clan_id"], ["clans.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["merchant_user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["product_id"], ["marketplace_products.id"], ondelete="SET NULL"),
+            sa.ForeignKeyConstraint(["reviewer_user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["shop_id"], ["marketplace_shops.id"], ondelete="SET NULL"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+
+    _create_index_if_missing(bind, "ix_marketplace_reviews_id", "marketplace_reviews", ["id"])
+    _create_index_if_missing(bind, "ix_marketplace_reviews_clan_id", "marketplace_reviews", ["clan_id"])
+    _create_index_if_missing(bind, "ix_marketplace_reviews_product_id", "marketplace_reviews", ["product_id"])
+    _create_index_if_missing(bind, "ix_marketplace_reviews_shop_id", "marketplace_reviews", ["shop_id"])
+    _create_index_if_missing(bind, "ix_marketplace_reviews_reviewer_user_id", "marketplace_reviews", ["reviewer_user_id"])
+    _create_index_if_missing(bind, "ix_marketplace_reviews_merchant_user_id", "marketplace_reviews", ["merchant_user_id"])
+    _create_index_if_missing(bind, "ix_marketplace_reviews_rating", "marketplace_reviews", ["rating"])
+    _create_index_if_missing(bind, "ix_marketplace_reviews_created_at", "marketplace_reviews", ["created_at"])
+
+    if not _has_table(bind, "marketplace_product_reposts"):
+        op.create_table(
+            "marketplace_product_reposts",
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("original_product_id", sa.Integer(), nullable=False),
+            sa.Column("reposted_by_user_id", sa.Integer(), nullable=False),
+            sa.Column("target_clan_id", sa.Integer(), nullable=False),
+            sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.ForeignKeyConstraint(["original_product_id"], ["marketplace_products.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["reposted_by_user_id"], ["users.id"], ondelete="CASCADE"),
+            sa.ForeignKeyConstraint(["target_clan_id"], ["clans.id"], ondelete="CASCADE"),
+            sa.PrimaryKeyConstraint("id"),
+        )
+
+    _create_index_if_missing(bind, "ix_marketplace_product_reposts_id", "marketplace_product_reposts", ["id"])
+    _create_index_if_missing(bind, "ix_marketplace_product_reposts_original_product_id", "marketplace_product_reposts", ["original_product_id"])
+    _create_index_if_missing(bind, "ix_marketplace_product_reposts_reposted_by_user_id", "marketplace_product_reposts", ["reposted_by_user_id"])
+    _create_index_if_missing(bind, "ix_marketplace_product_reposts_target_clan_id", "marketplace_product_reposts", ["target_clan_id"])
+    _create_index_if_missing(bind, "ix_marketplace_product_reposts_created_at", "marketplace_product_reposts", ["created_at"])
+
+
 def upgrade() -> None:
     bind = op.get_bind()
+    _ensure_marketplace_domain_tables(bind)
 
     if not _has_table(bind, "vault_orders"):
         op.create_table(

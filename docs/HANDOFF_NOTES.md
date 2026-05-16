@@ -26592,3 +26592,39 @@ GSN-branded invite composer and invite-entry continuity.
   - When testing from the phone, copy/open a fresh shop link after this build.
     Old WhatsApp/browser links that point at the public Render domain can still
     show the old origin's state.
+
+### Render backend pre-deploy marketplace table repair (2026-05-16)
+
+- Follow-up after the owner reported that the backend has been failing on Render
+  since May 4th.
+- Render error:
+  - `psycopg.errors.UndefinedTable: relation "marketplace_shops" does not exist`
+  - failure occurred inside
+    `gmfn_backend/alembic/versions/20260504_add_vault_domain_tables.py` while
+    creating `vault_orders`;
+  - `vault_orders`, `vault_blocks`, and `vault_private_offers` reference
+    `marketplace_shops` / `marketplace_products`;
+  - SQLite local migration testing did not expose this because SQLite allows a
+    foreign key reference to a table that does not yet exist, while Postgres
+    refuses it.
+- Updated `gmfn_backend/alembic/versions/20260504_add_vault_domain_tables.py`:
+  - added `_ensure_marketplace_domain_tables()`;
+  - before creating Vault tables, the migration now creates missing marketplace
+    domain tables:
+    - `marketplace_shops`
+    - `marketplace_products`
+    - `marketplace_broadcasts`
+    - `marketplace_reviews`
+    - `marketplace_product_reposts`
+  - adds matching indexes only when missing.
+- Verification:
+  - `python -m py_compile gmfn_backend\alembic\versions\20260504_add_vault_domain_tables.py`
+    passed.
+  - Fresh local Alembic upgrade with
+    `DATABASE_URL=sqlite:///./gmfn-render-predeploy-check.db` passed through
+    head.
+- Remaining truth:
+  - This repairs the exact missing-table failure shown in the Render log.
+  - If Render fails again, the next log should be read from the first real
+    Postgres exception above the SQLAlchemy help link; do not diagnose from the
+    help link alone.
