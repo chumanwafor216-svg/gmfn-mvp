@@ -231,7 +231,7 @@ def _draw_identity_block(c: canvas.Canvas, y: float, user: Optional[User], trust
     x1 = LEFT
     x2 = LEFT + col_width + col_gap
 
-    y1 = _kv_pair(c, x1, y, "GMFN ID", _safe_str(trustslip.get("gmfn_id")), col_width=col_width)
+    y1 = _kv_pair(c, x1, y, "GSN ID", _safe_str(trustslip.get("gmfn_id")), col_width=col_width)
     y2 = _kv_pair(c, x2, y, "User Email", _mask_email(getattr(user, "email", None)), col_width=col_width)
 
     y_next = min(y1, y2) - 3 * mm
@@ -377,7 +377,7 @@ def _draw_sponsors_block(c: canvas.Canvas, y: float, trustslip: Dict[str, Any], 
         c.roundRect(LEFT, y - 16 * mm, RIGHT - LEFT, 14 * mm, 3 * mm, stroke=1, fill=1)
 
         _draw_text(c, LEFT + 3 * mm, y - 4 * mm, f"Sponsor {idx}", size=9, bold=True, color=colors.HexColor("#0F172A"))
-        _draw_text(c, LEFT + 3 * mm, y - 8 * mm, f"GMFN ID: {_safe_str(sponsor.get('gmfn_id'))}", size=9)
+        _draw_text(c, LEFT + 3 * mm, y - 8 * mm, f"GSN ID: {_safe_str(sponsor.get('gmfn_id'))}", size=9)
         _draw_text(c, LEFT + 70 * mm, y - 8 * mm, f"Type: {_safe_str(sponsor.get('edge_type'))}", size=9)
         _draw_text(c, LEFT + 3 * mm, y - 12 * mm, f"Email: {_mask_email(sponsor.get('email'))}", size=9)
         _draw_text(c, LEFT + 70 * mm, y - 12 * mm, f"Phone verified: {'Yes' if sponsor.get('phone_verified') else 'No'}", size=9)

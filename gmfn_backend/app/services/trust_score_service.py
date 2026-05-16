@@ -37,6 +37,7 @@ EV_IDENTITY_BANK_RECORDED = "identity.bank_destination_recorded"
 EV_IDENTITY_DRIVERS_LICENCE = "identity.drivers_licence_recorded"
 EV_IDENTITY_REGION_CONSISTENT = "identity.region_consistent"
 EV_IDENTITY_REGION_MISMATCH_EXPLAINED = "identity.region_mismatch_explained"
+EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED = "community_confirmation.review_case_resolved"
 
 # Reversal event types (append-only corrections)
 EV_BORROWER_FULL_REPAID_REV = "loan_fully_repaid_reversed"
@@ -130,6 +131,36 @@ def _normalize_event_type(event_type: str) -> str:
     return et
 
 
+def _safe_event_meta(row: TrustEvent) -> Dict[str, Any]:
+    raw = getattr(row, "meta", None) or getattr(row, "meta_json", None)
+    if raw is None:
+        return {}
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
+        except Exception:
+            return {}
+    return {}
+
+
+def _explicit_trust_delta(meta: Dict[str, Any]) -> Decimal:
+    raw = (
+        meta.get("trust_delta")
+        or meta.get("delta")
+        or meta.get("score_delta")
+        or meta.get("points_delta")
+    )
+    if raw in (None, ""):
+        return Decimal("0")
+    try:
+        return Decimal(str(raw))
+    except Exception:
+        return Decimal("0")
+
+
 def humane_trust_level(score: Decimal) -> str:
     s = _d(score)
     if s < Decimal("0.50"):
@@ -216,6 +247,7 @@ def recompute_trust_for_user(
         EV_IDENTITY_DRIVERS_LICENCE: 0,
         EV_IDENTITY_REGION_CONSISTENT: 0,
         EV_IDENTITY_REGION_MISMATCH_EXPLAINED: 0,
+        EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED: 0,
         EV_BORROWER_FULL_REPAID_REV: 0,
         EV_GUARANTOR_SUCCESS_REV: 0,
     }
@@ -223,6 +255,10 @@ def recompute_trust_for_user(
     total_repayments = 0
     recent_repayments = 0
     last_full_repayment_at: Optional[datetime] = None
+    review_delta_total = Decimal("0")
+    review_positive = 0
+    review_caution = 0
+    review_negative = 0
 
     for row in rows:
         et = _normalize_event_type(getattr(row, "event_type", "") or "")
@@ -230,6 +266,18 @@ def recompute_trust_for_user(
             continue
 
         counts[et] += 1
+        if et == EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED:
+            meta = _safe_event_meta(row)
+            if meta.get("affects_trust_reading") is True:
+                review_delta_total += _explicit_trust_delta(meta)
+                impact = str(meta.get("trust_impact") or "").strip().lower()
+                if impact == "positive":
+                    review_positive += 1
+                elif impact == "caution":
+                    review_caution += 1
+                elif impact == "negative":
+                    review_negative += 1
+            continue
 
         if et == EV_BORROWER_FULL_REPAID:
             total_repayments += 1
@@ -266,10 +314,12 @@ def recompute_trust_for_user(
     gain_identity_region = IDENTITY_REGION_CONSISTENT_GAIN * _d(identity_region_consistent)
     rev_borrower = BORROWER_FULL_REPAY_GAIN * _d(full_repayments_rev)
     rev_guarantor = GUARANTOR_SUCCESS_GAIN * _d(guarantor_success_rev)
+    gain_review = review_delta_total if review_delta_total > 0 else Decimal("0")
 
     penalty_missed = MISSED_PAYMENT_PENALTY * _d(missed_payments)
     penalty_default = DEFAULT_PENALTY * _d(defaults)
     penalty_fraud = FRAUD_PENALTY * _d(fraud_flags)
+    penalty_review = abs(review_delta_total) if review_delta_total < 0 else Decimal("0")
 
     total_gains = (
         gain_borrower
@@ -278,8 +328,9 @@ def recompute_trust_for_user(
         + gain_identity_bank
         + gain_identity_licence
         + gain_identity_region
+        + gain_review
     ) - (rev_borrower + rev_guarantor)
-    total_penalties = penalty_missed + penalty_default + penalty_fraud
+    total_penalties = penalty_missed + penalty_default + penalty_fraud + penalty_review
     lifetime = total_gains - total_penalties
 
     denom = max(1, total_repayments)
@@ -314,6 +365,12 @@ def recompute_trust_for_user(
     elif missed_payments > 0:
         latest_reason = "Missed payment reduced trust standing"
         latest_source = EV_MISSED_PAYMENT
+    elif review_negative > 0:
+        latest_reason = "A resolved community confirmation review created trust pressure"
+        latest_source = EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED
+    elif review_caution > 0:
+        latest_reason = "A resolved community confirmation review added caution to the trust reading"
+        latest_source = EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED
     elif identity_bank_recorded > 0:
         latest_reason = "Verified onboarding proofs established your starter trust standing"
         latest_source = EV_IDENTITY_BANK_RECORDED
@@ -329,6 +386,9 @@ def recompute_trust_for_user(
     elif guarantor_success > 0 and full_repayments == 0:
         latest_reason = "Successful guarantor support strengthened trust standing"
         latest_source = EV_GUARANTOR_SUCCESS
+    elif review_positive > 0:
+        latest_reason = "A resolved community confirmation review supported the trust reading"
+        latest_source = EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED
 
     standing = lifetime * recency_factor
     standing_q = _q(standing)
@@ -367,6 +427,12 @@ def recompute_trust_for_user(
             "identity_drivers_licence": identity_drivers_licence,
             "identity_region_consistent": identity_region_consistent,
             "identity_region_mismatch_explained": identity_region_mismatch_explained,
+            "community_confirmation_reviews_resolved": counts[
+                EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED
+            ],
+            "community_confirmation_review_positive": review_positive,
+            "community_confirmation_review_caution": review_caution,
+            "community_confirmation_review_negative": review_negative,
             "full_repayments_reversed": full_repayments_rev,
             "guarantor_success_reversed": guarantor_success_rev,
         },
@@ -377,6 +443,7 @@ def recompute_trust_for_user(
             "identity_bank": str(_q(gain_identity_bank)),
             "identity_drivers_licence": str(_q(gain_identity_licence)),
             "identity_region": str(_q(gain_identity_region)),
+            "community_confirmation_review": str(_q(gain_review)),
             "reversals": str(_q(rev_borrower + rev_guarantor)),
             "total": str(_q(total_gains)),
         },
@@ -384,6 +451,7 @@ def recompute_trust_for_user(
             "missed": str(_q(penalty_missed)),
             "default": str(_q(penalty_default)),
             "fraud": str(_q(penalty_fraud)),
+            "community_confirmation_review": str(_q(penalty_review)),
             "total": str(_q(total_penalties)),
         },
         "policy": loan_policy_for_band(band),
@@ -422,6 +490,7 @@ def compute_trust_score_explained(db: Session, user_id: int) -> Dict[str, Any]:
     out["explanation"] = (
         "Your trust standing grows slowly when you fully repay loans. "
         "Starter identity proofs can establish an initial base. "
+        "Resolved community confirmation reviews can add small support or caution. "
         "If a repayment is corrected later, a reversal event is logged and the "
         "score is recomputed from the trust ledger."
     )

@@ -1,8 +1,10 @@
 ﻿from __future__ import annotations
 
 import io
+import re
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from html import escape
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -15,6 +17,7 @@ from app.core.rate_limit import client_ip, rate_limiter
 from app.db.database import get_db
 from app.db.models import MarketplaceShop, TrustSlip, User
 from app.services.feature_entitlements_service import has_active_feature
+from app.services.community_confirmation_service import build_community_confirmation_summary
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_slips_services import (
     backfill_missing_trustslip_snapshots,
@@ -68,6 +71,25 @@ def _safe_str(value: Any, default: str = "") -> str:
     return s if s else default
 
 
+def _html(value: Any, default: str = "") -> str:
+    return escape(_safe_str(value, default), quote=True)
+
+
+def _display_datetime(value: Any, default: str = "Not stated") -> str:
+    raw = _safe_str(value)
+    if not raw:
+        return default
+    try:
+        cleaned = raw.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(cleaned)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.astimezone(timezone.utc)
+        return dt.strftime("%d %b %Y, %H:%M UTC")
+    except Exception:
+        return raw
+
+
 def _no_store_headers() -> Dict[str, str]:
     return {
         "Cache-Control": "no-store, max-age=0",
@@ -107,6 +129,21 @@ def _safe_visibility_level(user: Optional[User], requested_level: Optional[str])
     if level not in {"minimal", "standard", "detailed"}:
         return "standard"
     return level
+
+
+def _public_visibility_level(
+    *,
+    stored_level: str,
+    requested_level: Optional[str],
+) -> str:
+    ranks = {"minimal": 0, "standard": 1, "detailed": 2}
+    stored = stored_level if stored_level in ranks else "standard"
+    if not requested_level:
+        return stored
+    requested = str(requested_level).strip().lower()
+    if requested not in ranks:
+        return stored
+    return requested if ranks[requested] <= ranks[stored] else stored
 
 
 def _verify_page_url(code: str, level: Optional[str] = None) -> str:
@@ -206,18 +243,49 @@ def _status_effective(
     return "invalid"
 
 
+def _trust_slip_needs_refresh(slip: Optional[TrustSlip]) -> bool:
+    if slip is None:
+        return False
+    raw_status = _safe_str(getattr(slip, "status", "")).lower()
+    if raw_status in {"frozen", "revoked"}:
+        return False
+    return raw_status == "expired" or _is_expired(getattr(slip, "expires_at", None))
+
+
 def _merchant_badge(effective_status: str) -> tuple[str, str]:
     if effective_status == "active":
-        return ("VALID — OK TO RELEASE GOODS", "#0a7")
+        return ("VALID NOW - CURRENT TRUSTSLIP FOUND", "#166534")
     if effective_status == "merchant_verify_inactive":
-        return ("MERCHANT VERIFY INACTIVE — DO NOT RELEASE", "#b00")
+        return ("PUBLIC RECORD ONLY - MERCHANT VERIFY NOT ACTIVE", "#92400E")
     if effective_status == "expired":
-        return ("EXPIRED — DO NOT RELEASE", "#b00")
+        return ("FRESH TRUSTSLIP REQUIRED", "#92400E")
     if effective_status == "revoked":
-        return ("REVOKED — DO NOT RELEASE", "#b00")
+        return ("REVOKED - VERIFICATION BLOCKED", "#991B1B")
     if effective_status == "frozen":
-        return ("FROZEN — CONTACT ADMIN", "#b00")
-    return ("NOT VALID — DO NOT RELEASE", "#b00")
+        return ("FROZEN - CONTACT GSN ADMIN", "#991B1B")
+    return ("NOT CURRENT - ASK FOR UPDATED VERIFICATION", "#991B1B")
+
+
+def _band_short_label(value: Any) -> str:
+    raw = _safe_str(value).upper()
+    match = re.search(r"\b([A-F])\b", raw)
+    band = match.group(1) if match else raw[:1]
+    return {
+        "A": "Strongly trusted",
+        "B": "Generally trusted",
+        "C": "Mixed",
+        "D": "Needs attention",
+        "E": "High pressure",
+        "F": "Not enough evidence",
+    }.get(band, "")
+
+
+def _band_with_label(value: Any, default: str = "Not shown") -> str:
+    band = _safe_str(value, default)
+    label = _band_short_label(band)
+    if not label:
+        return band
+    return f"{band.upper()[:1]} - {label}"
 
 
 def _slip_subject_user_id(slip: TrustSlip) -> int:
@@ -280,11 +348,35 @@ def _aligned_snapshot_for_slip(
     )
 
     stored_level = _safe_visibility_level(holder, snapshot.get("merchant_visibility_level"))
-    effective_level = _safe_visibility_level(holder, requested_level or stored_level)
+    effective_level = _public_visibility_level(
+        stored_level=stored_level,
+        requested_level=requested_level,
+    )
+    stored_full_summary = dict(snapshot.get("full_summary") or {})
+    full_summary = {**full_payload, **stored_full_summary}
+
+    # Older snapshots should keep their recorded trust facts, but additive
+    # reader-context fields can be filled from the current payload so old
+    # TrustSlip links do not look emptier than newly issued links.
+    for key in (
+        "profile_image_url",
+        "identity_context",
+        "community_context",
+        "cci_explainer",
+        "identity_status_label",
+        "community_global_id",
+        "community_code",
+        "holder_role",
+        "community_member_count",
+        "active_member_count",
+        "total_member_count",
+    ):
+        if not full_summary.get(key) and full_payload.get(key) is not None:
+            full_summary[key] = full_payload.get(key)
 
     if requested_level and effective_level != stored_level:
         merchant_view = build_trust_slip_visibility_view(
-            dict(snapshot.get("full_summary") or full_payload),
+            dict(full_summary),
             level=effective_level,
         )
     else:
@@ -300,7 +392,7 @@ def _aligned_snapshot_for_slip(
         "snapshot": snapshot,
         "merchant_view": merchant_view,
         "visibility_level": effective_level,
-        "full_summary": dict(snapshot.get("full_summary") or full_payload),
+        "full_summary": full_summary,
     }
 
 
@@ -340,17 +432,25 @@ def _ensure_my_trust_slip_payload(
         }
 
     current = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
-    if not current:
+    if not current or _trust_slip_needs_refresh(current):
         try:
-            issue_result = issue_trust_slip_for_user(db, user_id=int(current_user.id))
+            issue_result = (
+                reissue_trust_slip(
+                    db,
+                    user_id=int(current_user.id),
+                    reason="expired_trustslip_auto_refresh",
+                )
+                if current
+                else issue_trust_slip_for_user(db, user_id=int(current_user.id))
+            )
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc))
 
         code = issue_result.get("code")
-        if bool(issue_result.get("issued")):
+        if bool(issue_result.get("issued", True)):
             log_trust_event(
                 db,
-                event_type="trust_slip.issued",
+                event_type="trust_slip.reissued" if current else "trust_slip.issued",
                 clan_id=0,
                 actor_user_id=int(current_user.id),
                 subject_user_id=int(current_user.id),
@@ -358,7 +458,8 @@ def _ensure_my_trust_slip_payload(
                 guarantor_id=None,
                 meta={
                     "reason": issue_result.get("reason"),
-                    "trust_slip_id": issue_result.get("trust_slip_id"),
+                    "trust_slip_id": issue_result.get("trust_slip_id") or issue_result.get("new_trust_slip_id"),
+                    "old_trust_slip_id": issue_result.get("old_trust_slip_id"),
                     "code": code,
                     "gmfn_id": issue_result.get("gmfn_id"),
                 },
@@ -494,6 +595,21 @@ def get_my_trust_slip_reissue_check(
             "changes": {},
         }
 
+    if _trust_slip_needs_refresh(slip):
+        return {
+            "ok": True,
+            "has_current_slip": True,
+            "trust_slip_id": int(slip.id),
+            "code": slip.code,
+            "material_change": True,
+            "changes": {
+                "status": {
+                    "old": "expired",
+                    "new": "needs_current_trustslip",
+                }
+            },
+        }
+
     out = has_material_trustslip_change(
         db,
         slip=slip,
@@ -519,7 +635,8 @@ def reissue_my_trust_slip(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     slip = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
-    if slip:
+    slip_needs_refresh = _trust_slip_needs_refresh(slip)
+    if slip and not slip_needs_refresh:
         check = has_material_trustslip_change(
             db,
             slip=slip,
@@ -671,6 +788,19 @@ def verify_trust_slip_public(
         "display_name": display_name,
         "gmfn_id": gmfn_id,
         "community": community,
+        "profile_image_url": merchant_view.get("profile_image_url")
+        or merchant_summary.get("profile_image_url")
+        or full_summary.get("profile_image_url"),
+        "identity_context": merchant_view.get("identity_context")
+        or full_summary.get("identity_context")
+        or {},
+        "community_context": merchant_view.get("community_context")
+        or full_summary.get("community_context")
+        or {},
+        "cci_explainer": merchant_view.get("cci_explainer")
+        or merchant_summary.get("cci_explainer")
+        or full_summary.get("cci_explainer")
+        or {},
         "band": band,
         "visibility_level": visibility_level,
         "status": effective,
@@ -686,14 +816,69 @@ def verify_trust_slip_public(
         },
     }
 
+    top_level_cci_score = merchant_view_out.get("cci_score") or merchant_summary.get("cci_score")
+    top_level_cci_band = merchant_view_out.get("cci_band") or merchant_summary.get("cci_band")
+    top_level_sponsor_count = (
+        merchant_view_out.get("sponsor_count")
+        if merchant_view_out.get("sponsor_count") is not None
+        else merchant_summary.get("sponsor_count")
+    )
+    top_level_phone_verified = merchant_view_out.get("phone_verified")
+    if top_level_phone_verified is None:
+        top_level_phone_verified = merchant_summary.get("phone_verified")
+    evidence_summary = full_summary.get("evidence_summary") or {}
+    commitment_discipline = evidence_summary.get("commitment_discipline") or {}
+    personal_commitment_discipline = evidence_summary.get("personal_commitment_discipline") or {}
+    human_terms = evidence_summary.get("human_terms") or {}
+    identity_context = merchant_view_out.get("identity_context") or {}
+    community_context = merchant_view_out.get("community_context") or {}
+    cci_explainer = merchant_view_out.get("cci_explainer") or {}
+    community_confirmation: Dict[str, Any] = {}
+    try:
+        community_confirmation = build_community_confirmation_summary(
+            db,
+            community_id=int(getattr(slip, "clan_id")),
+            subject_user_id=int(getattr(slip, "holder_user_id")),
+        )
+    except Exception:
+        community_confirmation = {
+            "relay_available": False,
+            "plain_language": "Community confirmation could not be loaded for this TrustSlip.",
+        }
+
     return {
         "code": slip.code,
         "token": slip.code,
         "verification_token": slip.code,
         "verification_code": slip.code,
         "public_verify_url": _verify_page_url(slip.code, visibility_level),
+        "holder_name": display_name,
+        "display_name": display_name,
+        "profile_image_url": merchant_view_out.get("profile_image_url") if visibility_level != "minimal" else None,
+        "gmfn_id": gmfn_id,
+        "holder_gmfn_id": gmfn_id,
+        "community_name": community,
+        "community": community,
+        "identity_context": identity_context if visibility_level != "minimal" else {},
+        "community_context": community_context if visibility_level != "minimal" else {},
+        "community_confirmation": community_confirmation if visibility_level != "minimal" else {
+            "relay_available": bool(community_confirmation.get("relay_available")),
+            "plain_language": community_confirmation.get("plain_language"),
+        },
+        "cci_explainer": cci_explainer if visibility_level != "minimal" else {},
+        "identity_verified": bool(identity_context.get("identity_verified")),
+        "identity_status_label": identity_context.get("identity_status_label"),
+        "community_global_id": community_context.get("community_global_id"),
+        "community_code": community_context.get("community_code"),
+        "holder_role": community_context.get("holder_role"),
+        "community_member_count": community_context.get("active_member_count"),
+        "active_member_count": community_context.get("active_member_count"),
+        "total_member_count": community_context.get("total_member_count"),
+        "trust_band": band,
+        "band": band,
         "status": getattr(slip, "status", None),
         "effective_status": effective,
+        "verification_status": effective,
         "merchant_verify_active": bool(merchant_verify_active),
         "merchant_verify_subscription_required": not bool(merchant_verify_active),
         "merchant_message": badge_text,
@@ -703,14 +888,26 @@ def verify_trust_slip_public(
         "trust_limit": trust_limit,
         "trust_slip_limit": trust_limit,
         "currency": currency,
+        "cci_score": top_level_cci_score,
+        "cci_band": top_level_cci_band,
+        "sponsor_count": top_level_sponsor_count,
+        "phone_verified": bool(top_level_phone_verified),
+        "visibility_level": visibility_level,
         "last_release_at": last_release_at_value,
+        "last_full_repayment_at": merchant_view_out.get("last_full_repayment_at"),
+        "days_since_last_full_repayment": merchant_view_out.get("days_since_last_full_repayment"),
+        "risk_flags": merchant_view_out.get("risk_flags", []),
+        "commitment_discipline": commitment_discipline if visibility_level != "minimal" else {},
+        "personal_commitment_discipline": personal_commitment_discipline if visibility_level != "minimal" else {},
+        "human_terms": human_terms if visibility_level != "minimal" else {},
         "holder_email_masked": _mask_email(getattr(holder, "email", None)),
-        "holder_gmfn_id": gmfn_id,
         "verify_page": _verify_page_url(slip.code, visibility_level),
         "lite_page": _lite_page_url(slip.code, visibility_level),
         "verified_at": _now_utc().isoformat(),
         "offline_note": "If network drops, screenshot this page. Use the code to re-verify later.",
-        "verification_note": "GMFN is non-custodial. This verifies TrustSlip validity only.",
+        "verification_note": "GSN is non-custodial. This verifies TrustSlip validity only.",
+        "disclaimer": merchant_view_out.get("disclaimer")
+        or "TrustSlip is a decision aid, not a bank guarantee, not auto-debit, and not automatic approval.",
         "snapshot_version": snapshot.get("snapshot_version"),
         "snapshot_checksum": snapshot.get("snapshot_checksum") or getattr(slip, "snapshot_checksum", None),
         "is_current": bool(getattr(slip, "is_current", True)),
@@ -753,7 +950,7 @@ def trust_slip_share_text_public(
 
     text = (
         f"TrustSlip verify: {verify_page}  Code: {code}  "
-        f"GMFN ID: {holder_gmfn_id or 'N/A'}  Visibility: {visibility_level}  Status: {msg}"
+        f"GSN ID: {holder_gmfn_id or 'N/A'}  Visibility: {visibility_level}  Status: {msg}"
     )
 
     return {
@@ -807,31 +1004,108 @@ def trust_slip_verify_lite_page(
     trust_limit = _safe_str(merchant_summary.get("trust_limit") or full_summary.get("trust_limit"))
     currency = _safe_str(merchant_summary.get("currency") or full_summary.get("currency"))
     holder_gmfn_id = _safe_str(merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None), "N/A")
-    expires_text = _safe_str(merchant_summary.get("expires_at") or full_summary.get("expires_at"), "No expiry")
+    expires_text = _display_datetime(
+        merchant_summary.get("expires_at") or full_summary.get("expires_at"),
+        "No expiry",
+    )
+    verified_text = _display_datetime(_now_utc().isoformat())
+    status_label = {
+        "active": "Current",
+        "expired": "Fresh TrustSlip required",
+        "merchant_verify_inactive": "Public record only",
+        "revoked": "Revoked",
+        "frozen": "Frozen",
+    }.get(effective, "Not current")
+    action_text = (
+        "Use this only as a quick confirmation. For support, trade, or credit decisions, open the full public verification paper."
+        if effective == "active"
+        else "Ask the holder to refresh their TrustSlip in GSN and share the new public code or QR before relying on it."
+    )
 
     html = f"""<!doctype html>
 <html>
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>TrustSlip Verify</title>
+    <title>GSN TrustSlip Lite Verification</title>
     <style>
-      body {{ font-family: Arial, sans-serif; margin: 14px; }}
-      .badge {{ padding: 12px; border-radius: 10px; background: {color}; color: #fff; font-weight: 800; text-align:center; }}
-      .row {{ margin-top: 10px; font-size: 18px; }}
-      .muted {{ margin-top: 12px; font-size: 13px; color: #666; }}
-      code {{ background:#f4f4f4; padding:2px 6px; border-radius:6px; }}
+      * {{ box-sizing: border-box; }}
+      body {{
+        font-family: Inter, Arial, sans-serif;
+        margin: 0;
+        padding: 16px;
+        background: #EEF5FD;
+        color: #07172C;
+      }}
+      .paper {{
+        max-width: 520px;
+        margin: 0 auto;
+        border: 1px solid rgba(37,78,119,0.18);
+        border-radius: 24px;
+        background: #FFFFFF;
+        box-shadow: 0 22px 54px rgba(7,23,44,0.13);
+        overflow: hidden;
+      }}
+      .head {{ padding: 18px 20px; border-bottom: 1px solid #D8E3EE; }}
+      .eyebrow {{ color: #164E94; font-size: 12px; font-weight: 1000; letter-spacing: .08em; text-transform: uppercase; }}
+      h1 {{ margin: 5px 0 0; font-size: 30px; line-height: 1; }}
+      .brand {{ margin-top: 5px; color: #B7791F; font-size: 11px; font-weight: 1000; }}
+      .body {{ padding: 18px 20px 20px; }}
+      .badge {{
+        padding: 15px;
+        border-radius: 18px;
+        background: {color};
+        color: #fff;
+        font-weight: 1000;
+        text-align:center;
+        line-height: 1.1;
+        text-transform: uppercase;
+      }}
+      .note {{
+        margin-top: 14px;
+        border-left: 5px solid #D6AA45;
+        border-radius: 14px;
+        background: #FFF7E6;
+        color: #5A3A00;
+        padding: 12px 13px;
+        font-size: 14px;
+        font-weight: 850;
+        line-height: 1.45;
+      }}
+      .row {{
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        padding: 11px 0;
+        border-bottom: 1px solid #D8E3EE;
+        font-size: 15px;
+        font-weight: 850;
+      }}
+      .row b {{ color: #07172C; }}
+      .row span {{ text-align: right; overflow-wrap: anywhere; }}
+      .muted {{ margin-top: 12px; font-size: 13px; color: #64748B; font-weight: 750; line-height: 1.45; }}
+      code {{ background:#F1F7FF; padding:2px 6px; border-radius:6px; }}
     </style>
   </head>
   <body>
-    <div class="badge">{msg}</div>
-    <div class="row"><b>Trust Limit:</b> {trust_limit} {currency}</div>
-    <div class="row"><b>Code:</b> <code>{code}</code></div>
-    <div class="row"><b>GMFN ID:</b> <code>{holder_gmfn_id}</code></div>
-    <div class="row"><b>Visibility:</b> {visibility_level}</div>
-    <div class="row"><b>Expires:</b> {expires_text}</div>
-    <div class="muted">Verified at: {_now_utc().isoformat()} (UTC)</div>
-    <div class="muted">If network drops, screenshot this page.</div>
+    <main class="paper">
+      <header class="head">
+        <div class="eyebrow">GSN public lite check</div>
+        <h1>TrustSlip Lite</h1>
+        <div class="brand">OPEN - TRUST - IMPACT</div>
+      </header>
+      <section class="body">
+        <div class="badge">{_html(msg)}</div>
+        <div class="note">{_html(action_text)}</div>
+        <div class="row"><b>Status</b><span>{_html(status_label)}</span></div>
+        <div class="row"><b>Trust Limit</b><span>{_html(trust_limit)} {_html(currency)}</span></div>
+        <div class="row"><b>Code</b><span><code>{_html(code)}</code></span></div>
+        <div class="row"><b>GSN ID</b><span><code>{_html(holder_gmfn_id)}</code></span></div>
+        <div class="row"><b>Visibility</b><span>{_html(visibility_level)}</span></div>
+        <div class="row"><b>Expires</b><span>{_html(expires_text)}</span></div>
+        <div class="muted">Checked at: {_html(verified_text)}. If network drops, screenshot this page and re-check the code later.</div>
+      </section>
+    </main>
   </body>
 </html>"""
     return HTMLResponse(content=html, headers=_no_store_headers())
@@ -892,23 +1166,100 @@ def trust_slip_verify_page(
         merchant_verify_active=merchant_verify_active,
     )
     badge_text, badge_color = _merchant_badge(effective)
+    status_class = (
+        "status-valid"
+        if effective == "active"
+        else "status-caution"
+        if effective in {"expired", "merchant_verify_inactive"}
+        else "status-blocked"
+    )
 
     merchant_summary = merchant_view.get("merchant_summary") or {}
     trust_limit = _safe_str(merchant_summary.get("trust_limit") or full_summary.get("trust_limit"))
     currency = _safe_str(merchant_summary.get("currency") or full_summary.get("currency"))
     holder_gmfn_id = _safe_str(merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None), "Hidden")
-    expires_text = _safe_str(merchant_summary.get("expires_at") or full_summary.get("expires_at"), "No expiry")
+    display_name = _safe_str(
+        merchant_view.get("display_name")
+        or merchant_summary.get("display_name")
+        or full_summary.get("display_name"),
+        "Hidden",
+    )
+    community_name = _safe_str(
+        merchant_view.get("community")
+        or merchant_summary.get("community")
+        or full_summary.get("community"),
+        "Not shown",
+    )
+    band = _band_with_label(
+        merchant_view.get("band") or merchant_summary.get("band") or full_summary.get("band"),
+        "Not shown",
+    )
+    sponsor_count = _safe_str(
+        merchant_view.get("sponsor_count")
+        or merchant_summary.get("sponsor_count")
+        or full_summary.get("sponsor_count"),
+        "0",
+    )
+    phone_verified = bool(
+        merchant_view.get("phone_verified")
+        or merchant_summary.get("phone_verified")
+        or full_summary.get("phone_verified")
+    )
+    phone_status = "Verified" if phone_verified else "Not shown"
+    raw_expires_text = _safe_str(merchant_summary.get("expires_at") or full_summary.get("expires_at"), "No expiry")
+    expires_text = _display_datetime(raw_expires_text, "No expiry")
+    issued_text = _display_datetime(getattr(slip, "created_at", None), "Not stated")
+    verified_text = _display_datetime(_now_utc().isoformat())
+
+    if effective == "active":
+        plain_reading = (
+            "This TrustSlip is current. It gives a public, community-backed trust summary "
+            "for identity, support, trade, and low-risk decision checks. Use it as one "
+            "careful input alongside your own judgement."
+        )
+        action_reading = (
+            "You may continue with ordinary caution, match the decision to the visible "
+            "evidence, and keep the TrustSlip code for later verification."
+        )
+    elif effective == "expired":
+        plain_reading = (
+            "This TrustSlip has passed its public verification window. It should not be "
+            "used for a new decision until the holder refreshes it and shares a current "
+            "TrustSlip."
+        )
+        action_reading = (
+            "Ask the holder to open GSN, refresh their TrustSlip, and send the new public "
+            "verification code or QR. Do not rely on this old code for support, release, "
+            "credit, or emergency decisions."
+        )
+    else:
+        plain_reading = (
+            "This TrustSlip is not a current public decision paper. Treat it as a failed "
+            "or limited verification and ask for a fresh TrustSlip before relying on it."
+        )
+        action_reading = (
+            "Do not use this page as approval. Ask for a current public TrustSlip, or "
+            "contact the holder/community through the normal GSN route."
+        )
 
     cci_row = ""
     if merchant_summary.get("cci_score") not in (None, "", "—"):
         cci_band = _safe_str(merchant_summary.get("cci_band"), "")
-        band_part = f" (Band {cci_band})" if cci_band else ""
-        cci_row = f'<div class="row"><b>CCI:</b> {_safe_str(merchant_summary.get("cci_score"))}{band_part}</div>'
+        band_part = f" ({_band_with_label(cci_band)})" if cci_band else ""
+        cci_value = f"{_safe_str(merchant_summary.get('cci_score'))}{band_part}"
+        cci_row = f'<div class="row"><b>Cross-community consistency</b><span>{_html(cci_value)}</span></div>'
 
+    status_label = {
+        "active": "Current",
+        "expired": "Fresh TrustSlip required",
+        "merchant_verify_inactive": "Public record only",
+        "revoked": "Revoked",
+        "frozen": "Frozen",
+    }.get(effective, "Not current")
     print_link = f"/trust-slips/verify/{code}/print?level={visibility_level}"
     lite_link = _lite_page_url(code, visibility_level)
     qr_img = f"/trust-slips/verify/{code}/qr.png?level={visibility_level}"
-    release_link = f"/trust-slips/{code}/release/page"
+    holder_refresh_link = "/app/trust-slip"
 
     html = f"""<!doctype html>
 <html>
@@ -917,90 +1268,385 @@ def trust_slip_verify_page(
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>TrustSlip Verification</title>
     <style>
-      body {{
-        font-family: Arial, sans-serif;
-        margin: 18px;
-        background: #ffffff;
-        color: #111;
+      :root {{
+        --navy: #07172C;
+        --blue: #0B63D1;
+        --gold: #D6AA45;
+        --gold-soft: #FFF7E6;
+        --line: #D8E3EE;
+        --muted: #64748B;
+        --status: {badge_color};
       }}
-      .box {{
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        padding: 16px;
-        max-width: 760px;
+      * {{ box-sizing: border-box; }}
+      body {{
+        font-family: Inter, Arial, sans-serif;
+        margin: 0;
+        background: linear-gradient(180deg, #F6FAFF 0%, #EEF5FD 48%, #F8FBFF 100%);
+        color: var(--navy);
+        padding: 18px;
+      }}
+      .paper {{
+        position: relative;
+        max-width: 920px;
+        margin: 0 auto;
+        overflow: hidden;
+        border: 1px solid rgba(37,78,119,0.18);
+        border-radius: 28px;
+        background: #FFFFFF;
+        box-shadow: 0 28px 70px rgba(7,23,44,0.14);
+      }}
+      .paper::before {{
+        content: "";
+        display: block;
+        height: 8px;
+        background: linear-gradient(90deg, var(--navy), #164E94 48%, var(--gold));
+      }}
+      .watermark {{
+        position: absolute;
+        right: -70px;
+        top: 120px;
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        border: 22px solid rgba(11,99,209,0.035);
+        pointer-events: none;
+      }}
+      .trustmark {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+        border: 1px solid rgba(214,170,69,0.34);
+        border-radius: 18px;
+        background: linear-gradient(135deg, #FFFCF2, #F8FBFF);
+        padding: 12px 14px;
+        color: #5A3A00;
+        font-size: 13px;
+        font-weight: 900;
+      }}
+      .trustmark span {{
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }}
+      .trustmark b {{
+        color: var(--navy);
+      }}
+      .header {{
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 16px;
+        padding: 26px 28px 18px;
+        border-bottom: 1px solid rgba(216,227,238,0.82);
+      }}
+      .eyebrow {{
+        color: #164E94;
+        font-size: 13px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }}
+      h1 {{
+        margin: 4px 0 0;
+        font-size: clamp(34px, 7vw, 56px);
+        line-height: .96;
+        letter-spacing: 0;
+      }}
+      .subtitle {{
+        margin: 10px 0 0;
+        max-width: 620px;
+        color: var(--muted);
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.45;
+      }}
+      .brand {{
+        text-align: right;
+        color: var(--navy);
+        font-weight: 1000;
+        font-size: 34px;
+        line-height: 1;
+      }}
+      .brand small {{
+        display: block;
+        margin-top: 4px;
+        color: #B7791F;
+        font-size: 10px;
+        font-weight: 1000;
+        letter-spacing: .08em;
+      }}
+      .body {{
+        position: relative;
+        padding: 22px 28px 26px;
       }}
       .badge {{
-        font-size: 18px;
-        font-weight: 800;
-        padding: 12px;
-        border-radius: 10px;
-        color: white;
+        border-radius: 20px;
+        padding: 18px;
+        color: #FFFFFF;
+        background: var(--status);
+        box-shadow: 0 14px 32px rgba(7,23,44,0.16);
+        font-size: clamp(21px, 5vw, 36px);
+        font-weight: 1000;
         text-align: center;
-        background: {badge_color};
-        margin-bottom: 14px;
+        line-height: 1.05;
+        text-transform: uppercase;
       }}
-      .row {{ margin: 10px 0; }}
-      .big {{ font-size: 18px; }}
-      .muted {{ font-size: 13px; color: #666; }}
+      .status-valid {{ background: #166534; }}
+      .status-caution {{ background: linear-gradient(135deg, #92400E, #B7791F); }}
+      .status-blocked {{ background: linear-gradient(135deg, #991B1B, #C02626); }}
+      .plain {{
+        background: #F8FBFF;
+        border: 1px solid rgba(216,227,238,0.95);
+        border-radius: 20px;
+        padding: 18px;
+        margin: 18px 0;
+        line-height: 1.48;
+        font-size: 18px;
+        font-weight: 700;
+      }}
+      .plain strong {{ font-weight: 1000; }}
+      .decision {{
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        margin-top: 14px;
+        border-radius: 18px;
+        border: 1px solid rgba(37,78,119,0.14);
+        background: #FFFFFF;
+        padding: 12px 14px;
+      }}
+      .decision small {{
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }}
+      .decision b {{
+        display: block;
+        margin-top: 3px;
+        color: var(--navy);
+        font-size: 17px;
+      }}
+      .decision-code {{
+        border-radius: 14px;
+        background: #F1F7FF;
+        padding: 9px 11px;
+        color: #164E94;
+        font-size: 13px;
+        font-weight: 1000;
+      }}
+      .instruction {{
+        margin-top: 12px;
+        border-left: 5px solid var(--gold);
+        border-radius: 14px;
+        background: var(--gold-soft);
+        padding: 13px 14px;
+        color: #5A3A00;
+        font-size: 15px;
+        font-weight: 850;
+        line-height: 1.45;
+      }}
+      .grid {{
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }}
+      .card {{
+        border: 1px solid rgba(216,227,238,0.92);
+        border-radius: 18px;
+        background: #FFFFFF;
+        padding: 14px;
+        min-height: 82px;
+      }}
+      .label {{
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 1000;
+        text-transform: uppercase;
+      }}
+      .value {{
+        margin-top: 7px;
+        color: var(--navy);
+        font-size: 19px;
+        font-weight: 1000;
+        line-height: 1.25;
+        overflow-wrap: anywhere;
+      }}
+      .row {{
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(216,227,238,0.78);
+        color: #334155;
+        font-size: 16px;
+        font-weight: 800;
+      }}
+      .row b {{ color: var(--navy); }}
+      .muted {{
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 750;
+        line-height: 1.45;
+      }}
+      .actions {{
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 18px;
+      }}
       .btn {{
-        display: inline-block;
-        padding: 10px 12px;
-        border-radius: 10px;
-        background: #111;
-        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 54px;
+        padding: 12px 14px;
+        border-radius: 16px;
+        background: #0B63D1;
+        color: #FFFFFF;
         text-decoration: none;
-        margin-right: 8px;
-        margin-top: 8px;
+        text-align: center;
+        font-size: 15px;
+        font-weight: 1000;
       }}
-      .btn.secondary {{ background: #444; }}
-      img.qr {{ width: 180px; height: 180px; border: 1px solid #eee; border-radius: 8px; }}
+      .btn.secondary {{ background: #FFFFFF; color: var(--navy); border: 1px solid rgba(37,78,119,0.18); }}
+      .btn.warning {{ background: #FFF7E6; color: #92400E; border: 1px solid rgba(180,83,9,0.26); }}
+      .qr-wrap {{
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 18px;
+        align-items: center;
+        border-radius: 20px;
+        border: 1px solid rgba(216,227,238,0.92);
+        background: #F8FBFF;
+        padding: 16px;
+      }}
+      img.qr {{
+        width: 180px;
+        height: 180px;
+        border: 1px solid rgba(37,78,119,0.14);
+        border-radius: 18px;
+        background: #FFFFFF;
+        padding: 8px;
+      }}
+      .footer {{
+        margin-top: 20px;
+        border-radius: 0 0 28px 28px;
+        background: var(--navy);
+        color: #F2C766;
+        padding: 14px 22px;
+        font-size: 13px;
+        font-weight: 900;
+      }}
+      @media (max-width: 720px) {{
+        body {{ padding: 14px; }}
+        .header {{ grid-template-columns: 1fr; padding: 22px 18px 16px; }}
+        .brand {{ text-align: left; font-size: 28px; }}
+        .body {{ padding: 18px; }}
+        .decision {{ grid-template-columns: 1fr; }}
+        .grid {{ grid-template-columns: 1fr; }}
+        .actions {{ grid-template-columns: 1fr; }}
+        .qr-wrap {{ grid-template-columns: 1fr; }}
+        img.qr {{ width: 100%; height: auto; max-width: 240px; }}
+      }}
       @media print {{
         .noprint {{ display: none; }}
-        body {{ margin: 0; }}
-        .box {{ border: none; }}
+        body {{ margin: 0; background: #FFFFFF; padding: 0; }}
+        .paper {{ box-shadow: none; border: none; border-radius: 0; }}
       }}
     </style>
   </head>
   <body>
-    <div class="box">
-      <div class="badge">{badge_text}</div>
+    <main class="paper">
+      <div class="watermark"></div>
+      <header class="header">
+        <div>
+          <div class="eyebrow">Public Verification Paper</div>
+          <h1>TrustSlip Verify</h1>
+          <p class="subtitle">
+            A public GSN trust check for identity, support, trade, and careful decision-making.
+          </p>
+        </div>
+        <div class="brand">GSN<small>OPEN - TRUST - IMPACT</small></div>
+      </header>
 
-      <div class="row big"><b>Trust Limit:</b> {trust_limit} {currency}</div>
-      <div class="row big"><b>Code:</b> {code}</div>
-      <div class="row"><b>GMFN ID:</b> {holder_gmfn_id}</div>
-      <div class="row"><b>Visibility:</b> {visibility_level}</div>
-      <div class="row"><b>Status:</b> {effective}</div>
-      <div class="row"><b>Merchant Verify:</b> {"Active" if merchant_verify_active else "Inactive"}</div>
-      <div class="row"><b>Expires:</b> {expires_text}</div>
-      <div class="row"><b>Holder:</b> {_mask_email(getattr(holder, "email", None)) or "Hidden"}</div>
-      {cci_row}
-
-      <div class="row muted">
-        Verified at: {_now_utc().isoformat()} (UTC)
+      <section class="body">
+      <div class="trustmark">
+        <span><b>Public / shareable / printable</b></span>
+        <span>Protected public check - private detail stays inside GSN</span>
       </div>
-
-      <div class="row noprint">
-        <a class="btn secondary" href="{print_link}">Print / Save PDF</a>
-        <a class="btn secondary" href="{lite_link}">Lite View</a>
-        <a class="btn" href="{release_link}">Log Release (Admin)</a>
-      </div>
-
-      <div class="row noprint" style="margin-top:14px;">
-        <div class="muted">QR (optional):</div>
-        <img class="qr" src="{qr_img}" alt="QR code"/>
-        <div class="muted" style="margin-top:6px;">
-          If QR fails, your server may not have qrcode installed. The link still works.
+      <div class="badge {status_class}">{_html(badge_text)}</div>
+      <div class="plain">
+        <strong>Reader meaning:</strong> {_html(plain_reading)}
+        <div class="decision">
+          <div>
+            <small>Current reader action</small>
+            <b>{_html(status_label)}</b>
+          </div>
+          <div class="decision-code">Code: {_html(code)}</div>
+        </div>
+        <div class="instruction">
+          {_html(action_reading)}
         </div>
       </div>
 
-      <div class="row muted" style="margin-top:16px;">
-        Offline tip: Screenshot this page if network drops.
+      <div class="grid">
+        <div class="card"><div class="label">Holder</div><div class="value">{_html(display_name)}</div></div>
+        <div class="card"><div class="label">GSN ID</div><div class="value">{_html(holder_gmfn_id)}</div></div>
+        <div class="card"><div class="label">TrustSlip code</div><div class="value">{_html(code)}</div></div>
+        <div class="card"><div class="label">Status</div><div class="value">{_html(status_label)}</div></div>
+        <div class="card"><div class="label">Trust limit shown</div><div class="value">{_html(trust_limit)} {_html(currency)}</div></div>
+        <div class="card"><div class="label">Trust band</div><div class="value">{_html(band)}</div></div>
       </div>
 
-      <div class="row muted" style="margin-top:6px;">
-        Evidence note: GMFN is non-custodial. This page verifies TrustSlip validity only.
+      <div style="margin-top:18px;">
+        <div class="row"><b>Community</b><span>{_html(community_name)}</span></div>
+        <div class="row"><b>Community sponsor signals</b><span>{_html(sponsor_count)}</span></div>
+        <div class="row"><b>Phone</b><span>{_html(phone_status)}</span></div>
+        <div class="row"><b>Visibility</b><span>{_html(visibility_level)}</span></div>
+        <div class="row"><b>Public verify access</b><span>{"Active" if merchant_verify_active else "Public record only"}</span></div>
+        <div class="row"><b>Issued</b><span>{_html(issued_text)}</span></div>
+        <div class="row"><b>Expires</b><span>{_html(expires_text)}</span></div>
+        <div class="row"><b>Not a bank guarantee</b><span>Yes</span></div>
+        <div class="row"><b>No auto-debit</b><span>Yes</span></div>
+        {cci_row}
       </div>
-    </div>
+
+      <div class="row muted">
+        <b>Checked at</b><span>{_html(verified_text)}</span>
+      </div>
+
+      <div class="actions noprint">
+        <a class="btn" href="{print_link}">Print / save PDF</a>
+        <a class="btn secondary" href="{lite_link}">Lite view</a>
+        <a class="btn warning" href="{holder_refresh_link}">Request current TrustSlip</a>
+      </div>
+
+      <div class="qr-wrap noprint">
+        <img class="qr" src="{qr_img}" alt="QR code"/>
+        <div>
+          <div class="label">Public verification QR</div>
+          <div class="value" style="font-size:16px;">Scan to check this TrustSlip code again.</div>
+          <p class="muted">
+            If this page says fresh verification is required, ask the holder to refresh their TrustSlip in GSN and share the new QR or code.
+          </p>
+        </div>
+      </div>
+
+      <div class="muted" style="margin-top:16px;">
+        Evidence note: GSN is non-custodial. This page verifies TrustSlip validity only.
+        It is not a payment guarantee, not automatic lending, not auto-debit, and not a replacement
+        for formal identity, medical, legal, or regulatory checks.
+      </div>
+      </section>
+      <div class="footer">GSN Trust Architecture - public evidence first, private detail protected, decision left with the reader.</div>
+    </main>
   </body>
 </html>"""
     return HTMLResponse(content=html, headers=_no_store_headers())
@@ -1075,13 +1721,16 @@ def trust_slip_share_bundle(
     holder_gmfn_id = merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None)
     trust_limit = merchant_summary.get("trust_limit") or full_summary.get("trust_limit")
     currency = merchant_summary.get("currency") or full_summary.get("currency")
-    expires_text = merchant_summary.get("expires_at") or full_summary.get("expires_at")
+    expires_text = _display_datetime(
+        merchant_summary.get("expires_at") or full_summary.get("expires_at"),
+        "No expiry",
+    )
 
     whatsapp_lines = [
         "Please verify TrustSlip before releasing goods:",
         verify_page,
         f"Code: {code}",
-        f"GMFN ID: {holder_gmfn_id or 'N/A'}",
+        f"GSN ID: {holder_gmfn_id or 'N/A'}",
         f"Visibility: {visibility_level}",
         f"Trust Limit: {trust_limit} {currency}",
         f"Expires: {expires_text}",
@@ -1090,7 +1739,7 @@ def trust_slip_share_bundle(
     whatsapp_text = "\n".join(whatsapp_lines)
 
     sms_text = (
-        f"Verify TrustSlip: {verify_page} | Code: {code} | GMFN ID: {holder_gmfn_id or 'N/A'} | "
+        f"Verify TrustSlip: {verify_page} | Code: {code} | GSN ID: {holder_gmfn_id or 'N/A'} | "
         f"Visibility: {visibility_level} | Limit: {trust_limit} {currency} | Expires: {expires_text}"
     )
 
@@ -1197,7 +1846,7 @@ def trust_slip_release_page(
     <div class="box">
       <h3>Log Release (Admin)</h3>
       <div class="muted">TrustSlip code: <b>{code}</b></div>
-      <div class="muted">GMFN ID: <b>{holder_gmfn_id}</b></div>
+      <div class="muted">GSN ID: <b>{holder_gmfn_id}</b></div>
       <div class="muted">This is admin-only. It does not collect payments.</div>
 
       <p class="muted">Use Swagger to submit the actual release:</p>

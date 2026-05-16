@@ -602,7 +602,7 @@ export default function RepaymentPage() {
     const text = [
       `Community: ${communityLabel}`,
       `Community ID: ${communityCode}`,
-      `GMFN ID: ${gmfnId}`,
+      `GSN ID: ${gmfnId}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Loan ID: ${numericLoanId}`,
@@ -737,7 +737,7 @@ export default function RepaymentPage() {
             </div>
             <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(true)}>Community ID: {communityCode}</span>
-              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>GSN ID: {gmfnId}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Current page: Repayment</span>

@@ -163,6 +163,7 @@ function helperText(): React.CSSProperties {
 function cleanGmfnId(value: string): string {
   return String(value || "")
     .replace(/^GMFN ID:\s*/i, "")
+    .replace(/^GSN ID:\s*/i, "")
     .trim()
     .toUpperCase();
 }
@@ -229,7 +230,7 @@ export default function ActivateMembershipPage() {
       const safePassword = String(password || "");
       const safeConfirm = String(confirm || "");
 
-      if (!safeGmfnId) throw new Error("Enter your GMFN ID.");
+      if (!safeGmfnId) throw new Error("Enter your GSN ID.");
       if (!safePassword) throw new Error("Enter your password.");
       if (safePassword.length < 6) {
         throw new Error("Password must be at least 6 characters.");
@@ -326,7 +327,7 @@ export default function ActivateMembershipPage() {
               {msg ? <div style={{ marginBottom: 16, ...noticeStyle("success") }}>{msg}</div> : null}
               {!initialGmfnId && !msg ? (
                 <div style={{ marginBottom: 16, ...noticeStyle("warning") }}>
-                  If you have been approved but do not yet have your GMFN ID in hand, return to the approval path and check the latest status first.
+                  If you have been approved but do not yet have your GSN ID in hand, return to the approval path and check the latest status first.
                 </div>
               ) : null}
 
@@ -342,7 +343,7 @@ export default function ActivateMembershipPage() {
                     <div style={{ marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {initialGmfnId ? (
                         <div style={badgeStyle()}>
-                          GMFN ID detected
+                          GSN ID detected
                         </div>
                       ) : null}
                       {requestId ? (
@@ -354,12 +355,12 @@ export default function ActivateMembershipPage() {
                   )}
 
                   <div style={{ marginBottom: 16, ...helperText() }}>
-                    Enter only the raw GMFN ID, for example: <strong>GMFN-U-A66CF7C0</strong>
+                    Enter only the raw GSN ID, for example: <strong>GMFN-U-A66CF7C0</strong>
                   </div>
 
                   <div style={{ display: "grid", gap: 12 }}>
                     <div>
-                      <div style={labelText()}>GMFN ID</div>
+                      <div style={labelText()}>GSN ID</div>
                       <input
                         placeholder="GMFN-U-XXXXXXXX"
                         value={gmfnId}

@@ -111,8 +111,38 @@ wholeFileFind(
 
 wholeFileFind(
   "src/App.tsx",
-  /import \{ publishRecoveryTarget \} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const publishTarget = publishRecoveryTarget\(\);[\s\S]*?if \(publishTarget \|\| token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
-  "Authenticated sessions or active publish attempts that reach Cover/Welcome must recover to the publisher/app route instead of staying in the public entry funnel."
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
+  "Authenticated sessions or active publish attempts that reach Cover/Welcome must recover to the publisher/app route, and unauthenticated publish attempts must keep that target through login."
+);
+
+wholeFileFind(
+  "src/lib/publishRecovery.ts",
+  /const PUBLISH_RECOVERY_TTL_MS = 30 \* 60 \* 1000;[\s\S]*?const PUBLISH_RECOVERY_WINDOW_NAME_PREFIX = "gmfn_publish_recovery:";[\s\S]*?function storageAreas\(\): Storage\[\][\s\S]*?window\.sessionStorage[\s\S]*?window\.localStorage[\s\S]*?export function rememberPublishRecovery[\s\S]*?for \(const storage of storageAreas\(\)\)[\s\S]*?window\.name = `\$\{PUBLISH_RECOVERY_WINDOW_NAME_PREFIX\}\$\{payload\}`;[\s\S]*?export function peekPublishRecoveryTarget\(\)[\s\S]*?readPublishRecoveryTarget\(false\)[\s\S]*?readWindowNameMarker\(\)/,
+  "Publish recovery must survive phone reloads by using a 30-minute marker, session/local storage, a window.name fallback, and a non-consuming peek."
+);
+
+wholeFileFind(
+  "src/pages/LoginPage.tsx",
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\.\/lib\/publishRecovery";[\s\S]*?function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*?target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*?const publishTarget = peekPublishRecoveryTarget\(\);[\s\S]*?if \(publishTarget\) return publishTarget;[\s\S]*?const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*?nav\(publishRecoveryTarget\(\) \|\| redirectTarget, \{ replace: true \}\)/,
+  "Login must accept only safe /app publish return targets and consume publish recovery after successful sign-in."
+);
+
+wholeFileFind(
+  "src/lib/nav.ts",
+  /import \{ rememberPublishRecovery \} from "\.\/publishRecovery";[\s\S]*?function isAppRouteTarget\(target: string\): boolean[\s\S]*?lower === "\/app" \|\| lower\.startsWith\("\/app\/"\)[\s\S]*?export function rememberAppRouteRecovery[\s\S]*?rememberPublishRecovery\(target, ctaId\);[\s\S]*?export function navigateWithOrigin[\s\S]*?rememberAppRouteRecovery\(to, "navigate\.app\.route"\);/,
+  "Shared navigation must mark all /app routes before navigating so phone reloads cannot strand the user in Cover/Welcome."
+);
+
+wholeFileFind(
+  "src/components/OriginLink.tsx",
+  /import \{ rememberAppRouteRecovery \} from "\.\.\/lib\/nav";[\s\S]*?const linkDebugId[\s\S]*?origin-link\.app\.route[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?guardLinkTap\(event, rest\.onClick\);/,
+  "Shared internal links must mark /app routes before navigation, not only the final publish button."
+);
+
+wholeFileFind(
+  "src/components/RequireAuth.tsx",
+  /import \{ peekPublishRecoveryTarget \} from "\.\.\/lib\/publishRecovery";[\s\S]*?function loginRecoveryTarget[\s\S]*?const publishTarget = peekPublishRecoveryTarget\(\);[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<Navigate to=\{target\.to\} replace state=\{target\.state\} \/>/,
+  "RequireAuth must preserve pending Spotlight publish recovery through session expiry instead of sending the user to a bare login/cover path."
 );
 
 wholeFileFind(
@@ -126,6 +156,34 @@ lineFind(
   /<Route path="\*" element=\{<RedirectUnknownRoute \/>\} \/>/,
   "The wildcard route must use RedirectUnknownRoute, not a direct Cover redirect."
 );
+
+[
+  ["/trust-slip/verify", "APP_ROUTES.MERCHANT_VERIFY"],
+  ["/trustslip/verify", "APP_ROUTES.MERCHANT_VERIFY"],
+].forEach(([path, target]) => {
+  wholeFileFind(
+    "src/App.tsx",
+    new RegExp(
+      `path="${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[\\s\\S]*?<PreserveRedirect to=\\{${target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\}`
+    ),
+    `Root TrustSlip verify alias ${path} must canonicalize before the public Cover fallback.`
+  );
+});
+
+[
+  "/trust-slips/verify/:code",
+  "/trust-slips/verify/:code/page",
+  "/trust-slips/verify/:code/lite",
+  "/trust-slips/verify/:code/print",
+].forEach((path) => {
+  lineFind(
+    "src/App.tsx",
+    new RegExp(
+      `<Route path="${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}" element=\\{<TrustSlipVerifyPage \\/>\\} \\/>`
+    ),
+    `Frontend must catch backend-shaped TrustSlip verify path ${path} before the public Cover fallback.`
+  );
+});
 
 [
   ["spotlight", "APP_ROUTES.FREE_SPOTLIGHT"],

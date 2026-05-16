@@ -244,7 +244,7 @@ export default function MemberActivationPage() {
     setSuccess("");
 
     if (!requestReady.gmfn_id && !requestReady.request_id) {
-      setError("GMFN ID or request ID is required.");
+      setError("GSN ID or request ID is required.");
       return;
     }
 
@@ -405,7 +405,7 @@ export default function MemberActivationPage() {
 
             {!initialGmfnId && !initialRequestId && !success ? (
               <div style={{ marginBottom: 16, ...noticeStyle("warning") }}>
-                If you have been approved but do not yet have your GMFN ID or request ID in hand, return to the approval path and check the latest status first.
+                If you have been approved but do not yet have your GSN ID or request ID in hand, return to the approval path and check the latest status first.
               </div>
             ) : null}
 
@@ -428,7 +428,7 @@ export default function MemberActivationPage() {
                   <div style={{ marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {initialGmfnId ? (
                       <div style={badgeStyle()}>
-                        GMFN ID detected
+                        GSN ID detected
                       </div>
                     ) : null}
                     {initialRequestId ? (
@@ -440,16 +440,16 @@ export default function MemberActivationPage() {
                 )}
 
                 <div style={{ marginBottom: 16, ...helperText() }}>
-                  Enter the approved GMFN ID or the request ID tied to your membership, then create your password.
+                  Enter the approved GSN ID or the request ID tied to your membership, then create your password.
                 </div>
 
                 <div style={{ display: "grid", gap: 12 }}>
                   <div>
-                    <div style={labelText()}>GMFN ID</div>
+                    <div style={labelText()}>GSN ID</div>
                     <input
                       value={form.gmfn_id}
                       onChange={(e) => setForm({ ...form, gmfn_id: e.target.value })}
-                      placeholder="Enter GMFN ID"
+                      placeholder="Enter GSN ID"
                       style={{ ...inputStyle(false), marginTop: 8 }}
                     />
                   </div>

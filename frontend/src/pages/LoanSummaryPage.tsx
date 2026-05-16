@@ -1057,7 +1057,7 @@ export default function LoanSummaryPage() {
     const lines = [
       `Community: ${communityLabel}`,
       `Community ID: ${communityPublicId}`,
-      `GMFN ID: ${gmfnId}`,
+      `GSN ID: ${gmfnId}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Loan ID: ${summary.id}`,
@@ -1289,7 +1289,7 @@ export default function LoanSummaryPage() {
             >
               {statusBadge(summary.status)}
               <span style={badge(true)}>Community ID: {communityPublicId}</span>
-              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>GSN ID: {gmfnId}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Current step: Loan summary</span>
@@ -1833,7 +1833,9 @@ export default function LoanSummaryPage() {
                       }}
                     >
                       {Number.isFinite(Number(s.cci)) ? (
-                        <span style={badge(false)}>CCI: {String(s.cci)}</span>
+                        <span style={badge(false)}>
+                          Wider consistency: {String(s.cci)}
+                        </span>
                       ) : null}
 
                       {Number.isFinite(Number(s.recommended_pledge)) ? (

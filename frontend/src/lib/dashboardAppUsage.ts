@@ -261,8 +261,8 @@ export function getDashboardAppUsageEntryFromLocation(
   if (path === "/app/identity") {
     return {
       key: "cci",
-      label: "CCI",
-      detail: "Cross-community integrity reading.",
+      label: "Wider consistency",
+      detail: "Cross-community consistency reading.",
       to: "/app/identity",
     };
   }

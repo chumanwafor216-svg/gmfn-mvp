@@ -1,0 +1,176 @@
+export type TrustBandLanguage = {
+  band: string;
+  title: string;
+  plainMeaning: string;
+  implication: string;
+  nextStep: string;
+  tone: "strong" | "good" | "care" | "weak" | "danger";
+};
+
+export type TrustEvidenceStatus = "strong" | "mixed" | "limited";
+
+export type TrustEvidenceLanguage = {
+  status: TrustEvidenceStatus;
+  label: string;
+  plainMeaning: string;
+  implication: string;
+  tone: "strong" | "care" | "weak";
+};
+
+export const TRUST_BAND_LANGUAGE: TrustBandLanguage[] = [
+  {
+    band: "A",
+    title: "Strong visible trust evidence",
+    plainMeaning:
+      "This person has strong visible evidence from community behaviour, follow-through, and recorded trust signals.",
+    implication:
+      "You may consider normal low-to-medium risk support, trade, or referral decisions, but still check the current details and expiry.",
+    nextStep: "Proceed carefully and match the size of the decision to the evidence shown.",
+    tone: "strong",
+  },
+  {
+    band: "B",
+    title: "Good visible trust evidence",
+    plainMeaning:
+      "This person has a useful trust story, but the reader should still check what kind of evidence created it.",
+    implication:
+      "A small or moderate decision may be reasonable. For bigger money, goods, work, or responsibility, ask for the fuller Trust Passport.",
+    nextStep: "Proceed with care; ask for more proof if the risk is meaningful.",
+    tone: "good",
+  },
+  {
+    band: "C",
+    title: "Moderate or mixed evidence",
+    plainMeaning:
+      "There is some trust evidence, but it may not be deep, recent, or consistent enough for a confident decision.",
+    implication:
+      "Keep the decision small, ask what changed, and look for contribution, repayment, commitment, or sponsor evidence.",
+    nextStep: "Ask for more context before taking a risk.",
+    tone: "care",
+  },
+  {
+    band: "D",
+    title: "Weak or pressured trust evidence",
+    plainMeaning:
+      "The visible record is showing pressure, limited evidence, or weak follow-through. This does not mean the person is bad; it means the proof is not strong yet.",
+    implication:
+      "Do not depend heavily on this record for credit, goods, work, or serious support. Reduce the amount, ask for repair evidence, or request community confirmation.",
+    nextStep: "Ask what needs care and wait for stronger evidence before a serious decision.",
+    tone: "weak",
+  },
+  {
+    band: "E",
+    title: "Very limited or concerning evidence",
+    plainMeaning:
+      "There is not enough reliable visible evidence, or the record has warning signs that need attention.",
+    implication:
+      "Do not use this TrustSlip or Trust Passport alone for a meaningful risk. Ask for direct verification, recent payments, completed commitments, or admin/community confirmation.",
+    nextStep: "Do not rely on this alone. Require stronger proof first.",
+    tone: "danger",
+  },
+  {
+    band: "F",
+    title: "No usable trust basis yet",
+    plainMeaning:
+      "The record is missing usable evidence or has a negative reading. The reader cannot make a careful trust decision from this alone.",
+    implication:
+      "Do not approve credit, release goods, accept responsibility, or make a serious referral from this record alone.",
+    nextStep: "Ask the person to rebuild visible evidence before relying on the record.",
+    tone: "danger",
+  },
+];
+
+export const TRUST_BAND_SHORT_LABELS: Array<{
+  band: "A" | "B" | "C" | "D" | "E";
+  label: string;
+}> = [
+  { band: "A", label: "Strongly trusted" },
+  { band: "B", label: "Generally trusted" },
+  { band: "C", label: "Mixed" },
+  { band: "D", label: "Needs attention" },
+  { band: "E", label: "High pressure" },
+];
+
+export const TRUST_EVIDENCE_LANGUAGE: Record<
+  TrustEvidenceStatus,
+  TrustEvidenceLanguage
+> = {
+  strong: {
+    status: "strong",
+    label: "Strong evidence",
+    plainMeaning:
+      "There is enough visible history to understand why the trust reading looks this way.",
+    implication:
+      "The reader can use the record as a useful trust signal, while still matching the decision to the risk.",
+    tone: "strong",
+  },
+  mixed: {
+    status: "mixed",
+    label: "Mixed evidence",
+    plainMeaning:
+      "Some useful history is visible, but there are still gaps, pressure, or details that need checking.",
+    implication:
+      "Keep the decision careful. Ask for the fuller Trust Passport, recent events, or live community confirmation if the risk is meaningful.",
+    tone: "care",
+  },
+  limited: {
+    status: "limited",
+    label: "Limited evidence",
+    plainMeaning:
+      "Only a small amount of usable trust history is visible so far.",
+    implication:
+      "This is not proof of bad behaviour. It means the reader should reduce the risk or ask for more evidence before relying on the record.",
+    tone: "weak",
+  },
+};
+
+export function normalizeTrustBand(raw: unknown): string {
+  const text = String(raw ?? "").trim().toUpperCase();
+  const first = text.slice(0, 1);
+  return /^[A-F]$/.test(first) ? first : "";
+}
+
+export function normalizeTrustEvidenceStatus(raw: unknown): TrustEvidenceStatus {
+  const text = String(raw ?? "").trim().toLowerCase();
+  return text === "strong" || text === "mixed" || text === "limited"
+    ? text
+    : "limited";
+}
+
+export function getTrustBandShortLabel(raw: unknown): string {
+  const band = normalizeTrustBand(raw);
+  return TRUST_BAND_SHORT_LABELS.find((item) => item.band === band)?.label || "Not shown";
+}
+
+export function getTrustEvidenceLanguage(
+  raw: unknown,
+  options: { lowData?: boolean } = {}
+): TrustEvidenceLanguage {
+  if (options.lowData) {
+    return {
+      ...TRUST_EVIDENCE_LANGUAGE.limited,
+      label: "Building history",
+      plainMeaning:
+        "This record is still building evidence. A thin record is not the same as bad trust.",
+      implication:
+        "Use this as an early identity and community signal only. Ask for recent events or live community confirmation before a serious decision.",
+    };
+  }
+  return TRUST_EVIDENCE_LANGUAGE[normalizeTrustEvidenceStatus(raw)];
+}
+
+export function getTrustBandLanguage(raw: unknown): TrustBandLanguage {
+  const band = normalizeTrustBand(raw);
+  return (
+    TRUST_BAND_LANGUAGE.find((item) => item.band === band) || {
+      band: "Not shown",
+      title: "No clear grade is available",
+      plainMeaning:
+        "GSN does not have a clear grade to explain on this screen yet.",
+      implication:
+        "Do not make a serious trust decision from the grade alone. Ask for the evidence behind the record.",
+      nextStep: "Ask for the fuller Trust Passport or recent Trust Events.",
+      tone: "care",
+    }
+  );
+}

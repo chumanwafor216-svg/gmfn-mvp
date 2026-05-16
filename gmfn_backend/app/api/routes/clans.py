@@ -704,7 +704,7 @@ def _already_member_join_payload(
         "result_status": "already_member",
         "code": "already_member",
         "message": (
-            "You already belong to this community. Your existing GMFN identity "
+            "You already belong to this community. Your existing GSN identity "
             "was reused; no new identity was created."
         ),
         "community_id": int(clan.id),
@@ -1119,7 +1119,7 @@ def _build_activation_package(
         "Congratulations,",
         "",
         f"Your request to join {clan.name} has been approved.",
-        f"Your GMFN ID is: {gmfn_id}",
+        f"Your GSN ID is: {gmfn_id}",
         f"Community ID: {community_code}",
         f"Invited by: {inviter_name}",
     ]
@@ -1130,12 +1130,12 @@ def _build_activation_package(
     lines.extend(
         [
             "",
-            "Use the link below to activate your GMFN membership and create your password:",
+            "Use the link below to activate your GSN membership and create your password:",
             activation_link,
             "",
             "Once activation is completed, you will be able to enter your workspace properly.",
             "",
-            "— Sent via GMFN",
+            "— Sent via GSN",
         ]
     )
 
@@ -1264,7 +1264,7 @@ def _approve_join_request(
             kind="approval_success",
             title="You were approved",
             message=(
-                f"{clan.name} approved your request. Your existing GMFN ID was reused; "
+                f"{clan.name} approved your request. Your existing GSN ID was reused; "
                 "no new identity was created."
             ),
             action_url=f"/app/marketplace?community={int(clan.id)}",
@@ -1345,9 +1345,9 @@ def _approve_join_request(
         "identity_reused": existing_identity,
         "activation_required": not existing_identity,
         "message": (
-            "Applicant approved with existing GMFN ID."
+            "Applicant approved with existing GSN ID."
             if existing_identity
-            else "Applicant approved and GMFN ID issued."
+            else "Applicant approved and GSN ID issued."
         ),
         **activation,
         "activation_generated_at": join_request.activation_generated_at,
@@ -1521,7 +1521,7 @@ def join_clan(
             "ok": True,
             "result_status": "already_member",
             "code": "already_member",
-            "message": "You already belong to this community. Your existing GMFN identity was reused.",
+            "message": "You already belong to this community. Your existing GSN identity was reused.",
             "community_id": int(clan_id),
             "community_code": _community_code(clan_id),
             "community_name": clan.name,
@@ -1563,7 +1563,7 @@ def join_clan(
         "ok": True,
         "result_status": "joined_successfully",
         "code": "joined_successfully",
-        "message": "Community membership created using your existing GMFN identity.",
+        "message": "Community membership created using your existing GSN identity.",
         "community_id": int(clan_id),
         "community_code": _community_code(clan_id),
         "community_name": clan.name,
@@ -2206,9 +2206,9 @@ def create_join_request(
                 detail={
                     "code": "existing_account_login_required",
                     "message": (
-                        "This phone number is already tied to an existing GMFN identity. "
+                        "This phone number is already tied to an existing GSN identity. "
                         "Sign in to that account first, then continue this community join "
-                        "with the same GMFN ID."
+                        "with the same GSN ID."
                     ),
                     "login_path": "/login",
                     "invite_code": invite_code,

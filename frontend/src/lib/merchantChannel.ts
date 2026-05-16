@@ -58,15 +58,20 @@ export async function getMerchantLink(ttlHours: number = 72, level: string = "st
 export function extractMerchantToken(fullUrlOrToken: string): string {
   const v = (fullUrlOrToken || "").trim();
   if (!v) return "";
-  const marker = "/trust-slips/verify/";
+  const marker = "/trust-slips/merchant/verify/";
   const idx = v.indexOf(marker);
   if (idx >= 0) return v.slice(idx + marker.length);
+
+  const legacyMarker = "/trust-slips/verify/";
+  const legacyIdx = v.indexOf(legacyMarker);
+  if (legacyIdx >= 0) return v.slice(legacyIdx + legacyMarker.length);
+
   return v.replace(/^\/+/, "");
 }
 
 export async function verifyMerchantPublic(tokenOrUrl: string): Promise<MerchantVerifyPublicResponse> {
   const token = extractMerchantToken(tokenOrUrl);
-  const res = await fetch(`/trust-slips/verify/${token}`, { method: "GET" });
+  const res = await fetch(`/trust-slips/merchant/verify/${token}`, { method: "GET" });
   if (!res.ok) throw new Error(await parseError(res));
   return (await res.json()) as MerchantVerifyPublicResponse;
 }

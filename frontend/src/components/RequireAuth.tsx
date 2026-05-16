@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, type Location as RouterLocation } from "react-router-dom";
 import { CardActionRow, StableCtaLink } from "./StableButton";
 import {
   getAccessToken,
@@ -12,6 +12,7 @@ import {
   setSelectedClanId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { peekPublishRecoveryTarget } from "../lib/publishRecovery";
 
 type Props = {
   children: React.ReactNode;
@@ -161,6 +162,44 @@ function httpStatus(error: unknown): number | null {
   return Number.isFinite(status) ? status : null;
 }
 
+function routeStateFromTarget(target: string) {
+  try {
+    const parsed = new URL(target, "https://gsn.local");
+    return {
+      pathname: parsed.pathname,
+      search: parsed.search,
+      hash: parsed.hash,
+    };
+  } catch {
+    return { pathname: "/app/dashboard", search: "", hash: "" };
+  }
+}
+
+function loginRecoveryTarget(
+  location: Pick<RouterLocation, "pathname" | "search" | "hash">
+) {
+  const publishTarget = peekPublishRecoveryTarget();
+
+  if (!publishTarget) {
+    return {
+      to: "/login?session=expired",
+      state: { from: location },
+    };
+  }
+
+  const next = new URLSearchParams();
+  next.set("session", "expired");
+  next.set("next", publishTarget);
+
+  return {
+    to: `/login?${next.toString()}`,
+    state: {
+      from: routeStateFromTarget(publishTarget),
+      recoveredFrom: `${location.pathname || ""}${location.search || ""}${location.hash || ""}`,
+    },
+  };
+}
+
 export default function RequireAuth({ children, requireRole }: Props) {
   const location = useLocation();
   const selectedClanId = Number(getSelectedClanId() || 0);
@@ -286,7 +325,8 @@ export default function RequireAuth({ children, requireRole }: Props) {
 
   if (!allowed) {
     if (!getAccessToken()) {
-      return <Navigate to="/login" replace state={{ from: location }} />;
+      const target = loginRecoveryTarget(location);
+      return <Navigate to={target.to} replace state={target.state} />;
     }
 
     if (deniedForRole) {
@@ -373,13 +413,8 @@ export default function RequireAuth({ children, requireRole }: Props) {
       );
     }
 
-    return (
-      <Navigate
-        to="/login?session=expired"
-        replace
-        state={{ from: location }}
-      />
-    );
+    const target = loginRecoveryTarget(location);
+    return <Navigate to={target.to} replace state={target.state} />;
   }
 
   if (continuityBlock) {

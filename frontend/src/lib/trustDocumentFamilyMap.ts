@@ -17,7 +17,7 @@ export function buildTrustDocumentFamilyItems(
       label: "Stable identity",
       title: "Identity & Integrity",
       detail:
-        "This is the steady identity layer. It keeps the owner, continuity, Open Trust, CCI, and next clean repair path together.",
+        "This is the steady identity layer. It keeps the owner, continuity, local trust, wider consistency, and next clean repair path together.",
       to: isAppRoute ? "/app/identity" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
@@ -27,13 +27,13 @@ export function buildTrustDocumentFamilyItems(
     {
       id: "cci",
       label: "Cross-community reading",
-      title: "CCI",
+      title: "Cross-community consistency",
       detail:
-        "CCI is the narrower cross-community integrity read. It helps you see how visible trust behaviour looks outside one immediate community.",
+        "This is the narrower cross-community consistency read. It helps you see how visible trust behaviour looks outside one immediate community. CCI is the internal label.",
       to: isAppRoute ? "/app/cci-reading" : undefined,
       disabled: !isAppRoute,
       disabledReason: !isAppRoute
-        ? "CCI opens inside the signed-in app flow."
+        ? "Cross-community consistency opens inside the signed-in app flow."
         : undefined,
     },
     {

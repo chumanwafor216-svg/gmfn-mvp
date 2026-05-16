@@ -17,7 +17,10 @@ import {
 } from "./lib/publicLinks";
 import { APP_ROUTES } from "./lib/appRoutes";
 import { getAccessToken, logout } from "./lib/api";
-import { publishRecoveryTarget } from "./lib/publishRecovery";
+import {
+  peekPublishRecoveryTarget,
+  publishRecoveryTarget,
+} from "./lib/publishRecovery";
 import { gmfnBrand } from "./styles/gmfnBrand";
 
 const CoverPage = React.lazy(() => import("./pages/CoverPage"));
@@ -63,6 +66,18 @@ const GuarantorEarningsPage = React.lazy(
 );
 const GuarantorInboxPage = React.lazy(
   () => import("./pages/GuarantorInboxPage")
+);
+const CommunityConfirmationInboxPage = React.lazy(
+  () => import("./pages/CommunityConfirmationInboxPage")
+);
+const CommunityConfirmationPolicyPage = React.lazy(
+  () => import("./pages/CommunityConfirmationPolicyPage")
+);
+const CommunityConfirmationOutcomePage = React.lazy(
+  () => import("./pages/CommunityConfirmationOutcomePage")
+);
+const CommunityVerifyPage = React.lazy(
+  () => import("./pages/CommunityVerifyPage")
 );
 const IdentityIntegrityPage = React.lazy(
   () => import("./pages/IdentityIntegrityPage")
@@ -234,7 +249,7 @@ function lastAuthenticatedAppPath(): string {
   }
 }
 
-function hasPublicSessionReset(search: string): boolean {
+function hasSessionReset(search: string): boolean {
   try {
     const params = new URLSearchParams(search);
     const value = String(params.get("reset") || "").trim().toLowerCase();
@@ -279,6 +294,16 @@ function PublicSessionReset() {
   return <Navigate to="/cover" replace />;
 }
 
+function GlobalSessionResetGate(props: { children: React.ReactNode }) {
+  const location = useLocation();
+
+  if (hasSessionReset(location.search)) {
+    return <PublicSessionReset />;
+  }
+
+  return <>{props.children}</>;
+}
+
 function RememberAuthenticatedAppRoute() {
   const location = useLocation();
 
@@ -293,14 +318,16 @@ function RememberAuthenticatedAppRoute() {
 function PublicEntryGuard(props: { children: React.ReactNode }) {
   const location = useLocation();
 
-  if (hasPublicSessionReset(location.search)) {
+  if (hasSessionReset(location.search)) {
     return <PublicSessionReset />;
   }
 
-  const publishTarget = publishRecoveryTarget();
   const token = getAccessToken();
+  const publishTarget = token
+    ? publishRecoveryTarget()
+    : peekPublishRecoveryTarget();
 
-  if (publishTarget || token) {
+  if (token) {
     return (
       <Navigate
         to={publishTarget || lastAuthenticatedAppPath() || APP_ROUTES.DASHBOARD}
@@ -310,7 +337,41 @@ function PublicEntryGuard(props: { children: React.ReactNode }) {
     );
   }
 
+  if (publishTarget) {
+    const next = new URLSearchParams(location.search);
+    next.set("session", "expired");
+    next.set("next", publishTarget);
+
+    return (
+      <Navigate
+        to={`/login?${next.toString()}`}
+        replace
+        state={{
+          from: routeStateFromTarget(publishTarget),
+          recoveredFrom: currentRoutePath(location),
+        }}
+      />
+    );
+  }
+
   return <>{props.children}</>;
+}
+
+function routeStateFromTarget(target: string): {
+  pathname: string;
+  search?: string;
+  hash?: string;
+} {
+  try {
+    const parsed = new URL(target, "https://gsn.local");
+    return {
+      pathname: parsed.pathname || APP_ROUTES.DASHBOARD,
+      search: parsed.search || "",
+      hash: parsed.hash || "",
+    };
+  } catch {
+    return { pathname: APP_ROUTES.DASHBOARD, search: "", hash: "" };
+  }
 }
 
 const ROOT_APP_ROUTE_ALIASES: Record<string, string> = {
@@ -484,9 +545,11 @@ export default function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <PublicHostRedirect />
-      <RememberAuthenticatedAppRoute />
-      <Routes>
-        <Route path="/" element={<Navigate to="/cover" replace />} />
+      <GlobalSessionResetGate>
+        <RememberAuthenticatedAppRoute />
+        <Routes>
+          <Route path="/" element={<Navigate to="/cover" replace />} />
+          <Route path="/reset" element={<PublicSessionReset />} />
 
       <Route
         path="/cover"
@@ -551,6 +614,22 @@ export default function App() {
 
       <Route path="/trust-slip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
       <Route path="/trustslip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
+      <Route
+        path="/community-confirmations"
+        element={<PreserveRedirect to={APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX} />}
+      />
+      <Route
+        path="/community-confirmation-inbox"
+        element={<PreserveRedirect to={APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX} />}
+      />
+      <Route
+        path="/trust-slip/verify"
+        element={<PreserveRedirect to={APP_ROUTES.MERCHANT_VERIFY} />}
+      />
+      <Route
+        path="/trustslip/verify"
+        element={<PreserveRedirect to={APP_ROUTES.MERCHANT_VERIFY} />}
+      />
       <Route
         path="/open-trust-slip"
         element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />}
@@ -678,6 +757,15 @@ export default function App() {
       <Route path="/activate-membership" element={<MemberActivationPage />} />
 
       <Route path="/t/:code" element={<TrustSlipVerifyPage />} />
+      <Route path="/trust-slips/verify/:code" element={<TrustSlipVerifyPage />} />
+      <Route path="/trust-slips/verify/:code/page" element={<TrustSlipVerifyPage />} />
+      <Route path="/trust-slips/verify/:code/lite" element={<TrustSlipVerifyPage />} />
+      <Route path="/trust-slips/verify/:code/print" element={<TrustSlipVerifyPage />} />
+      <Route
+        path="/community-confirmations/public/:token"
+        element={<CommunityConfirmationOutcomePage />}
+      />
+      <Route path="/verify/community/:communityKey" element={<CommunityVerifyPage />} />
       <Route path="/shop/:gmfnId" element={<ShopGalleryPage />} />
       <Route path="/shop-gallery/:gmfnId" element={<RedirectPublicShopAlias />} />
       <Route path="/open-shop/:gmfnId" element={<RedirectPublicShopAlias />} />
@@ -786,6 +874,19 @@ export default function App() {
         />
         <Route path="guarantor-earnings" element={<GuarantorEarningsPage />} />
         <Route path="guarantor-inbox" element={<GuarantorInboxPage />} />
+        <Route path="community-confirmations" element={<CommunityConfirmationInboxPage />} />
+        <Route
+          path="community-confirmations/policy"
+          element={<CommunityConfirmationPolicyPage />}
+        />
+        <Route
+          path="community-confirmation-policy"
+          element={<PreserveRedirect to={APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY} />}
+        />
+        <Route
+          path="community-confirmation-inbox"
+          element={<PreserveRedirect to={APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX} />}
+        />
         <Route path="earnings" element={<PreserveRedirect to="/app/guarantor-earnings" />} />
 
         <Route path="marketplace" element={<MarketplacePage />} />
@@ -1012,7 +1113,8 @@ export default function App() {
       </Route>
 
         <Route path="*" element={<RedirectUnknownRoute />} />
-      </Routes>
+        </Routes>
+      </GlobalSessionResetGate>
     </Suspense>
   );
 }

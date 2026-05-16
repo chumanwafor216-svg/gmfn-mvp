@@ -32,6 +32,7 @@ from app.api.routes.trust_timeline_pdf import router as trust_timeline_pdf_route
 from app.api.routes.trust_explainability import router as trust_explainability_router
 from app.api.routes.trust_graph import router as trust_graph_router
 from app.api.routes.community_integrity import router as community_integrity_router
+from app.api.routes.community_confirmations import router as community_confirmations_router
 
 # =========================
 # Evidence
@@ -55,6 +56,7 @@ from app.api.routes.liquidity import router as liquidity_router
 # Merchant / Public Config
 # =========================
 from app.api.routes.public_config import router as public_config_router
+from app.api.routes.merchant_verify import router as merchant_verify_router
 from app.api.routes.merchant_risk import router as merchant_risk_router
 from app.api.routes.marketplace import router as marketplace_router
 from app.api.routes.marketplace_media import router as marketplace_media_router
@@ -133,6 +135,7 @@ api_router.include_router(trust_timeline_pdf_router)
 api_router.include_router(trust_explainability_router)
 api_router.include_router(trust_graph_router)
 api_router.include_router(community_integrity_router)
+api_router.include_router(community_confirmations_router)
 
 # EVIDENCE
 api_router.include_router(evidence_pack_router)
@@ -150,6 +153,7 @@ api_router.include_router(liquidity_router)
 
 # MERCHANT / PUBLIC CONFIG
 api_router.include_router(public_config_router)
+api_router.include_router(merchant_verify_router)
 api_router.include_router(merchant_risk_router)
 api_router.include_router(marketplace_media_router)
 api_router.include_router(marketplace_router)

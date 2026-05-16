@@ -24,7 +24,7 @@ import {
 } from "../lib/api";
 import {
   publicShopBlockUrl,
-  publicShopUrl,
+  publicShopDiariesUrl,
 } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
 import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
@@ -387,7 +387,7 @@ async function uploadMarketplaceVideoFile(
 
 function buildShopLink(gmfnId: string): string {
   if (!gmfnId) return "";
-  return publicShopUrl(gmfnId);
+  return publicShopDiariesUrl(gmfnId);
 }
 
 function buildProductDeepLink(
@@ -1302,7 +1302,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </PrimaryButton>
 
               <SecondaryButton
-                onClick={() => copyText(shopLink, "Full public shop link copied.")}
+                onClick={() => copyText(shopLink, "Public shop diaries link copied.")}
                 disabled={!shopLink}
                 fullWidth
                 stableHeight={isCompact ? 56 : 48}
@@ -1543,7 +1543,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     {firstTruthy(shop?.marketplace_name, shop?.community_name, "Selected community")}
                   </div>
                   <div style={{ marginTop: 6, fontSize: 13, opacity: 0.95 }}>
-                    {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "GMFN ID awaiting issue")}
+                    {firstTruthy(shop?.gmfn_id, me?.gmfn_id, "GSN ID awaiting issue")}
                   </div>
                 </div>
               </div>
@@ -1979,7 +1979,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                             Number(selectedPublicProduct.id),
                             selectedPublicSlot
                           ),
-                          "Full public shop link copied. Mention this block in your message."
+                          "Public shop block link copied. It opens this block inside the Shop Diaries."
                         )
                       }
                       fullWidth
@@ -2224,7 +2224,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 </SecondaryButton>
 
                   <SubtleButton
-                    onClick={() => copyText(shopLink, "Full public shop link copied.")}
+                    onClick={() => copyText(shopLink, "Public shop diaries link copied.")}
                     disabled={!shopLink}
                     fullWidth
                     stableHeight={isCompact ? 56 : 48}
@@ -2614,7 +2614,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         onClick={() =>
                           copyText(
                             productLink,
-                            "Full public shop link copied. Mention this item in your message."
+                            "Public shop item link copied. It opens this item inside the Shop Diaries."
                           )
                         }
                       disabled={!productLink || isHidden}

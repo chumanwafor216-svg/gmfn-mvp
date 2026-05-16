@@ -535,7 +535,7 @@ export function buildDashboardTrustNoticeCopy(params: {
     return {
       title: trustPrimary ? "Trust needs attention now" : "Identity check needs attention now",
       detail: toSentence(repairGuidance.issueText),
-      ctaLabel: trustPrimary ? "Open Trust Status" : "Open Identity Check",
+      ctaLabel: trustPrimary ? "Open trust status" : "Open identity check",
       ctaRouteKey: trustPrimary ? "trust" : "cci",
       bucket: "actNow",
     };
@@ -566,7 +566,7 @@ export function buildDashboardTrustNoticeCopy(params: {
           ? "Your trust position is still okay, but some areas need attention before they get worse."
           : "Your wider identity position is still okay, but some areas need attention before they get worse.",
       ]),
-      ctaLabel: trustPrimary ? "Open Trust Status" : "Open Identity Check",
+      ctaLabel: trustPrimary ? "Open trust status" : "Open identity check",
       ctaRouteKey: trustPrimary ? "trust" : "cci",
       bucket: "dueSoon",
     };
@@ -601,7 +601,7 @@ export function buildDashboardTrustAttentionCore(params: {
   const bothUnderPressure =
     params.openTrust.tone === "red" && params.cci.tone === "red";
   const baseConnectionText =
-    "Focus shows your visible follow-through. Trust shows how people in your community are reading it. CCI shows how people outside your community may read the same behavior. TrustSlip is the record they may later check when they want proof.";
+    "Focus shows visible follow-through. Local trust shows how your community reads it. Cross-community consistency shows how people outside your community may read the same behaviour. TrustSlip is the record they may later check when they want proof.";
 
   let helpingText = "";
 
@@ -611,15 +611,15 @@ export function buildDashboardTrustAttentionCore(params: {
       "finished target"
     )} in Focus Commitments ${
       params.focusCompletedCount === 1 ? "is" : "are"
-    } helping trust because people can see that you finish what you start. This also supports CCI because people outside your community can see steady follow-through.`;
+    } helping trust because people can see that you finish what you start. This also supports cross-community consistency because people outside your community can see steady follow-through.`;
   } else if (params.focusOnTrackCount > 0) {
     helpingText = `${withCount(params.focusOnTrackCount, "target")} ${
       params.focusOnTrackCount === 1 ? "is" : "are"
-    } on track in Focus Commitments. That helps trust because people can see you are keeping your word, and it also helps your CCI stay steady.`;
+    } on track in Focus Commitments. That helps trust because people can see you are keeping your word, and it also helps your wider consistency stay steady.`;
   } else if (specificHelp) {
     helpingText = `${toSentence(
       specificHelp
-    )} This is helping trust in your community and also helping your CCI look steadier outside your community.`;
+    )} This is helping trust in your community and also helping your wider consistency look steadier outside your community.`;
   } else if (
     params.pendingRequestsCount === 0 &&
     params.unreadCount === 0 &&
@@ -630,7 +630,7 @@ export function buildDashboardTrustAttentionCore(params: {
       "You do not have waiting requests or unread alerts building up right now. That helps trust because people are not being left hanging, and it keeps your wider identity steadier too.";
   } else {
     helpingText =
-      "Any clear follow-through you keep visible here helps trust grow. When people can see your actions matching your word, both trust and CCI become stronger.";
+      "Any clear follow-through you keep visible here helps trust grow. When people can see your actions matching your word, both local trust and wider consistency become stronger.";
   }
 
   if (!cleanText(params.trustSlipCode)) {
@@ -640,7 +640,7 @@ export function buildDashboardTrustAttentionCore(params: {
         "Your TrustSlip is still pending. Until it is ready, people cannot see your verification clearly, and that can hold back both trust and wider identity confidence.",
       problemText: "Your TrustSlip is still pending or not complete.",
       consequenceText:
-        "When your trust record is not ready, people cannot see your verification clearly. That can hold back trust in your community and also weaken your CCI outside your community.",
+        "When your trust record is not ready, people cannot see your verification clearly. That can hold back trust in your community and also weaken your wider consistency outside your community.",
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and finish the missing verification step.`,
@@ -653,16 +653,16 @@ export function buildDashboardTrustAttentionCore(params: {
       helpingText,
       careText: `${withCount(params.focusBehindCount, "commitment")} ${
         params.focusBehindCount === 1 ? "is" : "are"
-      } behind in Focus Commitments. When a visible target is missed, trust becomes weaker, CCI can also drop, and your TrustSlip story looks less steady.`,
+      } behind in Focus Commitments. When a visible target is missed, trust becomes weaker, wider consistency can also drop, and your TrustSlip story looks less steady.`,
       problemText: `${withCount(params.focusBehindCount, "commitment")} ${
         params.focusBehindCount === 1 ? "is" : "are"
       } behind in Focus Commitments.`,
       consequenceText:
-        "When a visible target is missed, trust can weaken in your community. It can also reduce your CCI and make your TrustSlip story look less steady.",
+        "When a visible target is missed, trust can weaken in your community. It can also reduce your wider consistency and make your TrustSlip story look less steady.",
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and update, replan, or complete the missed commitment.`,
-      connectionText: `${baseConnectionText} Right now Focus is showing a missed target. That weakens Trust first, can pull down CCI next, and makes your TrustSlip story look less steady when people check it.`,
+      connectionText: `${baseConnectionText} Right now Focus is showing a missed target. That weakens local trust first, can pull down wider consistency next, and makes your TrustSlip story look less steady when people check it.`,
     };
   }
 
@@ -680,7 +680,7 @@ export function buildDashboardTrustAttentionCore(params: {
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and answer the waiting request so nobody stays hanging.`,
-      connectionText: `${baseConnectionText} Right now the waiting request is the visible problem. It weakens Trust first, can later affect CCI, and leaves your TrustSlip story looking less steady because your follow-through is not clear.`,
+      connectionText: `${baseConnectionText} Right now the waiting request is the visible problem. It weakens local trust first, can later affect wider consistency, and leaves your TrustSlip story looking less steady because your follow-through is not clear.`,
     };
   }
 
@@ -690,16 +690,16 @@ export function buildDashboardTrustAttentionCore(params: {
       helpingText,
       careText: `${withCount(waitingCount, "notification")} ${
         waitingCount === 1 ? "is" : "are"
-      } still waiting for your response. When people do not get a reply, trust weakens, CCI can also suffer, and your response habit starts to look poor.`,
+      } still waiting for your response. When people do not get a reply, trust weakens, wider consistency can also suffer, and your response habit starts to look poor.`,
       problemText: `${withCount(waitingCount, "notification")} ${
         waitingCount === 1 ? "is" : "are"
       } still waiting for your response.`,
       consequenceText:
-        "When people do not get a reply, trust can weaken in your community. If it keeps happening, your CCI and response habit can also suffer.",
+        "When people do not get a reply, trust can weaken in your community. If it keeps happening, your wider consistency and response habit can also suffer.",
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and reply to the person or item still waiting.`,
-      connectionText: `${baseConnectionText} Right now the waiting reply is the visible problem. It weakens Trust in your community, can later affect CCI outside your community, and makes your TrustSlip story look weaker because your response habit is not clear.`,
+      connectionText: `${baseConnectionText} Right now the waiting reply is the visible problem. It weakens local trust in your community, can later affect wider consistency outside your community, and makes your TrustSlip story look weaker because your response habit is not clear.`,
     };
   }
 
@@ -717,7 +717,7 @@ export function buildDashboardTrustAttentionCore(params: {
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and answer the waiting need.`,
-      connectionText: `${baseConnectionText} Right now the waiting need is the visible problem. If you ignore it, Trust can weaken first, CCI can also become more careful, and your TrustSlip story will not look strong.`,
+      connectionText: `${baseConnectionText} Right now the waiting need is the visible problem. If you ignore it, local trust can weaken first, wider consistency can also become more careful, and your TrustSlip story will not look strong.`,
     };
   }
 
@@ -726,16 +726,16 @@ export function buildDashboardTrustAttentionCore(params: {
       helpingText,
       careText: `${withCount(params.focusWatchCount, "commitment")} ${
         params.focusWatchCount === 1 ? "is" : "are"
-      } now on watch in Focus Commitments. If you do not correct it early, it can weaken trust and later pull down your CCI too.`,
+      } now on watch in Focus Commitments. If you do not correct it early, it can weaken trust and later pull down your wider consistency too.`,
       problemText: `${withCount(params.focusWatchCount, "commitment")} ${
         params.focusWatchCount === 1 ? "is" : "are"
       } now on watch in Focus Commitments.`,
       consequenceText:
-        "If you do not correct it early, it can weaken trust and later pull down your CCI too.",
+        "If you do not correct it early, it can weaken trust and later pull down your wider consistency too.",
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and correct the commitment before it slips behind.`,
-      connectionText: `${baseConnectionText} Right now Focus is already showing a warning. If you do not correct it early, Trust can weaken and CCI can later fall too, even before TrustSlip is checked.`,
+      connectionText: `${baseConnectionText} Right now Focus is already showing a warning. If you do not correct it early, local trust can weaken and wider consistency can later fall too, even before TrustSlip is checked.`,
     };
   }
 
@@ -744,10 +744,10 @@ export function buildDashboardTrustAttentionCore(params: {
       helpingText,
       careText: `${toSentence(
         specificCare
-      )} If this stays like that, it can weaken trust in your community and also affect your CCI outside your community.`,
+      )} If this stays like that, it can weaken trust in your community and also affect your wider consistency outside your community.`,
       problemText: toSentence(specificCare),
       consequenceText: bothUnderPressure
-        ? "If this stays open, both trust and CCI can fall together."
+        ? "If this stays open, both local trust and wider consistency can fall together."
         : params.openTrust.tone === "red" || params.openTrust.tone === "yellow"
         ? "If this stays open, people in your community may become less sure about you."
         : "If this stays open, people outside your community may become more careful with you.",
@@ -756,8 +756,8 @@ export function buildDashboardTrustAttentionCore(params: {
         `Open ${routeLabel} now and fix the first problem still marked for action.`,
       connectionText:
         params.openTrust.tone === "red" || params.openTrust.tone === "yellow"
-          ? `${baseConnectionText} Right now Trust is the clearest warning, and if you leave it there, CCI can also start to suffer later.`
-          : `${baseConnectionText} Right now CCI is the clearest warning, but the same behavior can also weaken Trust in your community if it continues.`,
+          ? `${baseConnectionText} Right now local trust is the clearest warning, and if you leave it there, wider consistency can also start to suffer later.`
+          : `${baseConnectionText} Right now wider consistency is the clearest warning, but the same behavior can also weaken local trust in your community if it continues.`,
     };
   }
 
@@ -767,7 +767,7 @@ export function buildDashboardTrustAttentionCore(params: {
       careText:
         "A serious trust or identity problem is already showing. If you leave it there, people may hold back, delay, or stop moving with you.",
       problemText: bothUnderPressure
-        ? "A serious problem is already affecting both trust and CCI."
+        ? "A serious problem is already affecting both local trust and wider consistency."
         : params.openTrust.tone === "red"
         ? "A serious problem is already affecting trust in your community."
         : "A serious problem is already affecting how people outside your community see you.",
@@ -777,10 +777,10 @@ export function buildDashboardTrustAttentionCore(params: {
         nextPlain ||
         `Open ${routeLabel} now and fix the problem already marked for action.`,
       connectionText: bothUnderPressure
-        ? `${baseConnectionText} Right now both Trust and CCI are already under pressure, which means the same visible behavior is hurting both close community confidence and wider identity confidence together.`
+        ? `${baseConnectionText} Right now both local trust and wider consistency are already under pressure, which means the same visible behavior is hurting both close community confidence and wider identity confidence together.`
         : params.openTrust.tone === "red"
-        ? `${baseConnectionText} Right now Trust is already under serious pressure. If you leave it there, CCI and your TrustSlip story can also become weaker.`
-        : `${baseConnectionText} Right now CCI is already under serious pressure. If you leave it there, Trust in your community can also weaken further.`,
+        ? `${baseConnectionText} Right now local trust is already under serious pressure. If you leave it there, wider consistency and your TrustSlip story can also become weaker.`
+        : `${baseConnectionText} Right now wider consistency is already under serious pressure. If you leave it there, trust in your community can also weaken further.`,
     };
   }
 
@@ -788,18 +788,18 @@ export function buildDashboardTrustAttentionCore(params: {
     return {
       helpingText,
       careText:
-        "A warning sign is showing in your trust or identity reading. If you leave it too long, the problem can grow and start affecting both trust and CCI more clearly.",
+        "A warning sign is showing in your trust or identity reading. If you leave it too long, the problem can grow and start affecting both local trust and wider consistency more clearly.",
       problemText:
         "A warning sign is showing in your trust or identity reading.",
       consequenceText:
-        "If you leave it too long, the problem can grow and start affecting both trust and CCI more clearly.",
+        "If you leave it too long, the problem can grow and start affecting both local trust and wider consistency more clearly.",
       actionText:
         nextPlain ||
         `Open ${routeLabel} now and correct the warning sign early.`,
       connectionText:
         params.openTrust.tone === "yellow"
-          ? `${baseConnectionText} Right now Trust is giving the earlier warning. If you fix it early, you protect both community trust and wider CCI.`
-          : `${baseConnectionText} Right now CCI is giving the earlier warning. If you fix it early, you protect both wider identity confidence and Trust in your community.`,
+          ? `${baseConnectionText} Right now local trust is giving the earlier warning. If you fix it early, you protect both community trust and wider consistency.`
+          : `${baseConnectionText} Right now wider consistency is giving the earlier warning. If you fix it early, you protect both wider identity confidence and trust in your community.`,
     };
   }
 
@@ -844,10 +844,10 @@ export function buildDashboardTrustJourneyCopy(params: {
 
   const cciDetail =
     params.cci.tone === "red"
-      ? "CCI is already showing a serious problem outside your community. That means people beyond your circle may already be more careful with you."
+      ? "Cross-community consistency is already showing a serious problem outside your community. That means people beyond your circle may already be more careful with you."
       : params.cci.tone === "yellow"
-      ? "CCI is giving an early warning outside your community. If you leave it too long, the wider reading can get worse."
-      : "CCI shows how people outside your community may read the same behavior.";
+      ? "Cross-community consistency is giving an early warning outside your community. If you leave it too long, the wider reading can get worse."
+      : "Cross-community consistency shows how people outside your community may read the same behaviour.";
 
   const trustSlipDetail = cleanText(params.trustSlipCode)
     ? "TrustSlip is the record people can check when they want proof that your trust story is backed by a visible record."
@@ -880,23 +880,23 @@ export function buildDashboardTrustJourneyCopy(params: {
     "Trust Passport helps you read the full trust path in simple steps, while TrustSlip is the record people may later check for proof.";
 
   let connectionSummary =
-    "These five work together: Focus shows your visible follow-through, Trust shows how your community reads it, CCI shows how people outside your community may read it, TrustSlip carries the record, and Trust Passport helps you understand the whole path.";
+    "These five work together: Focus shows visible follow-through, local trust shows how your community reads it, cross-community consistency shows how people outside your community may read it, TrustSlip carries the record, and Trust Passport helps you understand the whole path.";
 
   if (params.focusBehindCount > 0) {
     connectionSummary =
-      "Right now the missed Focus commitment is the visible problem. That can weaken Trust in your community, pull down CCI outside your community, and make your TrustSlip story look less steady.";
+      "Right now the missed Focus commitment is the visible problem. That can weaken trust in your community, pull down wider consistency outside your community, and make your TrustSlip story look less steady.";
   } else if (params.pendingRequestsCount > 0) {
     connectionSummary =
-      "Right now the waiting request is the visible problem. When people are left waiting, Trust weakens first, CCI can also suffer later, and your TrustSlip story does not look as strong.";
+      "Right now the waiting request is the visible problem. When people are left waiting, trust weakens first, wider consistency can also suffer later, and your TrustSlip story does not look as strong.";
   } else if (params.actNowCount > 0 || params.unreadCount > 0) {
     connectionSummary =
-      "Right now the waiting notification or reply is the visible problem. If you do not answer, Trust can weaken, CCI can also drop, and your record stops looking steady.";
+      "Right now the waiting notification or reply is the visible problem. If you do not answer, trust can weaken, wider consistency can also drop, and your record stops looking steady.";
   } else if (!cleanText(params.trustSlipCode)) {
     connectionSummary =
       "Right now the missing TrustSlip is the visible gap. Without that record, people cannot easily confirm your trust story even if some other parts look healthy.";
   } else if (params.urgentDemandCount > 0) {
     connectionSummary =
-      "Right now the waiting need is the visible problem. If you leave it there, people may feel ignored, Trust can weaken, and CCI can also become more careful.";
+      "Right now the waiting need is the visible problem. If you leave it there, people may feel ignored, trust can weaken, and wider consistency can also become more careful.";
   }
 
   return {
@@ -904,7 +904,7 @@ export function buildDashboardTrustJourneyCopy(params: {
     careText: core.careText,
     connectionItems: [
       { key: "trust", title: "Trust", detail: trustDetail },
-      { key: "cci", title: "CCI", detail: cciDetail },
+      { key: "cci", title: "Wider consistency", detail: cciDetail },
       { key: "trust-slip", title: "TrustSlip", detail: trustSlipDetail },
       { key: "focus", title: "Focus", detail: focusDetail },
       {

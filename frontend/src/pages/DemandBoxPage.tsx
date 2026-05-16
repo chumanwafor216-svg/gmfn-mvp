@@ -1040,7 +1040,7 @@ export default function DemandBoxPage() {
                 <span style={badge(false)}>GSN ID: {safeStr(me?.gmfn_id)}</span>
               ) : null}
               {memberCciLabel ? (
-                <span style={badge(false)}>CCI: {memberCciLabel}</span>
+                <span style={badge(false)}>Wider consistency: {memberCciLabel}</span>
               ) : null}
               <span style={badge(false)}>Context: {currentCommunityName}</span>
               <span style={badge(false)}>My open needs: {myOpenRows.length}</span>
@@ -1449,7 +1449,7 @@ export default function DemandBoxPage() {
                 <span style={badge(false)}>GSN ID {safeStr(me?.gmfn_id)}</span>
               ) : null}
               {memberCciLabel ? (
-                <span style={badge(false)}>CCI {memberCciLabel}</span>
+                <span style={badge(false)}>Wider consistency {memberCciLabel}</span>
               ) : null}
               <span style={badge(false)}>From {currentCommunityName}</span>
             </div>

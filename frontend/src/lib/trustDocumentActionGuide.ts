@@ -23,7 +23,7 @@ export function buildIdentityActionGuide(): TrustDocumentActionGuideContent {
         id: "gmfn-id",
         title: "Copy the stable identifier first",
         detail:
-          "Use GMFN ID when someone needs the one identity reference that should stay steady across communities and trust changes.",
+          "Use GSN ID when someone needs the one identity reference that should stay steady across communities and trust changes.",
       },
       {
         id: "trustslip-code",
@@ -35,7 +35,7 @@ export function buildIdentityActionGuide(): TrustDocumentActionGuideContent {
         id: "snapshot",
         title: "Use the identity snapshot for context",
         detail:
-          "Copy the identity snapshot when you want one short summary of identity, continuity, open trust, CCI, and the next clean step in one piece.",
+          "Copy the identity snapshot when you want one short summary of identity, continuity, local trust, wider consistency, and the next clean step in one piece.",
       },
     ],
     footer:
@@ -60,7 +60,7 @@ export function buildTrustPassportActionGuide(): TrustDocumentActionGuideContent
         id: "snapshot",
         title: "Copy the trust snapshot for the fuller explanation",
         detail:
-          "Use the trust snapshot when someone needs the short trust story with band, score, Open Trust, CCI, TrustSlip code, and the next clean step.",
+          "Use the trust snapshot when someone needs the short trust story with band, score, local trust, wider consistency, TrustSlip code, and the next clean step.",
       },
       {
         id: "verify",
@@ -97,7 +97,7 @@ export function buildTrustSlipActionGuide(): TrustDocumentActionGuideContent {
         id: "snapshot",
         title: "Use the TrustSlip snapshot for a short portable summary",
         detail:
-          "Copy the TrustSlip snapshot when you need one clean text summary of the holder, band, trust limit, CCI, expiry, and verify path.",
+          "Copy the TrustSlip snapshot when you need one clean text summary of the holder, band, trust limit, wider consistency, expiry, and verify path.",
       },
     ],
     footer:

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
+import { EntryBackLink } from "../components/EntryControls";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
   clearPublicEntryState,
@@ -27,11 +27,11 @@ import {
 
 function pageShell(): React.CSSProperties {
   return {
-    minHeight: "100vh",
+    minHeight: "100svh",
     width: "100%",
     background:
-      "radial-gradient(circle at 84% 8%, rgba(84,123,169,0.12) 0%, rgba(84,123,169,0.00) 28%), radial-gradient(circle at 18% 88%, rgba(58,92,134,0.12) 0%, rgba(58,92,134,0.00) 28%), linear-gradient(180deg, #06111C 0%, #0A1B2B 46%, #102A43 100%)",
-    padding: "34px 22px",
+      "radial-gradient(circle at 84% 18%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0.00) 24%), radial-gradient(circle at 16% 82%, rgba(70,119,165,0.20) 0%, rgba(70,119,165,0.00) 30%), linear-gradient(180deg, #04101B 0%, #061827 46%, #0B253B 100%)",
+    padding: "8px 8px 14px",
     boxSizing: "border-box",
   };
 }
@@ -163,36 +163,64 @@ function secondaryBtn(): React.CSSProperties {
   };
 }
 
-function stageToggleBtn(active = false): React.CSSProperties {
-  return active
-    ? secondaryBtn()
-    : {
-        ...secondaryBtn(),
-        borderRadius: 16,
-        background:
-          "linear-gradient(180deg, #2D6AA3 0%, #235784 52%, #173E63 100%)",
-        color: "#FFFFFF",
-        boxShadow:
-          "0 20px 36px rgba(1,13,32,0.28), inset 0 1px 0 rgba(196,222,247,0.34), inset 0 -8px 12px rgba(8,25,43,0.20)",
-        textShadow: "none",
-      };
+function stageDropDownHeader(active = false, complete = false): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 58,
+    borderRadius: 14,
+    border: "1px solid rgba(126,164,204,0.14)",
+    background: active
+      ? "linear-gradient(180deg, rgba(24,65,101,0.48) 0%, rgba(12,38,64,0.36) 100%)"
+      : complete
+        ? "linear-gradient(180deg, rgba(214,170,69,0.18) 0%, rgba(18,54,82,0.28) 100%)"
+        : "transparent",
+    color: "#F8FBFF",
+    boxShadow: active
+      ? "0 14px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "none",
+    padding: "7px",
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    alignItems: "center",
+    gap: 8,
+    textAlign: "left",
+    justifyContent: "stretch",
+  };
+}
+
+function stageOpenIcon(active = false): React.CSSProperties {
+  return {
+    width: 26,
+    height: 26,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: active ? "rgba(242,199,102,0.16)" : "rgba(126,164,204,0.12)",
+    border: "1px solid rgba(255,255,255,0.16)",
+    color: active ? "#F2C766" : "#C9D9E8",
+    fontSize: 18,
+    fontWeight: 1000,
+    lineHeight: 1,
+  };
 }
 
 function existingMemberCard(open = false): React.CSSProperties {
   return {
-    width: "min(100%, 760px)",
-    borderRadius: 22,
+    width: "100%",
+    borderRadius: 14,
     border: open
-      ? "1px solid rgba(120,153,194,0.24)"
-      : "1px solid rgba(255,255,255,0.16)",
+      ? "1px solid rgba(242,199,102,0.30)"
+      : "1px solid rgba(126,164,204,0.24)",
     background: open
-      ? "linear-gradient(180deg, rgba(74,123,169,0.10) 0%, rgba(255,255,255,0.05) 100%)"
-      : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
+      ? "linear-gradient(180deg, rgba(13,45,73,0.96) 0%, rgba(7,28,48,0.98) 100%)"
+      : "linear-gradient(180deg, rgba(11,40,66,0.94) 0%, rgba(8,29,49,0.96) 100%)",
     boxShadow:
-      "0 16px 34px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.10)",
-    padding: 14,
+      "0 18px 34px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.09)",
+    padding: 9,
     display: "grid",
-    gap: 12,
+    gap: 7,
+    position: "relative",
+    overflow: "hidden",
   };
 }
 
@@ -215,6 +243,361 @@ function feedbackCard(success = false): React.CSSProperties {
     color: success ? "#065F46" : "#991B1B",
     fontWeight: 900,
   };
+}
+
+function guideHeroCallout(done = false): React.CSSProperties {
+  return {
+    width: "100%",
+    borderRadius: 16,
+    border: done
+      ? "1px solid rgba(255,255,255,0.16)"
+      : "1px solid rgba(255,241,183,0.74)",
+    background: done
+      ? "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)"
+      : "linear-gradient(145deg, #FFE795 0%, #F2C766 43%, #D9A842 100%)",
+    boxShadow: done
+      ? "0 14px 28px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "0 26px 46px rgba(214,170,69,0.28), 0 18px 36px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.72)",
+    padding: done ? "8px" : "9px",
+    display: "grid",
+    gridTemplateColumns: done ? "34px minmax(0, 1fr)" : "39px minmax(0, 1fr)",
+    gap: done ? 7 : 8,
+    alignItems: "center",
+    position: "relative",
+    overflow: "hidden",
+  };
+}
+
+function guideHeroMark(done = false): React.CSSProperties {
+  return {
+    width: done ? 34 : 39,
+    height: done ? 34 : 39,
+    borderRadius: 12,
+    display: "grid",
+    placeItems: "center",
+    background: done
+      ? "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)"
+      : "linear-gradient(180deg, #102A43 0%, #07172C 100%)",
+    color: done ? "#F3D06A" : "#F8FBFF",
+    border: done
+      ? "1px solid rgba(255,255,255,0.16)"
+      : "1px solid rgba(255,255,255,0.42)",
+    boxShadow: done
+      ? "inset 0 1px 0 rgba(255,255,255,0.10)"
+      : "0 16px 28px rgba(7,23,44,0.30), inset 0 1px 0 rgba(255,255,255,0.22)",
+    fontSize: done ? 11.5 : 13,
+    fontWeight: 1000,
+    letterSpacing: 0,
+  };
+}
+
+function guideHeroButton(done = false): React.CSSProperties {
+  return {
+    ...primaryBtn(false),
+    width: "100%",
+    minHeight: done ? 32 : 38,
+    borderRadius: 11,
+    border: done
+      ? "1px solid rgba(255,255,255,0.18)"
+      : "1px solid rgba(7,23,44,0.24)",
+    background: done
+      ? "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)"
+      : "linear-gradient(180deg, #102A43 0%, #0B1F33 54%, #07172C 100%)",
+    color: done ? "#F8FBFF" : "#FFFFFF",
+    boxShadow: done
+      ? "0 12px 24px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.12)"
+      : "0 18px 34px rgba(7,23,44,0.30), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -8px 12px rgba(0,0,0,0.16)",
+    fontSize: done ? 11.5 : 13,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  };
+}
+
+type GuideStepKey = "details" | "verification" | "community";
+
+function guideDropDownShell(open = false): React.CSSProperties {
+  return {
+    borderRadius: 16,
+    border: open
+      ? "1px solid rgba(45,106,163,0.32)"
+      : "1px solid rgba(16,37,59,0.10)",
+    background: open
+      ? "linear-gradient(180deg, rgba(245,249,255,0.98) 0%, rgba(229,238,249,0.96) 100%)"
+      : "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
+    boxShadow: open
+      ? "0 14px 28px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.86)"
+      : "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
+    overflow: "hidden",
+  };
+}
+
+function guideDropDownHeader(open = false): React.CSSProperties {
+  return {
+    width: "100%",
+    minHeight: 58,
+    border: 0,
+    background: "transparent",
+    padding: "13px 14px",
+    display: "grid",
+    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    gap: 10,
+    alignItems: "center",
+    textAlign: "left",
+    color: "#10253B",
+    fontWeight: 1000,
+    fontSize: 14,
+    cursor: "pointer",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+    appearance: "none",
+    WebkitAppearance: "none",
+    transform: "none",
+    transition: "none",
+    outlineOffset: 4,
+    boxSizing: "border-box",
+    ...(open
+      ? { borderBottom: "1px solid rgba(16,37,59,0.10)" }
+      : null),
+  };
+}
+
+function guideStepNumber(): React.CSSProperties {
+  return {
+    width: 26,
+    height: 26,
+    borderRadius: 12,
+    display: "grid",
+    placeItems: "center",
+    background: "linear-gradient(180deg, #2D6AA3 0%, #173E63 100%)",
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: 1000,
+    boxShadow: "0 8px 18px rgba(23,62,99,0.22)",
+  };
+}
+
+function MiniLineIcon({
+  kind,
+}: {
+  kind: "member" | "shield" | "flag" | "doc" | "info" | "lock";
+}): React.ReactElement {
+  const common: React.CSSProperties = {
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    border: "1px solid rgba(242,199,102,0.34)",
+    background:
+      "linear-gradient(180deg, rgba(242,199,102,0.13) 0%, rgba(242,199,102,0.05) 100%)",
+    color: "#F2C766",
+    fontWeight: 1000,
+    fontSize: 10,
+    lineHeight: 1,
+    flex: "0 0 auto",
+  };
+  const glyph =
+    kind === "member"
+      ? "->"
+      : kind === "shield"
+        ? "OK"
+        : kind === "flag"
+          ? "1"
+          : kind === "doc"
+            ? "="
+            : kind === "lock"
+              ? "L"
+              : "i";
+  return <span aria-hidden="true" style={common}>{glyph}</span>;
+}
+
+function CreateCommunityWatermark(): React.ReactElement {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        right: -28,
+        top: 58,
+        width: 146,
+        height: 146,
+        opacity: 0.08,
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          borderRadius: "38% 38% 48% 48%",
+          border: "7px solid rgba(242,199,102,0.62)",
+          transform: "rotate(45deg)",
+          boxSizing: "border-box",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 28,
+          display: "grid",
+          placeItems: "center",
+          color: "#F2C766",
+          fontSize: 27,
+          fontWeight: 1000,
+          letterSpacing: 0,
+        }}
+      >
+        GSN
+      </div>
+    </div>
+  );
+}
+
+function WizardProgress({ guideDone }: { guideDone: boolean }): React.ReactElement {
+  const steps = [
+    { number: "1", label: "Guide", active: true, done: guideDone },
+    { number: "2", label: "Form", active: false, done: false },
+    { number: "3", label: "Review", active: false, done: false },
+  ];
+  return (
+    <div
+      style={{
+        position: "relative",
+        display: "grid",
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+        alignItems: "start",
+        gap: 0,
+        width: "min(100%, 330px)",
+        marginTop: 10,
+        padding: "0 3px",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: 30,
+          right: 30,
+          top: 13,
+          borderTop: "2px dashed rgba(126,164,204,0.28)",
+        }}
+      />
+      {steps.map((item) => (
+          <div
+            key={item.number}
+            style={{
+              position: "relative",
+              display: "grid",
+              justifyItems: "center",
+              gap: 4,
+              zIndex: 1,
+            }}
+          >
+            <div
+              style={{
+                width: 26,
+                height: 26,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                background: item.active
+                  ? "linear-gradient(180deg, #F8D779 0%, #D6AA45 100%)"
+                  : "rgba(7,23,44,0.42)",
+                border: item.active
+                  ? "1px solid rgba(255,245,204,0.80)"
+                  : "1px solid rgba(126,164,204,0.32)",
+                color: item.active ? "#07172C" : "#E4EEF8",
+                fontSize: 12,
+                fontWeight: 1000,
+                boxShadow: item.active
+                  ? "0 12px 24px rgba(214,170,69,0.28), inset 0 1px 0 rgba(255,255,255,0.42)"
+                  : "inset 0 1px 0 rgba(255,255,255,0.08)",
+              }}
+            >
+              {item.number}
+            </div>
+            <div
+              style={{
+                color: item.active ? "#F2C766" : "#8FA7BD",
+                fontSize: 9.5,
+                fontWeight: 900,
+              }}
+            >
+              {item.label}
+            </div>
+          </div>
+      ))}
+    </div>
+  );
+}
+
+function GuideDocumentGlyph(): React.ReactElement {
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        right: 10,
+        top: 24,
+        width: 42,
+        height: 42,
+        opacity: 0.20,
+        pointerEvents: "none",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 18,
+          border: "2px solid rgba(255,255,255,0.72)",
+          background: "rgba(255,255,255,0.12)",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.40)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: 22,
+          right: 22,
+          top: 28,
+          display: "grid",
+          gap: 8,
+        }}
+      >
+        {[0, 1, 2].map((line) => (
+          <span
+            key={line}
+            style={{
+              height: 4,
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.72)",
+            }}
+          />
+        ))}
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          right: -12,
+          bottom: -10,
+          width: 44,
+          height: 44,
+          borderRadius: 999,
+          border: "2px solid rgba(255,255,255,0.80)",
+          display: "grid",
+          placeItems: "center",
+          color: "#FFFFFF",
+          fontWeight: 1000,
+          fontSize: 22,
+        }}
+      >
+        i
+      </div>
+    </div>
+  );
 }
 
 type EntryVerificationResult = {
@@ -296,36 +679,36 @@ function verificationCard(status?: string | null): React.CSSProperties {
 function stageShell(active = false, complete = false): React.CSSProperties {
   if (active) {
     return {
-      borderRadius: 20,
-      padding: 18,
-      border: "1px solid rgba(28,76,126,0.24)",
+      borderRadius: 24,
+      padding: 14,
+      border: "1px solid rgba(126,164,204,0.30)",
       background:
-        "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(230,239,252,0.96) 58%, rgba(212,226,246,0.92) 100%)",
+        "linear-gradient(180deg, rgba(12,42,69,0.92) 0%, rgba(9,31,53,0.96) 100%)",
       boxShadow:
-        "0 16px 34px rgba(16,37,59,0.10), inset 0 1px 0 rgba(255,255,255,0.72)",
+        "0 18px 36px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.10)",
     };
   }
 
   if (complete) {
     return {
-      borderRadius: 20,
-      padding: 18,
-      border: "1px solid rgba(184,159,104,0.26)",
+      borderRadius: 24,
+      padding: 14,
+      border: "1px solid rgba(242,199,102,0.28)",
       background:
-        "linear-gradient(180deg, rgba(247,244,236,0.98) 0%, rgba(236,232,220,0.94) 100%)",
+        "linear-gradient(180deg, rgba(18,54,82,0.88) 0%, rgba(10,32,54,0.96) 100%)",
       boxShadow:
-        "0 12px 24px rgba(16,37,59,0.07), inset 0 1px 0 rgba(255,255,255,0.72)",
+        "0 14px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
     };
   }
 
   return {
-    borderRadius: 20,
-    padding: 18,
-    border: "1px solid rgba(28,76,126,0.18)",
+    borderRadius: 16,
+    padding: 8,
+    border: "1px solid rgba(126,164,204,0.22)",
     background:
-      "linear-gradient(180deg, rgba(248,251,255,0.99) 0%, rgba(238,245,252,0.97) 100%)",
+      "linear-gradient(180deg, rgba(13,43,70,0.76) 0%, rgba(8,29,49,0.88) 100%)",
     boxShadow:
-      "0 10px 22px rgba(16,37,59,0.06), inset 0 1px 0 rgba(255,255,255,0.68)",
+      "0 14px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
   };
 }
 
@@ -334,27 +717,27 @@ function stageBadge(
   complete = false
 ): React.CSSProperties {
   return {
-    width: 34,
-    height: 34,
+    width: 44,
+    height: 44,
     borderRadius: 999,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     fontWeight: 1000,
-    fontSize: 14,
+    fontSize: 22,
     background: active
-      ? "#1F548C"
+      ? "linear-gradient(180deg, rgba(35,80,124,0.96) 0%, rgba(17,49,82,0.98) 100%)"
       : complete
-        ? "#B88721"
-        : "rgba(28,76,126,0.10)",
-    color: active || complete ? "#FFFFFF" : "#24415C",
+        ? "linear-gradient(180deg, #D6AA45 0%, #9B6E1F 100%)"
+        : "linear-gradient(180deg, rgba(35,80,124,0.64) 0%, rgba(12,37,63,0.78) 100%)",
+    color: active || complete ? "#FFFFFF" : "rgba(248,251,255,0.90)",
     boxShadow: active || complete
-      ? "0 10px 18px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.22)"
-      : "0 8px 16px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.74)",
+      ? "0 14px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.18)"
+      : "0 12px 22px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
     border:
       active || complete
-        ? "1px solid rgba(255,255,255,0.12)"
-        : "1px solid rgba(28,76,126,0.12)",
+        ? "1px solid rgba(255,255,255,0.16)"
+        : "1px solid rgba(126,164,204,0.22)",
     textShadow:
       active || complete ? "0 1px 0 rgba(0,0,0,0.12)" : "0 1px 0 rgba(255,255,255,0.68)",
   };
@@ -568,6 +951,7 @@ export default function CreateEntryPage() {
     useState<EntryVerificationResult>(null);
   const [guideDone, setGuideDone] = useState(hasInitialCommunityContext);
   const [procedureOpen, setProcedureOpen] = useState(false);
+  const [guideStepOpen, setGuideStepOpen] = useState<GuideStepKey | null>(null);
   const [existingMemberOpen, setExistingMemberOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
     hasInitialCommunityContext ? "community" : null
@@ -681,6 +1065,30 @@ export default function CreateEntryPage() {
     focusPanel(next);
   }
 
+  function handleToggleDetailsGroup() {
+    if (!guideDone) {
+      setProcedureOpen(true);
+      return;
+    }
+
+    if (openPanel !== null) {
+      setOpenPanel(null);
+      return;
+    }
+
+    if (canOpenCommunity) {
+      handleOpenPanel("community");
+      return;
+    }
+
+    if (canOpenVerification) {
+      handleOpenPanel("verification");
+      return;
+    }
+
+    handleOpenPanel("details");
+  }
+
   function handleGuideDone() {
     setGuideDone(true);
     setProcedureOpen(false);
@@ -704,42 +1112,61 @@ export default function CreateEntryPage() {
   const existingMemberPanel = (
     <div style={existingMemberCard(existingMemberOpen)}>
       <div
+        aria-hidden="true"
         style={{
-          display: "flex",
-          justifyContent: "space-between",
+          position: "absolute",
+          right: -30,
+          top: -34,
+          width: 112,
+          height: 112,
+          borderRadius: 999,
+          background: "radial-gradient(circle, rgba(242,199,102,0.10) 0%, rgba(242,199,102,0) 64%)",
+        }}
+      />
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto minmax(0, 1fr) auto",
           alignItems: "center",
-          gap: 12,
-          flexWrap: "wrap",
+          gap: 8,
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        <div style={{ display: "grid", gap: 5 }}>
-          <div style={{ ...sectionLabel(), color: "#F3D06A" }}>
+        <MiniLineIcon kind="member" />
+        <div style={{ display: "grid", gap: 3 }}>
+          <div style={{ ...sectionLabel(), color: "#F3D06A", fontSize: 9.5, letterSpacing: 1.4 }}>
             Already a member?
           </div>
           <div
             style={{
               color: "#F8FBFF",
-              fontSize: 15,
+              fontSize: "clamp(10.5px, 2.9vw, 12px)",
               fontWeight: 900,
-              lineHeight: 1.35,
+              lineHeight: 1.24,
             }}
           >
-            Sign in instead of filling the new-community form.
+            Already registered? Sign in.
           </div>
         </div>
 
         <SecondaryButton
           onClick={() => setExistingMemberOpen((current) => !current)}
-          minWidth={220}
-          stableHeight={44}
+          minWidth={122}
+          stableHeight={35}
           debugId="create-entry.existing-member.toggle"
           style={{
             ...secondaryBtn(),
-            minHeight: 44,
-            color: "#123055",
+            minHeight: 35,
+            padding: "7px 9px",
+            fontSize: "clamp(10px, 2.8vw, 12px)",
+            color: "#F8FBFF",
+            border: "1px solid rgba(126,164,204,0.32)",
+            background: "rgba(7,23,44,0.24)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)",
           }}
         >
-          {existingMemberOpen ? "Collapse sign-in help" : "Open sign-in help"}
+          {existingMemberOpen ? "Close" : "Sign-in help"}
         </SecondaryButton>
       </div>
 
@@ -762,10 +1189,7 @@ export default function CreateEntryPage() {
               fontWeight: 700,
             }}
           >
-            If you already have a GSN account, do not create another one.
-            Open sign in and verify yourself with your email and password.
-            After sign-in, the app opens your workspace instead of returning
-            you to this create-community form.
+            Already have GSN? Sign in to open your workspace.
           </div>
 
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -781,7 +1205,7 @@ export default function CreateEntryPage() {
                 flex: "1 1 220px",
               }}
             >
-              Open sign in instead
+              Sign in
             </PrimaryButton>
             <SecondaryButton
               onClick={() => setExistingMemberOpen(false)}
@@ -1381,12 +1805,41 @@ export default function CreateEntryPage() {
     }
   }
 
+  const guideStepItems: Array<{
+    key: GuideStepKey;
+    number: string;
+    title: string;
+    detail: string;
+  }> = [
+    {
+      key: "details",
+      number: "1",
+      title: "Your details",
+      detail:
+        "Add your name, phone, email, and password.",
+    },
+    {
+      key: "verification",
+      number: "2",
+      title: "Bank and wallet details",
+      detail:
+        "Add the bank or wallet record linked to you.",
+    },
+    {
+      key: "community",
+      number: "3",
+      title: "Community setup",
+      detail:
+        "Name the community and add a short story.",
+    },
+  ];
+
   return (
     <div style={pageShell()}>
-      <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gap: 18 }}>
+      <div style={{ maxWidth: 430, margin: "0 auto", display: "grid", gap: 7 }}>
         <div
           style={{
-            display: "grid",
+            display: "none",
             gridTemplateColumns: "56px 1fr 56px",
             alignItems: "center",
             gap: 12,
@@ -1428,39 +1881,119 @@ export default function CreateEntryPage() {
         <div
           style={{
             ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: 20,
+            border: "1px solid rgba(126,164,204,0.20)",
+            boxShadow:
+              "0 20px 44px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+            padding: "12px",
           }}
         >
-          <div style={sectionLabel()}>Create community</div>
+          <CreateCommunityWatermark />
+          <div style={{ position: "relative", zIndex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <MiniLineIcon kind="shield" />
+            <div style={{ ...sectionLabel(), color: "#9EB1C6", fontSize: "clamp(9.5px, 2.7vw, 12px)", letterSpacing: 1.1 }}>
+              Create community
+            </div>
+          </div>
 
           <div
             style={{
-              marginTop: 10,
-              fontSize: 30,
+              marginTop: 6,
+              fontSize: "clamp(25px, 8vw, 34px)",
               fontWeight: 1000,
               color: "#F8FBFF",
-              lineHeight: 1.15,
+              lineHeight: 1.02,
+              letterSpacing: 0,
+              maxWidth: 560,
             }}
           >
             Start a new community
           </div>
+          <div
+            style={{
+              marginTop: 6,
+              color: "#C9D9E8",
+              fontSize: "clamp(11px, 3vw, 13.5px)",
+              fontWeight: 720,
+              lineHeight: 1.38,
+              maxWidth: 620,
+            }}
+          >
+            Set up safely in 3 steps.
+          </div>
 
-          <div style={{ marginTop: 14, display: "grid", gap: 12, justifyItems: "start" }}>
-            <EntryGuideLauncher
-              compact
-              text={guideDone ? "Read Again" : "Read First"}
-              onClick={() => setProcedureOpen(true)}
-            />
-            <div
-              style={{
-                color: guideDone ? "#B9D7F0" : "#CCAC63",
-                fontSize: 13,
-                fontWeight: 800,
-                lineHeight: 1.6,
-              }}
-            >
-              {guideDone
-                ? "Guide read. Block 1 is open so you can start safely."
-                : "Read this first. Block 1 opens after you finish the guide."}
+          <WizardProgress guideDone={guideDone} />
+
+          <div style={{ marginTop: 8, display: "grid", gap: 7, justifyItems: "start" }}>
+            <div style={guideHeroCallout(guideDone)}>
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  right: -12,
+                  top: -18,
+                  width: 62,
+                  height: 62,
+                  borderRadius: 999,
+                  border: guideDone
+                    ? "1px solid rgba(255,255,255,0.08)"
+                    : "1px solid rgba(7,23,44,0.08)",
+                  opacity: guideDone ? 0.20 : 0.14,
+                }}
+              />
+              {!guideDone ? <GuideDocumentGlyph /> : null}
+              <div style={guideHeroMark(guideDone)}>GSN</div>
+              <div style={{ display: "grid", gap: guideDone ? 4 : 6, minWidth: 0, position: "relative", zIndex: 1 }}>
+                <div style={{ display: "grid", gap: guideDone ? 1 : 2 }}>
+                  <div
+                    style={{
+                      color: guideDone ? "#F3D06A" : "#10253B",
+                      fontSize: guideDone ? "clamp(8px, 2.2vw, 9.5px)" : "clamp(9px, 2.4vw, 10.5px)",
+                      fontWeight: 1000,
+                      letterSpacing: guideDone ? 1.6 : 2,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {guideDone ? "Guide ready" : "Start here first"}
+                  </div>
+                  <div
+                    style={{
+                      color: guideDone ? "#F8FBFF" : "#07172C",
+                      fontSize: guideDone ? "clamp(12px, 3.25vw, 13.5px)" : "clamp(13px, 3.6vw, 15px)",
+                      fontWeight: 1000,
+                      lineHeight: guideDone ? 1.14 : 1.22,
+                    }}
+                  >
+                    {guideDone
+                      ? "Guide is ready."
+                      : "Read guide first."}
+                  </div>
+                  {!guideDone ? (
+                    <div
+                      style={{
+                        color: "#334155",
+                        fontSize: "clamp(10px, 2.75vw, 11.5px)",
+                        fontWeight: 800,
+                        lineHeight: 1.38,
+                      }}
+                    >
+                      Then Block 1 opens.
+                    </div>
+                  ) : null}
+                </div>
+                <PrimaryButton
+                  onClick={() => setProcedureOpen(true)}
+                  fullWidth
+                  stableHeight={guideDone ? 32 : 38}
+                  debugId="create-entry.guide.primary"
+                  style={guideHeroButton(guideDone)}
+                >
+                  {guideDone ? "Open guide" : "Read, then start"}
+                </PrimaryButton>
+              </div>
             </div>
             {procedureOpen ? (
               <div
@@ -1558,55 +2091,71 @@ export default function CreateEntryPage() {
                       zIndex: 1,
                     }}
                   >
-                  <div
-                    style={{
-                      borderRadius: 16,
-                      border: "1px solid rgba(16,37,59,0.10)",
-                      background:
-                        "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
-                      padding: "13px 14px",
-                    }}
-                  >
-                    <strong style={{ color: "#10253B" }}>1. Your details.</strong> We ask for your street name or nickname and
-                    your phone number first so the system can know who is starting this community.
-                    Your email and password become the sign-in details you will use later. This helps
-                    protect your entry from being used by the wrong person.
-                  </div>
-                  <div
-                    style={{
-                      borderRadius: 16,
-                      border: "1px solid rgba(16,37,59,0.10)",
-                      background:
-                        "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
-                      padding: "13px 14px",
-                    }}
-                  >
-                    <strong style={{ color: "#10253B" }}>2. Bank and wallet details.</strong> GSN does
-                    not keep your money. It records the account or wallet you say belongs to you so
-                    future support, repayments, payouts, and trusted financial actions can be matched
-                    to the right person. The phone check protects this record in the background, and
-                    the bank or wallet details become the practical part you fill here.
-                  </div>
-                  <div
-                    style={{
-                      borderRadius: 16,
-                      border: "1px solid rgba(16,37,59,0.10)",
-                      background:
-                        "linear-gradient(180deg, rgba(250,252,254,0.82) 0%, rgba(235,241,247,0.70) 100%)",
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.82), 0 8px 20px rgba(10,24,49,0.06)",
-                      padding: "13px 14px",
-                    }}
-                  >
-                    <strong style={{ color: "#10253B" }}>3. Community setup.</strong> Only after your identity and rails are in
-                    place do we ask for your community name and short story. This keeps the
-                    community tied to a real, explainable founder record and helps the app detect
-                    abnormal changes if someone else tries to take over your flow.
-                  </div>
+                    {guideStepItems.map((item) => {
+                      const isOpen = guideStepOpen === item.key;
+                      return (
+                        <div key={item.key} style={guideDropDownShell(isOpen)}>
+                          <SecondaryButton
+                            aria-expanded={isOpen}
+                            onClick={() =>
+                              setGuideStepOpen((current) =>
+                                current === item.key ? null : item.key
+                              )
+                            }
+                            minWidth="100%"
+                            stableHeight={58}
+                            debugId={`create-entry.guide.${item.key}.toggle`}
+                            style={guideDropDownHeader(isOpen)}
+                          >
+                            <span style={guideStepNumber()}>{item.number}</span>
+                            <span style={{ display: "grid", gap: 2 }}>
+                              <span>{item.title}</span>
+                              <span
+                                style={{
+                                  color: "#60758A",
+                                  fontSize: 12,
+                                  fontWeight: 850,
+                                }}
+                              >
+                                {isOpen ? "Tap to close" : "Tap to read"}
+                              </span>
+                            </span>
+                            <span
+                              aria-hidden="true"
+                              style={{
+                                width: 30,
+                                height: 30,
+                                borderRadius: 999,
+                                display: "grid",
+                                placeItems: "center",
+                                background: isOpen
+                                  ? "rgba(45,106,163,0.14)"
+                                  : "rgba(16,37,59,0.08)",
+                                color: "#173E63",
+                                fontSize: 20,
+                                fontWeight: 1000,
+                                lineHeight: 1,
+                              }}
+                          >
+                              {isOpen ? "-" : "+"}
+                            </span>
+                          </SecondaryButton>
+                          {isOpen ? (
+                            <div
+                              style={{
+                                padding: "13px 14px 15px 54px",
+                                color: "#17324D",
+                                fontSize: 14,
+                                fontWeight: 780,
+                                lineHeight: 1.75,
+                              }}
+                            >
+                              {item.detail}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                   <PrimaryButton
                     onClick={handleGuideDone}
@@ -1621,12 +2170,13 @@ export default function CreateEntryPage() {
                       zIndex: 1,
                     }}
                   >
-                    Done, start Block 1
+                    Done
                   </PrimaryButton>
                 </div>
               </div>
             ) : null}
 
+          </div>
           </div>
 
         </div>
@@ -1634,25 +2184,35 @@ export default function CreateEntryPage() {
         {error ? <div style={feedbackCard(false)}>{error}</div> : null}
         {success ? <div style={feedbackCard(true)}>{success}</div> : null}
 
-        <div style={pageCard()}>
-          <div style={{ display: "grid", gap: 14 }}>
+        <div
+          style={{
+            borderRadius: 18,
+            background:
+              "linear-gradient(180deg, rgba(8,31,53,0.96) 0%, rgba(6,24,39,0.98) 100%)",
+            border: "1px solid rgba(126,164,204,0.20)",
+            padding: 9,
+            opacity: guideDone ? 1 : 0.78,
+            boxShadow: guideDone
+              ? "0 12px 28px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)"
+              : "0 8px 20px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.06)",
+          }}
+        >
+          <div style={{ display: "grid", gap: 8 }}>
             <div
               ref={detailsRef}
               style={stageShell(
-                guideDone && stepProgress.details,
+                guideDone && openPanel !== null,
                 stepProgress.detailsDone
               )}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
+              <SecondaryButton
+                onClick={handleToggleDetailsGroup}
+                fullWidth
+                stableHeight={58}
+                debugId="create-entry.details.toggle"
+                style={stageDropDownHeader(guideDone && openPanel !== null, stepProgress.detailsDone)}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                   <span
                     style={stageBadge(
                       guideDone && stepProgress.details,
@@ -1661,54 +2221,71 @@ export default function CreateEntryPage() {
                   >
                     1
                   </span>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={sectionLabel()}>First block</div>
-                    <div
+                    <span style={{ display: "grid", gap: 3 }}>
+                    <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 1.5, fontSize: 9.5 }}>
+                      First block
+                    </span>
+                    <span
                       style={{
-                        color: "#0B1F33",
-                        fontSize: 22,
+                        color: "#F8FBFF",
+                        fontSize: "clamp(17px, 4.9vw, 21px)",
                         fontWeight: 1000,
                         lineHeight: 1.15,
                       }}
                     >
                       Your details
-                    </div>
+                    </span>
+                  </span>
+                </span>
+                <span style={stageOpenIcon(guideDone && openPanel !== null)}>
+                  {!guideDone ? "!" : openPanel !== null ? "-" : "+"}
+                </span>
+              </SecondaryButton>
+
+              {guideDone && openPanel !== null ? (
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#B9D0E6",
+                    lineHeight: 1.4,
+                    fontSize: "clamp(10.5px, 2.9vw, 12.5px)",
+                    fontWeight: 760,
+                  }}
+                >
+                  Founder identity starts here.
+                </div>
+              ) : !guideDone ? (
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#B9D0E6",
+                    lineHeight: 1.4,
+                    fontSize: "clamp(10.5px, 2.9vw, 12.5px)",
+                    fontWeight: 760,
+                  }}
+                >
+                  Read the guide first.
+                  <div
+                    style={{
+                      marginTop: 6,
+                      borderRadius: 10,
+                      border: "1px solid rgba(126,164,204,0.16)",
+                      background: "rgba(126,164,204,0.08)",
+                      color: "#96AFC7",
+                      minHeight: 27,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      fontSize: 10,
+                      fontWeight: 900,
+                    }}
+                  >
+                    <MiniLineIcon kind="lock" />
+                    Locked
                   </div>
                 </div>
-
-                <SecondaryButton
-                  onClick={() =>
-                    !guideDone
-                      ? setProcedureOpen(true)
-                      : openPanel === "details"
-                      ? setOpenPanel(null)
-                      : handleOpenPanel("details")
-                  }
-                  minWidth={190}
-                  stableHeight={48}
-                  debugId="create-entry.details.toggle"
-                  style={stageToggleBtn(guideDone && openPanel === "details")}
-                >
-                  {!guideDone
-                    ? "Read First"
-                    : openPanel === "details"
-                    ? "Collapse details step"
-                    : "Open details step"}
-                </SecondaryButton>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#5F7287",
-                  lineHeight: 1.7,
-                  fontSize: 14,
-                }}
-              >
-                {guideDone
-                  ? "Street name, phone number, email, and password start the founder identity."
-                  : "Read the short guide first. After you press Done, this first block opens here."}
-              </div>
+              ) : null}
 
               {guideDone && openPanel === "details" ? (
                 <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
@@ -1836,25 +2413,49 @@ export default function CreateEntryPage() {
                   </div>
                 </div>
               ) : null}
-            </div>
+
+              {guideDone && openPanel !== null ? (
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 12,
+                    marginTop: 18,
+                    paddingTop: 16,
+                    borderTop: "1px solid rgba(16,37,59,0.12)",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#8FA7BD",
+                      fontSize: 12,
+                      fontWeight: 950,
+                      letterSpacing: 1.8,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Next parts inside your details
+                  </div>
 
             <div
               ref={verificationRef}
               style={stageShell(
-                stepProgress.verification,
+                openPanel === "verification",
                 stepProgress.verificationDone
               )}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
+              <SecondaryButton
+                onClick={() =>
+                  openPanel === "verification"
+                    ? setOpenPanel(null)
+                    : handleOpenPanel("verification")
+                }
+                disabled={!canOpenVerification}
+                fullWidth
+                stableHeight={74}
+                debugId="create-entry.verification.toggle"
+                style={stageDropDownHeader(openPanel === "verification", stepProgress.verificationDone)}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <span
                     style={stageBadge(
                       stepProgress.verification,
@@ -1863,51 +2464,42 @@ export default function CreateEntryPage() {
                   >
                     2
                   </span>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={sectionLabel()}>Second block</div>
-                    <div
+                  <span style={{ display: "grid", gap: 6 }}>
+                    <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 2.2 }}>
+                      Second block
+                    </span>
+                    <span
                       style={{
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontSize: 22,
                         fontWeight: 1000,
                         lineHeight: 1.15,
                       }}
                     >
                       {verificationBlockTitle}
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                  </span>
+                </span>
+                <span style={stageOpenIcon(openPanel === "verification")}>
+                  {!canOpenVerification ? "!" : openPanel === "verification" ? "-" : "+"}
+                </span>
+              </SecondaryButton>
 
-                <SecondaryButton
-                  onClick={() =>
-                    openPanel === "verification"
-                      ? setOpenPanel(null)
-                      : handleOpenPanel("verification")
-                  }
-                  disabled={!canOpenVerification}
-                  minWidth={220}
-                  stableHeight={48}
-                  debugId="create-entry.verification.toggle"
-                  style={stageToggleBtn(openPanel === "verification")}
+              {openPanel === "verification" ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#B9D0E6",
+                    lineHeight: 1.7,
+                    fontSize: 14,
+                    fontWeight: 760,
+                  }}
                 >
-                  {openPanel === "verification"
-                    ? "Collapse verification step"
-                    : "Open verification step"}
-                </SecondaryButton>
-              </div>
+                  {verificationBlockHelp}
+                </div>
+              ) : null}
 
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#5F7287",
-                  lineHeight: 1.7,
-                  fontSize: 14,
-                }}
-              >
-                {verificationBlockHelp}
-              </div>
-
-              {phoneVerificationProof ? (
+              {openPanel === "verification" && phoneVerificationProof ? (
                 <div
                   style={{
                     ...softCard("#ECFDF5"),
@@ -1997,7 +2589,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {bankRecordProof ? (
+              {openPanel === "verification" && bankRecordProof ? (
                 <div
                   style={{
                     ...softCard("#ECFDF5"),
@@ -2080,7 +2672,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {bankVerificationResult ? (
+              {openPanel === "verification" && bankVerificationResult ? (
                 <div style={{ ...verificationCard(bankVerificationResult.status), marginTop: 14 }}>
                   <div style={sectionLabel()}>Bank verification status</div>
                   <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
@@ -2099,7 +2691,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {licenceVerificationResult ? (
+              {openPanel === "verification" && licenceVerificationResult ? (
                 <div
                   style={{
                     ...verificationCard(licenceVerificationResult.status),
@@ -2449,61 +3041,55 @@ export default function CreateEntryPage() {
               ) : null}
             </div>
 
-            <div ref={communityRef} style={stageShell(stepProgress.community, false)}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
+            <div ref={communityRef} style={stageShell(openPanel === "community", false)}>
+              <SecondaryButton
+                onClick={() =>
+                  openPanel === "community"
+                    ? setOpenPanel(null)
+                    : handleOpenPanel("community")
+                }
+                disabled={!canOpenCommunity}
+                fullWidth
+                stableHeight={74}
+                debugId="create-entry.community.toggle"
+                style={stageDropDownHeader(openPanel === "community", false)}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <span style={stageBadge(stepProgress.community, false)}>3</span>
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={sectionLabel()}>Third block</div>
-                    <div
+                  <span style={{ display: "grid", gap: 6 }}>
+                    <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 2.2 }}>
+                      Third block
+                    </span>
+                    <span
                       style={{
-                        color: "#0B1F33",
+                        color: "#F8FBFF",
                         fontSize: 22,
                         fontWeight: 1000,
                         lineHeight: 1.15,
                       }}
                     >
                       Community setup
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                  </span>
+                </span>
+                <span style={stageOpenIcon(openPanel === "community")}>
+                  {!canOpenCommunity ? "!" : openPanel === "community" ? "-" : "+"}
+                </span>
+              </SecondaryButton>
 
-                <SecondaryButton
-                  onClick={() =>
-                    openPanel === "community"
-                      ? setOpenPanel(null)
-                      : handleOpenPanel("community")
-                  }
-                  disabled={!canOpenCommunity}
-                  minWidth={220}
-                  stableHeight={48}
-                  debugId="create-entry.community.toggle"
-                  style={stageToggleBtn(openPanel === "community")}
+              {openPanel === "community" ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    color: "#B9D0E6",
+                    lineHeight: 1.7,
+                    fontSize: 14,
+                    fontWeight: 760,
+                  }}
                 >
-                  {openPanel === "community"
-                    ? "Collapse community step"
-                    : "Open community step"}
-                </SecondaryButton>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#5F7287",
-                  lineHeight: 1.7,
-                  fontSize: 14,
-                }}
-              >
-                Community name and short story only appear after the identity and rails checks are in place.
-              </div>
+                  Community details come last.
+                </div>
+              ) : null}
 
               {openPanel === "community" ? (
                 <form
@@ -2568,6 +3154,32 @@ export default function CreateEntryPage() {
                 </form>
               ) : null}
             </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div
+            style={{
+              marginTop: 15,
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0, 1fr) auto",
+              alignItems: "center",
+              gap: 9,
+              color: "#B9D0E6",
+            }}
+          >
+            <MiniLineIcon kind="shield" />
+            <div style={{ display: "grid", gap: 3 }}>
+              <div style={{ fontWeight: 900, fontSize: 13.5 }}>
+                Secure setup.
+              </div>
+              <div style={{ color: "#8FA7BD", fontWeight: 760, lineHeight: 1.35, fontSize: 11.5 }}>
+                Your data is protected.
+              </div>
+            </div>
+            <span aria-hidden="true" style={{ color: "#8FA7BD", fontSize: 24, fontWeight: 300 }}>
+              {">"}
+            </span>
           </div>
         </div>
       </div>

@@ -21,9 +21,9 @@ export function buildTrustDocumentUseCaseItems(
     {
       id: "cci",
       question: "How does trust behaviour read across visible communities without the full passport story?",
-      title: "Use CCI for the narrower cross-community read",
+      title: "Use cross-community consistency for the narrower read",
       detail:
-        "Use CCI when the question is the slimmer integrity reading across communities and you do not yet need the full personal trust journey.",
+        "Use cross-community consistency when the question is the slimmer reading across communities and you do not yet need the full personal trust journey.",
       ...mapFamilyItem(byId.get("cci")),
       active: activeId === "cci",
     },
@@ -32,7 +32,7 @@ export function buildTrustDocumentUseCaseItems(
       question: "Who is this person, and what holds steady across trust changes?",
       title: "Start with Identity & Integrity",
       detail:
-        "Use the identity layer when the question is stable ownership, continuity, verification posture, or the narrower CCI context behind trust.",
+        "Use the identity layer when the question is stable ownership, continuity, verification posture, or the narrower consistency context behind trust.",
       ...mapFamilyItem(byId.get("identity")),
       active: activeId === "identity",
     },

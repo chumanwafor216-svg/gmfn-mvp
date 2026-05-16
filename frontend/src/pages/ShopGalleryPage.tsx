@@ -3,9 +3,11 @@ import { useLocation, useParams } from "react-router-dom";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
+  createMarketplaceRepost,
   createMarketplaceShop,
   getAccessToken,
   getCurrentClan,
+  listMyClans,
   getMe,
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
@@ -14,8 +16,8 @@ import {
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
   publicShopBlockUrl,
+  publicShopDiariesUrl,
   publicShopPath,
-  publicShopUrl,
 } from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import {
@@ -50,6 +52,7 @@ type ShopProduct = {
   visibilityMode: string;
   createdAt: string;
   originShopName: string;
+  originClanId: number;
   repostsUsed: number;
   distributionSlotsRemaining: number;
 };
@@ -70,6 +73,11 @@ type ShopBroadcast = {
 };
 
 type NoticeTone = "success" | "error";
+
+type RepostCommunityOption = {
+  id: number;
+  name: string;
+};
 
 const GALLERY_SLOTS_TOTAL = 12;
 const PLACEHOLDER_TEXTS = new Set([
@@ -136,7 +144,7 @@ function publicShopReconnectErrorMessage(message: string): string {
   }
 
   if (isDisconnectedPublicShopError(message)) {
-    return "This public shop link is not connected to an active shop yet. If you are the owner, sign in in this browser; this page will reconnect Shop Diaries automatically as soon as your owner session is available.";
+    return "This public shop link is not connected to an active shop yet. If you are signed in as the owner, this page will reconnect to your current GSN shop and load Shop Diaries automatically.";
   }
 
   return message || "Shop gallery could not be loaded right now.";
@@ -148,7 +156,14 @@ function replacePublicShopAddress(gmfnId: string): void {
   const path = publicShopPath(gmfnId);
   if (!path || window.location.pathname === path) return;
 
-  window.history.replaceState(window.history.state, "", path);
+  const currentSearch = window.location.search || "";
+  const currentHash = window.location.hash || "";
+
+  window.history.replaceState(
+    window.history.state,
+    "",
+    `${path}${currentSearch}${currentHash}`
+  );
 }
 
 function positiveNumber(value: any): number {
@@ -647,6 +662,9 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
       "community_visible",
     createdAt: firstMeaningful(src?.created_at),
     originShopName: firstMeaningful(src?.origin_shop_name, src?.source_shop_name),
+    originClanId: positiveNumber(
+      src?.origin_clan_id || src?.source_clan_id || src?.clan_id
+    ),
     repostsUsed: positiveNumber(src?.reposts_used),
     distributionSlotsRemaining: positiveNumber(
       src?.distribution_slots_remaining || src?.remaining_distribution_slots
@@ -792,6 +810,7 @@ export default function ShopGalleryPage() {
   const communitySpotlightsRef = useRef<ShopBroadcast[]>([]);
   const miniSpotlightIndexRef = useRef(0);
   const galleryRevealFrameRef = useRef<number | null>(null);
+  const galleryRevealTimeoutRefs = useRef<number[]>([]);
   const galleryRevealTargetRef = useRef("");
   const autoRevealDiariesKeyRef = useRef("");
   const [products, setProducts] = useState<ShopProduct[]>([]);
@@ -807,6 +826,12 @@ export default function ShopGalleryPage() {
   const [error, setError] = useState<string>("");
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
+  const [repostPanelOpen, setRepostPanelOpen] = useState(false);
+  const [repostCommunities, setRepostCommunities] = useState<RepostCommunityOption[]>([]);
+  const [repostCommunitiesLoading, setRepostCommunitiesLoading] = useState(false);
+  const [selectedRepostProductId, setSelectedRepostProductId] = useState<number>(0);
+  const [selectedRepostClanId, setSelectedRepostClanId] = useState<number>(0);
+  const [repostingProduct, setRepostingProduct] = useState(false);
   const autoRefreshAttemptedRef = useRef("");
 
   useEffect(() => {
@@ -831,6 +856,49 @@ export default function ShopGalleryPage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!repostPanelOpen) return;
+    if (!getAccessToken()) return;
+
+    let alive = true;
+    setRepostCommunitiesLoading(true);
+
+    listMyClans()
+      .then((res) => {
+        if (!alive) return;
+        const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+        const options = rows
+          .map((row: any) => {
+            const id = positiveNumber(row?.id || row?.clan_id || row?.community_id);
+            const name = firstMeaningful(
+              row?.marketplace_name,
+              row?.name,
+              row?.display_name,
+              id ? `Community ${id}` : ""
+            );
+            return id && name ? { id, name } : null;
+          })
+          .filter(Boolean) as RepostCommunityOption[];
+
+        setRepostCommunities(options);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setRepostCommunities([]);
+        setNotice({
+          tone: "error",
+          text: "Could not load your communities for live repost. Sign in again and try from inside GSN.",
+        });
+      })
+      .finally(() => {
+        if (alive) setRepostCommunitiesLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [repostPanelOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -979,13 +1047,7 @@ export default function ShopGalleryPage() {
         return "";
       }
 
-      if (!identityMatches(ownerGmfnId, cleanedGmfnId)) {
-        throw new Error(
-          `This public shop link belongs to ${cleanedGmfnId}, but this browser is signed in as ${ownerGmfnId}. Sign in as ${cleanedGmfnId}, or open your current public shop link from Marketplace.`
-        );
-      }
-
-      const clanId = positiveNumber(
+      const preferredClanId = positiveNumber(
         clanRes?.id || clanRes?.clan_id || getSelectedClanId()
       );
       const ownerName = firstMeaningful(
@@ -994,8 +1056,7 @@ export default function ShopGalleryPage() {
         ownerGmfnId,
         "GSN owner"
       );
-      await createMarketplaceShop({
-        clan_id: clanId || null,
+      const basePayload = {
         name: firstMeaningful(
           clanRes?.marketplace_name,
           clanRes?.name ? `${clanRes.name} Shop` : "",
@@ -1003,7 +1064,43 @@ export default function ShopGalleryPage() {
           "GSN Shop"
         ),
         description: "Public GSN shop face for trusted products.",
-      });
+      };
+      const candidateClanIds = [preferredClanId, 0];
+
+      try {
+        const clanRows = rowsOf<any>(await listMyClans().catch(() => []));
+        for (const row of clanRows) {
+          candidateClanIds.push(
+            positiveNumber(row?.id || row?.clan_id || row?.community_id)
+          );
+        }
+      } catch {
+        // The owner reconnect can still use backend default membership.
+      }
+
+      let lastCreateError: any = null;
+      for (const clanId of Array.from(new Set(candidateClanIds)).filter(
+        (id) => id >= 0
+      )) {
+        try {
+          await createMarketplaceShop({
+            clan_id: clanId || null,
+            ...basePayload,
+          });
+          lastCreateError = null;
+          break;
+        } catch (err: any) {
+          lastCreateError = err;
+          const message = safeStr(err?.message);
+          const canTryAnotherCommunity =
+            /no active clan selected|not an active member|community|clan/i.test(
+              message
+            );
+          if (!canTryAnotherCommunity) break;
+        }
+      }
+
+      if (lastCreateError) throw lastCreateError;
 
       return ownerGmfnId;
     }
@@ -1089,7 +1186,32 @@ export default function ShopGalleryPage() {
       window.cancelAnimationFrame(galleryRevealFrameRef.current);
       galleryRevealFrameRef.current = null;
     }
+    galleryRevealTimeoutRefs.current.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    galleryRevealTimeoutRefs.current = [];
   }, []);
+
+  const scrollGalleryTargetIntoView = useCallback(
+    function scrollGalleryTargetIntoView(targetId: string) {
+      if (typeof document === "undefined" || typeof window === "undefined") return;
+      const target = document.getElementById(targetId);
+      if (!target) return;
+
+      const topNavOffset = Math.min(
+        92,
+        Math.max(12, Math.round((window.innerHeight || 0) * 0.07))
+      );
+      const targetTop =
+        target.getBoundingClientRect().top + window.scrollY - topNavOffset;
+
+      window.scrollTo({
+        top: Math.max(0, targetTop),
+        behavior: "auto",
+      });
+    },
+    []
+  );
 
   const revealGalleryTarget = useCallback(function revealGalleryTarget(
     targetId: string,
@@ -1100,9 +1222,18 @@ export default function ShopGalleryPage() {
     const target = document.getElementById(targetId);
     if (target) {
       cancelPendingGalleryReveal();
-      target.scrollIntoView({
-        behavior: "auto",
-        block: "start",
+      galleryRevealTargetRef.current = targetId;
+      scrollGalleryTargetIntoView(targetId);
+      window.requestAnimationFrame(() => {
+        if (galleryRevealTargetRef.current !== targetId) return;
+        scrollGalleryTargetIntoView(targetId);
+      });
+      [120, 320, 700, 1100].forEach((delay) => {
+        const timeoutId = window.setTimeout(() => {
+          if (galleryRevealTargetRef.current !== targetId) return;
+          scrollGalleryTargetIntoView(targetId);
+        }, delay);
+        galleryRevealTimeoutRefs.current.push(timeoutId);
       });
       return;
     }
@@ -1115,7 +1246,7 @@ export default function ShopGalleryPage() {
         revealGalleryTarget(targetId, attempt + 1);
       });
     }
-  }, [cancelPendingGalleryReveal]);
+  }, [cancelPendingGalleryReveal, scrollGalleryTargetIntoView]);
 
   useEffect(() => {
     miniSpotlightIndexRef.current = miniSpotlightIndex;
@@ -1287,6 +1418,37 @@ export default function ShopGalleryPage() {
     [products, showAllProducts]
   );
   const overflowProductCount = Math.max(0, products.length - GALLERY_SLOTS_TOTAL);
+  const repostableProducts = useMemo(() => {
+    return products.filter((product) => {
+      return (
+        positiveNumber(product.id) > 0 &&
+        product.visibilityMode === "community_visible" &&
+        product.distributionSlotsRemaining > 0
+      );
+    });
+  }, [products]);
+  const selectedRepostProduct = useMemo(() => {
+    return (
+      repostableProducts.find(
+        (product) => Number(product.id || 0) === Number(selectedRepostProductId || 0)
+      ) ||
+      repostableProducts[0] ||
+      null
+    );
+  }, [repostableProducts, selectedRepostProductId]);
+  const targetRepostCommunities = useMemo(() => {
+    const originClanId = positiveNumber(selectedRepostProduct?.originClanId);
+    return repostCommunities.filter((community) => community.id !== originClanId);
+  }, [repostCommunities, selectedRepostProduct?.originClanId]);
+  const selectedRepostCommunity = useMemo(() => {
+    return (
+      targetRepostCommunities.find(
+        (community) => community.id === Number(selectedRepostClanId || 0)
+      ) ||
+      targetRepostCommunities[0] ||
+      null
+    );
+  }, [targetRepostCommunities, selectedRepostClanId]);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -1341,7 +1503,7 @@ export default function ShopGalleryPage() {
 
   const absoluteShopLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
-    return ownerId ? publicShopUrl(ownerId) : "";
+    return ownerId ? publicShopDiariesUrl(ownerId) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
   const shopLoadFailed = Boolean(error);
@@ -1549,13 +1711,108 @@ export default function ShopGalleryPage() {
       return;
     }
 
+    if (!getAccessToken()) {
+      const copied = await safeCopy(
+        `GSN network repost draft:\n${shopNameText}\n${shopDescriptionText}\n${absoluteShopLink}`
+      );
+      setNotice({
+        tone: copied ? "success" : "error",
+        text: copied
+          ? "Draft copied. Sign in to complete a live GSN repost into another community."
+          : "Sign in to repost inside GSN, or use Share for an outside link.",
+      });
+      return;
+    }
+
+    if (repostableProducts.length === 0) {
+      setNotice({
+        tone: "error",
+        text: "No public block currently has repost slots available.",
+      });
+      return;
+    }
+
+    setRepostPanelOpen((open) => !open);
+    setSelectedRepostProductId((current) => {
+      if (current > 0 && repostableProducts.some((product) => product.id === current)) {
+        return current;
+      }
+      return positiveNumber(repostableProducts[0]?.id);
+    });
+  }
+
+  async function submitLiveRepost() {
+    const product = selectedRepostProduct;
+    const targetCommunity = selectedRepostCommunity;
+
+    if (!product?.id) {
+      setNotice({
+        tone: "error",
+        text: "Choose a public block before reposting.",
+      });
+      return;
+    }
+
+    if (!targetCommunity?.id) {
+      setNotice({
+        tone: "error",
+        text: "Choose one of your communities as the repost destination.",
+      });
+      return;
+    }
+
+    setRepostingProduct(true);
+    try {
+      const res = await createMarketplaceRepost({
+        product_id: Number(product.id),
+        target_clan_id: Number(targetCommunity.id),
+      });
+      const remaining = positiveNumber(
+        res?.product?.distribution_slots_remaining ||
+          res?.product?.remaining_distribution_slots ||
+          product.distributionSlotsRemaining - 1
+      );
+      setProducts((prev) =>
+        prev.map((item) =>
+          Number(item.id || 0) === Number(product.id)
+            ? {
+                ...item,
+                distributionSlotsRemaining: Math.max(0, remaining),
+                repostsUsed: item.repostsUsed + 1,
+              }
+            : item
+        )
+      );
+      setNotice({
+        tone: "success",
+        text: `${publicShopBlockLabel(product)} reposted into ${targetCommunity.name}.`,
+      });
+      setRepostPanelOpen(false);
+    } catch (err: any) {
+      setNotice({
+        tone: "error",
+        text:
+          safeStr(err?.message) ||
+          "Live repost did not complete. Check membership, target community, and remaining slots.",
+      });
+    } finally {
+      setRepostingProduct(false);
+    }
+  }
+
+  async function copyRepostDraft() {
+    const product = selectedRepostProduct || repostableProducts[0];
+    const blockText = product
+      ? `${publicShopBlockLabel(product)} - ${productDisplayTitle(product)}`
+      : shopNameText;
+
     const copied = await safeCopy(
-      `GSN network repost:\n${shopNameText}\n${shopDescriptionText}\n${absoluteShopLink}`
+      `GSN network repost draft:\n${blockText}\n${shopDescriptionText}\n${absoluteShopLink}`
     );
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
-        ? "GSN repost pack copied for sharing inside the network."
+        ? "Network repost draft copied. A live repost still needs a product and target community inside GSN."
         : "Clipboard copy was blocked. Use the visible public shop link instead.",
     });
   }
@@ -1871,6 +2128,188 @@ export default function ShopGalleryPage() {
             {isCompact ? "Copy link" : "Copy link"}
           </SecondaryButton>
         </div>
+
+        {repostPanelOpen ? (
+          <section
+            className="public-shop-section"
+            style={{
+              ...innerCard("#F8FBFF"),
+              display: "grid",
+              gap: isCompact ? 10 : 12,
+            }}
+            aria-label="Live GSN repost"
+          >
+            <div>
+              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
+                Live GSN repost
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#0B1F33",
+                  fontSize: isCompact ? 15 : 18,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                Send one public block into another community.
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#526C84",
+                  fontSize: isCompact ? 10.5 : 12.5,
+                  lineHeight: 1.35,
+                  fontWeight: 700,
+                }}
+              >
+                This is inside GSN. Outside sharing still uses the Share button.
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: isCompact ? 8 : 10,
+              }}
+            >
+              <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
+                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Public block</span>
+                <select
+                  value={String(selectedRepostProduct?.id || "")}
+                  onChange={(event) => setSelectedRepostProductId(Number(event.target.value || 0))}
+                  style={{
+                    minHeight: isCompact ? 42 : 46,
+                    borderRadius: 14,
+                    border: "1px solid rgba(13,95,168,0.20)",
+                    background: "#FFFFFF",
+                    color: "#0B1F33",
+                    fontWeight: 800,
+                    padding: "8px 10px",
+                    width: "100%",
+                  }}
+                >
+                  {repostableProducts.map((product) => (
+                    <option key={`repost-product-${product.id}`} value={product.id}>
+                      {publicShopBlockLabel(product)} - {productDisplayTitle(product)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
+                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Target community</span>
+                <select
+                  value={String(selectedRepostCommunity?.id || "")}
+                  onChange={(event) => setSelectedRepostClanId(Number(event.target.value || 0))}
+                  disabled={repostCommunitiesLoading || targetRepostCommunities.length === 0}
+                  style={{
+                    minHeight: isCompact ? 42 : 46,
+                    borderRadius: 14,
+                    border: "1px solid rgba(13,95,168,0.20)",
+                    background: "#FFFFFF",
+                    color: "#0B1F33",
+                    fontWeight: 800,
+                    padding: "8px 10px",
+                    width: "100%",
+                  }}
+                >
+                  {targetRepostCommunities.length === 0 ? (
+                    <option value="">
+                      {repostCommunitiesLoading
+                        ? "Loading your communities..."
+                        : "No eligible target community"}
+                    </option>
+                  ) : (
+                    targetRepostCommunities.map((community) => (
+                      <option key={`repost-community-${community.id}`} value={community.id}>
+                        {community.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
+            </div>
+
+            {selectedRepostProduct ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: isCompact ? 7 : 8,
+                  color: "#526C84",
+                  fontSize: isCompact ? 10.5 : 12,
+                  fontWeight: 800,
+                }}
+              >
+                <span style={badge(true)}>
+                  {selectedRepostProduct.distributionSlotsRemaining} slots left
+                </span>
+                <span style={badge(true)}>
+                  {selectedRepostProduct.repostsUsed} reposts used
+                </span>
+                <span style={badge(Boolean(selectedRepostCommunity))}>
+                  {selectedRepostCommunity ? "Target ready" : "Target needed"}
+                </span>
+              </div>
+            ) : null}
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: isCompact ? 7 : 10,
+              }}
+            >
+              <PrimaryButton
+                onClick={submitLiveRepost}
+                minWidth={0}
+                stableHeight={isCompact ? 42 : 48}
+                busy={repostingProduct}
+                disabled={
+                  repostingProduct ||
+                  !selectedRepostProduct ||
+                  !selectedRepostCommunity ||
+                  repostCommunitiesLoading
+                }
+                debugId="shop-gallery.repost-submit"
+                style={{
+                  ...primaryBtn(
+                    repostingProduct ||
+                      !selectedRepostProduct ||
+                      !selectedRepostCommunity ||
+                      repostCommunitiesLoading
+                  ),
+                  minHeight: isCompact ? 42 : 48,
+                  borderRadius: 14,
+                  fontSize: isCompact ? 11.2 : 13,
+                }}
+              >
+                {repostingProduct ? "Reposting..." : "Repost inside GSN"}
+              </PrimaryButton>
+
+              <SecondaryButton
+                onClick={copyRepostDraft}
+                minWidth={0}
+                stableHeight={isCompact ? 42 : 48}
+                debugId="shop-gallery.repost-copy-draft"
+                style={{
+                  ...secondaryBtn(false),
+                  minHeight: isCompact ? 42 : 48,
+                  borderRadius: 14,
+                  fontSize: isCompact ? 11.2 : 13,
+                }}
+              >
+                Copy draft instead
+              </SecondaryButton>
+            </div>
+          </section>
+        ) : null}
 
         {absoluteShopLink && shopLoadFailed ? (
           <span

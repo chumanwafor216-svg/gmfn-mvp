@@ -1036,7 +1036,7 @@ export default function MyGMFNAndIPage() {
             >
               {isAppRoute ? (
                 <>
-                  <span style={badge(true)}>GMFN ID: {gmfnId}</span>
+                  <span style={badge(true)}>GSN ID: {gmfnId}</span>
                   <span style={badge(false)}>Community: {communityLabel}</span>
                 </>
               ) : (

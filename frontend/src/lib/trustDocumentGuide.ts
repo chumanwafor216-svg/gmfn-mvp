@@ -13,9 +13,9 @@ export function buildIdentityIntegrityGuideItems(): NextActionGuideItem[] {
     },
     {
       id: "cci",
-      label: "Open CCI",
+      label: "Open consistency reading",
       detail:
-        "Go to CCI when you want the cross-community integrity reading by itself without staying inside the wider identity surface.",
+        "Go here when you want the cross-community consistency reading by itself without staying inside the wider identity surface.",
       to: "/app/cci-reading",
       keywords: ["cci", "cross-community", "integrity", "reading"],
       tone: "secondary",
@@ -38,7 +38,7 @@ export function buildCciGuideItems(): NextActionGuideItem[] {
       id: "identity",
       label: "Open Identity & Integrity",
       detail:
-        "Use the wider identity route when you want the fuller verification, continuity, and integrity story around this CCI reading.",
+        "Use the wider identity route when you want the fuller verification, continuity, and identity story around this consistency reading.",
       to: "/app/identity",
       keywords: ["identity", "integrity", "verification", "continuity", "cci"],
       tone: "primary",
@@ -88,7 +88,7 @@ export function buildTrustSlipGuideItems(): NextActionGuideItem[] {
       id: "identity",
       label: "Open Identity & Integrity",
       detail:
-        "Open Identity & Integrity when you want the wider verification and CCI context that sits behind the portable trust summary.",
+        "Open Identity & Integrity when you want the wider verification and consistency context that sits behind the portable trust summary.",
       to: "/app/identity",
       keywords: ["identity", "integrity", "cci", "verification"],
       tone: "soft",
@@ -129,7 +129,7 @@ export function buildTrustSlipVerifyGuideItems(
       id: "identity",
       label: "Open Identity & Integrity",
       detail:
-        "Use Identity & Integrity when you want the wider CCI, verification, and continuity reading behind the same trust story.",
+        "Use Identity & Integrity when you want the wider consistency, verification, and continuity reading behind the same trust story.",
       to: "/app/identity",
       keywords: ["identity", "integrity", "cci", "verification"],
       tone: "soft",

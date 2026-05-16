@@ -1,3 +1,1973 @@
+### System-level mobile tap stability repair (2026-05-16)
+
+- Applied a shared, system-level button/tap hardening pass before continuing
+  Community Confirmation checks.
+- Root cause addressed:
+  - the existing stable tap layer guarded pointer-down, mouse-down, and click;
+  - it did not guard pointer-up everywhere;
+  - child text/icon elements inside stable CTAs could still become the mobile
+    hit target, which can make taps feel jumpy or fall through to nearby parent
+    card handlers.
+- Updated:
+  - `frontend/src/components/StableButton.tsx`
+    - `StableButton` now stops pointer-up propagation as well as pointer-down.
+    - `StableDisclosureSummary` now stops pointer-up propagation.
+  - `frontend/src/components/OriginLink.tsx`
+    - internal and external links now guard pointer-up as well as pointer-down,
+      mouse-down, and click.
+  - `frontend/src/styles/gmfnBrand.ts`
+    - `actionTapGuardProps()` now includes `onPointerUp`.
+  - `frontend/src/index.css`
+    - stable CTA children under `data-cta-id` no longer steal the tap target
+      from the parent button/link/summary.
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - audits now protect this exact repair.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx src/components/OriginLink.tsx src/styles/gmfnBrand.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - This is the right system-level repair for tap fall-through/jumpy stable
+    CTAs. It cannot fix every page that still uses old raw controls or custom
+    clickable cards, but it strengthens the shared path used by the audited
+    pages.
+
+### Loans page mobile button sizing pass (2026-05-16)
+
+- Tightened the `/app/loans` route-card buttons for phone screens after the
+  owner asked for button size to respect the mobile viewport.
+- Updated `frontend/src/pages/LoansPage.tsx`:
+  - route-card buttons now use a compact phone style while keeping stable tap
+    targets;
+  - mobile route tiles use 66px stable height instead of the desktop 88px;
+  - mobile route tiles use smaller icon circles, tighter padding, and smaller
+    route title text;
+  - secondary helper lines are hidden on compact screens so the buttons do not
+    feel oversized or wordy on phone;
+  - desktop route tiles keep the existing 88px presentation.
+- Verification:
+  - `npm exec -- eslint src/pages/LoansPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - This fixes the obvious mobile button-size heaviness on the Loans route
+    grid. It does not globally resize every button across the whole app.
+
+### Loans button route audit guard (2026-05-16)
+
+- Tightened the automated button/link audit around `/app/loans` after the
+  phone screenshot showed button and layout instability.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - asserts the canonical authenticated Loans/support route constants still
+    point to `/app/loans`, `/app/loan-readiness`, `/app/loan-suggestions`,
+    `/app/loan-workbench`, `/app/guarantor-inbox`, and
+    `/app/guarantor-earnings`;
+  - asserts `App.tsx` still has real nested routes for Loans, readiness,
+    suggestions, workbench, guarantor earnings, and guarantor inbox;
+  - asserts the Loans page route map does not drift to Cover, Dashboard, or
+    Action Inbox by mistake.
+- Confirmed route intent:
+  - `Start Support Request` currently routes to
+    `/app/marketplace#marketplace-loans-support` because the support request
+    entry lives inside the Marketplace support section.
+  - That is a product choice, not an accidental fall-through. If the intended
+    destination changes, the audit should be updated deliberately.
+- Verification:
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - These audits prove configured routes and link contracts. They do not prove
+    that every physical phone tap feels perfect under real touch conditions.
+    A manual phone pass is still needed for final confidence.
+
+### Loans page mobile grid repair (2026-05-16)
+
+- Repaired the visible phone layout failure on `/app/loans`.
+- Root cause:
+  - `frontend/src/pages/LoansPage.tsx` forced the live support module cards into
+    a three-column grid even when `isCompact` was true.
+  - On a phone, each card's text column became so narrow that words rendered as
+    one-character vertical stacks.
+- Updated `frontend/src/pages/LoansPage.tsx`:
+  - support summary tiles use two columns on compact screens instead of three;
+  - pool summary spans the full compact width;
+  - live support module cards use one full-width column on compact screens;
+  - queues/flows use one full-width column on compact screens;
+  - route titles now allow normal word wrapping instead of forcing unreadable
+    squeezed columns.
+- Verification:
+  - `npm exec -- eslint src/pages/LoansPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - This fixes the severe one-letter-column failure. It does not yet redesign
+    the whole Loans page or replace the emoji-like icons.
+
+### Backend and PDF GSN ID wording cleanup (2026-05-16)
+
+- Continued the same brand cleanup beyond React pages into generated messages
+  and PDFs.
+- Updated:
+  - `gmfn_backend/app/api/routes/auth.py`
+    - activation/member-facing error text now says `GSN ID`.
+  - `gmfn_backend/app/api/routes/clans.py`
+    - join/approval/activation messages now say `GSN identity`, `GSN ID`,
+      and `GSN membership`.
+  - `gmfn_backend/app/services/global_identity_service.py`
+    - generation failure message now says `GSN ID`.
+  - `gmfn_backend/app/services/trust_timeline_pdf_service.py`
+  - `gmfn_backend/app/services/trust_slip_evidence_pdf_service.py`
+    - generated PDF labels now say `GSN ID`.
+  - `frontend/src/components/TrustGraphAdminPage.tsx`
+    - old duplicate admin component visible text now matches the newer page:
+      `GSN ID` and `consistency`, with `CCI` explained as internal.
+- Verification:
+  - `npm exec -- eslint src/components/TrustGraphAdminPage.tsx` passed.
+  - `python -m py_compile gmfn_backend/app/api/routes/auth.py gmfn_backend/app/api/routes/clans.py gmfn_backend/app/services/global_identity_service.py gmfn_backend/app/services/trust_timeline_pdf_service.py gmfn_backend/app/services/trust_slip_evidence_pdf_service.py` passed.
+  - `python -m pytest gmfn_backend/tests/test_join_requests.py -q` passed.
+  - `python -m pytest gmfn_backend/tests/test_entry_create.py -q` passed.
+  - `python -m pytest gmfn_backend/tests/test_clan_members.py -q` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - The codebase still has internal `gmfn_id` fields and `CCI` route keys.
+    That is deliberate. Those are contracts, not reader-facing labels.
+
+### Reader-facing GSN ID and consistency label cleanup (2026-05-16)
+
+- Continued the long-haul trust-language cleanup into remaining safe
+  frontend surfaces.
+- Updated reader-facing copy in:
+  - `frontend/src/lib/firstCircle.ts`
+    - invite message now says `GSN ID` instead of `GMFN ID`.
+  - `frontend/src/lib/api.ts`
+    - empty ID error now says `GSN ID is required`; internal function and
+      field names stay unchanged.
+  - `frontend/src/lib/dashboardUserGuidance.ts`
+    - trust/identity CTAs now use calmer sentence-case labels.
+  - `frontend/src/pages/JoinEntryPage.tsx`
+    - friendly join error still recognises the old backend phrase but also
+      recognises the new `GSN identity` phrase.
+  - `frontend/src/pages/ExposurePage.tsx`
+    - visible admin labels now say `consistency` instead of leading with
+      `CCI`.
+  - `frontend/src/pages/TrustGraphAdminPage.tsx`
+    - visible ID labels now say `GSN ID`; CCI is described as the internal
+      metric name.
+- Verification:
+  - `npm exec -- eslint src/lib/firstCircle.ts src/lib/api.ts src/lib/dashboardUserGuidance.ts src/pages/JoinEntryPage.tsx` passed.
+  - `npm exec -- eslint src/pages/ExposurePage.tsx src/pages/TrustGraphAdminPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - I did not rename route constants, function names, API fields, or internal
+    `cci`/`gmfn_id` contracts. Those names are still present because changing
+    them now would create a much bigger backend/frontend migration risk.
+
+### Local trust / wider consistency wording pass (2026-05-16)
+
+- Continued the long trust-document cleanup into the signed-in identity,
+  local trust, dashboard guidance, and trust navigation surfaces.
+- Updated:
+  - `frontend/src/pages/OpenTrustPage.tsx`
+    - user-facing title now reads `Local community trust`.
+    - pending/empty states explain that this is the current-community reading,
+      separate from wider cross-community consistency.
+    - visible band output now uses shared `D - Needs attention` style labels
+      and adds the shared plain-language band meaning.
+  - `frontend/src/pages/IdentityIntegrityPage.tsx`
+    - identity summary now shows `GSN ID` in user-facing copy while leaving
+      internal ids and variables alone.
+    - `Open Trust`/`CCI` reader-facing blocks now read as `Local community
+      trust` and `Cross-community consistency`.
+    - both readings now show shared band labels and plain-language meanings
+      instead of naked letters only.
+  - `frontend/src/lib/dashboardUserGuidance.ts`
+    - dashboard explanation strings now say local trust / wider consistency
+      instead of asking ordinary users to understand `CCI`.
+  - `frontend/src/lib/dashboardAppUsage.ts`
+  - `frontend/src/pages/DashboardPage.tsx`
+  - `frontend/src/pages/TrustPage.tsx`
+  - `frontend/src/pages/TrustLeaderboardPage.tsx`
+    - light navigation/label cleanup so trust buttons and compact tiles no
+      longer lead with `CCI` or `Open Trust` where plain wording is clearer.
+- Verification:
+  - `npm exec -- eslint src/pages/IdentityIntegrityPage.tsx src/pages/OpenTrustPage.tsx` passed.
+  - `npm exec -- eslint src/lib/dashboardUserGuidance.ts src/lib/dashboardAppUsage.ts` passed.
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/TrustPage.tsx src/pages/TrustLeaderboardPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - I did not rename route constants, API fields, database models, or internal
+    variables named `cci`/`openTrust`; that would be a risky contract change.
+  - Admin/analytics surfaces still contain technical labels where they are
+    expected. The ordinary-reader surfaces now carry the clearer wording.
+
+### Trust document consistency-language and public paper cleanup (2026-05-16)
+
+- Continued the long TrustSlip / Trust Passport cleanup after the snapshot
+  wording pass.
+- Updated frontend trust-document wording:
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Trust Passport surface card now says `Cross-community consistency`
+      instead of leading with `CCI`.
+    - CTA now says `View consistency reading`.
+  - `frontend/src/pages/CCIReadingPage.tsx`
+    - the page now leads with `Cross-community consistency`.
+    - `CCI` is kept only as the internal label in helper text.
+    - snapshot and use-case wording now says `consistency` instead of asking
+      ordinary readers to understand the acronym first.
+  - `frontend/src/lib/trustDocumentGuide.ts`
+  - `frontend/src/lib/trustDocumentUseCases.ts`
+  - `frontend/src/lib/trustDocumentFamilyMap.ts`
+  - `frontend/src/lib/trustDocumentActionGuide.ts`
+    - shared trust-document guide language now uses `local trust`, `wider
+      consistency`, and `GSN ID` in reader-facing copy.
+- Updated backend public TrustSlip verify paper:
+  - `gmfn_backend/app/api/routes/trust_slips.py`
+    - added band explanation helper so public paper can show `D - Needs
+      attention` instead of a naked grade.
+    - public page now labels the wider consistency row as
+      `Cross-community consistency`.
+    - removed the masked holder email row from the public paper.
+    - changed `Merchant Verify` row to `Public verify access`, which is less
+      confusing for an outside reader.
+    - added clear `Not a bank guarantee` and `No auto-debit` rows.
+- Verification:
+  - `npm exec -- eslint src/pages/CCIReadingPage.tsx src/pages/TrustScorePage.tsx src/lib/trustDocumentGuide.ts src/lib/trustDocumentUseCases.ts src/lib/trustDocumentFamilyMap.ts src/lib/trustDocumentActionGuide.ts` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `python -m py_compile gmfn_backend/app/api/routes/trust_slips.py` passed.
+  - `python -m pytest gmfn_backend/tests/test_community_confirmation_relay.py -q` passed.
+  - `python -m pytest gmfn_backend/tests/test_focus_commitment_trust_events.py -q` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - This still does not finish every old `CCI` occurrence across the whole
+    app, especially admin/deeper analytics areas.
+  - It does clean the trust-document surfaces most likely to face ordinary
+    readers and public TrustSlip verification.
+
+### Trust document snapshot wording alignment (2026-05-16)
+
+- Continued the human-first TrustSlip / Trust Passport cleanup into copied
+  snapshot text and private verify detail.
+- Updated:
+  - `frontend/src/lib/trustDocumentSnapshots.ts`
+    - copied/exported snapshot text now says `Local community trust` instead
+      of `Open Trust`.
+    - copied/exported snapshot text now says `Cross-community consistency`
+      instead of naked `CCI`.
+    - CCI snapshot title now reads `GSN cross-community consistency snapshot`.
+    - TrustSlip snapshot now labels the CCI band as
+      `Cross-community consistency band`.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+    - private evidence drawer now labels the section as
+      `Cross-community consistency / sponsor signal`.
+    - the internal acronym is explained as an internal label rather than being
+      the first thing the reader sees.
+- Verification:
+  - `npm exec -- eslint src/lib/trustDocumentSnapshots.ts src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - This is not a visual change, but it matters because copied trust documents
+    are part of what people actually forward.
+  - The exported wording now better matches the product rule: explain the
+    human meaning first, then carry technical labels as secondary context.
+
+### TrustSlip page language alignment (2026-05-16)
+
+- Continued the same trust-language cleanup into the signed-in TrustSlip page.
+- Updated `frontend/src/pages/TrustSlipPage.tsx`:
+  - Imports the shared trust-band and evidence-depth helpers.
+  - Shows the shared short band label beside the visible TrustSlip grade.
+  - Replaces public-facing `CCI` wording in the main TrustSlip reading with
+    `cross-community consistency`, while keeping a small note that CCI is the
+    internal label.
+  - Evidence-depth text now starts from the shared evidence-depth language
+    (`Strong evidence`, `Mixed evidence`, `Limited evidence`, or
+    `Building history`) before listing sponsors, active communities, and
+    counterparties.
+  - Evidence-depth counting now treats non-numeric backend values as zero
+    instead of accidentally turning them into misleading evidence strength.
+  - TrustSlip decision summary now says `D - Needs attention` style wording
+    instead of showing a naked letter only.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/lib/trustBandLanguage.ts src/lib/trustPassportViewModel.ts src/components/TrustBandMeaningGuide.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - This is language and interpretation alignment, not a full visual rebuild.
+  - The TrustSlip page is still a large page, but its most important public
+    decision language now matches the Trust Passport / Verify direction better.
+
+### Shared trust evidence-depth language (2026-05-16)
+
+- Continued the long TrustSlip / Trust Passport cleanup by centralizing the
+  plain-language treatment of evidence depth.
+- Updated:
+  - `frontend/src/lib/trustBandLanguage.ts`
+    - added `TrustEvidenceStatus`
+    - added `TrustEvidenceLanguage`
+    - added `TRUST_EVIDENCE_LANGUAGE`
+    - added `normalizeTrustEvidenceStatus()`
+    - added `getTrustEvidenceLanguage()`
+    - special-cases low-data records as `Building history` so thin evidence is
+      not presented as misconduct.
+  - `frontend/src/lib/trustPassportViewModel.ts`
+    - Trust Passport verdict now uses the shared A-E short labels.
+    - Trust Passport verdict now carries shared evidence-depth label/meaning.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - Evidence-depth pill now shows the human label, for example
+      `Building history` or `Limited evidence`, rather than the raw lower-case
+      status.
+  - `frontend/src/components/TrustBandMeaningGuide.tsx`
+    - Grade guide now uses the same short A-E labels as TrustSlip and Trust
+      Passport.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - TrustSlip Verify now derives public evidence wording from the shared
+      evidence-depth helper.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - Visible score tile now shows the shared evidence label instead of a
+      hardcoded confidence sentence.
+- Verification:
+  - `npm exec -- eslint src/lib/trustBandLanguage.ts src/lib/trustPassportViewModel.ts src/components/TrustBandMeaningGuide.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`,
+    `npm run audit:route-fallthrough`, and `npm run audit:link-contracts`
+    passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Blunt truth:
+  - This does not finish the whole trust-language system.
+  - It does remove another drift point: low data, evidence depth, and A-E grade
+    wording are now less likely to contradict each other across Trust Passport
+    and TrustSlip Verify.
+
+### Shared trust band short labels (2026-05-16)
+
+- Centralized the short A-E trust-band labels instead of leaving each trust page to define its own mini scale.
+- Updated:
+  - `frontend/src/lib/trustBandLanguage.ts`
+    - added `TRUST_BAND_SHORT_LABELS`
+    - added `getTrustBandShortLabel()`
+  - `frontend/src/pages/TrustSlipPage.tsx`
+    - replaced local TrustSlip grade legend with the shared labels.
+  - `frontend/src/pages/TrustScorePage.tsx`
+    - replaced local Trust Passport grade legend with the shared labels.
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+    - maps the visible TrustSlip band to the shared short label and next-step meaning.
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    - shows the shared short band label and compact implication under the visible grade instead of a hardcoded generic evidence line.
+- Verification:
+  - `npm exec -- eslint src/lib/trustBandLanguage.ts src/pages/TrustSlipPage.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyData.ts src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is a small but important consistency change.
+  - It does not yet make every Trust page use the same full implication/explanation card, but it stops the core A-E short wording from drifting.
+
+### TrustSlip Verify data/view-model extraction (2026-05-16)
+
+- Continued the long TrustSlip Verify cleanup by moving route-local data shaping out of the page.
+- Added:
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`
+  - `frontend/src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts`
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - Removed the large inline TrustSlip normalization function.
+  - Removed the inline verification-banner decision logic.
+  - Removed most of the inline raw-field-to-human-reading transformation.
+  - The page now coordinates loading, routing, stable audited buttons, notices, and component composition.
+  - The data module now owns raw API normalization and verify-banner status rules.
+  - The view-model module now owns the public/private TrustSlip human-readable fields, decision questions, validity labels, community confirmation rows, and public verify URL.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/trustSlipVerifyData.ts src/pages/trustSlipVerify/trustSlipVerifyViewModel.ts src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is not a visual redesign, but it is an important stability cleanup.
+  - `TrustSlipVerifyPage.tsx` is still long because the audit-required stable action buttons and page shell remain there.
+  - The next honest cleanup target is shared TrustSlip/Trust Passport language mapping so band explanations, low-data warnings, and community-confirmation meanings are not duplicated page by page.
+
+### TrustSlip Verify private evidence extraction (2026-05-16)
+
+- Continued the longer TrustSlip Verify cleanup by extracting the private/internal evidence body out of `frontend/src/pages/TrustSlipVerifyPage.tsx`.
+- Added:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx`
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - Replaced the inline private evidence body with `TrustSlipVerifyPrivateEvidence`.
+  - Kept the `details` wrapper and `StableDisclosureSummary` in the page so the private drawer remains collapsed and route-local.
+  - Kept the audit-required internal action buttons in `TrustSlipVerifyPage.tsx`:
+    - copy code
+    - copy verify link
+    - copy GSN ID
+    - print
+    - copy snapshot
+    - route to Trust Passport / guide
+  - Removed page-local helper/style functions that only existed for the private evidence body.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPrivateEvidence.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This makes `TrustSlipVerifyPage.tsx` more of a coordinator and less of a giant mixed document.
+  - The extracted private component is still large because it carries a real evidence surface, not just decoration.
+  - The next honest cleanup target is not more visual rearrangement; it is reducing prop noise by introducing a route-local view model for TrustSlip Verify.
+
+### TrustSlip Verify public paper extraction (2026-05-16)
+
+- Continued the longer TrustSlip Verify cleanup by extracting the large public/shareable TrustSlip paper body out of `frontend/src/pages/TrustSlipVerifyPage.tsx`.
+- Added:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - Replaced the inline public paper JSX with `TrustSlipVerifyPublicPaper`.
+  - Kept the audited public action row in the page and passed it into the component as `publicActions`.
+  - Kept the required stable action/debug IDs in `TrustSlipVerifyPage.tsx` so `tools/audit-button-stability.mjs` still verifies the route contract.
+  - Removed now-unused public-paper helper functions from the page:
+    - `paperStatusPill`
+    - `publicVerifyShell`
+    - `paperMiniRow`
+    - `paperDataRow`
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is useful structural cleanup, not a new product feature.
+  - The TrustSlip Verify page is still large because the private/internal evidence drawer remains inline.
+  - The next clean extraction target is the private evidence drawer, but that should be done carefully because it contains the audit-required internal action row and deeper TrustSlip evidence fields.
+
+### TrustSlip Verify route-local component extraction (2026-05-16)
+
+- Continued the TrustSlip Verify cleanup by extracting safe presentation pieces from the large page file.
+- Added:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx`
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx`
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - Replaced the inline public/private boundary section with `TrustSlipVerifyBoundary`.
+  - Replaced the inline private verification-result section with `TrustSlipVerifyResultCard`.
+  - Removed the now-unused local `badge()` helper.
+  - Kept the audited stable action buttons inside `TrustSlipVerifyPage.tsx` because `tools/audit-button-stability.mjs` expects the debug IDs in that exact file.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyBoundary.tsx src/pages/trustSlipVerify/TrustSlipVerifyResultCard.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is the first real code-structure cleanup on the TrustSlip Verify route.
+  - The page is still large because the public paper itself is still inline.
+  - The next safe extraction target is the public paper body, but it will need careful prop design because it carries QR, profile image, community confirmation, print, and navigation actions.
+
+### TrustSlip Verify private drawer de-noise (2026-05-16)
+
+- Continued the TrustSlip Verify cleanup after the public-paper simplification.
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - Removed generic route-helper panels from the private/internal drawer:
+    - `What this page means`
+    - `NextActionGuide`
+    - `TrustDocumentActionGuide`
+    - `TrustDocumentFamilyMap`
+    - `TrustDocumentUseCases`
+  - Kept the drawer focused on actual private/internal material:
+    - verification result
+    - reader block
+    - holder/reading/evidence detail
+    - commitment/contribution/repayment detail
+    - document reference and validity window
+  - Restored a compact `Internal actions` row inside the drawer because the project button-stability audit explicitly requires those stable button contracts on this route.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This removes a real source of clutter.
+  - The private drawer is still a large internal evidence surface, but it is now less like a second onboarding/manual page and more like an evidence drawer.
+
+### TrustSlip Verify public paper simplification pass (2026-05-16)
+
+- Returned to the TrustSlip Verify workstream after the Start Community phone-fit pass.
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - Shortened the public-facing TrustSlip Verify language so the outward paper reads more like a usable trust document and less like stacked system explanation.
+  - Changed stale/expired public wording from `This TrustSlip looks expired` to `Needs fresh TrustSlip`.
+  - Kept the truth intact: expired or invalid records are still not presented as valid.
+  - Removed the exposed `What this screen does` helper block above the public paper to reduce repetition.
+  - Shortened the page/nav hero language.
+  - Shortened the four reader questions and quick trust answers.
+  - Strengthened the public/private boundary language:
+    - public paper: share or print only the section above.
+    - private/internal drawer: review, repair, and deeper evidence only.
+  - Shortened Instant Community Confirmation copy while keeping the privacy point that GSN returns counts/outcomes and does not publish member phone numbers.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This makes the page less noisy, but the file still contains a large private/internal evidence drawer.
+  - That drawer is collapsed by default and clearly separated, so it is acceptable for now.
+  - A deeper cleanup should later split public paper, private drawer, and TrustSlip reader pieces into smaller components.
+
+### Start Community phone balance edit (2026-05-16)
+
+- Product owner shared a fresh phone screenshot of `/create`.
+- Confirmed issue:
+  - The progress row was wrapping/breaking into two lines on phone, with `Review` dropping below the `Guide` / `Form` row.
+  - The `Guide ready` card was too tall after the guide was completed.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - Rebuilt `WizardProgress` as a three-column phone-stable row with one dashed connector behind the steps.
+  - Removed the extra leading flag/step cell that was causing the stepper to overflow and wrap.
+  - Made the completed guide card more compact.
+  - Removed the repeated `Block 1 is open.` line from the completed guide card.
+  - Kept route logic, guide completion, and form gating unchanged.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This fixes the visible phone imbalance shown in the screenshot.
+  - The remaining exact vertical feel still depends on the live phone browser chrome, but the progress-row wrap was a real layout fault and is now corrected.
+
+### Start Community first-view copy reduction (2026-05-16)
+
+- Product owner reviewed the phone-sized `/create` screen and said it was still too worded.
+- Reduced visible copy in `frontend/src/pages/CreateEntryPage.tsx` without changing the route or form logic:
+  - shortened the already-member message and sign-in helper copy.
+  - shortened the hero support line to `Set up safely in 3 steps.`
+  - shortened the gold guide card to `Read guide first.` / `Then Block 1 opens.`
+  - shortened the locked first-block explanation to `Read the guide first.` and `Locked`.
+  - shortened the secure footer to `Secure setup.` / `Your data is protected.`
+  - shortened the guide-step details inside the guide modal.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - old long-copy search passed for removed first-view phrases.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This makes the phone first view much cleaner.
+  - It also removes some explanatory safety language from the first surface; the trade-off is acceptable because the guide and form still carry the underlying flow.
+
+### Start Community phone height stretch (2026-05-16)
+
+- Product owner clarified that the phone reference images represent the intended phone-height setting, and the latest app version was slightly too short after the hard-fit compression.
+- Adjusted `frontend/src/pages/CreateEntryPage.tsx` without changing route logic:
+  - kept the phone-width canvas at `430px`.
+  - changed the shell to use `100svh` for mobile viewport height.
+  - added roughly 10% more vertical presence through padding, hero scale, progress sizing, guide-card height, locked-block height, and secure-footer spacing.
+  - kept the page in the approved phone reference order: sign-in help, create-community hero, progress, gold guide card, locked `Your details`, secure note.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - ASCII icon check passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This pass intentionally stretches the phone presentation after the previous compression.
+  - It does not create a separate laptop layout; it keeps the phone reference as the visual authority for this screen.
+
+### Start Community phone hard-fit pass (2026-05-16)
+
+- Product owner tested `/create` again on phone and said the mockup direction was right but the rendered app screen still needed to be reduced to phone screen size.
+- Tightened `frontend/src/pages/CreateEntryPage.tsx` again:
+  - narrowed the live canvas to a phone-width maximum (`430px`) instead of the earlier wider layout.
+  - reduced page padding and top-level gaps.
+  - reduced the already-member strip, helper button, icon mark, and text scale.
+  - reduced the create-community hero card padding, title scale, subtitle line-height, progress row, and GSN watermark.
+  - reduced the gold guide card height by shrinking its mark, document glyph, text scale, spacing, and primary button height.
+  - reduced the locked `Your details` block badge, header height, helper text, locked-status row, and secure footer.
+  - kept the approved structure intact: sign-in help, hero, Guide/Form/Review progress, gold guide card, locked `Your details`, and secure footer.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - ASCII icon check passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is now deliberately phone-scaled, but it is still a live responsive screen, not a static screenshot.
+  - If the product owner still wants every visible item to fit under browser chrome on a short Android viewport, the next honest move is not more tiny compression; it is removing or hiding one item from the first viewport, most likely the subtitle or progress row.
+
+### Start Community phone-scale compression (2026-05-16)
+
+- Product owner tested the new `Start a new community` screen on phone and found the mockup structure was correct but the actual rendered scale was too large.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` to compress the first viewport:
+  - reduced page padding and top-level gaps.
+  - reduced already-member card padding, button height, and text scale.
+  - reduced hero padding, heading size, subtitle size, and watermark size.
+  - reduced the progress row, gold guide card, GSN mark, guide button height, and guide text scale.
+  - reduced the locked `Your details` block padding, badge size, text scale, and locked status row.
+  - replaced decorative non-ASCII icon glyphs with simple ASCII-safe marks to avoid rendering/fallback problems on mobile.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This fixes the oversized phone proportions from the first attempt.
+  - It is still a responsive app screen, not a static image. Exact fit will vary slightly by browser chrome height, but the screen is now intentionally phone-scaled instead of presentation-scaled.
+
+### Start Community first viewport matches locked gold-guide mockup (2026-05-16)
+
+- Implemented the product owner's locked reference direction for the `Start a new community` first viewport.
+- Frontend behavior:
+  - `CreateEntryPage` now presents the start-community route as a premium dark GSN canvas instead of a stacked white form surface.
+  - The already-member strip uses the dark card, gold label, icon mark, and stable sign-in help button from the reference mood.
+  - The create-community hero now shows:
+    - shield mark
+    - `Create community`
+    - large `Start a new community` heading
+    - short guidance sentence
+    - three-step progress row: Guide, Form, Review
+    - faint GSN shield watermark
+  - The primary guide card now uses a strong gold surface, GSN mark, document watermark, and `Read first, then start` action.
+  - The first block now presents as the locked `Your details` card under the guide, with a clear `Locked until guide is completed` message before the guide is completed.
+  - Bank/wallet and community setup remain nested inside the main details flow; the existing gating logic was preserved.
+  - Added a simple security footer: `Your information is secure. We protect your data at every step.`
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` first passed TypeScript after fixing helper return types, then hit the known sandbox Vite/esbuild `spawn EPERM`; it passed with approved escalation.
+- Blunt truth:
+  - This copies the structure and mood of the provided mockup in route-local code.
+  - It is not a pixel-perfect image export; it is a working responsive app screen using CSS/React primitives.
+  - No backend onboarding logic was changed.
+
+### Community Confirmation notification links focus inbox items (2026-05-16)
+
+- Tightened the Community Confirmation notification landing behavior so reviewer and responder notifications do not drop users into an unfocused busy inbox.
+- Frontend behavior:
+  - `CommunityConfirmationInboxPage` now reads `request_id` from notification links such as `/app/community-confirmations?request_id=...`.
+  - Matching live confirmation requests are moved to the top of the responder inbox and highlighted as opened from a notification.
+  - The page now reads `case_id`, `status`, `scope`, and `sort` from review-case notification links such as `/app/community-confirmations?status=all&scope=all_visible&sort=urgency&case_id=...`.
+  - Matching review cases are moved to the top of the review list, highlighted, and the linked filters are applied.
+  - The focus scroll uses non-animated scrolling so mobile taps are not destabilized by smooth post-action movement.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+- Blunt truth:
+  - This is an in-app landing fix only. It does not add push/SMS/email delivery.
+  - It makes existing notification links useful and less jumpy, which is necessary before external delivery is worth adding.
+
+### Community Confirmation live requests notify responders (2026-05-16)
+
+- Continued the Instant Community Confirmation pipeline by making live requests actively reach eligible responders.
+- Backend behavior:
+  - `create_confirmation_request()` now selects eligible confirmation contacts for the request mode.
+  - It creates deduped in-app notifications with kind `community_confirmation.request_to_respond`.
+  - The notification points to `/app/community-confirmations?request_id=...`.
+  - The copy tells responders to answer only if they genuinely know the member in the community.
+  - No private responder list, phone number, or raw contact detail is exposed publicly.
+  - `community_confirmation.requested` and `community_confirmation.delivery_pool_prepared` TrustEvents now include:
+    - `delivery_contact_count`
+    - `responder_notifications_created`
+  - When a responder records a response, the matching request notification is marked read.
+  - `community_confirmation.response_recorded` now includes `responder_notification_marked_read`.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` verifies the request creates one responder notification for the eligible member.
+  - The same test verifies the notification becomes read after the responder answers.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+- Blunt truth:
+  - This is in-app notification only. It is not SMS, WhatsApp, push notification, or email delivery yet.
+  - That is still acceptable for the MVP because it keeps privacy tight and proves the workflow before external messaging is added.
+
+### Community Confirmation SLA scanner creates reviewer notifications (2026-05-16)
+
+- Continued the Community Confirmation TrustEvent pipeline by making newly recorded review SLA markers visible to reviewers.
+- Backend behavior:
+  - When `scan_confirmation_review_sla_events()` records a new `community_confirmation.review_case_needs_attention` or `community_confirmation.review_case_overdue` TrustEvent, it now creates a deduped reviewer notification.
+  - Notification recipients are:
+    - assigned reviewer, when present.
+    - otherwise the review opener.
+    - community admins for the case community.
+  - Notifications point to `/app/community-confirmations?status=all&scope=all_visible&sort=urgency&case_id=...`.
+  - The message stays operational: it says the review case has waited beyond the policy threshold and should be checked with evidence before resolution.
+  - It does not say the member is guilty, does not change trust score, and does not expose private contact details.
+- API behavior:
+  - `POST /community-confirmations/review-cases/scan-sla-events` now returns `notifications_created`.
+- Frontend behavior:
+  - `CommunityConfirmationInboxPage` now shows the scanner's reviewer notification count in the SLA scan result cards.
+  - The success notice says how many TrustEvent markers and reviewer notifications were created.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` verifies the scanner creates exactly one overdue reviewer notification with the review-case link and no duplicate TrustEvent behavior.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/lib/api.ts` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is still scanner-triggered notification, not a production scheduler.
+  - Added `gmfn_backend/app/maintenance/scan_community_confirmation_review_sla.py` as a cron/worker entrypoint.
+  - It runs the same scanner, records missing SLA TrustEvents, creates reviewer notifications, and prints a JSON result.
+  - It requires `--actor-user-id` or `GSN_MAINTENANCE_ACTOR_USER_ID`; this keeps the maintenance actor explicit.
+  - Verified `python gmfn_backend\app\maintenance\scan_community_confirmation_review_sla.py --help` works without database configuration because app imports are lazy.
+  - The remaining production step is configuring a real timed worker/cron to call that script.
+
+### Community Confirmation inbox can trigger SLA scanner (2026-05-16)
+
+- Made the review SLA scanner usable from the signed-in review workflow instead of leaving it as a hidden backend-only endpoint.
+- Frontend/API behavior:
+  - Added `scanCommunityConfirmationReviewSlaEvents()` in `frontend/src/lib/api.ts`.
+  - `CommunityConfirmationInboxPage` now includes a collapsed `Record overdue review markers` panel inside the review-case section.
+  - The panel explains in plain language that the scan records missing TrustEvent SLA markers only.
+  - The action calls `POST /community-confirmations/review-cases/scan-sla-events`, shows scanned/overdue/attention/events-recorded counts, and refreshes review cases afterward.
+  - Community admins are guided to enter a Community ID before scanning; platform admins can scan without that filter.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/lib/api.ts` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This makes the scanner manually operable, but it is still not automatic background maintenance.
+  - The next production step remains a scheduled worker plus reviewer notifications for newly overdue cases.
+
+### Community Confirmation review SLA scanner endpoint (2026-05-16)
+
+- Continued the SLA audit trail work by adding an explicit scanner instead of relying only on someone opening the inbox/public outcome page.
+- Backend/API behavior:
+  - Added `POST /community-confirmations/review-cases/scan-sla-events`.
+  - Platform admins can scan all active review cases or a specific community.
+  - Community admins must provide a `community_id` and can only scan their own community.
+  - The scanner records missing deduped SLA TrustEvents for active review cases:
+    - `community_confirmation.review_case_needs_attention`
+    - `community_confirmation.review_case_overdue`
+  - The scanner returns counts for scanned cases, attention cases, overdue cases, newly recorded events, and a privacy-safe sample of recorded items.
+  - It does not expose private contacts, change review status, or change trust scores.
+- Service behavior:
+  - Added `scan_confirmation_review_sla_events()` in `community_confirmation_service.py`.
+  - `_record_review_case_sla_event()` now reports whether it actually wrote a new marker and uses the same dedupe key as the read-triggered path.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now verifies the scanner records one overdue event before the inbox is opened.
+  - The same test then opens the inbox and verifies no duplicate event is created.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+- Blunt truth:
+  - This is a scanner endpoint, not a true background scheduler.
+  - A production deployment still needs a timed job or worker that calls this scanner automatically and a notification path for overdue review cases.
+
+### Community Confirmation review SLA markers feed TrustEvents (2026-05-16)
+
+- Continued the Instant Community Confirmation audit trail work by making review SLA pressure part of the Trust Event record, not just UI decoration.
+- Backend behavior:
+  - `CommunityConfirmationReviewCase` serialization now records deduped zero-delta TrustEvents when an active review case reaches:
+    - `community_confirmation.review_case_needs_attention`
+    - `community_confirmation.review_case_overdue`
+  - Event metadata includes review case id, request id, optional decision id, age hours, policy thresholds, SLA meaning, `affects_trust_reading: false`, and `private_contacts_exposed: false`.
+  - Dedupe key format is `cc-review-sla:{review_case_id}:{status}` so repeated inbox/public reads do not spam the ledger.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now verifies an overdue review case creates exactly one `community_confirmation.review_case_overdue` event.
+  - The test also verifies the event is audit evidence only and does not move the trust reading by itself.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+- Blunt truth:
+  - This is read-triggered SLA evidence, not a background scheduler.
+  - It is good enough for the current app because the inbox/public outcome paths surface the case and write the audit marker.
+  - For production-grade operations, add a scheduled SLA scanner and notification/escalation jobs so overdue evidence is recorded even before a reviewer opens the inbox.
+
+### Community Confirmation review inbox has real pagination metadata (2026-05-16)
+
+- Continued the review-case workload work by adding page movement, not only a limit.
+- Backend/API behavior:
+  - `GET /community-confirmations/review-cases/inbox` now accepts `offset`.
+  - The review-case inbox response now includes:
+    - `offset`
+    - `limit`
+    - `returned_count`
+    - `total_available`
+    - `has_more`
+    - `next_offset`
+    - `previous_offset`
+  - `sort=urgency` still keeps active, older review cases first before pagination is applied.
+- Frontend behavior:
+  - `CommunityConfirmationInboxPage` now has stable `Previous` and `Next` controls for review cases.
+  - Filter and sort changes reset to the first page.
+  - The review-case header shows the returned slice against the full filtered count.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now verifies:
+    - `limit=1&offset=0` returns the older overdue case first.
+    - `limit=1&offset=1` returns the fresher case second.
+    - `has_more`, `next_offset`, and `previous_offset` are correct.
+- Verification so far:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/lib/api.ts` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is now usable offset pagination, but it is still not cursor pagination.
+  - If review-case volume gets large or records are edited while a reviewer pages, cursor-based pagination would be safer.
+
+### Community Confirmation review inbox can sort by urgency (2026-05-16)
+
+- Continued the review-case workload work by making urgency actionable, not only visible.
+- Backend/API behavior:
+  - `GET /community-confirmations/review-cases/inbox` now accepts `sort`.
+  - Supported sort values:
+    - `urgency`: active review cases first, oldest cases first.
+    - `recent`: most recently updated cases first.
+  - The response includes the normalized `sort` value.
+  - The response also includes `returned_count` and `total_available`, so a reviewer can tell when the current limit is hiding more matching cases.
+- Frontend behavior:
+  - `CommunityConfirmationInboxPage` now asks for `urgency` sorting by default.
+  - Added a `Sort` control to the review-case filter row so reviewers can switch between `Urgency first` and `Most recent`.
+  - The review-case pill now shows returned cases against total available cases when more rows exist server-side.
+  - Existing stable buttons and route contracts are preserved.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now creates a temporary fresher review case and verifies that `sort=urgency&limit=1` still returns the older overdue case first while reporting `total_available`.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/lib/api.ts` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is better queue ordering and clearer queue volume, not true page-by-page case management.
+  - `total` remains the number of returned items for backward compatibility; use `total_available` for the full filtered count.
+  - SLA thresholds are still code constants, not configurable policy.
+
+### Community Confirmation review cases show SLA / urgency markers (2026-05-16)
+
+- Continued the review-case workload work by adding derived urgency markers to review cases.
+- Backend behavior:
+  - `CommunityConfirmationReviewCase` public items now include:
+    - `review_age_hours`
+    - `review_sla_status`
+    - `review_sla_label`
+    - `review_sla_meaning`
+  - SLA states are derived from case age and status:
+    - `fresh`: under 24 hours
+    - `needs_attention`: 24+ hours
+    - `overdue`: 72+ hours
+    - `closed`: resolved or dismissed
+    - `unknown`: missing timestamp
+  - No migration was needed; this is calculated from existing timestamps.
+- Frontend behavior:
+  - `CommunityConfirmationInboxPage` now shows the SLA label as a visible pill on each review case.
+  - Review timing meaning appears in plain language under the trust effect text.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now verifies an old review case comes back as `overdue` with an age over 72 hours.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is not a true SLA policy engine yet. The 24h / 72h thresholds are simple code constants.
+  - If this becomes operationally serious, move SLA thresholds into policy/settings and add escalation notifications.
+
+### Community Confirmation review-case scope is backend-backed (2026-05-16)
+
+- Supersedes the earlier frontend-only review scope note below.
+- Backend/API changes:
+  - `GET /community-confirmations/review-cases/inbox` now accepts `scope`.
+  - Supported scope values:
+    - `all_visible`
+    - `assigned_to_me`
+    - `unassigned`
+  - `list_confirmation_review_cases()` applies the scope before limit is applied, so `assigned_to_me` and `unassigned` are no longer only cosmetic client-side filters.
+  - Response includes the normalized `scope`.
+- Frontend changes:
+  - `getCommunityConfirmationReviewCaseInbox()` now sends `scope`.
+  - `CommunityConfirmationInboxPage` reloads review cases when `Case scope` changes.
+  - The local frontend-only filtering was removed; the backend now owns the queue slice.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` verifies:
+    - `scope=unassigned` returns the open unassigned case before assignment.
+    - `scope=unassigned` returns no cases after assignment.
+    - `scope=assigned_to_me` returns the assigned case for the assigned reviewer.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/lib/api.ts` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is now a real server-backed queue filter.
+  - It is still not full workload management. Missing pieces remain: pagination metadata, SLA timers, overdue markers, reviewer directory, and case volume analytics.
+
+### Community Confirmation review-case scope filter in inbox (2026-05-16)
+
+- Continued the review-case inbox work by adding a lightweight workload view without changing backend contracts.
+- Updated `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - added a `Case scope` filter alongside status, community ID, and limit.
+  - scope options are:
+    - `All visible`
+    - `Assigned to me`
+    - `Unassigned`
+  - the page now loads the current user id through `getMe()` and filters the visible review-case list locally.
+  - the review-case count now shows the filtered count and, when filtered, the total returned count.
+  - empty-state copy now tells the reviewer to adjust status, scope, or community filters.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is a useful reviewer view, but it is still frontend filtering over the returned list.
+  - If review volume grows, the proper next step is a backend-supported `assigned_to_me` queue with pagination and SLA timers.
+
+### Community Confirmation review assignment controls in inbox (2026-05-16)
+
+- Continued the Instant Community Confirmation review workflow by exposing the existing review-case assignment backend inside `CommunityConfirmationInboxPage`.
+- Frontend behavior:
+  - The review inbox now loads the signed-in user through `getMe()`.
+  - Each review case has a collapsed `Assignment` drawer.
+  - Permitted reviewers/admins can:
+    - see whether a case is unassigned or assigned to a user id
+    - claim a review case for themselves
+    - release a review case back to the queue
+    - assign a specific reviewer by user id when permitted by the backend
+    - add an internal assignment note
+  - Assignment controls use stable buttons and remain below the case summary so they do not crowd the review-case card.
+- Backend/API behavior used:
+  - Reused `PATCH /community-confirmations/review-cases/{review_case_id}/assignment`.
+  - Backend still enforces platform/community-admin assignment permissions and same-community reviewer constraints.
+  - Assignment changes remain internal trust events and do not expose private community contacts.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is still assignment by user id, not a polished reviewer directory.
+  - The important spine is now present: a case can be found, claimed, evidenced, resolved, and fed into the trust-event trail.
+
+### Community Confirmation outcome page can add internal review evidence (2026-05-16)
+
+- Continued the review-case workflow by wiring the existing review-evidence backend into the public outcome paper's signed-in review area.
+- Frontend behavior:
+  - `CommunityConfirmationOutcomePage` now loads review evidence when a signed-in actor can access the review case.
+  - Added a collapsed `Internal review evidence` panel under the review case block.
+  - Reviewers can add controlled evidence with:
+    - evidence type
+    - title
+    - private evidence note
+    - optional reference
+  - Existing evidence is shown as internal review material, not as public proof.
+- Privacy rule preserved:
+  - Review evidence remains internal.
+  - No private community contact list, phone number, or raw responder identity is exposed on the public outcome paper.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is still not file upload or full dispute case management.
+  - It is now enough for a reviewer/provider/admin to leave a structured evidence trail before resolving a case.
+
+### Community Confirmation review outcomes now affect trust readings when resolved (2026-05-16)
+
+- Bridged the Instant Community Confirmation review-case workflow into the Trust Event scoring path.
+- Backend behavior:
+  - `community_confirmation.review_case_resolved` now writes a conservative `trust_delta` instead of always writing `0.00`.
+  - Impact mapping:
+    - `positive` -> `+0.03`
+    - `caution` -> `-0.03`
+    - `negative` -> `-0.08`
+    - `none` -> `0.00`
+  - Only `resolved` review cases can affect the reading. Dismissed or unresolved cases are recorded but do not quietly move trust.
+  - Review-case snapshots now include `trust_reading_effect` with plain-language meaning and reader guidance.
+  - The Trust Event also records `affects_trust_reading`, `trust_reading_effect`, and a policy note explaining that only resolved review outcomes with explicit trust impact affect the reading.
+  - `trust_score_service.py` now consumes resolved Community Confirmation review deltas in the canonical trust breakdown, splitting positive review movement into gains and caution/negative review movement into penalties.
+  - The trust breakdown now exposes:
+    - `counts.community_confirmation_reviews_resolved`
+    - `counts.community_confirmation_review_positive`
+    - `counts.community_confirmation_review_caution`
+    - `counts.community_confirmation_review_negative`
+    - `gains.community_confirmation_review`
+    - `penalties.community_confirmation_review`
+- Frontend behavior:
+  - `CommunityConfirmationOutcomePage` now normalizes and displays the review's trust-reading effect in human terms when a review case has one.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\trust_score_service.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This is still policy-coded trust movement, not absolute truth.
+  - The safe principle is now in place: raw allegations and private evidence do not change trust by themselves; resolved review outcomes can.
+  - The delta scale is intentionally small for now. If the business wants heavier penalties or stronger positive lift, that should be a policy decision, not a casual code tweak.
+
+### Community Confirmation review evidence records (2026-05-16)
+
+- Added controlled evidence records for Community Confirmation review cases.
+- Backend model and migration:
+  - Added `CommunityConfirmationReviewEvidence` in `gmfn_backend/app/db/models.py`.
+  - Added migration `gmfn_backend/alembic/versions/20260516_add_community_confirmation_review_evidence.py`.
+  - Evidence records store review case, request, community, subject, actor, evidence type, title, body, optional external reference, visibility, and timestamp.
+  - Visibility is `internal` by default. This is deliberate: review evidence must not automatically become public TrustSlip output.
+- Backend/API behavior:
+  - Added `GET /community-confirmations/review-cases/{review_case_id}/evidence`.
+  - Added `POST /community-confirmations/review-cases/{review_case_id}/evidence`.
+  - Added `add_confirmation_review_evidence()` and `list_confirmation_review_evidence()` in `community_confirmation_service.py`.
+  - Allowed evidence types are `note`, `merchant_note`, `member_statement`, `community_statement`, `system_snapshot`, and `external_reference`.
+  - Evidence can be added/viewed by the review opener, assigned reviewer, platform admin, or community admin.
+  - Adding evidence records `community_confirmation.review_evidence_added`.
+  - The Trust Event captures evidence id, type, title, whether body/ref exists, visibility, and `private_contacts_exposed: false`.
+- Frontend API changes:
+  - `frontend/src/lib/api.ts` now exposes:
+    - `getCommunityConfirmationReviewEvidence()`
+    - `addCommunityConfirmationReviewEvidence()`
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` verifies evidence can be added to a review case, listed again, stored as internal evidence, and written into the Trust Event trail.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\alembic\versions\20260516_add_community_confirmation_review_evidence.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `python -m alembic -c gmfn_backend\alembic.ini heads` shows `20260516_add_community_confirmation_review_evidence (head)`.
+  - `npm exec -- eslint src/lib/api.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is not file upload yet. It is the audit spine for evidence.
+  - Do not expose this evidence publicly until a formal privacy/dispute policy says exactly what can be shown, to whom, and why.
+
+### Community Confirmation review inbox and assignment trail (2026-05-16)
+
+- Continued the review-case work by making review cases findable and assignable.
+- Backend/API changes:
+  - Added `GET /community-confirmations/review-cases/inbox`.
+  - Added `PATCH /community-confirmations/review-cases/{review_case_id}/assignment`.
+  - Added `list_confirmation_review_cases()` in `gmfn_backend/app/services/community_confirmation_service.py`.
+  - Added `assign_confirmation_review_case()` in the same service.
+  - Non-platform users only see review cases they opened, cases assigned to them, or cases in communities where they are admin.
+  - Only platform/community admins can assign a review case.
+  - Community admins can only assign reviewers who belong to the same community.
+  - Assignment changes record `community_confirmation.review_case_assigned`.
+  - Assignment metadata includes previous/current assignee, previous/current status, assignment note presence, request id, review case id, and `private_contacts_exposed: false`.
+- Frontend API changes:
+  - `frontend/src/lib/api.ts` now exposes:
+    - `getCommunityConfirmationReviewCaseInbox()`
+    - `assignCommunityConfirmationReviewCase()`
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now verifies:
+    - review inbox returns the open review case.
+    - assignment moves the review from `open` to `in_review`.
+    - assignment writes `community_confirmation.review_case_assigned`.
+    - resolved review events preserve the correct previous state after assignment.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `python -m alembic -c gmfn_backend\alembic.ini heads` shows `20260516_add_community_confirmation_review_cases (head)`.
+  - `npm exec -- eslint src/lib/api.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - The review work is now much less likely to vanish because it has an inbox and assignment trail.
+  - It still needs a proper reviewer UI, evidence attachments, and policy logic for when review outcomes affect TrustSlip / Trust Passport readings.
+
+### Community Confirmation review cases (2026-05-16)
+
+- Continued the Instant Community Confirmation evidence trail by turning `under_review` into a real review case, not just a loose status label.
+- Backend model and migration:
+  - Added `CommunityConfirmationReviewCase` in `gmfn_backend/app/db/models.py`.
+  - Added migration `gmfn_backend/alembic/versions/20260516_add_community_confirmation_review_cases.py`.
+  - Review cases are one-per-confirmation-request and can link to the provider decision when the review came from a decision.
+  - Stored fields include request, decision, community, subject, opener, assigned reviewer placeholder, status, reason, private notes, resolution, trust impact, evidence summary, and timestamps.
+- Backend service/API behavior:
+  - Marking a confirmation request `under_review` now automatically opens or reuses a review case.
+  - Marking a provider decision `under_review` also opens or reuses the same review case and moves the request to `under_review`.
+  - Added `GET /community-confirmations/{request_id}/review-case`.
+  - Added `PATCH /community-confirmations/review-cases/{review_case_id}`.
+  - Resolving a review case records `community_confirmation.review_case_resolved`.
+  - Opening a review case records `community_confirmation.review_case_opened`; reopening/updating an existing case records `community_confirmation.review_case_updated`.
+  - Public confirmation outcome now includes a privacy-safe `review_case` summary when a case exists, but does not expose private responder contacts.
+- Frontend behavior:
+  - `frontend/src/lib/api.ts` now exposes review-case get/update helpers.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx` now shows a review-case block when one exists.
+  - Signed-in actors can resolve clean, resolve with caution, or dismiss review from the same outcome paper.
+  - Those actions call the review-case endpoint and feed the review outcome into Trust Events.
+- Test coverage:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now verifies that sending a request to review creates a review case, and resolving it writes `community_confirmation.review_case_resolved`.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\alembic\versions\20260516_add_community_confirmation_review_cases.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `python -m alembic -c gmfn_backend\alembic.ini heads` shows `20260516_add_community_confirmation_review_cases (head)`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx src/lib/api.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is now a real review-case foundation, but it is still not mature dispute management.
+  - Still missing: assigned reviewer UI, evidence attachments, reviewer inbox, final policy for whether a review changes Trust Passport/TrustSlip readings, and abuse controls around repeated review requests.
+
+### Community Confirmation request lifecycle TrustEvents (2026-05-16)
+
+- Added the next missing lifecycle control for Instant Community Confirmation: eligible actors can now intentionally close, cancel, or send a confirmation request to review.
+- Backend changes:
+  - `gmfn_backend/app/services/community_confirmation_service.py` now exposes `update_confirmation_request_status()`.
+  - Allowed request statuses are `closed`, `cancelled`, and `under_review`.
+  - The allowed actors are platform admin, the request starter, the subject member, a provider who recorded a decision on the request, or a community admin.
+  - Every status change records `community_confirmation.request_status_updated` in the Trust Event trail.
+  - Event metadata includes previous/current status, status reason, optional private note, request mode, reason type, risk level, and `private_contacts_exposed: false`.
+  - This completes the first clean request lifecycle after request -> delivery pool -> response -> outcome -> provider decision.
+- API changes:
+  - Added `PATCH /community-confirmations/{request_id}/status`.
+  - Payload: `status`, optional `status_reason`, optional `status_note`.
+- Frontend changes:
+  - `frontend/src/lib/api.ts` now exposes `updateCommunityConfirmationRequestStatus()`.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx` now adds request lifecycle controls inside the signed-in action area:
+    - close request
+    - send to review
+    - cancel request
+  - The controls keep the public paper readable while giving the requester/provider/admin a clean audit action.
+- Test changes:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now verifies that an admin can move a request to review and that the Trust Event is written with the correct metadata.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx src/lib/api.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This makes request closure/review traceable, but it is still not full dispute management.
+  - The next serious slice should add a real review case surface: reviewer assignment, evidence attachments, final resolution reason, and whether the outcome should affect future trust readings.
+
+### Instant Community Confirmation now feeds calculated outcomes into Trust Events (2026-05-15)
+
+- Followed up after the product owner clarified that all Instant Community Confirmation activity must feed the Trust Event layer.
+- Backend changes:
+  - `gmfn_backend/app/services/community_confirmation_service.py` still records `community_confirmation.requested` when a live confirmation request starts.
+  - Added `community_confirmation.delivery_pool_prepared` when GSN prepares the eligible in-app confirmation inbox pool.
+  - `community_confirmation.response_recorded` now carries richer responder evidence:
+    - response category: positive / caution / objection
+    - response timing in seconds
+    - outward anonymity flag
+    - internal attribution flag
+    - counted-in-outcome flag
+    - private-contact exposure flag
+  - Added `community_confirmation.outcome_recorded` when the aggregate outcome is recomputed.
+  - The outcome event records:
+    - confidence level
+    - positive / caution / objection counts
+    - no-response count
+    - responses received
+    - eligible response pool
+    - active community member count
+    - required positive response threshold
+    - privacy/anonymity flags
+  - Added `record_confirmation_decision()` plus `POST /community-confirmations/{request_id}/decision`.
+  - That endpoint records `community_confirmation.merchant_decision_recorded` for signed-in merchants/providers/opportunity gatekeepers when they record whether they released, reduced, deferred, cancelled, or refused after seeing the confirmation result.
+  - Added `CommunityConfirmationDecision` and migration `20260515_add_community_confirmation_decisions.py`.
+  - Provider decisions now have a structured lifecycle row in `community_confirmation_decisions` as well as a Trust Event.
+  - The lifecycle row stores request, community, subject, actor, decision, amount band, issue/settlement flags, status, note, and a confidence snapshot from the live community result.
+  - The Trust Event now includes `decision_id`, so later dispute review can connect the evidence event back to the structured decision record.
+  - Added `PATCH /community-confirmations/decisions/{decision_id}` for provider/admin decision status updates.
+  - Status updates record `community_confirmation.decision_status_updated` with previous/current status, issue, and settlement state.
+- Frontend changes:
+  - `frontend/src/lib/api.ts` now exposes `recordCommunityConfirmationDecision()`.
+  - `frontend/src/lib/api.ts` also exposes `updateCommunityConfirmationDecisionStatus()` for the next dispute/status UI pass.
+  - `frontend/src/pages/CommunityConfirmationOutcomePage.tsx` now includes a collapsed signed-in section called `Record provider decision`.
+  - The action lets a provider record:
+    - reduce and proceed
+    - do not proceed
+    - ask for more evidence
+  - After a provider decision is recorded, the same collapsed section now exposes compact follow-up actions:
+    - mark settled
+    - report issue
+    - send to review
+  - Those follow-up actions call the decision-status endpoint and feed `community_confirmation.decision_status_updated` into the Trust Event trail.
+  - This keeps the public confirmation paper readable while still allowing the provider's final action to become a Trust Event.
+- Test changes:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py` now asserts the request, delivery pool, response, calculated outcome, and merchant/provider decision all appear as Trust Events with the expected metadata.
+- Product effect:
+  - A live confirmation is no longer only a screen result. It now leaves an evidence trail the Trust Passport, TrustSlip explanation layer, Trust Graph, and later dispute review can use.
+  - The current chain is: request started -> eligible pool prepared -> responder answer recorded -> aggregate outcome recorded -> outsider decision recorded.
+  - Provider decision evidence is now both queryable as lifecycle data and visible as Trust Event evidence.
+  - Later issue/settlement changes on that decision are also Trust Events.
+- Truth/devil's advocate:
+  - Push/SMS/email notification delivery is still not a Trust Event because that delivery system has not been built yet.
+  - This is still not a payment/release ledger. It records the provider's decision around a confirmation, not the legal or financial execution of a transaction.
+  - Full dispute management still needs a later workflow for issue updates, evidence attachments, admin review, and resolution outcomes.
+  - The backend can now record issue/settlement status changes, but there is not yet a polished dispute-management UI for that workflow.
+  - There is now a basic provider-side status UI on the public outcome paper, but it is still not a full dispute case-management console.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m py_compile gmfn_backend\alembic\versions\20260515_add_community_confirmation_decisions.py` passed.
+  - `python -m alembic -c gmfn_backend\alembic.ini heads` showed `20260515_add_community_confirmation_decisions (head)`.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `5 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx src/lib/api.ts` passed.
+  - `npm exec -- eslint src/lib/api.ts` passed after adding the decision status API helper.
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx src/lib/api.ts` passed after adding the provider status follow-up UI.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Instant Community Confirmation protocol supersedes admin-confirmed wording (2026-05-15)
+
+- Product owner clarified that the live confirmation layer must be response-based, not admin-confirmed.
+- New protocol doc:
+  - `docs/GSN_INSTANT_COMMUNITY_CONFIRMATION_PROTOCOL_2026-05-15.md`
+  - It supersedes earlier wording where "Community Confirmation Relay" could sound like an admin or GSN staff member personally confirms the subject.
+- Backend changes:
+  - `build_community_confirmation_summary()` now reports `approval_type: Response-based community confirmation` instead of `Community/admin confirmed`.
+  - Live confirmation summaries now carry `active_member_count` so public output can say how many active community members existed when the confirmation was requested.
+  - Outcome recomputation preserves the original eligible request pool and calculates confidence from configured positive-response thresholds, not from a percentage.
+  - Public confirmation output now returns `active_member_count` alongside `requests_sent`, `responses_received`, `confirmed_known_count`, `caution_count`, and `objection_count`.
+  - Added `cannot_confirm_now` as a valid caution response type.
+- Frontend changes:
+  - Public outcome paper is now titled `Instant Community Confirmation`.
+  - TrustSlip / TrustSlip Verify now say `Request instant confirmation`, `Eligible response pool`, and `Instant confirmation result`.
+  - Outcome display now shows responses against active community members, e.g. `Responses: 3 of 20`.
+  - Policy and inbox copy now explain that admins manage routing only; the result is calculated from aggregate responses.
+- Truth/devil's advocate:
+  - This is now closer to the intended logic, but the true two-minute live voting UI is still not fully built as a separate timer-driven responder screen.
+  - Current implementation supports instant mode, responder inbox, aggregate public outcome, policy controls, and audit events, but notification delivery and live response countdown UX still need a later pass.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `5 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx src/pages/CommunityConfirmationPolicyPage.tsx src/pages/CommunityConfirmationInboxPage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Community Confirmation Relay policy control (2026-05-15)
+
+- Continued the Community Confirmation Relay work after the product owner asked to implement the practical community-backed verification route immediately.
+- Backend changes:
+  - `gmfn_backend/app/services/community_confirmation_service.py` now has admin-only policy/contact management helpers:
+    - read the community confirmation relay policy
+    - update relay, instant pulse, public confirmation, minimum-response, and response-window settings
+    - pause/allow individual relay contacts
+    - refuse to override a member's own relay opt-out
+  - `gmfn_backend/app/api/routes/community_confirmations.py` now exposes:
+    - `GET /community-confirmations/community/{community_id}/policy`
+    - `PATCH /community-confirmations/community/{community_id}/policy`
+    - `PATCH /community-confirmations/community/{community_id}/contacts/{target_user_id}`
+  - Admin policy payloads avoid turning the relay into a private contact directory: no raw phone numbers are exposed, and missing display names no longer fall back to email addresses.
+- Frontend changes:
+  - Added `frontend/src/pages/CommunityConfirmationPolicyPage.tsx`.
+  - Added route `/app/community-confirmations/policy`, alias `/app/community-confirmation-policy`, and `APP_ROUTES.COMMUNITY_CONFIRMATION_POLICY`.
+  - `CommunityConfirmationInboxPage` now shows `Manage policy` for community admin relay contacts.
+  - `docs/SCREEN_REGISTRY.md` now registers `CommunityConfirmationPolicyPage`.
+- Product effect:
+  - A community owner/admin can now control whether relay requests are enabled, whether instant pulse is enabled, whether public confirmation is shown, how many positive responses are expected, the response window, and which members may receive relay/instant requests.
+  - This turns the Community Confirmation Relay from a public-facing idea into a controllable community policy surface.
+- Truth/devil's advocate:
+  - This still is not a full production notification system. Requests appear in the responder inbox, but push/SMS/email notification delivery is still a later layer.
+  - This does not yet implement anonymous two-minute voting as a separate UI; it gives the policy/control backbone required before that voting surface is safe.
+  - Strong privacy controls are still essential: the system must keep showing aggregate outcomes externally, not individual names/contacts.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `5 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx src/pages/CommunityConfirmationInboxPage.tsx src/lib/api.ts src/App.tsx` passed.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:route-fallthrough` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+
+### Community verification discoverability from trust papers (2026-05-15)
+
+- Continued the Community Confirmation Relay work after the product owner asked how an outsider should identify a community behind a TrustSlip or Trust Passport.
+- Frontend changes:
+  - `frontend/src/pages/TrustSlipPage.tsx` now adds `Open public community record` inside the TrustSlip community confirmation block.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` now adds `Open community record` beside public TrustSlip Verify actions.
+  - `frontend/src/pages/TrustScorePage.tsx` now adds `Open public community record` in the Trust Passport identity/verification area.
+  - These links point to `/verify/community/{community_code_or_id}` using the best available community code, community global id, backend community id, or selected community id.
+- Product effect:
+  - A reader can now move from a person-level trust document to the community-level public record without seeing private member names, raw phone numbers, or sponsor contact details.
+  - This supports the protocol principle: public proof can show that a community exists and can confirm members, while private contactability stays behind the GSN relay.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/CommunityVerifyPage.tsx src/App.tsx` passed.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:route-fallthrough` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `3 passed`.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx frontend\src\pages\TrustSlipPage.tsx frontend\src\pages\TrustSlipVerifyPage.tsx` passed with only existing CRLF warnings.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+- Blunt truth:
+  - This makes community verification findable from the trust papers, but it does not yet create an admin policy editor for who can serve as confirmation contacts.
+  - It also does not yet create notification delivery for instant pulse requests. The responder inbox exists, but product-grade rollout still needs notification routing, request expiry/closure UI, and admin contact-policy management.
+
+### TrustSlip Verify public/private demarcation pass (2026-05-15)
+
+- Followed up after the product owner said the boundary between public/shareable TrustSlip Verify and private/internal app detail was too subtle.
+- Frontend change:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` now places a strong navy/gold boundary card between the public paper and the private/internal drawer.
+  - The boundary explicitly says `Public shareable paper ends here` and `Private/internal drawer below`.
+  - The deeper app section is now labelled `Private/internal app detail - closed by default`.
+  - The drawer handle includes a red warning pill: `Not the public/shareable TrustSlip`.
+- Truth/devil's advocate:
+  - This improves visual separation, but the proper long-term privacy model is still route/access enforcement: truly private evidence should not depend only on a collapsed drawer if the page is public.
+  - For now, the public paper is visually separated from the deeper app detail so users are less likely to screenshot or share the wrong thing.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:route-fallthrough` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `git diff --check -- frontend\src\pages\TrustSlipVerifyPage.tsx` passed, with only existing CRLF warnings.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip public verify cleanup after audit (2026-05-15)
+
+- Followed up after the audit found two trust-breaking presentation issues on TrustSlip / TrustSlip Verify.
+- Frontend changes:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` no longer shows the visible `PRIVATE / INTERNAL / SIGNED-IN DETAIL` mockup block on the public verification surface.
+  - The public verify paper now presents only the public reader view, with deeper app evidence left behind the existing collapsed `Full app evidence and controls` drawer.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` now labels the visible holder identifier as `GSN ID` instead of `GMFN ID`, while keeping internal variable names/contracts unchanged.
+  - `frontend/src/pages/TrustSlipPage.tsx` no longer gives the disabled `Open TrustSlip Verify` link a Trust Passport fallback route; when the verify path is missing, the link target is inert and the control remains disabled.
+- Truth/devil's advocate:
+  - Public verify must not display private/internal-looking evidence panels, even as a design explanation. It creates doubt and privacy risk.
+  - The deeper evidence still exists, but it belongs in signed-in or collapsed app detail, not in the first public paper.
+  - `bank_verified` is still a naming risk elsewhere because today it means bank details were recorded during entry verification, not live bank-account verification.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/TrustSlipPage.tsx` passed.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:route-fallthrough` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+  - `npm run audit:tap-stability` passed from `frontend`.
+  - `rg` found no remaining `PRIVATE / INTERNAL`, `DO NOT SHARE`, visible `GMFN ID`, or `verifyPath || routes.trust` in the TrustSlip / TrustSlip Verify pages.
+  - `git diff --check -- frontend\src\pages\TrustSlipVerifyPage.tsx frontend\src\pages\TrustSlipPage.tsx` passed, with only existing CRLF warnings.
+
+### Trust document verification categories pass (2026-05-15)
+
+- Followed up after the product owner clarified that Trust Passport / TrustSlip should treat phone, bank, passport, and community confirmation as serious identity signals.
+- Backend changes:
+  - `gmfn_backend/app/services/trust_slips_services.py` now adds an `identity_context` verification layer to TrustSlip payloads:
+    - phone verification from the user record
+    - bank detail recorded status from `EntryPhoneVerification`
+    - driving licence recorded status where available
+    - passport status as explicitly "not connected yet"
+    - community identity confirmation from active community membership context
+  - Top-level TrustSlip payload and merchant summary now expose bank, passport, and community identity labels so both Trust Passport and TrustSlip can explain them in human language.
+- Frontend changes:
+  - `frontend/src/lib/trustPassportViewModel.ts` now carries bank verification label, passport verification label, and community identity confirmation.
+  - `frontend/src/pages/TrustScorePage.tsx` now shows those verification labels in the Trust Passport identity badge area.
+  - `frontend/src/pages/TrustSlipPage.tsx` now shows phone, community-confirmed identity, identity continuity, bank detail status, and passport status on the TrustSlip paper surface.
+- Truth/devil's advocate:
+  - Phone verification is a real connected check today.
+  - Bank details are currently treated as recorded entry-verification evidence, not live bank-account verification against a banking API.
+  - Passport is not connected yet, so the UI must say that plainly instead of pretending it is verified.
+  - Community identity confirmation is useful, but a public community profile/lookup for codes like `GSN-C-000003` still needs a separate product and route decision.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\trust_slips_services.py gmfn_backend\app\api\routes\trust_slips.py` passed.
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustScorePage.tsx src/lib/trustPassportViewModel.ts` passed.
+  - `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py` passed: 5 tests.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:route-fallthrough` passed from `frontend`.
+  - `npm run audit:link-contracts` passed from `frontend`.
+
+### Expired TrustSlip auto-refresh fix (2026-05-15)
+
+- Followed up after the product owner said TrustSlip kept showing as expired and should not present an old used paper as the current shareable document.
+- Backend changes:
+  - `gmfn_backend/app/api/routes/trust_slips.py` now treats an expired current TrustSlip as needing refresh when `/trust-slips/me` or `/trust-slips/me/summary` is read.
+  - The same route now auto-reissues an expired current TrustSlip instead of returning stale expired proof to the frontend.
+  - `gmfn_backend/app/api/routes/trust_slips.py` now reports expired slips as material change in `/trust-slips/me/reissue-check`, so manual reissue is not blocked by a "no material change" response.
+  - `gmfn_backend/app/services/trust_slips_services.py` now refuses to reuse an expired current slip in `issue_trust_slip_for_user()`.
+  - `reissue_trust_slip()` now creates a fresh weekly expiry instead of copying the old expired expiry date into the new TrustSlip.
+- Test coverage:
+  - Added `test_expired_current_trustslip_reissues_with_fresh_expiry` in `gmfn_backend/tests/test_focus_commitment_trust_events.py`.
+- Truth/devil's advocate:
+  - This fixes the stale-current-paper problem. An expired TrustSlip should no longer be presented as the main current TrustSlip after the user opens or refreshes the page.
+  - Frozen or revoked TrustSlips are still not silently refreshed, because those states may represent a real block that must not be hidden.
+  - This does not erase old TrustSlips from the database. It supersedes the old paper and makes the fresh paper current, which is the safer audit trail.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py gmfn_backend\tests\test_focus_commitment_trust_events.py` passed.
+  - `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py` passed: 5 tests.
+  - `npm run audit:button-stability` passed from `frontend`.
+  - `npm run audit:route-fallthrough` passed from `frontend`.
+
+### TrustSlip QR and paper-icon realism pass (2026-05-15)
+
+- Followed up after the product owner said the remaining phone-view icons looked fake/low quality and the TrustSlip QR area was vacant.
+- Frontend changes:
+  - `frontend/src/pages/TrustSlipPage.tsx` now renders TrustSlip QR codes in-app with `qrcode.react` instead of depending on a backend PNG URL.
+  - The QR value is built from the best available public verification value: `verifyUrl`, then `verifyPath`, then the TrustSlip code.
+  - Replaced the old QR image slots in both TrustSlip paper surfaces with a generated `QRCodeSVG`, so the code appears even when `/qr.png` is unavailable.
+  - Confirmed the active Trust Passport / TrustSlip paper files no longer rely on browser emoji characters for the trust-document icon layer.
+- Truth/devil's advocate:
+  - The QR visual is now reliable on the frontend, but it only proves useful if the encoded verify URL/path/code is valid in the app.
+  - This does not create backend verification truth; it makes the shareable paper show a proper scannable code for the verification destination already known to the page.
+  - The icons are now code-native SVG marks, not photographic "live" icons. That is the right direction for an institutional document because SVG stays sharp on phone screens and PDF-like layouts.
+- Verification:
+  - `rg` found no remaining emoji literals or old `qrUrl`/`publicApiUrl` QR dependency in `TrustSlipPage.tsx`, `TrustScorePage.tsx`, or `TrustPaperMarks.tsx`.
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustScorePage.tsx src/components/TrustPaperMarks.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\pages\TrustSlipPage.tsx frontend\src\pages\TrustScorePage.tsx frontend\src\components\TrustPaperMarks.tsx` passed, with only existing CRLF warnings.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust paper security icon and watermark completion pass (2026-05-15)
+
+- Followed up after the product owner said the Trust Passport and TrustSlip paper frames had lost the authority/security icon layer from the reference mockups.
+- Frontend changes:
+  - Added shared `frontend/src/components/TrustPaperMarks.tsx` for code-native SVG trust-document marks:
+    - shield/check seal
+    - phone, community, ID, hash, chart, wallet, shop, document, QR/search/copy/refresh icons
+    - low-opacity watermark icons
+    - reusable security footer
+  - `frontend/src/pages/TrustScorePage.tsx` now uses the shared trust marks on the Trust Passport:
+    - GSN shield mark in the header
+    - profile/security seal overlay
+    - icons on identity rows, verification badges, trust-question rows, trust surfaces, and share actions
+    - shield/warning watermarks in `What helps trust` and `What creates pressure`
+    - security footer matching the paper-document style
+  - `frontend/src/pages/TrustSlipPage.tsx` now uses the same shared trust marks on TrustSlip:
+    - GSN shield mark in the header
+    - profile/security seal overlay
+    - identity, verification, status, decision, use-case, limit, trust-reason, and quick-action icons
+    - shield/warning watermarks in the document body
+    - security footer matching the paper-document style
+- Truth/devil's advocate:
+  - This is visual authority and readability work. It does not make the evidence cryptographically stronger or create backend verification truth.
+  - The paper now looks more institutional, but the real proof still depends on TrustSlip status, verification code validity, Trust Events, and backend freshness.
+- Verification:
+  - `npm exec -- eslint src/components/TrustPaperMarks.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\components\TrustPaperMarks.tsx frontend\src\pages\TrustScorePage.tsx frontend\src\pages\TrustSlipPage.tsx` passed, with only existing CRLF warnings.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust-domain button stability audit and TrustSlip refresh fix (2026-05-15)
+
+- Followed up after the product owner said Trust-domain buttons still felt jumpy and could fall into the wrong places.
+- Audit scope:
+  - Checked Trust Passport, TrustSlip, TrustSlip Verify, Open Trust, CCI Reading, and Trust Events button/link wiring.
+  - Re-ran route fallthrough, link contract, button stability, mobile tap stability, targeted ESLint, and production build checks.
+- Frontend change:
+  - `frontend/src/pages/TrustSlipPage.tsx` no longer uses `window.location.reload()` for `Refresh TrustSlip`.
+  - Added a shared `fetchTrustSlipPageData()` helper so initial load and manual refresh use the same data path.
+  - `Refresh TrustSlip` now refreshes TrustSlip data in place with a busy label instead of reloading the whole app.
+- Truth/devil's advocate:
+  - This was a real jump risk. A hard browser reload can look like route failure on a phone, especially if auth/session recovery or the browser address bar changes during reload.
+  - The automated route audits passed before this because a reload is not a route string. Human audit was needed to catch the behavior.
+  - Remaining Trust-domain navigation routes are semantically separated: Open Trust, CCI Reading, Trust Passport, TrustSlip, and TrustSlip Verify each have their own route.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustScorePage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/OpenTrustPage.tsx src/pages/CCIReadingPage.tsx` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `git diff --check -- frontend\src\pages\TrustSlipPage.tsx frontend\src\pages\TrustScorePage.tsx docs\HANDOFF_NOTES.md` passed, with only existing CRLF warnings.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust Passport button audit and local trust route fix (2026-05-15)
+
+- Followed up after the product owner reported that buttons on the Trust Passport page were not opening the right trust surfaces.
+- Frontend change:
+  - `frontend/src/pages/TrustScorePage.tsx` now resolves a dedicated `openTrust` route for the local community trust reading.
+  - The `View local reading` button in the `Trust surfaces` section now opens `/app/open-trust-reading` instead of incorrectly opening the identity/CCI surface.
+  - `View CCI reading`, `Open TrustSlip`, and `Open TrustSlip verify` remain separate actions.
+- Truth/devil's advocate:
+  - The local trust button was genuinely miswired. It was labelled as local trust but sent the user to the identity/CCI area.
+  - The automated audits did not catch the semantic mismatch because `/app/identity` is still a valid route. Human product audit was needed here.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx docs\HANDOFF_NOTES.md` passed, with only the existing CRLF warning.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip entry-point button hardening (2026-05-15)
+
+- Followed up after the product owner reported that TrustSlip was no longer easy to find from Trust Passport, and the Dashboard entry could fall toward the wrong action/inbox path.
+- Frontend changes:
+  - `frontend/src/pages/TrustScorePage.tsx` now includes a direct `Open TrustSlip` action inside `Shareable trust tools`, alongside refresh, copy snapshot, and verify.
+  - `frontend/src/pages/DashboardPage.tsx` now always shows the `TrustSlip` button in the Dashboard trust action row, even when the TrustSlip code is still pending.
+  - `frontend/src/pages/DashboardPage.tsx` now accepts `app/trust-slip`, `app/trustslip`, `app/open-trust-slip`, and `app/trust-slip/verify` as stable dashboard route aliases so guidance/action cards do not fall back to the Action Inbox when the leading slash is missing.
+- Truth/devil's advocate:
+  - This fixes the front-door routing and button visibility problem. It does not guarantee the backend has issued a fresh valid TrustSlip code.
+  - If the TrustSlip still says expired or preparing after opening correctly, that is a separate backend/state issue, not a button issue.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/pages/TrustScorePage.tsx` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `git diff --check -- frontend\src\pages\DashboardPage.tsx frontend\src\pages\TrustScorePage.tsx` passed, with only the existing CRLF warnings.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip paper-frame rebuild from product-owner mockup (2026-05-15)
+
+- Followed up after the product owner provided a TrustSlip reference frame and asked to present TrustSlip in that same clean institutional paper style.
+- Frontend change:
+  - `frontend/src/pages/TrustSlipPage.tsx` now renders the active `/app/trust-slip` surface as one paper-style TrustSlip frame.
+  - The visible TrustSlip order now follows the provided structure:
+    1. `Who is this person?`
+    2. `Current TrustSlip status`
+    3. `TrustSlip decision summary`
+    4. `What this TrustSlip says`
+    5. `What this can be used for`
+    6. `What this does NOT mean`
+    7. `Why a reader may trust this`
+    8. `Quick actions`
+  - The identity block uses the shared dashboard/profile image resolver where available, plus GSN ID, community, community ID, and verification badges.
+  - The status block shows `VALID NOW` only when the TrustSlip is current and has a verification code. If the TrustSlip is expired, frozen, revoked, inactive, or missing a code, it shows a safer `NEEDS REFRESH` or `PREPARING` state.
+  - The decision summary keeps the band, limit, evidence depth, and A-E grade guide visible without pretending a TrustSlip is a loan approval or guarantee.
+  - The reader-facing sections clearly explain useful cases, limits, trust reasons, and quick actions.
+- Truth/devil's advocate:
+  - This intentionally refuses to show `VALID NOW` for stale or expired data, even if the mockup says valid. Credibility is more important than optimism here.
+  - This is still a frontend presentation correction; it does not create new backend evidence, scoring truth, or verification truth.
+  - The old detailed support sections remain in the file for now but are no longer the active rendered surface. A later cleanup can safely delete unused legacy JSX once the phone view is approved.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustSlipPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `git diff --check -- frontend\src\pages\TrustSlipPage.tsx` passed, with only the existing CRLF warning.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust Passport paper-frame rebuild from product-owner mockup (2026-05-15)
+
+- Followed up after the product owner provided a clear Trust Passport reference frame and asked to use that structure as the Trust Passport page.
+- Frontend change:
+  - `frontend/src/pages/TrustScorePage.tsx` now presents `/app/trust` as one institutional paper-style Trust Passport instead of a stack of repeated app blocks.
+  - The page order now follows the provided frame:
+    1. `Who is this person?`
+    2. `Current trust verdict`
+    3. `What this reading says`
+    4. `Why this reading looks like this`
+    5. `Trust surfaces`
+    6. `Why did my trust change?`
+    7. `Shareable trust tools`
+    8. `Evidence & institutional context`
+  - The visible identity section uses `GSN ID` surface copy, profile image/initials, community, role, verification badges, and active-community count.
+  - The verdict section now shows the current band with A-E meaning directly beside it, so the reader is not left with a naked grade.
+  - The trust-question section keeps the reader's practical questions visible: identity, support, contribution discipline, finance discipline, trade, follow-through, community stability, and verified history.
+  - The reasons section keeps `What helps trust` and `What creates pressure` near the top of the paper.
+  - Shareable tools were kept compact and stable: refresh, copy snapshot, TrustSlip verify, pressure-note reference, and export/print.
+  - The TrustSlip verify action still uses the internal frontend verify route, not the public/API URL path that previously caused cover/welcome fallback risk.
+- Truth/devil's advocate:
+  - This is a presentation and explanation correction, not a new backend scoring truth.
+  - Empty/weak backend evidence still appears as limited evidence; the page does not pretend missing Trust Events are proof of safety.
+  - The next honest review should be a phone screenshot of `/app/trust` after reload to confirm the paper frame feels readable on the actual device.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx` passed, with only the existing CRLF warning.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip paper-first auditor simplification pass (2026-05-15)
+
+- Followed up after the product owner said TrustSlip still looked busy/confusing and asked for auditor-style simplification without losing important information.
+- Audit inputs:
+  - Product/plain-language auditor: the TrustSlip had the right evidence but the wrong hierarchy; the four-question reader answer needed to be inside the document, not hidden behind a reader block.
+  - Fintech/risk auditor: expiry must be a hard blocking signal, caveats must be visible, verification limits must be explicit, and `Trust limit` language must not sound like approved credit.
+- Frontend changes in `frontend/src/pages/TrustSlipPage.tsx`:
+  - Removed the pre-paper training stack from the top of the page. The TrustSlip document now appears before product guidance.
+  - Added a visible `Four-question answer` inside the TrustSlip paper:
+    - trust decision
+    - follow-through
+    - community stability
+    - verified history
+  - Added client-side expiry blocking with `expires_at < now`, so an old TrustSlip is treated as needing refresh even if backend status text is missing or stale.
+  - Added visible caveat text inside the document: evidence only, not a bank guarantee, not auto-debit, and not approval by itself.
+  - Added `What verification confirms` and what it does not confirm.
+  - Added visible evidence-depth and risk-signal rows.
+  - Reframed `Trust limit` as `Visible TrustSlip limit` with helper text saying it is not an approved loan amount or payment guarantee.
+  - Removed app-ish badges such as `Current page` and `Current step`.
+  - Replaced overclaiming language such as `Issued trust instrument`, `Formal verification instrument`, and `proves` with safer wording such as `portable trust summary`, `verification record`, and `shows`.
+  - Removed the separate exposed `Merchant-facing view` section because it duplicated merchant/verification facts already shown elsewhere.
+  - Moved product education into one closed `Help using this TrustSlip` drawer below the paper.
+- Truth/devil's advocate:
+  - This is a stronger TrustSlip shape: paper first, decision meaning second, verification/caveat visible, technical education later.
+  - It is still not a final design polish pass. The next pass should inspect phone screenshots and tighten spacing/visual density on the TrustSlip paper itself.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustSlipPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `git diff --check -- frontend\src\pages\TrustSlipPage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip page support blocks collapsed and expired label softened (2026-05-15)
+
+- Followed up after the product owner managed to open TrustSlip but reported that the page was still jumpy, everything was exposed, repeated itself too much, and showed `expired` too bluntly.
+- Frontend changes:
+  - `frontend/src/pages/TrustSlipPage.tsx` now collapses the support/help areas by default:
+    - Next help
+    - Use these actions well
+    - Trust document family
+    - Which question belongs here
+    - Reader explanation
+    - Merchant verification
+    - Merchant-facing view
+    - Evidence and exposure context
+    - Institutional notes
+  - Bumped TrustSlip UI storage from `gmfn.trustSlip.sections.v3` to `gmfn.trustSlip.sections.v4`, so old phone/browser state does not keep the previous "everything open" layout.
+  - Raw `expired` is no longer presented as the main public status label. The visible reader label is now `Needs refresh`, with a plain-language note explaining that the TrustSlip exists but the public proof window has passed.
+- Truth/devil's advocate:
+  - This does not hide expiry. It translates it into human language and still warns that nobody should rely on the old TrustSlip without a fresh one.
+  - The deeper repetition is reduced by collapsing repeated blocks, not fully removed yet. The next honest pass should merge duplicated merchant/status/evidence facts into one reader-first TrustSlip section.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustSlipPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `git diff --check -- frontend\src\pages\TrustSlipPage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip verify buttons tightened to use internal route paths (2026-05-15)
+
+- Followed up after the product owner reported the TrustSlip/verify button still felt jumpy and could fight the tap.
+- Frontend change:
+  - `frontend/src/pages/TrustScorePage.tsx` now separates the TrustSlip verify navigation path from the share/copy URL.
+  - `frontend/src/pages/TrustSlipPage.tsx` now does the same split.
+  - Button taps now use internal frontend paths such as `/trust-slips/verify/{code}/page` instead of full absolute URLs.
+  - Copy/share text still receives the full absolute URL, so sharing remains useful.
+- Truth/devil's advocate:
+  - The previous absolute URL behavior could make a mobile tap behave like a full external page load instead of steady in-app navigation.
+  - This fix tightens the frontend button target. If a deployed phone still falls to cover/welcome, the next suspects are stale bundle/cache or auth/session guard behavior, not the button path.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx src\pages\TrustSlipPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx frontend\src\pages\TrustSlipPage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Dashboard profile picture now feeds Trust Passport and TrustSlip (2026-05-15)
+
+- Followed up after the product owner said the same picture used on the Dashboard should automatically appear on Trust Passport and TrustSlip, instead of requiring separate uploads.
+- Frontend changes:
+  - Added `frontend/src/lib/profileImage.ts` as the shared profile-image resolver.
+  - `frontend/src/pages/TrustScorePage.tsx` now resolves the Trust Passport image from TrustSlip summary, identity context, the logged-in user profile, or the Dashboard avatar cache.
+  - `frontend/src/pages/TrustSlipPage.tsx` now uses the same shared resolver, so the member image follows the person into the TrustSlip view.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` now uses the shared resolver for authenticated app routes and public TrustSlip record image URLs.
+- Truth/devil's advocate:
+  - The authenticated app can safely fall back to the local Dashboard avatar cache because it belongs to the current browser/user session.
+  - The public outsider verification page should not borrow a private local Dashboard cache unless the viewer is inside the authenticated app route. A true public TrustSlip must receive the image from the backend/public TrustSlip record.
+  - This fixes the frontend sharing path, but the backend/public TrustSlip payload still needs to consistently include `profile_image_url` if outsiders must see the same photo.
+- Verification:
+  - `npm exec -- eslint src\lib\profileImage.ts src\pages\TrustScorePage.tsx src\pages\TrustSlipPage.tsx src\pages\TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:tap-stability` passed.
+  - `git diff --check -- frontend\src\lib\profileImage.ts frontend\src\pages\TrustScorePage.tsx frontend\src\pages\TrustSlipPage.tsx frontend\src\pages\TrustSlipVerifyPage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust Passport avatar frame made intentional (2026-05-15)
+
+- Followed up after the product owner confirmed the picture frame was still visible and asked that, if it remains on Trust Passport, it should carry a picture like TrustSlip.
+- Frontend change:
+  - `frontend/src/pages/TrustScorePage.tsx` now always renders the identity frame intentionally.
+  - If a real profile image exists, it shows the image.
+  - If no profile image exists, it shows the same kind of initials avatar pattern used by TrustSlip, rather than an empty or unfinished-looking frame.
+- Truth/devil's advocate:
+  - This is better than hiding the frame because Trust Passport is the fuller identity surface; it should visually anchor the person.
+  - The major remaining work is still the TrustSlip page itself, which has too many mixed sections and needs its own cleanup pass.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust Passport identity hero cleaned and GSN ID label applied (2026-05-15)
+
+- Followed up after the product owner saw an unfinished-looking picture frame and a visible `GMFN ID` label on the Trust Passport page.
+- Frontend changes:
+  - `frontend/src/pages/TrustScorePage.tsx` now renders the Trust Passport profile image frame only when a real profile image URL exists.
+  - If no image is available, the identity hero no longer shows an initials/photo placeholder box, avoiding the impression of an incomplete upload frame.
+  - The visible identity badge now reads `GSN ID` instead of `GMFN ID`.
+  - `frontend/src/lib/trustDocumentSnapshots.ts` now uses `GSN ID` in copied trust document snapshots.
+- Truth/devil's advocate:
+  - Internal API/type names still use `gmfn_id`. That is correct for now because renaming backend contracts would be a wider migration.
+  - Trust Passport can still show a photo when a real photo exists because the Passport is the fuller identity/trust view; it should not show a fake or empty frame.
+  - Some TrustSlip/Verify surfaces may still have visible `GMFN ID` labels and should be handled in the next TrustSlip-specific correction pass.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx src\lib\trustDocumentSnapshots.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx frontend\src\lib\trustDocumentSnapshots.ts` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust Passport care notes moved into local disclosures (2026-05-15)
+
+- Followed up after the product owner objected to the top `Review what needs care` button jumping the phone view down to another section.
+- Frontend change:
+  - `frontend/src/pages/TrustScorePage.tsx` no longer uses the top care action as a jump button.
+  - The Trust verdict card now contains an in-place `Open what creates pressure` disclosure.
+  - That disclosure contains:
+    - what needs care now
+    - what helps trust
+    - the local community trust explanation
+    - the cross-community consistency explanation
+  - `What this reading says` is no longer a separate exposed page section; it now sits inside the main verdict/right-side reading block as `Open what this reading says`.
+  - The lower `Why this reading looks like this` exposed section was removed to reduce repetition.
+  - The share-tools `Review reasons` action no longer jumps; it only points the reader back to the in-place care notes.
+- Truth/devil's advocate:
+  - This is the better phone structure: the reader sees the verdict first, then opens the explanation exactly where the verdict is.
+  - There is still one lower share-tools action retained for audit/stability coverage, but it no longer moves the user around the page.
+  - If the page still feels long, the next reduction target is the shareable tools area, not the verdict/care explanation.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust Passport repetition cleanup and TrustSlip button tightening (2026-05-15)
+
+- Followed up after the product owner showed phone screenshots where `/app/trust` still felt too repetitive and TrustSlip/Verify actions could feel like they were falling back toward the cover/welcome flow.
+- Frontend changes:
+  - `frontend/src/pages/TrustScorePage.tsx` now gives TrustSlip one clear direct action: `Open TrustSlip`, routed through `routes.trustSlip`.
+  - TrustSlip Verify remains routed through the frontend verification URL builder instead of API/public URL handling.
+  - Repeated TrustSlip/Verify cards were removed from the visible "related trust surfaces" set.
+  - Related trust surfaces are now collapsed under `Open related trust surfaces`, keeping Identity & Integrity and Cross-community consistency available without exposing another stack of cards.
+  - The Trust verdict no longer repeats TrustSlip code/status/issued/expires; those are now kept in the shareable tools area where they belong.
+  - `frontend/src/components/TrustBandMeaningGuide.tsx` now shows the current grade meaning first and keeps the full A-E explanation behind an `Open A-E grade guide` disclosure.
+  - The technical reading remains behind a stable collapsed `Open technical reading` disclosure.
+- Truth/devil's advocate:
+  - The button problem was not solved by adding more buttons. It was solved by making the route target explicit and reducing competing TrustSlip/Verify surfaces.
+  - If a phone still lands on cover/welcome after this build is actually deployed, the next suspects are stale browser cache, stale Render bundle, or auth/session guard state, not the TrustSlip button target itself.
+  - The Trust Passport is still a long page because the evidence model is large; this pass reduces repetition and hides secondary detail, but the next honest review should be a phone screenshot after reload/deploy.
+- Verification:
+  - `npm exec -- eslint src\components\TrustBandMeaningGuide.tsx src\pages\TrustScorePage.tsx src\pages\TrustSlipPage.tsx` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\components\TrustBandMeaningGuide.tsx frontend\src\pages\TrustScorePage.tsx frontend\src\pages\TrustSlipPage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip verify link no longer opens API/public entry by mistake (2026-05-15)
+
+- Followed up after the product owner reported that TrustSlip was still landing on the cover/welcome page instead of opening properly.
+- Frontend fix:
+  - `frontend/src/pages/TrustSlipPage.tsx` now builds TrustSlip Verify links as frontend routes on the current app origin: `/trust-slips/verify/{code}/page`.
+  - `frontend/src/pages/TrustScorePage.tsx` now uses the same frontend-route builder for TrustSlip Verify from the Trust Passport page.
+  - The Trust Passport `Open TrustSlip verify` action now navigates to the frontend verification route instead of opening a public/API URL in a new tab.
+  - API URL building remains reserved for real API/QR/image resources.
+- Truth/devil's advocate:
+  - The bug was not the TrustSlip page component itself; the bad path was the URL builder using `publicApiUrl(...)` for what should be a React frontend route.
+  - If a phone still lands on cover/welcome after this, the next suspect is stale browser cache or an unauthenticated session, not this TrustSlip route builder.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustScorePage.tsx src\pages\TrustSlipPage.tsx` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- frontend\src\pages\TrustScorePage.tsx frontend\src\pages\TrustSlipPage.tsx` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### Trust Passport human-question-first simplification (2026-05-15)
+
+- Followed the product owner's Trust Passport simplification protocol: the Trust Passport must answer human trust questions before technical score questions.
+- Frontend changes:
+  - Added `frontend/src/lib/trustPassportViewModel.ts` as the transformation layer from raw trust fields into human sections: identity, verification, verdict, trust questions, reasons, shareable outputs, and technical detail.
+  - Rebuilt `frontend/src/pages/TrustScorePage.tsx` around the approved order:
+    1. Identity & verification
+    2. Trust verdict in plain language
+    3. What this reading says
+    4. Why this reading looks like this
+    5. Shareable trust tools
+    6. Full evidence & institutional detail, collapsed by default
+  - The top of `/app/trust` now shows profile/avatar where available, GMFN ID, community, community ID, role, visible member count, phone verification, bank verification when available, identity status, membership status, and identity continuity.
+  - The Trust verdict now explains the letter grade and separates real risk from thin evidence. Low/no data is labeled as building history or limited evidence, not as proof of bad behaviour.
+  - Replaced top-level jargon with plain labels such as "Local community trust" and "Cross-community consistency (CCI)".
+  - Moved capacity context, raw reading lines, computed score internals, event count, ruleset, and risk flags into a collapsed institutional detail section.
+  - Updated `frontend/src/components/TrustBandMeaningGuide.tsx` so the guide explains the grade without showing a naked numeric score near the top.
+  - Updated `frontend/src/components/TrustSlipReaderBlock.tsx` to use "Cross-community consistency" before the CCI acronym.
+- Truth/devil's advocate:
+  - This is a presentation and interpretation improvement, not new scoring truth.
+  - Empty event history now reads as incomplete evidence, not safety.
+  - The page still depends on backend fields being present; if profile image, bank verification, member count, or event details are not returned, the UI says they are not shown instead of pretending they exist.
+  - The next meaningful review should be on a real phone viewport with Amara/demo data to confirm the order feels calm and not too long.
+- Verification:
+  - `npm exec -- eslint src\lib\trustPassportViewModel.ts src\lib\trustBandLanguage.ts src\components\TrustBandMeaningGuide.tsx src\components\TrustSlipReaderBlock.tsx src\pages\TrustScorePage.tsx src\pages\TrustSlipPage.tsx src\pages\TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed.
+  - `git diff --check -- frontend\src\lib\trustPassportViewModel.ts frontend\src\components\TrustBandMeaningGuide.tsx frontend\src\components\TrustSlipReaderBlock.tsx frontend\src\pages\TrustScorePage.tsx docs\HANDOFF_NOTES.md` passed.
+  - `npm run build` first hit the known Vite/esbuild sandbox `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip ship-readiness manifest and workshop seed update (2026-05-15)
+
+- Continued into cleanup/ship-readiness after the product owner said to go on.
+- Added `docs/GSN_TRUSTSLIP_SHIP_READINESS_MANIFEST_2026-05-15.md`.
+- Updated `gmfn_backend/app/db/seed_workshop_demo.py` so Amara's seeded workshop story now includes:
+  - personal commitment Trust Events (`commitment.created`, `commitment.checkin`, `commitment.milestone`, `commitment.completed`)
+  - confirmed expected contribution records
+  - confirmed expected repayment record
+- Truth/devil's advocate:
+  - The TrustSlip/workshop evidence package is coherent enough to prepare for a focused commit.
+  - The working tree still contains adjacent reset/login/merchant-route changes that should be reviewed separately before a Render deploy.
+  - The generated PDF should only be included if regenerated from the latest Markdown and intentionally shared.
+- Verification:
+  - `python -m compileall -q gmfn_backend\app\db\seed_workshop_demo.py gmfn_backend\app\api\routes\trust_events.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed.
+  - `git diff --check` passed for the seed and new test.
+
+### Dashboard focus commitments now feed Trust Events and TrustSlip (2026-05-15)
+
+- Followed up after the product owner clarified that not every community member will be in ROSCA/pool contributions, so personal commitment discipline must also become TrustSlip evidence.
+- Backend changes:
+  - `gmfn_backend/app/api/routes/trust_events.py` now accepts authenticated Dashboard focus commitment events at `POST /trust-events/me/focus-commitment`.
+  - The route logs existing `TrustEvent` rows with event types:
+    - `commitment.created`
+    - `commitment.checkin`
+    - `commitment.milestone`
+    - `commitment.replanned`
+    - `commitment.completed`
+    - `commitment.missed_reported`
+  - These events are neutral for scoring (`trust_delta: 0.00`) but are now real backend evidence in the Trust Event ledger.
+  - `gmfn_backend/app/services/trust_slips_services.py` now adds `evidence_summary.personal_commitment_discipline` from those Trust Events.
+  - `gmfn_backend/app/api/routes/trust_slips.py` exposes `personal_commitment_discipline` on non-minimal public TrustSlip verification.
+- Frontend changes:
+  - `frontend/src/lib/api.ts` adds `recordFocusCommitmentTrustEvent(...)`.
+  - `frontend/src/pages/DashboardPage.tsx` now fire-and-forget syncs focus commitment create/check-in/milestone/replan/complete/missed-report actions to backend Trust Events while keeping the local Dashboard UX intact.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` and `frontend/src/pages/TrustSlipPage.tsx` now show personal commitment evidence alongside contribution and repayment evidence.
+- Truth/devil's advocate:
+  - This gives non-ROSCA members a valid personal discipline evidence path.
+  - These are member-recorded commitment events, not externally verified payments. They should support follow-through reading, not automatically raise scores or guarantee trust.
+  - Existing old local commitments will not appear in backend evidence until the member creates/checks in/replans/completes after this wiring, unless a later migration/sync pass is built.
+- Verification:
+  - `npm exec -- eslint src\pages\DashboardPage.tsx src\pages\TrustSlipVerifyPage.tsx src\pages\TrustSlipPage.tsx src\lib\api.ts` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\trust_events.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - Added `gmfn_backend/tests/test_focus_commitment_trust_events.py`.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed.
+  - `git diff --check` passed for the touched files.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip commitment discipline and human reader explanation (2026-05-15)
+
+- Continued the TrustSlip evidence wiring after the product owner asked for two things:
+  - connect TrustSlip to the real departments/evidence sources instead of leaving the four questions as presentation copy
+  - show technical evidence first, then explain it in plain human language addressed to the reader
+- Backend changes:
+  - `gmfn_backend/app/services/trust_slips_services.py` now builds `evidence_summary.commitment_discipline` from backend `ExpectedPayment` rows.
+  - The commitment discipline block separates contribution, repayment, and other expected payments with expected/completed/partial/open/expired-or-defaulted counts plus totals.
+  - The block originally only covered `ExpectedPayment` rows. Dashboard focus commitments are now handled separately as personal commitment Trust Events; they should not be merged into payment evidence.
+  - `evidence_summary.human_terms` now gives plain-language explanations for support/finance/trade trust, follow-through, community stability, and verified history.
+  - `gmfn_backend/app/api/routes/trust_slips.py` exposes `commitment_discipline` and `human_terms` on public verification when visibility is not minimal.
+- Frontend changes:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` now displays technical contribution and repayment discipline counts, then explains them under `In plain language`.
+  - The public verification page now includes `What this means for you`, written directly to the reader in plain terms rather than technical system language.
+  - `frontend/src/pages/TrustSlipPage.tsx` now shows owner-side contribution discipline, repayment discipline, and a human reading of what the evidence means.
+- Truth/devil's advocate:
+  - This is now wired to real backend ExpectedPayment evidence.
+  - This section was later superseded by the Dashboard focus commitment Trust Event wiring below.
+  - We should still avoid presenting personal commitment as verified payment evidence; it is a separate follow-through signal.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustSlipVerifyPage.tsx src\pages\TrustSlipPage.tsx` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - `git diff --check` passed for the touched TrustSlip files.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+
+### TrustSlip four-question public verification pass (2026-05-15)
+
+- Followed up after the product owner defined the four questions TrustSlip must quickly answer:
+  1. Can this person be trusted for support, contribution, finance discipline, or trade?
+  2. Do they follow through?
+  3. Are they stable inside a real community?
+  4. Is there verified history behind what they claim?
+- Frontend changes:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` now normalizes public TrustSlip verify data from both flat backend fields and nested `merchant_view`/`merchant_summary` fields.
+  - Public verification now displays trust limit, CCI/sponsor signal, merchant verification state, phone verification, last release, last full repayment, risk flags, snapshot state, and a four-question decision panel.
+  - `frontend/src/pages/TrustSlipPage.tsx` now surfaces owner-side decision cautions: readiness recommendation/score, risk flags, capacity reasons, readiness reasons, and days since full repayment.
+- Backend changes:
+  - `gmfn_backend/app/api/routes/trust_slips.py` now returns flat public verification aliases for holder, GMFN/GSN ID, community, trust band, trust limit, CCI, sponsor count, phone verification, visibility, merchant verification, last release, last full repayment, risk flags, snapshot metadata, and disclaimer.
+  - `gmfn_backend/app/services/trust_slips_services.py` now includes `days_since_last_full_repayment` in the detailed merchant view.
+- Documentation changes:
+  - Added the four questions to `docs/GSN_RGU_Customer_Discovery_Working_Plan.md`.
+  - Added the four questions to `docs/GSN_TRUSTSLIP_SCREEN_GAP_AUDIT_2026-05-15.md`.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustSlipVerifyPage.tsx src\pages\TrustSlipPage.tsx` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - `git diff --check` passed for the touched TrustSlip files and docs.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then passed with approved escalation.
+- Remaining truth:
+  - Superseded by later work on 2026-05-15: public TrustSlip verification now includes `ExpectedPayment` contribution/repayment discipline and separate Dashboard focus commitment Trust Events.
+  - The important caution remains: personal commitment evidence supports follow-through, but it must not be treated as verified payment proof.
+
+### TrustSlip screen gap audit and implementation priority (2026-05-15)
+
+- Followed up after the product owner asked whether the TrustSlip carries enough information for finance, fintech/risk, ROSCA/community, and outsider viewers to make an informed decision.
+- Added `docs/GSN_TRUSTSLIP_SCREEN_GAP_AUDIT_2026-05-15.md`.
+- Truth/devil's advocate:
+  - Superseded by later 2026-05-15 implementation: the TrustSlip concept is not stopped, and the public verification surface now carries stronger contribution, repayment, and personal commitment evidence.
+  - `/app/trust-slip` already shows useful owner-side evidence: status, trust limit, CCI, sponsor count, capacity/exposure, merchant verification, last release, and last full repayment.
+  - The backend public verify response carries richer nested `merchant_view` evidence than the public React verification page currently normalizes or displays.
+  - The biggest original ROSCA/community-finance gap was contribution discipline. Later work added expected/confirmed/partial/outstanding/defaulted payment discipline and separate personal commitment discipline.
+- Recommended implementation order:
+  1. Fix public TrustSlip verify normalization and display using existing backend fields.
+  2. Add flat backend JSON aliases for holder, GMFN/GSN ID, community, trust band, trust limit, CCI, sponsor count, phone verification, last release, last full repayment, snapshot version/checksum, and disclaimer.
+  3. Surface risk flags, readiness context, capacity reasons, sponsor rows, and snapshot metadata on `/app/trust-slip`.
+  4. Add behavior counts from the existing trust score breakdown.
+  5. Derive contribution discipline from `ExpectedPayment` only where the source data can support the claim.
+
+### TrustSlip ROSCA evidence audit for RGU workshop (2026-05-15)
+
+- Followed up after the product owner clarified that the previous stop point was TrustSlip completeness: whether TrustSlip carries enough information for a merchant, society member, fintech/risk auditor, or outsider to make an informed decision.
+- Truth/devil's advocate:
+  - The current TrustSlip direction is strong, but a score/band/sponsor-count surface is not enough by itself.
+  - ROSCA and community-finance evidence points to repeated contribution, post-payout follow-through, peer selection, reputation/exclusion, governance, sponsor quality, risk flags, and evidence freshness as the real decision signals.
+  - TrustSlip must stay a decision aid, not a lending guarantee, employment guarantee, or replacement for formal verification.
+- Documentation change:
+  - Added `docs/GSN_TRUSTSLIP_ROSCA_RESEARCH_AUDIT_2026-05-15.md`.
+  - Updated `docs/GSN_RGU_Customer_Discovery_Working_Plan.md` with TrustSlip evidence questions, a seven-part evidence checklist, and a Community finance / ROSCA auditor role.
+- Current recommendation:
+  - Next compare `/app/trust-slip` and the public verification page against the seven TrustSlip evidence sections before changing backend/frontend fields.
+
 ### Render parity and phone reset handoff (2026-05-15)
 
 - Followed up after the product owner confirmed the local phone URL finally opened, but Render did not match the local phone arrangement needed for a possible online/Zoom school review.
@@ -23222,3 +25192,1403 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This intentionally trades a small amount of decorative motion for steadier phone testing. It should help the app feel calmer and less jumpy during guided review.
   - Dashboard's frozen Market Wisdom/profile-frame areas were not modified.
+
+### RGU customer discovery workshop planning and proof-path audit (2026-05-15)
+
+- Created the workshop working brief:
+  - `docs/GSN_RGU_Customer_Discovery_Working_Plan.md`
+  - `docs/GSN_RGU_Customer_Discovery_Working_Plan.pdf`
+- Working workshop position:
+  - GSN should not be presented as only a contribution, ROSCA, savings, shop, or marketplace tool.
+  - The core workshop wedge is portable trust: community evidence becomes visible, portable, and usable in a new setting.
+  - Recommended scenario: Amara builds trust in Lagos, arrives in Aberdeen, and uses Trust Passport / TrustSlip / merchant verification so others can verify her community-backed trust story.
+- Created the app proof-path audit:
+  - `docs/GSN_RGU_APP_PROOF_PATH_AUDIT.md`
+- Created the phone-side proof-path checklist:
+  - `docs/GSN_RGU_PHONE_PROOF_PATH_CHECKLIST.md`
+- Blunt audit finding:
+  - The route/screen structure exists for `Cover -> Login -> Dashboard -> Community -> Marketplace -> Shop -> Trust Passport -> TrustSlip -> Public / Merchant Verification`.
+  - The current local demo account is not workshop-ready as the main proof account because its TrustSlip is expired, trust limit is `0.00`, trust score is `0.00`, CCI is red/class E, sponsor count is `0`, and merchant verification is inactive.
+  - `gmfn_backend/app/api/routes/merchant_verify.py` exists but is not included in `gmfn_backend/app/api/router.py`; `/api/trust-slips/me/merchant-link` currently returns 404 locally.
+  - There is a route collision risk if `merchant_verify.py` is included as-is because it defines `/trust-slips/verify/{token}` while `trust_slips.py` already defines `/trust-slips/verify/{code}`.
+- Recommended next work:
+  - Prepare a deliberate workshop/demo account or seed with active community evidence, active TrustSlip, and active merchant verification.
+  - Fix merchant verification routing deliberately without colliding with existing TrustSlip public verification.
+  - Re-test `/app/trust`, `/app/trust-slip`, and public verification on laptop and phone before presenting.
+
+### RGU workshop demo account and merchantification proof path (2026-05-15)
+
+- Added local workshop seed script:
+  - `gmfn_backend/app/db/seed_workshop_demo.py`
+- Seed command:
+  - from `gmfn_backend`: `.venv\Scripts\python.exe -m app.db.seed_workshop_demo`
+- Demo account:
+  - email: `amara.demo@gsnworkshop.co.uk`
+  - password: `pass1234`
+  - GSN ID: `GSN-DEMO-AMARA`
+  - TrustSlip code: `GSNAMARA2026`
+- Seeded proof state:
+  - Trust score `6.60`, band `B`
+  - CCI `66.95`, class/band `B`
+  - TrustSlip active
+  - Trust limit `25000.00 NGN`
+  - Sponsor count `2`
+  - Merchant Verify active
+  - Public TrustSlip verify returns valid/current
+- Fixed merchant verification route wiring:
+  - `gmfn_backend/app/api/router.py` now includes `merchant_verify_router`.
+  - Merchant public route moved away from the TrustSlip code route to avoid collision:
+    - `/trust-slips/merchant/verify/{token}`
+  - `gmfn_backend/app/services/merchant_verify_service.py` now generates the new merchant verification path.
+  - `frontend/src/lib/merchantChannel.ts` now reads/verifies the new merchant route and still extracts legacy links if pasted.
+- Verified laptop API proof for the demo account:
+  - `/auth/me` works.
+  - `/trust/score/explained` works.
+  - `/trust-slips/me` works.
+  - `/trust-slips/verify/GSNAMARA2026` works.
+  - `/trust-slips/me/merchant-link` works.
+  - Generated merchant public verify link works.
+- Scenario audit after Anambra travel / hospital / goods-on-credit example:
+  - Raw TrustSlip/Trust Passport data is sufficient for the intended portable-financial-character story.
+  - Public verifier wording was too merchant-specific (`OK TO RELEASE GOODS`) and has been changed to neutral decision-support wording: `VALID - CURRENT TRUSTSLIP FOUND`.
+  - Public verifier now includes plain-language reading, holder name, community, trust band, sponsor signals, phone status, and a stronger no-guarantee note.
+  - `trust_slips_services.py` now prefers the holder display name and actual community/marketplace name over `GSN ID` / `Clan {id}` fallbacks.
+- Operational note:
+  - The old backend process on port `8012` had to be stopped with `taskkill` because it was still serving the old route table.
+  - Backend was restarted on `0.0.0.0:8012` with the project venv and dev env vars.
+  - The old admin account remains a caution/rejection example, not the main workshop proof account.
+
+### TrustSlip commitment evidence proof refresh (2026-05-15)
+
+- Refreshed the Amara workshop seed after adding personal commitment and expected-payment evidence to the TrustSlip payload.
+- Seed command used locally from `gmfn_backend`:
+  - `$env:PYTHONPATH='.'; $env:GMFN_DEV_MODE='1'; python app\db\seed_workshop_demo.py`
+- Public verification proof:
+  - `GET /trust-slips/verify/GSNAMARA2026` returned `200`.
+  - Holder: `Amara Okafor`.
+  - Expected-payment discipline returned `3` expected records and `3` confirmed records.
+  - Personal commitment discipline returned `4` Trust Events and `1` completed personal commitment.
+  - Public payload now separates payment evidence from personal commitment evidence:
+    - expected payments are contribution/repayment evidence.
+    - dashboard focus commitments are personal discipline evidence recorded as Trust Events.
+- Blunt truth:
+  - A personal commitment is useful evidence of follow-through, especially for members who are not in a ROSCA/community pool.
+  - It is not the same strength as verified contribution or repayment evidence, and the TrustSlip should keep that distinction visible.
+
+### RGU workshop working plan cleanup for phone review (2026-05-15)
+
+- Cleaned `docs/GSN_RGU_Customer_Discovery_Working_Plan.md` into a shorter phone-readable working brief.
+- Regenerated `docs/GSN_RGU_Customer_Discovery_Working_Plan.pdf` from the cleaned Markdown so the shareable PDF is not stale.
+- The plan now leads with:
+  - what the workshop is testing
+  - the core portable-trust claim
+  - the Amara demo story
+  - the four TrustSlip reader questions
+  - the evidence checklist
+  - the exact app proof path
+  - the auditor roles
+  - the immediate next steps
+- Removed extra strategy bulk from the main plan so Chris/Favour or a phone reviewer can see the workshop logic without getting lost.
+- Truth/devil's advocate:
+  - The research/audit docs should remain internal support material.
+  - The sendable workshop plan should stay simple; if it tries to carry all the research, it will confuse people before they even reach the app.
+
+### TrustSlip Verify human-reader presentation cleanup (2026-05-15)
+
+- Reviewed `frontend/src/pages/TrustSlipVerifyPage.tsx` after the product owner asked whether the TrustSlip reads like technical blocks or a real-life message to the person checking it.
+- Blunt finding:
+  - The page already had strong evidence blocks and plain-language text, but the human explanation came too late.
+  - A busy verifier would first meet status and technical cards before seeing the practical decision reading.
+- Changed the public verification page so it now shows, near the top:
+  - a plain reading for the person checking the TrustSlip
+  - the four practical questions and answers
+  - an important limit that says the page is evidence, not a guarantee
+- Removed the older duplicated lower "What this means for you" section to reduce bulk.
+- Verification:
+  - `npm exec -- eslint src\pages\TrustSlipVerifyPage.tsx` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Remaining truth:
+  - `/app/trust-slip` is still more owner/admin-facing and block-heavy, which is acceptable for the holder.
+  - The public verifier page is the page that most needs direct human language, because that reader may not know GSN and may not have time for technical terms.
+
+### TrustSlip independent auditor hardening pass (2026-05-15)
+
+- Ran four independent read-only auditor lenses:
+  - fintech/risk
+  - community finance / ROSCA
+  - product/customer discovery
+  - technical implementation
+- Main findings:
+  - Public verification visibility could be expanded with `?level=detailed`; this risked exceeding holder-permitted visibility.
+  - Public TrustSlip Verify could fall back to the signed-in viewer's identity/community, risking wrong evidence attribution on public links.
+  - Owner and verifier copy still had wording that could sound like approval or guaranteed reliance.
+  - Payment evidence should speak before personal commitment evidence.
+  - Contribution counts are useful, but they are payment-count evidence, not full ROSCA cycle discipline.
+- Hardening changes made:
+  - `gmfn_backend/app/api/routes/trust_slips.py` now clamps public visibility so a query parameter can only redact downward, not expand upward.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` only uses signed-in identity/community fallbacks on app routes, not public verification routes.
+  - `gmfn_backend/app/api/routes/trust_events.py` now drops invalid `clan_id` context for Dashboard focus commitment Trust Events unless the member belongs to that clan.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` now explains CCI, sponsor count limits, snapshot limits, missing cycle/on-time evidence, and keeps payment evidence above personal commitment evidence.
+  - `frontend/src/pages/TrustSlipPage.tsx` now says merchants can use verification as current evidence, not rely on it as approval; boolean/debug labels were converted to human statements.
+- Verification:
+  - `python -m compileall -q gmfn_backend\app\api\routes\trust_events.py gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - `npm exec -- eslint src\pages\TrustSlipVerifyPage.tsx src\pages\TrustSlipPage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed with `4 passed`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+  - Local public check: `GET /trust-slips/verify/GSNAMARA2026?level=detailed` returned `200` with `visibility_level: standard`, confirming the public URL no longer expands stored visibility.
+- Remaining truth:
+  - Snapshot freshness still deserves a deeper follow-up: public verification may show the stored snapshot until reissue/refresh, while `/app/trust-slip` can show fresher live evidence.
+  - Sponsor quality is still not shown on the public page; the page now says this honestly.
+  - Contribution payment counts are not yet full ROSCA cycle discipline; the public page now says on-time rate, cycle position, and post-benefit contribution are not shown yet.
+
+### TrustSlip route/button fallthrough fix (2026-05-15)
+
+- Investigated the product owner's report that opening TrustSlip could jump back to Cover.
+- Confirmed the canonical signed-in route `/app/trust-slip` was already registered and CTA targets mostly resolved correctly.
+- Found the real route risk:
+  - backend-shaped verify links such as `/trust-slips/verify/{code}/page` were not frontend routes, so opening that path on the frontend host could fall through to `/cover`.
+  - stale/manual root verify links such as `/trust-slip/verify` and `/trustslip/verify` were also not protected before the wildcard fallback.
+- Fixed `frontend/src/App.tsx` so the frontend now catches:
+  - `/trust-slip/verify`
+  - `/trustslip/verify`
+  - `/trust-slips/verify/:code`
+  - `/trust-slips/verify/:code/page`
+  - `/trust-slips/verify/:code/lite`
+  - `/trust-slips/verify/:code/print`
+- Strengthened `frontend/tools/audit-route-fallthrough.mjs` so TrustSlip verify aliases must stay protected and cannot silently regress into the Cover fallback.
+- Cleaned the Login page stable-button contract while checking the broader button-jump family:
+  - `frontend/src/pages/LoginPage.tsx` now uses a Login-local `SubtleButton` for the guide opener with `debugId="login.open-help"`.
+  - `frontend/tools/audit-button-stability.mjs` now checks Login stable CTA IDs independently instead of relying on brittle source ordering.
+- Verification:
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm exec -- eslint src\App.tsx src\pages\LoginPage.tsx tools\audit-route-fallthrough.mjs tools\audit-button-stability.mjs` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Remaining truth:
+  - A TrustSlip URL containing `?reset=1` will still intentionally clear the browser session and return to Cover because reset handling is global in `frontend/src/App.tsx`.
+  - If a clean `/app/trust-slip` still goes to Cover after deployment, suspect stale deployed frontend assets or auth/session recovery, not the route table itself.
+  - Product audit says the TrustSlip evidence block is about 65-70% present. Still missing/partial: photo, real identity verification beyond phone, community member count/density, holder role, stronger CCI band explanation, and a cleaner share/PDF package on the TrustSlip screen.
+
+### TrustSlip reader-ready evidence block (2026-05-15)
+
+- Added a shared frontend reader block at `frontend/src/components/TrustSlipReaderBlock.tsx`.
+- Wired the block into:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+  - `frontend/src/pages/TrustSlipPage.tsx`
+- The block now gives a non-technical reader one place to see:
+  - holder photo or initials
+  - holder name and GSN number
+  - phone verification status
+  - truthful identity warning: formal document verification is not shown by GSN yet
+  - community name, community ID, holder role, active member count, active community context, and sponsor signal count
+  - CCI score/band with plain-language meaning
+  - trust limit
+  - the four reader questions:
+    - can this person be trusted for support, contribution, finance, or trade?
+    - do they follow through?
+    - are they stable inside a real community?
+    - is there verified history behind what they claim?
+- Backend TrustSlip payload now exposes the supporting fields:
+  - `profile_image_url`
+  - `identity_context`
+  - `community_context`
+  - `cci_explainer`
+  - `identity_status_label`
+  - `community_global_id`
+  - `holder_role`
+  - `active_member_count`
+- Public TrustSlip verification now returns those fields for non-minimal visibility.
+- Older TrustSlip snapshots keep their stored trust facts, but `_aligned_snapshot_for_slip` now fills missing additive reader-context fields from the current payload so old links do not look emptier than newly issued links.
+- Verification:
+  - `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - `npm exec -- eslint src\components\TrustSlipReaderBlock.tsx src\pages\TrustSlipVerifyPage.tsx src\pages\TrustSlipPage.tsx` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed with `4 passed`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is now a real reader-facing TrustSlip package, not only technical blocks.
+  - It still should not claim formal KYC/identity verification because the backend does not prove that yet.
+  - It still needs visual/manual review in browser on phone before sending screenshots or relying on it in the workshop.
+  - PDF/share packaging is improved through print/copy actions, but a polished one-click PDF export is still a follow-up, not finished.
+
+### Trust Passport plain-language band explanation pass (2026-05-15)
+
+- Product owner reviewed the phone view of `/app/trust` and correctly found that it still looked too technical:
+  - D / `0.00` was visible, but the practical meaning was not explained strongly enough.
+  - lower explanation/audit blocks could show empty rows or weak empty-state text.
+  - the page still asked an ordinary reader to interpret score machinery before it explained implication.
+- Ran two independent auditor lenses:
+  - fintech/risk auditor
+  - product/customer-discovery auditor
+- Their shared verdict:
+  - D / `0.00` with empty evidence must be treated as insufficient/weak visible evidence, not a soft approval.
+  - `No risk flags shown` must not be presented as `no risk`.
+  - Trust Passport must answer the four human questions before advanced technical breakdown.
+- Added shared frontend language module:
+  - `frontend/src/lib/trustBandLanguage.ts`
+  - defines A-F plain meanings, implications, and next actions.
+- Added shared explanation component:
+  - `frontend/src/components/TrustBandMeaningGuide.tsx`
+  - shows the current band, score, plain meaning, implication, next action, and the A-F scale.
+- Wired the new explanation into:
+  - `frontend/src/pages/TrustScorePage.tsx` (`/app/trust`, Trust Passport)
+  - `frontend/src/components/TrustSlipReaderBlock.tsx`
+- Trust Passport now places these before the technical summary:
+  - a direct plain verdict for the current band
+  - the first practical repair/protection action
+  - the A-F band explanation portal
+  - a four-question reader panel:
+    - can this person be trusted for support, contribution, finance, or trade?
+    - do they follow through?
+    - are they stable inside a real community?
+    - is there verified history behind what they claim?
+- Empty states were hardened:
+  - no recent movement now explains that the screen lacks recent evidence, not that the record is clean.
+  - no recent Trust Events now says the reading is weaker because recent behaviour/repair is not visible.
+  - empty advanced reading breakdown now warns that the record is incomplete on this screen and asks for Trust Events or community confirmation.
+- Verification:
+  - `npm exec -- eslint src\lib\trustBandLanguage.ts src\components\TrustBandMeaningGuide.tsx src\components\TrustSlipReaderBlock.tsx src\pages\TrustScorePage.tsx src\pages\TrustSlipPage.tsx src\pages\TrustSlipVerifyPage.tsx` passed.
+  - `python -m compileall -q gmfn_backend\app\api\routes\trust_slips.py gmfn_backend\app\services\trust_slips_services.py` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed with `4 passed`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is now much closer to a human explanation layer.
+  - It still deserves phone visual review because the newly inserted A-F scale may need spacing/polish on narrow screens.
+  - The product still must not claim formal credit approval, formal KYC, or absence of risk unless backend evidence proves it.
+
+### TrustSlip Verify public/private paper structure (2026-05-15)
+
+- Product owner supplied a reference mockup for `GSN TrustSlip Verify - Public vs Private Information Structure` and asked for the TrustSlip Verify page to copy that structure closely, including the public/shareable side, private/internal side, institutional framing, QR, marks, and watermark feel.
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx` with a new primary paper-style section near the top of the verified result:
+  - left side: `PUBLIC / SHAREABLE / PRINTABLE` TrustSlip proof with status banner, holder summary, GSN/GMFN ID, phone/document visibility, trust grade, visible score, trust limit, issue/expiry dates, live QR code, public link, and public actions.
+  - right side: `PRIVATE / INTERNAL / SIGNED-IN DETAIL` with protected full Trust Passport-style detail, event/history summaries, contribution/repayment discipline, cross-community consistency, risk/exposure, scoring detail, repair path, notes, admin/audit notes, and technical evidence chips.
+  - bottom design rule strip clarifies that public TrustSlip Verify is quick outward proof, while full Trust Passport and internal scoring detail stay signed-in/private.
+- Reused the existing `TrustPaperMarks` visual system so the new section includes shield marks, watermark panels, security footer, and less fake-looking icons than the earlier emoji-heavy pass.
+- Wired the visible QR with `QRCodeSVG`, using the resolved public verify URL when available.
+- Important truth:
+  - The new paper structure is primary. The older detailed verify sections now sit inside one collapsed `Full app evidence and controls` disclosure under the paper, so the page no longer exposes two full designs at once.
+  - The collapsed section preserves working evidence and app controls while phone review decides what should be permanently removed, merged into the paper, or kept as signed-in detail.
+  - The public proof must still avoid claiming formal KYC, bank verification, or document verification unless backend evidence actually proves those fields.
+  - If a TrustSlip is genuinely expired, backend state still decides that. The UI should not pretend an expired code is valid; the safer path is to generate or fetch a current TrustSlip.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+
+### Trust pages polish and button stability pass (2026-05-15)
+
+- Polished the three active trust surfaces:
+  - `frontend/src/pages/TrustScorePage.tsx` (`/app/trust`, Trust Passport)
+  - `frontend/src/pages/TrustSlipPage.tsx` (`/app/trust-slip`, TrustSlip)
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx` (public/app TrustSlip Verify)
+- Trust Passport:
+  - `Review pressure notes` now lands on the actual `Why this reading looks like this` section instead of only showing a toast.
+  - Removed smooth scrolling because the mobile tap audit correctly treats it as a possible tapped-control movement risk.
+  - `Open TrustSlip verify` no longer falls through to the broader merchant verify route when no public code exists. It now sends the member to TrustSlip to prepare or refresh a current public code.
+- TrustSlip:
+  - `Open TrustSlip Verify` is disabled and labelled `Verify not ready` when there is no current verify path, instead of falling to the wrong route.
+  - The secondary external verify link now opens the real public verify path only and is labelled `Open Public Verify` instead of `Open Merchant Verify`, reducing confusion between TrustSlip Verify and merchant verification controls.
+  - Removed unused `routes.verify` entries that still pointed at merchant verification from Trust Passport and TrustSlip route maps, so future edits cannot accidentally reconnect TrustSlip Verify buttons to the wrong destination.
+- TrustSlip Verify:
+  - The collapsed `Full app evidence and controls` area now uses the shared `StableDisclosureSummary` primitive instead of a raw `<summary>`.
+  - The print/download action is guarded before calling `window.print`.
+  - The button-stability audit now explicitly accepts the shared stable disclosure primitive on TrustSlip Verify.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx tools/audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - The buttons are now more stable by code contract, but this still needs a phone tap-through review because visual crowding and finger targeting can only be fully judged on the real device viewport.
+
+### TrustSlip public verification paper authority pass (2026-05-15)
+
+- Product owner reviewed the backend/public TrustSlip page on phone and correctly found it still looked too raw:
+  - the expired state sounded like a broken rejection page instead of an institutional renewal instruction.
+  - the public page still exposed debug-like wording, old `GMFN ID` labels, raw ISO dates, and a visible admin release button.
+  - the lite/share paths did not match the more polished TrustSlip paper language.
+- Updated `gmfn_backend/app/api/routes/trust_slips.py`:
+  - public expired wording is now `FRESH TRUSTSLIP REQUIRED`, with plain guidance to ask the holder for a refreshed public code or QR.
+  - public verification paper now has a stronger GSN paper frame, navy/gold trust strip, public/shareable marker, reader action card, human-formatted dates, QR explanation, and non-custodial evidence note.
+  - removed the public-facing admin release action from the verification paper.
+  - removed the server/qrcode debug note from the public page.
+  - changed visible public/share text labels from `GMFN ID` to `GSN ID` while leaving internal fields/contracts unchanged.
+  - updated Lite View to use the same institutional language and human-formatted expiry/check times.
+  - share bundle text now says `GSN ID` and formats expiry dates for readers.
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - made the public/private boundary more explicit: `Public paper ends here`, `Private internal mockup below`, and `Private/internal app detail - do not share`.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\trust_slips.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed with `5 passed`.
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - We should not hide expired status or make an old TrustSlip look valid. The correct trust behavior is to require a fresh TrustSlip.
+  - The page now sounds more institutional, but it still needs a real phone refresh/restart check because backend HTML changes require the running backend to serve the updated code.
+
+### Start Community guide collapse pass (2026-05-15)
+
+- Product owner reviewed the `Start a new community` page and found the three guide blocks too exposed on phone:
+  - `Your details`
+  - `Bank and wallet details`
+  - `Community setup`
+- Confirmed `docs/SCREEN_SPECS.md` already requires `StartCommunityPage` to behave as a 3-step wizard with only one step expanded at a time.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - the top `Read this first` guide now shows the three explanations as compact attached dropdown rows.
+  - only one guide explanation opens at a time, and the default state is collapsed so the page does not dump all explanatory text at first view.
+  - dropdown headers use the shared `SecondaryButton` stable primitive rather than raw buttons, preserving the entry-page button stability contract.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This fixes the guide text dump. The actual Block 1/2/3 wizard was already mostly collapsed by state, but the guide made the page feel heavier than the approved spec intended.
+
+### Start Community main wizard dropdown pass (2026-05-15)
+
+- Product owner asked for the actual `Your details`, `Bank and wallet details`, and `Community setup` blocks to behave like the newly collapsed guide rows.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - main Block 1/2/3 headers are now full-width stable dropdown rows.
+  - only the currently opened block shows its helper text and form fields.
+  - completed verification/proof cards stay hidden while Block 2 is collapsed, reducing phone-page heaviness.
+  - the older separate `Open/Collapse step` side buttons were removed in favor of a single compact row tap target.
+  - the existing step gating remains: Block 2 still waits for Block 1, and Block 3 still waits for the bank/wallet step.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This should make the page feel much calmer on phone. It still needs one real device pass to confirm the row heights and tap areas feel comfortable in the browser chrome.
+
+### Start Community nested details pass (2026-05-15)
+
+- Product owner clarified the intended phone shape for `Start a new community`:
+  - `Your details` should be the only visible outer wizard block after the guide.
+  - `Bank and wallet details` and `Community setup` should live inside the lower part of `Your details`, not appear as three separate top-level blocks.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - added one outer `Your details` dropdown group.
+  - moved the Bank/wallet and Community setup rows into a nested section labelled `Next parts inside your details`.
+  - kept the existing step gating intact: Block 2 still waits for Block 1, and Block 3 still waits for the bank/wallet step.
+  - the outer `Your details` row now reopens the next active inner step when the user collapses and returns.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is closer to the requested phone behavior, but it still needs a real-device tap-through because the best judge of whether the nested section feels calm is the actual mobile browser.
+
+### Start Community visual priority pass (2026-05-15)
+
+- Product owner noted that the `Start a new community` page still had controls competing for equal attention even after the wizard was nested.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - replaced the small shared compact guide button on this page with a route-local gold/navy `Read first, then start` callout.
+  - added a simple GSN mark and clearer welcome copy so the first action is visually obvious on phone.
+  - after the guide is read, the callout quiets down to `Open guide again` and the form below becomes the main work area.
+  - softened the lower form card before the guide is completed so the page no longer presents the guide and form as equal priorities.
+  - kept the nested `Your details` / bank-wallet / community setup structure and all existing entry gating intact.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This improves hierarchy in code, but the phone viewport still needs a human look because "welcoming" is partly a visual judgement, not just an audit result.
+
+### Community Confirmation Relay protocol (2026-05-15)
+
+- Product owner developed the idea that TrustSlip should not merely say `Community member: Yes`; it should support a controlled way for a merchant, employer, society leader, landlord, support group, or opportunity provider to ask whether the community can still confirm the person now.
+- Added `docs/GSN_COMMUNITY_CONFIRMATION_RELAY_PROTOCOL_2026-05-15.md`.
+- The protocol defines:
+  - `Community Confirmation Relay` for slower confirmation.
+  - `Instant Community Pulse` for a quick 2-5 minute community signal while the person is standing with a merchant or other requester.
+  - public TrustSlip block requirements.
+  - full Trust Passport community-backed verification requirements.
+  - public community verification page route idea: `/verify/community/:communityId`.
+  - backend entities, API routes, frontend surfaces, Trust Event generation, and phased rollout.
+- Privacy line recorded:
+  - no public member phone list.
+  - no raw sponsor/admin contacts by default.
+  - aggregate public outcome only.
+  - private internal audit trail must still know who responded and why.
+- ICO privacy principles were checked from official ICO sources before adding the policy language:
+  - lawful basis before sharing.
+  - data minimisation.
+  - data protection by design and by default.
+  - pseudonymisation where full identity is not needed.
+- Blunt truth:
+  - This is a powerful trust layer, but it must not become a hidden guarantor system or a pressure/vigilance tool. The Phase 1 build should keep the result as evidence, not a guarantee.
+
+### Community Confirmation Relay Phase 1 backend (2026-05-15)
+
+- Implemented the first backend slice of the Community Confirmation Relay / Instant Community Pulse idea.
+- Added database models in `gmfn_backend/app/db/models.py`:
+  - `CommunityConfirmationContact`
+  - `CommunityConfirmationPolicy`
+  - `CommunityConfirmationRequest`
+  - `CommunityConfirmationResponse`
+  - `CommunityConfirmationOutcome`
+- Added Alembic migration:
+  - `gmfn_backend/alembic/versions/20260515_add_community_confirmation_relay.py`
+- Added service layer:
+  - `gmfn_backend/app/services/community_confirmation_service.py`
+- Added API routes:
+  - `POST /community-confirmations/request`
+  - `GET /community-confirmations/public/{public_token}`
+  - `GET /community-confirmations/inbox`
+  - `POST /community-confirmations/{request_id}/respond`
+  - `GET /community-confirmations/community/{community_id}/summary`
+  - `GET /verify/community/{community_key}`
+- Registered the router in `gmfn_backend/app/api/router.py`.
+- Attached a privacy-safe `community_confirmation` object to the TrustSlip public verify JSON in `gmfn_backend/app/api/routes/trust_slips.py`.
+- Privacy behavior:
+  - public responses expose aggregate counts only.
+  - raw member phone numbers are not exposed.
+  - responder identity is not exposed on the public outcome.
+  - internal `TrustEvent` records are created for request and response.
+  - public request/read endpoints use the existing MVP in-memory rate limiter.
+- New focused tests:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+- Verification:
+  - `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\app\api\routes\trust_slips.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `2 passed`.
+  - `python -m pytest -q gmfn_backend\tests\test_focus_commitment_trust_events.py --basetemp .pytest-tmp` passed with `5 passed`.
+- Implementation note:
+  - This backend uses `SessionLocal(autoflush=False)`, so `ensure_default_confirmation_contacts` explicitly flushes newly created contact rows before the same request counts eligible contacts.
+- Blunt truth:
+  - This is not yet the full product feature. It has no frontend inbox/merchant button yet, no admin policy editor, no durable/distributed abuse-rate limiter, and no rich dispute workflow.
+  - The current Phase 1 is enough to create a relay request, collect eligible community responses privately, expose a controlled public outcome, and enrich TrustSlip verification with community-confirmation availability.
+
+### Community Confirmation Relay TrustSlip UI wiring (2026-05-15)
+
+- Added frontend API helpers in `frontend/src/lib/api.ts`:
+  - `requestCommunityConfirmation`
+  - `getPublicCommunityConfirmation`
+  - `getCommunityConfirmationInbox`
+  - `respondToCommunityConfirmation`
+  - `getCommunityConfirmationSummary`
+- Updated `frontend/src/pages/TrustSlipPage.tsx`:
+  - normalizes the backend `community_confirmation` object from TrustSlip summary.
+  - adds a new `Community confirmation` section inside the TrustSlip paper.
+  - shows community status, active members, relay contacts, sponsor signals, and last confirmation.
+  - adds a stable `Request community confirmation` action.
+  - displays the aggregate outcome after request creation without exposing private contact details.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/lib/api.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - TrustSlip now has the request action, but there is still no signed-in responder inbox screen. Community members can respond through the API, but the app does not yet give them a polished UI for it.
+  - The public TrustSlip Verify page still needs its own visual community-confirmation block so the outward reader sees the same relay idea on the verification paper, not only inside the signed-in TrustSlip page.
+
+### Community Confirmation Relay public TrustSlip Verify wiring (2026-05-15)
+
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - normalizes `community_confirmation` from the TrustSlip verification response.
+  - adds a public-paper `Community confirmation` section before the public action buttons.
+  - shows community status, active members, relay contacts, sponsor signals, and last confirmation.
+  - explains that GSN uses a controlled relay and does not expose private member phone numbers on the public paper.
+  - adds a stable `Request community confirmation` action for the public/outward reader.
+  - displays aggregate relay outcome after request creation: confidence, sent count, response count, and confirmed-known count.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/lib/api.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - The public TrustSlip Verify paper can now request community confirmation, but the respondent side is still API-only. The next practical UI slice is a signed-in confirmation inbox where approved community contacts can answer `known here`, `active here`, `good standing for this decision`, `ask for more evidence`, `inactive`, `under dispute`, or `not known sufficiently`.
+
+### Community Confirmation Relay responder inbox UI (2026-05-15)
+
+- Added named authenticated screen to `docs/SCREEN_REGISTRY.md`:
+  - `CommunityConfirmationInboxPage`
+- Added route constants:
+  - `APP_ROUTES.COMMUNITY_CONFIRMATION_INBOX = /app/community-confirmations`
+  - CTA intent `communityConfirmationInbox`
+- Added `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - loads `GET /community-confirmations/inbox`.
+  - shows pending relay/instant pulse requests.
+  - gives approved community contacts clear response choices:
+    - `known_here`
+    - `active_here`
+    - `good_standing`
+    - `ask_more_evidence`
+    - `known_but_caution`
+    - `inactive`
+    - `under_dispute`
+    - `not_known`
+  - submits responses through `POST /community-confirmations/{request_id}/respond`.
+  - removes answered requests from the visible queue after success.
+  - explains that the response should be based on honest direct knowledge, not pressure or guesswork.
+- Wired routes in `frontend/src/App.tsx`:
+  - `/app/community-confirmations`
+  - `/app/community-confirmation-inbox` redirects to `/app/community-confirmations`.
+  - public aliases `/community-confirmations` and `/community-confirmation-inbox` redirect to the authenticated inbox.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx src/App.tsx src/lib/appRoutes.ts src/lib/ctaTargets.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - The responder UI is now usable, but the backend inbox item currently gives `subject_user_id` rather than a friendly member name, phone status, or GSN ID. For a production-quality responder experience, the next backend improvement should add a privacy-safe `subject_profile` summary to `_private_request_item`.
+  - There is still no admin policy editor for relay contacts or opt-in/out management.
+
+### Community Confirmation Relay responder subject profile (2026-05-15)
+
+- Improved the signed-in responder experience so approved community contacts no longer see only `member #id`.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - `_private_request_item` now includes a privacy-safe `subject_profile` for signed-in eligible responders.
+  - Fields exposed:
+    - `user_id`
+    - `display_name`
+    - `gmfn_id`
+    - `profile_image_url`
+    - `phone_verified`
+    - `membership_status`
+    - `membership_role`
+  - Still does not expose raw phone numbers or private contacts.
+- Updated `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - shows subject profile card with avatar/photo fallback, name, GSN ID, phone verification, and membership status.
+  - keeps response buttons stable and explicit.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - confirms signed-in inbox includes subject display name, GSN ID, phone verification, and membership status.
+  - confirms raw `phone_e164` is not included in the subject profile.
+- Verification:
+  - `python -m py_compile gmfn_backend/app/services/community_confirmation_service.py gmfn_backend/app/api/routes/community_confirmations.py` passed.
+  - `python -m pytest -q gmfn_backend/tests/test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `2 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is now much more human, but still not complete as a full institution-grade relay. Missing pieces remain: admin contact policy editor, opt-in/out screen, richer reason notes, expiry/closure management UI, and a public outcome page component for `/community-confirmations/public/{token}` if the product owner wants the aggregate result to be viewed as its own paper.
+
+### Community Confirmation review SLA is policy-owned (2026-05-16)
+
+- Continued the Instant Community Confirmation review workflow by moving review-case timing out of hard-coded service logic and into community confirmation policy.
+- Added policy fields:
+  - `review_attention_after_hours` default 24
+  - `review_overdue_after_hours` default 72
+- Added migration:
+  - `gmfn_backend/alembic/versions/20260516_add_community_confirmation_review_sla_policy.py`
+- Updated backend:
+  - `CommunityConfirmationPolicy` now stores the review timing thresholds.
+  - policy GET/PATCH returns and updates the thresholds.
+  - policy updates log `community_confirmation.policy_updated` with the SLA fields in `changed_fields`.
+  - review-case public items now include `review_attention_after_hours` and `review_overdue_after_hours`.
+  - review-case SLA labels/meanings now use the community policy thresholds instead of fixed 24h/72h copy.
+- Updated frontend:
+  - `CommunityConfirmationPolicyPage` shows a compact `Review timing` control with 1d/3d, 2d/5d, and 3d/7d presets.
+  - `CommunityConfirmationInboxPage` now surfaces the active policy timing on each review case card, so reviewers can see the threshold behind the SLA label.
+  - `frontend/src/lib/api.ts` accepts the new policy fields.
+- Updated tests:
+  - policy admin test verifies defaults, updates, and TrustEvent changed fields.
+  - review inbox test proves a 2h/4h policy makes a 5-hour case overdue, so the setting is functional, not decorative.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\db\models.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py gmfn_backend\alembic\versions\20260516_add_community_confirmation_review_sla_policy.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `python -m alembic -c gmfn_backend\alembic.ini heads` shows `20260516_add_community_confirmation_review_sla_policy (head)`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationPolicyPage.tsx src/pages/CommunityConfirmationInboxPage.tsx src/lib/api.ts` passed.
+  - `npm run audit:button-stability`, `npm run audit:tap-stability`, `npm run audit:route-fallthrough`, and `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is a schema change, so it needs migration discipline before deployment.
+  - The SLA is now configurable, but there is still no true reviewer workload system: no assigned-to-me default dashboard, no escalation notifications, and no bulk triage.
+
+### Community Confirmation Relay public outcome paper (2026-05-15)
+
+- Added public verification screen registry entry:
+  - `CommunityConfirmationOutcomePage`
+- Added `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`:
+  - loads `GET /community-confirmations/public/{token}` through `getPublicCommunityConfirmation`.
+  - presents the relay outcome as a GSN verification paper, not a raw API response.
+  - shows status/confidence, plain meaning, community, request reason, risk level, aggregate response counts, privacy note, decision note, and collapsible technical detail.
+  - keeps public data aggregate only: no private member phone numbers, no individual responder names, no raw contact list.
+  - adds stable actions for refresh, copy public link, and print/save PDF.
+- Wired public route in `frontend/src/App.tsx`:
+  - `/community-confirmations/public/:token`
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx src/App.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `python -m pytest -q gmfn_backend/tests/test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `2 passed`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - The relay now has request, response, public TrustSlip block, responder inbox, and public outcome paper.
+  - Still missing for institution-grade completion: admin policy editor, contact opt-in/out UI, richer response notes, request expiry/closure management, and a visible route from notifications/inbox into pending confirmation requests.
+
+### Community Confirmation Relay outcome link wiring (2026-05-15)
+
+- Updated `frontend/src/pages/TrustSlipPage.tsx` and `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - after a community confirmation request is opened, the visible result now includes a stable `Open public outcome paper` link.
+  - the link points to `/community-confirmations/public/{public_token}`.
+  - this makes the new public outcome paper reachable from both the signed-in TrustSlip and the outward TrustSlip Verify surface.
+- Verification:
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/CommunityConfirmationOutcomePage.tsx src/App.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `python -m pytest -q gmfn_backend/tests/test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `2 passed`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+
+### Community Confirmation Relay provider decision trail (2026-05-15)
+
+- Added backend decision recording for the merchant/provider side of an instant community confirmation:
+  - new model `CommunityConfirmationDecision` in `gmfn_backend/app/db/models.py`.
+  - new migration `gmfn_backend/alembic/versions/20260515_add_community_confirmation_decisions.py`.
+  - `POST /community-confirmations/{request_id}/decision` records whether the provider proceeded, reduced exposure, asked for more evidence, declined, or sent the matter to review.
+  - `PATCH /community-confirmations/decisions/{decision_id}` records follow-up outcome such as settled, issue reported, or under review.
+  - `GET /community-confirmations/{request_id}/decision` lets a signed-in provider/admin reload the aggregate outcome paper and recover their recorded decision status.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - confirmation requests now create TrustEvents for request creation and delivery-pool preparation.
+  - responder submissions create `community_confirmation.response_recorded` TrustEvents.
+  - aggregate outcome recomputation creates `community_confirmation.outcome_recorded` TrustEvents.
+  - provider decisions create `community_confirmation.merchant_decision_recorded` TrustEvents.
+  - provider follow-up status changes create `community_confirmation.decision_status_updated` TrustEvents.
+  - event metadata keeps privacy flags explicit: outwardly anonymous, internally attributable, no private contacts exposed.
+- Updated `frontend/src/lib/api.ts`:
+  - `recordCommunityConfirmationDecision`
+  - `updateCommunityConfirmationDecisionStatus`
+  - `getCommunityConfirmationDecision`
+- Updated `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`:
+  - adds a collapsed `Record provider decision` section for signed-in providers/admins.
+  - supports `Reduce and proceed`, `Do not proceed`, and `Ask for more evidence`.
+  - after a decision is recorded, supports `Mark settled`, `Report issue`, and `Send to review`.
+  - on reload, hydrates the existing signed-in provider/admin decision without exposing private responder contacts.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - now verifies the provider decision row, status update, signed-in decision lookup, and exact TrustEvent chain:
+    1. `community_confirmation.requested`
+    2. `community_confirmation.delivery_pool_prepared`
+    3. `community_confirmation.response_recorded`
+    4. `community_confirmation.outcome_recorded`
+    5. `community_confirmation.merchant_decision_recorded`
+    6. `community_confirmation.decision_status_updated`
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `5 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationOutcomePage.tsx src/lib/api.ts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `git diff --check -- docs/HANDOFF_NOTES.md frontend/src/pages/CommunityConfirmationOutcomePage.tsx frontend/src/lib/api.ts gmfn_backend/app/db/models.py gmfn_backend/app/services/community_confirmation_service.py gmfn_backend/app/api/routes/community_confirmations.py gmfn_backend/tests/test_community_confirmation_relay.py gmfn_backend/alembic/versions/20260515_add_community_confirmation_decisions.py` passed.
+  - `python -m alembic -c gmfn_backend\alembic.ini heads` shows `20260515_add_community_confirmation_decisions (head)`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - The confirmation flow now feeds the Trust Event system at the important points: request, delivery, response, aggregate outcome, provider decision, and follow-up result.
+  - This is still not a bank guarantee, legal enforcement system, or full dispute-resolution engine. It creates evidence and accountability signals; it does not make the merchant whole by itself.
+  - The next serious production slice should be admin policy/contact management: who is eligible to receive confirmation requests, who opted in, when they were last active, and how community policy controls the eligible pool.
+
+### Community Confirmation Relay policy TrustEvents (2026-05-15)
+
+- Tightened the relay accountability trail so policy and contact-control changes also feed the Trust Event ledger.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - member opt-in/out or responder preference changes now log `community_confirmation.contact_preference_updated`.
+  - admin changes to relay policy now log `community_confirmation.policy_updated`.
+  - admin changes to an eligible contact's relay/instant status now log `community_confirmation.contact_eligibility_updated`.
+  - each event records changed fields, before/after state, whether the action was member-controlled or admin-controlled, and `private_contacts_exposed: false`.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - verifies member opt-out creates the contact preference TrustEvent.
+  - verifies admin policy changes create the policy TrustEvent.
+  - verifies admin contact changes create the contact eligibility TrustEvent.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\app\api\routes\community_confirmations.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `5 passed`.
+- Blunt truth:
+  - The relay now has a much better evidence trail: not only transaction-facing actions, but also the governance choices behind who can answer.
+  - The remaining serious gap is not event logging; it is product control: there is still no mature UI for member-nominated references, opt-in education, response notes/tags, or community-level dispute review.
+
+### Community Confirmation responder reason notes (2026-05-15)
+
+- Tightened the responder evidence layer for Instant Community Confirmation.
+- Updated `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - each response option now sends a structured reason tag instead of a display label.
+  - each request card now includes an optional `Private context for GSN review` note box.
+  - the note is explicitly explained as internal context for later dispute/admin review, not public TrustSlip output.
+  - notes are capped at 500 characters and cleared after the response is recorded.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - `community_confirmation.response_recorded` TrustEvents now include `response_note` and `response_note_present`.
+  - response notes remain internal evidence; public community confirmation outcomes still expose aggregate counts only.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - verifies response reason, private response note, and `response_note_present` appear in the TrustEvent metadata.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `5 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This improves later dispute evidence because a responder can now explain why they chose an answer.
+  - It also creates a privacy/product risk: response notes must stay out of public papers unless a later formal dispute policy explicitly allows controlled disclosure. Right now they are internal TrustEvent evidence only.
+
+### Community Confirmation expiry TrustEvent (2026-05-15)
+
+- Tightened the live confirmation lifecycle so expiry is now recorded as evidence, not only shown as page state.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - added canonical expiry helper for community confirmation requests.
+  - when a responder tries to answer an expired request, GSN marks it expired and logs `community_confirmation.request_expired`.
+  - when the public outcome page is opened after expiry, GSN also marks it expired and logs the same deduped TrustEvent.
+  - expiry metadata includes request id, mode, reason, risk level, previous status, expiry time, and `private_contacts_exposed: false`.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - adds coverage proving public read of an expired live confirmation persists the expired status and records `community_confirmation.request_expired`.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `6 passed`.
+- Blunt truth:
+  - This closes another evidence gap: an expired confirmation is now part of the Trust Event trail.
+  - It is still not a full closure-management UI. A later admin/provider surface should let eligible actors cancel or close a request intentionally, with reasons.
+
+### Community Confirmation review cases visible in inbox (2026-05-16)
+
+- Continued the Instant Community Confirmation long-haul work by making review cases easier to find from the existing confirmation inbox.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - review-case inbox items now include the request `public_token` alongside request status, mode, reason, risk, outcome summary, community name/code, and `private_contacts_exposed: false`.
+  - this gives the frontend a safe route back to the public outcome paper without exposing raw contacts.
+- Updated `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - added a compact/collapsible `Review cases` section on the same inbox screen.
+  - review cards show status, reason, risk, request status, community, review reason, trust-reading effect, subject id, assignment status, and last update.
+  - added stable buttons for `Open outcome paper`, `Copy case summary`, and `Refresh cases`.
+  - added a collapsed `Resolve this case` control with explicit resolution, trust-reading effect, and factual resolution note.
+  - resolution posts through the existing review-case API and reloads the open review-case list after success.
+  - mobile keeps the review section collapsed by default so the inbox does not become another content dump.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - asserts review inbox items include the public token and request context.
+  - asserts no phone/contact field leaks through review inbox JSON.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\services\community_confirmation_service.py gmfn_backend\tests\test_community_confirmation_relay.py` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This makes review work discoverable and resolvable from the inbox, but it is still not a full case-management desk with assignment queues, filters, evidence attachments, and reviewer workload controls.
+  - The next useful slice is a dedicated admin review desk if the workflow becomes more than a few open cases.
+
+### Community Confirmation review evidence drawer in inbox (2026-05-16)
+
+- Continued the review-case inbox work so a reviewer can attach internal evidence before resolving a case.
+- Updated `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - added a collapsed `Internal review evidence` drawer inside each review case.
+  - reviewers can load existing evidence for that case without leaving the inbox.
+  - reviewers can add an internal evidence item with type, title, note, and optional reference.
+  - the UI explicitly warns that evidence must not expose private responder contacts.
+  - evidence controls use stable buttons and collapsed disclosure sections so the inbox stays mobile-friendly.
+- Reused existing API helpers:
+  - `getCommunityConfirmationReviewEvidence`
+  - `addCommunityConfirmationReviewEvidence`
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This closes the immediate evidence gap inside the inbox, but the system still lacks filters and assignment workload management. If many cases exist, the current inbox will become too broad for serious operations.
+
+### Community Confirmation review-case filters in inbox (2026-05-16)
+
+- Continued the review-case inbox work by adding lightweight operational filters before building a separate admin desk.
+- Updated `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - added review-case filters for status, optional community ID, and result limit.
+  - supported `open`, `in_review`, `resolved`, `dismissed`, and `all` case views through the existing review-case inbox API.
+  - added `Apply` and `Clear` controls with stable tap targets.
+  - adjusted the empty state to say `No matching review cases` instead of implying only open cases exist.
+  - fixed the clear-community-filter path so it does not accidentally reuse the old community id from state.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx` passed.
+  - `python -m pytest -q gmfn_backend\tests\test_community_confirmation_relay.py --basetemp .pytest-tmp` passed with `7 passed`.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - Filters make the inbox more operational, but this is still not workload management. There is still no "assigned to me" queue, reviewer performance view, SLA timer, or bulk case triage.
+
+### Spotlight publish public-entry recovery repair (2026-05-16)
+
+- Fixed the route-recovery weakness behind the user report that a Spotlight publish click could fall into Cover/Welcome.
+- Updated `frontend/src/lib/publishRecovery.ts`:
+  - added `peekPublishRecoveryTarget()` so the app can inspect an active publish recovery marker without consuming it.
+  - kept `publishRecoveryTarget()` as the consuming read used after successful recovery/login.
+- Updated `frontend/src/App.tsx`:
+  - `PublicEntryGuard` now reads the auth token before consuming the publish marker.
+  - authenticated users who reach `/cover` or `/welcome` during a publish attempt are sent back to the remembered `/app/...` publish target.
+  - unauthenticated users with an active publish marker are sent to `/login?session=expired` with the publish target preserved as the return route, instead of being stranded in the public entry funnel.
+- Updated `frontend/src/pages/LoginPage.tsx`:
+  - login redirect logic now preserves route hashes from `state.from`.
+  - direct login also peeks at a pending publish target.
+  - successful login consumes the publish marker and returns to the Spotlight route when one exists.
+- Updated audits:
+  - `frontend/tools/audit-route-fallthrough.mjs`
+  - `frontend/tools/audit-link-contracts.mjs`
+  - both now assert that publish recovery uses peek-before-login and consume-after-auth behavior.
+- Verification:
+  - `npm exec -- eslint src/App.tsx src/pages/LoginPage.tsx src/lib/publishRecovery.ts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This fixes the strongest route-level cause of Spotlight publish falling into Cover/Welcome.
+  - If publish still falls after this, the next suspect is not the route guard; it is likely token/session invalidation during the upload/API call, or a phone-browser reload losing session storage.
+
+### Spotlight publish phone recovery hardening pass 2 (2026-05-16)
+
+- Follow-up after the owner correctly reported the first repair was not enough.
+- Updated `frontend/src/lib/publishRecovery.ts`:
+  - publish recovery now writes to both `sessionStorage` and `localStorage`.
+  - recovery TTL increased from 5 minutes to 30 minutes so longer phone upload/reload paths do not lose the marker too quickly.
+  - read/consume logic clears both storage locations when the marker is expired or consumed.
+- Updated `frontend/src/App.tsx`:
+  - unauthenticated publish recovery now sends the user to `/login` with an explicit safe `next=/app/...` query as well as router state.
+  - this protects the return route even if phone browser route state is lost during reload.
+- Updated `frontend/src/pages/LoginPage.tsx`:
+  - login now accepts only safe `/app` or `/app/...` `next` targets.
+  - pending publish recovery still takes priority and is consumed only after successful sign-in/redirect.
+- Updated audits:
+  - `frontend/tools/audit-route-fallthrough.mjs`
+  - `frontend/tools/audit-link-contracts.mjs`
+  - both now assert 30-minute dual-storage publish recovery, explicit login `next` handoff, and safe `/app` login return handling.
+- Verification:
+  - `npm exec -- eslint src/App.tsx src/pages/LoginPage.tsx src/lib/publishRecovery.ts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+  - `npm run audit:entry-auth` still fails on pre-existing `JoinEntryPage.tsx` invite-entry expectations; this was not caused by the Spotlight repair.
+- Blunt truth:
+  - This is now much stronger for phone behavior than the first patch.
+  - If a Spotlight publish click still lands on Cover/Welcome, the remaining likely causes are outside the visible publish buttons: a full browser/storage reset, a backend/API auth response clearing the app state, or a different Spotlight-adjacent button being tested than the Free/Paid publish controls.
+
+### Spotlight publish route/link/auth recovery hardening pass 3 (2026-05-16)
+
+- Follow-up after the owner reported the second recovery pass was still not enough.
+- Root cause addressed:
+  - the previous marker was created by the final publish functions, but some phone paths enter Spotlight through route buttons/CTA links first.
+  - if auth/session rejection happened before the final publish function ran, the app could still reach login/cover without a concrete Spotlight return target.
+- Updated `frontend/src/lib/nav.ts`:
+  - added shared Spotlight-route recovery detection for `/app/...spotlight...` targets.
+  - `navigateWithOrigin()` now records a publish/Spotlight recovery marker before navigating to a Spotlight app route.
+- Updated `frontend/src/components/OriginLink.tsx`:
+  - internal React Router links now record Spotlight recovery before click navigation when the target is a Spotlight app route.
+  - preserved the shared tap guards for pointer down/up, mouse down, and click.
+- Updated `frontend/src/components/RequireAuth.tsx`:
+  - unauthenticated/session-expired redirects now check pending publish recovery.
+  - login receives `session=expired&next=/app/...` plus route state, instead of a bare login route.
+- Updated audits:
+  - `frontend/tools/audit-route-fallthrough.mjs`
+  - `frontend/tools/audit-link-contracts.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+  - audits now assert route/link/auth level Spotlight recovery, not only final publish-button recovery.
+- Verification:
+  - `npm exec -- eslint src/lib/nav.ts src/components/OriginLink.tsx src/components/RequireAuth.tsx` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is the deeper system-level fix the user was asking for: route buttons, stable links, and auth rejection now all preserve the Spotlight destination.
+  - If a publish action still falls to Cover after this, the likely remaining issue is not normal React route fallthrough. It would point to full browser storage loss, a cached/stale frontend bundle on the phone, or a separate raw/non-shared button that is not using `navigateWithOrigin`, `OriginLink`, or the stable button/link primitives.
+
+### Spotlight publish phone recovery hardening pass 4 (2026-05-16)
+
+- Follow-up after the owner reported the third recovery pass was still falling to the welcome page.
+- Root cause addressed:
+  - publish recovery still depended on browser storage being readable across the phone click/reload path.
+  - `ShopControlPage` still had raw subscription Spotlight navigation calls that bypassed `navigateWithOrigin`.
+- Updated `frontend/src/lib/publishRecovery.ts`:
+  - publish recovery now also stores the pending target in `window.name` with a dedicated recovery prefix.
+  - recovery reads storage first, then falls back to the `window.name` marker.
+  - marker cleanup clears both storage and the `window.name` fallback when consumed or expired.
+- Updated `frontend/src/pages/ShopControlPage.tsx`:
+  - subscription Spotlight route buttons now use `navigateWithOrigin`.
+  - the internal link-section route helper now uses `navigateWithOrigin` for path/search/hash targets.
+  - the hook dependency list now includes `location` where the route helper uses it.
+- Updated audits:
+  - `frontend/tools/audit-route-fallthrough.mjs`
+  - `frontend/tools/audit-link-contracts.mjs`
+  - `frontend/tools/audit-spotlight-controls.mjs`
+  - audits now assert the `window.name` recovery fallback and the Shop Control Spotlight navigation contract.
+- Verification:
+  - `npm exec -- eslint src/lib/publishRecovery.ts src/pages/ShopControlPage.tsx src/lib/nav.ts src/components/OriginLink.tsx src/components/RequireAuth.tsx` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - The known Spotlight route buttons, links, auth redirects, and Shop Control Spotlight jumps are now covered by the shared recovery system.
+  - If the phone still lands on Welcome after this, the next suspects are a stale phone bundle/dev server cache, a URL containing an explicit reset/cover trigger, or another unobserved raw redirect outside the audited Spotlight paths.
+
+### Global phone tap-boundary hardening (2026-05-16)
+
+- Follow-up after the owner reported broadly unstable/wobbling buttons across many places.
+- Root cause addressed:
+  - page-level stable buttons and audits were not enough to protect against a phone/browser late click landing on a different underlying action after layout movement.
+  - this can look like a button "falling" to the wrong page even when the individual button component is stable.
+- Added `frontend/src/lib/mobileTapGuard.ts`:
+  - installs a document-level capture guard.
+  - records the action root where `pointerdown` starts.
+  - blocks the following click if it lands on a different action root within the same short tap window.
+  - covers shared action roots, `data-cta-id`, legacy raw buttons, links, role buttons, summaries, and submit/button inputs.
+- Updated app boot in `frontend/src/main.tsx`:
+  - installs the global mobile tap guard before rendering the app.
+- Updated shared action primitives:
+  - `frontend/src/components/StableButton.tsx`
+  - `frontend/src/components/OriginLink.tsx`
+  - Stable buttons, CTA links, disclosure summaries, external links, and router links now mark themselves with `data-gmfn-action-root="true"`.
+- Updated global CSS in `frontend/src/index.css`:
+  - action-root children no longer steal the tap target from the parent action.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - now asserts the global tap guard exists, is installed at boot, and shared action roots are marked.
+- Verification:
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts src/main.tsx src/components/StableButton.tsx src/components/OriginLink.tsx` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This is a real system-level guard, not a page-by-page patch.
+  - It will not fix every possible visual layout problem, but it should stop the worst failure mode: a tap starting on one button and firing a different button/link underneath.
+
+### Global phone button steadiness hardening pass 2 (2026-05-16)
+
+- Follow-up after the owner asked to steady buttons broadly.
+- Tightened `frontend/src/lib/mobileTapGuard.ts`:
+  - added pointer-up mismatch detection.
+  - if a tap starts on one action and pointer-up lands on another action, the next click is suppressed.
+  - disabled/aria-disabled actions are blocked at the capture layer so they cannot leak into parent cards or nearby route controls.
+- Tightened `frontend/src/index.css`:
+  - global action surfaces now get steadier max-width, line-height, text alignment, and wrapping rules.
+  - action-root children are guarded recursively so nested labels/icons cannot steal the tap target.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - now asserts pointer-up suppression, disabled-action checks, and global action sizing/wrapping rules.
+- Verification:
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts src/main.tsx src/components/StableButton.tsx src/components/OriginLink.tsx` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This makes the shared button system stricter and safer on phone.
+  - Remaining visible "wobble" after this is likely from page layout/card sizing, not from the tap/click system itself.
+
+### Global phone button steadiness hardening pass 3 (2026-05-16)
+
+- Follow-up after the owner reported buttons started tripping off again.
+- Tightened `frontend/src/lib/mobileTapGuard.ts`:
+  - added a short 520ms settle window after an accepted action click.
+  - rapid duplicate/ghost clicks during re-render/navigation are suppressed before they can hit a newly exposed action.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - now asserts the settle-window behavior along with pointer-up mismatch and disabled-action suppression.
+- Verification:
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM` and approved escalation.
+- Blunt truth:
+  - This should stop fast ghost/double clicks from tripping into the wrong action while the screen is moving.
+  - If a single slow tap still trips to the wrong route, the next fix must be targeted at the exact screen/card because it is likely a page-level clickable container or layout overlap, not a global tap timing issue.
+
+### Global phone button steadiness hardening pass 4 (2026-05-16)
+
+- Follow-up after the owner said the button route still was not okay.
+- Blunt diagnosis:
+  - the earlier guard still treated only Spotlight as the route most likely to
+    need recovery;
+  - that was too narrow because the owner is now seeing general app buttons
+    fall back toward Cover/Welcome;
+  - the old rapid-click settle window could also suppress a legitimate fast
+    second tap because it did not check whether a new pointer tap had started.
+- Updated `frontend/src/lib/nav.ts`:
+  - added `rememberAppRouteRecovery()`;
+  - `navigateWithOrigin()` now records every safe `/app` target, not only
+    Spotlight targets, before route movement starts.
+- Updated `frontend/src/components/OriginLink.tsx`:
+  - shared router links now record every safe `/app` target before navigation.
+- Updated `frontend/src/lib/mobileTapGuard.ts`:
+  - action-root detection now reads `event.composedPath()` first, so nested
+    text/icon/overlay targets are less likely to be misread on phone;
+  - the 520ms settle window now suppresses only ghost clicks that arrive
+    without a new active pointer tap;
+  - added a small session trace under `gmfn_mobile_tap_trace` for the last 20
+    accepted/suppressed action clicks. This is for debugging only and should
+    not affect runtime behavior.
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx`:
+  - the remaining raw public shop URL anchor now marks itself as an action root
+    and stops pointer/click propagation.
+- Updated audits:
+  - `frontend/tools/audit-route-fallthrough.mjs`
+  - `frontend/tools/audit-link-contracts.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+- Verification:
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts src/lib/nav.ts src/components/OriginLink.tsx src/components/CommunityShopControlPanel.tsx` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Blunt truth:
+  - This is a stronger shared repair than the earlier Spotlight-only recovery.
+  - If a button still falls to Cover/Welcome after this exact build is served
+    fresh on the phone, the next useful evidence is the exact button plus the
+    `gmfn_mobile_tap_trace` session-storage value. Without that, more global
+    guessing risks making normal taps feel dead.
+
+### Shared stable button physical tightening (2026-05-16)
+
+- Follow-up after the owner asked to tighten buttons again after broad route
+  recovery and global tap guards.
+- Tightened `frontend/src/components/StableButton.tsx`:
+  - added a short 360ms per-control duplicate-click guard for `StableButton`
+    and `StableCtaLink`;
+  - kept disabled/busy controls as guarded `aria-disabled` controls rather
+    than native dead buttons;
+  - reinforced shared action shape with hidden overflow, normal wrapping,
+    center alignment, no decoration, and stable word breaking.
+- Verification:
+  - `npm exec -- eslint src\components\StableButton.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Blunt truth:
+  - This should reduce double-fire and text/box instability in shared buttons.
+  - It cannot prove every remaining page-level overlap is gone. If a single
+    button still falls wrongly after this fresh build, inspect that exact
+    page/button next instead of adding more blind global suppression.
+
+### Public shop share/repost link audit and repair (2026-05-16)
+
+- Follow-up after the owner asked why Share Shop and GSN repost were not giving
+  the right result.
+- Blunt diagnosis from code:
+  - backend has a real product-level repost route:
+    `POST /marketplace/products/{product_id}/repost`;
+  - that route requires a product, a target community, active membership in the
+    target community, available distribution slots, and records
+    `marketplace.product.reposted` as a trust event;
+  - the public Shop Gallery `GSN repost` button was not calling that backend
+    route. It was only copying a text pack, so it was not a real live repost;
+  - outward Shop Share links were using the public shop root and product share
+    helpers were discarding product/block data, so outsiders could land on the
+    upper signboard instead of the Shop Diaries / 12 public blocks.
+- Updated `frontend/src/lib/publicLinks.ts`:
+  - added `publicShopDiariesPath()` and `publicShopDiariesUrl()`;
+  - changed `publicShopBlockPath()` so product/block shares preserve
+    `product_id` and `#shop-block-N` / `#product-ID` anchors.
+- Updated outward share/copy surfaces:
+  - `frontend/src/pages/ShopGalleryPage.tsx` now uses the Shop Diaries URL for
+    the visible share/copy/repost link and tells the truth that the public
+    `GSN repost` action is a draft unless a product and target community are
+    chosen inside GSN.
+  - `frontend/src/pages/MarketplacePage.tsx` now prepares/copies/opens the
+    Shop Diaries URL after the backend-confirmed owner shop exists.
+  - `frontend/src/components/CommunityShopControlPanel.tsx` now exposes the
+    Shop Diaries public link after the active shop is confirmed.
+  - `frontend/src/pages/ShopAssetsPage.tsx` now copies Shop Diaries links for
+    whole-shop sharing and block/item deep links for product sharing, with
+    honest success messages.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - the audit now protects the new outward-share rule instead of enforcing the
+    old root-only behavior.
+- Verification:
+  - `npm exec -- eslint src\lib\publicLinks.ts src\pages\ShopGalleryPage.tsx src\pages\MarketplacePage.tsx src\components\CommunityShopControlPanel.tsx src\pages\ShopAssetsPage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - Share Shop is repaired to land on Shop Diaries.
+  - Product/block share is repaired to carry the exact block.
+  - Whole-shop "repost" is still not a true backend repost. The next real
+    implementation step is a product-level repost workflow with a target
+    community picker, because the backend contract cannot repost "a whole shop"
+    without choosing a product and destination community.
+
+### Public shop live repost workflow (2026-05-16)
+
+- Follow-up after the owner asked to continue and get the repost done.
+- Implemented the real available repost contract instead of faking whole-shop
+  repost:
+  - backend truth is product-level repost through
+    `POST /marketplace/products/{product_id}/repost`;
+  - therefore the UI now asks for a public block and target community before
+    submitting.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - imports `createMarketplaceRepost()` and `listMyClans()`;
+  - public products now carry `originClanId` where the backend exposes it;
+  - `GSN repost` now opens a signed-in live repost panel when possible;
+  - if the visitor is not signed in, it copies a repost draft and says clearly
+    that sign-in is required for a live in-network repost;
+  - the live panel lets the user choose:
+    - one public block with remaining distribution slots;
+    - one eligible target community from the signed-in user's communities;
+  - submitting calls `createMarketplaceRepost({ product_id, target_clan_id })`;
+  - success updates visible repost/slot counters and closes the panel.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - asserts the Shop Gallery repost path calls the real backend product repost
+    route with a product and target community;
+  - asserts the live repost panel still includes public-block and target
+    community selection.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx src\lib\publicLinks.ts` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Blunt truth:
+  - This is now a real product repost workflow, not just a copied text pack.
+  - It is still not a whole-shop repost because the backend does not currently
+    define whole-shop repost as a business action. Creating that would need a
+    separate backend model/rule, otherwise it would bypass the current
+    distribution-slot and trust-event rules.
+
+### Marketplace public shop button and Shop Diaries landing repair (2026-05-16)
+
+- Follow-up after the owner reported that public Shop Gallery / Shop Diary
+  block links still opened the upper public shop face instead of the 12 public
+  blocks, and that Marketplace public-shop buttons were hard to test because of
+  phone tap instability.
+- Blunt diagnosis from code:
+  - the outward link helpers were already producing `#shop-diaries` and
+    `#shop-block-N` links after the previous repair;
+  - the public shop page only performed a single `scrollIntoView()` reveal, so
+    phone layout shifts after images/cards loaded could pull the user back above
+    Shop Diaries;
+  - stale owner-shop reconnect could also replace the public shop path while
+    dropping `?product_id` and the fragment, which turns a block link back into
+    the upper shop face.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - `replacePublicShopAddress()` now preserves the current search and hash
+    when reconnecting a stale public shop owner ID;
+  - Shop Diaries / block hash landing now uses a mobile-safe offset and
+    repeated reveal passes after layout settles (`120ms`, `320ms`, `700ms`,
+    `1100ms`) instead of one fragile scroll.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - the Marketplace public shop visible link and Refresh/Copy/Email/Open
+    controls now have explicit stable debug ids;
+  - the public shop action buttons keep fixed `54px` stable height for phone
+    tap traceability.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - protects the new hash/search preservation and repeated mobile reveal rule;
+  - protects traceable Marketplace public-shop button ids.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx src\pages\MarketplacePage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - The link contract now has stronger protection, and mobile landing should
+    settle at Shop Diaries / selected block instead of the upper signboard.
+  - This does not prove the phone's served bundle is fresh. If the same phone
+    still lands high after refresh, first clear/reload the served frontend and
+    then capture the exact URL shown in the address bar.
+
+### Marketplace page-specific button steadiness repair (2026-05-16)
+
+- Follow-up after the owner asked whether button repair was being handled at
+  system level or page level, and reported that Marketplace remained especially
+  unstable.
+- Blunt answer:
+  - the app already has system-level tap protection through
+    `mobileTapGuard`, shared `StableButton`, shared `StableCtaLink`, and app
+    route recovery;
+  - Marketplace still needed page-level repair because it has large route
+    tiles and section buttons that open content and then scroll inside the same
+    page. One shared tap guard cannot stop that page from missing its landing
+    after layout changes.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - normal Marketplace action buttons now keep fixed `48px` height and
+    `48px` max-height so text or state changes do not stretch the tap area;
+  - Marketplace OS route tiles now keep fixed `154px` height, max-height,
+    overflow protection, layout containment, and scroll anchoring disabled;
+  - Marketplace OS row controls now keep fixed `78px` height, max-height,
+    overflow protection, layout containment, and scroll anchoring disabled;
+  - internal Marketplace section landing now uses repeated mobile-safe scroll
+    passes (`120ms`, `320ms`, `700ms`, `1100ms`) with an offset instead of a
+    single `scrollIntoView()`.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - protects fixed Marketplace action/tile heights;
+  - protects repeated Marketplace section landing.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This is not a generic promise that every Marketplace tap is now perfect on
+    every phone. It removes the biggest page-local instability: resizing tiles
+    and one-shot section scrolling.
+  - If Marketplace still falls wrong after a fresh build, inspect the session
+    storage `gmfn_mobile_tap_trace` and the exact button text/URL. Without
+    that trace, further global suppression risks breaking normal taps.
+
+### Public Shop Diaries owner reconnect softening (2026-05-16)
+
+- Follow-up after the owner reported that public shop share links were steady
+  but still opened only the upper public shop face, with the stale message:
+  `This public shop link is not connected to an active shop yet...`
+- Blunt diagnosis:
+  - the upper public shop face and the 12-block Shop Diaries are not separate
+    shops; they are two sections of the same public shop page;
+  - if the stale message appears, the frontend reached `/shop/:gmfnId`, but the
+    backend could not resolve that public identity to an active marketplace
+    shop, so the 12 public blocks cannot be trusted/shown;
+  - the owner reconnect path was too strict because it required the stale link
+    ID to match the signed-in owner ID before it would recreate/reactivate the
+    current owner's shop.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - disconnected public shop links now heal to the signed-in owner's current
+    GSN shop when an owner session is present, instead of blocking on a stale
+    copied/demo ID;
+  - reconnect now tries the preferred community, backend default membership,
+    and active memberships from `listMyClans()` so a stale selected community
+    does not stop the owner shop from being recreated/reactivated;
+  - the user-facing stale-link copy now explains that signed-in owners are
+    reconnected to their current GSN shop and Shop Diaries automatically.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - protects the signed-in-owner reconnect path and fallback community retry.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+- Remaining truth:
+  - Anonymous visitors still cannot see a shop for an identity that genuinely
+    does not exist in the active backend database.
+  - If the phone still shows only the upper signboard after this patch, inspect
+    the exact copied URL and the public endpoint response for
+    `/marketplace/public/shop/:gmfnId`; the remaining issue would be live data
+    mismatch, not button behavior.
+
+### Dev-aware Public Shop share links (2026-05-16)
+
+- Follow-up after the owner still saw the old public-shop disconnected message
+  from the phone after the reconnect softening patch.
+- Blunt diagnosis:
+  - local Vite was serving the new `ShopGalleryPage.tsx` code, so the exact old
+    wording was not coming from the current local bundle;
+  - the public shop share/open helpers were still producing the canonical public
+    frontend URL during local phone testing, which could send the browser to a
+    different origin and database than the signed-in local session;
+  - this made a local owner session look disconnected even when the local app had
+    the correct owner context.
+- Updated `frontend/src/lib/publicLinks.ts`:
+  - added `shareablePublicFrontendUrl()`;
+  - in development mode, public shop root, Shop Diaries, and block links now use
+    the current browser origin, including private-network phone testing origins
+    like `http://192.168.x.x:5173`;
+  - in production mode, links still use the canonical public frontend URL.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - protects the dev-aware public shop link helper;
+  - protects Shop Diaries/block links so they continue to use the shared helper.
+- Verification:
+  - `npm exec -- eslint src\lib\publicLinks.ts src\pages\ShopGalleryPage.tsx`
+    passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:spotlight-controls` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This fixes the wrong-origin/stale-bundle part of the problem. It does not
+    invent public products where the backend has no active shop/products for
+    that owner identity.
+  - When testing from the phone, copy/open a fresh shop link after this build.
+    Old WhatsApp/browser links that point at the public Render domain can still
+    show the old origin's state.

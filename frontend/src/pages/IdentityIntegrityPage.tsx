@@ -37,6 +37,11 @@ import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildIdentityIntegrityGuideItems } from "../lib/trustDocumentGuide";
 import { buildIdentityIntegritySnapshot } from "../lib/trustDocumentSnapshots";
+import {
+  getTrustBandLanguage,
+  getTrustBandShortLabel,
+  normalizeTrustBand,
+} from "../lib/trustBandLanguage";
 
 type TrustEventRow = {
   id?: number | string;
@@ -505,8 +510,9 @@ function getCciState(me: any): ReadingState {
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "No CCI reading yet",
-    whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
+    statusText: "No cross-community consistency reading yet",
+    whyText:
+      "Complete identity and community activity first. The fuller consistency reading across communities will appear here when it is available.",
   };
 }
 
@@ -660,9 +666,9 @@ function getOpenTrustState(
       classText: "Pending",
       scoreText: "—",
       tone: "neutral",
-      statusText: "Select a community to view Open Trust",
+      statusText: "Select a community to view local trust",
       whyText:
-        "Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
+        "Local community trust belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
     };
   }
 
@@ -670,9 +676,9 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "No Open Trust reading yet",
+    statusText: "No local community reading yet",
     whyText:
-      "Open Trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
+      "Local community trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
   };
 }
 
@@ -984,6 +990,22 @@ export default function IdentityIntegrityPage() {
     () => getOpenTrustState(me, trustSlip, Boolean(selectedClanId)),
     [me, trustSlip, selectedClanId]
   );
+  const cciBand = normalizeTrustBand(cci.classText);
+  const cciBandLabel = cciBand
+    ? `${cciBand} - ${getTrustBandShortLabel(cciBand)}`
+    : cci.classText;
+  const cciBandMeaning = useMemo(
+    () => getTrustBandLanguage(cci.classText),
+    [cci.classText]
+  );
+  const openTrustBand = normalizeTrustBand(openTrust.classText);
+  const openTrustBandLabel = openTrustBand
+    ? `${openTrustBand} - ${getTrustBandShortLabel(openTrustBand)}`
+    : openTrust.classText;
+  const openTrustBandMeaning = useMemo(
+    () => getTrustBandLanguage(openTrust.classText),
+    [openTrust.classText]
+  );
 
   const cciTone = useMemo(() => {
     if (cci.tone === "green") {
@@ -1265,12 +1287,12 @@ export default function IdentityIntegrityPage() {
 
   function copyGmfnId() {
     if (!gmfnId || gmfnId === "Pending") {
-      showNotice("error", "GMFN ID is not ready yet.");
+      showNotice("error", "GSN ID is not ready yet.");
       return;
     }
 
     safeCopy(gmfnId);
-    showNotice("success", "GMFN ID copied.");
+    showNotice("success", "GSN ID copied.");
   }
 
   function copyTrustSlipCode() {
@@ -1348,7 +1370,7 @@ export default function IdentityIntegrityPage() {
       <PageTopNav
         sectionLabel="Identity & Integrity"
         title="Identity & Integrity"
-        subtitle="Your stable GSN identity, your integrity reading across communities, what strengthened it, what weakened it, and the next clean repair or continuity step."
+        subtitle="Your stable GSN identity, your consistency across communities, what strengthened it, what weakened it, and the next clean repair or continuity step."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -1356,7 +1378,7 @@ export default function IdentityIntegrityPage() {
 
       <ExplainToggle
         label="What this screen does"
-        what="This screen brings together your stable identity, cross-community integrity reading, trust changes, and the next clean continuity or repair step."
+        what="This screen brings together your stable identity, cross-community consistency, trust changes, and the next clean continuity or repair step."
         why="It helps you understand identity and trust as one continuing record instead of scattered signals across several pages."
         next="Start with the identity summary, then read the identity readings and the timeline before you act on the next clean step."
         tone="light"
@@ -1443,7 +1465,7 @@ export default function IdentityIntegrityPage() {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(true)}>GSN ID: {gmfnId}</span>
               <span style={badge(false)}>Community: {communityLabel}</span>
               <span style={badge(false)}>
                 TrustSlip: {trustSlipCode || "Awaiting issue"}
@@ -1456,7 +1478,7 @@ export default function IdentityIntegrityPage() {
                 disabled={!gmfnId || gmfnId === "Pending"}
                 debugId="identity-integrity.copy-gmfn-id"
               >
-                Copy GMFN ID
+                Copy GSN ID
               </PrimaryButton>
 
               <SecondaryButton
@@ -1495,7 +1517,7 @@ export default function IdentityIntegrityPage() {
           <div>
             <div style={sectionLabel()}>Identity readings</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Your identity and integrity readings stay together here.
+              Your identity, local community trust, and wider consistency stay together here.
             </div>
           </div>
 
@@ -1521,7 +1543,7 @@ export default function IdentityIntegrityPage() {
               }}
             >
               <div style={statTile(openTrustTone.bg, openTrustTone.border)}>
-                <div style={sectionLabel()}>Open Trust</div>
+                <div style={sectionLabel()}>Local community trust</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1530,18 +1552,21 @@ export default function IdentityIntegrityPage() {
                     fontSize: 26,
                   }}
                 >
-                  {openTrust.classText}
+                  {openTrustBandLabel}
                 </div>
                 <div style={{ marginTop: 8, color: "#64748B", fontSize: 13 }}>
-                  Score: {openTrust.scoreText}
+                  Current score: {openTrust.scoreText}
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {openTrust.statusText}
                 </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  {openTrustBandMeaning.plainMeaning}
+                </div>
               </div>
 
               <div style={statTile(cciTone.bg, cciTone.border)}>
-                <div style={sectionLabel()}>CCI</div>
+                <div style={sectionLabel()}>Cross-community consistency</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1550,13 +1575,16 @@ export default function IdentityIntegrityPage() {
                     fontSize: 26,
                   }}
                 >
-                  {cci.classText}
+                  {cciBandLabel}
                 </div>
                 <div style={{ marginTop: 8, color: "#64748B", fontSize: 13 }}>
-                  Score: {cci.scoreText}
+                  Current score: {cci.scoreText}
                 </div>
                 <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
                   {cci.statusText}
+                </div>
+                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  {cciBandMeaning.plainMeaning}
                 </div>
               </div>
 
@@ -1591,14 +1619,14 @@ export default function IdentityIntegrityPage() {
               }}
             >
               <div style={innerCard("#F8FBFF")}>
-                <div style={sectionLabel()}>Open Trust meaning</div>
+                <div style={sectionLabel()}>Local trust meaning</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   {openTrust.whyText}
                 </div>
               </div>
 
               <div style={innerCard("#F8FBFF")}>
-                <div style={sectionLabel()}>CCI meaning</div>
+                <div style={sectionLabel()}>Consistency meaning</div>
                 <div style={{ marginTop: 8, ...helperText() }}>{cci.whyText}</div>
               </div>
             </div>
@@ -2186,10 +2214,10 @@ export default function IdentityIntegrityPage() {
                   Identity is the stable layer. It should not split from one community to another.
                 </div>
                 <div style={helperText()}>
-                  CCI helps you see how consistently your identity is holding across visible communities.
+                  Cross-community consistency helps you see how steadily your identity and trust signals hold across visible communities.
                 </div>
                 <div style={helperText()}>
-                  Open Trust shows your immediate community standing.
+                  Local community trust shows your immediate community standing.
                 </div>
               </div>
             </div>
@@ -2201,7 +2229,7 @@ export default function IdentityIntegrityPage() {
         storageKey="gmfn.identityIntegrity.nextActionGuide.v1"
         compact={isCompact}
         items={guideItems}
-        intro="Say what you need next in plain words like open trust passport, check cci, or open the portable proof. GSN will carry you into the closest trust document surface."
+        intro="Say what you need next in plain words like open Trust Passport, check consistency, or open the portable proof. GSN will carry you into the closest trust document surface."
         onSelect={handleGuideSelect}
       />
 
@@ -2218,7 +2246,7 @@ export default function IdentityIntegrityPage() {
         compact={isCompact}
         items={trustDocumentUseCases}
         title="Which trust question should stay with identity first?"
-        intro="Stay here when the question is who this person is, what holds steady across trust changes, or what narrower verification and CCI context sits behind the trust story."
+        intro="Stay here when the question is who this person is, what holds steady across trust changes, or what narrower verification and consistency context sits behind the trust story."
       />
     </div>
   );

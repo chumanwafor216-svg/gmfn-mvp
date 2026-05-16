@@ -1722,6 +1722,339 @@ export async function getTrustSlipShareBundle(
   );
 }
 
+export async function requestCommunityConfirmation(payload: {
+  trust_slip_code?: string | null;
+  subject_user_id?: number | string | null;
+  community_id?: number | string | null;
+  requester_external_label?: string | null;
+  reason_type?: string | null;
+  risk_level?: string | null;
+  mode?: "relay" | "instant_pulse" | string | null;
+}): Promise<any> {
+  return httpJson("/community-confirmations/request", "POST", {
+    trust_slip_code: payload.trust_slip_code || undefined,
+    subject_user_id: payload.subject_user_id || undefined,
+    community_id: payload.community_id || undefined,
+    requester_external_label: payload.requester_external_label || undefined,
+    reason_type: payload.reason_type || "merchant_trust_check",
+    risk_level: payload.risk_level || "low",
+    mode: payload.mode || "instant_pulse",
+  });
+}
+
+export async function getPublicCommunityConfirmation(
+  publicToken: string
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/public/${encodeURIComponent(String(publicToken))}`,
+    "GET"
+  );
+}
+
+export async function getPublicCommunityVerification(
+  communityKey: string | number
+): Promise<any> {
+  return httpJson(
+    `/verify/community/${encodeURIComponent(String(communityKey))}`,
+    "GET"
+  );
+}
+
+export async function getCommunityConfirmationInbox(): Promise<any> {
+  return httpJson("/community-confirmations/inbox", "GET");
+}
+
+export async function getMyCommunityConfirmationContactSettings(
+  communityId?: number | string | null
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/my-contact-settings${buildQuery({
+      community_id: communityId || undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function updateMyCommunityConfirmationContactSetting(
+  communityId: number | string,
+  payload: {
+    can_receive_relay_requests?: boolean | null;
+    can_receive_instant_pulse?: boolean | null;
+    opted_out?: boolean | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/my-contact-settings/${encodeURIComponent(String(communityId))}`,
+    "PATCH",
+    {
+      can_receive_relay_requests:
+        payload.can_receive_relay_requests === null
+          ? undefined
+          : payload.can_receive_relay_requests,
+      can_receive_instant_pulse:
+        payload.can_receive_instant_pulse === null
+          ? undefined
+          : payload.can_receive_instant_pulse,
+      opted_out: payload.opted_out === null ? undefined : payload.opted_out,
+    }
+  );
+}
+
+export async function respondToCommunityConfirmation(
+  requestId: number | string,
+  payload: {
+    response_type: string;
+    response_reason?: string | null;
+    response_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/${encodeURIComponent(String(requestId))}/respond`,
+    "POST",
+    payload
+  );
+}
+
+export async function recordCommunityConfirmationDecision(
+  requestId: number | string,
+  payload: {
+    decision: string;
+    amount_band?: string | null;
+    issue_reported?: boolean | null;
+    settled?: boolean | null;
+    decision_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/${encodeURIComponent(String(requestId))}/decision`,
+    "POST",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function getCommunityConfirmationDecision(
+  requestId: number | string
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/${encodeURIComponent(String(requestId))}/decision`,
+    "GET"
+  );
+}
+
+export async function updateCommunityConfirmationDecisionStatus(
+  decisionId: number | string,
+  payload: {
+    status: string;
+    issue_reported?: boolean | null;
+    settled?: boolean | null;
+    decision_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/decisions/${encodeURIComponent(String(decisionId))}`,
+    "PATCH",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function updateCommunityConfirmationRequestStatus(
+  requestId: number | string,
+  payload: {
+    status: string;
+    status_reason?: string | null;
+    status_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/${encodeURIComponent(String(requestId))}/status`,
+    "PATCH",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function getCommunityConfirmationReviewCase(
+  requestId: number | string
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/${encodeURIComponent(String(requestId))}/review-case`,
+    "GET"
+  );
+}
+
+export async function getCommunityConfirmationReviewCaseInbox(payload?: {
+  status?: string | null;
+  scope?: string | null;
+  sort?: string | null;
+  community_id?: number | string | null;
+  limit?: number | null;
+  offset?: number | null;
+}): Promise<any> {
+  return httpJson(
+    `/community-confirmations/review-cases/inbox${buildQuery({
+      status: payload?.status || "open",
+      scope: payload?.scope || undefined,
+      sort: payload?.sort || undefined,
+      community_id: payload?.community_id || undefined,
+      limit: payload?.limit || undefined,
+      offset: payload?.offset || undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function scanCommunityConfirmationReviewSlaEvents(payload?: {
+  community_id?: number | string | null;
+  limit?: number | null;
+}): Promise<any> {
+  return httpJson(
+    `/community-confirmations/review-cases/scan-sla-events${buildQuery({
+      community_id: payload?.community_id || undefined,
+      limit: payload?.limit || undefined,
+    })}`,
+    "POST"
+  );
+}
+
+export async function assignCommunityConfirmationReviewCase(
+  reviewCaseId: number | string,
+  payload: {
+    assigned_to_user_id?: number | string | null;
+    assignment_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/review-cases/${encodeURIComponent(String(reviewCaseId))}/assignment`,
+    "PATCH",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function getCommunityConfirmationReviewEvidence(
+  reviewCaseId: number | string
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/review-cases/${encodeURIComponent(String(reviewCaseId))}/evidence`,
+    "GET"
+  );
+}
+
+export async function addCommunityConfirmationReviewEvidence(
+  reviewCaseId: number | string,
+  payload: {
+    evidence_type?: string | null;
+    title: string;
+    body?: string | null;
+    external_ref?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/review-cases/${encodeURIComponent(String(reviewCaseId))}/evidence`,
+    "POST",
+    Object.fromEntries(
+      Object.entries({
+        evidence_type: payload.evidence_type || "note",
+        title: payload.title,
+        body: payload.body,
+        external_ref: payload.external_ref,
+      }).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function updateCommunityConfirmationReviewCase(
+  reviewCaseId: number | string,
+  payload: {
+    status: string;
+    resolution?: string | null;
+    trust_impact?: string | null;
+    resolution_note?: string | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/review-cases/${encodeURIComponent(String(reviewCaseId))}`,
+    "PATCH",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function getCommunityConfirmationSummary(
+  communityId: number | string,
+  subjectUserId?: number | string | null
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/community/${encodeURIComponent(String(communityId))}/summary${buildQuery({
+      subject_user_id: subjectUserId || undefined,
+    })}`,
+    "GET"
+  );
+}
+
+export async function getCommunityConfirmationPolicy(
+  communityId: number | string
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/community/${encodeURIComponent(String(communityId))}/policy`,
+    "GET"
+  );
+}
+
+export async function updateCommunityConfirmationPolicy(
+  communityId: number | string,
+  payload: {
+    relay_enabled?: boolean | null;
+    instant_pulse_enabled?: boolean | null;
+    minimum_positive_responses?: number | null;
+    maximum_relay_contacts?: number | null;
+    response_window_seconds?: number | null;
+    review_attention_after_hours?: number | null;
+    review_overdue_after_hours?: number | null;
+    allow_admin_contacts?: boolean | null;
+    allow_sponsor_contacts?: boolean | null;
+    allow_voting_member_contacts?: boolean | null;
+    allow_subject_nominated_contacts?: boolean | null;
+    public_confirmation_enabled?: boolean | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/community/${encodeURIComponent(String(communityId))}/policy`,
+    "PATCH",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
+export async function updateCommunityConfirmationContact(
+  communityId: number | string,
+  targetUserId: number | string,
+  payload: {
+    active?: boolean | null;
+    can_receive_relay_requests?: boolean | null;
+    can_receive_instant_pulse?: boolean | null;
+    role_type?: string | null;
+    standing_status?: string | null;
+    priority_order?: number | null;
+  }
+): Promise<any> {
+  return httpJson(
+    `/community-confirmations/community/${encodeURIComponent(String(communityId))}/contacts/${encodeURIComponent(String(targetUserId))}`,
+    "PATCH",
+    Object.fromEntries(
+      Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
+    )
+  );
+}
+
 export async function logTrustSlipRelease(
   code: string,
   payload: {
@@ -2282,6 +2615,24 @@ export async function listExpectedPayments(payload?: {
     undefined,
     primaryClanId > 0 ? { header_clan_id: primaryClanId } : undefined
   );
+}
+
+export async function recordFocusCommitmentTrustEvent(payload: {
+  clan_id?: number;
+  local_commitment_id: string;
+  local_event_id: string;
+  event_kind: string;
+  title: string;
+  category?: string | null;
+  target_value?: number | null;
+  current_value?: number | null;
+  progress_value?: number | null;
+  unit?: string | null;
+  due_date?: string | null;
+  cadence?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson("/trust-events/me/focus-commitment", "POST", payload);
 }
 
 export async function runBankReconciliation(payload: {
@@ -3433,7 +3784,7 @@ export async function getTrustGraphByGmfnId(gmfnId: string): Promise<any> {
   const cleaned = String(gmfnId || "").trim();
 
   if (!cleaned) {
-    throw new Error("GMFN ID is required");
+    throw new Error("GSN ID is required");
   }
 
   const me = await getMe();

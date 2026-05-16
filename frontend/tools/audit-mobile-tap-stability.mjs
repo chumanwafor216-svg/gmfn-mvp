@@ -100,6 +100,16 @@ const communityMarketplaceSpotlightSource = readFileSync(
 );
 const indexCssPath = join(sourceRoot, "index.css");
 const indexCssSource = readFileSync(indexCssPath, "utf8");
+const stableButtonPath = join(sourceRoot, "components", "StableButton.tsx");
+const stableButtonSource = readFileSync(stableButtonPath, "utf8");
+const originLinkPath = join(sourceRoot, "components", "OriginLink.tsx");
+const originLinkSource = readFileSync(originLinkPath, "utf8");
+const mobileTapGuardPath = join(sourceRoot, "lib", "mobileTapGuard.ts");
+const mobileTapGuardSource = readFileSync(mobileTapGuardPath, "utf8");
+const mainPath = join(sourceRoot, "main.tsx");
+const mainSource = readFileSync(mainPath, "utf8");
+const brandPath = join(sourceRoot, "styles", "gmfnBrand.ts");
+const brandSource = readFileSync(brandPath, "utf8");
 let insideOwnedLinksSection = false;
 let marketplaceButtonCount = 0;
 
@@ -173,6 +183,160 @@ if (globalButtonStackingRule.test(indexCssSource)) {
       "Global button reset must not create stacking layers that can move mobile hit testing",
     text:
       "Remove global position/z-index/isolation from the button reset; layer only named overlays deliberately.",
+  });
+}
+
+if (
+  !/:where\([\s\S]*?\[data-gmfn-action-root="true"\][\s\S]*?\)\s*:where\(span,\s*div,\s*strong,\s*small,\s*b,\s*i,\s*svg,\s*p\)\s*\{[^}]*pointer-events:\s*none;/.test(
+    indexCssSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, indexCssPath),
+    line: 1,
+    label:
+      "Stable CTA children must not steal the mobile tap target from the parent button/link",
+    text:
+      "Expected data-cta-id child pointer-events guard was not found in the global CSS.",
+  });
+}
+
+if (
+  !/export function installMobileTapGuard\(\): void[\s\S]*?document\.addEventListener\("pointerdown", handlePointerDown, true\);[\s\S]*?document\.addEventListener\("pointerup", handlePointerUp, true\);[\s\S]*?document\.addEventListener\("click", handleClick, true\);/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must capture pointer-down and click so late phone clicks cannot land on a different action",
+    text: "Expected installMobileTapGuard capture listeners were not found.",
+  });
+}
+
+if (
+  !/function isDisabledAction\(root: Element \| null\): boolean[\s\S]*?aria-disabled[\s\S]*?function handlePointerUp\(event: PointerEvent\): void[\s\S]*?suppressNextClick = true[\s\S]*?event\.preventDefault\(\);[\s\S]*?function handleClick\(event: MouseEvent\): void[\s\S]*?insideSettleWindow[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?activeTap\.suppressNextClick[\s\S]*?lastAcceptedActionClickAt = currentTime/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must suppress mismatched pointer-up/click pairs, disabled action clicks, and rapid ghost clicks",
+    text: "Expected pointer-up suppression, disabled-action checks, and settle-window checks were not found.",
+  });
+}
+
+if (
+  !/:where\(a,\s*button,\s*\[role="button"\],\s*summary,\s*input\[type="button"\],\s*input\[type="submit"\],\s*\.gmfn-btn,\s*\[data-gmfn-action-root="true"\]\)\s*\{[\s\S]*?line-height:\s*1\.18;[\s\S]*?overflow-wrap:\s*anywhere;/.test(
+    indexCssSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, indexCssPath),
+    line: 1,
+    label:
+      "Global action surfaces must hold text sizing and wrapping steady on phone",
+    text: "Expected global action surface sizing/wrapping rule was not found.",
+  });
+}
+
+if (
+  !/const ACTION_ROOT_SELECTOR = \[[\s\S]*?'\[data-gmfn-action-root="true"\]'[\s\S]*?"\[data-cta-id\]"[\s\S]*?"button"[\s\S]*?"a"/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must recognize shared action roots and legacy raw actions",
+    text: "Expected action-root selector was not found.",
+  });
+}
+
+if (
+  !/import \{ installMobileTapGuard \} from "\.\/lib\/mobileTapGuard";[\s\S]*?installMobileTapGuard\(\);/.test(
+    mainSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mainPath),
+    line: 1,
+    label: "App boot must install the global mobile tap guard before rendering",
+    text: "Expected installMobileTapGuard() boot call was not found.",
+  });
+}
+
+if (
+  !/data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{debugId\}[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{debugId\}[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{debugId\}/.test(
+    stableButtonSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, stableButtonPath),
+    line: 1,
+    label:
+      "StableButton, StableCtaLink, and StableDisclosureSummary must mark action roots for the global phone tap guard",
+    text: "Expected data-gmfn-action-root markers were not found.",
+  });
+}
+
+if (
+  !/data-gmfn-action-root="true"[\s\S]*?style=\{stableStyle\}[\s\S]*?<Link[\s\S]*?data-gmfn-action-root="true"[\s\S]*?style=\{stableStyle\}/.test(
+    originLinkSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, originLinkPath),
+    line: 1,
+    label:
+      "OriginLink must mark external and router links as action roots for the global phone tap guard",
+    text: "Expected OriginLink data-gmfn-action-root markers were not found.",
+  });
+}
+
+if (
+  !/onPointerDown=\{stopTap\}[\s\S]*?onPointerUp=\{stopTap\}[\s\S]*?onMouseDown=\{stopTap\}[\s\S]*?onClick=\{handleClick\}/.test(
+    stableButtonSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, stableButtonPath),
+    line: 1,
+    label:
+      "StableButton must guard pointer-up as well as pointer-down so taps cannot bubble into parent mobile cards",
+    text: "Expected StableButton pointer-up guard was not found.",
+  });
+}
+
+if (
+  !/onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => guardLinkTap\(event, rest\.onClick\)\}/.test(
+    originLinkSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, originLinkPath),
+    line: 1,
+    label:
+      "OriginLink must guard pointer-up as well as pointer-down so route links cannot fall through parent mobile cards",
+    text: "Expected OriginLink pointer-up guard was not found.",
+  });
+}
+
+if (
+  !/export function actionTapGuardProps\(\): Pick<[\s\S]*?"onPointerDown" \| "onPointerUp" \| "onMouseDown"[\s\S]*?onPointerDown: stopActionTap,[\s\S]*?onPointerUp: stopActionTap,[\s\S]*?onMouseDown: stopActionTap,/.test(
+    brandSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, brandPath),
+    line: 1,
+    label:
+      "Shared action tap guard props must include pointer-up, not only pointer-down",
+    text: "Expected actionTapGuardProps pointer-up guard was not found.",
   });
 }
 

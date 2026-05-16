@@ -464,7 +464,7 @@ function inviteBundleText(params: {
 
   const header = [
     `Invite from: ${params.memberName}`,
-    params.gmfnId ? `GMFN ID: ${params.gmfnId}` : "",
+    params.gmfnId ? `GSN ID: ${params.gmfnId}` : "",
     params.communityName ? `Community: ${params.communityName}` : "",
     "",
     "Trusted first-circle contacts:",
@@ -927,7 +927,7 @@ function resetDraft() {
               <span style={badge(false)}>
                 Role: {roleText(draft.memberRole)}
               </span>
-              <span style={badge(false)}>GMFN ID: {gmfnId || "Awaiting issue"}</span>
+              <span style={badge(false)}>GSN ID: {gmfnId || "Awaiting issue"}</span>
             </div>
           </div>
 

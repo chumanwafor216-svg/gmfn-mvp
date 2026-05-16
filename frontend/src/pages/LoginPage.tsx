@@ -1,9 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { EntryBackLink, EntryGuideLauncher } from "../components/EntryControls";
+import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import { getAccessToken, getMe, loginAndStore } from "../lib/api";
+import {
+  peekPublishRecoveryTarget,
+  publishRecoveryTarget,
+} from "../lib/publishRecovery";
 
 function pageShell(compact = false): React.CSSProperties {
   return {
@@ -221,6 +225,12 @@ function joinRedirectFromLoginSearch(searchParams: URLSearchParams): string {
   return finalQuery ? `/join?${finalQuery}` : "/join";
 }
 
+function safeAppReturnTarget(value: unknown): string {
+  const target = safeStr(value);
+  if (target === "/app" || target.startsWith("/app/")) return target;
+  return "";
+}
+
 export default function LoginPage() {
   const nav = useNavigate();
   const location = useLocation();
@@ -228,7 +238,7 @@ export default function LoginPage() {
   const routeState = useMemo(
     () =>
       ((location.state as {
-        from?: { pathname?: string; search?: string };
+        from?: { pathname?: string; search?: string; hash?: string };
         create_entry?: {
           clan_name?: string;
           clan_description?: string;
@@ -244,8 +254,14 @@ export default function LoginPage() {
   const forceLogin = searchParams.get("force") === "1";
 
   const redirectTarget = useMemo(() => {
+    const publishTarget = peekPublishRecoveryTarget();
+    if (publishTarget) return publishTarget;
+    const nextTarget = safeAppReturnTarget(searchParams.get("next"));
+    if (nextTarget) return nextTarget;
     if (routeState.from?.pathname && routeState.from.pathname !== "/login") {
-      return `${routeState.from.pathname}${routeState.from.search || ""}`;
+      return `${routeState.from.pathname}${routeState.from.search || ""}${
+        routeState.from.hash || ""
+      }`;
     }
     const inviteTarget = joinRedirectFromLoginSearch(searchParams);
     if (inviteTarget) return inviteTarget;
@@ -293,7 +309,7 @@ export default function LoginPage() {
 
         const me = await getMe();
         if (me?.id) {
-          nav(redirectTarget, { replace: true });
+          nav(publishRecoveryTarget() || redirectTarget, { replace: true });
         }
       } catch {
         // ignore stale token during test phase
@@ -320,7 +336,7 @@ export default function LoginPage() {
 
       setMsg("Sign-in successful. Opening your workspace...");
       setTimeout(() => {
-        nav(redirectTarget, { replace: true });
+        nav(publishRecoveryTarget() || redirectTarget, { replace: true });
       }, 500);
     } catch (e: any) {
       const raw = String(
@@ -424,12 +440,27 @@ export default function LoginPage() {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <EntryGuideLauncher
-                label="About"
-                text="Sign In Guide"
+              <SubtleButton
+                type="button"
                 onClick={() => setGuideOpen((current) => !current)}
-                compact={isCompact}
-              />
+                minWidth={isCompact ? "auto" : 132}
+                stableHeight={40}
+                debugId="login.open-help"
+                style={{
+                  ...secondaryBtn(),
+                  width: "auto",
+                  minHeight: 40,
+                  padding: isCompact ? "9px 14px" : "10px 18px",
+                  borderRadius: 999,
+                  color: "#F8FBFF",
+                  fontSize: isCompact ? 11 : 12,
+                  letterSpacing: isCompact ? 0.45 : 0.2,
+                  textTransform: isCompact ? "uppercase" : "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {isCompact ? "Sign In Guide" : "About Sign In"}
+              </SubtleButton>
             </div>
           </div>
 
@@ -909,45 +940,18 @@ export default function LoginPage() {
 
             <div style={{ marginTop: 14 }}>
               <SecondaryButton
-                onClick={() => setGuideOpen(true)}
+                onClick={openActivationRoute}
                 disabled={busy}
                 fullWidth
                 stableHeight={50}
-                debugId="login.open-help"
+                debugId="login.activate-approved"
                 style={secondaryBtn()}
               >
-                <span aria-hidden="true" style={{ marginRight: 8 }}>
-                  💬
-                </span>
-                Open sign-in help
+                Already approved? Activate membership
               </SecondaryButton>
             </div>
             </div>
           </form>
-
-          <SubtleButton
-            onClick={openCreateRoute}
-            disabled={busy}
-            fullWidth
-            stableHeight={36}
-            debugId="login.start-community"
-            style={{
-              width: "100%",
-              border: "none",
-              background: "transparent",
-              color: "#A9C4F7",
-              fontSize: 15,
-              fontWeight: 900,
-              cursor: "pointer",
-              padding: "2px 0",
-              textAlign: "center",
-            }}
-          >
-            Start a new community{" "}
-            <span style={{ color: "#F3D06A" }} aria-hidden="true">
-              &gt;
-            </span>
-          </SubtleButton>
 
           <div
             style={{
@@ -1005,27 +1009,22 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <SubtleButton
-            onClick={openActivationRoute}
+          <SecondaryButton
+            onClick={openCreateRoute}
             disabled={busy}
             fullWidth
-            stableHeight={40}
-            debugId="login.activate-approved"
+            stableHeight={50}
+            debugId="login.start-community"
             style={{
-              width: "100%",
-              border: "1px solid rgba(243,208,106,0.18)",
-              background: "rgba(255,255,255,0.035)",
-              color: "rgba(243,208,106,0.92)",
-              borderRadius: 999,
-              fontSize: 13,
-              fontWeight: 900,
-              cursor: "pointer",
-              padding: "10px 14px",
-              textAlign: "center",
+              ...secondaryBtn(),
+              color: "#F8FBFF",
+              border: "1px solid rgba(220,231,243,0.28)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.075) 0%, rgba(255,255,255,0.035) 100%)",
             }}
           >
-            Already approved? Activate membership
-          </SubtleButton>
+            Start a new community
+          </SecondaryButton>
           </div>
         </div>
       </div>

@@ -30,4 +30,4 @@ def ensure_user_gmfn_id(db: Session, user: User) -> User:
             db.refresh(user)
             return user
 
-    raise HTTPException(status_code=500, detail="Could not generate unique GMFN ID")
+    raise HTTPException(status_code=500, detail="Could not generate unique GSN ID")

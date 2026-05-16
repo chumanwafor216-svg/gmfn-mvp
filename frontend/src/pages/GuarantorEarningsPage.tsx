@@ -693,7 +693,7 @@ export default function GuarantorEarningsPage() {
       `Community: ${selectedCommunityLabel}`,
       `Community ID: ${communityPublicId}`,
       `Member: ${memberName}`,
-      `GMFN ID: ${gmfnId}`,
+      `GSN ID: ${gmfnId}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Total earned: ${fmtMoney(totals.total)} ${currency}`,
       `Potential share: ${fmtMoney(totals.estimatedTotal)} ${currency}`,
@@ -820,7 +820,7 @@ export default function GuarantorEarningsPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>GMFN ID</div>
+                <div style={sectionLabel()}>GSN ID</div>
                 <div
                   style={{
                     marginTop: 8,

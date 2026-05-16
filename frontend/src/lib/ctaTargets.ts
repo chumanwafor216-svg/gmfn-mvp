@@ -34,6 +34,7 @@ export type CtaIntent =
   | "loanSummary"
   | "repayment"
   | "guarantorInbox"
+  | "communityConfirmationInbox"
   | "guarantorEarnings"
   | "notifications"
   | "buildFirstCircle"
@@ -100,6 +101,7 @@ const INTENT_ROUTE = {
   loanSummary: "LOAN_SUMMARY",
   repayment: "REPAYMENT",
   guarantorInbox: "GUARANTOR_INBOX",
+  communityConfirmationInbox: "COMMUNITY_CONFIRMATION_INBOX",
   guarantorEarnings: "GUARANTOR_EARNINGS",
   notifications: "NOTIFICATIONS",
   buildFirstCircle: "BUILD_FIRST_CIRCLE",

@@ -167,10 +167,11 @@ export function stopActionTap(event?: React.SyntheticEvent) {
 
 export function actionTapGuardProps(): Pick<
   React.HTMLAttributes<HTMLElement>,
-  "onPointerDown" | "onMouseDown"
+  "onPointerDown" | "onPointerUp" | "onMouseDown"
 > {
   return {
     onPointerDown: stopActionTap,
+    onPointerUp: stopActionTap,
     onMouseDown: stopActionTap,
   };
 }

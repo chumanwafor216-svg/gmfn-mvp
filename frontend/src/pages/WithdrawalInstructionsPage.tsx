@@ -1016,7 +1016,7 @@ export default function WithdrawalInstructionsPage() {
 
   async function handleLoadWithdrawalRoute() {
     if (!selectedClanId || !currentGmfnId) {
-      showNotice("error", "Community or GMFN ID is not visible yet.");
+      showNotice("error", "Community or GSN ID is not visible yet.");
       return;
     }
 
@@ -1051,7 +1051,7 @@ export default function WithdrawalInstructionsPage() {
 
   async function handleSaveDestination() {
     if (!selectedClanId || !currentGmfnId) {
-      showNotice("error", "Community or GMFN ID is not visible yet.");
+      showNotice("error", "Community or GSN ID is not visible yet.");
       return;
     }
 
@@ -1231,7 +1231,7 @@ export default function WithdrawalInstructionsPage() {
     const text = [
       `Community: ${communityLabel}`,
       `Community ID: ${publicCommunityId}`,
-      `GMFN ID: ${currentGmfnId || "Awaiting issue"}`,
+      `GSN ID: ${currentGmfnId || "Awaiting issue"}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Current stage: ${guidedState.step}`,
@@ -1426,7 +1426,7 @@ export default function WithdrawalInstructionsPage() {
               }}
             >
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
-              <span style={badge(false)}>GMFN ID: {currentGmfnId || "Awaiting issue"}</span>
+              <span style={badge(false)}>GSN ID: {currentGmfnId || "Awaiting issue"}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Current page: Money Out</span>

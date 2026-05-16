@@ -12,6 +12,11 @@ import {
   institutionalPageCard,
 } from "../lib/institutionalSurface";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import {
+  getTrustBandLanguage,
+  getTrustBandShortLabel,
+  normalizeTrustBand,
+} from "../lib/trustBandLanguage";
 
 type TrustSlipRecord = {
   code?: string | null;
@@ -282,9 +287,9 @@ function getOpenTrustState(
       classText: "Pending",
       scoreText: "—",
       tone: "neutral",
-      statusText: "Select a community to view Open Trust",
+      statusText: "Select a community to view local trust",
       whyText:
-        "Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
+        "Local community trust belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
     };
   }
 
@@ -292,9 +297,9 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "No Open Trust reading yet",
+    statusText: "No local community reading yet",
     whyText:
-      "Open Trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
+      "Local community trust reflects your standing in your current community. Select or use a community first, then this reading will appear here.",
   };
 }
 
@@ -371,6 +376,14 @@ export default function OpenTrustPage() {
     () => getOpenTrustState(me, trustSlip, Boolean(selectedClanId)),
     [me, trustSlip, selectedClanId]
   );
+  const openTrustBand = normalizeTrustBand(openTrust.classText);
+  const openTrustBandLabel = openTrustBand
+    ? `${openTrustBand} - ${getTrustBandShortLabel(openTrustBand)}`
+    : openTrust.classText;
+  const openTrustBandMeaning = useMemo(
+    () => getTrustBandLanguage(openTrust.classText),
+    [openTrust.classText]
+  );
   const tone = useMemo(() => toneMeta(openTrust.tone), [openTrust.tone]);
   const routeGuide = useMemo(
     () => [
@@ -378,7 +391,7 @@ export default function OpenTrustPage() {
         label: "Stay here when",
         title: "You only need the immediate community read",
         body:
-          "Open Trust answers the narrower question: how are you reading inside the community you are in right now?",
+          "Local community trust answers the narrower question: how are you reading inside the community you are in right now?",
       },
       {
         label: "Move to Trust Passport when",
@@ -410,9 +423,9 @@ export default function OpenTrustPage() {
   return (
     <div style={{ maxWidth: 980, margin: "0 auto", display: "grid", gap: 18 }}>
       <PageTopNav
-        sectionLabel="Open Trust"
-        title="Open Trust"
-        subtitle="Your immediate community trust reading without the wider Trust Passport bundle."
+        sectionLabel="Local community trust"
+        title="Local community trust"
+        subtitle="Your immediate community reading without the wider Trust Passport bundle."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -420,7 +433,7 @@ export default function OpenTrustPage() {
       />
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Open Trust</div>
+        <div style={sectionLabel()}>Local trust reading</div>
         <div style={{ marginTop: 10, color: "#0B1F33", fontSize: isCompact ? 28 : 34, fontWeight: 900, lineHeight: 1.1 }}>
           Current community reading
         </div>
@@ -429,7 +442,7 @@ export default function OpenTrustPage() {
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <span style={badge(true)}>{communityLabel}</span>
-          <span style={badge(false)}>Class {openTrust.classText}</span>
+          <span style={badge(false)}>{openTrustBandLabel}</span>
         </div>
 
         <div
@@ -444,13 +457,16 @@ export default function OpenTrustPage() {
           <div style={{ ...innerCard(tone.bg), border: tone.border }}>
             <div style={sectionLabel()}>Reading</div>
             <div style={{ marginTop: 12, color: tone.text, fontWeight: 900, fontSize: 34, lineHeight: 1 }}>
-              Class {openTrust.classText}
+              {openTrustBandLabel}
             </div>
             <div style={{ marginTop: 10, color: "#475569", fontSize: 14, fontWeight: 800 }}>
-              Score {openTrust.scoreText}
+              Current score: {openTrust.scoreText}
             </div>
             <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 14, fontWeight: 800, lineHeight: 1.45 }}>
               {openTrust.statusText}
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              {openTrustBandMeaning.plainMeaning}
             </div>
           </div>
 
@@ -485,7 +501,7 @@ export default function OpenTrustPage() {
           Use the right trust surface for the right question
         </div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          Open Trust is the narrow community reading. If you need the fuller trust record or
+          Local community trust is the narrow community reading. If you need the fuller trust record or
           the place where this reading is being shaped, move there directly from here.
         </div>
 

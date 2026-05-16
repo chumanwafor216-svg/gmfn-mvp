@@ -300,7 +300,7 @@ export default function CommunityJoinRequestsPage() {
 
       if (vote === "approve" && res?.approved_now && res?.approval_result?.gmfn_id) {
         setSuccess(
-          `Request approved successfully. GMFN ID issued: ${res.approval_result.gmfn_id}`
+          `Request approved successfully. GSN ID issued: ${res.approval_result.gmfn_id}`
         );
         setActivationPack(res.approval_result || null);
       } else if (vote === "approve") {
@@ -337,7 +337,7 @@ export default function CommunityJoinRequestsPage() {
 
       if (res?.approval_result?.gmfn_id) {
         setSuccess(
-          `Admin approval completed successfully. GMFN ID issued: ${res.approval_result.gmfn_id}`
+          `Admin approval completed successfully. GSN ID issued: ${res.approval_result.gmfn_id}`
         );
         setActivationPack(res.approval_result || null);
       } else {
@@ -573,7 +573,7 @@ export default function CommunityJoinRequestsPage() {
             }}
           >
             <div>
-              <strong>GMFN ID:</strong> {safeStr(activationPack.gmfn_id)}
+              <strong>GSN ID:</strong> {safeStr(activationPack.gmfn_id)}
             </div>
             <div>
               <strong>Community:</strong> {safeStr(activationPack.community_name || "Not available yet")}
@@ -740,7 +740,7 @@ export default function CommunityJoinRequestsPage() {
                   <div>Required approvals: {Number(item.required_approvals || 0)}</div>
 
                   {safeStr(item.applicant_gmfn_id || "") ? (
-                    <div>Applicant GMFN ID: {safeStr(item.applicant_gmfn_id)}</div>
+                    <div>Applicant GSN ID: {safeStr(item.applicant_gmfn_id)}</div>
                   ) : null}
                 </div>
               </div>

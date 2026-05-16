@@ -4,6 +4,7 @@ import type {
   NavigateOptions,
   To,
 } from "react-router-dom";
+import { rememberPublishRecovery } from "./publishRecovery";
 
 export type OriginState = {
   from?: string;
@@ -55,12 +56,66 @@ export function resolveBackTarget(
   return fallback;
 }
 
+function toPathString(to: To): string {
+  if (typeof to === "string") return to;
+
+  const pathname = String(to?.pathname || "");
+  const search = String(to?.search || "");
+  const hash = String(to?.hash || "");
+
+  return `${pathname}${search}${hash}`.trim();
+}
+
+function isAppRouteTarget(target: string): boolean {
+  const raw = String(target || "").trim();
+  const lower = raw.toLowerCase();
+
+  return lower === "/app" || lower.startsWith("/app/");
+}
+
+function isSpotlightRouteTarget(target: string): boolean {
+  const raw = String(target || "").trim();
+  const lower = raw.toLowerCase();
+
+  if (!isAppRouteTarget(lower)) return false;
+
+  return (
+    lower.includes("spotlight") ||
+    lower.includes("#shop-control-spotlight") ||
+    lower.includes("#shop-control-paid-spotlight")
+  );
+}
+
+export function rememberAppRouteRecovery(
+  to: To,
+  ctaId = "app.route"
+) {
+  const target = toPathString(to);
+
+  if (!isAppRouteTarget(target)) return;
+
+  rememberPublishRecovery(target, ctaId);
+}
+
+export function rememberSpotlightRouteRecovery(
+  to: To,
+  ctaId = "app.spotlight.route"
+) {
+  const target = toPathString(to);
+
+  if (!isSpotlightRouteTarget(target)) return;
+
+  rememberPublishRecovery(target, ctaId);
+}
+
 export function navigateWithOrigin(
   navigate: NavigateFunction,
   to: To,
   location: Pick<Location, "pathname" | "search" | "hash">,
   options?: NavigateOptions
 ) {
+  rememberAppRouteRecovery(to, "navigate.app.route");
+
   navigate(to, {
     ...(options || {}),
     state: withOriginState(location, (options?.state as Record<string, unknown>) || {}),

@@ -1245,7 +1245,7 @@ export default function LoanWorkbenchPage() {
               }}
             >
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
-              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>GSN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Workbench stage</span>
               {cameFromWithdrawalSupport ? (

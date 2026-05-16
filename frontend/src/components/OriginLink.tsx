@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, type LinkProps, useLocation } from "react-router-dom";
+import { rememberAppRouteRecovery } from "../lib/nav";
 import { brandStableTapTarget, stopActionTap } from "../styles/gmfnBrand";
 
 type OriginLinkProps = Omit<LinkProps, "to"> & {
@@ -87,8 +88,10 @@ export default function OriginLink(props: OriginLinkProps) {
       <a
         href={rawTo}
         {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+        data-gmfn-action-root="true"
         style={stableStyle}
         onPointerDown={(event) => guardLinkTap(event, rest.onPointerDown)}
+        onPointerUp={(event) => guardLinkTap(event, rest.onPointerUp)}
         onMouseDown={(event) => guardLinkTap(event, rest.onMouseDown)}
         onClick={(event) => guardLinkTap(event, rest.onClick)}
       >
@@ -116,15 +119,25 @@ export default function OriginLink(props: OriginLinkProps) {
           originPath: `${location.pathname}${location.search}${location.hash}`,
         };
 
+  const linkDebugId =
+    typeof (rest as Record<string, unknown>)["data-cta-id"] === "string"
+      ? String((rest as Record<string, unknown>)["data-cta-id"])
+      : "origin-link.app.route";
+
   return (
     <Link
       {...rest}
       to={nextTo}
       state={nextState}
+      data-gmfn-action-root="true"
       style={stableStyle}
       onPointerDown={(event) => guardLinkTap(event, rest.onPointerDown)}
+      onPointerUp={(event) => guardLinkTap(event, rest.onPointerUp)}
       onMouseDown={(event) => guardLinkTap(event, rest.onMouseDown)}
-      onClick={(event) => guardLinkTap(event, rest.onClick)}
+      onClick={(event) => {
+        rememberAppRouteRecovery(nextTo, linkDebugId);
+        guardLinkTap(event, rest.onClick);
+      }}
     >
       {children}
     </Link>

@@ -18,6 +18,14 @@ No bottom navigation on these screens.
 9. CommunityCreatedPage
 10. JoinRequestSubmittedPage
 
+## Public Verification Screens
+
+No bottom navigation on these screens.
+
+1. TrustSlipVerifyPage
+2. CommunityConfirmationOutcomePage
+3. CommunityVerifyPage
+
 ## Authenticated Screens
 
 Bottom navigation is allowed here.
@@ -31,6 +39,8 @@ Bottom navigation is allowed here.
 7. TrustPassportPage
 8. TrustEventsPage
 9. NotificationsPage
+10. CommunityConfirmationInboxPage
+11. CommunityConfirmationPolicyPage
 
 ## Current Repo Name Notes
 

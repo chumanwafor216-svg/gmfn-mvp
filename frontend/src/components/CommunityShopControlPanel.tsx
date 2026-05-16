@@ -4,7 +4,7 @@ import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
 import * as api from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicShopPath, publicShopUrl } from "../lib/publicLinks";
+import { publicShopDiariesPath, publicShopDiariesUrl } from "../lib/publicLinks";
 
 type NoticeTone = "success" | "error";
 
@@ -607,12 +607,12 @@ export default function CommunityShopControlPanel({
 
   const publicShopTo = useMemo(() => {
     const gmfnId = safeStr(shop?.gmfnId);
-    return gmfnId && shop?.id ? publicShopPath(gmfnId) : "";
+    return gmfnId && shop?.id ? publicShopDiariesPath(gmfnId) : "";
   }, [shop]);
 
   const publicShopLink = useMemo(() => {
     const gmfnId = safeStr(shop?.gmfnId);
-    return gmfnId && shop?.id ? publicShopUrl(gmfnId) : "";
+    return gmfnId && shop?.id ? publicShopDiariesUrl(gmfnId) : "";
   }, [shop]);
 
   const shopImageSrc = useMemo(() => {
@@ -810,6 +810,12 @@ export default function CommunityShopControlPanel({
                         href={publicShopLink}
                         target="_blank"
                         rel="noreferrer"
+                        data-gmfn-action-root="true"
+                        data-cta-id="community-shop-control.public-url"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onPointerUp={(event) => event.stopPropagation()}
+                        onMouseDown={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
                         style={{
                           color: "inherit",
                           fontWeight: 900,

@@ -37,6 +37,7 @@ import {
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { institutionalBlueRailShell } from "../lib/institutionalSurface";
 import { rememberPublishRecovery } from "../lib/publishRecovery";
+import { navigateWithOrigin } from "../lib/nav";
 
 type ShopRecord = {
   id: number;
@@ -979,7 +980,9 @@ export default function ShopControlPage() {
     lastAutoScrolledHashRef.current = targetId;
 
     if (targetId === "shop-control-paid-spotlight") {
-      navigate(routes.subscriptionSpotlight, { replace: true });
+      navigateWithOrigin(navigate, routes.subscriptionSpotlight, location, {
+        replace: true,
+      });
       return;
     }
 
@@ -995,7 +998,7 @@ export default function ShopControlPage() {
 
     cancelPendingControlReveal();
     revealControlTarget(targetId);
-  }, [cancelPendingControlReveal, loading, location.hash, location.search, navigate, revealControlTarget, routes.subscriptionSpotlight, shop?.id]);
+  }, [cancelPendingControlReveal, loading, location, location.hash, location.search, navigate, revealControlTarget, routes.subscriptionSpotlight, shop?.id]);
 
   const publicProducts = useMemo(
     () =>
@@ -1167,12 +1170,14 @@ export default function ShopControlPage() {
     if (!targetId) return;
 
     lastAutoScrolledHashRef.current = targetId;
-    navigate(
+    navigateWithOrigin(
+      navigate,
       {
         pathname: location.pathname,
         search: "",
         hash: `#${targetId}`,
       },
+      location,
       { replace: true, preventScrollReset: true }
     );
   }
@@ -2093,7 +2098,9 @@ export default function ShopControlPage() {
                 </div>
                 <SecondaryButton
                   type="button"
-                  onClick={() => navigate(routes.subscriptionSpotlight)}
+                  onClick={() =>
+                    navigateWithOrigin(navigate, routes.subscriptionSpotlight, location)
+                  }
                   fullWidth
                   style={{ marginTop: 12 }}
                   debugId="shop-control.spotlight.paid-lane"
@@ -2803,7 +2810,9 @@ export default function ShopControlPage() {
             </div>
             <div style={{ marginTop: 8, ...controlGrid(isCompact, 160) }}>
               <PrimaryButton
-                onClick={() => navigate(routes.subscriptionSpotlight)}
+                onClick={() =>
+                  navigateWithOrigin(navigate, routes.subscriptionSpotlight, location)
+                }
                 disabled={shopActionsLocked}
                 fullWidth
                 debugId="shop-control.subscription.open"
@@ -2816,7 +2825,9 @@ export default function ShopControlPage() {
                 })}
               </PrimaryButton>
               <SecondaryButton
-                onClick={() => navigate(routes.subscriptionSpotlight)}
+                onClick={() =>
+                  navigateWithOrigin(navigate, routes.subscriptionSpotlight, location)
+                }
                 fullWidth
                 debugId="shop-control.subscription.publisher"
               >

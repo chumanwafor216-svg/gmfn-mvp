@@ -350,7 +350,7 @@ function friendlyJoinError(value: any): string {
     if (cleanText(parsed?.code).toLowerCase() === "existing_account_login_required") {
       return (
         cleanText(parsed?.message) ||
-        "This phone is already tied to an existing GMFN identity. Sign in first, then continue this join link with the same GMFN ID."
+        "This phone is already tied to an existing GSN identity. Sign in first, then continue this join link with the same GSN ID."
       );
     }
   } catch {
@@ -361,10 +361,11 @@ function friendlyJoinError(value: any): string {
 
   if (
     lower.includes("existing_account_login_required") ||
-    lower.includes("already tied to an existing gmfn identity")
+    lower.includes("already tied to an existing gmfn identity") ||
+    lower.includes("already tied to an existing gsn identity")
   ) {
     return (
-      "This phone is already tied to an existing GMFN identity. Sign in first, then continue this join link with the same GMFN ID."
+      "This phone is already tied to an existing GSN identity. Sign in first, then continue this join link with the same GSN ID."
     );
   }
 
@@ -1374,7 +1375,7 @@ export default function JoinEntryPage() {
         throw new Error("The app is still checking this invite link. Please wait a moment.");
       }
       if (!usingExistingIdentity) {
-        throw new Error("Sign in to your existing GSN account before joining with your current GMFN ID.");
+        throw new Error("Sign in to your existing GSN account before joining with your current GSN ID.");
       }
 
       const displayName = cleanText(currentMember?.display_name || currentMember?.nickname || "");
@@ -1694,7 +1695,7 @@ export default function JoinEntryPage() {
 
             {currentMemberChecked && usingExistingIdentity ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
-                <div style={labelText()}>Existing GMFN identity</div>
+                <div style={labelText()}>Existing GSN identity</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1704,11 +1705,11 @@ export default function JoinEntryPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Join this community with your existing GMFN identity.
+                  Join this community with your existing GSN identity.
                 </div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   This adds a new community membership request for{" "}
-                  {resolvedCommunityName}. It does not create a new GMFN ID or a
+                  {resolvedCommunityName}. It does not create a new GSN ID or a
                   duplicate account. Community approval may still be required.
                 </div>
                 <div
@@ -1719,7 +1720,7 @@ export default function JoinEntryPage() {
                     flexWrap: "wrap",
                   }}
                 >
-                  <span style={badge(true)}>GMFN ID {currentGmfnId}</span>
+                  <span style={badge(true)}>GSN ID {currentGmfnId}</span>
                   <span style={badge(false)}>
                     {cleanText(currentMember?.email || "Signed in")}
                   </span>
@@ -1734,7 +1735,7 @@ export default function JoinEntryPage() {
                     busyLabel="Sending request..."
                     style={{ width: "min(100%, 68%)" }}
                   >
-                    Join with existing GMFN ID
+                    Join with existing GSN ID
                   </PrimaryButton>
                 </div>
               </div>
@@ -1742,7 +1743,7 @@ export default function JoinEntryPage() {
 
             {lockedAuthenticatedWithoutGmfn ? (
               <div style={{ marginTop: 14, ...noticeStyle("info") }}>
-                Sign in again before using an existing GMFN identity for this
+                Sign in again before using an existing GSN identity for this
                 invite. The app will not create a second identity for a logged-in
                 member.
               </div>
@@ -1765,7 +1766,7 @@ export default function JoinEntryPage() {
                     Choose how you are joining
                   </div>
                   <div style={{ color: "#35516B", fontSize: 14, lineHeight: 1.6 }}>
-                    If you already have a GMFN ID, sign in first so this invite
+                    If you already have a GSN ID, sign in first so this invite
                     adds only a community membership. If you are new to GSN,
                     open the request form.
                   </div>
@@ -1784,7 +1785,7 @@ export default function JoinEntryPage() {
                     kind="secondary"
                     debugId="join-entry.already-have-gmfn"
                   >
-                    I already have a GMFN ID
+                    I already have a GSN ID
                   </StableCtaLink>
 
                   <SecondaryButton
@@ -1858,9 +1859,9 @@ export default function JoinEntryPage() {
                 <div>
                   {cleanText(success?.result_status || success?.code || "").toLowerCase() ===
                   "already_member"
-                    ? "You already belong to this community. Your current GMFN identity stays the same."
+                    ? "You already belong to this community. Your current GSN identity stays the same."
                     : success?.existing_identity || success?.identity_reused
-                    ? "Your request has been sent for community review using your existing GMFN identity. Admission is not automatic, and no new GMFN ID will be created."
+                    ? "Your request has been sent for community review using your existing GSN identity. Admission is not automatic, and no new GSN ID will be created."
                     : "Your request has been sent for community review. Admission is not automatic. Once approval is reached, you will be able to proceed to activation with your GSN identity."}
                 </div>
 

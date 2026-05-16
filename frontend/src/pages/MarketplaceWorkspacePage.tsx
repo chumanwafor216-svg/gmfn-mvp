@@ -1433,8 +1433,8 @@ export default function MarketplaceWorkspacePage() {
                       }}
                     >
                       {member.gmfnId
-                        ? `GMFN ID: ${member.gmfnId}`
-                        : "GMFN ID not yet available"}
+                        ? `GSN ID: ${member.gmfnId}`
+                        : "GSN ID not yet available"}
                     </div>
                   </div>
 
@@ -1476,7 +1476,7 @@ export default function MarketplaceWorkspacePage() {
                   )}
                 </div>
                 <div style={muted()}>
-                  GMFN ID:{" "}
+                  GSN ID:{" "}
                   {safeStr(
                     selectedMember?.gmfn_id ||
                       selectedMember?.member_gmfn_id ||

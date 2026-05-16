@@ -486,6 +486,556 @@ class ClanJoinVote(Base):
     )
 
 
+class CommunityConfirmationContact(Base):
+    __tablename__ = "community_confirmation_contacts"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "community_id",
+            "user_id",
+            name="uq_community_confirmation_contact",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    role_type: Mapped[str] = mapped_column(
+        String(32),
+        nullable=False,
+        default="member",
+        server_default="member",
+    )
+    active: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    can_receive_relay_requests: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    can_receive_instant_pulse: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    priority_order: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=10,
+        server_default="10",
+    )
+    standing_status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="active",
+        server_default="active",
+    )
+    last_active_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    opted_in_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    opted_out_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class CommunityConfirmationPolicy(Base):
+    __tablename__ = "community_confirmation_policies"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    community_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    relay_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    instant_pulse_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    minimum_positive_responses: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=2,
+        server_default="2",
+    )
+    maximum_relay_contacts: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=8,
+        server_default="8",
+    )
+    response_window_seconds: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=86400,
+        server_default="86400",
+    )
+    review_attention_after_hours: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=24,
+        server_default="24",
+    )
+    review_overdue_after_hours: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=72,
+        server_default="72",
+    )
+    allow_admin_contacts: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    allow_sponsor_contacts: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    allow_voting_member_contacts: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    allow_subject_nominated_contacts: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    public_confirmation_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+
+class CommunityConfirmationRequest(Base):
+    __tablename__ = "community_confirmation_requests"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    public_token: Mapped[str] = mapped_column(
+        String(80),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+    requester_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    requester_external_label: Mapped[Optional[str]] = mapped_column(
+        String(120),
+        nullable=True,
+    )
+    subject_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    trust_slip_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("trust_slips.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    reason_type: Mapped[str] = mapped_column(String(48), nullable=False, index=True)
+    risk_level: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="low",
+        server_default="low",
+    )
+    mode: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="relay",
+        server_default="relay",
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="pending",
+        server_default="pending",
+        index=True,
+    )
+    visible_outcome: Mapped[Optional[str]] = mapped_column(String(24), nullable=True)
+    outcome_summary_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    abuse_flag: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default="0",
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+    expires_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True,
+    )
+
+    def _get_outcome_summary(self) -> Optional[Dict[str, Any]]:
+        if not self.outcome_summary_json:
+            return None
+        try:
+            raw = json.loads(self.outcome_summary_json)
+            return raw if isinstance(raw, dict) else None
+        except Exception:
+            return None
+
+    def _set_outcome_summary(self, value: Optional[Dict[str, Any]]) -> None:
+        self.outcome_summary_json = json.dumps(value) if value is not None else None
+
+    outcome_summary = synonym(
+        "outcome_summary_json",
+        descriptor=property(_get_outcome_summary, _set_outcome_summary),
+    )
+
+
+class CommunityConfirmationResponse(Base):
+    __tablename__ = "community_confirmation_responses"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "request_id",
+            "responder_user_id",
+            name="uq_community_confirmation_response_once",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    request_id: Mapped[int] = mapped_column(
+        ForeignKey("community_confirmation_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    responder_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    response_type: Mapped[str] = mapped_column(String(48), nullable=False, index=True)
+    response_reason: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    response_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    counted_in_outcome: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="1",
+    )
+    responded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+
+
+class CommunityConfirmationOutcome(Base):
+    __tablename__ = "community_confirmation_outcomes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    request_id: Mapped[int] = mapped_column(
+        ForeignKey("community_confirmation_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+    positive_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    caution_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    objection_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    no_response_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    eligible_contact_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    confidence_level: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="limited",
+        server_default="limited",
+        index=True,
+    )
+    visible_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    closed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+
+class CommunityConfirmationDecision(Base):
+    __tablename__ = "community_confirmation_decisions"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "request_id",
+            "actor_user_id",
+            name="uq_community_confirmation_decision_actor_once",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    request_id: Mapped[int] = mapped_column(
+        ForeignKey("community_confirmation_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    subject_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    actor_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    decision: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    amount_band: Mapped[Optional[str]] = mapped_column(String(32), nullable=True)
+    issue_reported: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    settled: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="recorded",
+        server_default="recorded",
+        index=True,
+    )
+    decision_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    confidence_snapshot_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    def _get_confidence_snapshot(self) -> Optional[Dict[str, Any]]:
+        if not self.confidence_snapshot_json:
+            return None
+        try:
+            raw = json.loads(self.confidence_snapshot_json)
+            return raw if isinstance(raw, dict) else None
+        except Exception:
+            return None
+
+    def _set_confidence_snapshot(self, value: Optional[Dict[str, Any]]) -> None:
+        self.confidence_snapshot_json = json.dumps(value) if value is not None else None
+
+    confidence_snapshot = synonym(
+        "confidence_snapshot_json",
+        descriptor=property(_get_confidence_snapshot, _set_confidence_snapshot),
+    )
+
+
+class CommunityConfirmationReviewCase(Base):
+    __tablename__ = "community_confirmation_review_cases"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "request_id",
+            name="uq_community_confirmation_review_case_request",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    request_id: Mapped[int] = mapped_column(
+        ForeignKey("community_confirmation_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    decision_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("community_confirmation_decisions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    community_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    subject_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    opened_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    assigned_to_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="open",
+        server_default="open",
+        index=True,
+    )
+    review_reason: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    reviewer_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    resolution: Mapped[Optional[str]] = mapped_column(String(48), nullable=True)
+    resolution_note: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    trust_impact: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="none",
+        server_default="none",
+    )
+    evidence_summary_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
+
+    def _get_evidence_summary(self) -> Optional[Dict[str, Any]]:
+        if not self.evidence_summary_json:
+            return None
+        try:
+            raw = json.loads(self.evidence_summary_json)
+            return raw if isinstance(raw, dict) else None
+        except Exception:
+            return None
+
+    def _set_evidence_summary(self, value: Optional[Dict[str, Any]]) -> None:
+        self.evidence_summary_json = json.dumps(value) if value is not None else None
+
+    evidence_summary = synonym(
+        "evidence_summary_json",
+        descriptor=property(_get_evidence_summary, _set_evidence_summary),
+    )
+
+
+class CommunityConfirmationReviewEvidence(Base):
+    __tablename__ = "community_confirmation_review_evidence"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    review_case_id: Mapped[int] = mapped_column(
+        ForeignKey("community_confirmation_review_cases.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    request_id: Mapped[int] = mapped_column(
+        ForeignKey("community_confirmation_requests.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    community_id: Mapped[int] = mapped_column(
+        ForeignKey("clans.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    subject_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    added_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    evidence_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    external_ref: Mapped[Optional[str]] = mapped_column(String(240), nullable=True)
+    visibility: Mapped[str] = mapped_column(
+        String(24),
+        nullable=False,
+        default="internal",
+        server_default="internal",
+        index=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        index=True,
+    )
+
+
 class EntryPhoneVerification(Base):
     __tablename__ = "entry_phone_verifications"
 

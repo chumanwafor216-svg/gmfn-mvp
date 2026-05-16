@@ -1129,7 +1129,7 @@ export default function LoanSuggestionsPage() {
               }}
             >
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>
-              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>GSN ID: {gmfnId}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Fit suggestions</span>
               {cameFromWithdrawalSupport ? (
@@ -1612,7 +1612,7 @@ export default function LoanSuggestionsPage() {
 
                       {safeStr(item.gmfnId) ? (
                         <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                          GMFN ID: {safeStr(item.gmfnId)}
+                          GSN ID: {safeStr(item.gmfnId)}
                         </div>
                       ) : null}
                     </div>

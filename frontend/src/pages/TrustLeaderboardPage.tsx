@@ -111,16 +111,16 @@ export default function TrustLeaderboardPage() {
           </div>
           <CardActionRow style={{ marginTop: 16 }}>
             <StableCtaLink to={routes.trust} debugId="trust-leaderboard.trust">
-              Open Trust
+              Open Trust Passport
             </StableCtaLink>
             <StableCtaLink to={routes.trustSlip} debugId="trust-leaderboard.trust-slip">
-              Open Trust Slip
+              Open TrustSlip
             </StableCtaLink>
             <StableCtaLink
               to={routes.openTrust}
               debugId="trust-leaderboard.open-trust"
             >
-              Open Trust Reading
+              Open local trust reading
             </StableCtaLink>
           </CardActionRow>
           <div style={{ marginTop: 16, ...helperText(), color: "#991B1B" }}>
@@ -149,7 +149,7 @@ export default function TrustLeaderboardPage() {
             <thead>
               <tr>
                 <th>User</th>
-                <th>CCI Score</th>
+                <th>Consistency score</th>
                 <th>Reliability</th>
               </tr>
             </thead>

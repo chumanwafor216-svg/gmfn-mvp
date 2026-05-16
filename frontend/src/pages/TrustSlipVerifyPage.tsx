@@ -1,57 +1,33 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
-import NextActionGuide from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
-import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
-import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
-import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
-import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
+import {
+  PrimaryButton,
+  SecondaryButton,
+  StableCtaLink,
+  StableDisclosureSummary,
+  SubtleButton,
+} from "../components/StableButton";
 import * as api from "../lib/api";
 import {
-  institutionalInnerCard,
   institutionalPageCard,
   institutionalSoftCard,
-  institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicFrontendUrl } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildTrustSlipVerifyActionGuide } from "../lib/trustDocumentActionGuide";
-import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
-import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
-import { buildTrustSlipVerifyGuideItems } from "../lib/trustDocumentGuide";
 import { buildTrustSlipVerifySnapshot } from "../lib/trustDocumentSnapshots";
-
-type TrustSlipVerifyRecord = {
-  id?: number;
-  code?: string | null;
-  holder_name?: string | null;
-  gmfn_id?: string | null;
-  status?: string | null;
-  verification_status?: string | null;
-  state?: string | null;
-  trust_band?: string | null;
-  trust_class?: string | null;
-  trust_score?: string | number | null;
-  open_trust_band?: string | null;
-  open_trust_class?: string | null;
-  open_trust_score?: string | number | null;
-  community_trust_band?: string | null;
-  community_trust_class?: string | null;
-  community_trust_score?: string | number | null;
-  community_name?: string | null;
-  clan_name?: string | null;
-  marketplace_name?: string | null;
-  issued_at?: string | null;
-  expires_at?: string | null;
-  valid?: boolean | null;
-  verified?: boolean | null;
-  message?: string | null;
-  detail?: string | null;
-};
-
-type VerifyBannerTone = "success" | "warning" | "error" | "info";
+import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
+import TrustSlipVerifyPrivateEvidence from "./trustSlipVerify/TrustSlipVerifyPrivateEvidence";
+import TrustSlipVerifyPublicPaper from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
+import {
+  callFirstAvailable,
+  deriveBanner,
+  normalizeTrustSlipVerification,
+  type CommunityConfirmationOutcome,
+  type TrustSlipVerifyRecord,
+  type VerifyBannerTone,
+} from "./trustSlipVerify/trustSlipVerifyData";
+import { buildTrustSlipVerifyViewModel } from "./trustSlipVerify/trustSlipVerifyViewModel";
 type NoticeTone = "success" | "error";
 
 function safeStr(x: any): string {
@@ -77,19 +53,6 @@ function firstNumberLike(...values: any[]): number | null {
   return null;
 }
 
-function positiveNumber(value: any): number {
-  const n = Number(value || 0);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
-function safeDateTime(x: any): string {
-  const raw = safeStr(x);
-  if (!raw) return "";
-  const d = new Date(raw);
-  if (!Number.isFinite(d.getTime())) return raw;
-  return d.toLocaleString();
-}
-
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
@@ -106,29 +69,6 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
   };
 }
 
-function innerCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    ...institutionalInnerCard(bg),
-    borderRadius: 18,
-    padding: 15,
-  };
-}
-
-function statTile(
-  bg = "#FFFFFF",
-  border = "1px solid rgba(11,31,51,0.08)"
-): React.CSSProperties {
-  return {
-    ...institutionalStatTile(
-      bg,
-      border === "1px solid rgba(11,31,51,0.08)"
-        ? "1px solid rgba(37,78,119,0.12)"
-        : border,
-    ),
-    borderRadius: 18,
-  };
-}
-
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -136,27 +76,6 @@ function sectionLabel(): React.CSSProperties {
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
-  };
-}
-
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 30,
-    borderRadius: 999,
-    padding: "6px 10px",
-    border: primary
-      ? "1px solid rgba(11,99,209,0.14)"
-      : "1px solid rgba(108,138,184,0.18)",
-    background: primary
-      ? "linear-gradient(180deg, rgba(11,99,209,0.11) 0%, rgba(11,99,209,0.06) 100%)"
-      : "linear-gradient(180deg, rgba(245,249,255,0.96) 0%, rgba(232,240,249,0.94) 100%)",
-    color: primary ? "#0B63D1" : "#415A72",
-    fontSize: 12,
-    fontWeight: 900,
-    whiteSpace: "normal",
   };
 }
 
@@ -216,233 +135,6 @@ function bannerToneStyle(tone: VerifyBannerTone): {
   };
 }
 
-function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(148,163,184,0.18)",
-    background: bg,
-    padding: 14,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.45)",
-  };
-}
-
-function documentFrameStyle(): React.CSSProperties {
-  return {
-    position: "relative",
-    overflow: "hidden",
-    border: "1px solid rgba(148,163,184,0.2)",
-    boxShadow:
-      "0 20px 54px rgba(2,6,23,0.12), inset 0 1px 0 rgba(255,255,255,0.5)",
-  };
-}
-
-function documentWatermarkStyle(): React.CSSProperties {
-  return {
-    position: "absolute",
-    top: 18,
-    right: -16,
-    transform: "rotate(-90deg)",
-    transformOrigin: "top right",
-    letterSpacing: 3.1,
-    fontSize: 11,
-    fontWeight: 900,
-    color: "rgba(11,31,51,0.08)",
-    pointerEvents: "none",
-    textTransform: "uppercase",
-  };
-}
-
-function documentFooterGrid(isCompact: boolean): React.CSSProperties {
-  return {
-    position: "relative",
-    zIndex: 1,
-    marginTop: 16,
-    paddingTop: 14,
-    borderTop: "1px solid rgba(148,163,184,0.2)",
-    display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-    gap: 12,
-  };
-}
-
-function documentFooterLabel(): React.CSSProperties {
-  return {
-    fontSize: 11,
-    letterSpacing: 0.28,
-    fontWeight: 900,
-    textTransform: "uppercase",
-    color: "#64748B",
-  };
-}
-
-function normalizeTrustSlipVerification(raw: any, fallbackCode: string): TrustSlipVerifyRecord | null {
-  if (!raw) return null;
-
-  const src = raw?.item || raw?.trust_slip || raw?.verification || raw;
-
-  return {
-    id: positiveNumber(firstTruthy(src?.id, src?.trust_slip_id)) || undefined,
-    code: firstTruthy(src?.code, src?.trust_slip_code, fallbackCode),
-    holder_name: firstTruthy(
-      src?.holder_name,
-      src?.display_name,
-      src?.name,
-      src?.member_name
-    ),
-    gmfn_id: firstTruthy(src?.gmfn_id),
-    status: firstTruthy(src?.status),
-    verification_status: firstTruthy(src?.verification_status),
-    state: firstTruthy(src?.state),
-    trust_band: firstTruthy(src?.trust_band, src?.trust_class),
-    trust_class: firstTruthy(src?.trust_class, src?.trust_band),
-    trust_score: firstNumberLike(src?.trust_score),
-    open_trust_band: firstTruthy(
-      src?.open_trust_band,
-      src?.community_trust_band,
-      src?.open_trust_class
-    ),
-    open_trust_class: firstTruthy(
-      src?.open_trust_class,
-      src?.community_trust_class,
-      src?.open_trust_band
-    ),
-    open_trust_score: firstNumberLike(
-      src?.open_trust_score,
-      src?.community_trust_score
-    ),
-    community_trust_band: firstTruthy(
-      src?.community_trust_band,
-      src?.open_trust_band
-    ),
-    community_trust_class: firstTruthy(
-      src?.community_trust_class,
-      src?.open_trust_class
-    ),
-    community_trust_score: firstNumberLike(
-      src?.community_trust_score,
-      src?.open_trust_score
-    ),
-    community_name: firstTruthy(
-      src?.community_name,
-      src?.clan_name,
-      src?.marketplace_name
-    ),
-    clan_name: firstTruthy(src?.clan_name),
-    marketplace_name: firstTruthy(src?.marketplace_name),
-    issued_at: firstTruthy(src?.issued_at, src?.created_at),
-    expires_at: firstTruthy(src?.expires_at, src?.expiry_at),
-    valid:
-      typeof src?.valid === "boolean"
-        ? src.valid
-        : typeof src?.is_valid === "boolean"
-        ? src.is_valid
-        : null,
-    verified:
-      typeof src?.verified === "boolean"
-        ? src.verified
-        : typeof src?.is_verified === "boolean"
-        ? src.is_verified
-        : null,
-    message: firstTruthy(src?.message),
-    detail: firstTruthy(src?.detail, src?.description),
-  };
-}
-
-async function callFirstAvailable<T = any>(
-  names: string[],
-  argsSets: any[][]
-): Promise<T | null> {
-  for (const name of names) {
-    const fn = (api as any)[name];
-    if (typeof fn !== "function") continue;
-
-    for (const args of argsSets) {
-      try {
-        const result = await fn(...args);
-        if (result) return result as T;
-      } catch {
-        // try next signature
-      }
-    }
-  }
-
-  return null;
-}
-
-function deriveBanner(record: TrustSlipVerifyRecord | null): {
-  tone: VerifyBannerTone;
-  title: string;
-  detail: string;
-} {
-  if (!record) {
-    return {
-      tone: "error",
-      title: "No usable TrustSlip record was found",
-      detail:
-        "The supplied TrustSlip code did not return a usable verification record from the available verification source.",
-    };
-  }
-
-  const statusText = [
-    safeStr(record.status),
-    safeStr(record.verification_status),
-    safeStr(record.state),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  const expiresAt = safeStr(record.expires_at);
-  const expiresDate = expiresAt ? new Date(expiresAt) : null;
-  const isExpired =
-    expiresDate && Number.isFinite(expiresDate.getTime())
-      ? expiresDate.getTime() < Date.now()
-      : false;
-
-  if (isExpired || statusText.includes("expired")) {
-    return {
-      tone: "warning",
-      title: "This TrustSlip looks expired",
-      detail:
-        "A record was found, but the expiry line suggests that the current verification window may have ended.",
-    };
-  }
-
-  if (
-    record.valid === false ||
-    record.verified === false ||
-    statusText.includes("revoked") ||
-    statusText.includes("invalid") ||
-    statusText.includes("rejected")
-  ) {
-    return {
-      tone: "error",
-      title: "This TrustSlip is not currently valid",
-      detail:
-        "A record was found, but the visible verification state suggests it is not currently valid.",
-    };
-  }
-
-  if (
-    statusText.includes("pending") ||
-    statusText.includes("preparing") ||
-    statusText.includes("processing")
-  ) {
-    return {
-      tone: "warning",
-      title: "This TrustSlip is still being issued",
-      detail:
-        "A TrustSlip record exists, but the visible state suggests the current verification issue is not fully settled yet.",
-    };
-  }
-
-  return {
-    tone: "success",
-    title: "A TrustSlip record was found",
-    detail:
-      "This shows the current verification reading returned for the supplied TrustSlip code.",
-  };
-}
-
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
@@ -468,6 +160,9 @@ export default function TrustSlipVerifyPage() {
   const [record, setRecord] = useState<TrustSlipVerifyRecord | null>(null);
   const [resolvedCode, setResolvedCode] = useState("");
   const [loadError, setLoadError] = useState("");
+  const [confirmationBusy, setConfirmationBusy] = useState(false);
+  const [confirmationOutcome, setConfirmationOutcome] =
+    useState<CommunityConfirmationOutcome | null>(null);
 
   const isAppRoute = location.pathname.startsWith("/app/");
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
@@ -519,10 +214,12 @@ export default function TrustSlipVerifyPage() {
       setLoadError("");
 
       try {
-        const [meRes, clanRes] = await Promise.all([
-          (api as any).getMe?.().catch(() => null) ?? Promise.resolve(null),
-          (api as any).getCurrentClan?.().catch(() => null) ?? Promise.resolve(null),
-        ]);
+        const [meRes, clanRes] = isAppRoute
+          ? await Promise.all([
+              (api as any).getMe?.().catch(() => null) ?? Promise.resolve(null),
+              (api as any).getCurrentClan?.().catch(() => null) ?? Promise.resolve(null),
+            ])
+          : [null, null];
 
         if (!alive) return;
         setMe(meRes || null);
@@ -561,6 +258,7 @@ export default function TrustSlipVerifyPage() {
 
         const normalized = normalizeTrustSlipVerification(verifyResult, codeToUse);
         setRecord(normalized);
+        setConfirmationOutcome(null);
 
         if (!normalized) {
           setLoadError(
@@ -583,30 +281,30 @@ export default function TrustSlipVerifyPage() {
         record?.community_name,
         record?.marketplace_name,
         record?.clan_name,
-        currentClan?.marketplace_name,
-        currentClan?.name,
-        currentClan?.display_name,
-        currentClan?.title
+        isAppRoute ? currentClan?.marketplace_name : null,
+        isAppRoute ? currentClan?.name : null,
+        isAppRoute ? currentClan?.display_name : null,
+        isAppRoute ? currentClan?.title : null
       ) || "Not stated"
     );
-  }, [record, currentClan]);
+  }, [record, currentClan, isAppRoute]);
 
   const gmfnId = useMemo(() => {
-    return firstTruthy(record?.gmfn_id, me?.gmfn_id, "Awaiting issue");
-  }, [record, me]);
+    return firstTruthy(record?.gmfn_id, isAppRoute ? me?.gmfn_id : null, "Awaiting issue");
+  }, [record, me, isAppRoute]);
 
   const holderName = useMemo(() => {
     return (
       firstTruthy(
         record?.holder_name,
-        me?.display_name,
-        me?.nickname,
-        me?.name,
-        me?.first_name,
-        me?.email
+        isAppRoute ? me?.display_name : null,
+        isAppRoute ? me?.nickname : null,
+        isAppRoute ? me?.name : null,
+        isAppRoute ? me?.first_name : null,
+        isAppRoute ? me?.email : null
       ) || "Member"
     );
-  }, [record, me]);
+  }, [record, me, isAppRoute]);
 
   const visibleBand = firstTruthy(
     record?.open_trust_band,
@@ -626,35 +324,122 @@ export default function TrustSlipVerifyPage() {
 
   const banner = useMemo(() => deriveBanner(record), [record]);
   const bannerStyle = bannerToneStyle(banner.tone);
-  const guideItems = useMemo(
-    () => buildTrustSlipVerifyGuideItems(isAppRoute),
-    [isAppRoute]
-  );
-  const familyItems = useMemo(
-    () => buildTrustDocumentFamilyItems(isAppRoute),
-    [isAppRoute]
-  );
-  const trustDocumentUseCases = useMemo(
-    () => buildTrustDocumentUseCaseItems(familyItems, "verify"),
-    [familyItems]
-  );
-  const actionGuide = useMemo(() => buildTrustSlipVerifyActionGuide(), []);
 
-  const verifyPath = resolvedCode ? `/t/${encodeURIComponent(resolvedCode)}` : "";
-  const verifyUrl = resolvedCode ? publicFrontendUrl(verifyPath) : "";
+  const trustSlipView = useMemo(
+    () =>
+      buildTrustSlipVerifyViewModel({
+        record,
+        me,
+        isAppRoute,
+        holderName,
+        communityLabel,
+        visibleBand,
+        visibleScore,
+        resolvedCode,
+        banner,
+      }),
+    [
+      record,
+      me,
+      isAppRoute,
+      holderName,
+      communityLabel,
+      visibleBand,
+      visibleScore,
+      resolvedCode,
+      banner,
+    ]
+  );
+
+  const {
+    trustLimit,
+    currency,
+    cciReading,
+    cciBand,
+    sponsorCount,
+    profileImageUrl,
+    communityGlobalId,
+    holderRole,
+    activeMemberCount,
+    activeCommunityCount,
+    identityStatusLabel,
+    cciMeaning,
+    phoneVerified,
+    merchantVerifyActive,
+    lastReleaseText,
+    lastFullRepaymentText,
+    snapshotLabel,
+    riskFlags,
+    personalCommitmentDiscipline,
+    contributionDiscipline,
+    repaymentDiscipline,
+    commitmentPlainLanguage,
+    personalCommitmentPlainLanguage,
+    commitmentSourceNote,
+    fourDecisionQuestions,
+    readerVerdict,
+    verifyPath,
+    verifyUrl,
+    compactTrustLimit,
+    publicVisibleScore,
+    visibleBandLabel,
+    visibleBandMeaning,
+    visibleEvidenceLabel,
+    validNow,
+    publicValidityLabel,
+    quickTrustAnswers,
+    communityConfirmation,
+    communityVerifyPath,
+    communityRelayAvailable,
+    communityPulseAvailable,
+    communityConfirmationText,
+    communityConfirmationRows,
+    statusLabel,
+    issuedAtLabel,
+    expiresAtLabel,
+    systemNote,
+    verificationState,
+    verificationNote,
+  } = trustSlipView;
+
+  const confirmationResult = confirmationOutcome?.community_response || null;
+  const confirmationPublicPath = confirmationOutcome?.public_token
+    ? `/community-confirmations/public/${encodeURIComponent(String(confirmationOutcome.public_token))}`
+    : "";
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
   }
 
-  function copyCode() {
-    if (!resolvedCode) {
+  async function requestCommunityPulse() {
+    const code = firstTruthy(record?.code, resolvedCode);
+    if (!code) {
       showNotice("error", "TrustSlip code is not available.");
       return;
     }
 
-    api.safeCopy(resolvedCode);
-    showNotice("success", "TrustSlip code copied.");
+    if (!communityPulseAvailable) {
+      showNotice("error", "Community confirmation relay is not available yet.");
+      return;
+    }
+
+    setConfirmationBusy(true);
+
+    try {
+      const result = await (api as any).requestCommunityConfirmation({
+        trust_slip_code: code,
+        requester_external_label: "TrustSlip public viewer",
+        reason_type: "merchant_trust_check",
+        risk_level: "low",
+        mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
+      });
+      setConfirmationOutcome(result);
+      showNotice("success", "Community confirmation request opened.");
+    } catch {
+      showNotice("error", "Community confirmation could not be opened yet.");
+    } finally {
+      setConfirmationBusy(false);
+    }
   }
 
   function copyVerifyLink() {
@@ -667,14 +452,24 @@ export default function TrustSlipVerifyPage() {
     showNotice("success", "Verify link copied.");
   }
 
+  function copyCode() {
+    if (!resolvedCode) {
+      showNotice("error", "TrustSlip code is not available.");
+      return;
+    }
+
+    api.safeCopy(resolvedCode);
+    showNotice("success", "TrustSlip code copied.");
+  }
+
   function copyGmfnId() {
     if (!gmfnId || gmfnId === "Awaiting issue") {
-      showNotice("error", "GMFN ID is not available.");
+      showNotice("error", "GSN ID is not available.");
       return;
     }
 
     api.safeCopy(gmfnId);
-    showNotice("success", "GMFN ID copied.");
+    showNotice("success", "GSN ID copied.");
   }
 
   function copyVerificationSnapshot() {
@@ -687,18 +482,63 @@ export default function TrustSlipVerifyPage() {
         visibleBand,
         visibleScore: visibleScore === null ? "-" : String(Math.round(visibleScore)),
         verificationStatus: banner.title,
-        issuedAt: safeDateTime(record?.issued_at) || "Not stated",
-        expiresAt: safeDateTime(record?.expires_at) || "Not stated",
+        issuedAt: issuedAtLabel,
+        expiresAt: expiresAtLabel,
         verifyUrl,
       })
     );
     showNotice("success", "Verification snapshot copied.");
   }
 
-  function handleGuideSelect(item: { to?: string; disabled?: boolean }) {
-    if (!item.to || item.disabled) return;
-    navigateWithOrigin(navigate, item.to, location);
-  }
+  const publicTrustSlipActions = (
+    <div
+      style={{
+        marginTop: 12,
+        display: "grid",
+        gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+        gap: 8,
+      }}
+    >
+      <SecondaryButton
+        type="button"
+        onClick={copyVerifyLink}
+        disabled={!verifyUrl}
+        stableHeight={44}
+        debugId="trust-slip-verify.public.copy-link"
+      >
+        Copy verify link
+      </SecondaryButton>
+      <SecondaryButton
+        type="button"
+        onClick={() => {
+          if (typeof window !== "undefined" && typeof window.print === "function") {
+            window.print();
+          }
+        }}
+        stableHeight={44}
+        debugId="trust-slip-verify.public.print"
+      >
+        Download summary
+      </SecondaryButton>
+      <SecondaryButton
+        type="button"
+        onClick={() => navigateWithOrigin(navigate, routes.trust, location)}
+        stableHeight={44}
+        debugId="trust-slip-verify.public.open-passport"
+      >
+        Open Trust Passport
+      </SecondaryButton>
+      <StableCtaLink
+        to={communityVerifyPath || "#"}
+        kind="soft"
+        disabled={!communityVerifyPath}
+        stableHeight={44}
+        debugId="trust-slip-verify.public.open-community-record"
+      >
+        Open community record
+      </StableCtaLink>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -786,7 +626,7 @@ export default function TrustSlipVerifyPage() {
           <PageTopNav
             sectionLabel="TrustSlip Verify"
             title="TrustSlip Verify"
-            subtitle="Confirm who this TrustSlip belongs to, whether it is valid now, and when the current verification window ends."
+            subtitle="Check the holder, status, QR code, and safe public limits."
             homeTo={routes.dashboard}
             homeLabel="Dashboard"
             backTo={routes.trustSlip}
@@ -810,7 +650,7 @@ export default function TrustSlipVerifyPage() {
               lineHeight: 1.1,
             }}
           >
-            TrustSlip verification page
+            TrustSlip Verify
           </div>
 
           <div
@@ -821,7 +661,7 @@ export default function TrustSlipVerifyPage() {
               color: "#D7E3F1",
             }}
           >
-            It confirms identity, visible trust reading, and current validity. It is not the full trust explanation page.
+            Public check for holder, status, QR code, and safe limits.
           </div>
 
           <div
@@ -852,345 +692,156 @@ export default function TrustSlipVerifyPage() {
         </section>
       )}
 
-      <ExplainToggle
-        label="What this screen does"
-        what="TrustSlip Verify confirms whether the supplied TrustSlip code belongs to a valid current record and what public reading is visible for it."
-        why="It gives a clean verification layer without forcing people into the fuller trust explanation pages first."
-        next="Read the verification result first, then use the detailed record below if you need the holder, status, and validity window."
-        tone="blue"
-      />
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section
+      <TrustSlipVerifyPublicPaper
+        compact={isCompact}
+        validNow={validNow}
+        publicValidityLabel={publicValidityLabel}
+        bannerDetail={banner.detail}
+        profileImageUrl={profileImageUrl}
+        holderName={holderName}
+        gsnId={gmfnId}
+        communityLabel={communityLabel}
+        visibleBand={visibleBand}
+        visibleBandLabel={visibleBandLabel}
+        visibleBandMeaning={visibleBandMeaning}
+        visibleEvidenceLabel={visibleEvidenceLabel}
+        publicVisibleScore={publicVisibleScore}
+        compactTrustLimit={compactTrustLimit}
+        issuedAtLabel={issuedAtLabel}
+        expiresAtLabel={expiresAtLabel}
+        resolvedCode={resolvedCode}
+        verifyPath={verifyPath}
+        verifyUrl={verifyUrl}
+        quickTrustAnswers={quickTrustAnswers}
+        communityRelayAvailable={communityRelayAvailable}
+        communityPulseAvailable={communityPulseAvailable}
+        communityConfirmationText={communityConfirmationText}
+        communityConfirmationRows={communityConfirmationRows}
+        confirmationOutcome={confirmationOutcome}
+        confirmationResult={confirmationResult}
+        confirmationPublicPath={confirmationPublicPath}
+        confirmationBusy={confirmationBusy}
+        canRequestCommunityPulse={Boolean(firstTruthy(record?.code, resolvedCode))}
+        onRequestCommunityPulse={() => {
+          void requestCommunityPulse();
+        }}
+        publicActions={publicTrustSlipActions}
+      />
+      <TrustSlipVerifyBoundary compact={isCompact} />
+
+      <details
+        className="print-trust-support"
         style={{
-          ...pageCard(bannerStyle.bg),
-          border: bannerStyle.border,
+          ...pageCard("#FFF7E6"),
+          padding: isCompact ? 14 : 18,
+          border: "2px solid rgba(180,83,9,0.5)",
+          boxShadow: "0 18px 42px rgba(146,64,14,0.13)",
+          overflowAnchor: "none",
+          contain: "layout paint",
         }}
       >
-        <div style={sectionLabel()}>Verification result</div>
-
-        <ExplainToggle
-          label="What this result means"
-          what="This banner is the first verification answer for the supplied code."
-          why="It tells you quickly whether the record is valid now and whether it is safe to trust the public reading shown below."
-          next="Use the status and code here as the first check, then read the detailed verification record if you need the fuller context."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
-        <div
+        <StableDisclosureSummary
+          debugId="trust-slip-verify.full-evidence-toggle"
+          stableHeight={92}
           style={{
-            marginTop: 10,
-            color: bannerStyle.text,
-            fontWeight: 900,
-            fontSize: isCompact ? 24 : 30,
-            lineHeight: 1.15,
+            color: "#07172C",
+            fontSize: isCompact ? 18 : 20,
+            fontWeight: 1000,
+            alignItems: "flex-start",
+            justifyContent: "center",
+            flexDirection: "column",
+            textAlign: "left",
+            gap: 0,
           }}
         >
-          {banner.title}
-        </div>
-
-        <div style={{ marginTop: 12, ...helperText(), color: "#0B1F33" }}>
-          {loadError || banner.detail}
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
-          }}
-        >
-          <span style={badge(true)}>
-            Code: {resolvedCode || "Not available"}
+          Private/internal detail
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              width: "fit-content",
+              marginTop: 8,
+              borderRadius: 999,
+              padding: "6px 10px",
+              background: "#FFF1F2",
+              border: "1px solid rgba(190,18,60,0.28)",
+              color: "#991B1B",
+              fontSize: 12,
+              fontWeight: 1000,
+              textTransform: "uppercase",
+            }}
+          >
+            Not the public/shareable TrustSlip
           </span>
-          <span style={badge(false)}>
-            Status:{" "}
-            {firstTruthy(
-              record?.status,
-              record?.verification_status,
-              record?.state,
-              loadError ? "Unavailable" : "Record found"
-            )}
+          <span
+            style={{
+              display: "block",
+              marginTop: 6,
+              color: "#64748B",
+              fontSize: 13,
+              fontWeight: 800,
+              lineHeight: 1.45,
+            }}
+          >
+            Review, repair, and deeper evidence only. Keep this separate from the public paper.
           </span>
-        </div>
-      </section>
+        </StableDisclosureSummary>
 
-      <section
-        className="print-trust-document"
-        style={{ ...pageCard("#FFFFFF"), ...documentFrameStyle() }}
-      >
-        <div className="print-watermark" aria-hidden style={documentWatermarkStyle()}>
-          GSN Verify
-        </div>
-        <div style={sectionLabel()}>Verification summary</div>
-
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>Holder identity</div>
-
-            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              <div style={statTile()}>
-                <div style={sectionLabel()}>Holder</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 18,
-                  }}
-                >
-                  {holderName}
-                </div>
-              </div>
-
-              <div style={statTile()}>
-                <div style={sectionLabel()}>GMFN ID</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 16,
-                    lineHeight: 1.25,
-                    wordBreak: "break-word",
-                  }}
-                >
-                  {gmfnId}
-                </div>
-              </div>
-
-              <div style={statTile()}>
-                <div style={sectionLabel()}>Community</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 16,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {communityLabel}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={innerCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Visible trust reading</div>
-
-            <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-              <div style={statTile()}>
-                <div style={sectionLabel()}>Visible band</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 18,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {visibleBand}
-                </div>
-              </div>
-
-              <div style={statTile()}>
-                <div style={sectionLabel()}>Visible score</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 18,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {visibleScore === null ? "-" : String(Math.round(visibleScore))}
-                </div>
-              </div>
-
-              <div style={statTile()}>
-                <div style={sectionLabel()}>Issued / expires</div>
-                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                  <div style={{ ...helperText(), color: "#0B1F33" }}>
-                    Issued: {safeDateTime(record?.issued_at) || "-"}
-                  </div>
-                  <div style={{ ...helperText(), color: "#0B1F33" }}>
-                    Expires: {safeDateTime(record?.expires_at) || "Not stated"}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {firstTruthy(record?.message, record?.detail) ? (
-          <div style={{ marginTop: 14, ...softCard("#F8FBFF") }}>
-            <div style={sectionLabel()}>System note</div>
-            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-              {firstTruthy(record?.message, record?.detail)}
-            </div>
-          </div>
-        ) : null}
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div style={documentMetaCard("#FFFFFF")}>
-            <div style={sectionLabel()}>Document reference</div>
-            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-              Verification code: {resolvedCode || "Not available"}
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-              Verification state: {firstTruthy(record?.verification_status, record?.status, "Not stated")}
-            </div>
-          </div>
-
-          <div style={documentMetaCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Validity window</div>
-            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-              Issued: {safeDateTime(record?.issued_at) || "Not stated"}
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-              Expires: {safeDateTime(record?.expires_at) || "Not stated"}
-            </div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-              Public verify path: {verifyPath || "Not available"}
-            </div>
-          </div>
-        </div>
-
-        <div style={documentFooterGrid(isCompact)}>
-          <div>
-            <div style={documentFooterLabel()}>Verification control</div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-              Code: {resolvedCode || "Not available"}
-            </div>
-            <div style={{ marginTop: 4, ...helperText(), color: "#0B1F33" }}>
-              Public path: {verifyPath || "Not available"}
-            </div>
-          </div>
-
-          <div>
-            <div style={documentFooterLabel()}>Validity window</div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-              Issued: {safeDateTime(record?.issued_at) || "Not stated"}
-            </div>
-            <div style={{ marginTop: 4, ...helperText(), color: "#0B1F33" }}>
-              Expires: {safeDateTime(record?.expires_at) || "Not stated"}
-            </div>
-          </div>
-
-          <div>
-            <div style={documentFooterLabel()}>Verification note</div>
-            <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
-              This confirms current public validity only. Trust Passport
-              gives the fuller explanation.
-            </div>
-          </div>
-        </div>
-      </section>
-
+      <TrustSlipVerifyPrivateEvidence
+        compact={isCompact}
+        bannerTitle={banner.title}
+        bannerDetail={banner.detail}
+        bannerStyle={bannerStyle}
+        loadError={loadError}
+        resolvedCode={resolvedCode}
+        statusLabel={loadError ? "Unavailable" : statusLabel}
+        holderName={holderName}
+        gsnId={gmfnId}
+        profileImageUrl={profileImageUrl}
+        communityLabel={communityLabel}
+        communityGlobalId={communityGlobalId}
+        holderRole={holderRole}
+        activeMemberCount={activeMemberCount}
+        activeCommunityCount={activeCommunityCount}
+        sponsorCount={sponsorCount}
+        phoneVerifiedRaw={record?.phone_verified}
+        identityStatusLabel={identityStatusLabel}
+        cciReading={cciReading}
+        cciBand={cciBand}
+        cciMeaning={cciMeaning}
+        trustLimit={trustLimit}
+        currency={currency}
+        readerVerdict={readerVerdict}
+        questions={fourDecisionQuestions}
+        visibleBand={visibleBand}
+        visibleScore={visibleScore}
+        issuedAt={record?.issued_at}
+        expiresAt={record?.expires_at}
+        merchantVerifyActive={merchantVerifyActive}
+        phoneVerified={phoneVerified}
+        contributionDiscipline={contributionDiscipline}
+        repaymentDiscipline={repaymentDiscipline}
+        personalCommitmentDiscipline={personalCommitmentDiscipline}
+        commitmentPlainLanguage={commitmentPlainLanguage}
+        personalCommitmentPlainLanguage={personalCommitmentPlainLanguage}
+        commitmentSourceNote={commitmentSourceNote}
+        systemNote={systemNote}
+        verificationState={verificationState}
+        verifyPath={verifyPath}
+        lastReleaseText={lastReleaseText}
+        lastFullRepaymentText={lastFullRepaymentText}
+        snapshotLabel={snapshotLabel}
+        riskFlags={riskFlags}
+        verificationNote={verificationNote}
+      />
       <section className="print-trust-support" style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>What this page means</div>
+        <div style={sectionLabel()}>Internal actions</div>
 
         <div
           style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#F8FBFF")}>
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 15,
-              }}
-            >
-              Current validity
-            </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Use this public verification page to confirm identity, trust
-              reading, and current validity quickly.
-            </div>
-          </div>
-
-          <div style={innerCard("#FFFFFF")}>
-            <div
-              style={{
-                color: "#0B1F33",
-                fontWeight: 900,
-                fontSize: 15,
-              }}
-            >
-              This is not the full trust story
-            </div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              The full trust explanation still belongs in Trust Passport, where the why, change path, repair path, and trust journey are explained in more detail.
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <NextActionGuide
-        storageKey="gmfn.trustSlipVerify.nextActionGuide.v1"
-        compact={isCompact}
-        items={guideItems}
-        intro="Say what you need next in plain words, like open the full trust explanation, return to the document, or check the identity side behind this verification."
-        onSelect={handleGuideSelect}
-      />
-
-      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
-
-      <TrustDocumentFamilyMap
-        compact={isCompact}
-        items={familyItems}
-        title="How this public verification fits into the wider trust family"
-        intro={
-          isAppRoute
-            ? "TrustSlip Verify confirms the public reading, but it does not replace the stable identity layer, the narrower CCI reading, or the fuller Trust Passport story."
-            : "This page is the public verification end of the trust family. Use this map to understand what belongs to the private signed-in trust record and what belongs to portable proof and public validity."
-        }
-      />
-
-      <TrustDocumentUseCases
-        compact={isCompact}
-        items={trustDocumentUseCases}
-        title="Which trust question belongs on this public page?"
-        intro={
-          isAppRoute
-            ? "Stay here when the question is whether a public code still points to a valid current reading. Move back to TrustSlip, Trust Passport, or Identity & Integrity when someone needs the fuller private context behind this result."
-            : "Use this public chooser when you need to separate quick validity confirmation from the deeper signed-in trust records that explain the person and the wider trust story."
-        }
-      />
-
-      <section className="print-trust-support" style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>Quick actions</div>
-
-        <div
-          style={{
-            marginTop: 14,
+            marginTop: 12,
             display: "flex",
             gap: 10,
             flexWrap: "wrap",
@@ -1200,7 +851,7 @@ export default function TrustSlipVerifyPage() {
             type="button"
             onClick={copyCode}
             disabled={!resolvedCode}
-            stableHeight={48}
+            stableHeight={44}
             debugId="trust-slip-verify.copy-code"
           >
             Copy TrustSlip Code
@@ -1210,7 +861,7 @@ export default function TrustSlipVerifyPage() {
             type="button"
             onClick={copyVerifyLink}
             disabled={!verifyUrl}
-            stableHeight={48}
+            stableHeight={44}
             debugId="trust-slip-verify.copy-link"
           >
             Copy Verify Link
@@ -1220,10 +871,10 @@ export default function TrustSlipVerifyPage() {
             type="button"
             onClick={copyGmfnId}
             disabled={!gmfnId || gmfnId === "Awaiting issue"}
-            stableHeight={48}
+            stableHeight={44}
             debugId="trust-slip-verify.copy-gmfn-id"
           >
-            Copy GMFN ID
+            Copy GSN ID
           </SecondaryButton>
 
           <SubtleButton
@@ -1236,7 +887,7 @@ export default function TrustSlipVerifyPage() {
             stableHeight={44}
             debugId="trust-slip-verify.print"
           >
-            Print Verification
+            Print
           </SubtleButton>
 
           <SubtleButton
@@ -1245,7 +896,7 @@ export default function TrustSlipVerifyPage() {
             stableHeight={44}
             debugId="trust-slip-verify.copy-snapshot"
           >
-            Copy verification snapshot
+            Copy snapshot
           </SubtleButton>
 
           {isAppRoute ? (
@@ -1262,16 +913,20 @@ export default function TrustSlipVerifyPage() {
               to="/guide"
               kind="soft"
               stableHeight={44}
-              debugId="trust-slip-verify.route.guide"
+              debugId="trust-slip-verify.route.trust"
             >
               My GSN and I
             </StableCtaLink>
           )}
         </div>
       </section>
+
+      </details>
     </div>
   );
 }
+
+
 
 
 

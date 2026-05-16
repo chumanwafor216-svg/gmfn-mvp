@@ -12,8 +12,8 @@ import {
 import { routeWithCommunity } from "../lib/appRoutes";
 import {
   publicFrontendUrl,
+  publicShopDiariesUrl,
   publicShopPath,
-  publicShopUrl,
 } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StableButton, StableCtaLink } from "../components/StableButton";
@@ -1226,7 +1226,9 @@ function marketplaceActionStyle(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
+      height: 48,
       minHeight: 44,
+      maxHeight: 48,
       padding: "10px 15px",
       borderRadius: 14,
       border: "1px solid rgba(255,255,255,0.18)",
@@ -1265,7 +1267,9 @@ function marketplaceActionStyle(
       display: "inline-flex",
       alignItems: "center",
       justifyContent: "center",
+      height: 48,
       minHeight: 44,
+      maxHeight: 48,
       padding: "10px 14px",
       borderRadius: 13,
       border: "1px solid var(--gsn-border)",
@@ -1302,7 +1306,9 @@ function marketplaceActionStyle(
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
+    height: 48,
     minHeight: 44,
+    maxHeight: 48,
     padding: "10px 15px",
     borderRadius: 14,
     border: "1px solid var(--gsn-border)",
@@ -1635,7 +1641,9 @@ function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsTileStyle(): React.CSSProperties {
   return {
     width: "100%",
+    height: 154,
     minHeight: 154,
+    maxHeight: 154,
     borderRadius: 20,
     border: "1px solid var(--gsn-border)",
     background:
@@ -1654,6 +1662,9 @@ function marketplaceOsTileStyle(): React.CSSProperties {
     appearance: "none",
     WebkitAppearance: "none",
     boxSizing: "border-box",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -1677,7 +1688,9 @@ function marketplaceOsIconStyle(bg: string): React.CSSProperties {
 function marketplaceOsRowStyle(): React.CSSProperties {
   return {
     width: "100%",
+    height: 78,
     minHeight: 78,
+    maxHeight: 78,
     borderRadius: 16,
     border: "1px solid var(--gsn-border)",
     background:
@@ -1697,6 +1710,9 @@ function marketplaceOsRowStyle(): React.CSSProperties {
     appearance: "none",
     WebkitAppearance: "none",
     boxSizing: "border-box",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    contain: "layout paint",
   };
 }
 
@@ -1888,6 +1904,7 @@ export default function MarketplacePage() {
 
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
+  const scrollTimeoutRefs = useRef<number[]>([]);
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
 
@@ -1944,7 +1961,7 @@ export default function MarketplacePage() {
 
   const publicShopViewLink = useMemo(() => {
     if (!publicShopOwnerId || !publicShopRecord) return "";
-    return publicShopUrl(publicShopOwnerId);
+    return publicShopDiariesUrl(publicShopOwnerId);
   }, [publicShopOwnerId, publicShopRecord]);
   const publicShopActionsLocked =
     !currentGmfnId || !activeCommunityId || preparingPublicShopLink;
@@ -2085,6 +2102,17 @@ export default function MarketplacePage() {
     setIntentGuideOpen((prev) => !prev);
   }
 
+  const cancelMarketplaceSectionScroll = useCallback(() => {
+    if (scrollFrameRef.current !== null) {
+      window.cancelAnimationFrame(scrollFrameRef.current);
+      scrollFrameRef.current = null;
+    }
+    scrollTimeoutRefs.current.forEach((timeoutId) => {
+      window.clearTimeout(timeoutId);
+    });
+    scrollTimeoutRefs.current = [];
+  }, []);
+
   const scrollToMarketplaceSection = useCallback(function scrollToMarketplaceSection(
     id: string,
     attempt = 0
@@ -2098,16 +2126,15 @@ export default function MarketplacePage() {
       document.getElementById(id) ||
       (id === "marketplace-loans-support" ? supportSectionRef.current : null);
     if (target) {
-      const rect = target.getBoundingClientRect();
-      const viewportHeight =
-        window.innerHeight || document.documentElement.clientHeight || 0;
-      const alreadyComfortablyVisible =
-        rect.top >= 16 && rect.bottom <= Math.max(viewportHeight - 16, 16);
+      const topNavOffset = Math.min(
+        96,
+        Math.max(18, Math.round((window.innerHeight || 0) * 0.08))
+      );
+      const targetTop =
+        target.getBoundingClientRect().top + window.scrollY - topNavOffset;
 
-      if (alreadyComfortablyVisible) return;
-
-      target.scrollIntoView({
-        block: "start",
+      window.scrollTo({
+        top: Math.max(0, targetTop),
         behavior: "auto",
       });
       return;
@@ -2121,27 +2148,28 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     return () => {
-      if (scrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(scrollFrameRef.current);
-        scrollFrameRef.current = null;
-      }
+      cancelMarketplaceSectionScroll();
     };
-  }, []);
+  }, [cancelMarketplaceSectionScroll]);
 
   const scheduleMarketplaceSectionScroll = useCallback(
     function scheduleMarketplaceSectionScroll(sectionId: string) {
       if (typeof window === "undefined") return;
-      if (scrollFrameRef.current !== null) {
-        window.cancelAnimationFrame(scrollFrameRef.current);
-        scrollFrameRef.current = null;
-      }
+      cancelMarketplaceSectionScroll();
 
       scrollFrameRef.current = window.requestAnimationFrame(() => {
         scrollFrameRef.current = null;
         scrollToMarketplaceSection(sectionId);
       });
+
+      [120, 320, 700, 1100].forEach((delay) => {
+        const timeoutId = window.setTimeout(() => {
+          scrollToMarketplaceSection(sectionId);
+        }, delay);
+        scrollTimeoutRefs.current.push(timeoutId);
+      });
     },
-    [scrollToMarketplaceSection]
+    [cancelMarketplaceSectionScroll, scrollToMarketplaceSection]
   );
 
   function openMarketplaceIntent(
@@ -2392,7 +2420,7 @@ export default function MarketplacePage() {
         normalized?.gmfn_id,
         currentGmfnId
       );
-      const link = ownerId ? publicShopUrl(ownerId) : "";
+      const link = ownerId ? publicShopDiariesUrl(ownerId) : "";
       setNotice({
         tone: "success",
         text: link
@@ -4684,6 +4712,7 @@ export default function MarketplacePage() {
                         to={publicShopViewLink}
                         target="_blank"
                         rel="noreferrer"
+                        debugId="marketplace.public-shop.visible-link"
                         style={{
                           display: "inline",
                           width: "auto",
@@ -4713,6 +4742,8 @@ export default function MarketplacePage() {
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
                       type="button"
+                      debugId="marketplace.public-shop.refresh"
+                      stableHeight={54}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4739,6 +4770,8 @@ export default function MarketplacePage() {
                     </StableButton>
                     <StableButton
                       type="button"
+                      debugId="marketplace.public-shop.copy"
+                      stableHeight={54}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4765,6 +4798,8 @@ export default function MarketplacePage() {
                     </StableButton>
                     <StableButton
                       type="button"
+                      debugId="marketplace.public-shop.email"
+                      stableHeight={54}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4791,6 +4826,8 @@ export default function MarketplacePage() {
                     </StableButton>
                     <StableButton
                       type="button"
+                      debugId="marketplace.public-shop.open"
+                      stableHeight={54}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {

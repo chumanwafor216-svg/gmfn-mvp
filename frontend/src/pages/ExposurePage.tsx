@@ -241,7 +241,7 @@ export default function ExposurePage() {
       }
 
       setCciByUserId(next);
-      setMsg("CCI scores loaded ✅");
+      setMsg("Consistency scores loaded.");
     } catch (e: any) {
       setErr(e?.message || String(e));
     } finally {
@@ -384,12 +384,12 @@ export default function ExposurePage() {
             onClick={loadCciScoresUI}
             disabled={cciLoading || rows.length === 0}
             busy={cciLoading}
-            busyLabel="Loading CCI..."
+            busyLabel="Loading consistency..."
             stableHeight={40}
             debugId="exposure.load-cci"
             style={toolButtonStyle(cciLoading || rows.length === 0)}
           >
-            Load CCI scores
+            Load consistency scores
           </SecondaryButton>
 
           <StableCtaLink
@@ -434,7 +434,7 @@ export default function ExposurePage() {
                   Available
                 </th>
                 <th style={{ textAlign: "right", padding: 8, borderBottom: "1px solid #eee" }}>
-                  CCI
+                  Consistency
                 </th>
               </tr>
             </thead>

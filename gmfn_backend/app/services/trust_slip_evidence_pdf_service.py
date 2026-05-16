@@ -98,7 +98,7 @@ def build_trust_slip_pdf(db: Session, summary: Dict[str, Any], pack_meta: Option
     elements.append(Spacer(1, 0.25 * inch))
 
     elements.append(Paragraph(f"User ID: {summary.get('user_id')}", styles["Normal"]))
-    elements.append(Paragraph(f"GMFN ID: {summary.get('gmfn_id')}", styles["Normal"]))
+    elements.append(Paragraph(f"GSN ID: {summary.get('gmfn_id')}", styles["Normal"]))
     elements.append(Paragraph(f"Lifetime Trust: {summary.get('lifetime_trust')}", styles["Normal"]))
     elements.append(Paragraph(f"Standing Score: {summary.get('standing_score')}", styles["Normal"]))
     elements.append(Paragraph(f"TrustSlip Limit: {summary.get('trust_slip_limit') or summary.get('trust_limit')}", styles["Normal"]))

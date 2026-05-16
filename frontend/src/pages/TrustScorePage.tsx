@@ -7,6 +7,14 @@ import {
   SecondaryButton,
   SubtleButton,
 } from "../components/StableButton";
+import {
+  TrustPaperBadgeIcon,
+  TrustPaperIcon,
+  TrustPaperSeal,
+  TrustPaperSecurityFooter,
+  TrustPaperWatermark,
+  type TrustPaperIconName,
+} from "../components/TrustPaperMarks";
 import * as api from "../lib/api";
 import {
   buildGuidanceSnapshot,
@@ -16,12 +24,13 @@ import {
   institutionalInnerCard,
   institutionalPageCard,
   institutionalSoftCard,
-  institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicApiUrl } from "../lib/publicLinks";
+import { resolveSharedProfileImage } from "../lib/profileImage";
 import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
+import { TRUST_BAND_SHORT_LABELS } from "../lib/trustBandLanguage";
+import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 
 type NoticeTone = "success" | "error";
 
@@ -93,6 +102,12 @@ type MerchantSummary = {
   expires_at?: string | null;
   expiry_policy?: string | null;
   phone_verified?: boolean | null;
+  bank_verified?: boolean | null;
+  bank_verification_label?: string | null;
+  passport_verified?: boolean | null;
+  passport_verification_label?: string | null;
+  community_identity_confirmed?: boolean | null;
+  community_identity_label?: string | null;
 };
 
 type CapacityContext = {
@@ -110,8 +125,25 @@ type TrustSlipSummary = {
   clan_id?: number | null;
   gmfn_id?: string | null;
   display_name?: string | null;
+  profile_image_url?: string | null;
   community?: string | null;
   phone_verified?: boolean | null;
+  bank_verified?: boolean | null;
+  bank_verification_label?: string | null;
+  passport_verified?: boolean | null;
+  passport_verification_label?: string | null;
+  community_identity_confirmed?: boolean | null;
+  community_identity_label?: string | null;
+  identity_verified?: boolean | null;
+  identity_status_label?: string | null;
+  identity_context?: Record<string, any> | null;
+  community_context?: Record<string, any> | null;
+  community_global_id?: string | null;
+  community_code?: string | null;
+  holder_role?: string | null;
+  community_member_count?: string | number | null;
+  active_member_count?: string | number | null;
+  total_member_count?: string | number | null;
   level?: string | null;
   band?: string | null;
   level_label?: string | null;
@@ -437,8 +469,20 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     clan_id: src?.clan_id ?? null,
     gmfn_id: firstTruthy(src?.gmfn_id),
     display_name: firstTruthy(src?.display_name),
+    profile_image_url: firstTruthy(src?.profile_image_url),
     community: firstTruthy(src?.community),
     phone_verified: src?.phone_verified ?? null,
+    bank_verified: src?.bank_verified ?? null,
+    identity_verified: src?.identity_verified ?? null,
+    identity_status_label: firstTruthy(src?.identity_status_label),
+    identity_context: src?.identity_context || null,
+    community_context: src?.community_context || null,
+    community_global_id: firstTruthy(src?.community_global_id),
+    community_code: firstTruthy(src?.community_code),
+    holder_role: firstTruthy(src?.holder_role),
+    community_member_count: src?.community_member_count ?? null,
+    active_member_count: src?.active_member_count ?? null,
+    total_member_count: src?.total_member_count ?? null,
     level: firstTruthy(src?.level),
     band: firstTruthy(src?.band),
     level_label: firstTruthy(src?.level_label),
@@ -513,21 +557,6 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function statTile(
-  bg = "#FFFFFF",
-  border = "1px solid rgba(11,31,51,0.08)"
-): React.CSSProperties {
-  return {
-    ...institutionalStatTile(
-      bg,
-      border === "1px solid rgba(11,31,51,0.08)"
-        ? "1px solid rgba(37,78,119,0.12)"
-        : border,
-    ),
-    borderRadius: 18,
-  };
-}
-
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -538,27 +567,62 @@ function sectionLabel(): React.CSSProperties {
   };
 }
 
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 30,
-    borderRadius: 999,
-    padding: "6px 10px",
-    background: primary ? "rgba(11,99,209,0.08)" : "rgba(100,116,139,0.10)",
-    color: primary ? "#0B63D1" : "#51657A",
-    fontSize: 12,
-    fontWeight: 900,
-    whiteSpace: "normal",
-  };
-}
-
 function helperText(): React.CSSProperties {
   return {
     color: "#526579",
     fontSize: 14.5,
     lineHeight: 1.75,
+  };
+}
+
+function statusPillStyle(status: string): React.CSSProperties {
+  const text = safeStr(status).toLowerCase();
+  const positive =
+    text.includes("strong") ||
+    text.includes("stable") ||
+    text.includes("verified") ||
+    text.includes("ready") ||
+    text === "yes";
+  const pressure =
+    text.includes("caution") ||
+    text.includes("pressure") ||
+    text.includes("weak") ||
+    text.includes("high");
+  const mixed = text.includes("mixed") || text.includes("pending");
+
+  return {
+    display: "inline-flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 26,
+    borderRadius: 8,
+    padding: "4px 10px",
+    fontSize: 12,
+    fontWeight: 1000,
+    color: positive
+      ? "#166534"
+      : pressure
+        ? "#991B1B"
+        : mixed
+          ? "#92400E"
+          : "#334155",
+    background: positive
+      ? "#EAF7EE"
+      : pressure
+        ? "#FFF1F2"
+        : mixed
+          ? "#FFF7E6"
+          : "#F1F5F9",
+    border: `1px solid ${
+      positive
+        ? "rgba(46,155,98,0.16)"
+        : pressure
+          ? "rgba(200,58,58,0.16)"
+          : mixed
+            ? "rgba(245,158,11,0.16)"
+            : "rgba(100,116,139,0.14)"
+    }`,
+    textAlign: "center",
   };
 }
 
@@ -574,16 +638,42 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
   };
 }
 
-function absoluteUrl(pathOrUrl: string): string {
+function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
+  const cleanCode = safeStr(code);
+  if (cleanCode) {
+    return `/trust-slips/verify/${encodeURIComponent(cleanCode)}/page`;
+  }
+
+  const rawFallback = safeStr(fallback);
+  if (!rawFallback) return "";
+
+  try {
+    const url = new URL(rawFallback, "https://gsn.local");
+    if (url.pathname.startsWith("/trust-slips/verify")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    // Use the raw fallback below.
+  }
+
+  return rawFallback.startsWith("/trust-slips/verify") ? rawFallback : "";
+}
+
+function frontendAbsoluteUrl(pathOrUrl: string): string {
   const raw = safeStr(pathOrUrl);
   if (!raw) return "";
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return publicApiUrl(raw);
+
+  try {
+    const base =
+      typeof window !== "undefined" && window.location?.origin
+        ? window.location.origin
+        : "";
+    const url = new URL(raw, base || "https://gsn.local");
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    return base ? `${base}${path}` : path;
+  } catch {
+    return raw;
   }
-  if (raw.startsWith("/")) {
-    return publicApiUrl(raw);
-  }
-  return raw;
 }
 
 function getCciState(me: any, trustSlip: any): TrustReadingState {
@@ -721,8 +811,8 @@ function getCciState(me: any, trustSlip: any): TrustReadingState {
     classText: "Pending",
     scoreText: "-",
     tone: "neutral",
-    statusText: "No CCI reading yet",
-    whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
+    statusText: "No cross-community consistency reading yet",
+    whyText: "Complete identity and community activity first. The wider consistency reading will appear here when it is available.",
   };
 }
 
@@ -879,9 +969,9 @@ function getOpenTrustState(
       classText: "Pending",
       scoreText: "-",
       tone: "neutral",
-      statusText: "Select a community to view Open Trust",
+      statusText: "Select a community to view local community trust",
       whyText:
-        "Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
+        "Local community trust belongs to the community you are using now, not the wider cross-community consistency reading.",
     };
   }
 
@@ -889,29 +979,28 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "-",
     tone: "neutral",
-    statusText: "No Open Trust reading yet",
+    statusText: "No local community trust reading yet",
     whyText:
-      "Open Trust reflects your standing in the community you are using now. Select or use a community first, then this reading will appear here.",
+      "Local community trust reflects your standing in the community you are using now. Use the community first, then this reading will appear here.",
   };
 }
 
 export default function TrustScorePage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const pressureSectionRef = useRef<HTMLElement | null>(null);
   const selectedClanId = Number((api as any).getSelectedClanId?.() || 0);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "trust-score.route.dashboard"),
       notifications: routeTarget("notifications", selectedClanId, "trust-score.route.notifications"),
       identity: routeTarget("cci", selectedClanId, "trust-score.route.identity"),
+      openTrust: routeTarget("openTrust", selectedClanId, "trust-score.route.open-trust"),
       cciReading: routeTarget("cciReading", selectedClanId, "trust-score.route.cci-reading"),
       trustSlip: routeTarget("trustSlip", selectedClanId, "trust-score.route.trust-slip"),
-      verify: routeTarget("merchantVerify", selectedClanId, "trust-score.route.verify"),
     }),
     [selectedClanId]
   );
-  const trustRevealRef = useRef<number | null>(null);
-
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -1123,6 +1212,25 @@ export default function TrustScorePage() {
     );
   }, [trustSlipSummary, me]);
 
+  const identityContext = useMemo(
+    () => trustSlipSummary?.identity_context || {},
+    [trustSlipSummary]
+  );
+  const communityContext = useMemo(
+    () => trustSlipSummary?.community_context || {},
+    [trustSlipSummary]
+  );
+  const profileImageUrl = useMemo(() => {
+    return resolveSharedProfileImage(
+      me,
+      trustSlipSummary?.profile_image_url,
+      identityContext?.profile_image_url,
+      me?.profile_image_url,
+      me?.avatar_url,
+      me?.photo_url
+    );
+  }, [trustSlipSummary, identityContext, me]);
+
   const gmfnId = useMemo(() => {
     return firstTruthy(trustSlipSummary?.gmfn_id, me?.gmfn_id, "Awaiting issue");
   }, [trustSlipSummary, me]);
@@ -1142,10 +1250,31 @@ export default function TrustScorePage() {
   }, [trustSlipSummary, currentClan, matchedClan, selectedClanId]);
   const communityCode = useMemo(() => {
     return (
-      firstTruthy(matchedClan?.community_code, currentClan?.community_code) ||
+      firstTruthy(
+        trustSlipSummary?.community_code,
+        trustSlipSummary?.community_global_id,
+        communityContext?.community_code,
+        communityContext?.community_global_id,
+        matchedClan?.community_code,
+        currentClan?.community_code
+      ) ||
       "Awaiting issue"
      );
-  }, [matchedClan, currentClan]);
+  }, [trustSlipSummary, communityContext, matchedClan, currentClan]);
+  const communityVerifyKey = useMemo(() => {
+    return firstTruthy(
+      trustSlipSummary?.community_code,
+      trustSlipSummary?.community_global_id,
+      communityContext?.community_code,
+      communityContext?.community_global_id,
+      matchedClan?.community_code,
+      currentClan?.community_code,
+      selectedClanId
+    );
+  }, [trustSlipSummary, communityContext, matchedClan, currentClan, selectedClanId]);
+  const communityVerifyPath = communityVerifyKey
+    ? `/verify/community/${encodeURIComponent(communityVerifyKey)}`
+    : "";
 
   const currentBand = useMemo(() => {
     return firstTruthy(
@@ -1210,12 +1339,6 @@ export default function TrustScorePage() {
       : [];
   }, [explainability]);
 
-  const eventCounts = useMemo(() => {
-    const rows = Object.entries(recompute?.breakdown?.counts_by_event_type || {});
-    rows.sort((a, b) => Number(b[1] || 0) - Number(a[1] || 0));
-    return rows.slice(0, 12);
-  }, [recompute]);
-
   const nextStep = useMemo(() => {
     return {
       title: safeStr(
@@ -1230,23 +1353,15 @@ export default function TrustScorePage() {
     };
   }, [guidance, routes.notifications]);
 
-  const verifyUrl = useMemo(() => {
-    return absoluteUrl(
-      firstTruthy(
-        trustSlipSummary?.public_verify_url,
-        trustSlipSummary?.verification_code
-          ? `/trust-slips/verify/${encodeURIComponent(
-              safeStr(trustSlipSummary.verification_code)
-            )}/page`
-          : "",
-        trustSlipSummary?.code
-          ? `/trust-slips/verify/${encodeURIComponent(
-              safeStr(trustSlipSummary.code)
-            )}/page`
-          : ""
-      )
+  const verifyPath = useMemo(() => {
+    const code = firstTruthy(
+      trustSlipSummary?.verification_code,
+      trustSlipSummary?.code,
+      trustSlipSummary?.token
     );
+    return trustSlipVerifyFrontendPath(code, trustSlipSummary?.public_verify_url || "");
   }, [trustSlipSummary]);
+  const verifyUrl = useMemo(() => frontendAbsoluteUrl(verifyPath), [verifyPath]);
 
   const capacityContext = trustSlipSummary?.evidence_summary?.capacity_context || null;
   const ruleset = recompute?.breakdown?.ruleset || null;
@@ -1257,12 +1372,6 @@ export default function TrustScorePage() {
     "0.00"
   );
   const trustCurrency = firstTruthy(trustSlipSummary?.currency, "NGN");
-  const graphScore = firstTruthy(trustSlipSummary?.graph_score, "-");
-  const cciScore = firstTruthy(trustSlipSummary?.cci_score, "-");
-  const cciBand = firstTruthy(trustSlipSummary?.cci_band, "-");
-  const levelLabel = firstTruthy(trustSlipSummary?.level_label, "-");
-  const standingScore = firstTruthy(trustSlipSummary?.standing_score, "-");
-  const lifetimeTrust = firstTruthy(trustSlipSummary?.lifetime_trust, "-");
   const riskFlags = Array.isArray(trustSlipSummary?.risk_flags)
     ? trustSlipSummary!.risk_flags!
     : [];
@@ -1284,32 +1393,154 @@ export default function TrustScorePage() {
       ),
     [trustSlipSummary]
   );
+  const trustSlipStatus = firstTruthy(
+    trustSlipSummary?.status,
+    trustSlipSummary?.active || trustSlipSummary?.verified || trustSlipCode
+      ? "Ready"
+      : "Pending"
+  );
+  const expiresText = safeDateTime(trustSlipSummary?.expires_at) || "Not stated";
+  const eventCount = safeStr(recompute?.event_count ?? "0");
+  const activeClanCount = safeStr(trustSlipSummary?.active_clan_count ?? "0");
+  const counterpartiesCount = safeStr(
+    trustSlipSummary?.unique_counterparties ?? "0"
+  );
+  const riskLevel = firstTruthy(capacityContext?.risk_level, "Unknown");
+  const readingBreakdownSource: Array<[string, string]> = [
+    ["Borrower repayment delta", safeStr(ruleset?.borrower_repayment_delta || "-")],
+    ["Guarantor repayment delta", safeStr(ruleset?.guarantor_repayment_delta || "-")],
+    ["Precision", safeStr(ruleset?.precision || "-")],
+    ["Ordering", safeStr(ruleset?.ordering || "-")],
+    [
+      "Computed band",
+      safeStr(recompute?.breakdown?.computed_band || recompute?.band || "-"),
+    ],
+    [
+      "Computed score",
+      safeStr(recompute?.breakdown?.computed_score || recompute?.score || "-"),
+    ],
+    [
+      "Computed score int",
+      safeStr(recompute?.breakdown?.computed_score_int ?? "-"),
+    ],
+    [
+      "Last event used",
+      safeStr(
+        recompute?.breakdown?.last_event_id_used ??
+          recompute?.last_event_id ??
+          "-"
+      ),
+    ],
+    [
+      "Event count used",
+      safeStr(
+        recompute?.breakdown?.event_count_used ??
+          recompute?.event_count ??
+          "-"
+      ),
+    ],
+  ];
+  const readingBreakdownRows = readingBreakdownSource.filter(([, value]) => {
+    const text = safeStr(value);
+    return text && text !== "-";
+  });
+  const passportVm = buildTrustPassportViewModel({
+    displayName: memberName,
+    profileImageUrl,
+    gmfnId,
+    communityName,
+    communityId: communityCode,
+    holderRole: firstTruthy(
+      trustSlipSummary?.holder_role,
+      communityContext?.holder_role,
+      "member"
+    ),
+    activeMemberCount: firstTruthy(
+      trustSlipSummary?.active_member_count,
+      trustSlipSummary?.community_member_count,
+      communityContext?.active_member_count
+    ),
+    phoneVerified: trustSlipSummary?.phone_verified ?? identityContext?.phone_verified,
+    bankVerified: trustSlipSummary?.bank_verified ?? identityContext?.bank_verified,
+    bankVerificationLabel: firstTruthy(
+      trustSlipSummary?.bank_verification_label,
+      trustSlipSummary?.merchant_summary?.bank_verification_label,
+      identityContext?.bank_verification_label
+    ),
+    passportVerified:
+      trustSlipSummary?.passport_verified ?? identityContext?.passport_verified,
+    passportVerificationLabel: firstTruthy(
+      trustSlipSummary?.passport_verification_label,
+      trustSlipSummary?.merchant_summary?.passport_verification_label,
+      identityContext?.passport_verification_label
+    ),
+    communityIdentityConfirmed:
+      trustSlipSummary?.community_identity_confirmed ??
+      identityContext?.community_identity_confirmed,
+    communityIdentityLabel: firstTruthy(
+      trustSlipSummary?.community_identity_label,
+      trustSlipSummary?.merchant_summary?.community_identity_label,
+      identityContext?.community_identity_label
+    ),
+    identityVerified:
+      trustSlipSummary?.identity_verified ?? identityContext?.identity_verified,
+    identityStatusLabel: firstTruthy(
+      trustSlipSummary?.identity_status_label,
+      identityContext?.identity_status_label
+    ),
+    hasSelectedCommunity,
+    band: currentBand,
+    score: currentScore,
+    localTrustReason: openTrust.whyText,
+    crossCommunityReason: cci.whyText,
+    latestReason: explainability?.latest_reason,
+    latestNote: explainability?.latest_note,
+    eventCount,
+    recentEventCount: recentEvents.length,
+    trustLimit,
+    trustCurrency,
+    activeClans: activeClanCount,
+    counterparties: counterpartiesCount,
+    sponsorCount: trustSlipSummary?.sponsor_count,
+    riskLevel,
+    riskFlags,
+    trustSlipStatus,
+    trustSlipCode,
+    verifyUrl,
+    lastFullRepaymentAt: trustSlipSummary?.last_full_repayment_at,
+    lastReleaseAt: trustSlipSummary?.last_release_at,
+    rawBreakdownRows: readingBreakdownRows,
+    isExpiredOrInactive:
+      ["expired", "revoked", "frozen"].includes(
+        safeStr(trustSlipSummary?.status).toLowerCase()
+      ) || trustSlipSummary?.active === false,
+  });
+  const hasProfileImage = Boolean(passportVm.identity.profileImageUrl);
+  const passportInitials =
+    passportVm.identity.displayName
+      .split(/\s+/)
+      .map((part) => part[0])
+      .filter(Boolean)
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "GSN";
+  const plainTrustVerdict = passportVm.verdict.lowData
+    ? passportVm.verdict.interpretation
+    : `${passportVm.verdict.band} means ${passportVm.verdict.bandLanguage.title.toLowerCase()}. ${passportVm.verdict.bandLanguage.implication}`;
   function openTrustRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
   }
 
-  function revealTrustSection(targetId: string, attempt = 0) {
-    if (typeof document === "undefined" || typeof window === "undefined") return;
-
-    if (trustRevealRef.current !== null) {
-      window.cancelAnimationFrame(trustRevealRef.current);
-      trustRevealRef.current = null;
-    }
-
-    const target = document.getElementById(targetId);
-    if (!target) {
-      if (attempt >= 6) return;
-      trustRevealRef.current = window.requestAnimationFrame(() => {
-        revealTrustSection(targetId, attempt + 1);
+  function scrollToPressureNotes() {
+    setNotice({
+      tone: "success",
+      text: "Opened the pressure notes. This is where the page explains what helps trust and what needs care.",
+    });
+    window.setTimeout(() => {
+      pressureSectionRef.current?.scrollIntoView({
+        block: "start",
       });
-      return;
-    }
-
-    target.scrollIntoView({ behavior: "auto", block: "start" });
-  }
-
-  function openTrustSection(targetId: string) {
-    revealTrustSection(targetId);
+    }, 60);
   }
 
   function handleCopy(text: string, successText: string, emptyText: string) {
@@ -1372,140 +1603,117 @@ export default function TrustScorePage() {
     );
   }
 
-  const trustSlipStatus = firstTruthy(
-    trustSlipSummary?.status,
-    trustSlipSummary?.active || trustSlipSummary?.verified || trustSlipCode
-      ? "Ready"
-      : "Pending"
-  );
-  const issuedText = safeDateTime(trustSlipSummary?.issued_at) || "Not stated";
-  const expiresText = safeDateTime(trustSlipSummary?.expires_at) || "Not stated";
-  const eventCount = safeStr(recompute?.event_count ?? "0");
-  const activeClanCount = safeStr(trustSlipSummary?.active_clan_count ?? "0");
-  const counterpartiesCount = safeStr(
-    trustSlipSummary?.unique_counterparties ?? "0"
-  );
-  const riskLevel = firstTruthy(capacityContext?.risk_level, "Unknown");
-  const surfaceCards = [
+  const verificationBadges = [
     {
-      title: "Identity & Integrity",
-      detail: "Use this for steady identity proof.",
-      cta: "Open Identity & Integrity",
-      tone: "#EAF3FF",
-      icon: "🪪",
-      to: routes.identity,
+      icon: "phone" as TrustPaperIconName,
+      label: passportVm.identity.phoneVerified
+        ? "Phone verified"
+        : "Phone not verified",
+      ok: passportVm.identity.phoneVerified,
     },
     {
-      title: "CCI",
-      detail: "Use this for the cross-community integrity read.",
-      cta: "Open CCI",
-      tone: "#E9F8EF",
-      icon: "🌐",
-      to: routes.cciReading,
+      icon: "community" as TrustPaperIconName,
+      label:
+        passportVm.identity.communityIdentityConfirmed
+          ? "Identity confirmed by community"
+          : "Community identity not confirmed",
+      ok: passportVm.identity.communityIdentityConfirmed,
     },
     {
-      title: "TrustSlip",
-      detail: "Use this to carry a short portable proof.",
-      cta: "Open TrustSlip",
-      tone: "#FFF6DB",
-      icon: "📄",
-      to: routes.trustSlip,
+      icon: "shield" as TrustPaperIconName,
+      label:
+        passportVm.identity.identityContinuity === "clean"
+          ? "Identity continuity confirmed"
+          : "Identity continuity needs review",
+      ok: passportVm.identity.identityContinuity === "clean",
     },
     {
-      title: "TrustSlip Verify",
-      detail: "Use this to check whether a public code is valid now.",
-      cta: "Open Verify",
-      tone: "#F4EEFF",
-      icon: "🛡️",
-      to: routes.verify,
+      icon: "wallet" as TrustPaperIconName,
+      label:
+        passportVm.identity.bankVerified === true
+          ? passportVm.identity.bankVerificationLabel
+          : "Bank check not connected yet",
+      ok: passportVm.identity.bankVerified === true,
+    },
+    {
+      icon: "document" as TrustPaperIconName,
+      label: passportVm.identity.passportVerificationLabel,
+      ok: passportVm.identity.passportVerified,
     },
   ];
 
-  const MetricTile = ({
+  const gradeLegend = TRUST_BAND_SHORT_LABELS.map(({ band, label }) => [
+    band,
     label,
-    value,
-    icon,
-  }: {
-    label: string;
-    value: React.ReactNode;
-    icon: string;
-  }) => (
-    <div style={statTile()}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 10,
-        }}
-      >
-        <div style={sectionLabel()}>{label}</div>
-        <div style={{ fontSize: 24, lineHeight: 1 }}>{icon}</div>
-      </div>
-      <div
-        style={{
-          marginTop: 8,
-          color: "#07172C",
-          fontSize: isCompact ? 20 : 22,
-          fontWeight: 1000,
-          lineHeight: 1.12,
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
+  ]);
+  const activeBand = safeStr(currentBand).toUpperCase().slice(0, 1);
 
-  const SurfaceCard = ({
-    item,
-  }: {
-    item: (typeof surfaceCards)[number];
-  }) => (
-    <div
-      style={{
-        ...innerCard(`linear-gradient(180deg, ${item.tone} 0%, #FFFFFF 100%)`),
-        display: "grid",
-        gap: 10,
-        minHeight: 178,
-      }}
-    >
-      <div style={{ fontSize: 30, lineHeight: 1 }}>{item.icon}</div>
-      <div
-        style={{
-          color: "#07172C",
-          fontWeight: 1000,
-          fontSize: 16,
-          lineHeight: 1.2,
-        }}
-      >
-        {item.title}
-      </div>
-      <div style={{ ...helperText(), fontSize: 13.5, lineHeight: 1.45 }}>
-        {item.detail}
-      </div>
-      {item.title === "TrustSlip" ? (
-        <SubtleButton
-          onClick={() => openTrustRoute(item.to)}
-          fullWidth
-          stableHeight={44}
-          debugId={`trust-score.surface.${item.title}`}
-          style={{ alignSelf: "end" }}
-        >
-          {item.cta}
-        </SubtleButton>
-      ) : (
-        <PrimaryButton
-          onClick={() => openTrustRoute(item.to)}
-          fullWidth
-          stableHeight={44}
-          debugId={`trust-score.surface.${item.title}`}
-          style={{ alignSelf: "end" }}
-        >
-          {item.cta}
-        </PrimaryButton>
-      )}
-    </div>
-  );
+  const identityRows: Array<[TrustPaperIconName, string, string]> = [
+    ["id", "GSN ID", passportVm.identity.gmfnId],
+    ["community", "Community", passportVm.identity.communityName],
+    ["hash", "Community ID", passportVm.identity.communityId],
+    ["shield", "Role", passportVm.identity.holderRole],
+  ];
+
+  const trustQuestionIcons: Record<string, TrustPaperIconName> = {
+    "Identity verified": "shield",
+    "Support trust": "community",
+    "Contribution discipline": "chart",
+    "Finance discipline": "wallet",
+    "Trade trust": "shop",
+    "Follow-through": "check",
+    "Community stability": "home",
+    "Verified history": "document",
+  };
+
+  const trustSurfaceCards = [
+    {
+      icon: "home" as TrustPaperIconName,
+      title: "Local community trust",
+      detail: "How this member is currently reading inside the active community.",
+      action: "View local reading",
+      to: routes.openTrust,
+      value: openTrust.classText,
+      tone: "#EEF6FF",
+    },
+    {
+      icon: "globe" as TrustPaperIconName,
+      title: "Cross-community consistency",
+      detail:
+        "How consistent this member's trust signals appear across communities. CCI is the internal label.",
+      action: "View consistency reading",
+      to: routes.cciReading,
+      value: cci.classText,
+      tone: "#F3EFFF",
+    },
+  ];
+
+  const latestExplanation =
+    firstTruthy(
+      explainability?.latest_note,
+      explainability?.latest_reason,
+      openTrust.whyText,
+      cci.whyText
+    ) ||
+    "No recent trust movement is shown yet. When new events occur, the reason will appear here in plain language.";
+
+  const institutionalRows = [
+    ["Trust limit", `${trustLimit} ${trustCurrency}`],
+    ["Event count", eventCount],
+    ["Counterparties", counterpartiesCount],
+    [
+      "Available guarantee capacity",
+      safeStr(capacityContext?.available_guarantee_capacity || "0.00"),
+    ],
+    [
+      "Current locked guarantees",
+      safeStr(capacityContext?.current_locked_guarantees || "0.00"),
+    ],
+    ["Overexposure ratio", safeStr(capacityContext?.overexposure_ratio || "0.00")],
+    ["Risk level", riskLevel],
+    ["Not a bank guarantee", "Yes"],
+    ["No auto-debit", "Yes"],
+  ];
 
   const noticeNode = notice ? (
     <div style={noticeCard(notice.tone)}>{notice.text}</div>
@@ -1518,8 +1726,7 @@ export default function TrustScorePage() {
         minHeight: "100vh",
         margin: "-18px",
         padding: "18px 18px 42px",
-        display: "grid",
-        gap: 14,
+        background: "#F4F7FB",
       }}
     >
       <div
@@ -1542,76 +1749,483 @@ export default function TrustScorePage() {
 
         <section
           style={{
-            ...pageCard(
-              "radial-gradient(circle at 82% 26%, rgba(242,207,119,0.22), transparent 28%), linear-gradient(135deg, #03101F 0%, #08213A 64%, #061827 100%)"
-            ),
-            color: "#FFFFFF",
-            border: "1px solid rgba(242,207,119,0.34)",
-            boxShadow: "0 22px 48px rgba(3,16,31,0.22)",
+            ...pageCard("#FFFFFF"),
+            border: "1px solid rgba(37,78,119,0.14)",
+            boxShadow: "0 22px 60px rgba(7,23,44,0.10)",
+            padding: isCompact ? 16 : 22,
+            position: "relative",
+            overflow: "hidden",
           }}
         >
-          <div
+          <TrustPaperWatermark
+            name="shield"
+            color="#0B63D1"
+            size={220}
+            opacity={0.035}
+            style={{ top: 92, right: -58, bottom: "auto" }}
+          />
+          <header
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 190px",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+              gap: 14,
+              alignItems: "start",
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <div style={{ ...sectionLabel(), color: "#164E94" }}>
+                Main Movement
+              </div>
+              <h1
+                style={{
+                  margin: "4px 0 0",
+                  color: "#07172C",
+                  fontSize: isCompact ? 34 : 48,
+                  lineHeight: 1,
+                  fontWeight: 1000,
+                }}
+              >
+                Trust Passport
+              </h1>
+              <p style={{ ...helperText(), margin: "8px 0 0", maxWidth: 620 }}>
+                A clear trust reading for identity, support, finance discipline,
+                trade, and community standing.
+              </p>
+            </div>
+            <div
+              style={{
+                color: "#07172C",
+                fontSize: 30,
+                lineHeight: 1,
+                fontWeight: 1000,
+                textAlign: isCompact ? "left" : "right",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: isCompact ? "flex-start" : "flex-end",
+                  gap: 8,
+                }}
+              >
+                <TrustPaperIcon name="shield" size={28} color="#0B63D1" />
+                <span>GSN</span>
+              </div>
+              <div
+                style={{
+                  color: "#334155",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                  marginTop: 4,
+                }}
+              >
+                Global<br />Support<br />Network
+              </div>
+            </div>
+          </header>
+
+          <section
+            style={{
+              ...innerCard("#F8FBFF"),
+              border: "1px solid rgba(37,78,119,0.14)",
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "150px minmax(0, 1fr) minmax(220px, 0.78fr)",
               gap: 18,
               alignItems: "center",
             }}
           >
+            <div
+              style={{
+                width: isCompact ? 132 : 142,
+                height: isCompact ? 132 : 142,
+                borderRadius: 14,
+                display: "grid",
+                placeItems: "center",
+                background: "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)",
+                border: "1px solid rgba(37,78,119,0.18)",
+                color: "#0B63D1",
+                fontWeight: 1000,
+                fontSize: 28,
+                overflow: "hidden",
+                boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.65)",
+                position: "relative",
+              }}
+            >
+              {hasProfileImage ? (
+                <img
+                  src={passportVm.identity.profileImageUrl}
+                  alt={`${passportVm.identity.displayName} profile`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                passportInitials
+              )}
+              <TrustPaperSeal compact={isCompact} />
+            </div>
+
             <div>
-              <div style={{ ...sectionLabel(), color: "#F2CF77" }}>
-                Trust Passport
-              </div>
-              <h1
+              <div
                 style={{
-                  margin: "8px 0 0",
-                  fontSize: isCompact ? 30 : 42,
-                  lineHeight: 1.02,
-                  letterSpacing: "-0.02em",
+                  color: "#07172C",
                   fontWeight: 1000,
+                  fontSize: isCompact ? 20 : 22,
+                  marginBottom: 12,
                 }}
               >
-                Full trust reading
-              </h1>
-              <p
-                style={{
-                  margin: "10px 0 0",
-                  color: "rgba(255,255,255,0.84)",
-                  fontSize: 16,
-                  lineHeight: 1.45,
-                  maxWidth: 560,
-                }}
-              >
-                See what is helping your trust, what needs care, and what to do next.
-              </p>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={{ ...badge(false), color: "#FFFFFF" }}>
-                  🪪 GMFN ID: {gmfnId}
-                </span>
-                <span style={{ ...badge(false), color: "#FFFFFF" }}>
-                  👥 Community: {communityName}
-                </span>
-                <span style={{ ...badge(false), color: "#FFFFFF" }}>
-                  # Community ID: {communityCode}
-                </span>
+                1. Who is this person?
               </div>
+              {identityRows.map(([icon, label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "28px minmax(92px, 0.38fr) minmax(0, 1fr)",
+                    gap: 10,
+                    alignItems: "start",
+                    marginTop: 8,
+                  }}
+                >
+                  <TrustPaperIcon name={icon} size={21} color="#0B63D1" />
+                  <span style={{ color: "#0B63D1", fontWeight: 1000 }}>{label}</span>
+                  <span
+                    style={{
+                      color: "#334155",
+                      fontWeight: 850,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
 
+            <div style={{ display: "grid", gap: 8 }}>
+              {verificationBadges.map((item) => (
+                <span
+                  key={item.label}
+                  style={{
+                    ...statusPillStyle(item.ok ? "Strong" : "Limited"),
+                    justifyContent: "flex-start",
+                    gap: 8,
+                  }}
+                >
+                  <TrustPaperBadgeIcon name={item.icon} ok={item.ok} />
+                  {item.label}
+                </span>
+              ))}
+              <span style={{ ...statusPillStyle("Limited"), justifyContent: "flex-start", gap: 8 }}>
+                <TrustPaperIcon name="community" size={18} color="#526579" />
+                Active in {passportVm.technicalDetail.activeClans} communities
+              </span>
+              <SecondaryButton
+                onClick={() => {
+                  if (communityVerifyPath) {
+                    openTrustRoute(communityVerifyPath);
+                    return;
+                  }
+                  setNotice({
+                    tone: "error",
+                    text: "The public community record is not ready because this Trust Passport has no community code yet.",
+                  });
+                }}
+                disabled={!communityVerifyPath}
+                stableHeight={48}
+                debugId="trust-score.open-public-community-record"
+              >
+                <TrustPaperIcon name="search" size={18} />
+                Open public community record
+              </SecondaryButton>
+            </div>
+          </section>
+
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 14,
+              marginTop: 14,
+            }}
+          >
+            <div
+              style={{
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(216,227,238,0.9)",
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                2. Current trust verdict
+              </div>
               <div
                 style={{
-                  marginTop: 16,
                   display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(3, minmax(0, 1fr))",
+                  gridTemplateColumns: "112px minmax(0, 1fr)",
+                  gap: 16,
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    minHeight: 112,
+                    borderRadius: 18,
+                    display: "grid",
+                    placeItems: "center",
+                    background: readingTone.bg,
+                    border: readingTone.border,
+                    color: readingTone.text,
+                    fontSize: 76,
+                    lineHeight: 1,
+                    fontWeight: 1000,
+                  }}
+                >
+                  {activeBand || currentBand}
+                </div>
+                <div>
+                  <div
+                    style={{
+                      color: readingTone.text,
+                      fontSize: 23,
+                      lineHeight: 1.1,
+                      fontWeight: 1000,
+                    }}
+                  >
+                    {passportVm.verdict.label}
+                  </div>
+                  <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                    {plainTrustVerdict}
+                  </p>
+                  <div style={{ marginTop: 10 }}>
+                    <span
+                      title={passportVm.verdict.evidenceMeaning}
+                      style={statusPillStyle(passportVm.verdict.evidenceStatus)}
+                    >
+                      Evidence depth: {passportVm.verdict.evidenceLabel}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                  border: "1px solid rgba(216,227,238,0.9)",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                }}
+              >
+                {gradeLegend.map(([grade, label]) => {
+                  const isActive = activeBand === grade;
+                  return (
+                    <div
+                      key={grade}
+                      style={{
+                        padding: "10px 6px",
+                        textAlign: "center",
+                        background: isActive ? "#FFF1F2" : grade === "A" || grade === "B" ? "#F0FBF4" : "#FFFDF5",
+                        borderLeft: "1px solid rgba(216,227,238,0.9)",
+                        boxShadow: isActive ? "inset 0 0 0 2px rgba(200,58,58,0.45)" : "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: isActive ? "#991B1B" : "#07172C",
+                          fontWeight: 1000,
+                          fontSize: 18,
+                        }}
+                      >
+                        {grade}
+                      </div>
+                      <div style={{ color: "#526579", fontSize: 11, fontWeight: 850 }}>
+                        {label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(216,227,238,0.9)",
+              }}
+            >
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                3. What this reading says
+              </div>
+              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+                {passportVm.trustQuestions.map((item) => (
+                  <div
+                    key={item.title}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: 10,
+                      alignItems: "center",
+                      padding: "8px 0",
+                      borderBottom: "1px solid rgba(216,227,238,0.72)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#334155",
+                        fontWeight: 900,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <TrustPaperIcon
+                        name={trustQuestionIcons[item.title] || "shield"}
+                        size={19}
+                        color="#0B63D1"
+                      />
+                      {item.title}
+                    </span>
+                    <span style={statusPillStyle(item.status)}>{item.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section
+            ref={pressureSectionRef}
+            style={{
+              ...innerCard("#FFFFFF"),
+              border: "1px solid rgba(216,227,238,0.9)",
+              marginTop: 14,
+            }}
+          >
+            <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+              4. Why this reading looks like this
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gap: 14,
+                marginTop: 12,
+              }}
+            >
+              <div style={{ ...innerCard("#F0FBF4"), position: "relative", overflow: "hidden" }}>
+                <TrustPaperWatermark name="shield" color="#166534" size={130} opacity={0.065} />
+                <div style={{ color: "#166534", fontWeight: 1000, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}>
+                  <TrustPaperIcon name="shield" size={21} />
+                  What helps trust
+                </div>
+                <ul style={{ ...helperText(), margin: "10px 0 0", paddingLeft: 18 }}>
+                  {passportVm.reasons.helpsTrust.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div style={{ ...innerCard("#FFF1F2"), position: "relative", overflow: "hidden" }}>
+                <TrustPaperWatermark name="alert" color="#991B1B" size={130} opacity={0.06} />
+                <div style={{ color: "#991B1B", fontWeight: 1000, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}>
+                  <TrustPaperIcon name="alert" size={21} />
+                  What creates pressure
+                </div>
+                <ul style={{ ...helperText(), margin: "10px 0 0", paddingLeft: 18 }}>
+                  {passportVm.reasons.createsPressure.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <section style={{ marginTop: 14 }}>
+            <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+              5. Trust surfaces
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gap: 12,
+                marginTop: 10,
+              }}
+            >
+              {trustSurfaceCards.map((item) => (
+                <div key={item.title} style={{ ...innerCard(item.tone), display: "grid", gap: 8 }}>
+                  <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 17, display: "flex", alignItems: "center", gap: 9 }}>
+                    <TrustPaperIcon name={item.icon} size={25} color="#0B63D1" />
+                    {item.title}
+                  </div>
+                  <p style={{ ...helperText(), margin: 0 }}>{item.detail}</p>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <span style={statusPillStyle(item.value)}>{item.value}</span>
+                    <SecondaryButton
+                      onClick={() => openTrustRoute(item.to)}
+                      stableHeight={38}
+                      debugId={`trust-score.surface.${item.title}`}
+                    >
+                      {item.action}
+                    </SecondaryButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 14,
+              marginTop: 14,
+            }}
+          >
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                6. Why did my trust change?
+              </div>
+              <div style={{ color: "#0B63D1", fontWeight: 1000, marginTop: 10 }}>
+                Latest explanation
+              </div>
+              <p style={{ ...helperText(), margin: "6px 0 0" }}>{latestExplanation}</p>
+              <div style={{ color: "#5542A8", fontWeight: 1000, marginTop: 14 }}>
+                Recent trust events
+              </div>
+              {recentEvents.length > 0 ? (
+                <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
+                  {recentEvents.slice(0, 3).map((event, index) => (
+                    <div key={event.id || index} style={innerCard("#F8FBFF")}>
+                      <b>{firstTruthy(event.event_type, "Trust event")}</b>
+                      <div style={helperText()}>
+                        {firstTruthy(event.reason, event.note, safeDateTime(event.created_at), "No detail shown")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ ...innerCard("#F8FBFF"), marginTop: 8, color: "#526579" }}>
+                  No recent trust events are visible.
+                </div>
+              )}
+            </div>
+
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                7. Shareable trust tools
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
                   gap: 10,
+                  marginTop: 12,
                 }}
               >
                 <PrimaryButton
@@ -1621,551 +2235,148 @@ export default function TrustScorePage() {
                   busy={refreshing}
                   busyLabel="Refreshing..."
                   fullWidth
+                  stableHeight={74}
                   debugId="trust-score.refresh"
                 >
-                  🔄 {refreshing ? "Refreshing..." : "Refresh Trust Reading"}
+                  <TrustPaperIcon name="refresh" size={21} />
+                  Refresh trust reading
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={copyTrustSnapshot}
                   fullWidth
+                  stableHeight={74}
                   debugId="trust-score.copy-snapshot"
                 >
-                  📋 Copy Snapshot
+                  <TrustPaperIcon name="copy" size={21} />
+                  Copy snapshot
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => openTrustRoute(routes.trustSlip)}
+                  fullWidth
+                  stableHeight={74}
+                  debugId="trust-score.open-trust-slip"
+                >
+                  <TrustPaperIcon name="document" size={21} />
+                  Open TrustSlip
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => {
-                    if (verifyUrl && typeof window !== "undefined") {
-                      window.open(verifyUrl, "_blank", "noopener,noreferrer");
+                    if (verifyPath) {
+                      openTrustRoute(verifyPath);
                       return;
                     }
-                    openTrustRoute(routes.verify);
+                    setNotice({
+                      tone: "error",
+                      text: "TrustSlip verify is not ready because no current public code is visible. Open TrustSlip first and refresh or generate the current TrustSlip.",
+                    });
+                    openTrustRoute(routes.trustSlip);
                   }}
                   fullWidth
+                  stableHeight={74}
                   debugId="trust-score.verify"
                 >
-                  🔎 Open TrustSlip Verify
+                  <TrustPaperIcon name="search" size={21} />
+                  {verifyPath ? "Open TrustSlip verify" : "Prepare TrustSlip verify"}
                 </SecondaryButton>
               </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 10,
+                  marginTop: 10,
+                }}
+              >
+                <DangerButton
+                  onClick={scrollToPressureNotes}
+                  fullWidth
+                  stableHeight={46}
+                  debugId="trust-score.review-care"
+                >
+                  Review pressure notes
+                </DangerButton>
+                <SubtleButton
+                  onClick={() => {
+                    if (
+                      typeof window !== "undefined" &&
+                      typeof window.print === "function"
+                    ) {
+                      window.print();
+                    }
+                  }}
+                  fullWidth
+                  stableHeight={46}
+                  debugId="trust-score.export"
+                >
+                  Export / print
+                </SubtleButton>
+              </div>
+              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <span style={statusPillStyle(trustSlipStatus)}>
+                  TrustSlip: {trustSlipStatus || "Pending"}
+                </span>
+                <span style={statusPillStyle(trustSlipCode ? "Ready" : "Limited")}>
+                  Code: {trustSlipCode || "Not stated"}
+                </span>
+                <span style={statusPillStyle("Limited")}>Expires: {expiresText}</span>
+              </div>
             </div>
+          </section>
 
-            <div
-              aria-hidden
-              style={{
-                justifySelf: isCompact ? "center" : "end",
-                width: 160,
-                height: 160,
-                borderRadius: 999,
-                display: "grid",
-                placeItems: "center",
-                background:
-                  "radial-gradient(circle, rgba(242,207,119,0.20), rgba(255,255,255,0.05) 62%, rgba(255,255,255,0.02))",
-                border: "1px solid rgba(242,207,119,0.18)",
-                boxShadow: "inset 0 0 32px rgba(242,207,119,0.10)",
-                fontSize: 76,
-              }}
-            >
-              🛡️
-            </div>
-          </div>
-        </section>
-
-        <section
-          style={{
-            ...pageCard(
-              "linear-gradient(135deg, #FFF8F8 0%, #FFFFFF 56%, #FFF9E8 100%)"
-            ),
-            border: "1px solid rgba(200,58,58,0.18)",
-            boxShadow: "0 14px 34px rgba(200,58,58,0.07)",
-          }}
-        >
-          <div
+          <section
             style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 0.9fr) minmax(320px, 1.1fr)",
-              gap: 14,
-              alignItems: "stretch",
+              ...innerCard("#FFFFFF"),
+              border: "1px solid rgba(216,227,238,0.9)",
+              marginTop: 14,
             }}
           >
-            <div>
-              <div
-                style={{
-                  color: "#07172C",
-                  fontWeight: 1000,
-                  fontSize: 19,
-                }}
-              >
-                Current Trust Posture
-              </div>
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "grid",
-                  gridTemplateColumns: "120px 1fr",
-                  gap: 16,
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    color: readingTone.text,
-                    fontSize: 66,
-                    lineHeight: 0.9,
-                    fontWeight: 1000,
-                  }}
-                >
-                  {currentBand}
-                </div>
-                <div
-                  style={{
-                    borderLeft: "1px solid rgba(7,23,44,0.12)",
-                    paddingLeft: 18,
-                  }}
-                >
-                  <div style={sectionLabel()}>Score</div>
-                  <div
-                    style={{
-                      color: "#07172C",
-                      fontSize: 32,
-                      fontWeight: 1000,
-                      lineHeight: 1,
-                      marginTop: 6,
-                    }}
-                  >
-                    {currentScore}
-                  </div>
-                </div>
-              </div>
-              <p style={{ ...helperText(), marginTop: 14, maxWidth: 360 }}>
-                {nextStep.detail ||
-                  "Respond early to keep your trust record understandable."}
-              </p>
-              <DangerButton
-                onClick={() =>
-                  openTrustSection("trust-passport-explainability")
-                }
-                debugId="trust-score.review-care"
-                style={{ marginTop: 12 }}
-              >
-                Review what needs care →
-              </DangerButton>
+            <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+              8. Evidence & institutional context
             </div>
-
             <div
               style={{
-                ...innerCard("#FFFFFF"),
                 display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
                 gap: 0,
-                padding: 0,
+                marginTop: 10,
+                border: "1px solid rgba(216,227,238,0.9)",
+                borderRadius: 14,
                 overflow: "hidden",
               }}
             >
-              {[
-                ["🛡️", "TrustSlip", trustSlipStatus],
-                ["🌐", "CCI", cciBand],
-                ["🔗", "Verification code", trustSlipCode || "Not stated"],
-                ["📅", "Issued", issuedText],
-                ["📅", "Expires", expiresText],
-              ].map(([icon, label, value]) => (
+              {institutionalRows.map(([label, value]) => (
                 <div
                   key={label}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "32px minmax(0, 1fr) minmax(0, 1fr)",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
                     gap: 10,
-                    alignItems: "center",
-                    padding: "12px 14px",
+                    padding: "10px 12px",
                     borderBottom: "1px solid rgba(216,227,238,0.72)",
+                    borderRight: isCompact ? "none" : "1px solid rgba(216,227,238,0.72)",
+                    alignItems: "center",
                   }}
                 >
-                  <span>{icon}</span>
-                  <span style={{ color: "#46566D", fontWeight: 850 }}>{label}</span>
-                  <span
-                    style={{
-                      color:
-                        label === "TrustSlip" && value === "Ready"
-                          ? "#168254"
-                          : label === "CCI" && safeStr(value).toUpperCase() !== "A"
-                          ? "#92400E"
-                          : "#07172C",
-                      fontWeight: 900,
-                      textAlign: "right",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="trust-passport-summary" style={pageCard("#FFFFFF")}>
-          <div
-            style={{
-              color: "#07172C",
-              fontWeight: 1000,
-              fontSize: 18,
-              marginBottom: 12,
-            }}
-          >
-            Trust Summary
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "repeat(2, minmax(0, 1fr))"
-                : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <MetricTile label="Current Band" value={currentBand} icon="🛡️" />
-            <MetricTile label="Current Score" value={currentScore} icon="📈" />
-            <MetricTile
-              label="Trust Limit"
-              value={`${trustLimit} ${trustCurrency}`}
-              icon="💳"
-            />
-            <MetricTile label="Event Count" value={eventCount} icon="🗓️" />
-            <MetricTile label="Active Clans" value={activeClanCount} icon="👥" />
-            <MetricTile
-              label="Counterparties"
-              value={counterpartiesCount}
-              icon="🤝"
-            />
-          </div>
-        </section>
-
-        <section id="trust-passport-explainability" style={pageCard("#FFFFFF")}>
-          <div
-            style={{
-              color: "#07172C",
-              fontWeight: 1000,
-              fontSize: 18,
-              marginBottom: 12,
-            }}
-          >
-            Why did my trust change?
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "repeat(4, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#F4F8FF")}>
-              <div style={{ fontSize: 24 }}>💬</div>
-              <div style={{ marginTop: 8, fontWeight: 1000, color: "#0B4EB3" }}>
-                Latest explanation
-              </div>
-              <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.5 }}>
-                {safeStr(
-                  explainability?.latest_reason ||
-                    explainability?.latest_note ||
-                    "No recent trust movement is shown yet."
-                )}
-              </p>
-            </div>
-            <div style={innerCard("#F8F6FF")}>
-              <div style={{ fontSize: 24 }}>🕘</div>
-              <div style={{ marginTop: 8, fontWeight: 1000, color: "#5542A8" }}>
-                Recent trust events
-              </div>
-              <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.5 }}>
-                {recentEvents.length
-                  ? `${recentEvents.length} recent trust event${
-                      recentEvents.length === 1 ? "" : "s"
-                    } visible.`
-                  : "No recent trust events are visible."}
-              </p>
-            </div>
-            <div style={innerCard("#F3FBF5")}>
-              <div style={{ fontSize: 24 }}>✅</div>
-              <div style={{ marginTop: 8, fontWeight: 1000, color: "#166534" }}>
-                What helps trust
-              </div>
-              <ul style={{ ...helperText(), margin: "8px 0 0", paddingLeft: 18 }}>
-                <li>Completed repayments</li>
-                <li>Responsible guarantees</li>
-                <li>Clean identity continuity</li>
-                <li>Promises closed properly</li>
-              </ul>
-            </div>
-            <div style={innerCard("#FFF2F2")}>
-              <div style={{ fontSize: 24 }}>⚠️</div>
-              <div style={{ marginTop: 8, fontWeight: 1000, color: "#991B1B" }}>
-                What creates pressure
-              </div>
-              <ul style={{ ...helperText(), margin: "8px 0 0", paddingLeft: 18 }}>
-                <li>Missed promises</li>
-                <li>Pending responses</li>
-                <li>Overexposure</li>
-                <li>Unresolved actions</li>
-              </ul>
-            </div>
-          </div>
-        </section>
-
-        <section style={pageCard("#FFFFFF")}>
-          <div
-            style={{
-              color: "#07172C",
-              fontWeight: 1000,
-              fontSize: 18,
-              marginBottom: 12,
-            }}
-          >
-            Choose the right trust surface
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "repeat(4, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            {surfaceCards.map((item) => (
-              <SurfaceCard key={item.title} item={item} />
-            ))}
-          </div>
-        </section>
-
-        <section id="trust-passport-evidence" style={pageCard("#FFFFFF")}>
-          <div
-            style={{
-              color: "#07172C",
-              fontWeight: 1000,
-              fontSize: 18,
-              marginBottom: 12,
-            }}
-          >
-            Evidence & Institutional Context
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#FFFBF0")}>
-              <div style={{ fontWeight: 1000, color: "#07172C" }}>
-                🏛️ Capacity context
-              </div>
-              {[
-                [
-                  "Available guarantee capacity",
-                  safeStr(capacityContext?.available_guarantee_capacity || "0.00"),
-                ],
-                [
-                  "Current locked guarantees",
-                  safeStr(capacityContext?.current_locked_guarantees || "0.00"),
-                ],
-                [
-                  "Overexposure ratio",
-                  safeStr(capacityContext?.overexposure_ratio || "0.00"),
-                ],
-                ["Risk level", riskLevel],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  style={{
-                    marginTop: 10,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    color: "#46566D",
-                    borderBottom: "1px dotted rgba(7,23,44,0.18)",
-                    paddingBottom: 5,
-                  }}
-                >
-                  <span>{label}</span>
-                  <b style={{ color: label === "Risk level" ? "#991B1B" : "#07172C" }}>
-                    {value}
-                  </b>
-                </div>
-              ))}
-            </div>
-            <div style={innerCard("#FFFFFF")}>
-              <div style={{ fontWeight: 1000, color: "#07172C" }}>
-                🏅 Institutional note
-              </div>
-              <p style={{ ...helperText(), marginTop: 10 }}>
-                {safeStr(
-                  trustSlipSummary?.disclaimer ||
-                    "Community-backed integrity limit. Not a bank guarantee. No auto-debit. TrustSlip is a portable summary derived from GSN trust history."
-                )}
-              </p>
-              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={badge(true)}>
-                  TrustSlip: {trustSlipStatus || "Pending"}
-                </span>
-                <span style={badge(false)}>CCI: {cciScore} / {cciBand}</span>
-                <span style={badge(false)}>
-                  Graph score: {graphScore}
-                </span>
-              </div>
-            </div>
-          </div>
-          <div
-            style={{
-              marginTop: 12,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#F8FBFF")}>
-              <div style={{ fontWeight: 1000, color: "#07172C" }}>
-                🧾 Full reading lines
-              </div>
-              {[
-                ["Open Trust", openTrust.classText],
-                ["Open Trust reason", openTrust.whyText],
-                ["CCI reason", cci.whyText],
-                ["Level label", levelLabel],
-                ["Standing score", standingScore],
-                ["Lifetime trust", lifetimeTrust],
-                ["Sponsors", safeStr(trustSlipSummary?.sponsor_count ?? "0")],
-                ["Phone verified", trustSlipSummary?.phone_verified ? "Yes" : "No"],
-                [
-                  "Not a bank guarantee",
-                  trustSlipSummary?.not_a_bank_guarantee ? "Yes" : "No",
-                ],
-                ["No auto-debit", trustSlipSummary?.no_auto_debit ? "Yes" : "No"],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  style={{
-                    marginTop: 10,
-                    display: "grid",
-                    gridTemplateColumns: "minmax(110px, 0.8fr) minmax(0, 1.2fr)",
-                    gap: 10,
-                    alignItems: "start",
-                    color: "#46566D",
-                    borderBottom: "1px dotted rgba(7,23,44,0.16)",
-                    paddingBottom: 5,
-                  }}
-                >
-                  <span>{label}</span>
+                  <span style={{ color: "#526579", fontWeight: 850 }}>{label}</span>
                   <b
                     style={{
-                      color: "#07172C",
+                      color: label === "Risk level" ? "#991B1B" : "#07172C",
                       textAlign: "right",
-                      wordBreak: "break-word",
                     }}
                   >
-                    {safeStr(value || "-")}
+                    {value}
                   </b>
                 </div>
               ))}
             </div>
-            <div style={innerCard("#FFFDF5")}>
-              <div style={{ fontWeight: 1000, color: "#07172C" }}>
-                📊 Reading breakdown
-              </div>
-              <p style={{ ...helperText(), marginTop: 10 }}>
-                These are the remaining evidence lines behind the trust reading.
-              </p>
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={badge(false)}>
-                  Ruleset: {safeStr(ruleset?.precision || ruleset?.ordering || "Not stated")}
-                </span>
-                <span style={badge(false)}>
-                  Risk flags: {riskFlags.length > 0 ? riskFlags.join(", ") : "None visible"}
-                </span>
-              </div>
-              <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                {[
-                  [
-                    "Borrower repayment delta",
-                    safeStr(ruleset?.borrower_repayment_delta || "-"),
-                  ],
-                  [
-                    "Guarantor repayment delta",
-                    safeStr(ruleset?.guarantor_repayment_delta || "-"),
-                  ],
-                  ["Precision", safeStr(ruleset?.precision || "-")],
-                  ["Ordering", safeStr(ruleset?.ordering || "-")],
-                  [
-                    "Computed band",
-                    safeStr(recompute?.breakdown?.computed_band || recompute?.band || "-"),
-                  ],
-                  [
-                    "Computed score",
-                    safeStr(recompute?.breakdown?.computed_score || recompute?.score || "-"),
-                  ],
-                  [
-                    "Computed score int",
-                    safeStr(recompute?.breakdown?.computed_score_int ?? "-"),
-                  ],
-                  [
-                    "Last event used",
-                    safeStr(
-                      recompute?.breakdown?.last_event_id_used ??
-                        recompute?.last_event_id ??
-                        "-"
-                    ),
-                  ],
-                  [
-                    "Event count used",
-                    safeStr(
-                      recompute?.breakdown?.event_count_used ??
-                        recompute?.event_count ??
-                        "-"
-                    ),
-                  ],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                      color: "#46566D",
-                      borderBottom: "1px dotted rgba(7,23,44,0.16)",
-                      paddingBottom: 5,
-                    }}
-                  >
-                    <span>{label}</span>
-                    <b style={{ color: "#07172C", textAlign: "right" }}>{value}</b>
-                  </div>
-                ))}
-                {eventCounts.length > 0 ? (
-                  eventCounts.map(([eventName, count]) => (
-                    <div
-                      key={eventName}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 10,
-                        color: "#46566D",
-                        borderBottom: "1px dotted rgba(7,23,44,0.16)",
-                        paddingBottom: 5,
-                      }}
-                    >
-                      <span>{safeStr(eventName)}</span>
-                      <b style={{ color: "#07172C" }}>{safeStr(count)}</b>
-                    </div>
-                  ))
-                ) : (
-                  <div style={helperText()}>
-                    No event-type breakdown is currently shown.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+            <p style={{ ...helperText(), margin: "10px 0 0" }}>
+              Human-first trust reading: identity first, explanation second,
+              evidence third, technical detail last.
+            </p>
+            <TrustPaperSecurityFooter text="Human-first trust reading: identity first, explanation second, evidence third, technical detail last." />
+          </section>
         </section>
       </div>
     </main>
   );
-
 }
-

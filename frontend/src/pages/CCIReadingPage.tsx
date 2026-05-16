@@ -195,7 +195,7 @@ function getCciState(me: any): ReadingState {
     classText: "Pending",
     scoreText: "-",
     tone: "neutral",
-    statusText: "No CCI reading yet",
+    statusText: "No wider consistency reading yet",
     whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
   };
 }
@@ -306,9 +306,9 @@ export default function CCIReadingPage() {
   return (
     <div style={{ maxWidth: 980, margin: "0 auto", display: "grid", gap: 18 }}>
       <PageTopNav
-        sectionLabel="CCI"
-        title="CCI"
-        subtitle="Your cross-community integrity reading without opening the full Trust Passport."
+        sectionLabel="Cross-community consistency"
+        title="Cross-community consistency"
+        subtitle="Your wider consistency reading without opening the full Trust Passport. CCI is the internal label."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
@@ -316,12 +316,12 @@ export default function CCIReadingPage() {
       />
 
       <section style={pageCard("#FFFFFF")}>
-        <div style={sectionLabel()}>CCI</div>
+        <div style={sectionLabel()}>Cross-community consistency</div>
         <div style={{ marginTop: 10, color: "#0B1F33", fontSize: isCompact ? 28 : 34, fontWeight: 900, lineHeight: 1.1 }}>
-          Cross-community integrity reading
+          Wider trust consistency reading
         </div>
         <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
-          Use this page when you want the CCI reading directly without the wider trust passport explanation.
+          Use this page when you want to see how steady the member's visible trust signals look beyond one immediate community.
         </div>
         <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
           <span style={badge(true)}>Class {cci.classText}</span>
@@ -353,7 +353,7 @@ export default function CCIReadingPage() {
           <div style={innerCard("#F8FBFF")}>
             <div style={sectionLabel()}>Why this reading</div>
             <div style={{ marginTop: 10, ...helperText() }}>
-              {loading ? "Loading the CCI reading..." : cci.whyText}
+              {loading ? "Loading the consistency reading..." : cci.whyText}
             </div>
             <CardActionRow style={{ marginTop: 16 }}>
               <StableCtaLink to={routes.identity} debugId="cci-reading.identity">
@@ -363,7 +363,7 @@ export default function CCIReadingPage() {
                 Open Trust Passport
               </StableCtaLink>
               <SecondaryButton onClick={copyCciSnapshot} debugId="cci-reading.copy-snapshot">
-                Copy CCI snapshot
+                Copy consistency snapshot
               </SecondaryButton>
             </CardActionRow>
           </div>
@@ -381,15 +381,15 @@ export default function CCIReadingPage() {
       <TrustDocumentFamilyMap
         compact={isCompact}
         items={familyItems}
-        title="Where CCI sits inside the trust-document family"
-        intro="CCI is only one reading inside the wider trust system. Use this map when you need to understand whether to stay with the narrow integrity read, move into the fuller personal trust story, carry portable proof, or confirm public validity."
+        title="Where consistency sits inside the trust-document family"
+        intro="Cross-community consistency is only one reading inside the wider trust system. Use this map when you need to decide whether to stay with this narrow read, move into the fuller personal trust story, carry portable proof, or confirm public validity."
       />
 
       <TrustDocumentUseCases
         compact={isCompact}
         items={trustDocumentUseCases}
-        title="Which trust question should stay with CCI?"
-        intro="Stay with CCI when the question is the narrower cross-community integrity read. Move out when someone needs the stable identity anchor, the fuller trust story, portable proof, or a public validity check."
+        title="Which trust question should stay here?"
+        intro="Stay here when the question is the narrower cross-community consistency read. Move out when someone needs the stable identity anchor, the fuller trust story, portable proof, or a public validity check."
       />
 
       <section style={pageCard("#FFFFFF")}>
@@ -404,7 +404,7 @@ export default function CCIReadingPage() {
         >
           <div style={innerCard("#F8FBFF")}>
             <div style={{ color: "#0B1F33", fontWeight: 900, fontSize: 15 }}>
-              Use CCI for the wider read
+              Use this for the wider read
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               This page helps you understand how people outside your immediate
@@ -419,7 +419,7 @@ export default function CCIReadingPage() {
             <div style={{ marginTop: 8, ...helperText() }}>
               If someone needs a portable trust document or a public verify
               code, continue into TrustSlip or Trust Passport instead of using
-              the CCI page alone.
+              this page alone.
             </div>
           </div>
         </div>

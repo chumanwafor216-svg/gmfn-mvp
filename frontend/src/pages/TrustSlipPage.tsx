@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide from "../components/NextActionGuide";
@@ -10,23 +11,43 @@ import {
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
+import {
+  TrustPaperBadgeIcon,
+  TrustPaperIcon,
+  TrustPaperSeal,
+  TrustPaperSecurityFooter,
+  TrustPaperWatermark,
+  type TrustPaperIconName,
+} from "../components/TrustPaperMarks";
 import TrustDocumentActionGuide from "../components/TrustDocumentActionGuide";
 import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
 import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
+import TrustSlipReaderBlock from "../components/TrustSlipReaderBlock";
 import * as api from "../lib/api";
 import { navigateWithOrigin } from "../lib/nav";
-import { publicApiUrl } from "../lib/publicLinks";
+import { resolveSharedProfileImage } from "../lib/profileImage";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { buildTrustSlipActionGuide } from "../lib/trustDocumentActionGuide";
 import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
 import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import { buildTrustSlipGuideItems } from "../lib/trustDocumentGuide";
 import { buildTrustSlipSnapshot } from "../lib/trustDocumentSnapshots";
+import {
+  getTrustBandShortLabel,
+  getTrustEvidenceLanguage,
+  normalizeTrustBand,
+  TRUST_BAND_SHORT_LABELS,
+} from "../lib/trustBandLanguage";
 
 type NoticeTone = "success" | "error";
 
 type CollapseState = {
+  nextActions: boolean;
+  actionGuide: boolean;
+  family: boolean;
+  useCases: boolean;
   summary: boolean;
+  reader: boolean;
   merchantVerify: boolean;
   merchantView: boolean;
   evidence: boolean;
@@ -47,6 +68,18 @@ type MerchantSummary = {
   expires_at?: string | null;
   expiry_policy?: string | null;
   phone_verified?: boolean | null;
+  profile_image_url?: string | null;
+  community_global_id?: string | null;
+  holder_role?: string | null;
+  active_member_count?: string | number | null;
+  cci_explainer?: Record<string, any> | null;
+  identity_status_label?: string | null;
+  bank_verified?: boolean | null;
+  bank_verification_label?: string | null;
+  passport_verified?: boolean | null;
+  passport_verification_label?: string | null;
+  community_identity_confirmed?: boolean | null;
+  community_identity_label?: string | null;
 };
 
 type MerchantView = {
@@ -57,13 +90,27 @@ type MerchantView = {
   code?: string | null;
   gmfn_id?: string | null;
   display_name?: string | null;
+  profile_image_url?: string | null;
   community?: string | null;
+  identity_context?: Record<string, any> | null;
+  community_context?: Record<string, any> | null;
+  cci_explainer?: Record<string, any> | null;
+  identity_status_label?: string | null;
+  community_global_id?: string | null;
+  holder_role?: string | null;
+  active_member_count?: string | number | null;
   band?: string | null;
   trust_limit?: string | null;
   currency?: string | null;
   expires_at?: string | null;
   expiry_policy?: string | null;
   phone_verified?: boolean | null;
+  bank_verified?: boolean | null;
+  bank_verification_label?: string | null;
+  passport_verified?: boolean | null;
+  passport_verification_label?: string | null;
+  community_identity_confirmed?: boolean | null;
+  community_identity_label?: string | null;
   merchant_summary?: MerchantSummary | null;
   not_a_bank_guarantee?: boolean | null;
   no_auto_debit?: boolean | null;
@@ -85,6 +132,25 @@ type CapacityContext = {
 type EvidenceSummary = {
   capacity_context?: CapacityContext | null;
   readiness_context?: Record<string, any> | null;
+  commitment_discipline?: Record<string, any> | null;
+  personal_commitment_discipline?: Record<string, any> | null;
+  human_terms?: Record<string, string> | null;
+};
+
+type CommunityConfirmationSummary = {
+  community_status?: string | null;
+  community_name?: string | null;
+  community_id?: string | number | null;
+  community_code?: string | null;
+  approval_type?: string | null;
+  active_member_count?: string | number | null;
+  contactable_reference_count?: string | number | null;
+  sponsor_signal_count?: string | number | null;
+  last_community_confirmation?: string | null;
+  relay_available?: boolean | null;
+  instant_pulse_available?: boolean | null;
+  request_action?: string | null;
+  plain_language?: string | null;
 };
 
 type TrustSlipSummary = {
@@ -94,6 +160,13 @@ type TrustSlipSummary = {
   clan_id?: number | null;
   gmfn_id?: string | null;
   display_name?: string | null;
+  profile_image_url?: string | null;
+  identity_context?: Record<string, any> | null;
+  community_context?: Record<string, any> | null;
+  community_confirmation?: CommunityConfirmationSummary | null;
+  cci_explainer?: Record<string, any> | null;
+  identity_verified?: boolean | null;
+  identity_status_label?: string | null;
   community?: string | null;
   owner?: {
     user_id?: number | null;
@@ -104,6 +177,12 @@ type TrustSlipSummary = {
   } | null;
   phone_e164?: string | null;
   phone_verified?: boolean | null;
+  bank_verified?: boolean | null;
+  bank_verification_label?: string | null;
+  passport_verified?: boolean | null;
+  passport_verification_label?: string | null;
+  community_identity_confirmed?: boolean | null;
+  community_identity_label?: string | null;
   level?: string | null;
   band?: string | null;
   level_label?: string | null;
@@ -152,9 +231,32 @@ type TrustSlipSummary = {
   community_global_id?: string | null;
   community_code?: string | null;
   clan_code?: string | null;
+  holder_role?: string | null;
+  community_member_count?: string | number | null;
+  active_member_count?: string | number | null;
+  total_member_count?: string | number | null;
 };
 
-const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v3";
+type CommunityConfirmationOutcome = {
+  public_token?: string | null;
+  status?: string | null;
+  mode?: string | null;
+  visible_summary?: string | null;
+  privacy_note?: string | null;
+  decision_note?: string | null;
+  community_response?: {
+    requests_sent?: number | null;
+    active_member_count?: number | null;
+    responses_received?: number | null;
+    confirmed_known_count?: number | null;
+    caution_count?: number | null;
+    objection_count?: number | null;
+    community_confidence?: string | null;
+    private_contacts_exposed?: boolean | null;
+  } | null;
+};
+
+const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v4";
 const GMFN_EXEC_SUMMARY_URL = "/gmfn-executive-summary.pdf";
 
 function safeStr(x: any): string {
@@ -177,6 +279,29 @@ function safeDateTime(x: any): string {
   return d.toLocaleString();
 }
 
+function isPastDate(value: any): boolean {
+  const raw = safeStr(value);
+  if (!raw) return false;
+  const d = new Date(raw);
+  return Number.isFinite(d.getTime()) && d.getTime() < Date.now();
+}
+
+function countText(value: any): string {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? String(n) : "0";
+}
+
+function numericCount(value: any): number {
+  const n = Number(value ?? 0);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function countOrNotProvided(value: any): string {
+  if (value === null || value === undefined || value === "") return "Not provided";
+  const n = Number(value);
+  return Number.isFinite(n) ? `${n} recorded` : safeStr(value);
+}
+
 function apiBase(): string {
   const raw =
     (typeof import.meta !== "undefined" &&
@@ -195,19 +320,42 @@ function joinUrl(root: string, path: string): string {
   return `${cleanRoot}${cleanPath}`;
 }
 
-function toApiAbsoluteUrl(pathOrUrl: string): string {
+function toFrontendAbsoluteUrl(pathOrUrl: string): string {
   const raw = safeStr(pathOrUrl);
   if (!raw) return "";
 
-  if (raw.startsWith("http://") || raw.startsWith("https://")) {
-    return publicApiUrl(raw);
+  try {
+    const base =
+      typeof window !== "undefined" && window.location?.origin
+        ? window.location.origin
+        : "";
+    const url = new URL(raw, base || "https://gsn.local");
+    const path = `${url.pathname}${url.search}${url.hash}`;
+    return base ? `${base}${path}` : path;
+  } catch {
+    return raw;
+  }
+}
+
+function trustSlipVerifyFrontendPath(code: string, fallback = ""): string {
+  const cleanCode = safeStr(code);
+  if (cleanCode) {
+    return `/trust-slips/verify/${encodeURIComponent(cleanCode)}/page`;
   }
 
-  if (raw.startsWith("/")) {
-    return publicApiUrl(raw);
+  const rawFallback = safeStr(fallback);
+  if (!rawFallback) return "";
+
+  try {
+    const url = new URL(rawFallback, "https://gsn.local");
+    if (url.pathname.startsWith("/trust-slips/verify")) {
+      return `${url.pathname}${url.search}${url.hash}`;
+    }
+  } catch {
+    // Fall through to the raw fallback below.
   }
 
-  return raw;
+  return rawFallback.startsWith("/trust-slips/verify") ? rawFallback : "";
 }
 
 async function fetchFirstJson(
@@ -357,6 +505,59 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function statusPillStyle(status: string): React.CSSProperties {
+  const text = safeStr(status).toLowerCase();
+  const positive =
+    text.includes("strong") ||
+    text.includes("verified") ||
+    text.includes("valid") ||
+    text.includes("acceptable") ||
+    text === "yes";
+  const pressure =
+    text.includes("caution") ||
+    text.includes("pressure") ||
+    text.includes("refresh") ||
+    text.includes("expired") ||
+    text.includes("limited") ||
+    text.includes("high");
+  const pending = text.includes("mixed") || text.includes("pending");
+
+  return {
+    display: "inline-flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 27,
+    borderRadius: 8,
+    padding: "4px 10px",
+    color: positive
+      ? "#166534"
+      : pressure
+        ? "#991B1B"
+        : pending
+          ? "#92400E"
+          : "#334155",
+    background: positive
+      ? "#EAF7EE"
+      : pressure
+        ? "#FFF1F2"
+        : pending
+          ? "#FFF7E6"
+          : "#F1F5F9",
+    border: `1px solid ${
+      positive
+        ? "rgba(46,155,98,0.18)"
+        : pressure
+          ? "rgba(200,58,58,0.18)"
+          : pending
+            ? "rgba(245,158,11,0.18)"
+            : "rgba(100,116,139,0.14)"
+    }`,
+    fontSize: 12,
+    fontWeight: 1000,
+    textAlign: "center",
+  };
+}
+
 function collapseToggle(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -374,6 +575,26 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     cursor: "pointer",
     whiteSpace: "normal",
+  };
+}
+
+function disclosureShell(): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,250,254,0.93) 100%)",
+    padding: 14,
+    boxShadow: "0 16px 34px rgba(15,23,42,0.045)",
+    overflowAnchor: "none",
+  };
+}
+
+function disclosureBody(): React.CSSProperties {
+  return {
+    marginTop: 12,
+    display: "grid",
+    gap: 12,
   };
 }
 
@@ -395,6 +616,41 @@ function noticeCard(tone: NoticeTone): React.CSSProperties {
         : "1px solid rgba(239,68,68,0.16)",
     fontWeight: 800,
   };
+}
+
+function qrBoxStyle(size = 110): React.CSSProperties {
+  return {
+    width: size,
+    height: size,
+    borderRadius: 12,
+    border: "1px solid rgba(11,31,51,0.12)",
+    background: "#FFFFFF",
+    padding: 6,
+    display: "grid",
+    placeItems: "center",
+    boxShadow: "inset 0 0 0 3px rgba(248,251,255,0.92)",
+  };
+}
+
+function TrustSlipQrCode({
+  value,
+  size = 98,
+}: {
+  value: string;
+  size?: number;
+}) {
+  return (
+    <div style={qrBoxStyle(size + 12)}>
+      <QRCodeSVG
+        value={value}
+        size={size}
+        bgColor="#FFFFFF"
+        fgColor="#07172C"
+        level="M"
+        marginSize={1}
+      />
+    </div>
+  );
 }
 
 function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
@@ -478,11 +734,16 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
+    nextActions: true,
+    actionGuide: true,
+    family: true,
+    useCases: true,
     summary: false,
+    reader: true,
     merchantVerify: true,
-    merchantView: false,
+    merchantView: true,
     evidence: true,
-    notes: false,
+    notes: true,
   };
 }
 
@@ -490,7 +751,12 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
+    nextActions: Boolean(raw?.nextActions ?? base.nextActions),
+    actionGuide: Boolean(raw?.actionGuide ?? base.actionGuide),
+    family: Boolean(raw?.family ?? base.family),
+    useCases: Boolean(raw?.useCases ?? base.useCases),
     summary: Boolean(raw?.summary ?? base.summary),
+    reader: Boolean(raw?.reader ?? base.reader),
     merchantVerify: Boolean(raw?.merchantVerify ?? base.merchantVerify),
     merchantView: Boolean(raw?.merchantView ?? base.merchantView),
     evidence: Boolean(raw?.evidence ?? base.evidence),
@@ -511,6 +777,13 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     clan_id: src?.clan_id,
     gmfn_id: firstTruthy(src?.gmfn_id),
     display_name: firstTruthy(src?.display_name),
+    profile_image_url: firstTruthy(src?.profile_image_url),
+    identity_context: src?.identity_context || null,
+    community_context: src?.community_context || null,
+    community_confirmation: src?.community_confirmation || null,
+    cci_explainer: src?.cci_explainer || null,
+    identity_verified: src?.identity_verified ?? null,
+    identity_status_label: firstTruthy(src?.identity_status_label),
     community: firstTruthy(src?.community),
     owner: src?.owner || null,
     phone_e164: firstTruthy(src?.phone_e164),
@@ -568,6 +841,10 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     community_global_id: firstTruthy(src?.community_global_id),
     community_code: firstTruthy(src?.community_code),
     clan_code: firstTruthy(src?.clan_code),
+    holder_role: firstTruthy(src?.holder_role),
+    community_member_count: src?.community_member_count ?? null,
+    active_member_count: src?.active_member_count ?? null,
+    total_member_count: src?.total_member_count ?? null,
   };
 }
 
@@ -596,6 +873,59 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
+async function fetchTrustSlipPageData(selectedClanId: number) {
+  const [meRes, clanRes, summaryRes] = await Promise.all([
+    typeof (api as any).getMe === "function"
+      ? (api as any).getMe().catch(() => null)
+      : Promise.resolve(null),
+    typeof (api as any).getCurrentClan === "function"
+      ? (api as any).getCurrentClan().catch(() => null)
+      : Promise.resolve(null),
+    (async () => {
+      const viaFn = await callFirstAvailable(
+        [
+          "getMyTrustSlipSummary",
+          "getTrustSlipSummary",
+          "getTrustSlipMeSummary",
+          "getMyTrustSlip",
+        ],
+        [
+          [],
+          [{ clan_id: selectedClanId || undefined }],
+          [
+            {
+              clan_id: selectedClanId || undefined,
+              header_clan_id: selectedClanId || undefined,
+            },
+          ],
+        ]
+      );
+
+      if (viaFn) return viaFn;
+
+      const clanHeaders: Record<string, string> = {};
+      if (selectedClanId) {
+        clanHeaders["X-Clan-Id"] = String(selectedClanId);
+      }
+
+      return fetchFirstJson(
+        [
+          "/trust-slips/me/summary",
+          "/trust-slips/me-summary",
+          "/trust-slips/summary/me",
+        ],
+        clanHeaders
+      );
+    })(),
+  ]);
+
+  return {
+    me: meRes || null,
+    clan: clanRes || null,
+    summary: normalizeTrustSlipSummary(summaryRes),
+  };
+}
+
 export default function TrustSlipPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -603,7 +933,6 @@ export default function TrustSlipPage() {
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "trust-slip.route.dashboard"),
-      verify: routeTarget("merchantVerify", selectedClanId, "trust-slip.route.verify"),
       trust: routeTarget("trust", selectedClanId, "trust-slip.route.trust"),
       guide: routeTarget("profile", selectedClanId, "trust-slip.route.guide"),
     }),
@@ -622,6 +951,7 @@ export default function TrustSlipPage() {
   );
 
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<{
     tone: NoticeTone;
     text: string;
@@ -630,6 +960,9 @@ export default function TrustSlipPage() {
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [summary, setSummary] = useState<TrustSlipSummary | null>(null);
+  const [confirmationBusy, setConfirmationBusy] = useState(false);
+  const [confirmationOutcome, setConfirmationOutcome] =
+    useState<CommunityConfirmationOutcome | null>(null);
   const guideItems = useMemo(() => buildTrustSlipGuideItems(), []);
   const actionGuide = useMemo(() => buildTrustSlipActionGuide(), []);
   const trustDocumentFamilyItems = useMemo(() => buildTrustDocumentFamilyItems(true), []);
@@ -672,56 +1005,14 @@ export default function TrustSlipPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, summaryRes] = await Promise.all([
-          typeof (api as any).getMe === "function"
-            ? (api as any).getMe().catch(() => null)
-            : Promise.resolve(null),
-          typeof (api as any).getCurrentClan === "function"
-            ? (api as any).getCurrentClan().catch(() => null)
-            : Promise.resolve(null),
-          (async () => {
-            const viaFn = await callFirstAvailable(
-              [
-                "getMyTrustSlipSummary",
-                "getTrustSlipSummary",
-                "getTrustSlipMeSummary",
-                "getMyTrustSlip",
-              ],
-              [
-                [],
-                [{ clan_id: selectedClanId || undefined }],
-                [
-                  {
-                    clan_id: selectedClanId || undefined,
-                    header_clan_id: selectedClanId || undefined,
-                  },
-                ],
-              ]
-            );
-
-            if (viaFn) return viaFn;
-
-            const clanHeaders: Record<string, string> = {};
-            if (selectedClanId) {
-              clanHeaders["X-Clan-Id"] = String(selectedClanId);
-            }
-
-            return fetchFirstJson(
-              [
-                "/trust-slips/me/summary",
-                "/trust-slips/me-summary",
-                "/trust-slips/summary/me",
-              ],
-              clanHeaders
-            );
-          })(),
-        ]);
+        const data = await fetchTrustSlipPageData(selectedClanId);
 
         if (!alive) return;
 
-        setMe(meRes || null);
-        setCurrentClan(clanRes || null);
-        setSummary(normalizeTrustSlipSummary(summaryRes));
+        setMe(data.me);
+        setCurrentClan(data.clan);
+        setSummary(data.summary);
+        setConfirmationOutcome(null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -731,6 +1022,23 @@ export default function TrustSlipPage() {
       alive = false;
     };
   }, [selectedClanId]);
+
+  async function refreshTrustSlip() {
+    setRefreshing(true);
+
+    try {
+      const data = await fetchTrustSlipPageData(selectedClanId);
+      setMe(data.me);
+      setCurrentClan(data.clan);
+      setSummary(data.summary);
+      setConfirmationOutcome(null);
+      showNotice("success", "TrustSlip refreshed.");
+    } catch {
+      showNotice("error", "TrustSlip could not refresh. Try again in a moment.");
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const holderName = useMemo(() => {
     return (
@@ -795,23 +1103,15 @@ export default function TrustSlipPage() {
     );
   }, [summary]);
 
-  const verifyUrl = useMemo(() => {
-    return firstTruthy(
-      toApiAbsoluteUrl(summary?.public_verify_url || ""),
-      trustSlipCode
-        ? publicApiUrl(
-            `/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/page`
-          )
-        : ""
+  const verifyPath = useMemo(() => {
+    return trustSlipVerifyFrontendPath(
+      trustSlipCode,
+      summary?.public_verify_url || ""
     );
   }, [summary, trustSlipCode]);
+  const verifyUrl = useMemo(() => toFrontendAbsoluteUrl(verifyPath), [verifyPath]);
 
-  const qrUrl = useMemo(() => {
-    if (!trustSlipCode) return "";
-    return publicApiUrl(
-      `/trust-slips/verify/${encodeURIComponent(trustSlipCode)}/qr.png`
-    );
-  }, [trustSlipCode]);
+  const qrValue = firstTruthy(verifyUrl, verifyPath, trustSlipCode);
 
   const merchantBand = firstTruthy(
     summary?.merchant_view?.band,
@@ -820,13 +1120,15 @@ export default function TrustSlipPage() {
     summary?.level,
     "Pending"
   );
+  const normalizedMerchantBand = normalizeTrustBand(merchantBand);
+  const merchantBandLabel = getTrustBandShortLabel(merchantBand);
 
   const merchantTrustLimit = firstTruthy(
     summary?.merchant_view?.trust_limit,
     summary?.merchant_summary?.trust_limit,
     summary?.trust_limit,
     summary?.trust_slip_limit,
-    "0.00"
+    "Not shown"
   );
 
   const merchantCurrency = firstTruthy(
@@ -858,6 +1160,30 @@ export default function TrustSlipPage() {
     summary?.merchant_view?.active ?? summary?.active ?? false;
   const merchantViewPhoneVerified =
     summary?.merchant_view?.phone_verified ?? summary?.phone_verified ?? false;
+  const rawTrustSlipStatus = safeStr(
+    summary?.status || summary?.merchant_view?.status || ""
+  ).toLowerCase();
+  const trustSlipExpiredByDate = isPastDate(
+    summary?.merchant_view?.expires_at || summary?.expires_at
+  );
+  const trustSlipPublicStatus =
+    rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
+      ? "Needs refresh"
+      : rawTrustSlipStatus === "revoked"
+      ? "Revoked"
+      : rawTrustSlipStatus === "frozen"
+      ? "Frozen"
+      : trustSlipCode
+      ? "Ready to verify"
+      : "Preparing";
+  const trustSlipStatusNote =
+    rawTrustSlipStatus === "expired" || trustSlipExpiredByDate
+      ? "This TrustSlip exists, but the current public proof window has passed. Refresh or generate a current TrustSlip before asking anyone to rely on it."
+      : rawTrustSlipStatus === "revoked" || rawTrustSlipStatus === "frozen"
+      ? "Do not rely on this TrustSlip until the status is cleared and a fresh verification record is available."
+      : trustSlipCode
+      ? "This TrustSlip has a code and can be checked through the verify page."
+      : "The TrustSlip code is not ready yet.";
 
   const cciScore = firstTruthy(
     summary?.merchant_view?.cci_score,
@@ -880,6 +1206,376 @@ export default function TrustSlipPage() {
   );
 
   const capacityContext = summary?.evidence_summary?.capacity_context || null;
+  const readinessContext = summary?.evidence_summary?.readiness_context || null;
+  const riskFlags = Array.isArray(summary?.risk_flags) ? summary.risk_flags : [];
+  const capacityReasons = Array.isArray(capacityContext?.reasons)
+    ? capacityContext.reasons
+    : [];
+  const readinessReasons = Array.isArray(readinessContext?.reasons)
+    ? readinessContext.reasons
+    : [];
+  const commitmentDiscipline = summary?.evidence_summary?.commitment_discipline || {};
+  const personalCommitmentDiscipline =
+    summary?.evidence_summary?.personal_commitment_discipline || {};
+  const contributionDiscipline = commitmentDiscipline?.contribution || {};
+  const repaymentDiscipline = commitmentDiscipline?.repayment || {};
+  const commitmentPlainLanguage = firstTruthy(commitmentDiscipline?.plain_language);
+  const personalCommitmentPlainLanguage = firstTruthy(
+    personalCommitmentDiscipline?.plain_language
+  );
+  const identityContext =
+    summary?.identity_context || summary?.merchant_view?.identity_context || {};
+  const communityContext =
+    summary?.community_context || summary?.merchant_view?.community_context || {};
+  const cciExplainer =
+    summary?.cci_explainer ||
+    summary?.merchant_view?.cci_explainer ||
+    summary?.merchant_summary?.cci_explainer ||
+    {};
+  const profileImageUrl = resolveSharedProfileImage(
+    me,
+    summary?.profile_image_url,
+    summary?.merchant_view?.profile_image_url,
+    summary?.merchant_summary?.profile_image_url,
+    identityContext?.profile_image_url
+  );
+  const holderRole = firstTruthy(
+    summary?.holder_role,
+    summary?.merchant_view?.holder_role,
+    summary?.merchant_summary?.holder_role,
+    communityContext?.holder_role,
+    "member"
+  );
+  const activeMemberCount = firstTruthy(
+    summary?.active_member_count,
+    summary?.community_member_count,
+    summary?.merchant_view?.active_member_count,
+    summary?.merchant_summary?.active_member_count,
+    communityContext?.active_member_count
+  );
+  const activeCommunityCount = firstTruthy(
+    summary?.active_clan_count,
+    communityContext?.active_community_count
+  );
+  const visibleEvidencePoints =
+    numericCount(summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count) +
+    numericCount(summary?.active_clan_count) +
+    numericCount(summary?.unique_counterparties);
+  const trustSlipEvidenceStatus =
+    visibleEvidencePoints <= 0
+      ? "limited"
+      : normalizedMerchantBand === "A" || normalizedMerchantBand === "B"
+        ? "strong"
+        : normalizedMerchantBand === "C"
+          ? "mixed"
+          : "limited";
+  const trustSlipEvidenceLanguage = getTrustEvidenceLanguage(trustSlipEvidenceStatus, {
+    lowData: visibleEvidencePoints <= 0 && !trustSlipCode,
+  });
+  const evidenceDepthText = `${trustSlipEvidenceLanguage.label}: ${
+    trustSlipEvidenceLanguage.plainMeaning
+  } Sponsors: ${countOrNotProvided(
+    summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count
+  )}; active communities: ${countOrNotProvided(
+    summary?.active_clan_count
+  )}; counterparties: ${countOrNotProvided(summary?.unique_counterparties)}.`;
+  const riskSignalText =
+    riskFlags.length > 0
+      ? `Flags present: ${riskFlags.join(", ")}`
+      : Array.isArray(summary?.risk_flags)
+      ? "No risk flags shown."
+      : "Risk data not shown at this visibility level.";
+  const identityStatusLabel = firstTruthy(
+    summary?.identity_status_label,
+    summary?.merchant_view?.identity_status_label,
+    summary?.merchant_summary?.identity_status_label,
+    identityContext?.identity_status_label
+  );
+  const bankVerified =
+    summary?.bank_verified ??
+    summary?.merchant_view?.bank_verified ??
+    summary?.merchant_summary?.bank_verified ??
+    identityContext?.bank_verified ??
+    false;
+  const bankVerificationLabel = firstTruthy(
+    summary?.bank_verification_label,
+    summary?.merchant_view?.bank_verification_label,
+    summary?.merchant_summary?.bank_verification_label,
+    identityContext?.bank_verification_label,
+    bankVerified ? "Bank details recorded" : "Bank check not connected yet"
+  );
+  const passportVerified =
+    summary?.passport_verified ??
+    summary?.merchant_view?.passport_verified ??
+    summary?.merchant_summary?.passport_verified ??
+    identityContext?.passport_verified ??
+    false;
+  const passportVerificationLabel = firstTruthy(
+    summary?.passport_verification_label,
+    summary?.merchant_view?.passport_verification_label,
+    summary?.merchant_summary?.passport_verification_label,
+    identityContext?.passport_verification_label,
+    "Passport check not connected yet"
+  );
+  const communityIdentityConfirmed =
+    summary?.community_identity_confirmed ??
+    summary?.merchant_view?.community_identity_confirmed ??
+    summary?.merchant_summary?.community_identity_confirmed ??
+    identityContext?.community_identity_confirmed ??
+    false;
+  const communityIdentityLabel = firstTruthy(
+    summary?.community_identity_label,
+    summary?.merchant_view?.community_identity_label,
+    summary?.merchant_summary?.community_identity_label,
+    identityContext?.community_identity_label,
+    communityIdentityConfirmed
+      ? "Identity confirmed by active community membership"
+      : "Community identity confirmation not shown"
+  );
+  const cciMeaning = firstTruthy(cciExplainer?.meaning, cciExplainer?.plain_language);
+  const lastReleaseText = safeDateTime(summary?.last_release_at) || "Not shown";
+  const lastFullRepaymentText =
+    safeDateTime(summary?.last_full_repayment_at) || "Not shown";
+  const hasBlockingTrustSlipState =
+    trustSlipExpiredByDate ||
+    summary?.is_current === false ||
+    summary?.merchant_view?.active === false ||
+    ["expired", "revoked", "frozen"].includes(
+      safeStr(summary?.status || summary?.merchant_view?.status).toLowerCase()
+    );
+  const readerVerdict = hasBlockingTrustSlipState
+    ? "Do not ask someone to rely on this TrustSlip by itself. The current state needs fresh evidence before support, goods, money, work, or a referral."
+    : `This TrustSlip gives a reader a short public trust story for ${holderName}. It should help them decide what to do next, not replace their judgement.`;
+  const fourDecisionQuestions = [
+    {
+      title: "Can this person be trusted for support, contribution, finance, or trade?",
+      answer: hasBlockingTrustSlipState
+        ? "Not from this TrustSlip alone. Ask for a fresh TrustSlip or the fuller Trust Passport before any risky decision."
+        : `The visible reading is ${merchantBand} (${merchantBandLabel}), with TrustSlip limit ${merchantTrustLimit} ${merchantCurrency} and cross-community consistency ${cciScore} / ${cciBand}. This supports a careful decision; it is not an automatic approval.`,
+    },
+    {
+      title: "Do they follow through?",
+      answer: safeStr(summary?.last_full_repayment_at)
+        ? `Follow-through evidence is visible. Last full repayment: ${lastFullRepaymentText}.`
+        : safeStr(summary?.last_release_at)
+        ? `A release is visible (${lastReleaseText}), but this view does not yet show full repayment after that release.`
+        : commitmentPlainLanguage
+        ? commitmentPlainLanguage
+        : personalCommitmentPlainLanguage
+        ? personalCommitmentPlainLanguage
+        : "This TrustSlip does not yet show enough follow-through evidence. Ask for contribution, repayment, or personal commitment history.",
+    },
+    {
+      title: "Are they stable inside a real community?",
+      answer: `Community shown: ${communityName}. Role: ${holderRole}. Active members shown: ${
+        activeMemberCount || "not shown"
+      }. Sponsor signals: ${summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count ?? "not shown"}.`,
+    },
+    {
+      title: "Is there verified history behind what they claim?",
+      answer:
+        safeStr(summary?.code || summary?.verification_code || summary?.merchant_view?.code)
+          ? "A TrustSlip code and verification route exist. For a higher-risk decision, ask for the Trust Passport, Trust Events, or direct community confirmation."
+          : "The TrustSlip code is not ready yet, so the reader cannot verify the portable claim from this page alone.",
+    },
+  ];
+  const briefDecisionAnswers = [
+    {
+      label: "Trust decision",
+      value: hasBlockingTrustSlipState
+        ? "Do not rely yet. Ask for a refreshed TrustSlip before support, goods, money, work, or referral."
+        : `Use carefully. Reading ${merchantBand} (${merchantBandLabel}); limit ${merchantTrustLimit} ${merchantCurrency}; cross-community consistency ${cciScore} / ${cciBand}.`,
+    },
+    {
+      label: "Follow-through",
+      value: safeStr(summary?.last_full_repayment_at)
+        ? `Full repayment shown: ${lastFullRepaymentText}.`
+        : safeStr(summary?.last_release_at)
+        ? `Release shown: ${lastReleaseText}; repayment follow-through is not fully shown here.`
+        : commitmentPlainLanguage || personalCommitmentPlainLanguage || "Limited follow-through evidence shown.",
+    },
+    {
+      label: "Community stability",
+      value: `${communityName}. Role: ${holderRole}. Active members: ${
+        activeMemberCount || "not shown"
+      }. Sponsors: ${summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count ?? "not shown"}.`,
+    },
+    {
+      label: "Verified history",
+      value: trustSlipCode
+        ? "A verification code exists. For higher risk, also ask for Trust Passport or Trust Events."
+        : "No current verification code is shown yet.",
+    },
+  ];
+  const trustSlipBandLetter = safeStr(merchantBand).toUpperCase().slice(0, 1);
+  const trustSlipGradeLegend = TRUST_BAND_SHORT_LABELS.map(({ band, label }) => [
+    band,
+    label,
+  ]);
+  const trustSlipValidNow =
+    trustSlipCode &&
+    !hasBlockingTrustSlipState &&
+    trustSlipPublicStatus !== "Preparing";
+  const trustSlipStatusTitle = trustSlipValidNow
+    ? "VALID NOW"
+    : trustSlipPublicStatus === "Preparing"
+      ? "PREPARING"
+      : "NEEDS REFRESH";
+  const trustSlipStatusTone = trustSlipValidNow ? "valid" : "refresh";
+  const decisionSummaryText = hasBlockingTrustSlipState
+    ? "Do not rely on this TrustSlip until it is refreshed and verified again."
+    : ["D", "E"].includes(trustSlipBandLetter)
+      ? "Use with caution but acceptable for low-risk support and trade decisions."
+      : "Usable for low-risk checking, with normal judgement and verification.";
+  const trustSlipReadingRows = [
+    {
+      icon: "shield" as TrustPaperIconName,
+      label: "Identity verified",
+      status:
+        merchantViewPhoneVerified && (bankVerified || communityIdentityConfirmed)
+          ? "Strong"
+          : merchantViewPhoneVerified
+          ? "Mixed"
+          : "Limited",
+    },
+    {
+      icon: "community" as TrustPaperIconName,
+      label: "Support trust",
+      status: hasBlockingTrustSlipState ? "Needs caution" : "Mixed",
+    },
+    {
+      icon: "chart" as TrustPaperIconName,
+      label: "Contribution discipline",
+      status:
+        commitmentPlainLanguage || personalCommitmentPlainLanguage
+          ? "Mixed"
+          : "Limited",
+    },
+    {
+      icon: "wallet" as TrustPaperIconName,
+      label: "Finance discipline",
+      status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "Caution",
+    },
+    {
+      icon: "shop" as TrustPaperIconName,
+      label: "Trade trust",
+      status:
+        Number(summary?.unique_counterparties ?? 0) > 0 ? "Mixed" : "Limited",
+    },
+    {
+      icon: "check" as TrustPaperIconName,
+      label: "Follow-through",
+      status: safeStr(summary?.last_full_repayment_at) ? "Strong" : "Pending",
+    },
+    {
+      icon: "home" as TrustPaperIconName,
+      label: "Community standing",
+      status: ["D", "E"].includes(trustSlipBandLetter)
+        ? "Under pressure"
+        : "Stable",
+    },
+    {
+      icon: "document" as TrustPaperIconName,
+      label: "Verified history",
+      status: trustSlipCode ? "Limited" : "Not ready",
+    },
+  ];
+  const trustSlipUseCases: Array<[TrustPaperIconName, string]> = [
+    ["community", "Community-backed support conversations"],
+    ["briefcase", "Small trade or low-risk trust checks"],
+    ["shop", "Merchant review before release"],
+    ["search", "First-look trust screening"],
+  ];
+  const trustSlipLimits = [
+    "Not a bank guarantee",
+    "No auto-debit",
+    "Not a legal promise of repayment",
+    "Not a substitute for your own judgement",
+  ];
+  const trustSlipTrustReasons = [
+    merchantViewPhoneVerified
+      ? "Backed by phone identity verification"
+      : "Identity verification is limited",
+    trustSlipCode
+      ? "Can be checked through public verification"
+      : "Public verification code is not ready yet",
+    "Based on recorded trust signals where available",
+    "Linked to community activity where shown",
+  ];
+  const communityConfirmation = summary?.community_confirmation || null;
+  const communityVerifyKey = firstTruthy(
+    communityConfirmation?.community_code,
+    communityConfirmation?.community_id,
+    summary?.community_code,
+    summary?.community_global_id,
+    summary?.community_id,
+    currentClan?.community_code,
+    currentClan?.community_global_id,
+    currentClan?.id
+  );
+  const communityVerifyPath = communityVerifyKey
+    ? `/verify/community/${encodeURIComponent(communityVerifyKey)}`
+    : "";
+  const communityRelayAvailable = Boolean(communityConfirmation?.relay_available);
+  const communityPulseAvailable = Boolean(
+    communityConfirmation?.instant_pulse_available || communityRelayAvailable
+  );
+  const communityConfirmationText =
+    firstTruthy(communityConfirmation?.plain_language) ||
+    "Community confirmation is not available for this TrustSlip yet.";
+  const communityConfirmationRows = [
+    ["Community status", firstTruthy(communityConfirmation?.community_status, "Not shown")],
+    [
+      "Active members",
+      firstTruthy(communityConfirmation?.active_member_count, activeMemberCount, "Not shown"),
+    ],
+    [
+      "Eligible response pool",
+      firstTruthy(communityConfirmation?.contactable_reference_count, "0"),
+    ],
+    [
+      "Sponsor signals",
+      firstTruthy(communityConfirmation?.sponsor_signal_count, summary?.sponsor_count, "0"),
+    ],
+    [
+      "Last confirmation",
+      safeDateTime(communityConfirmation?.last_community_confirmation) || "Not requested yet",
+    ],
+  ];
+  const confirmationResult = confirmationOutcome?.community_response || null;
+  const confirmationPublicPath = confirmationOutcome?.public_token
+    ? `/community-confirmations/public/${encodeURIComponent(String(confirmationOutcome.public_token))}`
+    : "";
+
+  async function requestCommunityPulse() {
+    if (!trustSlipCode) {
+      showNotice("error", "Refresh TrustSlip first so a public code is available.");
+      return;
+    }
+
+    if (!communityPulseAvailable) {
+      showNotice("error", "Community confirmation relay is not available yet.");
+      return;
+    }
+
+    setConfirmationBusy(true);
+
+    try {
+      const result = await (api as any).requestCommunityConfirmation({
+        trust_slip_code: trustSlipCode,
+        requester_external_label: "TrustSlip viewer",
+        reason_type: "merchant_trust_check",
+        risk_level: "low",
+        mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
+      });
+      setConfirmationOutcome(result);
+      showNotice("success", "Community confirmation request opened.");
+    } catch {
+      showNotice("error", "Community confirmation could not be opened yet.");
+    } finally {
+      setConfirmationBusy(false);
+    }
+  }
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -957,6 +1653,685 @@ export default function TrustSlipPage() {
     );
   }
 
+  const trustSlipPaperFrameEnabled = true;
+  if (trustSlipPaperFrameEnabled) {
+    return (
+      <div
+        style={{
+          maxWidth: 1180,
+          margin: "0 auto",
+          paddingBottom: 40,
+          display: "grid",
+          gap: 18,
+        }}
+      >
+        <style>{`
+          @page { margin: 14mm; }
+          @media print {
+            body { background: #ffffff !important; }
+            button { display: none !important; }
+            .print-trust-nav { display: none !important; }
+            .print-trust-document {
+              box-shadow: none !important;
+              border: 1px solid rgba(148,163,184,0.34) !important;
+              background: #ffffff !important;
+              break-inside: avoid;
+              page-break-inside: avoid;
+            }
+          }
+        `}</style>
+
+        <div className="print-trust-nav">
+          <PageTopNav
+            sectionLabel="Main Movement"
+            title="TrustSlip"
+            subtitle="Portable trust summary for sharing, checking, and quick decision-making."
+            homeTo={routes.dashboard}
+            homeLabel="Dashboard"
+            backTo={routes.dashboard}
+          />
+        </div>
+
+        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+        <section
+          className="print-trust-document"
+          style={{
+            ...pageCard("#FFFFFF"),
+            border: "1px solid rgba(37,78,119,0.14)",
+            boxShadow: "0 22px 60px rgba(7,23,44,0.10)",
+            padding: isCompact ? 16 : 22,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <TrustPaperWatermark
+            name="shield"
+            color="#0B63D1"
+            size={220}
+            opacity={0.035}
+            style={{ top: 92, right: -58, bottom: "auto" }}
+          />
+          <header
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+              gap: 14,
+              alignItems: "start",
+              marginBottom: 14,
+            }}
+          >
+            <div>
+              <div style={{ ...sectionLabel(), color: "#164E94" }}>
+                Main Movement
+              </div>
+              <h1
+                style={{
+                  margin: "4px 0 0",
+                  color: "#07172C",
+                  fontSize: isCompact ? 34 : 48,
+                  lineHeight: 1,
+                  fontWeight: 1000,
+                }}
+              >
+                TrustSlip
+              </h1>
+              <p style={{ ...helperText(), margin: "8px 0 0", maxWidth: 620 }}>
+                A portable trust summary for sharing, checking, and quick
+                decision-making.
+              </p>
+            </div>
+            <div
+              style={{
+                color: "#07172C",
+                fontSize: 30,
+                lineHeight: 1,
+                fontWeight: 1000,
+                textAlign: isCompact ? "left" : "right",
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: isCompact ? "flex-start" : "flex-end",
+                  gap: 8,
+                }}
+              >
+                <TrustPaperIcon name="shield" size={28} color="#0B63D1" />
+                <span>GSN</span>
+              </div>
+              <div
+                style={{
+                  color: "#334155",
+                  fontSize: 12,
+                  fontWeight: 900,
+                  lineHeight: 1.15,
+                  marginTop: 4,
+                }}
+              >
+                Global<br />Support<br />Network
+              </div>
+            </div>
+          </header>
+
+          <section
+            style={{
+              ...innerCard("#F8FBFF"),
+              border: "1px solid rgba(37,78,119,0.14)",
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "150px minmax(0, 1fr) minmax(220px, 0.78fr)",
+              gap: 18,
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                width: isCompact ? 132 : 142,
+                height: isCompact ? 132 : 142,
+                borderRadius: 14,
+                display: "grid",
+                placeItems: "center",
+                background: "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)",
+                border: "1px solid rgba(37,78,119,0.18)",
+                color: "#0B63D1",
+                fontWeight: 1000,
+                fontSize: 28,
+                overflow: "hidden",
+                boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.65)",
+                position: "relative",
+              }}
+            >
+              {profileImageUrl ? (
+                <img
+                  src={profileImageUrl}
+                  alt={`${holderName} profile`}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                holderName
+                  .split(/\s+/)
+                  .map((part) => part[0])
+                  .filter(Boolean)
+                  .slice(0, 2)
+                  .join("")
+                  .toUpperCase() || "GSN"
+              )}
+              <TrustPaperSeal compact={isCompact} />
+            </div>
+
+            <div>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                1. Who is this person?
+              </div>
+              {[
+                ["id", "GSN ID", gmfnId],
+                ["shield", "Verified member", merchantViewPhoneVerified ? "Yes" : "Not fully shown"],
+                ["community", "Community", communityName],
+                ["hash", "Community ID", communityRef],
+              ].map(([icon, label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "28px minmax(112px, 0.42fr) minmax(0, 1fr)",
+                    gap: 10,
+                    alignItems: "start",
+                    marginTop: 8,
+                  }}
+                >
+                  <TrustPaperIcon name={icon as TrustPaperIconName} size={21} color="#0B63D1" />
+                  <span style={{ color: "#0B63D1", fontWeight: 1000 }}>{label}</span>
+                  <span
+                    style={{
+                      color: "#334155",
+                      fontWeight: 850,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              <span style={{ ...statusPillStyle(merchantViewPhoneVerified ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
+                <TrustPaperBadgeIcon name="phone" ok={merchantViewPhoneVerified} />
+                {merchantViewPhoneVerified ? "Phone verified" : "Phone not verified"}
+              </span>
+              <span style={{ ...statusPillStyle("Strong"), justifyContent: "flex-start", gap: 8 }}>
+                <TrustPaperBadgeIcon name="community" ok />
+                {communityIdentityLabel}
+              </span>
+              <span style={{ ...statusPillStyle(identityStatusLabel ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
+                <TrustPaperBadgeIcon name="shield" ok={Boolean(identityStatusLabel)} />
+                {identityStatusLabel || "Identity continuity not shown"}
+              </span>
+              <span style={{ ...statusPillStyle(bankVerified ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
+                <TrustPaperBadgeIcon name="wallet" ok={Boolean(bankVerified)} />
+                {bankVerificationLabel}
+              </span>
+              <span style={{ ...statusPillStyle(passportVerified ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
+                <TrustPaperBadgeIcon name="document" ok={Boolean(passportVerified)} />
+                {passportVerificationLabel}
+              </span>
+            </div>
+          </section>
+
+          <section
+            style={{
+              ...innerCard("#FFFFFF"),
+              border: "1px solid rgba(216,227,238,0.9)",
+              marginTop: 14,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <TrustPaperWatermark name="community" color="#0B63D1" size={170} opacity={0.045} />
+            <div
+              style={{
+                position: "relative",
+                zIndex: 1,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.15fr) minmax(280px, 0.85fr)",
+                gap: 14,
+                alignItems: "stretch",
+              }}
+            >
+              <div>
+                <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                  6. Instant community confirmation
+                </div>
+                <div
+                  style={{
+                    ...documentMetaCard(communityRelayAvailable ? "#F0FBF4" : "#FFF7E6"),
+                    marginTop: 12,
+                    color: "#334155",
+                    lineHeight: 1.5,
+                    fontWeight: 850,
+                  }}
+                >
+                  {communityConfirmationText}
+                </div>
+                <div style={{ marginTop: 12, display: "grid", gap: 7 }}>
+                  {communityConfirmationRows.map(([label, value]) => (
+                    <div
+                      key={label}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) auto",
+                        gap: 10,
+                        padding: "8px 0",
+                        borderBottom: "1px solid rgba(216,227,238,0.72)",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={{ color: "#526579", fontWeight: 900 }}>{label}</span>
+                      <span style={statusPillStyle(String(value))}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ ...documentMetaCard("#F8FBFF"), display: "grid", gap: 12 }}>
+                <div style={sectionLabel()}>Live response check</div>
+                <div style={{ color: "#07172C", fontSize: 18, fontWeight: 1000 }}>
+                  Ask eligible members to confirm now without exposing phone numbers.
+                </div>
+                <div style={{ color: "#526579", fontWeight: 800, lineHeight: 1.45 }}>
+                  GSN asks eligible community responders inside the system. The public result shows counts against active community members, not private member details.
+                </div>
+                <PrimaryButton
+                  type="button"
+                  onClick={() => {
+                    void requestCommunityPulse();
+                  }}
+                  disabled={!communityPulseAvailable || !trustSlipCode}
+                  busy={confirmationBusy}
+                  busyLabel="Requesting..."
+                  fullWidth
+                  stableHeight={58}
+                  debugId="trust-slip.community-confirmation.request"
+                >
+                  <TrustPaperIcon name="community" size={21} />
+                  Request instant confirmation
+                </PrimaryButton>
+                <StableCtaLink
+                  to={communityVerifyPath || "#"}
+                  kind="soft"
+                  disabled={!communityVerifyPath}
+                  stableHeight={48}
+                  debugId="trust-slip.community-confirmation.open-community-record"
+                  style={{ width: "100%" }}
+                >
+                  <TrustPaperIcon name="search" size={18} />
+                  Open public community record
+                </StableCtaLink>
+                {confirmationOutcome ? (
+                  <div style={{ ...documentMetaCard("#FFFFFF"), border: "1px solid rgba(46,155,98,0.18)" }}>
+                    <div style={{ color: "#166534", fontWeight: 1000 }}>
+                      Request opened
+                    </div>
+                    <div style={{ marginTop: 8, color: "#334155", fontWeight: 850, lineHeight: 1.45 }}>
+                      {confirmationOutcome.visible_summary ||
+                        "Community responses will appear as an aggregate result when members answer."}
+                    </div>
+                    <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+                      <span style={statusPillStyle(firstTruthy(confirmationResult?.community_confidence, "Pending"))}>
+                        Confidence: {firstTruthy(confirmationResult?.community_confidence, "Pending")}
+                      </span>
+                      <span style={{ color: "#526579", fontWeight: 800, fontSize: 13 }}>
+                        Sent: {confirmationResult?.requests_sent ?? 0}; Responses:{" "}
+                        {confirmationResult?.responses_received ?? 0} of{" "}
+                        {confirmationResult?.active_member_count ?? 0}; Confirmed:{" "}
+                        {confirmationResult?.confirmed_known_count ?? 0}
+                      </span>
+                      {confirmationPublicPath ? (
+                        <StableCtaLink
+                          to={confirmationPublicPath}
+                          kind="soft"
+                          stableHeight={44}
+                          debugId="trust-slip.community-confirmation.open-outcome"
+                          style={{ marginTop: 2, width: "100%" }}
+                        >
+                          Open public outcome paper
+                        </StableCtaLink>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 14,
+              marginTop: 14,
+            }}
+          >
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                2. Current TrustSlip status
+              </div>
+              <div
+                style={{
+                  marginTop: 14,
+                  borderRadius: 14,
+                  padding: "18px 16px",
+                  textAlign: "center",
+                  background:
+                    trustSlipStatusTone === "valid"
+                      ? "linear-gradient(135deg, #2E9B62 0%, #1F8A4E 100%)"
+                      : "linear-gradient(135deg, #FFF7E6 0%, #FFE8B5 100%)",
+                  color: trustSlipStatusTone === "valid" ? "#FFFFFF" : "#92400E",
+                  fontSize: isCompact ? 28 : 36,
+                  fontWeight: 1000,
+                  letterSpacing: 0.5,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 12,
+                }}
+              >
+                <TrustPaperIcon name="shield" size={isCompact ? 34 : 42} />
+                {trustSlipStatusTitle}
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 118px",
+                  gap: 12,
+                  alignItems: "center",
+                  marginTop: 14,
+                }}
+              >
+                <div style={{ display: "grid", gap: 8 }}>
+                  <div style={helperText()}>Slip code: {trustSlipCode || "Awaiting issue"}</div>
+                  <div style={helperText()}>
+                    Issued: {safeDateTime(summary?.issued_at) || "Not stated"}
+                  </div>
+                  <div style={helperText()}>
+                    Expires: {safeDateTime(summary?.expires_at) || "Not stated"}
+                  </div>
+                </div>
+                {qrValue ? <TrustSlipQrCode value={qrValue} /> : null}
+              </div>
+              <SecondaryButton
+                onClick={() => {
+                  if (verifyPath) {
+                    navigateWithOrigin(navigate, verifyPath, location);
+                    return;
+                  }
+                  showNotice("error", "TrustSlip verify route is not ready yet.");
+                }}
+                fullWidth
+                stableHeight={50}
+                debugId="trust-slip.paper.open-verify"
+                style={{ marginTop: 14 }}
+              >
+                Open public verify
+              </SecondaryButton>
+            </div>
+
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                3. TrustSlip decision summary
+              </div>
+              <div
+                style={{
+                  ...documentMetaCard("#FFF7E6"),
+                  marginTop: 12,
+                  color: "#07172C",
+                  fontWeight: 1000,
+                  lineHeight: 1.45,
+                  display: "grid",
+                  gridTemplateColumns: "34px 1fr",
+                  gap: 10,
+                  alignItems: "start",
+                }}
+              >
+                <TrustPaperIcon name="alert" size={26} color="#B45309" />
+                <span>{decisionSummaryText}</span>
+              </div>
+              {[
+                ["Trust band", `${merchantBand} - ${merchantBandLabel}`],
+                ["Trust limit", `${merchantTrustLimit} ${merchantCurrency}`],
+                ["Evidence depth", trustSlipEvidenceLanguage.label],
+              ].map(([label, value]) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    gap: 10,
+                    padding: "10px 0",
+                    borderBottom: "1px solid rgba(216,227,238,0.72)",
+                    alignItems: "center",
+                  }}
+                >
+                  <span style={{ color: "#526579", fontWeight: 900 }}>{label}</span>
+                  <span style={statusPillStyle(String(value))}>{value}</span>
+                </div>
+              ))}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                  border: "1px solid rgba(216,227,238,0.9)",
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  marginTop: 12,
+                }}
+              >
+                {trustSlipGradeLegend.map(([grade, label]) => {
+                  const active = trustSlipBandLetter === grade;
+                  return (
+                    <div
+                      key={grade}
+                      style={{
+                        padding: "10px 6px",
+                        textAlign: "center",
+                        background: active ? "#FFF1F2" : grade === "A" || grade === "B" ? "#F0FBF4" : "#FFFDF5",
+                        boxShadow: active ? "inset 0 0 0 2px rgba(200,58,58,0.45)" : "none",
+                        borderLeft: "1px solid rgba(216,227,238,0.9)",
+                      }}
+                    >
+                      <div style={{ color: active ? "#991B1B" : "#07172C", fontWeight: 1000 }}>
+                        {grade}
+                      </div>
+                      <div style={{ color: "#526579", fontSize: 11, fontWeight: 850 }}>
+                        {label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 14,
+              marginTop: 14,
+            }}
+          >
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                4. What this TrustSlip says
+              </div>
+              <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
+                {trustSlipReadingRows.map((item) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "minmax(0, 1fr) auto",
+                      gap: 10,
+                      alignItems: "center",
+                      padding: "8px 0",
+                      borderBottom: "1px solid rgba(216,227,238,0.72)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#334155",
+                        fontWeight: 900,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <TrustPaperIcon name={item.icon} size={19} color="#0B63D1" />
+                      {item.label}
+                    </span>
+                    <span style={statusPillStyle(item.status)}>{item.status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                5. What this can be used for
+              </div>
+              <div style={{ marginTop: 12, display: "grid", gap: 13 }}>
+                {trustSlipUseCases.map(([icon, item]) => (
+                  <div key={item} style={{ display: "grid", gridTemplateColumns: "38px 1fr", gap: 12, alignItems: "center" }}>
+                    <span
+                      aria-hidden
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 19,
+                        background: "#EAF3FF",
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#0B63D1",
+                        fontWeight: 1000,
+                      }}
+                    >
+                      <TrustPaperIcon name={icon} size={21} />
+                    </span>
+                    <span style={{ color: "#334155", fontWeight: 900 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: 14,
+              marginTop: 14,
+            }}
+          >
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                7. What this does NOT mean
+              </div>
+              <div style={{ ...documentMetaCard("#FFF1F2"), marginTop: 12, position: "relative", overflow: "hidden" }}>
+                <TrustPaperWatermark name="alert" color="#991B1B" size={132} opacity={0.065} />
+                {trustSlipLimits.map((item) => (
+                  <div key={item} style={{ color: "#991B1B", fontWeight: 900, marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                    <TrustPaperIcon name="alert" size={17} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+                8. Why a reader may trust this
+              </div>
+              <div style={{ ...documentMetaCard("#F0FBF4"), marginTop: 12, position: "relative", overflow: "hidden" }}>
+                <TrustPaperWatermark name="shield" color="#166534" size={132} opacity={0.075} />
+                {trustSlipTrustReasons.map((item) => (
+                  <div key={item} style={{ color: "#166534", fontWeight: 900, marginTop: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                    <TrustPaperIcon name="check" size={17} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          <section
+            style={{
+              ...innerCard("#FFFFFF"),
+              border: "1px solid rgba(216,227,238,0.9)",
+              marginTop: 14,
+            }}
+          >
+            <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+              9. Quick actions
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                gap: 12,
+                marginTop: 12,
+              }}
+            >
+              <SecondaryButton
+                onClick={copyTrustSlipSnapshot}
+                fullWidth
+                stableHeight={58}
+                debugId="trust-slip.paper.copy"
+              >
+                <TrustPaperIcon name="copy" size={21} />
+                Copy TrustSlip
+              </SecondaryButton>
+              <PrimaryButton
+                onClick={() => {
+                  void refreshTrustSlip();
+                }}
+                busy={refreshing}
+                busyLabel="Refreshing..."
+                fullWidth
+                stableHeight={58}
+                debugId="trust-slip.paper.refresh"
+              >
+                <TrustPaperIcon name="refresh" size={21} />
+                Refresh TrustSlip
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() => {
+                  if (verifyPath) {
+                    navigateWithOrigin(navigate, verifyPath, location);
+                    return;
+                  }
+                  showNotice("error", "TrustSlip verify route is not ready yet.");
+                }}
+                fullWidth
+                stableHeight={58}
+                debugId="trust-slip.paper.verify"
+              >
+                <TrustPaperIcon name="search" size={21} />
+                Verify public code
+              </SecondaryButton>
+            </div>
+          </section>
+
+          <TrustPaperSecurityFooter text="Human-first TrustSlip: clear identity, clear status, clear limits, clear verification." />
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -1004,38 +2379,6 @@ export default function TrustSlipPage() {
         />
       </div>
 
-      <ExplainToggle
-        label="What this screen does"
-        what="TrustSlip is the portable public trust summary for your current trust state."
-        why="It keeps the public-facing trust summary, code, expiry window, and verification route together in one shareable place."
-        next="Start with the main TrustSlip summary, then use TrustSlip Verify when you need to confirm the current public reading."
-        tone="blue"
-      />
-
-      <NextActionGuide
-        storageKey="gmfn.trustSlip.nextActionGuide.v1"
-        compact={isCompact}
-        items={guideItems}
-        intro="Say what you need next in simple words, like verify this code, explain the trust story, or open the identity side behind the same document."
-        onSelect={handleGuideSelect}
-      />
-
-      <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
-
-      <TrustDocumentFamilyMap
-        compact={isCompact}
-        items={trustDocumentFamilyItems}
-        title="How TrustSlip fits into the wider trust-document family"
-        intro="TrustSlip is the portable proof layer. Use this map when you need to separate the fuller Trust Passport story from the shorter outward-facing document and the public verification check that proves it is still current."
-      />
-
-      <TrustDocumentUseCases
-        compact={isCompact}
-        items={trustDocumentUseCases}
-        title="Which trust question should stay in TrustSlip?"
-        intro="Stay here when the task is carrying concise outward-facing proof. Move outward to public verification for current validity, or back inward to Trust Passport and Identity & Integrity when the fuller story matters."
-      />
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
@@ -1064,7 +2407,7 @@ export default function TrustSlipPage() {
         >
           <div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(true)}>Issued trust instrument</span>
+              <span style={badge(true)}>Portable trust summary</span>
               <span style={badge(false)}>Portable verification summary</span>
             </div>
 
@@ -1080,7 +2423,7 @@ export default function TrustSlipPage() {
               }}
             >
               {trustSlipCode
-                ? "Your TrustSlip summary is loaded"
+                ? "GSN TrustSlip"
                 : "TrustSlip is still preparing"}
             </div>
 
@@ -1092,8 +2435,8 @@ export default function TrustSlipPage() {
                 maxWidth: 840,
               }}
             >
-              This shows your current portable trust state, verify link,
-              code, CCI, trust limit, and institutional notes.
+              A short public trust paper for a careful reader. It shows who this
+              belongs to, what the current evidence says, and how to verify it.
             </div>
 
             <div
@@ -1105,11 +2448,18 @@ export default function TrustSlipPage() {
               }}
             >
               <span style={badge(true)}>Holder: {holderName}</span>
-              <span style={badge(false)}>GMFN ID: {gmfnId}</span>
+              <span style={badge(false)}>GSN ID: {gmfnId}</span>
               <span style={badge(false)}>Community: {communityName}</span>
               <span style={badge(false)}>Community ID: {communityRef}</span>
-              <span style={badge(false)}>Current page: TrustSlip</span>
-              <span style={badge(false)}>Current step: Review portable trust summary</span>
+              <span style={badge(merchantViewPhoneVerified)}>Phone {merchantViewPhoneVerified ? "verified" : "not shown"}</span>
+              <span style={badge(Boolean(identityStatusLabel))}>
+                Identity: {identityStatusLabel || "not fully shown"}
+              </span>
+            </div>
+
+            <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1" }}>
+              Profile image is not identity proof. Community membership is shown;
+              government ID and affordability are not certified by this TrustSlip.
             </div>
 
             <CardActionRow style={{ marginTop: 16 }}>
@@ -1145,14 +2495,14 @@ export default function TrustSlipPage() {
                 onClick={() =>
                   handleCopy(
                     gmfnId,
-                    "GMFN ID copied.",
-                    "GMFN ID is not ready yet."
+                    "GSN ID copied.",
+                    "GSN ID is not ready yet."
                   )
                 }
                 disabled={!gmfnId || gmfnId === "Awaiting issue"}
                 debugId="trust-slip.copy-gmfn-id"
               >
-                Copy GMFN ID
+                Copy GSN ID
               </SecondaryButton>
 
               <SubtleButton
@@ -1187,7 +2537,7 @@ export default function TrustSlipPage() {
               label="What this does"
               what="This portable reading summarizes the trust state that other people can verify from your current TrustSlip."
               why="It keeps the main public trust signals, document codes, and issue window visible in one place before you share or verify anything."
-              next="Read the band, trust limit, CCI, and issue window here first, then use the TrustSlip code or verify route when needed."
+              next="Read the band, visible TrustSlip limit, cross-community consistency, and issue window here first, then use the TrustSlip code or verify route when needed."
               tone="light"
               style={{ marginTop: 12 }}
             />
@@ -1213,10 +2563,13 @@ export default function TrustSlipPage() {
                 >
                   {merchantBand}
                 </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+                  {merchantBandLabel}
+                </div>
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>Trust limit</div>
+                <div style={sectionLabel()}>Visible TrustSlip limit</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1228,10 +2581,13 @@ export default function TrustSlipPage() {
                 >
                   {merchantTrustLimit} {merchantCurrency}
                 </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+                  Not an approved loan amount or payment guarantee.
+                </div>
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>CCI</div>
+                <div style={sectionLabel()}>Cross-community consistency</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1243,12 +2599,65 @@ export default function TrustSlipPage() {
                 >
                   {cciScore} / {cciBand}
                 </div>
+                <div style={{ marginTop: 6, ...helperText(), fontSize: 12.5, lineHeight: 1.45 }}>
+                  CCI is the internal label for this wider consistency reading.
+                </div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+              <div style={documentMetaCard("#FFFFFF")}>
+                <div style={sectionLabel()}>Evidence depth</div>
+                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                  {evidenceDepthText}
+                </div>
+              </div>
+              <div style={documentMetaCard("#FFF8E5")}>
+                <div style={sectionLabel()}>Risk signal</div>
+                <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                  {riskSignalText}
+                </div>
               </div>
             </div>
 
             <div style={{ marginTop: 12, ...helperText() }}>
-              Status: {safeStr(summary?.status || "Awaiting issue")} - Visibility:{" "}
+              Status: {trustSlipPublicStatus} - Visibility:{" "}
               {merchantVisibility}
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              {trustSlipStatusNote}
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                borderRadius: 18,
+                border: "1px solid rgba(11,31,51,0.10)",
+                background: "#FFFFFF",
+                padding: 14,
+              }}
+            >
+              <div style={sectionLabel()}>Four-question answer</div>
+              <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                {briefDecisionAnswers.map((item) => (
+                  <div
+                    key={item.label}
+                    style={{
+                      display: "grid",
+                      gap: 4,
+                      paddingBottom: 10,
+                      borderBottom: "1px solid rgba(148,163,184,0.16)",
+                    }}
+                  >
+                    <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 14 }}>
+                      {item.label}
+                    </div>
+                    <div style={{ ...helperText(), lineHeight: 1.55 }}>
+                      {item.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div
@@ -1282,6 +2691,16 @@ export default function TrustSlipPage() {
                 </div>
               </div>
             </div>
+
+            <div style={{ marginTop: 12, ...documentMetaCard("#F8FBFF") }}>
+              <div style={sectionLabel()}>What verification confirms</div>
+              <div style={{ marginTop: 6, ...helperText(), color: "#0B1F33" }}>
+                Verification checks this TrustSlip code, holder reference, status,
+                visibility, and issue window. It does not confirm government ID,
+                affordability, available funds, debt-free status, future repayment,
+                or merchant performance.
+              </div>
+            </div>
           </div>
         </div>
 
@@ -1309,10 +2728,107 @@ export default function TrustSlipPage() {
           <div>
             <div style={documentFooterLabel()}>Institutional notice</div>
             <div style={{ marginTop: 6, ...helperText(), color: "#D7E3F1" }}>
+              Evidence only. Not a bank guarantee. Not auto-debit. Not approval
+              for credit, goods, release, work, or referral by itself.
+            </div>
+            <div style={{ marginTop: 4, ...helperText(), color: "#AFC4D9" }}>
               {disclaimer}
             </div>
           </div>
         </div>
+      </section>
+
+      <section style={disclosureShell()}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div style={sectionLabel()}>Reader explanation</div>
+            <div style={{ marginTop: 6, ...helperText() }}>
+              This explains the TrustSlip in ordinary language. Keep it closed when you only need the document and verify link.
+            </div>
+          </div>
+          <SubtleButton
+            onClick={() => toggleSection("reader")}
+            style={collapseToggle()}
+            debugId="trust-slip.toggle-reader"
+          >
+            {collapsed.reader ? "Open" : "Close"}
+          </SubtleButton>
+        </div>
+
+        {!collapsed.reader ? (
+          <div style={disclosureBody()}>
+            <TrustSlipReaderBlock
+              compact={isCompact}
+              holderName={holderName}
+              gmfnId={gmfnId}
+              profileImageUrl={profileImageUrl}
+              communityName={communityName}
+              communityGlobalId={communityRef}
+              holderRole={holderRole}
+              activeMemberCount={activeMemberCount}
+              activeCommunityCount={activeCommunityCount}
+              sponsorCount={summary?.sponsor_count ?? summary?.merchant_summary?.sponsor_count}
+              phoneVerified={merchantViewPhoneVerified}
+              identityStatusLabel={identityStatusLabel}
+              cciScore={cciScore}
+              cciBand={cciBand}
+              cciMeaning={cciMeaning}
+              trustLimit={merchantTrustLimit}
+              currency={merchantCurrency}
+              readerVerdict={readerVerdict}
+              questions={fourDecisionQuestions}
+            />
+          </div>
+        ) : null}
+      </section>
+
+      <section style={disclosureShell()}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div style={sectionLabel()}>Help using this TrustSlip</div>
+            <div style={{ marginTop: 6, ...helperText() }}>
+              Product guidance lives here so the TrustSlip paper can stand on its own.
+            </div>
+          </div>
+          <SubtleButton
+            onClick={() => toggleSection("nextActions")}
+            style={collapseToggle()}
+            debugId="trust-slip.toggle-help"
+          >
+            {collapsed.nextActions ? "Open" : "Close"}
+          </SubtleButton>
+        </div>
+        {!collapsed.nextActions ? (
+          <div style={disclosureBody()}>
+            <ExplainToggle
+              label="What this screen does"
+              what="TrustSlip is the portable public trust summary for your current trust state."
+              why="It keeps the public-facing trust summary, code, expiry window, and verification route together in one shareable place."
+              next="Start with the main TrustSlip paper, then use TrustSlip Verify when you need to confirm the current public reading."
+              tone="blue"
+            />
+            <NextActionGuide
+              storageKey="gmfn.trustSlip.nextActionGuide.v1"
+              compact={isCompact}
+              items={guideItems}
+              intro="Say what you need next in simple words, like verify this code, explain the trust story, or open the identity side behind the same document."
+              onSelect={handleGuideSelect}
+            />
+            <TrustDocumentActionGuide content={actionGuide} compact={isCompact} />
+            <TrustDocumentFamilyMap
+              compact={isCompact}
+              items={trustDocumentFamilyItems}
+              title="How TrustSlip fits into the wider trust-document family"
+              intro="TrustSlip is the portable summary layer. Use this map when you need to separate the fuller Trust Passport story from the shorter outward-facing document and the public verification check that shows whether it is still current."
+            />
+            <TrustDocumentUseCases
+              compact={isCompact}
+              items={trustDocumentUseCases}
+              title="Which trust question should stay in TrustSlip?"
+              intro="Stay here when the task is carrying concise outward-facing proof. Move outward to public verification for current validity, or back inward to Trust Passport and Identity & Integrity when the fuller story matters."
+            />
+          </div>
+        ) : null}
       </section>
 
       <section
@@ -1363,20 +2879,8 @@ export default function TrustSlipPage() {
                 gap: 8,
               }}
             >
-              {trustSlipCode ? (
-                <img
-                  src={qrUrl}
-                  alt="TrustSlip QR"
-                  style={{
-                    width: 144,
-                    height: 144,
-                    borderRadius: 14,
-                    border: "1px solid rgba(11,31,51,0.10)",
-                    background: "#FFFFFF",
-                    padding: 6,
-                    objectFit: "contain",
-                  }}
-                />
+              {qrValue ? (
+                <TrustSlipQrCode value={qrValue} size={128} />
               ) : (
                 <div
                   style={{
@@ -1408,7 +2912,7 @@ export default function TrustSlipPage() {
               >
                 Scan to verify
                 <div style={{ marginTop: 6, color: "#94A3B8", fontWeight: 800 }}>
-                  Formal verification instrument
+                  Verification record
                 </div>
               </div>
             </div>
@@ -1442,16 +2946,16 @@ export default function TrustSlipPage() {
               <div style={{ marginTop: 10, ...helperText() }}>
                 Unlock result:{" "}
                 {merchantVerifyActive
-                  ? "Outside merchants can use this verification page now."
+                  ? "Outside merchants can use this verification page as current evidence."
                   : merchantVerifyRequired
                     ? "Outside merchants cannot use this verification page until Merchant Verify is active."
                     : "This verification page is not active for outside merchants yet."}
               </div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Verified: {String(merchantViewVerified)} - Active:{" "}
-                {String(merchantViewActive)} - Phone verified:{" "}
-                {String(merchantViewPhoneVerified)}
+                {merchantViewVerified ? "Merchant view verified." : "Merchant view not verified yet."}{" "}
+                {merchantViewActive ? "Merchant view active." : "Merchant view not active yet."}{" "}
+                {merchantViewPhoneVerified ? "Phone verified." : "Phone not verified or not shown."}
               </div>
 
               <div
@@ -1469,7 +2973,7 @@ export default function TrustSlipPage() {
                   Visibility: {merchantVisibility}
                 </span>
                 <span style={badge(false)}>
-                  Status: {safeStr(summary?.status || "Awaiting issue")}
+                  Status: {trustSlipPublicStatus}
                 </span>
               </div>
 
@@ -1484,11 +2988,12 @@ export default function TrustSlipPage() {
 
               <CardActionRow style={{ marginTop: 14 }}>
                 <StableCtaLink
-                  to={routes.verify}
+                  to={verifyPath || "#"}
                   kind="primary"
+                  disabled={!verifyPath}
                   debugId="trust-slip.open-verify"
                 >
-                  Open TrustSlip Verify
+                  {verifyPath ? "Open TrustSlip Verify" : "Verify not ready"}
                 </StableCtaLink>
 
                 <SecondaryButton
@@ -1507,144 +3012,17 @@ export default function TrustSlipPage() {
 
                 {verifyUrl ? (
                   <StableCtaLink
-                    to={verifyUrl}
+                    to={verifyPath}
                     target="_blank"
                     rel="noreferrer"
                     kind="soft"
+                    disabled={!verifyPath}
                     debugId="trust-slip.open-merchant-verify"
                   >
-                    Open Merchant Verify
+                    Open Public Verify
                   </StableCtaLink>
                 ) : null}
               </CardActionRow>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Merchant-facing view</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Everything a merchant needs to read stays together here.
-            </div>
-          </div>
-
-          <SubtleButton
-            onClick={() => toggleSection("merchantView")}
-            style={collapseToggle()}
-            debugId="trust-slip.toggle-merchant-view"
-          >
-            {collapsed.merchantView ? "Open" : "Collapse"}
-          </SubtleButton>
-        </div>
-
-        {!collapsed.merchantView ? (
-          <div
-            style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#FCFEFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Merchant summary
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  GSN ID: {safeStr(summary?.merchant_summary?.gmfn_id || gmfnId)}
-                </div>
-                <div style={helperText()}>
-                  Code: {safeStr(summary?.merchant_summary?.code || trustSlipCode || "Awaiting issue")}
-                </div>
-                <div style={helperText()}>
-                  Community: {safeStr(summary?.merchant_summary?.community || communityName)}
-                </div>
-                <div style={helperText()}>
-                  Band: {safeStr(summary?.merchant_summary?.band || merchantBand)}
-                </div>
-                <div style={helperText()}>
-                  Trust limit: {safeStr(summary?.merchant_summary?.trust_limit || merchantTrustLimit)}{" "}
-                  {safeStr(summary?.merchant_summary?.currency || merchantCurrency)}
-                </div>
-                <div style={helperText()}>
-                  CCI: {safeStr(summary?.merchant_summary?.cci_score || cciScore)} /{" "}
-                  {safeStr(summary?.merchant_summary?.cci_band || cciBand)}
-                </div>
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 15,
-                }}
-              >
-                Merchant view
-              </div>
-
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={badge(merchantViewActive)}>
-                  {merchantViewActive
-                    ? "Usable now"
-                    : "Not active yet"}
-                </span>
-                <span style={badge(false)}>
-                  {merchantViewVerified
-                    ? "Verified"
-                    : "Not yet verified"}
-                </span>
-                <span style={badge(false)}>
-                  Visibility: {safeStr(summary?.merchant_view?.visibility_level || merchantVisibility)}
-                </span>
-              </div>
-
-              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-                <div style={helperText()}>
-                  Verified: {String(merchantViewVerified)}
-                </div>
-                <div style={helperText()}>
-                  Active: {String(merchantViewActive)}
-                </div>
-                <div style={helperText()}>
-                  Status: {safeStr(summary?.merchant_view?.status || summary?.status || "Awaiting issue")}
-                </div>
-                <div style={helperText()}>
-                  Visibility level: {safeStr(summary?.merchant_view?.visibility_level || merchantVisibility)}
-                </div>
-                <div style={helperText()}>
-                  Expires: {safeDateTime(summary?.merchant_view?.expires_at || summary?.expires_at) || "Not stated"}
-                </div>
-                <div style={helperText()}>
-                  Phone verified: {String(merchantViewPhoneVerified)}
-                </div>
-                <div style={helperText()}>
-                  Decision reading:{" "}
-                  {merchantViewActive
-                    ? "A merchant can rely on this verification view now."
-                    : "A merchant cannot rely on this verification view yet."}
-                </div>
-              </div>
             </div>
           </div>
         ) : null}
@@ -1681,7 +3059,7 @@ export default function TrustSlipPage() {
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
               gap: 12,
             }}
           >
@@ -1698,16 +3076,19 @@ export default function TrustSlipPage() {
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={helperText()}>
-                  Available guarantee capacity: {safeStr(capacityContext?.available_guarantee_capacity || "0.00")}
+                  Available guarantee capacity: {firstTruthy(capacityContext?.available_guarantee_capacity, "Not provided")}
                 </div>
                 <div style={helperText()}>
-                  Current locked guarantees: {safeStr(capacityContext?.current_locked_guarantees || "0.00")}
+                  Current locked guarantees: {firstTruthy(capacityContext?.current_locked_guarantees, "Not provided")}
                 </div>
                 <div style={helperText()}>
-                  Overexposure ratio: {safeStr(capacityContext?.overexposure_ratio || "0.00")}
+                  Overexposure ratio: {firstTruthy(capacityContext?.overexposure_ratio, "Not provided")}
                 </div>
                 <div style={helperText()}>
                   Risk level: {safeStr(capacityContext?.risk_level || "unknown")}
+                </div>
+                <div style={helperText()}>
+                  Reasons: {capacityReasons.length ? capacityReasons.join(", ") : "Not provided"}
                 </div>
               </div>
             </div>
@@ -1728,13 +3109,13 @@ export default function TrustSlipPage() {
                   Graph score: {safeStr(summary?.graph_score || "Not stated")}
                 </div>
                 <div style={helperText()}>
-                  Active clan count: {safeStr(summary?.active_clan_count ?? "0")}
+                  Active community count: {countOrNotProvided(summary?.active_clan_count)}
                 </div>
                 <div style={helperText()}>
-                  Sponsor count: {safeStr(summary?.sponsor_count ?? "0")}
+                  Sponsor count: {countOrNotProvided(summary?.sponsor_count)}
                 </div>
                 <div style={helperText()}>
-                  Unique counterparties: {safeStr(summary?.unique_counterparties ?? "0")}
+                  Counterparties: {countOrNotProvided(summary?.unique_counterparties)}
                 </div>
               </div>
             </div>
@@ -1763,7 +3144,153 @@ export default function TrustSlipPage() {
                 <div style={helperText()}>
                   Last full repayment: {safeDateTime(summary?.last_full_repayment_at) || "Not stated"}
                 </div>
+                <div style={helperText()}>
+                  Days since full repayment: {safeStr(summary?.days_since_last_full_repayment ?? "Not stated")}
+                </div>
               </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Decision cautions
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Readiness: {safeStr(readinessContext?.recommendation || "Not stated")}
+                </div>
+                <div style={helperText()}>
+                  Readiness score: {safeStr(readinessContext?.readiness_score ?? "Not stated")}
+                </div>
+                <div style={helperText()}>
+                  Risk flags: {riskSignalText}
+                </div>
+                <div style={helperText()}>
+                  Readiness reasons: {readinessReasons.length ? readinessReasons.join(", ") : "Not provided"}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Contribution discipline
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Expected: {countText(contributionDiscipline?.expected_count)}
+                </div>
+                <div style={helperText()}>
+                  Completed: {countText(contributionDiscipline?.confirmed_count)}
+                </div>
+                <div style={helperText()}>
+                  Part paid: {countText(contributionDiscipline?.partial_count)}
+                </div>
+                <div style={helperText()}>
+                  Still open: {countText(contributionDiscipline?.outstanding_count)}
+                </div>
+                <div style={helperText()}>
+                  Expired/defaulted: {countText(contributionDiscipline?.expired_or_defaulted_count)}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Repayment discipline
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Expected: {countText(repaymentDiscipline?.expected_count)}
+                </div>
+                <div style={helperText()}>
+                  Completed: {countText(repaymentDiscipline?.confirmed_count)}
+                </div>
+                <div style={helperText()}>
+                  Part paid: {countText(repaymentDiscipline?.partial_count)}
+                </div>
+                <div style={helperText()}>
+                  Still open: {countText(repaymentDiscipline?.outstanding_count)}
+                </div>
+                <div style={helperText()}>
+                  Expired/defaulted: {countText(repaymentDiscipline?.expired_or_defaulted_count)}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#FFFFFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Personal commitment
+              </div>
+
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Commitments recorded: {countText(personalCommitmentDiscipline?.distinct_commitment_count)}
+                </div>
+                <div style={helperText()}>
+                  Check-ins: {countText(personalCommitmentDiscipline?.checkin_count)}
+                </div>
+                <div style={helperText()}>
+                  Milestones: {countText(personalCommitmentDiscipline?.milestone_count)}
+                </div>
+                <div style={helperText()}>
+                  Completed: {countText(personalCommitmentDiscipline?.completed_count)}
+                </div>
+                <div style={helperText()}>
+                  Missed/replanned: {countText(personalCommitmentDiscipline?.missed_reported_count)}
+                </div>
+              </div>
+            </div>
+
+            <div style={innerCard("#F8FBFF")}>
+              <div
+                style={{
+                  color: "#0B1F33",
+                  fontWeight: 900,
+                  fontSize: 15,
+                }}
+              >
+                Human reading
+              </div>
+
+              <div style={{ marginTop: 10, ...helperText() }}>
+                {commitmentPlainLanguage ||
+                  personalCommitmentPlainLanguage ||
+                  "Recorded contribution or repayment expectations are not shown yet. A reader should ask for more evidence before taking a bigger risk."}
+              </div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Personal commitments show member-recorded discipline. Expected payments show contribution or repayment evidence.
+              </div>
+              {personalCommitmentPlainLanguage && commitmentPlainLanguage ? (
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  Additional personal commitment signal: {personalCommitmentPlainLanguage}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -1818,10 +3345,10 @@ export default function TrustSlipPage() {
                 {disclaimer}
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Not a bank guarantee: {String(Boolean(summary?.not_a_bank_guarantee))}
+                This is not a bank guarantee.
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                No auto-debit: {String(Boolean(summary?.no_auto_debit))}
+                No automatic debit is connected.
               </div>
             </div>
 
@@ -1836,7 +3363,7 @@ export default function TrustSlipPage() {
                 Trust Passport
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Trust Passport explains the full trust story. TrustSlip proves the portable state.
+                Trust Passport explains the full trust story. TrustSlip shows the current portable state.
               </div>
 
               <div style={{ marginTop: 12 }}>

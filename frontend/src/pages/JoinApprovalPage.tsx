@@ -542,7 +542,7 @@ export default function JoinApprovalPage() {
                     Community ID: {safeStr(data?.community_code)}
                   </span>
                 ) : null}
-                {gmfnId ? <span style={badge(false)}>GMFN ID: {gmfnId}</span> : null}
+                {gmfnId ? <span style={badge(false)}>GSN ID: {gmfnId}</span> : null}
               </div>
             </div>
 
@@ -638,7 +638,7 @@ export default function JoinApprovalPage() {
 
                 {status === "approved" ? (
                   <div style={softCard()}>
-                    <div style={sectionLabel()}>GMFN ID</div>
+                    <div style={sectionLabel()}>GSN ID</div>
                     <div
                       style={{
                         marginTop: 8,

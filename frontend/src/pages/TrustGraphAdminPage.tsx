@@ -78,7 +78,7 @@ export default function TrustGraphAdminPage() {
     <div style={{ padding: 18, maxWidth: 1200 }}>
       <PageHeader
         title="TrustGraph Command Centre"
-        subtitle="Protected cross-community trust architecture, explainability, and CCI command view."
+        subtitle="Protected cross-community trust architecture, explainability, and consistency command view. CCI remains the internal label."
         right={
           <Button onClick={loadAll} disabled={loading || busy}>
             {loading ? "Loading..." : busy ? "Working..." : "Refresh"}
@@ -107,7 +107,7 @@ export default function TrustGraphAdminPage() {
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <Pill kind={isAdmin ? "green" : "red"}>{isAdmin ? "Admin access" : "Restricted"}</Pill>
-            <Pill kind="blue">{safeStr(me?.gmfn_id || "GMFN ID pending")}</Pill>
+            <Pill kind="blue">{safeStr(me?.gmfn_id || "GSN ID pending")}</Pill>
           </div>
         </div>
       </Card>
@@ -163,12 +163,12 @@ export default function TrustGraphAdminPage() {
               background: "#fff",
             }}
           >
-            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>Current GMFN ID</div>
+            <div style={{ fontSize: 12, color: "#64748b", fontWeight: 900 }}>Current GSN ID</div>
             <div style={{ marginTop: 8, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input
                 value={safeStr(me?.gmfn_id || queryGmfnId)}
                 readOnly
-                placeholder="GMFN ID pending"
+                placeholder="GSN ID pending"
                 style={{
                   flex: 1,
                   minWidth: 180,
@@ -277,7 +277,7 @@ export default function TrustGraphAdminPage() {
           <Card style={{ marginTop: 12 }}>
             <div style={{ fontSize: 16, fontWeight: 1000, color: "#0B1F33" }}>Explainability</div>
             <div style={{ marginTop: 6, color: "#64748b", fontSize: 12 }}>
-              Why this graph and CCI score were produced.
+              Why this graph and consistency score were produced. CCI is kept as the internal metric name.
             </div>
 
             <pre

@@ -687,7 +687,7 @@ export default function GuarantorInboxPage() {
       `Community: ${selectedCommunityLabel}`,
       `Community ID: ${communityPublicId}`,
       `Member: ${memberName}`,
-      `GMFN ID: ${gmfnId}`,
+      `GSN ID: ${gmfnId}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Pending: ${counts.pending}`,
       `Approved: ${counts.approved}`,
@@ -844,7 +844,7 @@ export default function GuarantorInboxPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>GMFN ID</div>
+                <div style={sectionLabel()}>GSN ID</div>
                 <div
                   style={{
                     marginTop: 8,

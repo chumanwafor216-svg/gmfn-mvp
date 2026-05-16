@@ -643,7 +643,7 @@ export default function RevenueAllocationPage() {
       `Community: ${communityLabel}`,
       `Community ID: ${communityPublicId}`,
       `Member: ${memberName}`,
-      `GMFN ID: ${gmfnId}`,
+      `GSN ID: ${gmfnId}`,
       memberRole ? `Role: ${memberRole}` : "",
       ...detailPairs(allocation).map(([label, value]) => `${label}: ${value}`),
     ]
@@ -765,7 +765,7 @@ export default function RevenueAllocationPage() {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>GMFN ID</div>
+                <div style={sectionLabel()}>GSN ID</div>
                 <div
                   style={{
                     marginTop: 8,

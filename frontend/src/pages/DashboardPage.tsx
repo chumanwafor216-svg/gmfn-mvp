@@ -17,6 +17,7 @@ import {
   getSelectedClanId,
   listMarketplaceRequests,
   removeMyProfileImage,
+  recordFocusCommitmentTrustEvent,
   uploadMyProfileImageFile,
 } from "../lib/api";
 import {
@@ -372,11 +373,15 @@ const EXACT_TARGET_ALIASES: Record<string, string> = {
   "open-trust": DASHBOARD_TARGETS.TRUST,
 
   "trust-slip": DASHBOARD_TARGETS.TRUST_SLIP,
+  "app/trust-slip": DASHBOARD_TARGETS.TRUST_SLIP,
   trustslip: DASHBOARD_TARGETS.TRUST_SLIP,
+  "app/trustslip": DASHBOARD_TARGETS.TRUST_SLIP,
   "open-trust-slip": DASHBOARD_TARGETS.TRUST_SLIP,
+  "app/open-trust-slip": DASHBOARD_TARGETS.TRUST_SLIP,
   "merchant-verify": DASHBOARD_TARGETS.TRUST_SLIP,
   "verify-merchant": DASHBOARD_TARGETS.TRUST_SLIP,
   "trust-slip/verify": DASHBOARD_TARGETS.TRUST_SLIP_VERIFY,
+  "app/trust-slip/verify": DASHBOARD_TARGETS.TRUST_SLIP_VERIFY,
 
   identity: DASHBOARD_TARGETS.CCI,
   "identity-integrity": DASHBOARD_TARGETS.CCI,
@@ -680,6 +685,7 @@ function dashboardActionSignal(label: string): DashboardSignalName {
     case "Trust":
       return "trust";
     case "CCI":
+    case "Wider consistency":
       return "community";
     case "TrustSlip":
       return "identity";
@@ -1619,8 +1625,9 @@ function getCciState(me: any): ReadingState {
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "No CCI reading yet",
-    whyText: "Complete identity and community activity first. The fuller cross-community reading will appear here when it is available.",
+    statusText: "No cross-community consistency reading yet",
+    whyText:
+      "Complete identity and community activity first. The fuller consistency reading across communities will appear here when it is available.",
   };
 }
 
@@ -1777,9 +1784,9 @@ function getOpenTrustState(
       classText: "Pending",
       scoreText: "—",
       tone: "neutral",
-      statusText: "Select your community to view your Open Trust",
+      statusText: "Select your community to view local trust",
       whyText:
-        "Your Open Trust belongs to your immediate community reading, not to your cross-community integrity reading.",
+        "Your local community trust belongs to the community you are using right now. It is separate from the wider cross-community consistency reading.",
     };
   }
 
@@ -1787,9 +1794,9 @@ function getOpenTrustState(
     classText: "Pending",
     scoreText: "—",
     tone: "neutral",
-    statusText: "No Open Trust reading yet",
+    statusText: "No local community reading yet",
     whyText:
-      "Your Open Trust reflects your standing in the community you are using now. Select or use a community first, then this reading will appear here.",
+      "Your local community trust reflects your standing in the community you are using now. Select or use a community first, then this reading will appear here.",
   };
 }
 
@@ -2170,8 +2177,8 @@ function buildMostUsedAppFallback(params: {
     },
     cci: {
       key: "cci",
-      label: "CCI",
-      detail: "Cross-community integrity reading.",
+      label: "Wider consistency",
+      detail: "Cross-community consistency reading.",
       to: DASHBOARD_TARGETS.CCI,
       count: 0,
       lastOpenedAt: "",
@@ -2359,8 +2366,8 @@ function buildPriorityRoutes(params: {
           }
         : {
             key: "cci",
-            label: "Open your CCI",
-            detail: "Review the cross-community integrity pressure.",
+            label: "Open wider consistency",
+            detail: "Review the cross-community consistency pressure.",
             to: DASHBOARD_TARGETS.CCI,
             reason: "Integrity pressure should be handled before new exposure.",
           },
@@ -2368,8 +2375,8 @@ function buildPriorityRoutes(params: {
         trustPrimary
           ? {
               key: "cci",
-              label: "Open your CCI",
-              detail: "Review the cross-community integrity reading.",
+              label: "Open wider consistency",
+              detail: "Review the cross-community consistency reading.",
               to: DASHBOARD_TARGETS.CCI,
             }
           : {
@@ -5070,6 +5077,31 @@ export default function DashboardPage() {
     setFocusComposerOpen(true);
   }
 
+  function syncFocusCommitmentTrustEvent(
+    item: FocusCommitment,
+    event: FocusCommitmentEvent
+  ) {
+    if (!dashboardIdentityReady) return;
+
+    void recordFocusCommitmentTrustEvent({
+      clan_id: selectedClanId || undefined,
+      local_commitment_id: item.id,
+      local_event_id: event.id,
+      event_kind: event.kind,
+      title: item.title,
+      category: item.category,
+      target_value: item.targetValue,
+      current_value: item.currentValue,
+      progress_value: event.progressValue,
+      unit: item.unit,
+      due_date: item.dueDate,
+      cadence: item.cadence,
+      note: event.note || item.note || null,
+    }).catch(() => {
+      // Keep local commitment usable; backend sync can be retried by a later check-in.
+    });
+  }
+
   function saveFocusCommitment() {
     const title = safeStr(focusDraft.title);
 
@@ -5126,6 +5158,7 @@ export default function DashboardPage() {
     };
 
     setFocusEvents((prev) => [createdEvent, ...prev].slice(0, 120));
+    syncFocusCommitmentTrustEvent(item, createdEvent);
 
     setFocusComposerOpen(false);
     setFocusDraft(defaultFocusCommitmentDraft());
@@ -5151,6 +5184,16 @@ export default function DashboardPage() {
         nextValue > Number(item.currentValue || 0)
       ? "milestone"
       : "checkin";
+    const checkInEvent: FocusCommitmentEvent = {
+      id: makeLocalId("focus-event"),
+      commitmentId,
+      kind: eventKind,
+      createdAt: now,
+      progressValue: nextValue,
+      note: completed
+        ? "Commitment completed"
+        : `Progress updated to ${nextValue}`,
+    };
 
     setFocusCommitments((prev) =>
       prev.map((row) =>
@@ -5171,20 +5214,10 @@ export default function DashboardPage() {
       )
     );
 
-    setFocusEvents((prev) =>
-      [
-        {
-          id: makeLocalId("focus-event"),
-          commitmentId,
-          kind: eventKind,
-          createdAt: now,
-          progressValue: nextValue,
-          note: completed
-            ? "Commitment completed"
-            : `Progress updated to ${nextValue}`,
-        },
-        ...prev,
-      ].slice(0, 120)
+    setFocusEvents((prev) => [checkInEvent, ...prev].slice(0, 120));
+    syncFocusCommitmentTrustEvent(
+      { ...item, currentValue: nextValue, completedAt: completed ? now : item.completedAt || null },
+      checkInEvent
     );
 
     setFocusProgressDrafts((prev) => ({
@@ -5205,6 +5238,17 @@ export default function DashboardPage() {
 
     const eventKind: FocusCommitmentEventKind =
       (daysUntil(item.nextCheckInDate) ?? 0) < 0 ? "missed-reported" : "replan";
+    const replanEvent: FocusCommitmentEvent = {
+      id: makeLocalId("focus-event"),
+      commitmentId,
+      kind: eventKind,
+      createdAt: now,
+      progressValue: null,
+      note:
+        eventKind === "missed-reported"
+          ? "Reported a missed checkpoint and moved the review"
+          : "Replanned the next review date",
+    };
 
     setFocusCommitments((prev) =>
       prev.map((row) =>
@@ -5222,21 +5266,10 @@ export default function DashboardPage() {
       )
     );
 
-    setFocusEvents((prev) =>
-      [
-        {
-          id: makeLocalId("focus-event"),
-          commitmentId,
-          kind: eventKind,
-          createdAt: now,
-          progressValue: null,
-          note:
-            eventKind === "missed-reported"
-              ? "Reported a missed checkpoint and moved the review"
-              : "Replanned the next review date",
-        },
-        ...prev,
-      ].slice(0, 120)
+    setFocusEvents((prev) => [replanEvent, ...prev].slice(0, 120));
+    syncFocusCommitmentTrustEvent(
+      { ...item, dueDate: nextDueDate, nextCheckInDate: minDateInputValue(nextDueDate, proposedNextCheckIn), updatedAt: now },
+      replanEvent
     );
   }
 
@@ -5275,6 +5308,18 @@ export default function DashboardPage() {
     };
 
     setFocusEvents((prev) => [completedEvent, ...prev].slice(0, 120));
+    syncFocusCommitmentTrustEvent(
+      {
+        ...item,
+        currentValue:
+          item.targetValue !== null
+            ? Number(item.targetValue)
+            : Number(item.currentValue || 0),
+        completedAt: now,
+        updatedAt: now,
+      },
+      completedEvent
+    );
   }
 
   const attentionPopupTone =
@@ -5646,10 +5691,10 @@ export default function DashboardPage() {
     fontFamily: "inherit",
   };
   const attentionConnectionText = isPhone
-    ? "Focus shows follow-through. Trust is how your community reads it. CCI is how outsiders may read it. TrustSlip keeps later proof. The waiting request is the issue now."
+    ? "Focus shows follow-through. Local trust is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later proof."
     : trustAttentionCore.connectionText;
   const attentionConsequenceText = isPhone
-    ? "Leaving it waiting weakens trust now. If it stays open, it can affect CCI and make your TrustSlip story look less steady."
+    ? "Leaving it waiting weakens trust now. If it stays open, it can affect wider consistency and make your TrustSlip story look less steady."
     : attentionDisplaySignal.consequenceText;
   const attentionPopupLabelStyle = (
     color = DASHBOARD_BRAND.label
@@ -6510,7 +6555,7 @@ export default function DashboardPage() {
           >
             {[
               { label: "Trust", value: openTrust.classText, to: DASHBOARD_TARGETS.TRUST },
-              { label: "CCI", value: cci.classText, to: DASHBOARD_TARGETS.CCI },
+              { label: "Wider", value: cci.classText, to: DASHBOARD_TARGETS.CCI },
               {
                 label: "TrustSlip",
                 value: trustSlipCode || "Pending",
@@ -7350,7 +7395,7 @@ export default function DashboardPage() {
                         </span>
                       </span>
                       <span style={trustMetricTile(false, "blue")}>
-                        <span style={trustMetricLabel()}>CCI</span>
+                        <span style={trustMetricLabel()}>Wider</span>
                         <span style={trustMetricValue()}>{cci.classText}</span>
                       </span>
                       <span style={trustMetricTile(false, "steel")}>
@@ -7397,8 +7442,8 @@ export default function DashboardPage() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: isPhone
-                          ? `repeat(${trustSlipCode ? 3 : 2}, minmax(0, 1fr))`
-                          : `repeat(${trustSlipCode ? 3 : 2}, minmax(132px, 1fr))`,
+                          ? "repeat(3, minmax(0, 1fr))"
+                          : "repeat(3, minmax(132px, 1fr))",
                         gap: isPhone ? 6 : 8,
                         alignItems: "stretch",
                       }}
@@ -7421,16 +7466,14 @@ export default function DashboardPage() {
                         Identity
                       </StableButton>
 
-                      {trustSlipCode ? (
-                        <StableButton
-                          type="button"
-                          onClick={openTrustSlipPage}
-                          onPointerDown={consumeDashboardPointerEvent}
-                          style={trustActionButton()}
-                        >
-                          TrustSlip
-                        </StableButton>
-                      ) : null}
+                      <StableButton
+                        type="button"
+                        onClick={openTrustSlipPage}
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={trustActionButton()}
+                      >
+                        TrustSlip
+                      </StableButton>
                     </div>
                   </div>
                 </div>

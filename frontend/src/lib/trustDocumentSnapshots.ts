@@ -75,11 +75,17 @@ export function buildIdentityIntegritySnapshot(
   return joinSnapshot([
     "GSN Identity & Integrity snapshot",
     cleanLine("Member", params.displayName),
-    cleanLine("GMFN ID", params.gmfnId),
+    cleanLine("GSN ID", params.gmfnId),
     cleanLine("Community", params.communityLabel),
     cleanLine("TrustSlip", params.trustSlipCode || "Awaiting issue"),
-    cleanLine("Open Trust", `${params.openTrustClass} / ${params.openTrustScore}`),
-    cleanLine("CCI", `${params.cciClass} / ${params.cciScore}`),
+    cleanLine(
+      "Local community trust",
+      `${params.openTrustClass} / ${params.openTrustScore}`
+    ),
+    cleanLine(
+      "Cross-community consistency",
+      `${params.cciClass} / ${params.cciScore}`
+    ),
     cleanLine("Continuity", params.continuityLabel),
     cleanLine("Next clean step", params.nextMoveLabel),
   ]);
@@ -87,10 +93,10 @@ export function buildIdentityIntegritySnapshot(
 
 export function buildCciSnapshot(params: CciSnapshotParams) {
   return joinSnapshot([
-    "GSN CCI snapshot",
+    "GSN cross-community consistency snapshot",
     cleanLine("Member", params.memberLabel),
-    cleanLine("CCI class", params.classText),
-    cleanLine("CCI score", params.scoreText),
+    cleanLine("Consistency class", params.classText),
+    cleanLine("Consistency score", params.scoreText),
     cleanLine("Reading", params.statusText),
     cleanLine("Why", params.whyText),
   ]);
@@ -100,7 +106,7 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
   return joinSnapshot([
     "GSN TrustSlip snapshot",
     cleanLine("Holder", params.holderName),
-    cleanLine("GMFN ID", params.gmfnId),
+    cleanLine("GSN ID", params.gmfnId),
     cleanLine("Community", params.communityName),
     cleanLine("Community ref", params.communityRef),
     cleanLine("TrustSlip code", params.trustSlipCode),
@@ -109,7 +115,7 @@ export function buildTrustSlipSnapshot(params: TrustSlipSnapshotParams) {
       "Trust limit",
       `${params.merchantCurrency} ${params.merchantTrustLimit}`
     ),
-    cleanLine("CCI band", params.cciBand),
+    cleanLine("Cross-community consistency band", params.cciBand),
     cleanLine("Expires", params.expiresAt),
     cleanLine("Verify link", params.verifyUrl),
   ]);
@@ -121,7 +127,7 @@ export function buildTrustSlipVerifySnapshot(
   return joinSnapshot([
     "GSN TrustSlip verification snapshot",
     cleanLine("Holder", params.holderName),
-    cleanLine("GMFN ID", params.gmfnId),
+    cleanLine("GSN ID", params.gmfnId),
     cleanLine("Community", params.communityLabel),
     cleanLine("TrustSlip code", params.trustSlipCode),
     cleanLine("Visible band", params.visibleBand),
@@ -139,13 +145,13 @@ export function buildTrustPassportSnapshot(
   return joinSnapshot([
     "GSN Trust Passport snapshot",
     cleanLine("Member", params.memberName),
-    cleanLine("GMFN ID", params.gmfnId),
+    cleanLine("GSN ID", params.gmfnId),
     cleanLine("Community", params.communityName),
     cleanLine("Community code", params.communityCode),
     cleanLine("Trust band", params.currentBand),
     cleanLine("Trust score", params.currentScore),
-    cleanLine("Open Trust", params.openTrustClass),
-    cleanLine("CCI", params.cciClass),
+    cleanLine("Local community trust", params.openTrustClass),
+    cleanLine("Cross-community consistency", params.cciClass),
     cleanLine("TrustSlip code", params.trustSlipCode),
     cleanLine("Next clean step", params.nextStepLabel),
     cleanLine("TrustSlip verify", params.verifyUrl),

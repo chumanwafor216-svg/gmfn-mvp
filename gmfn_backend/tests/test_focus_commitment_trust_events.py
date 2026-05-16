@@ -1,0 +1,201 @@
+from __future__ import annotations
+
+import json
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+
+from fastapi.testclient import TestClient
+from sqlalchemy import text
+
+from app.db.database import SessionLocal, engine
+from app.db.models import TrustEvent, TrustSlip
+from app.api.routes.trust_slips import _public_visibility_level
+from app.services.trust_slips_services import get_trust_slip_payload, issue_trust_slip_for_user
+
+
+def test_focus_commitment_route_logs_deduped_trust_event(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    payload = {
+        "clan_id": 1,
+        "local_commitment_id": "focus-local-1",
+        "local_event_id": "focus-event-local-1",
+        "event_kind": "complete",
+        "title": "Save for workshop transport",
+        "category": "savings",
+        "target_value": 100.0,
+        "current_value": 100.0,
+        "progress_value": 100.0,
+        "unit": "NGN",
+        "due_date": "2026-05-20",
+        "cadence": "weekly",
+        "note": "Marked as completed",
+    }
+
+    first = client.post("/trust-events/me/focus-commitment", json=payload)
+    assert first.status_code == 200, first.text
+    first_data = first.json()
+    assert first_data["ok"] is True
+    assert first_data["event_type"] == "commitment.completed"
+
+    second = client.post("/trust-events/me/focus-commitment", json=payload)
+    assert second.status_code == 200, second.text
+    assert second.json()["event_id"] == first_data["event_id"]
+
+    with SessionLocal() as db:
+        rows = db.query(TrustEvent).all()
+        assert len(rows) == 1
+        row = rows[0]
+        assert row.event_type == "commitment.completed"
+        assert row.actor_user_id == 1
+        assert row.subject_user_id == 1
+        assert row.clan_id == 1
+        meta = json.loads(row.meta_json or "{}")
+        assert meta["source"] == "dashboard_focus_commitment"
+        assert meta["local_commitment_id"] == "focus-local-1"
+        assert meta["local_event_id"] == "focus-event-local-1"
+        assert meta["trust_delta"] == "0.00"
+        assert "personal commitment event" in meta["reader_note"]
+
+
+def test_trustslip_payload_includes_personal_commitment_discipline(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    client.post(
+        "/trust-events/me/focus-commitment",
+        json={
+            "clan_id": 1,
+            "local_commitment_id": "focus-local-2",
+            "local_event_id": "focus-event-local-2",
+            "event_kind": "created",
+            "title": "Finish weekly stock check",
+            "category": "business",
+            "target_value": 1.0,
+            "current_value": 0.0,
+            "progress_value": 0.0,
+            "unit": "task",
+            "due_date": "2026-05-22",
+            "cadence": "weekly",
+            "note": "Created business commitment",
+        },
+    )
+    client.post(
+        "/trust-events/me/focus-commitment",
+        json={
+            "clan_id": 1,
+            "local_commitment_id": "focus-local-2",
+            "local_event_id": "focus-event-local-3",
+            "event_kind": "complete",
+            "title": "Finish weekly stock check",
+            "category": "business",
+            "target_value": 1.0,
+            "current_value": 1.0,
+            "progress_value": 1.0,
+            "unit": "task",
+            "due_date": "2026-05-22",
+            "cadence": "weekly",
+            "note": "Marked as completed",
+        },
+    )
+
+    with SessionLocal() as db:
+        payload = get_trust_slip_payload(db, user_id=1)
+
+    discipline = payload["evidence_summary"]["personal_commitment_discipline"]
+    assert discipline["source"] == "trust_events"
+    assert discipline["total_event_count"] == 2
+    assert discipline["distinct_commitment_count"] == 1
+    assert discipline["created_count"] == 1
+    assert discipline["completed_count"] == 1
+    assert discipline["active_commitment_count"] == 0
+    assert "completed at least one personal commitment" in discipline["plain_language"]
+    assert "bank_verification_label" in payload["identity_context"]
+    assert payload["identity_context"]["passport_verification_label"] == "Passport check not connected yet"
+    assert payload["identity_context"]["community_identity_confirmed"] is True
+
+
+def test_focus_commitment_drops_invalid_clan_context(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    response = client.post(
+        "/trust-events/me/focus-commitment",
+        json={
+            "clan_id": 999,
+            "local_commitment_id": "focus-local-invalid-clan",
+            "local_event_id": "focus-event-invalid-clan",
+            "event_kind": "checkin",
+            "title": "Check in without valid community",
+            "category": "savings",
+        },
+    )
+    assert response.status_code == 200, response.text
+
+    with SessionLocal() as db:
+        row = db.query(TrustEvent).filter(TrustEvent.dedupe_key == "focus:1:focus-event-invalid-clan").one()
+        assert row.clan_id is None
+
+
+def test_public_visibility_level_cannot_expand_above_stored_level():
+    assert _public_visibility_level(stored_level="minimal", requested_level="detailed") == "minimal"
+    assert _public_visibility_level(stored_level="standard", requested_level="detailed") == "standard"
+    assert _public_visibility_level(stored_level="detailed", requested_level="minimal") == "minimal"
+
+
+def test_expired_current_trustslip_reissues_with_fresh_expiry(seed_clan_member_membership):
+    def aware(dt):
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+    now = datetime.now(timezone.utc)
+    expired_at = now - timedelta(days=1)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE users
+                SET phone_e164 = '+2348000000000',
+                    phone_verified_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+                """
+            )
+        )
+
+    with SessionLocal() as db:
+        old_slip = TrustSlip(
+            code="OLD-TRUSTSLIP",
+            clan_id=1,
+            holder_user_id=1,
+            trust_limit=Decimal("0.00"),
+            currency="NGN",
+            status="active",
+            expires_at=expired_at,
+            created_at=expired_at - timedelta(days=7),
+            is_current=True,
+        )
+        db.add(old_slip)
+        db.commit()
+        db.refresh(old_slip)
+        old_id = int(old_slip.id)
+
+        result = issue_trust_slip_for_user(db, user_id=1)
+
+        assert result["issued"] is True
+        assert result["code"] != "OLD-TRUSTSLIP"
+        new_expires_at = aware(datetime.fromisoformat(result["expires_at"]))
+        assert new_expires_at > now
+
+        db.refresh(old_slip)
+        new_slip = db.query(TrustSlip).filter(TrustSlip.code == result["code"]).one()
+
+        assert old_slip.is_current is False
+        assert old_slip.superseded_by_trust_slip_id == new_slip.id
+        assert new_slip.is_current is True
+        assert new_slip.supersedes_trust_slip_id == old_id
+        assert new_slip.expires_at is not None
+        assert aware(new_slip.expires_at) > now

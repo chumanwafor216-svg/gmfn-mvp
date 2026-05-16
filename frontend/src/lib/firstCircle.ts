@@ -458,7 +458,7 @@ export function buildInviteMessage(params: {
   const lines: string[] = [
     `Hello ${safeStr(params.contact.name) || "there"},`,
     "",
-    `I recently joined GSN and received my GMFN ID ${gmfnId}.`,
+    `I recently joined GSN and received my GSN ID ${gmfnId}.`,
     "GSN works best when people begin with those they already trust and already do real life with.",
     "",
     `I am joining as a ${roleText.toLowerCase()}.`,

@@ -43,8 +43,14 @@ assertContains(
 
 assertContains(
   "src/components/StableButton.tsx",
-  /export function StableButton[\s\S]*?inFlight[\s\S]*?function handleClick[\s\S]*?const customClick = Boolean\(onClick\);[\s\S]*?if \(locked \|\| inFlight\.current\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?if \(type !== "submit" \|\| customClick\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?tabIndex=\{locked \? -1 : tabIndex\}[\s\S]*?export function StableCtaLink[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?export function PrimaryButton[\s\S]*?export function SecondaryButton[\s\S]*?export function SubtleButton[\s\S]*?export function DangerButton[\s\S]*?export function CardActionRow[\s\S]*?export function StableDisclosureSummary/,
-  "Shared button primitives must include duplicate-click protection, guarded default-action prevention that preserves plain submit buttons, guarded aria-disabled state, link support, stable action rows, and stable disclosure summaries."
+  /export function StableButton[\s\S]*?inFlight[\s\S]*?function handleClick[\s\S]*?const customClick = Boolean\(onClick\);[\s\S]*?if \(locked \|\| inFlight\.current\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?if \(type !== "submit" \|\| customClick\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?tabIndex=\{locked \? -1 : tabIndex\}[\s\S]*?onPointerDown=\{stopTap\}[\s\S]*?onPointerUp=\{stopTap\}[\s\S]*?export function StableCtaLink[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?export function PrimaryButton[\s\S]*?export function SecondaryButton[\s\S]*?export function SubtleButton[\s\S]*?export function DangerButton[\s\S]*?export function CardActionRow[\s\S]*?export function StableDisclosureSummary[\s\S]*?onPointerUp=\{\(event\) => \{[\s\S]*?stopTap\(event\);/,
+  "Shared button primitives must include duplicate-click protection, guarded default-action prevention that preserves plain submit buttons, guarded aria-disabled state, pointer-down/up tap guards, link support, stable action rows, and stable disclosure summaries."
+);
+
+assertContains(
+  "src/components/OriginLink.tsx",
+  /onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => guardLinkTap\(event, rest\.onClick\)\}[\s\S]*?<Link[\s\S]*?onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?\}\}/,
+  "OriginLink must guard pointer-down, pointer-up, mouse-down, and click for both external anchors and React Router links."
 );
 
 assertNotContains(
@@ -107,6 +113,18 @@ assertContains(
   "Marketplace must use shared stable primitives and shared CTA resolution for marketplace navigation, member/shop links, link desk actions, and support-request controls."
 );
 
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceActionStyle[\s\S]*?height: 48,[\s\S]*?maxHeight: 48,[\s\S]*?function marketplaceOsTileStyle\(\): React\.CSSProperties \{[\s\S]*?height: 154,[\s\S]*?maxHeight: 154,[\s\S]*?contain: "layout paint"[\s\S]*?function marketplaceOsRowStyle\(\): React\.CSSProperties \{[\s\S]*?height: 78,[\s\S]*?maxHeight: 78,[\s\S]*?contain: "layout paint"/,
+  "Marketplace route/action tiles must keep fixed phone-safe heights and layout containment so card text cannot stretch buttons into unstable tap targets."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?window\.scrollTo[\s\S]*?\[120, 320, 700, 1100\]\.forEach/,
+  "Marketplace section buttons must use repeated mobile-safe landing passes instead of one fragile scroll after opening a section."
+);
+
 assertNotContains(
   "src/pages/MarketplacePage.tsx",
   /(<button|<\/button>|<a\s|OriginLink|marketplacePointerGuardProps|marketplaceButtonGuardProps|actionTapGuardProps|brandStableTapTarget|stableTapTarget|actionBtn\(|aria-disabled=|withClanQuery\(|openMarketplaceRoute\(event, "\/app|to: "\/app)/,
@@ -139,9 +157,24 @@ assertNotContains(
 
 assertContains(
   "src/pages/LoginPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="login\.guide\.collapse"[\s\S]*?debugId="login\.error\.activate-membership"[\s\S]*?debugId="login\.submit"[\s\S]*?debugId="login\.open-help"[\s\S]*?debugId="login\.start-community"[\s\S]*?debugId="login\.activate-approved"/,
-  "Login page must use shared stable button primitives for guide, submit, create, and activation actions."
+  /import \{ PrimaryButton, SecondaryButton, SubtleButton \} from "\.\.\/components\/StableButton";/,
+  "Login page must import shared stable button primitives for guide, submit, create, and activation actions."
 );
+
+[
+  "login.open-help",
+  "login.guide.collapse",
+  "login.error.activate-membership",
+  "login.submit",
+  "login.start-community",
+  "login.activate-approved",
+].forEach((debugId) => {
+  assertContains(
+    "src/pages/LoginPage.tsx",
+    new RegExp(`debugId="${debugId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"`),
+    `Login page must keep stable CTA debug id ${debugId}.`
+  );
+});
 
 assertNotContains(
   "src/pages/LoginPage.tsx",
@@ -1135,8 +1168,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-slip-verify\.hero\.welcome"[\s\S]*?debugId="trust-slip-verify\.hero\.guide"[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?debugId="trust-slip-verify\.copy-link"[\s\S]*?debugId="trust-slip-verify\.copy-gmfn-id"[\s\S]*?debugId="trust-slip-verify\.print"[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
-  "TrustSlip Verify page must use shared stable primitives and shared CTA resolution for public navigation, copy, print, and trust routes."
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?StableDisclosureSummary[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-slip-verify\.hero\.welcome"[\s\S]*?debugId="trust-slip-verify\.hero\.guide"[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?debugId="trust-slip-verify\.copy-link"[\s\S]*?debugId="trust-slip-verify\.copy-gmfn-id"[\s\S]*?debugId="trust-slip-verify\.print"[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
+  "TrustSlip Verify page must use shared stable primitives, stable disclosure summaries, and shared CTA resolution for public navigation, copy, print, and trust routes."
 );
 
 assertNotContains(

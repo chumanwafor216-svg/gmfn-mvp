@@ -134,7 +134,7 @@ def build_merchant_verify_link(
     }
 
     token = _make_token(payload)
-    path = f"/trust-slips/verify/{token}"
+    path = f"/trust-slips/merchant/verify/{token}"
 
     # Evidence event (append-only)
     meta = {

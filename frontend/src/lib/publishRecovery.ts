@@ -1,5 +1,6 @@
 const PUBLISH_RECOVERY_KEY = "gmfn_publish_recovery";
-const PUBLISH_RECOVERY_TTL_MS = 5 * 60 * 1000;
+const PUBLISH_RECOVERY_TTL_MS = 30 * 60 * 1000;
+const PUBLISH_RECOVERY_WINDOW_NAME_PREFIX = "gmfn_publish_recovery:";
 
 type PublishRecoveryMarker = {
   to: string;
@@ -7,8 +8,20 @@ type PublishRecoveryMarker = {
   createdAt: number;
 };
 
-function canUseStorage(): boolean {
-  return typeof window !== "undefined" && typeof window.sessionStorage !== "undefined";
+function storageAreas(): Storage[] {
+  if (typeof window === "undefined") return [];
+  const areas: Storage[] = [];
+  try {
+    if (window.sessionStorage) areas.push(window.sessionStorage);
+  } catch {
+    // ignore unavailable storage
+  }
+  try {
+    if (window.localStorage) areas.push(window.localStorage);
+  } catch {
+    // ignore unavailable storage
+  }
+  return areas;
 }
 
 function safeTarget(value: unknown): string {
@@ -17,7 +30,7 @@ function safeTarget(value: unknown): string {
 }
 
 export function rememberPublishRecovery(to: string, ctaId: string): void {
-  if (!canUseStorage()) return;
+  if (typeof window === "undefined") return;
 
   const target = safeTarget(to);
   if (!target) return;
@@ -29,17 +42,47 @@ export function rememberPublishRecovery(to: string, ctaId: string): void {
   };
 
   try {
-    window.sessionStorage.setItem(PUBLISH_RECOVERY_KEY, JSON.stringify(marker));
+    const payload = JSON.stringify(marker);
+    for (const storage of storageAreas()) {
+      try {
+        storage.setItem(PUBLISH_RECOVERY_KEY, payload);
+      } catch {
+        // Try the next storage area.
+      }
+    }
+    try {
+      window.name = `${PUBLISH_RECOVERY_WINDOW_NAME_PREFIX}${payload}`;
+    } catch {
+      // Some embedded browsers can reject window.name writes.
+    }
   } catch {
-    // If storage is blocked, publish still continues normally.
+    // If recovery writes are blocked, publish still continues normally.
   }
 }
 
 export function publishRecoveryTarget(): string {
-  if (!canUseStorage()) return "";
+  return readPublishRecoveryTarget(true);
+}
+
+export function peekPublishRecoveryTarget(): string {
+  return readPublishRecoveryTarget(false);
+}
+
+function readPublishRecoveryTarget(consume: boolean): string {
+  if (typeof window === "undefined") return "";
 
   try {
-    const raw = String(window.sessionStorage.getItem(PUBLISH_RECOVERY_KEY) || "").trim();
+    const storageRaw = storageAreas()
+      .map((storage) => {
+        try {
+          return String(storage.getItem(PUBLISH_RECOVERY_KEY) || "").trim();
+        } catch {
+          return "";
+        }
+      })
+      .find(Boolean) || "";
+    const windowNameRaw = readWindowNameMarker();
+    const raw = storageRaw || windowNameRaw;
     if (!raw) return "";
 
     const marker = JSON.parse(raw) as Partial<PublishRecoveryMarker>;
@@ -48,18 +91,48 @@ export function publishRecoveryTarget(): string {
     const expired = !Number.isFinite(createdAt) || Date.now() - createdAt > PUBLISH_RECOVERY_TTL_MS;
 
     if (!target || expired) {
-      window.sessionStorage.removeItem(PUBLISH_RECOVERY_KEY);
+      clearPublishRecoveryMarker();
       return "";
     }
 
-    window.sessionStorage.removeItem(PUBLISH_RECOVERY_KEY);
+    if (consume) {
+      clearPublishRecoveryMarker();
+    }
     return target;
   } catch {
+    clearPublishRecoveryMarker();
+    return "";
+  }
+}
+
+function clearPublishRecoveryMarker(): void {
+  for (const storage of storageAreas()) {
     try {
-      window.sessionStorage.removeItem(PUBLISH_RECOVERY_KEY);
+      storage.removeItem(PUBLISH_RECOVERY_KEY);
     } catch {
       // ignore
     }
+  }
+
+  try {
+    if (
+      typeof window !== "undefined" &&
+      String(window.name || "").startsWith(PUBLISH_RECOVERY_WINDOW_NAME_PREFIX)
+    ) {
+      window.name = "";
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function readWindowNameMarker(): string {
+  try {
+    if (typeof window === "undefined") return "";
+    const value = String(window.name || "").trim();
+    if (!value.startsWith(PUBLISH_RECOVERY_WINDOW_NAME_PREFIX)) return "";
+    return value.slice(PUBLISH_RECOVERY_WINDOW_NAME_PREFIX.length).trim();
+  } catch {
     return "";
   }
 }

@@ -11,6 +11,17 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+function importMetaEnv(): Record<string, any> {
+  return typeof import.meta !== "undefined"
+    ? (import.meta as any)?.env || {}
+    : {};
+}
+
+function isDevelopmentFrontend(): boolean {
+  const env = importMetaEnv();
+  return Boolean(env.DEV || String(env.MODE || "").toLowerCase() === "development");
+}
+
 export function isPrivateFrontendHost(hostname: string): boolean {
   const host = cleanText(hostname).toLowerCase();
 
@@ -41,8 +52,7 @@ export function isSuspendedPublicFrontendHost(hostname: string): boolean {
 }
 
 function publicEnvCandidates(): string[] {
-  const env =
-    typeof import.meta !== "undefined" ? (import.meta as any)?.env || {} : {};
+  const env = importMetaEnv();
 
   return [
     env.VITE_PUBLIC_FRONTEND_URL,
@@ -55,8 +65,7 @@ function publicEnvCandidates(): string[] {
 }
 
 function publicApiEnvCandidates(): string[] {
-  const env =
-    typeof import.meta !== "undefined" ? (import.meta as any)?.env || {} : {};
+  const env = importMetaEnv();
 
   return [
     env.VITE_PUBLIC_API_URL,
@@ -141,6 +150,42 @@ export function publicFrontendUrl(pathOrUrl: string): string {
   return `${publicOrigin}${path}`;
 }
 
+function developmentFrontendOrigin(): string {
+  if (!isDevelopmentFrontend()) return "";
+  if (typeof window === "undefined" || !window.location?.origin) return "";
+
+  try {
+    const url = new URL(window.location.origin);
+    if (!/^https?:$/i.test(url.protocol)) return "";
+    if (isSuspendedPublicFrontendHost(url.hostname)) return "";
+    return trimTrailingSlash(url.origin);
+  } catch {
+    return "";
+  }
+}
+
+export function shareablePublicFrontendUrl(pathOrUrl: string): string {
+  const raw = cleanText(pathOrUrl);
+  if (!raw) return "";
+
+  const developmentOrigin = developmentFrontendOrigin();
+  if (developmentOrigin) {
+    if (/^https?:\/\//i.test(raw)) {
+      try {
+        const url = new URL(raw);
+        return `${developmentOrigin}${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        return raw;
+      }
+    }
+
+    const path = raw.startsWith("/") ? raw : `/${raw.replace(/^\/+/, "")}`;
+    return `${developmentOrigin}${path}`;
+  }
+
+  return canonicalPublicFrontendUrl(raw);
+}
+
 export function canonicalPublicFrontendUrl(pathOrUrl: string): string {
   const raw = cleanText(pathOrUrl);
   if (!raw) return "";
@@ -184,7 +229,7 @@ export function publicShopRootPath(pathOrUrl: string): string {
 }
 
 export function publicShopRootUrl(pathOrUrl: string): string {
-  return canonicalPublicFrontendUrl(publicShopRootPath(pathOrUrl));
+  return shareablePublicFrontendUrl(publicShopRootPath(pathOrUrl));
 }
 
 export function publicShopPath(gmfnId: string): string {
@@ -195,7 +240,17 @@ export function publicShopPath(gmfnId: string): string {
 
 export function publicShopUrl(gmfnId: string): string {
   const path = publicShopPath(gmfnId);
-  return path ? canonicalPublicFrontendUrl(path) : "";
+  return path ? shareablePublicFrontendUrl(path) : "";
+}
+
+export function publicShopDiariesPath(gmfnId: string): string {
+  const path = publicShopPath(gmfnId);
+  return path ? `${path}#${PUBLIC_SHOP_DIARIES_ANCHOR}` : "";
+}
+
+export function publicShopDiariesUrl(gmfnId: string): string {
+  const path = publicShopDiariesPath(gmfnId);
+  return path ? shareablePublicFrontendUrl(path) : "";
 }
 
 export function publicShopBlockPath(params: {
@@ -203,7 +258,22 @@ export function publicShopBlockPath(params: {
   productId?: string | number | null;
   block?: string | number | null;
 }): string {
-  return publicShopPath(params.gmfnId);
+  const path = publicShopPath(params.gmfnId);
+  if (!path) return "";
+
+  const productId = cleanText(params.productId);
+  const blockNumber = Number(params.block || 0);
+  const hasBlock = Number.isFinite(blockNumber) && blockNumber > 0;
+  const productQuery = productId
+    ? `?product_id=${encodeURIComponent(productId)}`
+    : "";
+  const anchor = hasBlock
+    ? `shop-block-${Math.trunc(blockNumber)}`
+    : productId
+      ? `product-${productId}`
+      : PUBLIC_SHOP_DIARIES_ANCHOR;
+
+  return `${path}${productQuery}#${encodeURIComponent(anchor)}`;
 }
 
 export function publicShopBlockUrl(params: {
@@ -212,7 +282,7 @@ export function publicShopBlockUrl(params: {
   block?: string | number | null;
 }): string {
   const path = publicShopBlockPath(params);
-  return path ? canonicalPublicFrontendUrl(path) : "";
+  return path ? shareablePublicFrontendUrl(path) : "";
 }
 
 export function publicApiUrl(pathOrUrl: string): string {

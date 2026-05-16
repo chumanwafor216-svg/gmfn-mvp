@@ -68,7 +68,7 @@ def get_my_merchant_view(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.get("/verify/{token}")
+@router.get("/merchant/verify/{token}")
 def verify_for_merchant(token: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
     """
     Public verification endpoint (merchant can open without login).

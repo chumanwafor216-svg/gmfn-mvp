@@ -930,7 +930,7 @@ export default function PaymentInstructionsPage() {
     const text = [
       `Community: ${communityLabel}`,
       `Community ID: ${publicCommunityCode}`,
-      `GMFN ID: ${currentGmfnId || "Awaiting issue"}`,
+      `GSN ID: ${currentGmfnId || "Awaiting issue"}`,
       `Member: ${memberName}`,
       memberRole ? `Role: ${memberRole}` : "",
       `Current stage: ${inferredResult.step}`,
@@ -1135,7 +1135,7 @@ export default function PaymentInstructionsPage() {
               }}
             >
               <span style={badge(true)}>Community ID: {publicCommunityCode}</span>
-              <span style={badge(false)}>GMFN ID: {currentGmfnId || "Awaiting issue"}</span>
+              <span style={badge(false)}>GSN ID: {currentGmfnId || "Awaiting issue"}</span>
               <span style={badge(false)}>Member: {memberName}</span>
               {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
               <span style={badge(false)}>Current stage: {inferredResult.step}</span>

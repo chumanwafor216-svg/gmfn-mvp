@@ -230,6 +230,24 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/appRoutes.ts",
+  /LOANS:\s*"\/app\/loans"[\s\S]*?LOAN_READINESS:\s*"\/app\/loan-readiness"[\s\S]*?LOAN_SUGGESTIONS:\s*"\/app\/loan-suggestions"[\s\S]*?LOAN_WORKBENCH:\s*"\/app\/loan-workbench"[\s\S]*?GUARANTOR_INBOX:\s*"\/app\/guarantor-inbox"[\s\S]*?GUARANTOR_EARNINGS:\s*"\/app\/guarantor-earnings"/,
+  "Loans/support route constants must keep their canonical authenticated targets and not drift into public fallback or notification pages."
+);
+
+assertContains(
+  "src/App.tsx",
+  /path="loans"[\s\S]*?<LoansPage \/>[\s\S]*?path="loan-readiness"[\s\S]*?<LoanReadinessPage \/>[\s\S]*?path="loan-suggestions"[\s\S]*?<LoanSuggestionsPage \/>[\s\S]*?path="loan-workbench"[\s\S]*?<LoanWorkbenchPage \/>[\s\S]*?path="guarantor-earnings"[\s\S]*?<GuarantorEarningsPage \/>[\s\S]*?path="guarantor-inbox"[\s\S]*?<GuarantorInboxPage \/>/,
+  "Authenticated Loans buttons must have real nested route destinations before any app fallback can catch them."
+);
+
+assertContains(
+  "src/pages/LoansPage.tsx",
+  /startSupport:\s*routeTarget\([\s\S]*?"marketplace"[\s\S]*?"loans\.route\.start-support"[\s\S]*?"marketplace-loans-support"[\s\S]*?readiness:\s*routeTarget\([\s\S]*?"loanReadiness"[\s\S]*?suggestions:\s*routeTarget\([\s\S]*?"loanSuggestions"[\s\S]*?guarantorInbox:\s*routeTarget\([\s\S]*?"guarantorInbox"[\s\S]*?notifications:\s*routeTarget\([\s\S]*?"notifications"[\s\S]*?guarantorEarnings:\s*routeTarget\([\s\S]*?"guarantorEarnings"/,
+  "Loans page support buttons must resolve to their intended feature routes, not accidentally to Cover, Dashboard, or Action Inbox."
+);
+
+assertContains(
   "src/App.tsx",
   /function authenticatedFallbackTarget\(pathname: string, search: string, hash: string\): string \{[\s\S]*?alias\.startsWith\("app\/"\)[\s\S]*?alias\.includes\("shop-control"\) \|\| alias\.includes\("spotlight"\)[\s\S]*?APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT[\s\S]*?APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?APP_ROUTES\.SHOP_ME[\s\S]*?APP_ROUTES\.DASHBOARD/,
   "Unknown authenticated publish/shop routes must stay inside /app instead of falling into Cover/Welcome."
@@ -237,8 +255,38 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /import \{ publishRecoveryTarget \} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const publishTarget = publishRecoveryTarget\(\);[\s\S]*?if \(publishTarget \|\| token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
-  "Authenticated sessions or active publish attempts that reach Cover/Welcome must recover to the publisher/app route instead of staying in the public entry funnel."
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
+  "Authenticated sessions or active publish attempts that reach Cover/Welcome must recover to the publisher/app route, and unauthenticated publish attempts must keep that target through login."
+);
+
+assertContains(
+  "src/lib/publishRecovery.ts",
+  /const PUBLISH_RECOVERY_TTL_MS = 30 \* 60 \* 1000;[\s\S]*?const PUBLISH_RECOVERY_WINDOW_NAME_PREFIX = "gmfn_publish_recovery:";[\s\S]*?function storageAreas\(\): Storage\[\][\s\S]*?window\.sessionStorage[\s\S]*?window\.localStorage[\s\S]*?export function rememberPublishRecovery[\s\S]*?window\.name = `\$\{PUBLISH_RECOVERY_WINDOW_NAME_PREFIX\}\$\{payload\}`;[\s\S]*?export function peekPublishRecoveryTarget\(\)[\s\S]*?readPublishRecoveryTarget\(false\)[\s\S]*?readWindowNameMarker\(\)/,
+  "Publish recovery must survive phone reloads by using a 30-minute marker, session/local storage, a window.name fallback, and a non-consuming peek."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\.\/lib\/publishRecovery";[\s\S]*?function safeAppReturnTarget\(value: unknown\): string \{[\s\S]*?target === "\/app" \|\| target\.startsWith\("\/app\/"\)[\s\S]*?const publishTarget = peekPublishRecoveryTarget\(\);[\s\S]*?if \(publishTarget\) return publishTarget;[\s\S]*?const nextTarget = safeAppReturnTarget\(searchParams\.get\("next"\)\);[\s\S]*?nav\(publishRecoveryTarget\(\) \|\| redirectTarget, \{ replace: true \}\)/,
+  "Login must accept only safe /app publish return targets and consume publish recovery after successful sign-in."
+);
+
+assertContains(
+  "src/lib/nav.ts",
+  /import \{ rememberPublishRecovery \} from "\.\/publishRecovery";[\s\S]*?function isAppRouteTarget\(target: string\): boolean[\s\S]*?export function rememberAppRouteRecovery[\s\S]*?rememberPublishRecovery\(target, ctaId\);[\s\S]*?navigateWithOrigin[\s\S]*?rememberAppRouteRecovery\(to, "navigate\.app\.route"\);/,
+  "Shared programmatic navigation must remember /app targets before moving so failed auth/reload cannot fall into Cover/Welcome."
+);
+
+assertContains(
+  "src/components/OriginLink.tsx",
+  /import \{ rememberAppRouteRecovery \} from "\.\.\/lib\/nav";[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?guardLinkTap\(event, rest\.onClick\);/,
+  "Shared CTA links must remember /app targets before moving, not only the final publish function."
+);
+
+assertContains(
+  "src/components/RequireAuth.tsx",
+  /import \{ peekPublishRecoveryTarget \} from "\.\.\/lib\/publishRecovery";[\s\S]*?function loginRecoveryTarget[\s\S]*?const publishTarget = peekPublishRecoveryTarget\(\);[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?<Navigate to=\{target\.to\} replace state=\{target\.state\} \/>/,
+  "RequireAuth must carry pending Spotlight recovery into login with a concrete next target."
 );
 
 assertContains(
@@ -279,20 +327,32 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopPath\(gmfnId: string\): string \{[\s\S]*?return\s+`\/shop\/\$\{encodeURIComponent\(ownerId\)\}`;[\s\S]*?\}/,
-  "Canonical public shop links must land on the full public shop root, not the block shelf or a private app route."
+  /function developmentFrontendOrigin\(\): string \{[\s\S]*?isDevelopmentFrontend\(\)[\s\S]*?window\.location\.origin[\s\S]*?export function shareablePublicFrontendUrl\(pathOrUrl: string\): string \{[\s\S]*?const developmentOrigin = developmentFrontendOrigin\(\);[\s\S]*?if \(developmentOrigin\)[\s\S]*?return `\$\{developmentOrigin\}\$\{path\}`;[\s\S]*?return canonicalPublicFrontendUrl\(raw\);/,
+  "Public shop sharing must stay on the current private-network dev origin during phone testing, while production keeps the canonical public frontend."
 );
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopBlockPath[\s\S]*?return publicShopPath\(params\.gmfnId\);[\s\S]*?}/,
-  "Product/block shares must resolve back to the complete public shop domain."
+  /export function publicShopPath\(gmfnId: string\): string \{[\s\S]*?return\s+`\/shop\/\$\{encodeURIComponent\(ownerId\)\}`;[\s\S]*?\}/,
+  "Canonical public shop root paths must stay on the public shop route, not a private app route."
 );
 
-findPattern(
-  /publicShopDiaries(?:Path|Url)\(/,
-  "Do not expose diary-fragment public shop URL helpers; ordinary public shop sharing must use publicShopPath/publicShopUrl/publicShopRootUrl.",
-  sourceFiles
+assertContains(
+  "src/lib/publicLinks.ts",
+  /export function publicShopRootUrl\(pathOrUrl: string\): string \{[\s\S]*?return shareablePublicFrontendUrl\(publicShopRootPath\(pathOrUrl\)\);[\s\S]*?export function publicShopUrl\(gmfnId: string\): string \{[\s\S]*?shareablePublicFrontendUrl\(path\)[\s\S]*?export function publicShopDiariesUrl\(gmfnId: string\): string \{[\s\S]*?shareablePublicFrontendUrl\(path\)[\s\S]*?export function publicShopBlockUrl[\s\S]*?shareablePublicFrontendUrl\(path\)/,
+  "Public shop root, diary, and block URLs must all use the dev-aware shareable public frontend helper."
+);
+
+assertContains(
+  "src/lib/publicLinks.ts",
+  /export function publicShopDiariesPath\(gmfnId: string\): string \{[\s\S]*?return path \? `\$\{path\}#\$\{PUBLIC_SHOP_DIARIES_ANCHOR\}` : "";[\s\S]*?\}[\s\S]*?export function publicShopDiariesUrl\(gmfnId: string\): string \{/,
+  "Outward shop sharing must have a dedicated Shop Diaries helper so visitors land on the 12 public blocks."
+);
+
+assertContains(
+  "src/lib/publicLinks.ts",
+  /export function publicShopBlockPath[\s\S]*?product_id=\$\{encodeURIComponent\(productId\)\}[\s\S]*?shop-block-\$\{Math\.trunc\(blockNumber\)\}[\s\S]*?product-\$\{productId\}[\s\S]*?PUBLIC_SHOP_DIARIES_ANCHOR[\s\S]*?return `\$\{path\}\$\{productQuery\}#\$\{encodeURIComponent\(anchor\)\}`;/,
+  "Product/block shares must preserve product_id and block anchors so shared item links open inside Shop Diaries."
 );
 
 assertContains(
@@ -315,8 +375,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const publicShopOwnerId = firstTruthy\([\s\S]*?publicShopRecord\?\.owner_gmfn_id,[\s\S]*?publicShopRecord\?\.gmfn_id,[\s\S]*?currentGmfnId[\s\S]*?\);[\s\S]*?const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!publicShopOwnerId \|\| !publicShopRecord\) return "";[\s\S]*?return publicShopUrl\(publicShopOwnerId\);[\s\S]*?}, \[publicShopOwnerId, publicShopRecord\]\);/,
-  "Marketplace public shop copy/open actions must use the backend-confirmed owner ID and canonical full public shop URL only after an active owner shop exists."
+  /const publicShopOwnerId = firstTruthy\([\s\S]*?publicShopRecord\?\.owner_gmfn_id,[\s\S]*?publicShopRecord\?\.gmfn_id,[\s\S]*?currentGmfnId[\s\S]*?\);[\s\S]*?const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!publicShopOwnerId \|\| !publicShopRecord\) return "";[\s\S]*?return publicShopDiariesUrl\(publicShopOwnerId\);[\s\S]*?}, \[publicShopOwnerId, publicShopRecord\]\);/,
+  "Marketplace public shop copy/open actions must use the backend-confirmed owner ID and send outsiders to Shop Diaries only after an active owner shop exists."
 );
 
 assertContains(
@@ -360,6 +420,12 @@ assertContains(
   "src/pages/MarketplacePage.tsx",
   /<StableCtaLink[\s\S]*?to=\{publicShopViewLink\}[\s\S]*?\{publicShopViewLink\}[\s\S]*?<\/StableCtaLink>/,
   "Marketplace public shop card must visibly show the full public shop domain as a real public link through the shared stable link primitive."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.public-shop\.visible-link"[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?debugId="marketplace\.public-shop\.open"/,
+  "Marketplace public shop link controls must have stable debug ids so phone tap/fallthrough issues can be traced to the exact control."
 );
 
 assertContains(
@@ -413,7 +479,7 @@ assertContains(
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
   /function shopLinkForRecord\(shop: any\): string \{[\s\S]*?publicShopRootUrl\(direct\)[\s\S]*?return gmfnId \? publicShopUrl\(gmfnId\) : "";/,
-  "Marketplace workspace must normalize confirmed shop URLs to the full public shop root, not a block or diary fragment."
+  "Marketplace workspace member rows must normalize confirmed shop URLs to the public shop root because this is internal browsing, not outward sharing."
 );
 
 assertContains(
@@ -424,8 +490,8 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /return gmfnId && shop\?\.id \? publicShopUrl\(gmfnId\) : "";/,
-  "Owner shop control must only expose a public shop link after a backend-confirmed active shop record exists."
+  /return gmfnId && shop\?\.id \? publicShopDiariesUrl\(gmfnId\) : "";/,
+  "Owner shop control must only expose a Shop Diaries public link after a backend-confirmed active shop record exists."
 );
 
 assertContains(
@@ -454,14 +520,32 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /buildProductDeepLink\([\s\S]*?publicShopBlockUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?Full public shop link copied\.[\s\S]*?Full public shop link copied\. Mention this block in your message\.[\s\S]*?Full public shop link copied\. Mention this item in your message\./,
-  "Ordinary Shop Assets block/item copy actions must copy the full public shop root link and use wording that does not promise a block-only deep link."
+  /buildProductDeepLink\([\s\S]*?publicShopBlockUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?Public shop diaries link copied\.[\s\S]*?Public shop block link copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item link copied\. It opens this item inside the Shop Diaries\./,
+  "Shop Assets copy actions must copy Shop Diaries and exact block/item links with honest feedback."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /function replacePublicShopAddress\(gmfnId: string\): void \{[\s\S]*?const currentSearch = window\.location\.search \|\| "";[\s\S]*?const currentHash = window\.location\.hash \|\| "";[\s\S]*?`\$\{path\}\$\{currentSearch\}\$\{currentHash\}`/,
+  "Public shop auto-reconnect must preserve product_id and Shop Diaries/block anchors instead of stripping visitors back to the upper shop face."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /async function refreshOwnerShop\(cleanedGmfnId: string, clanRes: any\)[\s\S]*?const ownerGmfnId = firstMeaningful[\s\S]*?const candidateClanIds = \[preferredClanId, 0\];[\s\S]*?listMyClans\(\)[\s\S]*?createMarketplaceShop\(\{[\s\S]*?clan_id: clanId \|\| null,[\s\S]*?\.\.\.basePayload/,
+  "Disconnected public shop links must heal to the signed-in owner's current active shop, even when a stale link ID or selected community would otherwise block Shop Diaries."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /scrollGalleryTargetIntoView[\s\S]*?window\.scrollTo[\s\S]*?\[120, 320, 700, 1100\]\.forEach/,
+  "Public shop hash landing must perform repeated mobile-safe reveal passes so late layout shifts cannot pull visitors back above Shop Diaries or the selected block."
 );
 
 assertNotContains(
   "src/pages/ShopAssetsPage.tsx",
-  /Shop gallery link copied\.|Block link copied\.|Item link copied\./,
-  "Ordinary Shop Assets public copy feedback must not imply a gallery-only, block-only, or item-only public link."
+  /Full public shop link copied\./,
+  "Shop Assets public copy feedback must not claim a root shop link when the copied URL intentionally targets Shop Diaries or a block."
 );
 
 assertNotContains(
@@ -474,6 +558,18 @@ assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopLink\);[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
   "Public Shop Gallery copy must block failed public-shop links and wait for clipboard success before reporting a valid copy."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /createMarketplaceRepost,[\s\S]*?listMyClans,[\s\S]*?async function submitLiveRepost\(\)[\s\S]*?createMarketplaceRepost\(\{[\s\S]*?product_id: Number\(product\.id\),[\s\S]*?target_clan_id: Number\(targetCommunity\.id\),[\s\S]*?marketplace\.product\.reposted|createMarketplaceRepost\(\{[\s\S]*?product_id: Number\(product\.id\),[\s\S]*?target_clan_id: Number\(targetCommunity\.id\),/,
+  "Public Shop Gallery GSN repost must call the real backend product repost route with a product and target community, not only copy a text draft."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /repostPanelOpen[\s\S]*?Live GSN repost[\s\S]*?Public block[\s\S]*?Target community[\s\S]*?Repost inside GSN/,
+  "Public Shop Gallery must show a live repost panel so users choose a public block and target community before reposting."
 );
 
 assertContains(

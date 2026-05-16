@@ -424,7 +424,7 @@ export default function TrustPage() {
         backLabel="Community Home"
         nextLinks={[
           { label: "TrustSlip", to: routes.trustSlip },
-          { label: "Open Trust", to: routes.openTrust },
+          { label: "Local community trust", to: routes.openTrust },
         ]}
       />
 

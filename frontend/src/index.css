@@ -64,6 +64,16 @@ html, body {
   overflow-anchor: none;
 }
 
+:where(a, button, [role="button"], summary, input[type="button"], input[type="submit"], .gmfn-btn, [data-gmfn-action-root="true"]) {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  line-height: 1.18;
+  text-align: center;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 :where(a, button, [role="button"], summary, input[type="button"], input[type="submit"], .gmfn-btn) {
   transform: none !important;
   contain: layout paint !important;
@@ -74,6 +84,22 @@ html, body {
 
 :where(button, [role="button"], .gmfn-btn) > :where(span, div, strong, small, b, i, svg) {
   pointer-events: none;
+}
+
+:where(
+  a[data-cta-id],
+  button[data-cta-id],
+  [role="button"][data-cta-id],
+  summary[data-cta-id],
+  [data-gmfn-action-root="true"]
+) :where(span, div, strong, small, b, i, svg, p) {
+  pointer-events: none;
+}
+
+:where(a, button, [role="button"], summary, .gmfn-btn, [data-gmfn-action-root="true"]) :where(span, div, strong, small, b, i, p) {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 :where(button, .gmfn-btn) {

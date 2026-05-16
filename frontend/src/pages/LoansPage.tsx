@@ -236,22 +236,22 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function routeTileStyle(primary = false): React.CSSProperties {
+function routeTileStyle(primary = false, compact = false): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "44px minmax(0, 1fr)",
+    gridTemplateColumns: compact ? "36px minmax(0, 1fr)" : "44px minmax(0, 1fr)",
     alignItems: "center",
-    gap: 10,
-    minHeight: 88,
+    gap: compact ? 8 : 10,
+    minHeight: compact ? 66 : 88,
     minWidth: 0,
-    borderRadius: 20,
+    borderRadius: compact ? 16 : 20,
     border: primary
       ? "1px solid rgba(31,115,224,0.28)"
       : "1px solid rgba(216,227,238,0.94)",
     background: primary
       ? "linear-gradient(180deg, #eff6ff 0%, #dcecff 100%)"
       : "linear-gradient(180deg, #ffffff 0%, #f7fbff 100%)",
-    padding: 12,
+    padding: compact ? "9px 10px" : 12,
     textDecoration: "none",
     textAlign: "left",
     justifyContent: "stretch",
@@ -305,11 +305,11 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function routeIconCircle(primary = false): React.CSSProperties {
+function routeIconCircle(primary = false, compact = false): React.CSSProperties {
   return {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: compact ? 38 : 48,
+    height: compact ? 38 : 48,
+    borderRadius: compact ? 13 : 16,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -317,19 +317,30 @@ function routeIconCircle(primary = false): React.CSSProperties {
       ? "linear-gradient(180deg, #1F73E0 0%, #0B4EB3 100%)"
       : "linear-gradient(180deg, #EEF6FF 0%, #E5EEF8 100%)",
     color: primary ? "#FFFFFF" : "#0B4EB3",
-    fontSize: 24,
+    fontSize: compact ? 19 : 24,
     boxShadow: primary
       ? "0 10px 20px rgba(19,95,209,0.22)"
       : "inset 0 1px 0 rgba(255,255,255,0.95)",
   };
 }
 
-function routeTitleStyle(): React.CSSProperties {
+function routeTitleStyle(compact = false): React.CSSProperties {
   return {
     color: "#07172C",
     fontWeight: 950,
-    fontSize: 15.5,
-    lineHeight: 1.18,
+    fontSize: compact ? 14.25 : 15.5,
+    lineHeight: compact ? 1.12 : 1.18,
+    overflowWrap: "break-word",
+  };
+}
+
+function routeHelperStyle(compact = false): React.CSSProperties {
+  return {
+    marginTop: compact ? 0 : 6,
+    ...helperText(),
+    display: compact ? "none" : "block",
+    fontSize: 13,
+    lineHeight: 1.35,
   };
 }
 
@@ -833,7 +844,7 @@ export default function LoansPage() {
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
               gap: 12,
             }}
           >
@@ -893,7 +904,7 @@ export default function LoansPage() {
               </div>
             </div>
 
-            <div style={{ ...statTile("#F0FBF6"), gridColumn: "span 2" }}>
+            <div style={{ ...statTile("#F0FBF6"), gridColumn: isCompact ? "1 / -1" : "span 2" }}>
               <div style={sectionLabel()}>🪙 Pool</div>
               <div
                 style={{
@@ -973,21 +984,21 @@ export default function LoansPage() {
           style={{
             marginTop: 16,
             display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
             gap: 12,
           }}
         >
           <StableCtaLink
             to={routes.startSupport}
             debugId="loans.route.start-support"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(true)}
+            style={routeTileStyle(true, isCompact)}
           >
-            <span style={routeIconCircle(true)}>▶️</span>
+            <span style={routeIconCircle(true, isCompact)}>▶️</span>
             <div>
-              <div style={routeTitleStyle()}>Start Support Request</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Start Support Request</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Begin or continue the borrower-side flow.
               </div>
             </div>
@@ -996,14 +1007,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.moneyIn}
             debugId="loans.route.money-in"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>⬇️</span>
+            <span style={routeIconCircle(false, isCompact)}>⬇️</span>
             <div>
-              <div style={routeTitleStyle()}>Money In</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Money In</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Use when the next step is payment into the pool.
               </div>
             </div>
@@ -1012,14 +1023,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.moneyOut}
             debugId="loans.route.money-out"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>⬆️</span>
+            <span style={routeIconCircle(false, isCompact)}>⬆️</span>
             <div>
-              <div style={routeTitleStyle()}>Money Out</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Money Out</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Use when the next step is withdrawal handling.
               </div>
             </div>
@@ -1028,14 +1039,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.readiness}
             debugId="loans.route.readiness"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>🛡️</span>
+            <span style={routeIconCircle(false, isCompact)}>🛡️</span>
             <div>
-              <div style={routeTitleStyle()}>Loan Readiness</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Loan Readiness</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Check whether the support flow looks ready.
               </div>
             </div>
@@ -1044,14 +1055,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.suggestions}
             debugId="loans.route.suggestions"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>💡</span>
+            <span style={routeIconCircle(false, isCompact)}>💡</span>
             <div>
-              <div style={routeTitleStyle()}>Loan Suggestions</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Loan Suggestions</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Open when you need suggestions.
               </div>
             </div>
@@ -1060,14 +1071,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.guarantorInbox}
             debugId="loans.route.guarantor-inbox"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>👥</span>
+            <span style={routeIconCircle(false, isCompact)}>👥</span>
             <div>
-              <div style={routeTitleStyle()}>Incoming Guarantor Requests</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Incoming Guarantor Requests</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Open the guarantor decision queue.
               </div>
             </div>
@@ -1076,14 +1087,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.notifications}
             debugId="loans.route.notifications"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>🔔</span>
+            <span style={routeIconCircle(false, isCompact)}>🔔</span>
             <div>
-              <div style={routeTitleStyle()}>Action Inbox</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Action Inbox</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Open when someone is waiting on your response.
               </div>
             </div>
@@ -1092,14 +1103,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.guarantorEarnings}
             debugId="loans.route.guarantor-earnings"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>🏆</span>
+            <span style={routeIconCircle(false, isCompact)}>🏆</span>
             <div>
-              <div style={routeTitleStyle()}>Guarantor Earnings</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Guarantor Earnings</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Read the guarantor reward side separately.
               </div>
             </div>
@@ -1108,14 +1119,14 @@ export default function LoansPage() {
           <StableCtaLink
             to={routes.marketplace}
             debugId="loans.route.marketplace"
-            stableHeight={88}
+            stableHeight={isCompact ? 66 : 88}
             fullWidth
-            style={routeTileStyle(false)}
+            style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false)}>🏪</span>
+            <span style={routeIconCircle(false, isCompact)}>🏪</span>
             <div>
-              <div style={routeTitleStyle()}>Marketplace</div>
-              <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+              <div style={routeTitleStyle(isCompact)}>Marketplace</div>
+              <div style={routeHelperStyle(isCompact)}>
                 Return to your community page.
               </div>
             </div>
@@ -1138,7 +1149,7 @@ export default function LoansPage() {
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: "1fr 1fr",
+            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
             gap: 14,
           }}
         >

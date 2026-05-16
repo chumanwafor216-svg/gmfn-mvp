@@ -36,6 +36,8 @@ type StableDisclosureSummaryProps = Omit<
   style?: React.CSSProperties;
 };
 
+const CLICK_DEBOUNCE_MS = 360;
+
 function stableStyle(
   kind: BrandActionKind | "danger",
   disabled: boolean,
@@ -60,6 +62,12 @@ function stableStyle(
     minHeight: args.stableHeight ?? base.minHeight,
     flexShrink: 0,
     gap: 8,
+    overflow: "hidden",
+    overflowWrap: "anywhere",
+    textAlign: "center",
+    textDecoration: "none",
+    whiteSpace: "normal",
+    wordBreak: "normal",
     contain: "layout paint",
     ...args.style,
   };
@@ -91,6 +99,7 @@ export function StableButton({
 }: StableButtonProps) {
   const [localBusy, setLocalBusy] = useState(false);
   const inFlight = useRef(false);
+  const lastClickAt = useRef(0);
   const locked = disabled || busy || localBusy;
 
   function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
@@ -100,6 +109,13 @@ export function StableButton({
       event.preventDefault();
       return;
     }
+
+    const clickedAt = performance.now();
+    if (clickedAt - lastClickAt.current < CLICK_DEBOUNCE_MS) {
+      event.preventDefault();
+      return;
+    }
+    lastClickAt.current = clickedAt;
 
     if (type !== "submit" || customClick) {
       event.preventDefault();
@@ -120,11 +136,13 @@ export function StableButton({
     <button
       {...rest}
       type={type}
+      data-gmfn-action-root="true"
       data-cta-id={debugId}
       aria-busy={busy || localBusy || undefined}
       aria-disabled={locked || undefined}
       tabIndex={locked ? -1 : tabIndex}
       onPointerDown={stopTap}
+      onPointerUp={stopTap}
       onMouseDown={stopTap}
       onClick={handleClick}
       style={stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style })}
@@ -149,6 +167,7 @@ export function StableCtaLink({
   tabIndex,
   ...rest
 }: StableLinkProps) {
+  const lastClickAt = useRef(0);
   const locked = disabled || busy;
 
   function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
@@ -157,12 +176,21 @@ export function StableCtaLink({
       event.preventDefault();
       return;
     }
+
+    const clickedAt = performance.now();
+    if (clickedAt - lastClickAt.current < CLICK_DEBOUNCE_MS) {
+      event.preventDefault();
+      return;
+    }
+    lastClickAt.current = clickedAt;
+
     onClick?.(event);
   }
 
   return (
     <OriginLink
       {...rest}
+      data-gmfn-action-root="true"
       data-cta-id={debugId}
       aria-busy={busy || undefined}
       aria-disabled={locked || undefined}
@@ -238,6 +266,7 @@ export function StableDisclosureSummary({
   return (
     <summary
       {...rest}
+      data-gmfn-action-root="true"
       data-cta-id={debugId}
       onPointerDown={(event) => {
         stopTap(event);
@@ -250,6 +279,9 @@ export function StableDisclosureSummary({
       onClick={(event) => {
         stopTap(event);
         onClick?.(event);
+      }}
+      onPointerUp={(event) => {
+        stopTap(event);
       }}
       onKeyDown={(event) => {
         event.stopPropagation();
