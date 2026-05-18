@@ -26765,6 +26765,8 @@ GSN-branded invite composer and invite-entry continuity.
     `audit:link-contracts`, and `audit:route-fallthrough`.
   - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
     and approved escalation.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
 - Remaining truth:
   - This makes Marketplace taps traceable and guards the route contracts. It
     does not by itself fix stale Render bundles, expired sessions, or missing
@@ -26772,3 +26774,42 @@ GSN-branded invite composer and invite-entry continuity.
   - If a Marketplace button still lands wrong, inspect
     `sessionStorage.gmfn_mobile_tap_trace`; the relevant action should now show
     a concrete `marketplace.*` debug ID.
+
+### Loans-domain button and layout tightening (2026-05-18)
+
+- Follow-up after Marketplace-domain tightening; the owner had also shown the
+  Loans & Support page with route card text squeezed into vertical columns on
+  phone.
+- Blunt diagnosis:
+  - the Loans page already used stable action primitives, but the main route
+    module grid depended on a JS `isCompact` switch;
+  - if the phone/browser reported width in an unexpected way, the page could
+    force three route columns and leave each card too narrow for normal labels;
+  - one Loan Decision row action was traceable at runtime, but the debug ID sat
+    after a conditional `to` expression, making simple action scans miss it.
+- Updated `frontend/src/pages/LoansPage.tsx`:
+  - added container-safe `responsiveGridColumns()` for summary, live support
+    modules, and queue/flow cards;
+  - removed the fragile hard three-column route grid from the live support
+    modules;
+  - forced route labels/helpers to avoid anywhere-style letter breaking.
+- Updated `frontend/src/pages/LoanDecisionPage.tsx`:
+  - moved the dynamic loan summary `debugId` before the conditional `to`
+    expression so action scans can identify it reliably.
+- Added `frontend/tools/audit-loans-actions.mjs` and
+  `npm run audit:loans-actions`:
+  - fails if any Loans-domain stable action lacks a traceable `debugId`;
+  - protects Loans route destinations;
+  - protects the phone-safe route grid so the vertical-text regression cannot
+    come back unnoticed.
+- Verification:
+  - `npm run audit:loans-actions` passed.
+  - `npm exec -- eslint src/pages/LoansPage.tsx src/pages/LoanDecisionPage.tsx tools/audit-loans-actions.mjs`
+    passed.
+  - Wider action/link audits passed before build:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, and `audit:route-fallthrough`.
+- Remaining truth:
+  - This fixes the Loans page layout mechanics that caused squeezed vertical
+    text. It does not prove the live phone bundle is current until Render
+    deploys the new commit and the phone cache is refreshed.

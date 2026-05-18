@@ -380,6 +380,7 @@ export default function LoanDecisionPage() {
 
                   <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <StableCtaLink
+                      debugId={`loan-decision.${loanId || index}.summary`}
                       to={
                         loanId > 0
                           ? routeTarget(
@@ -391,7 +392,6 @@ export default function LoanDecisionPage() {
                           : routes.loans
                       }
                       stableHeight={48}
-                      debugId={`loan-decision.${loanId || index}.summary`}
                       style={actionLink(true)}
                     >
                       Open Loan Summary

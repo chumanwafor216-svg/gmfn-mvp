@@ -255,10 +255,14 @@ function routeTileStyle(primary = false, compact = false): React.CSSProperties {
     textDecoration: "none",
     textAlign: "left",
     justifyContent: "stretch",
+    width: "100%",
+    maxWidth: "100%",
     boxSizing: "border-box",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     overflowAnchor: "none",
+    overflowWrap: "normal",
+    wordBreak: "normal",
     contain: "layout paint",
     transition: "none",
     flexShrink: 0,
@@ -276,6 +280,10 @@ function sectionLabel(): React.CSSProperties {
     letterSpacing: 0.35,
     textTransform: "uppercase",
   };
+}
+
+function responsiveGridColumns(minWidth: number): string {
+  return `repeat(auto-fit, minmax(min(100%, ${minWidth}px), 1fr))`;
 }
 
 function badge(primary = false): React.CSSProperties {
@@ -330,7 +338,9 @@ function routeTitleStyle(compact = false): React.CSSProperties {
     fontWeight: 950,
     fontSize: compact ? 14.25 : 15.5,
     lineHeight: compact ? 1.12 : 1.18,
-    overflowWrap: "break-word",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
   };
 }
 
@@ -341,6 +351,9 @@ function routeHelperStyle(compact = false): React.CSSProperties {
     display: compact ? "none" : "block",
     fontSize: 13,
     lineHeight: 1.35,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
   };
 }
 
@@ -844,7 +857,7 @@ export default function LoansPage() {
             style={{
               marginTop: 14,
               display: "grid",
-              gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: responsiveGridColumns(isCompact ? 150 : 190),
               gap: 12,
             }}
           >
@@ -984,7 +997,7 @@ export default function LoansPage() {
           style={{
             marginTop: 16,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gridTemplateColumns: responsiveGridColumns(260),
             gap: 12,
           }}
         >
@@ -1149,7 +1162,7 @@ export default function LoansPage() {
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+            gridTemplateColumns: responsiveGridColumns(280),
             gap: 14,
           }}
         >
