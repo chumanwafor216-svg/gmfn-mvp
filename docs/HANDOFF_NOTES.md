@@ -27067,3 +27067,39 @@ GSN-branded invite composer and invite-entry continuity.
   - If a Dashboard button still lands wrongly on phone after Render deploys this
     commit, inspect `sessionStorage.gmfn_mobile_tap_trace`; the action should
     now identify a concrete `dashboard.*` debug ID.
+
+### Global action debug-ID guardrail (2026-05-18)
+
+- Follow-up after the Dashboard pass; once the domain-specific passes were in
+  place, I checked the whole `frontend/src` tree for remaining stable actions
+  without trace IDs.
+- Blunt diagnosis:
+  - no page-level `PrimaryButton`, `SecondaryButton`, `SubtleButton`,
+    `DangerButton`, `StableButton`, `StableCtaLink`, or
+    `StableDisclosureSummary` was missing a `debugId`;
+  - the only untraced stable action tags were wrapper definitions in
+    `src/components/StableButton.tsx` and `src/components/uiKit.tsx`, where
+    props are intentionally passed through.
+- Added `frontend/tools/audit-global-action-debugids.mjs` and
+  `npm run audit:global-action-debugids`:
+  - scans all `frontend/src` TypeScript / TSX files;
+  - fails if any page or feature file adds a stable action without `debugId`;
+  - intentionally excludes the stable button wrapper files themselves.
+- Verification:
+  - `npm run audit:global-action-debugids` passed.
+  - `npm exec -- eslint tools/audit-global-action-debugids.mjs` passed.
+  - Wider action/link audits passed:
+    `audit:button-stability`, `audit:tap-stability`,
+    `audit:action-surfaces`, `audit:link-contracts`,
+    `audit:route-fallthrough`, `audit:dashboard-actions`,
+    `audit:marketplace-actions`, `audit:community-shop-actions`,
+    `audit:finance-actions`, `audit:admin-ops-actions`,
+    `audit:loans-actions`, `audit:trust-actions`,
+    `audit:member-entry-actions`, and `audit:spotlight-controls`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This closes the traceability guardrail for stable frontend action controls.
+  - It does not mean every product workflow is semantically complete; it means
+    new or existing stable buttons should no longer be able to hide from the
+    phone tap trace.
