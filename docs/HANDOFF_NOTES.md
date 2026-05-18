@@ -26942,3 +26942,42 @@ GSN-branded invite composer and invite-entry continuity.
     `sessionStorage.gmfn_mobile_tap_trace`; the action should now identify a
     concrete `finance.*`, `money-in.*`, `money-out.*`, `payment-rails.*`,
     `bank-console.*`, or `payout-details.*` debug ID.
+
+### Admin / Operations-domain button tightening (2026-05-18)
+
+- Follow-up after Finance; Admin and Operations pages are dense and risky
+  because a wrong tap can move a user into oversight, queue, exposure, or
+  notification routes.
+- Blunt diagnosis:
+  - the inspected Admin / Operations pages already had trace IDs on the visible
+    stable controls;
+  - the missing protection was a dedicated audit to stop future admin queue,
+    exposure, trust graph, trust event, system operations, and notification
+    actions from becoming untraceable or falling back to public entry routes.
+- Added `frontend/tools/audit-admin-ops-actions.mjs` and
+  `npm run audit:admin-ops-actions`:
+  - fails if Admin / Operations `PrimaryButton`, `SecondaryButton`,
+    `SubtleButton`, `DangerButton`, `StableButton`, `StableCtaLink`, or
+    `StableDisclosureSummary` actions lack `debugId`;
+  - rejects direct signed-in Admin / Operations links to `/cover` or `/welcome`;
+  - protects key System Operations, Admin Trust Graph, Admin Trust Events,
+    Admin Incomplete Loans, Exposure Admin, Exposure, Community Join Requests,
+    Notifications, and Admin Identity Risk action groups.
+- Verification:
+  - `npm run audit:admin-ops-actions` passed.
+  - `npm exec -- eslint tools/audit-admin-ops-actions.mjs` passed.
+  - Wider action/link audits passed:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, `audit:route-fallthrough`,
+    `audit:spotlight-controls`, `audit:marketplace-actions`,
+    `audit:community-shop-actions`, `audit:finance-actions`,
+    `audit:loans-actions`, and `audit:trust-actions`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This is a route-contract and traceability hardening pass. It does not audit
+    backend admin permissions or decide whether each admin workflow is complete.
+  - If an Admin or Notifications button still lands wrongly, inspect
+    `sessionStorage.gmfn_mobile_tap_trace`; it should now show an
+    `admin-*`, `system-operations.*`, `exposure*`, `community-join-requests.*`,
+    or `notifications.*` debug ID.
