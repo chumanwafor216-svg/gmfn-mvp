@@ -19,7 +19,18 @@ type ActiveTap = {
   suppressNextClick: boolean;
 };
 
+type PointerContext = {
+  root: Element;
+  rootLabel: string;
+  pointerId: number;
+  x: number;
+  y: number;
+  startedAt: number;
+  cancelledAt?: number;
+};
+
 let activeTap: ActiveTap | null = null;
+let lastPointerContext: PointerContext | null = null;
 let installed = false;
 let lastAcceptedActionClickAt = 0;
 const TRACE_KEY = "gmfn_mobile_tap_trace";
@@ -96,30 +107,52 @@ function isDisabledAction(root: Element | null): boolean {
 }
 
 function clearIfStale(): void {
-  if (!activeTap) return;
-  if (nowMs() - activeTap.startedAt > 900) {
+  const currentTime = nowMs();
+
+  if (activeTap && currentTime - activeTap.startedAt > 900) {
     activeTap = null;
+  }
+
+  if (lastPointerContext && currentTime - lastPointerContext.startedAt > 1200) {
+    lastPointerContext = null;
   }
 }
 
 function handlePointerDown(event: PointerEvent): void {
   const root = actionRootFromEvent(event);
-  activeTap = root
-    ? {
-        root,
-        rootLabel: labelForAction(root),
-        pointerId: event.pointerId,
-        x: event.clientX,
-        y: event.clientY,
-        startedAt: nowMs(),
-        suppressNextClick: false,
-      }
-    : null;
+  if (!root) {
+    activeTap = null;
+    lastPointerContext = null;
+    return;
+  }
+
+  const context = {
+    root,
+    rootLabel: labelForAction(root),
+    pointerId: event.pointerId,
+    x: event.clientX,
+    y: event.clientY,
+    startedAt: nowMs(),
+  };
+
+  activeTap = {
+    ...context,
+    suppressNextClick: false,
+  };
+  lastPointerContext = context;
 }
 
 function handlePointerCancel(event: PointerEvent): void {
-  if (!activeTap || activeTap.pointerId !== event.pointerId) return;
-  activeTap = null;
+  if (lastPointerContext?.pointerId === event.pointerId) {
+    lastPointerContext = {
+      ...lastPointerContext,
+      cancelledAt: nowMs(),
+    };
+  }
+
+  if (activeTap?.pointerId === event.pointerId) {
+    activeTap = null;
+  }
 }
 
 function handlePointerUp(event: PointerEvent): void {
@@ -170,6 +203,33 @@ function handleClick(event: MouseEvent): void {
     return;
   }
 
+  if (!activeTap && endRoot && lastPointerContext) {
+    const elapsedSinceStart = currentTime - lastPointerContext.startedAt;
+    const elapsedSinceCancel = lastPointerContext.cancelledAt
+      ? currentTime - lastPointerContext.cancelledAt
+      : Number.POSITIVE_INFINITY;
+    const moved = Math.hypot(
+      event.clientX - lastPointerContext.x,
+      event.clientY - lastPointerContext.y
+    );
+    const sameRoot = sameActionRoot(lastPointerContext.root, endRoot);
+    const recentPointer = elapsedSinceStart <= 900 && moved <= 40;
+    const recentCancel = elapsedSinceCancel <= 700;
+
+    if ((recentPointer && !sameRoot) || recentCancel) {
+      traceTap(recentCancel ? "click-after-cancel-suppressed" : "click-orphan-mismatch-suppressed", {
+        started: lastPointerContext.rootLabel,
+        ended: labelForAction(endRoot),
+        moved: Math.round(moved),
+        elapsed: Math.round(elapsedSinceStart),
+      });
+      event.preventDefault();
+      event.stopPropagation();
+      lastPointerContext = null;
+      return;
+    }
+  }
+
   if (!activeTap) return;
 
   const elapsed = currentTime - activeTap.startedAt;
@@ -197,6 +257,7 @@ function handleClick(event: MouseEvent): void {
   }
 
   activeTap = null;
+  lastPointerContext = null;
 }
 
 export function installMobileTapGuard(): void {

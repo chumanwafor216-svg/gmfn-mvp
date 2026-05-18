@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
+import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "./StableButton";
 import * as api from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
@@ -806,16 +806,11 @@ export default function CommunityShopControlPanel({
                     }}
                   >
                     {publicShopLink ? (
-                      <a
-                        href={publicShopLink}
+                      <StableCtaLink
+                        to={publicShopLink}
                         target="_blank"
                         rel="noreferrer"
-                        data-gmfn-action-root="true"
-                        data-cta-id="community-shop-control.public-url"
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onPointerUp={(event) => event.stopPropagation()}
-                        onMouseDown={(event) => event.stopPropagation()}
-                        onClick={(event) => event.stopPropagation()}
+                        debugId="community-shop-control.public-url"
                         style={{
                           color: "inherit",
                           fontWeight: 900,
@@ -827,7 +822,7 @@ export default function CommunityShopControlPanel({
                         }}
                       >
                         {publicShopLink}
-                      </a>
+                      </StableCtaLink>
                     ) : (
                       "Public shop link is not connected to an active shop yet. Refresh it from Marketplace before sharing."
                     )}

@@ -508,8 +508,8 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /href=\{publicShopLink\}[\s\S]*?\{publicShopLink\}/,
-  "Owner shop control must visibly show the full public shop domain as a real public link."
+  /<StableCtaLink[\s\S]*?to=\{publicShopLink\}[\s\S]*?debugId="community-shop-control\.public-url"[\s\S]*?\{publicShopLink\}/,
+  "Owner shop control must visibly show the full public shop domain as a real public link through the shared stable link primitive."
 );
 
 assertContains(

@@ -12,6 +12,7 @@
     "audit:route-fallthrough": "node tools/audit-route-fallthrough.mjs",
     "audit:spotlight-controls": "node tools/audit-spotlight-controls.mjs",
     "audit:spotlight-quota": "node tools/audit-spotlight-quota-suspension.mjs",
+    "audit:action-surfaces": "node tools/audit-action-surface-contracts.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "lint": "eslint .",

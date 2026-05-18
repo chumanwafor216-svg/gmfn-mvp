@@ -808,7 +808,7 @@ assertNotContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /import \{ PrimaryButton, SecondaryButton, SubtleButton \} from "\.\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="community-shop-control\.toggle"[\s\S]*?debugId="community-shop-control\.open-owner"[\s\S]*?debugId="community-shop-control\.open-public"[\s\S]*?debugId="community-shop-control\.copy-public-link"[\s\S]*?debugId="community-shop-control\.open-marketplace"[\s\S]*?debugId="community-shop-control\.shortcut\.pictures"[\s\S]*?debugId="community-shop-control\.shortcut\.vault"/,
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton \} from "\.\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="community-shop-control\.toggle"[\s\S]*?debugId="community-shop-control\.public-url"[\s\S]*?debugId="community-shop-control\.open-owner"[\s\S]*?debugId="community-shop-control\.open-public"[\s\S]*?debugId="community-shop-control\.copy-public-link"[\s\S]*?debugId="community-shop-control\.open-marketplace"[\s\S]*?debugId="community-shop-control\.shortcut\.pictures"[\s\S]*?debugId="community-shop-control\.shortcut\.vault"/,
   "Community Shop Control panel must use shared stable button primitives and shared CTA resolution for panel toggle, owner actions, and shortcuts."
 );
 

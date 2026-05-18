@@ -48,7 +48,7 @@ assertNotContains(
 
 assertContains(
   "src/components/RequireAuth.tsx",
-  /to="\/login\?session=expired"[\s\S]*state=\{\{ from: location \}\}/,
+  /function loginRecoveryTarget\([\s\S]*?if \(!publishTarget\) \{[\s\S]*?to: "\/login\?session=expired"[\s\S]*?state: \{ from: location \}[\s\S]*?next\.set\("next", publishTarget\)[\s\S]*?return <Navigate to=\{target\.to\} replace state=\{target\.state\} \/>/,
   "Protected auth failures must return to login while preserving the requested route."
 );
 
@@ -120,14 +120,14 @@ assertContains(
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /Choose how you are joining[\s\S]*I already have a GMFN ID[\s\S]*I am new to GSN/,
-  "Logged-out invite entry must branch existing GMFN holders away from new-person signup."
+  /If you already have a GSN ID[\s\S]*I already have a GSN ID[\s\S]*I am new to GSN/,
+  "Logged-out invite entry must branch existing GSN holders away from new-person signup."
 );
 
 assertContains(
   "src/pages/JoinEntryPage.tsx",
-  /usingExistingIdentity[\s\S]*Join this community with your existing GMFN identity[\s\S]*does not create a new GMFN ID/,
-  "Logged-in invite entry must reassure existing GMFN holders that identity is reused."
+  /usingExistingIdentity[\s\S]*Join this community with your existing GSN identity[\s\S]*does not create a new GSN ID/,
+  "Logged-in invite entry must reassure existing GSN holders that identity is reused."
 );
 
 assertContains(

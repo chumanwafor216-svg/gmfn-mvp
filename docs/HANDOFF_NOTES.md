@@ -26691,3 +26691,43 @@ GSN-branded invite composer and invite-entry continuity.
   - If the phone still lands on Welcome/Cover after this patch, capture the
     exact URL before and after the tap; the next suspect is token/session state
     or a stale deployed bundle, not this Community Home Free Spotlight handler.
+
+### System-level mobile action hardening (2026-05-18)
+
+- Follow-up after the owner reported that after one button is repaired another
+  button starts "jumping" or landing on Welcome/Cover.
+- Blunt diagnosis:
+  - the route audits were passing, so this was not only one bad URL;
+  - the global tap guard suppressed mismatched clicks while `activeTap` still
+    existed, but if the phone browser cancelled/lost the original pointer event,
+    a later orphan click could still land on a different action under the
+    finger;
+  - one public-shop URL inside `CommunityShopControlPanel` was still a raw
+    anchor, although it was manually guarded.
+- Updated `frontend/src/lib/mobileTapGuard.ts`:
+  - added `lastPointerContext`;
+  - pointer cancellation is now recorded instead of forgotten;
+  - orphan clicks after pointer cancel/loss are suppressed if they are recent
+    and could land on a different action.
+- Updated `frontend/src/components/CommunityShopControlPanel.tsx`:
+  - replaced the manually guarded raw public-shop `<a>` with `StableCtaLink`.
+- Added `frontend/tools/audit-action-surface-contracts.mjs` and
+  `npm run audit:action-surfaces`:
+  - fails on raw `<button>`, `<a>`, and `<summary>` outside the shared action
+    primitives;
+  - fails on direct Cover/Welcome navigation outside approved public-entry
+    surfaces;
+  - fails on direct app/public `window.location` navigation that would bypass
+    route recovery.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs` and
+  `frontend/tools/audit-button-stability.mjs` so this behavior stays guarded.
+- Updated `frontend/tools/audit-entry-auth-contracts.mjs`:
+  - protects the current `RequireAuth` login recovery helper instead of a stale
+    literal JSX pattern;
+  - uses the current user-facing GSN identity wording in the join-entry checks.
+- Remaining truth:
+  - This hardens the system against wrong-target late mobile clicks. It cannot
+    fix an expired session; that must still recover through login.
+  - If a single named button still lands wrong after this, inspect the trace in
+    `sessionStorage.gmfn_mobile_tap_trace` on that phone session and compare the
+    `started` and `ended` labels.

@@ -230,6 +230,20 @@ if (
 }
 
 if (
+  !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-suppressed[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must suppress orphan clicks after pointer cancel/loss so a late phone click cannot land on a different action",
+    text: "Expected pointer-context orphan/cancel click suppression was not found.",
+  });
+}
+
+if (
   !/:where\(a,\s*button,\s*\[role="button"\],\s*summary,\s*input\[type="button"\],\s*input\[type="submit"\],\s*\.gmfn-btn,\s*\[data-gmfn-action-root="true"\]\)\s*\{[\s\S]*?line-height:\s*1\.18;[\s\S]*?overflow-wrap:\s*anywhere;/.test(
     indexCssSource
   )
