@@ -26981,3 +26981,43 @@ GSN-branded invite composer and invite-entry continuity.
     `sessionStorage.gmfn_mobile_tap_trace`; it should now show an
     `admin-*`, `system-operations.*`, `exposure*`, `community-join-requests.*`,
     or `notifications.*` debug ID.
+
+### Member / Entry-domain button tightening (2026-05-18)
+
+- Follow-up after Admin / Operations; this pass covered Cover, Login, Create
+  Community entry, Join entry, pending / approval / activation, Profile, and
+  My GSN and I surfaces.
+- Added `frontend/tools/audit-member-entry-actions.mjs` and
+  `npm run audit:member-entry-actions`:
+  - fails if member / entry `PrimaryButton`, `SecondaryButton`,
+    `SubtleButton`, `DangerButton`, `StableButton`, `StableCtaLink`, or
+    `StableDisclosureSummary` actions lack `debugId`;
+  - protects key Cover, Login, CreateEntry, JoinEntry, MemberActivation,
+    Profile, and MyGMFNAndI action families.
+- Blunt Dashboard note:
+  - Dashboard still contains many stable actions without explicit `debugId`;
+  - I attempted a mechanical Dashboard trace-ID insertion, but PowerShell
+    rewrote existing Unicode punctuation into mojibake, so I restored
+    `frontend/src/pages/DashboardPage.tsx` immediately;
+  - because Dashboard contains frozen / high-risk areas, it should get a
+    separate careful Dashboard-only pass instead of being swept into this
+    member / entry audit.
+- Verification:
+  - `npm run audit:member-entry-actions` passed.
+  - `npm exec -- eslint tools/audit-member-entry-actions.mjs` passed.
+  - Wider action/link audits passed:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, `audit:route-fallthrough`,
+    `audit:spotlight-controls`, `audit:marketplace-actions`,
+    `audit:community-shop-actions`, `audit:finance-actions`,
+    `audit:admin-ops-actions`, `audit:loans-actions`, and
+    `audit:trust-actions`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This pass hardens non-Dashboard member / entry surfaces and their trace
+    coverage. It does not claim the Dashboard is fully button-tightened.
+  - If a pre-auth or member setup action still lands wrongly, inspect
+    `sessionStorage.gmfn_mobile_tap_trace`; the action should now identify a
+    concrete `cover.*`, `login.*`, `create-entry.*`, `join-entry.*`,
+    `member-activation.*`, `profile.*`, or `my-gmfn.*` debug ID.
