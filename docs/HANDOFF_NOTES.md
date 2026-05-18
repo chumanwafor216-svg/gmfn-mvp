@@ -27103,3 +27103,39 @@ GSN-branded invite composer and invite-entry continuity.
   - It does not mean every product workflow is semantically complete; it means
     new or existing stable buttons should no longer be able to hide from the
     phone tap trace.
+
+### Global raw action element guardrail (2026-05-18)
+
+- Follow-up after the global debug-ID guardrail; I checked whether any page or
+  feature file still bypasses the stable action wrappers with raw `<button>` or
+  raw `<a>` elements.
+- Blunt diagnosis:
+  - the current `frontend/src` tree only has raw `<button>` markup inside
+    `src/components/StableButton.tsx`;
+  - it only has raw `<a>` markup inside `src/components/OriginLink.tsx`;
+  - no page-level raw action element is currently bypassing the shared tap
+    guards.
+- Added `frontend/tools/audit-global-raw-action-elements.mjs` and
+  `npm run audit:global-raw-action-elements`:
+  - scans all `frontend/src` TypeScript / TSX files;
+  - fails if a raw `<button>` appears outside the StableButton wrapper;
+  - fails if a raw `<a>` appears outside the OriginLink wrapper.
+- Verification:
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm exec -- eslint tools/audit-global-raw-action-elements.mjs` passed.
+  - Wider action/link audits passed:
+    `audit:global-action-debugids`, `audit:button-stability`,
+    `audit:tap-stability`, `audit:action-surfaces`,
+    `audit:link-contracts`, `audit:route-fallthrough`,
+    `audit:marketplace-actions`, `audit:loans-actions`,
+    `audit:trust-actions`, `audit:community-shop-actions`,
+    `audit:finance-actions`, `audit:admin-ops-actions`,
+    `audit:member-entry-actions`, `audit:dashboard-actions`,
+    `audit:spotlight-controls`, and `audit:spotlight-quota`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This is a guardrail against button/link implementation drift.
+  - It does not prove every destination is product-correct; it proves pages are
+    no longer using raw action elements that can bypass the shared mobile tap
+    protection.

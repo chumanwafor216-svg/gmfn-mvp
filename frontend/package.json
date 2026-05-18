@@ -22,6 +22,7 @@
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",
     "audit:global-action-debugids": "node tools/audit-global-action-debugids.mjs",
+    "audit:global-raw-action-elements": "node tools/audit-global-raw-action-elements.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "lint": "eslint .",
