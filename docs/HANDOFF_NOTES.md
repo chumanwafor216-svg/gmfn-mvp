@@ -27021,3 +27021,49 @@ GSN-branded invite composer and invite-entry continuity.
     `sessionStorage.gmfn_mobile_tap_trace`; the action should now identify a
     concrete `cover.*`, `login.*`, `create-entry.*`, `join-entry.*`,
     `member-activation.*`, `profile.*`, or `my-gmfn.*` debug ID.
+
+### Dashboard-domain button tightening (2026-05-18)
+
+- Follow-up after the Member / Entry pass; Dashboard was the remaining
+  high-risk surface because it has many attention, app, Spotlight, Demand,
+  Inbox, Market Wisdom, and Focus Commitment controls.
+- Blunt diagnosis:
+  - the Dashboard already used stable primitives, but many stable controls did
+    not expose a `debugId`;
+  - without those IDs, a phone misroute could still be reported as "jumpy" but
+    could not be traced to the exact Dashboard control;
+  - this pass intentionally did not restyle, restructure, or rewrite Market
+    Wisdom or picture-frame tools.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - added `debugId` values to Dashboard attention popup controls, passport
+    signal buttons, hidden back control, trust actions, app launcher rows,
+    Spotlight controls, Demand Box toggle/action, Inbox toggle/action, Market
+    Wisdom focus action, most-used app rows, and Focus Commitment controls;
+  - all changes are trace IDs only.
+- Added `frontend/tools/audit-dashboard-actions.mjs` and
+  `npm run audit:dashboard-actions`:
+  - fails if any Dashboard `PrimaryButton`, `SecondaryButton`,
+    `SubtleButton`, `DangerButton`, `StableButton`, `StableCtaLink`, or
+    `StableDisclosureSummary` lacks `debugId`;
+  - rejects direct Dashboard signed-in actions to `/cover` or `/welcome`;
+  - protects key Dashboard attention, passport, trust, apps, Spotlight, Demand,
+    Inbox, Market Wisdom, and Focus Commitment action IDs.
+- Verification:
+  - `npm run audit:dashboard-actions` passed.
+  - `npm exec -- eslint src/pages/DashboardPage.tsx tools/audit-dashboard-actions.mjs`
+    passed.
+  - Wider action/link audits passed:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, `audit:route-fallthrough`,
+    `audit:spotlight-controls`, `audit:marketplace-actions`,
+    `audit:community-shop-actions`, `audit:finance-actions`,
+    `audit:admin-ops-actions`, `audit:loans-actions`,
+    `audit:trust-actions`, and `audit:member-entry-actions`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This is traceability and route-contract hardening, not a guarantee that
+    every Dashboard workflow is product-complete.
+  - If a Dashboard button still lands wrongly on phone after Render deploys this
+    commit, inspect `sessionStorage.gmfn_mobile_tap_trace`; the action should
+    now identify a concrete `dashboard.*` debug ID.

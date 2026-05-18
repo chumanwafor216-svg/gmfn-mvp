@@ -5917,6 +5917,7 @@ export default function DashboardPage() {
                     </span>
 
                     <StableButton
+                      debugId="dashboard.attention-popup.dismiss"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, dismissAttentionPopup, 260)
@@ -6124,6 +6125,7 @@ export default function DashboardPage() {
                   }}
                 >
                   <StableButton
+                    debugId="dashboard.attention-popup.primary"
                     type="button"
                     onClick={(event) =>
                       openAttentionTarget(event, attentionDisplaySignal.ctaTo)
@@ -6151,6 +6153,7 @@ export default function DashboardPage() {
                   {attentionDisplaySignal.secondaryCtaLabel &&
                   attentionDisplaySignal.secondaryCtaTo ? (
                     <StableButton
+                      debugId="dashboard.attention-popup.secondary"
                       type="button"
                       onClick={(event) =>
                         openAttentionTarget(
@@ -6185,6 +6188,7 @@ export default function DashboardPage() {
                   ) : null}
 
                   <StableButton
+                    debugId="dashboard.attention-popup.trust-journey"
                     type="button"
                     onClick={openTrustJourneyFromAttention}
                     style={{
@@ -6213,6 +6217,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <StableButton
+              debugId="dashboard.attention-reminder.open"
               type="button"
               onClick={(event) =>
                 runDashboardUiMutation(event, () => setAttentionPopupVisible(true), 260)
@@ -6563,6 +6568,7 @@ export default function DashboardPage() {
               },
             ].map((item, index) => (
               <StableButton
+                debugId={`dashboard.passport-signal.${item.label.toLowerCase()}`}
                 key={item.label}
                 type="button"
                 onClick={(event) => openDashboardRoute(event, item.to)}
@@ -6708,6 +6714,7 @@ export default function DashboardPage() {
               }}
             >
               <StableButton
+                debugId="dashboard.hidden-back.community"
                 type="button"
                 onClick={(event) => openDashboardRoute(event, "/app/community")}
                 onPointerDown={consumeDashboardPointerEvent}
@@ -7449,6 +7456,7 @@ export default function DashboardPage() {
                       }}
                     >
                       <StableButton
+                        debugId="dashboard.trust-action.trust"
                         type="button"
                         onClick={(event) => openDashboardRoute(event, "/app/trust")}
                         onPointerDown={consumeDashboardPointerEvent}
@@ -7458,6 +7466,7 @@ export default function DashboardPage() {
                       </StableButton>
 
                       <StableButton
+                        debugId="dashboard.trust-action.identity"
                         type="button"
                         onClick={(event) => openDashboardRoute(event, "/app/identity")}
                         onPointerDown={consumeDashboardPointerEvent}
@@ -7467,6 +7476,7 @@ export default function DashboardPage() {
                       </StableButton>
 
                       <StableButton
+                        debugId="dashboard.trust-action.trust-slip"
                         type="button"
                         onClick={openTrustSlipPage}
                         onPointerDown={consumeDashboardPointerEvent}
@@ -7498,6 +7508,7 @@ export default function DashboardPage() {
         }}
       >
         <StableButton
+          debugId="dashboard.apps.toggle"
           type="button"
           aria-expanded={uiState.appsExpanded}
           onClick={(event) =>
@@ -7569,6 +7580,10 @@ export default function DashboardPage() {
             },
           ].map((item) => (
             <StableButton
+              debugId={`dashboard.apps.primary.${item.label
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "")}`}
               key={item.label}
               type="button"
               onClick={(event) => openDashboardRoute(event, item.to)}
@@ -7633,6 +7648,10 @@ export default function DashboardPage() {
             },
           ].map((item) => (
             <StableButton
+              debugId={`dashboard.apps.secondary.${item.label
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-|-$/g, "")}`}
               key={item.label}
               type="button"
               onClick={(event) => openDashboardRoute(event, item.to)}
@@ -7733,6 +7752,7 @@ export default function DashboardPage() {
             {spotlights.length > 1 ? (
               <>
                 <StableButton
+                  debugId="dashboard.spotlight.previous"
                   type="button"
                   onClick={goPrevSpotlight}
                   onPointerDown={consumeDashboardPointerEvent}
@@ -7761,6 +7781,7 @@ export default function DashboardPage() {
                 </span>
 
                 <StableButton
+                  debugId="dashboard.spotlight.next"
                   type="button"
                   onClick={goNextSpotlight}
                   onPointerDown={consumeDashboardPointerEvent}
@@ -7776,6 +7797,7 @@ export default function DashboardPage() {
 
             {!showSpotlight ? (
               <StableButton
+                debugId="dashboard.spotlight.open-tasks.collapsed"
                 type="button"
                 onClick={openDashboardSpotlightGuide}
                 onPointerDown={consumeDashboardPointerEvent}
@@ -7860,6 +7882,7 @@ export default function DashboardPage() {
                 }}
               >
                 <StableButton
+                  debugId="dashboard.spotlight.open-tasks.empty-card"
                   type="button"
                   onClick={openDashboardSpotlightGuide}
                   onPointerDown={consumeDashboardPointerEvent}
@@ -8169,6 +8192,7 @@ export default function DashboardPage() {
 
                   <div style={{ ...dashboardActionGrid(isCompact ? 128 : 152) }}>
                     <StableButton
+                      debugId="dashboard.spotlight.open-marketplace"
                       type="button"
                       onClick={openSpotlightMarketplace}
                       onPointerDown={consumeDashboardPointerEvent}
@@ -8181,6 +8205,7 @@ export default function DashboardPage() {
                     </StableButton>
                     {safeStr(activeSpotlight.author_gmfn_id || "") ? (
                       <StableButton
+                        debugId="dashboard.spotlight.open-shop"
                         type="button"
                         onClick={openSpotlightShop}
                         onPointerDown={consumeDashboardPointerEvent}
@@ -8193,6 +8218,7 @@ export default function DashboardPage() {
                       </StableButton>
                     ) : null}
                     <StableButton
+                      debugId="dashboard.spotlight.minimize"
                       type="button"
                       onClick={minimizeSpotlight}
                       onPointerDown={consumeDashboardPointerEvent}
@@ -8221,6 +8247,7 @@ export default function DashboardPage() {
                 }}
               >
                 <StableButton
+                  debugId="dashboard.spotlight.guide.toggle"
                   type="button"
                   onClick={toggleSpotlightGuide}
                   onPointerDown={consumeDashboardPointerEvent}
@@ -8301,6 +8328,7 @@ export default function DashboardPage() {
                     }
                   >
                     <StableButton
+                      debugId="dashboard.spotlight.guide.upload"
                       type="button"
                       onClick={openDashboardSpotlightGuide}
                       onPointerDown={consumeDashboardPointerEvent}
@@ -8309,6 +8337,7 @@ export default function DashboardPage() {
                       Upload
                     </StableButton>
                     <StableButton
+                      debugId="dashboard.spotlight.guide.market"
                       type="button"
                       onClick={openSpotlightMarketplace}
                       onPointerDown={consumeDashboardPointerEvent}
@@ -8318,6 +8347,7 @@ export default function DashboardPage() {
                     </StableButton>
                     {safeStr(activeSpotlight.author_gmfn_id || "") ? (
                       <StableButton
+                        debugId="dashboard.spotlight.guide.shop"
                         type="button"
                         onClick={openSpotlightShop}
                         onPointerDown={consumeDashboardPointerEvent}
@@ -8327,6 +8357,7 @@ export default function DashboardPage() {
                       </StableButton>
                     ) : null}
                     <StableButton
+                      debugId="dashboard.spotlight.guide.hide"
                       type="button"
                       onClick={minimizeSpotlight}
                       onPointerDown={consumeDashboardPointerEvent}
@@ -8551,6 +8582,7 @@ export default function DashboardPage() {
               >
                 {!sellerIdentityDockOpen ? (
                   <StableButton
+                    debugId="dashboard.spotlight.seller.open-details"
                     type="button"
                     onClick={openSellerIdentityDock}
                     onPointerDown={consumeDashboardPointerEvent}
@@ -8579,6 +8611,7 @@ export default function DashboardPage() {
                 ) : null}
 
                 <StableButton
+                  debugId="dashboard.spotlight.legacy.minimize"
                   type="button"
                   onClick={minimizeSpotlight}
                   onPointerDown={consumeDashboardPointerEvent}
@@ -8859,6 +8892,7 @@ export default function DashboardPage() {
                       }}
                     >
                       <StableButton
+                        debugId="dashboard.spotlight.seller.open-marketplace"
                         type="button"
                         onClick={openSpotlightMarketplace}
                         onPointerDown={consumeDashboardPointerEvent}
@@ -8876,6 +8910,7 @@ export default function DashboardPage() {
                       }}
                     >
                       <StableButton
+                        debugId="dashboard.spotlight.seller.close"
                         type="button"
                         onClick={closeSellerIdentityDock}
                         onPointerDown={consumeDashboardPointerEvent}
@@ -8989,6 +9024,7 @@ export default function DashboardPage() {
               }}
             >
               <StableButton
+                debugId="dashboard.spotlight.latest.open-marketplace"
                 type="button"
                 onClick={(event) =>
                   openDashboardRoute(
@@ -9002,6 +9038,7 @@ export default function DashboardPage() {
                 Open your Marketplace
               </StableButton>
               <StableButton
+                debugId="dashboard.spotlight.latest.open-tasks"
                 type="button"
                 onClick={openDashboardSpotlightGuide}
                 onPointerDown={consumeDashboardPointerEvent}
@@ -9037,6 +9074,7 @@ export default function DashboardPage() {
           }}
         />
         <StableButton
+          debugId="dashboard.demand.toggle"
           type="button"
           aria-expanded={demandGuideOpen}
           onClick={toggleDemandGuide}
@@ -9381,6 +9419,7 @@ export default function DashboardPage() {
               }}
             >
               <StableButton
+                debugId="dashboard.demand.primary"
                 type="button"
                 onClick={(event) =>
                   openDashboardRoute(event, demandPrimaryActionTo)
@@ -9421,6 +9460,7 @@ export default function DashboardPage() {
           }}
         />
         <StableButton
+          debugId="dashboard.inbox.toggle"
           type="button"
           aria-expanded={uiState.inboxExpanded}
           onClick={(event) =>
@@ -9696,6 +9736,7 @@ export default function DashboardPage() {
 
               <div style={{ ...dashboardActionGrid(isCompact ? 132 : 156) }}>
                 <StableButton
+                  debugId="dashboard.inbox.primary"
                   type="button"
                   onClick={(event) =>
                     openDashboardRoute(event, dashboardNoticePrimaryActionTo)
@@ -9711,6 +9752,7 @@ export default function DashboardPage() {
                   {dashboardNoticePrimaryActionLabel}
                 </StableButton>
                 <StableButton
+                  debugId="dashboard.inbox.open-alerts"
                   type="button"
                   onClick={(event) =>
                     openDashboardRoute(event, DASHBOARD_TARGETS.WHAT_MATTERS_NOW)
@@ -9949,6 +9991,7 @@ export default function DashboardPage() {
               </div>
 
               <StableButton
+                debugId="dashboard.market-wisdom.open-focus-commitments"
                 type="button"
                 onClick={(event) =>
                   openDashboardRoute(
@@ -10029,6 +10072,7 @@ export default function DashboardPage() {
               >
                 {mostUsedAppSurface.map((app, index) => (
                   <StableButton
+                    debugId={`dashboard.most-used-app.${app.key}`}
                     key={`most-used-app-surface-${app.key}`}
                     type="button"
                     onClick={() => openTrackedApp(app)}
@@ -10112,6 +10156,7 @@ export default function DashboardPage() {
             />
 
             <StableButton
+              debugId="dashboard.focus.toggle"
               type="button"
               aria-expanded={uiState.trustExpanded}
               onClick={(event) =>
@@ -10203,6 +10248,7 @@ export default function DashboardPage() {
               ) : null}
               <span style={badge(true)}>Max 2 active</span>
               <StableButton
+                debugId="dashboard.focus.composer.toggle"
                 type="button"
                 onClick={(event) =>
                   runDashboardUiMutation(event, () =>
@@ -10343,6 +10389,7 @@ export default function DashboardPage() {
 
                   <div style={dashboardActionGrid(isCompact ? 96 : 120)}>
                     <StableButton
+                      debugId="dashboard.focus.template.savings"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, () =>
@@ -10355,6 +10402,7 @@ export default function DashboardPage() {
                       Savings idea
                     </StableButton>
                     <StableButton
+                      debugId="dashboard.focus.template.business"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, () =>
@@ -10367,6 +10415,7 @@ export default function DashboardPage() {
                       Business idea
                     </StableButton>
                     <StableButton
+                      debugId="dashboard.focus.template.repayment"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, () =>
@@ -10516,6 +10565,7 @@ export default function DashboardPage() {
 
                   <div style={dashboardActionGrid(isCompact ? 118 : 136)}>
                     <StableButton
+                      debugId="dashboard.focus.composer.cancel"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, () => {
@@ -10530,6 +10580,7 @@ export default function DashboardPage() {
                     </StableButton>
 
                     <StableButton
+                      debugId="dashboard.focus.composer.save"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, saveFocusCommitment)
@@ -10750,6 +10801,7 @@ export default function DashboardPage() {
                         />
 
                         <StableButton
+                          debugId={`dashboard.focus.check-in.${item.id}`}
                           type="button"
                           onClick={(event) =>
                             runDashboardUiMutation(event, () =>
@@ -10763,6 +10815,7 @@ export default function DashboardPage() {
                         </StableButton>
 
                         <StableButton
+                          debugId={`dashboard.focus.replan.${item.id}`}
                           type="button"
                           onClick={(event) =>
                             runDashboardUiMutation(event, () =>
@@ -10776,6 +10829,7 @@ export default function DashboardPage() {
                         </StableButton>
 
                         <StableButton
+                          debugId={`dashboard.focus.complete.${item.id}`}
                           type="button"
                           onClick={(event) =>
                             runDashboardUiMutation(event, () =>
@@ -10836,6 +10890,7 @@ export default function DashboardPage() {
                     }}
                   >
                     <StableButton
+                      debugId="dashboard.focus.empty-template.savings"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, () =>
@@ -10853,6 +10908,7 @@ export default function DashboardPage() {
                     </StableButton>
 
                     <StableButton
+                      debugId="dashboard.focus.empty-template.business"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, () =>
@@ -10870,6 +10926,7 @@ export default function DashboardPage() {
                     </StableButton>
 
                     <StableButton
+                      debugId="dashboard.focus.empty-template.repayment"
                       type="button"
                       onClick={(event) =>
                         runDashboardUiMutation(event, () =>
