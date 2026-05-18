@@ -15,6 +15,7 @@
     "audit:action-surfaces": "node tools/audit-action-surface-contracts.mjs",
     "audit:marketplace-actions": "node tools/audit-marketplace-actions.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
+    "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",
     "audit:tap-stability": "node tools/audit-mobile-tap-stability.mjs",
     "lint": "eslint .",

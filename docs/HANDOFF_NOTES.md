@@ -26765,8 +26765,6 @@ GSN-branded invite composer and invite-entry continuity.
     `audit:link-contracts`, and `audit:route-fallthrough`.
   - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
     and approved escalation.
-  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
-    and approved escalation.
 - Remaining truth:
   - This makes Marketplace taps traceable and guards the route contracts. It
     does not by itself fix stale Render bundles, expired sessions, or missing
@@ -26813,3 +26811,49 @@ GSN-branded invite composer and invite-entry continuity.
   - This fixes the Loans page layout mechanics that caused squeezed vertical
     text. It does not prove the live phone bundle is current until Render
     deploys the new commit and the phone cache is refreshed.
+
+### Trust-domain button tightening (2026-05-18)
+
+- Follow-up after Marketplace and Loans domain passes; the owner specifically
+  reported Trust Passport / TrustSlip / TrustSlip Verify buttons sometimes
+  landing on public entry surfaces or becoming hard to trace.
+- Blunt diagnosis:
+  - the Trust domain already used the shared stable action primitives heavily;
+  - the missing piece was a Trust-specific regression audit tying Trust
+    Passport, TrustSlip, public verify, CCI, Trust command, and community
+    confirmation buttons into one guarded family;
+  - one Community Confirmation Inbox assignment action had its `debugId` after
+    a long conditional handler, which made simple action scanners less reliable.
+- Updated `frontend/src/pages/CommunityConfirmationInboxPage.tsx`:
+  - moved the review assignment claim `debugId` up in the `PrimaryButton`
+    props so scanners and phone traces can identify it immediately.
+- Added `frontend/tools/audit-trust-actions.mjs` and
+  `npm run audit:trust-actions`:
+  - fails if Trust-domain `PrimaryButton`, `SecondaryButton`, `SubtleButton`,
+    `DangerButton`, `StableButton`, `StableCtaLink`, or
+    `StableDisclosureSummary` actions lack `debugId`;
+  - guards TrustSlip Verify links so coded public paper routes are preferred
+    and unrelated fallbacks are rejected;
+  - guards Trust Passport verify fallback so no-code cases return to TrustSlip
+    preparation instead of a bare verify route;
+  - guards signed-in TrustSlip Verify so it attempts the current member
+    TrustSlip before showing a missing-code state;
+  - guards community confirmation request/outcome/assignment actions.
+- Verification:
+  - `npm run audit:trust-actions` passed.
+  - `npm exec -- eslint src/pages/CommunityConfirmationInboxPage.tsx tools/audit-trust-actions.mjs`
+    passed.
+  - Wider action/link audits passed:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, `audit:route-fallthrough`,
+    `audit:marketplace-actions`, and `audit:loans-actions`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This makes Trust-domain actions traceable and protects the known route
+    contracts. It does not prove a phone session is authenticated or that Render
+    has deployed the new bundle.
+  - If TrustSlip Verify still shows public Welcome/Guide actions, check whether
+    the URL is the public `/trust-slips/verify/...` route or the signed-in
+    `/app/trust-slip/verify` route, and whether a current TrustSlip code is
+    available.

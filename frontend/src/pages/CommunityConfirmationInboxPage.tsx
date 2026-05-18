@@ -1811,6 +1811,7 @@ function CommunityConfirmationInboxPage() {
                       >
                         <PrimaryButton
                           type="button"
+                          debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.assignment-claim`}
                           onClick={() =>
                             currentUserId
                               ? void assignReviewCase(
@@ -1828,7 +1829,6 @@ function CommunityConfirmationInboxPage() {
                           busyLabel="Claiming..."
                           stableHeight={48}
                           minWidth={160}
-                          debugId={`community-confirmation-inbox.review-cases.${row.reviewCaseId}.assignment-claim`}
                         >
                           Claim review
                         </PrimaryButton>
