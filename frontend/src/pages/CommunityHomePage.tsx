@@ -2050,6 +2050,10 @@ export default function CommunityHomePage() {
           );
           break;
         }
+        if (nextStep === "open-free-publisher") {
+          openCommunityRoute(event, routes.freeSpotlight);
+          break;
+        }
         openCommunityHomeSection(
           event,
           "community-home-spotlight-gears",
@@ -3020,12 +3024,7 @@ export default function CommunityHomePage() {
               detail:
                 "Publish the normal community spotlight lane",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityHomeSection(
-                  event,
-                  "community-home-spotlight-gears",
-                  "spotlight",
-                  true
-                ),
+                openCommunityRoute(event, routes.freeSpotlight),
             },
             {
               icon: "💳",
@@ -3691,9 +3690,7 @@ export default function CommunityHomePage() {
               <div style={{ marginTop: 14 }}>
                 <StableButton
                   type="button"
-                  onClick={(event) =>
-                    openCommunityShopControl(event, "shop-control-spotlight")
-                  }
+                  onClick={(event) => openCommunityRoute(event, routes.freeSpotlight)}
                   style={communityActionStyle("primary")}
                 >
                   Open Free Spotlight

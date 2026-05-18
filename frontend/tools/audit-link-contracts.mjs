@@ -200,6 +200,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\);[\s\S]*?break;[\s\S]*?id: "free-spotlight"[\s\S]*?onClick: \(event: React\.SyntheticEvent<HTMLElement>\) =>\s*openCommunityRoute\(event, routes\.freeSpotlight\)/,
+  "Community Home Free Spotlight actions must route directly to the canonical Shop Control spotlight publisher instead of falling through to the local overview or public fallback."
+);
+
+assertContains(
   "src/App.tsx",
   /path="subscription-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT\}[\s\S]*?path="shop-control\/paid-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT\}/,
   "Nested /app paid spotlight aliases must redirect to the real paid publisher instead of escaping to the public fallback."

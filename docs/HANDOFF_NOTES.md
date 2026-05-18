@@ -26662,3 +26662,32 @@ GSN-branded invite composer and invite-entry continuity.
   - If Render fails again, the next log should be read from the first real
     Postgres exception above the SQLAlchemy help link; do not diagnose from the
     help link alone.
+
+### Free Spotlight route stabilization from Community Home (2026-05-18)
+
+- Follow-up after the owner reported that tapping Free Spotlight while trying
+  to set up spotlight could bounce to the welcome/cover path or otherwise land
+  in the wrong place.
+- Blunt diagnosis:
+  - the shared `/app/shop-control#shop-control-spotlight` route and stale alias
+    redirects were already protected;
+  - Community Home still had a local handoff gap: the decision model returned
+    `nextStep: "open-free-publisher"`, but the click handler did not handle it;
+  - that let a ready Free Spotlight action fall through to the local overview
+    panel instead of the canonical publisher route.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - `spotlight-free` now handles `open-free-publisher` by routing directly to
+    `routes.freeSpotlight`;
+  - the Free Spotlight tool card now routes directly to `routes.freeSpotlight`;
+  - the visible "Open Free Spotlight" button in the spotlight guidance panel
+    also routes directly to `routes.freeSpotlight`.
+- Updated `frontend/tools/audit-link-contracts.mjs`:
+  - added a guard that Community Home must keep Free Spotlight actions wired to
+    the canonical Shop Control spotlight publisher.
+- Remaining truth:
+  - If a signed-in session is expired, `RequireAuth` should still send the user
+    to login with recovery, not keep them inside the app. That is not a button
+    bug.
+  - If the phone still lands on Welcome/Cover after this patch, capture the
+    exact URL before and after the tap; the next suspect is token/session state
+    or a stale deployed bundle, not this Community Home Free Spotlight handler.
