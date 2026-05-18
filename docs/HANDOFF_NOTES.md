@@ -26904,3 +26904,41 @@ GSN-branded invite composer and invite-entry continuity.
     `sessionStorage.gmfn_mobile_tap_trace`; the action should now identify a
     concrete `community-home.*`, `shop-control.*`, or
     `community-shop-control.*` debug ID.
+
+### Finance-domain button tightening (2026-05-18)
+
+- Follow-up after Community / Shop domain; Finance, Money In, Money Out,
+  Payment Rails, Revenue Allocation, Bank Console, and Payout Details sit beside
+  Loans and Shop, so they need the same button-stability guardrail.
+- Blunt diagnosis:
+  - the Finance domain already had stable action primitives and debug IDs on
+    most visible controls;
+  - the risk was that no Finance-specific audit existed to keep Money In /
+    Money Out / Payment Rails route actions from drifting into untraceable or
+    wrong-target controls later.
+- Added `frontend/tools/audit-finance-actions.mjs` and
+  `npm run audit:finance-actions`:
+  - fails if any Finance-domain `PrimaryButton`, `SecondaryButton`,
+    `SubtleButton`, `DangerButton`, `StableButton`, `StableCtaLink`, or
+    `StableDisclosureSummary` lacks `debugId`;
+  - rejects direct signed-in Finance links to `/cover` or `/welcome`;
+  - protects key Money In, Money Out, Payment Rails, Revenue Allocation, Bank
+    Console, Payout Details, and embedded payment instruction actions.
+- Verification:
+  - `npm run audit:finance-actions` passed.
+  - `npm exec -- eslint tools/audit-finance-actions.mjs` passed.
+  - Wider action/link audits passed:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, `audit:route-fallthrough`,
+    `audit:spotlight-controls`, `audit:marketplace-actions`,
+    `audit:community-shop-actions`, `audit:loans-actions`, and
+    `audit:trust-actions`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This does not redesign Finance or prove live backend money logic. It locks
+    button traceability and known route contracts.
+  - If a Finance button still lands wrong on phone, check
+    `sessionStorage.gmfn_mobile_tap_trace`; the action should now identify a
+    concrete `finance.*`, `money-in.*`, `money-out.*`, `payment-rails.*`,
+    `bank-console.*`, or `payout-details.*` debug ID.
