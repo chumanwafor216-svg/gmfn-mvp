@@ -3255,6 +3255,7 @@ export default function MarketplacePage() {
           >
             <StableButton
               type="button"
+              debugId="marketplace.empty.community-home"
               onClick={(event) => openMarketplaceCta(event, "communityHome")}
               style={marketplaceActionStyle("primary")}
             >
@@ -3262,6 +3263,7 @@ export default function MarketplacePage() {
             </StableButton>
             <StableButton
               type="button"
+              debugId="marketplace.empty.dashboard"
               onClick={(event) => openMarketplaceCta(event, "dashboard")}
               style={marketplaceActionStyle("secondary")}
             >
@@ -3387,6 +3389,7 @@ export default function MarketplacePage() {
           >
             <StableButton
               type="button"
+              debugId="marketplace.tile.money"
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -3420,6 +3423,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.tile.support"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3457,6 +3461,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.tile.members"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3494,6 +3499,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.tile.trust"
               onClick={toggleProfileDetails}
               aria-expanded={profileDetailsOpen}
               style={marketplaceOsTileStyle()}
@@ -3589,6 +3595,7 @@ export default function MarketplacePage() {
           >
             <StableButton
               type="button"
+              debugId="marketplace.row.money"
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -3628,6 +3635,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.row.payment-rails"
               onClick={(event) =>
                 openMarketplaceCta(event, "paymentRails")
               }
@@ -3667,6 +3675,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.row.loan-process"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3710,6 +3719,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.row.member-ledger"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -3753,6 +3763,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.row.demand-box"
               onClick={(event) => openMarketplaceCta(event, "demandBox")}
               style={marketplaceOsRowStyle()}
             >
@@ -3790,6 +3801,7 @@ export default function MarketplacePage() {
 
             <StableButton
               type="button"
+              debugId="marketplace.row.records-links"
               onClick={(event) =>
                 openMarketplaceSection(event, "tools", "marketplace-owned-links")
               }
@@ -3830,6 +3842,7 @@ export default function MarketplacePage() {
 
           <StableButton
             type="button"
+            debugId="marketplace.extra-tools.toggle"
             onClick={toggleIntentGuide}
             aria-expanded={intentGuideOpen}
             style={{
@@ -3902,6 +3915,7 @@ export default function MarketplacePage() {
 
                 <StableButton
                   type="submit"
+                  debugId="marketplace.intent.submit"
                   style={marketplaceActionStyle("primary")}
                 >
                   {matchedIntent ? `Open ${matchedIntent.label}` : "Find action"}
@@ -3924,6 +3938,7 @@ export default function MarketplacePage() {
                     <StableButton
                       key={item.id}
                       type="button"
+                      debugId={`marketplace.intent.${item.id}`}
                       onClick={(event) => openMarketplaceIntent(event, item)}
                       style={intentChoiceStyle(item.tone)}
                     >
@@ -3979,6 +3994,7 @@ export default function MarketplacePage() {
 
           <StableButton
             type="button"
+            debugId="marketplace.money.toggle"
             onClick={(event) => toggleSectionFromButton(event, "money")}
             style={marketplaceActionStyle("soft")}
           >
@@ -4137,7 +4153,9 @@ export default function MarketplacePage() {
 
               <div style={{ marginTop: 14 }}>
                 <StableButton
-                  type="button"                  onClick={(event) => openMarketplaceCta(event, "moneyIn")}
+                  debugId="marketplace.money.money-in"
+                  type="button"
+                  onClick={(event) => openMarketplaceCta(event, "moneyIn")}
                   style={marketplaceActionStyle("primary")}
                 >
                   Money In
@@ -4177,7 +4195,9 @@ export default function MarketplacePage() {
 
               <div style={{ marginTop: 14 }}>
                 <StableButton
-                  type="button"                  onClick={(event) =>
+                  debugId="marketplace.money.money-out"
+                  type="button"
+                  onClick={(event) =>
                     openMarketplaceCta(event, "moneyOut")
                   }
                   style={marketplaceActionStyle("secondary")}
@@ -4218,7 +4238,9 @@ export default function MarketplacePage() {
 
               <div style={{ marginTop: 14 }}>
                 <StableButton
-                  type="button"                  onClick={(event) => openMarketplaceCta(event, "finance")}
+                  debugId="marketplace.money.finance"
+                  type="button"
+                  onClick={(event) => openMarketplaceCta(event, "finance")}
                   style={marketplaceActionStyle("secondary")}
                 >
                   See this in Finance
@@ -4254,6 +4276,7 @@ export default function MarketplacePage() {
           </div>
 
           <StableButton
+            debugId="marketplace.links.toggle"
             type="button"
             onClick={(event) => toggleSectionFromButton(event, "tools")}
             style={marketplaceActionStyle("soft")}
@@ -4332,6 +4355,7 @@ export default function MarketplacePage() {
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
+                      debugId="marketplace.links.join.copy"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4352,6 +4376,7 @@ export default function MarketplacePage() {
                       Copy Join Link
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.join.refresh"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4368,6 +4393,7 @@ export default function MarketplacePage() {
                       {creatingInviteLink ? "Refreshing..." : "Refresh Join Link"}
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.join.copy-message"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4389,6 +4415,7 @@ export default function MarketplacePage() {
                       Copy Invite Message
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.join.email"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4410,6 +4437,7 @@ export default function MarketplacePage() {
                       Email Join Link
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.join.whatsapp"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4486,6 +4514,7 @@ export default function MarketplacePage() {
                   ) : null}
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
+                      debugId="marketplace.links.create.copy"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4506,11 +4535,12 @@ export default function MarketplacePage() {
                       Copy Create Link
                     </StableButton>
                     <StableButton
-                        type="button"
-                        onClick={(event) => {
-                          runMarketplaceAction(event, () => {
-                            copyMarketplaceMessage(
-                              createWhatsappMessage,
+                      debugId="marketplace.links.create.copy-message"
+                      type="button"
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          copyMarketplaceMessage(
+                            createWhatsappMessage,
                             publicCreateEntryLink,
                             "Create message copied.",
                             "Create entry link is not ready yet."
@@ -4527,6 +4557,7 @@ export default function MarketplacePage() {
                       Copy Message
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.create.email"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4548,6 +4579,7 @@ export default function MarketplacePage() {
                       Email Link
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.create.open"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4567,6 +4599,7 @@ export default function MarketplacePage() {
                       Open Create Link
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.create.whatsapp"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4624,11 +4657,12 @@ export default function MarketplacePage() {
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
-                        type="button"
-                        onClick={(event) => {
-                          runMarketplaceAction(event, () => {
-                            copyMarketplaceLink(
-                              publicCommunityWorkspaceLink,
+                      debugId="marketplace.links.community-desk.copy"
+                      type="button"
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          copyMarketplaceLink(
+                            publicCommunityWorkspaceLink,
                             "Community access desk link copied.",
                             "Community access desk link is not ready yet."
                           );
@@ -4644,6 +4678,7 @@ export default function MarketplacePage() {
                       Copy Community Desk
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.community-desk.email"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4665,6 +4700,7 @@ export default function MarketplacePage() {
                       Email Link
                     </StableButton>
                     <StableButton
+                      debugId="marketplace.links.community-desk.open"
                       type="button"
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
@@ -4866,6 +4902,7 @@ export default function MarketplacePage() {
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
+                      debugId="marketplace.links.owner-shop-control"
                       type="button"
                       onClick={(event) =>
                         openMarketplaceCta(event, "shop")
@@ -4911,6 +4948,7 @@ export default function MarketplacePage() {
           </div>
 
           <StableButton
+            debugId="marketplace.members.toggle"
             type="button"
             onClick={(event) => toggleSectionFromButton(event, "members")}
             style={marketplaceActionStyle("soft")}
@@ -5046,6 +5084,7 @@ export default function MarketplacePage() {
                         >
                           {row.shopTo ? (
                             <StableCtaLink
+                              debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`}
                               to={row.shopTo}
                               style={marketplaceActionStyle("secondary")}
                             >
@@ -5055,6 +5094,7 @@ export default function MarketplacePage() {
 
                           {fitSuggestion ? (
                             <StableButton
+                              debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.choose-supporter`}
                               type="button"
                               onClick={(event) => {
                                 runMarketplaceAction(event, () => {
@@ -5105,6 +5145,7 @@ export default function MarketplacePage() {
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(false)}>Active items: {activeLoanCount}</span>
             <StableButton
+              debugId="marketplace.support.toggle"
               type="button"
               onClick={(event) => toggleSectionFromButton(event, "support")}
               style={marketplaceActionStyle("soft")}
@@ -5206,6 +5247,7 @@ export default function MarketplacePage() {
                 }}
               >
                 <StableButton
+                  debugId="marketplace.support.start-request"
                   type="button"
                   onClick={(event) => {
                     runMarketplaceAction(event, () => {
@@ -5221,6 +5263,7 @@ export default function MarketplacePage() {
 
                 {loanDraftId ? (
                   <StableButton
+                    debugId="marketplace.support.refresh-fit"
                     type="button"
                     onClick={(event) => {
                       runMarketplaceAction(event, () => {
@@ -5237,6 +5280,7 @@ export default function MarketplacePage() {
 
                 {loanDraftId ? (
                   <StableButton
+                    debugId="marketplace.support.cancel-draft"
                     type="button"
                     onClick={(event) => {
                       runMarketplaceAction(event, () => {
@@ -5261,7 +5305,9 @@ export default function MarketplacePage() {
                 }}
               >
                 <StableButton
-                  type="button"                  onClick={(event) =>
+                  debugId="marketplace.support.loan-readiness"
+                  type="button"
+                  onClick={(event) =>
                     openMarketplaceCta(event, "loanReadiness")
                   }
                   style={marketplaceActionStyle("soft")}
@@ -5269,7 +5315,9 @@ export default function MarketplacePage() {
                   Loan Readiness
                 </StableButton>
                 <StableButton
-                  type="button"                  onClick={(event) =>
+                  debugId="marketplace.support.loan-suggestions"
+                  type="button"
+                  onClick={(event) =>
                     openMarketplaceCta(event, "loanSuggestions")
                   }
                   style={marketplaceActionStyle("soft")}
@@ -5277,7 +5325,9 @@ export default function MarketplacePage() {
                   Loan Suggestions
                 </StableButton>
                 <StableButton
-                  type="button"                  onClick={(event) =>
+                  debugId="marketplace.support.loan-workbench"
+                  type="button"
+                  onClick={(event) =>
                     openMarketplaceCta(event, "loanWorkbench")
                   }
                   style={marketplaceActionStyle("soft")}
@@ -5285,13 +5335,17 @@ export default function MarketplacePage() {
                   Loan Workbench
                 </StableButton>
                 <StableButton
-                  type="button"                  onClick={(event) => openMarketplaceCta(event, "finance")}
+                  debugId="marketplace.support.finance"
+                  type="button"
+                  onClick={(event) => openMarketplaceCta(event, "finance")}
                   style={marketplaceActionStyle("soft")}
                 >
                   Finance
                 </StableButton>
                 <StableButton
-                  type="button"                  onClick={(event) => openMarketplaceCta(event, "loans")}
+                  debugId="marketplace.support.full-loans"
+                  type="button"
+                  onClick={(event) => openMarketplaceCta(event, "loans")}
                   style={marketplaceActionStyle("soft")}
                 >
                   Full Loans View
@@ -5409,6 +5463,7 @@ export default function MarketplacePage() {
                                   </div>
 
                                   <StableButton
+                                    debugId={`marketplace.support.suggestion.${item.key}.choose`}
                                     type="button"
                                     onClick={(event) => {
                                       runMarketplaceAction(event, () => {
@@ -5453,6 +5508,7 @@ export default function MarketplacePage() {
                           >
                             {visibleSelectedSupporters.map((item) => (
                               <StableButton
+                                debugId={`marketplace.support.selected.${item.key}.remove`}
                                 key={item.key}
                                 type="button"
                                 onClick={(event) => {
@@ -5487,6 +5543,7 @@ export default function MarketplacePage() {
                         }}
                       >
                         <StableButton
+                          debugId="marketplace.support.send-guarantor-requests"
                           type="button"
                           onClick={(event) => {
                             runMarketplaceAction(event, () => {

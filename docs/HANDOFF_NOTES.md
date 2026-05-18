@@ -26731,3 +26731,44 @@ GSN-branded invite composer and invite-entry continuity.
   - If a single named button still lands wrong after this, inspect the trace in
     `sessionStorage.gmfn_mobile_tap_trace` on that phone session and compare the
     `started` and `ended` labels.
+
+### Marketplace-domain button tightening (2026-05-18)
+
+- Follow-up after the owner asked to repair jumpy buttons domain by domain,
+  starting with Marketplace because Marketplace was the most notorious phone
+  surface.
+- Blunt diagnosis:
+  - Marketplace already used shared `StableButton` / `StableCtaLink` primitives,
+    but many actions had no `debugId`;
+  - without those IDs, phone traces could show that a tap went wrong without
+    proving which Marketplace control started it;
+  - public shop sharing was already routed toward Shop Diaries, so the remaining
+    repair here was action traceability and regression protection.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - added stable debug IDs to all Marketplace actions, including OS tiles,
+    row actions, money routes, join/create/community desk links, public shop
+    link actions, member shop/supporter actions, and support/loan controls.
+- Added `frontend/tools/audit-marketplace-actions.mjs` and
+  `npm run audit:marketplace-actions`:
+  - fails if any Marketplace-domain `StableButton` / `StableCtaLink` lacks a
+    `debugId`;
+  - protects outward public shop links so Marketplace copy/open/email continues
+    to target Shop Diaries;
+  - protects Shop Gallery diary/hash/product-block handling and Marketplace
+    Workspace confirmed-shop link behavior.
+- Verification:
+  - `npm run audit:marketplace-actions` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/MarketplaceWorkspacePage.tsx src/pages/ShopGalleryPage.tsx tools/audit-marketplace-actions.mjs`
+    passed.
+  - Wider action/link audits passed before build:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, and `audit:route-fallthrough`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This makes Marketplace taps traceable and guards the route contracts. It
+    does not by itself fix stale Render bundles, expired sessions, or missing
+    backend public-shop data.
+  - If a Marketplace button still lands wrong, inspect
+    `sessionStorage.gmfn_mobile_tap_trace`; the relevant action should now show
+    a concrete `marketplace.*` debug ID.
