@@ -797,6 +797,12 @@ export default function ShopGalleryPage() {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("product_id") || query.get("product"));
   }, [location.search]);
+  const publicShopReturnPath = useMemo(() => {
+    const path = `${location.pathname || ""}${location.search || ""}${
+      location.hash || ""
+    }`;
+    return path || "/app/marketplace";
+  }, [location.hash, location.pathname, location.search]);
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -833,6 +839,15 @@ export default function ShopGalleryPage() {
   const [selectedRepostClanId, setSelectedRepostClanId] = useState<number>(0);
   const [repostingProduct, setRepostingProduct] = useState(false);
   const autoRefreshAttemptedRef = useRef("");
+
+  const forceOwnerReconnect = useCallback(() => {
+    autoRefreshAttemptedRef.current = "";
+    setNotice({
+      tone: "success",
+      text: "Checking your signed-in owner shop now...",
+    });
+    setShopReconnectRetryKey((key) => key + 1);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1507,6 +1522,10 @@ export default function ShopGalleryPage() {
   }, [effectiveShop?.gmfnId, gmfnId]);
 
   const shopLoadFailed = Boolean(error);
+  const ownerSessionPresent = Boolean(getAccessToken());
+  const loginReconnectPath = `/login?next=${encodeURIComponent(
+    publicShopReturnPath
+  )}`;
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
   const shopDescriptionText = safeStr(
     autoRefreshingShop
@@ -2670,6 +2689,44 @@ export default function ShopGalleryPage() {
                 Public shop could not be loaded.
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>{error}</div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(2, minmax(0, 1fr))",
+                  gap: 10,
+                  marginTop: 14,
+                }}
+              >
+                {ownerSessionPresent ? (
+                  <PrimaryButton
+                    onClick={forceOwnerReconnect}
+                    fullWidth
+                    stableHeight={isCompact ? 42 : 48}
+                    debugId="shop-gallery.reconnect-owner-shop"
+                  >
+                    Reconnect my shop
+                  </PrimaryButton>
+                ) : (
+                  <StableCtaLink
+                    to={loginReconnectPath}
+                    fullWidth
+                    stableHeight={isCompact ? 42 : 48}
+                    debugId="shop-gallery.sign-in-reconnect-shop"
+                  >
+                    Sign in to reconnect
+                  </StableCtaLink>
+                )}
+                <StableCtaLink
+                  to="/app/marketplace"
+                  fullWidth
+                  stableHeight={isCompact ? 42 : 48}
+                  debugId="shop-gallery.open-marketplace-refresh"
+                >
+                  Open Marketplace
+                </StableCtaLink>
+              </div>
             </div>
           ) : visibleProducts.length === 0 ? (
             <div style={{ ...innerCard("#F8FBFF") }}>

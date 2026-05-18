@@ -1,3 +1,37 @@
+### Public shop stale production-link owner recovery (2026-05-18)
+
+- Live Render checks confirmed the public frontend route for
+  `/shop/GMFN-U-9867079C#shop-diaries` returns `200`, but the backend public
+  shop API returns `404` with `{"detail":"Seller identity not found"}` for
+  both the GMFN and GSN variants of that identity.
+- Blunt root cause:
+  - the link shape is correct;
+  - the production database does not currently have a user/shop identity for
+    `9867079C`, so anonymous visitors cannot see that old/local shop face;
+  - code cannot safely invent the missing owner or show another person's shop.
+- Updated `frontend/src/pages/ShopGalleryPage.tsx`:
+  - stale/missing public shop links now expose an explicit recovery action in
+    the Shop Diaries error block;
+  - signed-in owners see `Reconnect my shop`, which clears the retry guard and
+    reruns the owner-shop reconnect path;
+  - signed-out owners see `Sign in to reconnect`, with a `next` return back to
+    the same public shop URL;
+  - `Open Marketplace` remains available as the canonical owner place to
+    refresh/copy the current production public shop link.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed.
+  - `npm run audit:link-contracts` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This improves the owner recovery path and stops the stale link from being a
+    dead passive error. It does not make `GMFN-U-9867079C` work for anonymous
+    visitors unless production data is repaired or the owner reconnects and
+    shares the fresh production link.
+
 ### System-level mobile tap stability repair (2026-05-16)
 
 - Applied a shared, system-level button/tap hardening pass before continuing
