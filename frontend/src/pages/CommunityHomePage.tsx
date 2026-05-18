@@ -2344,6 +2344,7 @@ export default function CommunityHomePage() {
             >
               <StableButton
                 type="button"
+                debugId="community-home.empty.create-community"
                 onClick={(event) => openCommunityRoute(event, routes.clans)}
                 style={communityActionStyle("primary")}
               >
@@ -2351,6 +2352,7 @@ export default function CommunityHomePage() {
               </StableButton>
               <StableButton
                 type="button"
+                debugId="community-home.empty.build-first-circle"
                 onClick={(event) =>
                   openCommunityRoute(event, routes.buildFirstCircle)
                 }
@@ -2360,6 +2362,7 @@ export default function CommunityHomePage() {
               </StableButton>
               <StableButton
                 type="button"
+                debugId="community-home.empty.dashboard"
                 onClick={(event) => openCommunityRoute(event, routes.dashboard)}
                 style={communityActionStyle("secondary")}
               >
@@ -2668,6 +2671,7 @@ export default function CommunityHomePage() {
 
               <StableButton
                 type="button"
+                debugId="community-home.trust-summary.open"
                 onClick={(event) => openCommunityRoute(event, routes.trust)}
                 style={{
                   ...communityToolRowStyle(),
@@ -2789,6 +2793,7 @@ export default function CommunityHomePage() {
                 <StableButton
                   key={item.id}
                   type="button"
+                  debugId={`community-home.next-action.${item.id}`}
                   onClick={(event) => openCommunityNextAction(event, item.id)}
                   style={{
                     ...communityQuickActionButton(Boolean(item.primary), isCompact),
@@ -2845,6 +2850,7 @@ export default function CommunityHomePage() {
             >
               <StableButton
                 type="button"
+                debugId="community-home.spotlight-guided.collapse"
                 onClick={() => {
                   setGuidedActionFamilyFocus(null);
                 }}
@@ -2916,6 +2922,7 @@ export default function CommunityHomePage() {
               <StableButton
                 key={item.id}
                 type="button"
+                debugId={`community-home.spotlight-guided.${item.id}`}
                 onClick={(event) => {
                   void handleSpotlightHandle(item, event);
                 }}
@@ -2966,6 +2973,7 @@ export default function CommunityHomePage() {
           >
             <StableButton
               type="button"
+              debugId="community-home.spotlight-guided.back"
               onClick={() => {
                 setGuidedActionFamilyFocus(null);
               }}
@@ -3060,6 +3068,7 @@ export default function CommunityHomePage() {
             <StableButton
               key={item.title}
               type="button"
+              debugId={`community-home.tool.${item.id}`}
               onClick={item.onClick}
               style={{
                 ...communityToolRowStyle(),
@@ -3164,6 +3173,7 @@ export default function CommunityHomePage() {
           <div style={collapseButtonRow()}>
             <StableButton
               type="button"
+              debugId="community-home.owner-actions.toggle"
               onClick={(event) => toggleSectionFromButton(event, "tools")}
               style={collapseHeaderButton(isCompact)}
             >
@@ -3185,6 +3195,7 @@ export default function CommunityHomePage() {
           >
             <StableButton
               type="button"
+              debugId="community-home.owner-actions.create-community"
               onClick={(event) => openCommunityRoute(event, routes.clans)}
               style={communityActionStyle("primary")}
             >
@@ -3193,6 +3204,7 @@ export default function CommunityHomePage() {
 
             <StableButton
               type="button"
+              debugId="community-home.owner-actions.marketplace-links"
               onClick={(event) => void openSelectedMarketplaceLinks(event)}
               style={communityActionStyle(
                 "secondary",
@@ -3207,6 +3219,7 @@ export default function CommunityHomePage() {
 
             <StableButton
               type="button"
+              debugId="community-home.owner-actions.grow-circle"
               onClick={(event) =>
                 openCommunityHomeSection(
                   event,
@@ -3221,6 +3234,7 @@ export default function CommunityHomePage() {
 
             <StableButton
               type="button"
+              debugId="community-home.owner-actions.shop-control"
               onClick={openCommunityShopControl}
               style={communityActionStyle("secondary")}
             >
@@ -3229,6 +3243,7 @@ export default function CommunityHomePage() {
 
             <StableButton
               type="button"
+              debugId="community-home.owner-actions.notifications"
               onClick={(event) =>
                 openCommunityRoute(event, routes.notifications)
               }
@@ -3239,6 +3254,7 @@ export default function CommunityHomePage() {
 
             <StableButton
               type="button"
+              debugId="community-home.owner-actions.selected-marketplace"
               onClick={(event) => void openSelectedMarketplace(event)}
               disabled={!selectedClanId || changingClanId === selectedClanId}
               style={communityActionStyle(
@@ -3280,6 +3296,7 @@ export default function CommunityHomePage() {
 
           <StableButton
             type="button"
+            debugId="community-home.circle.toggle"
             onClick={(event) => toggleSectionFromButton(event, "circle")}
             style={collapseHeaderButton(isCompact)}
           >
@@ -3359,6 +3376,7 @@ export default function CommunityHomePage() {
               >
                 <StableButton
                   type="button"
+                  debugId="community-home.circle.open-first-circle"
                   onClick={(event) =>
                     openCommunityRoute(event, routes.buildFirstCircle)
                   }
@@ -3369,6 +3387,7 @@ export default function CommunityHomePage() {
 
                   <StableButton
                     type="button"
+                    debugId="community-home.circle.copy-invite-bundle"
                     onClick={copyFirstCircleInviteBundle}
                     disabled={readyFirstCircleContacts.length === 0}
                     style={communityActionStyle(
@@ -3479,6 +3498,7 @@ export default function CommunityHomePage() {
           <div style={collapseButtonRow()}>
             <StableButton
               type="button"
+              debugId="community-home.spotlight-status.toggle"
               onClick={(event) => toggleSectionFromButton(event, "spotlight")}
               style={collapseHeaderButton(isCompact)}
             >
@@ -3690,6 +3710,7 @@ export default function CommunityHomePage() {
               <div style={{ marginTop: 14 }}>
                 <StableButton
                   type="button"
+                  debugId="community-home.spotlight-status.open-free"
                   onClick={(event) => openCommunityRoute(event, routes.freeSpotlight)}
                   style={communityActionStyle("primary")}
                 >
@@ -3712,6 +3733,7 @@ export default function CommunityHomePage() {
       >
         <StableButton
           type="button"
+          debugId="community-home.communities.header-toggle"
           aria-expanded={!collapsed.communities}
           aria-controls="community-home-communities-panel"
           onClick={toggleCommunitiesSectionFromHeader}
@@ -3849,6 +3871,7 @@ export default function CommunityHomePage() {
                     >
                       <StableButton
                         type="button"
+                        debugId={`community-home.communities.${clan.id ?? clan.clan_id ?? clan.name ?? "unknown"}.open-marketplace`}
                         onClick={(event) => {
                           consumeCommunityButtonEvent(event);
                           void handleSelectCommunity(clan, true);

@@ -1,0 +1,153 @@
+/* global console, process */
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+function read(relativePath) {
+  return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+const findings = [];
+
+const communityShopFiles = [
+  "src/pages/CommunityHomePage.tsx",
+  "src/pages/ShopControlPage.tsx",
+  "src/components/CommunityShopControlPanel.tsx",
+  "src/pages/CreateEntryPage.tsx",
+  "src/pages/SubscriptionSpotlightPage.tsx",
+  "src/pages/VaultControlPage.tsx",
+  "src/pages/ShopPage.tsx",
+  "src/pages/ShopAssetsPage.tsx",
+  "src/pages/ShopAccessPage.tsx",
+];
+
+function assertContains(file, pattern, message) {
+  const text = read(file);
+
+  if (!pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Expected pattern was not found.",
+    });
+  }
+}
+
+function assertNotContains(file, pattern, message) {
+  const text = read(file);
+
+  text.split(/\r?\n/).forEach((line, index) => {
+    if (pattern.test(line)) {
+      findings.push({
+        file,
+        line: index + 1,
+        message,
+        text: line.trim(),
+      });
+    }
+  });
+}
+
+function assertStableActionsHaveDebugIds(file) {
+  const text = read(file);
+  const actionPattern =
+    /<(?:PrimaryButton|SecondaryButton|SubtleButton|DangerButton|StableButton|StableCtaLink|StableDisclosureSummary)\b/g;
+  let match;
+
+  while ((match = actionPattern.exec(text))) {
+    const preview = text.slice(match.index, match.index + 1100);
+    if (!/debugId=/.test(preview)) {
+      findings.push({
+        file,
+        line: text.slice(0, match.index).split(/\r?\n/).length,
+        message:
+          "Community / Shop stable actions must have debugId so phone misroutes can be traced to the exact control.",
+        text: preview.replace(/\s+/g, " ").slice(0, 220),
+      });
+    }
+  }
+}
+
+communityShopFiles.forEach(assertStableActionsHaveDebugIds);
+
+const signedInCommunityShopFiles = [
+  "src/pages/CommunityHomePage.tsx",
+  "src/pages/ShopControlPage.tsx",
+  "src/components/CommunityShopControlPanel.tsx",
+  "src/pages/SubscriptionSpotlightPage.tsx",
+  "src/pages/VaultControlPage.tsx",
+  "src/pages/ShopPage.tsx",
+  "src/pages/ShopAssetsPage.tsx",
+];
+
+for (const file of signedInCommunityShopFiles) {
+  assertNotContains(
+    file,
+    /to=["']\/cover["']|to=["']\/welcome["']/,
+    "Community / Shop app actions must not send signed-in users directly to Cover or Welcome."
+  );
+}
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\);[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?debugId="community-home\.spotlight-status\.open-free"/,
+  "Community Home Free Spotlight actions must keep routing to the canonical Shop Control spotlight publisher."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /debugId="community-home\.owner-actions\.create-community"[\s\S]*?debugId="community-home\.owner-actions\.marketplace-links"[\s\S]*?debugId="community-home\.owner-actions\.shop-control"[\s\S]*?debugId="community-home\.owner-actions\.selected-marketplace"/,
+  "Community Home owner action buttons must remain traceable in their main action cluster."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /debugId=\{`community-home\.next-action\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.spotlight-guided\.\$\{item\.id\}`\}[\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  "Community Home dynamic action groups must use item-based debug IDs."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
+  "Community Home community rows must keep a traceable Open Marketplace button."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /rememberPublishRecovery\([\s\S]*?routes\.freeSpotlight,[\s\S]*?"shop-control\.spotlight\.preview\.publish"[\s\S]*?\);/,
+  "Shop Control spotlight publish must keep recovery anchored to the free spotlight publisher route."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /navigateWithOrigin\(navigate, routes\.subscriptionSpotlight, location[\s\S]*?debugId="shop-control\.spotlight\.paid-lane"[\s\S]*?debugId="shop-control\.subscription\.open"[\s\S]*?debugId="shop-control\.subscription\.publisher"/,
+  "Shop Control paid spotlight actions must keep routing to the subscription spotlight lane."
+);
+
+assertContains(
+  "src/components/CommunityShopControlPanel.tsx",
+  /<StableCtaLink[\s\S]*?to=\{publicShopLink\}[\s\S]*?debugId="community-shop-control\.public-url"[\s\S]*?\{publicShopLink\}/,
+  "Community Shop Control public URL must stay a stable link, not a raw anchor."
+);
+
+assertContains(
+  "src/components/CommunityShopControlPanel.tsx",
+  /debugId="community-shop-control\.shortcut\.spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-spotlight"/,
+  "Community Shop Control shortcut buttons must keep separate Free and Paid Spotlight debug IDs."
+);
+
+if (findings.length > 0) {
+  console.error("Community / Shop action audit failed:");
+  for (const finding of findings) {
+    console.error(
+      `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
+    );
+  }
+  process.exit(1);
+}
+
+console.log("Community / Shop action audit passed.");

@@ -26857,3 +26857,50 @@ GSN-branded invite composer and invite-entry continuity.
     the URL is the public `/trust-slips/verify/...` route or the signed-in
     `/app/trust-slip/verify` route, and whether a current TrustSlip code is
     available.
+
+### Community / Shop-domain button tightening (2026-05-18)
+
+- Follow-up after Marketplace, Loans, and Trust domain passes; the owner wanted
+  the button repair done domain by domain and specifically called out Free
+  Spotlight / Publish and Community / Shop Control actions landing on the wrong
+  surfaces.
+- Blunt diagnosis:
+  - Shop Control, Subscription Spotlight, Vault, Shop, and shop-access surfaces
+    were already mostly using stable action primitives and trace IDs;
+  - the largest remaining gap was `CommunityHomePage`, where many owner,
+    quick-action, spotlight, trusted-circle, and community-row actions had no
+    `debugId`;
+  - without those IDs, the phone could still report a wrong landing but not
+    clearly identify the exact Community Home control that started it.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - added traceable `debugId` values to empty-state actions, trust summary,
+    What Next actions, guided spotlight actions, owner action rows, trusted
+    circle controls, spotlight status controls, community section toggles, and
+    individual community Open Marketplace buttons;
+  - kept existing route contracts intact, including the Free Spotlight route
+    through the canonical Shop Control publisher surface.
+- Added `frontend/tools/audit-community-shop-actions.mjs` and
+  `npm run audit:community-shop-actions`:
+  - fails if Community / Shop-domain stable actions lack `debugId`;
+  - rejects direct signed-in app links to `/cover` or `/welcome` in the
+    Community / Shop signed-in surfaces;
+  - protects Free Spotlight, paid Spotlight, public shop URL, and dynamic
+    Community Home action-group route contracts.
+- Verification:
+  - `npm run audit:community-shop-actions` passed.
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx tools/audit-community-shop-actions.mjs`
+    passed.
+  - Wider action/link audits passed:
+    `audit:action-surfaces`, `audit:button-stability`, `audit:tap-stability`,
+    `audit:link-contracts`, `audit:route-fallthrough`,
+    `audit:spotlight-controls`, `audit:marketplace-actions`,
+    `audit:loans-actions`, and `audit:trust-actions`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This improves Community / Shop traceability and protects route contracts.
+    It does not prove a stale Render bundle has refreshed on a phone.
+  - If Free Spotlight or Publish still lands wrongly after the deploy, inspect
+    `sessionStorage.gmfn_mobile_tap_trace`; the action should now identify a
+    concrete `community-home.*`, `shop-control.*`, or
+    `community-shop-control.*` debug ID.
