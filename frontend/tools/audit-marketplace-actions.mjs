@@ -118,7 +118,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceOsTileStyle[\s\S]*?height: isCompact \? 218 : 178[\s\S]*?maxHeight: isCompact \? 218 : 178[\s\S]*?54px 2\.45em 2\.35em 2\.8em[\s\S]*?function marketplaceOsTileMetricStyle[\s\S]*?WebkitLineClamp: 2[\s\S]*?whiteSpace: "normal"[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
+  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceOsTileStyle[\s\S]*?height: isCompact \? 218 : 178[\s\S]*?maxHeight: isCompact \? 218 : 178[\s\S]*?54px 2\.45em 2\.35em 2\.8em[\s\S]*?function marketplaceOsTileMetricStyle[\s\S]*?WebkitLineClamp: 2[\s\S]*?whiteSpace: "normal"[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
   "Marketplace front-page tiles and operating-lane rows must keep fixed phone-safe action geometry with enough reserve so text cannot escape button boxes."
 );
 
@@ -130,7 +130,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /getAccessToken[\s\S]*?function workspaceCtaPath\(target: CtaTarget\): string[\s\S]*?path\.startsWith\("\/app\/"\)[\s\S]*?next\.set\("session", "expired"\)[\s\S]*?next\.set\("next", path\)[\s\S]*?workspaceCtaPath\(communityHomeCta\)[\s\S]*?workspaceCtaPath\(marketplaceCta\)[\s\S]*?workspaceCtaPath\(item\.target\)[\s\S]*?workspaceCtaPath\(joinRequestsCta\)/,
+  /getAccessToken[\s\S]*?function workspaceCtaPath\(target: CtaTarget\): string[\s\S]*?path\.startsWith\("\/app\/"\)[\s\S]*?next\.set\("session", "expired"\)[\s\S]*?next\.set\("next", path\)[\s\S]*?function workspaceActionRowStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function workspaceActionStyle[\s\S]*?height: 58[\s\S]*?workspaceCtaPath\(communityHomeCta\)[\s\S]*?workspaceCtaPath\(marketplaceCta\)[\s\S]*?workspaceActionStyle\(\)[\s\S]*?workspaceCtaPath\(item\.target\)[\s\S]*?workspaceCtaPath\(joinRequestsCta\)/,
   "Public Marketplace Workspace CTAs must send unsigned users through login recovery instead of dumping them directly into private app routes."
 );
 

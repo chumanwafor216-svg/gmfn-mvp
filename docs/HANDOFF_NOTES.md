@@ -1,3 +1,28 @@
+### Marketplace inner action tightening pass (2026-05-25)
+
+- Owner confirmed Marketplace improved but still misses roughly 3 out of 4
+  attempts on phone, especially inner pages.
+- Tightened `frontend/src/pages/MarketplacePage.tsx` shared inner action
+  geometry:
+  - `marketplaceActionStyle()` actions now use fixed `56px` height instead of
+    `48px`;
+  - inline action grids now reserve `58px` rows;
+  - extra-tool choices gained more vertical reserve.
+- Tightened `frontend/src/pages/MarketplaceWorkspacePage.tsx`:
+  - added `workspaceActionRowStyle()` and `workspaceActionStyle()`;
+  - converted Marketplace Workspace action rows to fixed `58px` grid rows;
+  - applied fixed action styling to workspace CTAs, invite actions, route
+    handoff buttons, money/support buttons, alert request buttons, member-row
+    actions, and section toggles.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-marketplace-actions.mjs`
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+- Remaining truth:
+  - This keeps fixed tap geometry while adding reserve; it is not a redesign.
+  - If phone misses remain, next evidence needed is exact button label plus
+    `sessionStorage.gmfn_mobile_tap_trace`.
+
 ### Marketplace buttons falling to entry/public flow follow-up (2026-05-25)
 
 - Owner reported some Marketplace buttons still appear to fall toward the

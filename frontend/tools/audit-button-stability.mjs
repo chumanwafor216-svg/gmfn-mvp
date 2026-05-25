@@ -121,7 +121,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 48,[\s\S]*?maxHeight: 48,[\s\S]*?function marketplaceOsTileStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 218 : 178,[\s\S]*?maxHeight: isCompact \? 218 : 178,[\s\S]*?function marketplaceOsTileTitleStyle[\s\S]*?WebkitLineClamp: 2,[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
+  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceOsTileStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 218 : 178,[\s\S]*?maxHeight: isCompact \? 218 : 178,[\s\S]*?function marketplaceOsTileTitleStyle[\s\S]*?WebkitLineClamp: 2,[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
   "Marketplace route/action tiles must keep fixed phone-safe heights with clamped text so card content cannot stretch, overlap, or create unstable tap targets."
 );
 
@@ -238,7 +238,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
-  /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?getAccessToken[\s\S]*?resolveCtaTarget[\s\S]*?function workspaceCtaPath/,
+  /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?getAccessToken[\s\S]*?resolveCtaTarget[\s\S]*?function workspaceCtaPath[\s\S]*?function workspaceActionRowStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function workspaceActionStyle[\s\S]*?height: 58/,
   "Marketplace workspace must use shared stable CTA primitives and shared CTA target resolution."
 );
 

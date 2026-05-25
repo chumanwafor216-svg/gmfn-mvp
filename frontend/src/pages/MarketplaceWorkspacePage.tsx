@@ -241,6 +241,43 @@ function sectionTitle(): React.CSSProperties {
   };
 }
 
+function workspaceActionRowStyle(marginTop = 0): React.CSSProperties {
+  return {
+    marginTop,
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(148px, 1fr))",
+    gridAutoRows: "58px",
+    gap: 10,
+    alignItems: "stretch",
+    justifyContent: "stretch",
+    minHeight: 58,
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function workspaceActionStyle(disabled = false, fullWidth = true): React.CSSProperties {
+  return {
+    width: fullWidth ? "100%" : "auto",
+    minWidth: fullWidth ? 0 : 96,
+    height: 58,
+    minHeight: 58,
+    maxHeight: 58,
+    padding: "0 12px",
+    overflow: "hidden",
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    wordBreak: "normal",
+    textAlign: "center",
+    touchAction: "manipulation",
+    pointerEvents: "auto",
+    opacity: disabled ? 0.72 : undefined,
+    cursor: disabled ? "not-allowed" : undefined,
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -977,11 +1014,12 @@ export default function MarketplaceWorkspacePage() {
                 "This keeps one community's owner-side invite, alert, member, and shop-facing visibility tasks together without turning this desk into the full Marketplace."}
             </div>
 
-            <CardActionRow style={{ marginTop: 16 }}>
+            <CardActionRow style={workspaceActionRowStyle(16)}>
               <StableCtaLink
                 to={workspaceCtaPath(communityHomeCta)}
                 kind="secondary"
                 debugId={communityHomeCta.debugId}
+                style={workspaceActionStyle()}
               >
                 Open Community Home
               </StableCtaLink>
@@ -989,6 +1027,7 @@ export default function MarketplaceWorkspacePage() {
                 to={workspaceCtaPath(marketplaceCta)}
                 kind="secondary"
                 debugId={marketplaceCta.debugId}
+                style={workspaceActionStyle()}
               >
                 Open Marketplace
               </StableCtaLink>
@@ -996,6 +1035,7 @@ export default function MarketplaceWorkspacePage() {
                 to={workspaceCtaPath(communityListCta)}
                 kind="secondary"
                 debugId={communityListCta.debugId}
+                style={workspaceActionStyle()}
               >
                 Community List
               </StableCtaLink>
@@ -1065,7 +1105,7 @@ export default function MarketplaceWorkspacePage() {
             </div>
           </div>
 
-          <CardActionRow>
+          <CardActionRow style={workspaceActionRowStyle()}>
             <SecondaryButton
               type="button"
               onClick={() =>
@@ -1076,6 +1116,7 @@ export default function MarketplaceWorkspacePage() {
                 )
               }
               debugId="marketplace-workspace.open-alerts-section"
+              style={workspaceActionStyle()}
             >
               Open Alerts
             </SecondaryButton>
@@ -1089,6 +1130,7 @@ export default function MarketplaceWorkspacePage() {
                 )
               }
               debugId="marketplace-workspace.open-members-section"
+              style={workspaceActionStyle()}
             >
               Open Members
             </SecondaryButton>
@@ -1110,8 +1152,9 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setInviteOpen((v) => !v)}
-            stableHeight={50}
+            stableHeight={58}
             debugId="marketplace-workspace.toggle-invite"
+            style={workspaceActionStyle(false, false)}
           >
             {inviteOpen ? "Hide" : "Open"}
           </SubtleButton>
@@ -1172,7 +1215,7 @@ export default function MarketplaceWorkspacePage() {
                   </div>
                 </div>
 
-                <CardActionRow>
+                <CardActionRow style={workspaceActionRowStyle()}>
                   <PrimaryButton
                     type="button"
                     onClick={() => {
@@ -1184,7 +1227,7 @@ export default function MarketplaceWorkspacePage() {
                       setMsg("Community invite link copied.");
                     }}
                     debugId="marketplace-workspace.copy-join-link"
-                    style={!inviteLink ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
+                    style={workspaceActionStyle(!inviteLink)}
                   >
                     Copy Join Link
                   </PrimaryButton>
@@ -1193,6 +1236,7 @@ export default function MarketplaceWorkspacePage() {
                     type="button"
                     onClick={copyInviteMessage}
                     debugId="marketplace-workspace.copy-join-message"
+                    style={workspaceActionStyle(!inviteLink)}
                   >
                     Copy Join Message
                   </SecondaryButton>
@@ -1201,6 +1245,7 @@ export default function MarketplaceWorkspacePage() {
                     type="button"
                     onClick={shareWhatsAppJoin}
                     debugId="marketplace-workspace.whatsapp-join"
+                    style={workspaceActionStyle(!inviteLink)}
                   >
                     Send via WhatsApp
                   </SecondaryButton>
@@ -1224,11 +1269,12 @@ export default function MarketplaceWorkspacePage() {
                 This desk does not replace Marketplace.
               </div>
 
-              <CardActionRow style={{ marginTop: 10 }}>
+              <CardActionRow style={workspaceActionRowStyle(10)}>
                 <StableCtaLink
                   to={workspaceCtaPath(demandBoxCta)}
                   kind="secondary"
                   debugId={demandBoxCta.debugId}
+                  style={workspaceActionStyle()}
                 >
                   Open Demand Box
                 </StableCtaLink>
@@ -1236,6 +1282,7 @@ export default function MarketplaceWorkspacePage() {
                   to={workspaceCtaPath(marketplaceCta)}
                   kind="secondary"
                   debugId={marketplaceCta.debugId}
+                  style={workspaceActionStyle()}
                 >
                   Open Marketplace
                 </StableCtaLink>
@@ -1243,6 +1290,7 @@ export default function MarketplaceWorkspacePage() {
                   to={workspaceCtaPath(communityHomeCta)}
                   kind="secondary"
                   debugId={communityHomeCta.debugId}
+                  style={workspaceActionStyle()}
                 >
                   Open Community Home
                 </StableCtaLink>
@@ -1278,12 +1326,12 @@ export default function MarketplaceWorkspacePage() {
                   "No backend-confirmed public shop link is available for the selected member yet."}
               </div>
 
-              <CardActionRow style={{ marginTop: 12 }}>
+              <CardActionRow style={workspaceActionRowStyle(12)}>
                 <SecondaryButton
                   type="button"
                   onClick={copyShopViewLink}
                   debugId="marketplace-workspace.copy-public-shop-link"
-                  style={!shopViewLink ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
+                  style={workspaceActionStyle(!shopViewLink)}
                 >
                   Copy Public Shop Link
                 </SecondaryButton>
@@ -1292,7 +1340,7 @@ export default function MarketplaceWorkspacePage() {
                   type="button"
                   onClick={copyShopViewMessage}
                   debugId="marketplace-workspace.copy-public-shop-message"
-                  style={!shopViewLink ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
+                  style={workspaceActionStyle(!shopViewLink)}
                 >
                   Copy Public Shop Message
                 </SecondaryButton>
@@ -1316,15 +1364,16 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setMoneyOpen((v) => !v)}
-            stableHeight={50}
+            stableHeight={58}
             debugId="marketplace-workspace.toggle-money"
+            style={workspaceActionStyle(false, false)}
           >
             {moneyOpen ? "Hide" : "Open"}
           </SubtleButton>
         </div>
 
         {moneyOpen ? (
-          <CardActionRow style={{ marginTop: 16 }}>
+          <CardActionRow style={workspaceActionRowStyle(16)}>
             {moneyCtas.map((item) => (
               <SecondaryButton
                 key={item.label}
@@ -1337,6 +1386,7 @@ export default function MarketplaceWorkspacePage() {
                   })
                 }
                 debugId={item.target.debugId}
+                style={workspaceActionStyle()}
               >
                 {item.label}
               </SecondaryButton>
@@ -1381,8 +1431,9 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setAlertsOpen((v) => !v)}
-            stableHeight={50}
+            stableHeight={58}
             debugId="marketplace-workspace.toggle-alerts"
+            style={workspaceActionStyle(false, false)}
           >
             {alertsOpen ? "Hide" : "Open"}
           </SubtleButton>
@@ -1413,11 +1464,12 @@ export default function MarketplaceWorkspacePage() {
                       </div>
                     </div>
 
-                    <CardActionRow minHeight={50}>
+                    <CardActionRow minHeight={58} style={workspaceActionRowStyle()}>
                       <StableCtaLink
                         to={workspaceCtaPath(joinRequestsCta)}
                         kind="primary"
                         debugId={joinRequestsCta.debugId}
+                        style={workspaceActionStyle()}
                       >
                         Open Requests
                       </StableCtaLink>
@@ -1448,8 +1500,9 @@ export default function MarketplaceWorkspacePage() {
           <SubtleButton
             type="button"
             onClick={() => setMembersOpen((v) => !v)}
-            stableHeight={50}
+            stableHeight={58}
             debugId="marketplace-workspace.toggle-members"
+            style={workspaceActionStyle(false, false)}
           >
             {membersOpen ? "Hide" : "Open"}
           </SubtleButton>
@@ -1503,11 +1556,12 @@ export default function MarketplaceWorkspacePage() {
                     </div>
                   </div>
 
-                  <CardActionRow minHeight={50}>
+                  <CardActionRow minHeight={58} style={workspaceActionRowStyle()}>
                     <SecondaryButton
                       type="button"
                       onClick={() => setSelectedMember(member.raw)}
                       debugId="marketplace-workspace.view-member-row"
+                      style={workspaceActionStyle()}
                     >
                       View Row
                     </SecondaryButton>
@@ -1516,7 +1570,7 @@ export default function MarketplaceWorkspacePage() {
                       type="button"
                       onClick={() => openShopForMember(member.raw)}
                       debugId="marketplace-workspace.open-member-shop"
-                      style={!member.hasVisibleShop ? { opacity: 0.72, cursor: "not-allowed" } : undefined}
+                      style={workspaceActionStyle(!member.hasVisibleShop)}
                     >
                       Shop Gallery
                     </PrimaryButton>

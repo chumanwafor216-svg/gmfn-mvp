@@ -565,7 +565,7 @@ const marketplaceWorkspaceChecks = [
     label:
       "Community Access Desk public shop actions must keep stable shared copy controls tied to the live shopViewLink",
     pattern:
-      /debugId="marketplace-workspace\.copy-public-shop-link"[\s\S]*?style=\{!shopViewLink \?[\s\S]*?Copy Public Shop Link[\s\S]*?debugId="marketplace-workspace\.copy-public-shop-message"[\s\S]*?style=\{!shopViewLink \?[\s\S]*?Copy Public Shop Message/,
+      /debugId="marketplace-workspace\.copy-public-shop-link"[\s\S]*?style=\{workspaceActionStyle\(!shopViewLink\)\}[\s\S]*?Copy Public Shop Link[\s\S]*?debugId="marketplace-workspace\.copy-public-shop-message"[\s\S]*?style=\{workspaceActionStyle\(!shopViewLink\)\}[\s\S]*?Copy Public Shop Message/,
   },
 ];
 
