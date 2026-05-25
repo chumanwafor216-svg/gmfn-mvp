@@ -104,6 +104,24 @@ assertContains(
   "Marketplace Workspace internal shop browsing must continue to use confirmed public shop roots, not unconfirmed app routes."
 );
 
+assertContains(
+  "src/lib/marketplaceActionStability.ts",
+  /MARKETPLACE_LANDING_TRACE_KEY[\s\S]*?marketplaceLandingOffsetPx[\s\S]*?visualViewport[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?window\.scrollTo[\s\S]*?marketplaceSectionStyle/,
+  "Marketplace front/workspace pages must share one phone-safe landing helper instead of route-local scroll guesses."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200, 1800\]\.forEach[\s\S]*?setSectionsTouched\(\(prev\) => \(\{ \.\.\.prev, \[key\]: true \}\)\)[\s\S]*?id="marketplace-money-routes"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-owned-links"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-members-shops"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-loans-support"[\s\S]*?marketplaceSectionStyle\(\)/,
+  "Marketplace front page section buttons must mark opened sections as touched and land through the shared phone-safe section helper."
+);
+
+assertContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200\]\.forEach[\s\S]*?id="marketplace-workspace-alerts"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-workspace-members"[\s\S]*?marketplaceSectionStyle\(\)/,
+  "Marketplace Workspace inner buttons must use shared phone-safe section landing instead of raw scrollIntoView."
+);
+
 if (findings.length > 0) {
   console.error("Marketplace action audit failed:");
   for (const finding of findings) {

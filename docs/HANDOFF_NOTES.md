@@ -1,3 +1,51 @@
+### Marketplace front/workspace phone landing repair (2026-05-25)
+
+- Owner phone retest still showed Marketplace actions not landing in the right
+  place.
+- Blunt distinction:
+  - the previous pass was system-level for action-card geometry;
+  - this pass is system-level inside the Marketplace domain: front Marketplace
+    and inner Marketplace Workspace now share one landing helper instead of
+    keeping separate route-local scroll guesses.
+- Added `frontend/src/lib/marketplaceActionStability.ts`:
+  - `marketplaceLandingOffsetPx()` accounts for phone visual viewport and top
+    browser/app chrome instead of using a fixed small offset;
+  - `scrollElementToMarketplaceLanding()` performs the shared landing scroll;
+  - `marketplaceSectionStyle()` gives Marketplace sections a matching
+    `scrollMarginTop`;
+  - `traceMarketplaceLanding()` writes best-effort traces to
+    `sessionStorage.gmfn_marketplace_landing_trace` so phone failures can be
+    inspected without guessing.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - section buttons now use the shared Marketplace landing helper;
+  - open-section actions mark the section as touched before landing;
+  - landing retries now run at `80, 180, 360, 720, 1200, 1800ms` after opening
+    so late phone layout shifts get corrected;
+  - Money, Links, Members, and Support sections all use the shared Marketplace
+    section scroll-margin style.
+- Updated `frontend/src/pages/MarketplaceWorkspacePage.tsx`:
+  - removed raw `scrollIntoView` behavior for opening Alerts/Members sections;
+  - Workspace now uses the same shared Marketplace landing helper and retry
+    schedule;
+  - added explicit IDs for the inner workspace landing targets:
+    `marketplace-workspace-alerts` and `marketplace-workspace-members`.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-marketplace-actions.mjs`
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/lib/marketplaceActionStability.ts src/pages/MarketplacePage.tsx src/pages/MarketplaceWorkspacePage.tsx tools/audit-button-stability.mjs tools/audit-marketplace-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+- Remaining truth:
+  - This should improve the Marketplace front and inner Marketplace Workspace
+    section landings on phone, but it still needs a real phone retest.
+  - If it still lands wrong, check
+    `sessionStorage.gmfn_marketplace_landing_trace` and
+    `sessionStorage.gmfn_mobile_tap_trace` before changing more UI.
+
 ### Page-by-page mobile action geometry pass (2026-05-25)
 
 - Owner correctly identified that the Marketplace failure was the same family

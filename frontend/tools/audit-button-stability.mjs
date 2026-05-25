@@ -127,8 +127,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?window\.scrollTo[\s\S]*?\[120, 320, 700, 1100\]\.forEach/,
-  "Marketplace section buttons must use repeated mobile-safe landing passes instead of one fragile scroll after opening a section."
+  /import \{[\s\S]*?marketplaceSectionStyle[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\} from "\.\.\/lib\/marketplaceActionStability";[\s\S]*?scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200, 1800\]\.forEach[\s\S]*?marketplaceSectionStyle\(\)/,
+  "Marketplace section buttons must use the shared Marketplace landing helper with repeated phone-safe landing passes and section scroll margins."
 );
 
 assertNotContains(

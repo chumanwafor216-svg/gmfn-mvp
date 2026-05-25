@@ -35,6 +35,11 @@ import {
   publicShopRootUrl,
   publicShopUrl,
 } from "../lib/publicLinks";
+import {
+  marketplaceSectionStyle,
+  scrollElementToMarketplaceLanding,
+  traceMarketplaceLanding,
+} from "../lib/marketplaceActionStability";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -407,6 +412,7 @@ export default function MarketplaceWorkspacePage() {
   const [members, setMembers] = useState<any[]>([]);
   const [shops, setShops] = useState<any[]>([]);
   const [selectedMember, setSelectedMember] = useState<any | null>(null);
+  const scrollTimeoutRefs = useRef<number[]>([]);
 
   useEffect(() => {
     if (activeClanId > 0) {
@@ -416,6 +422,7 @@ export default function MarketplaceWorkspacePage() {
 
   const scrollToWorkspaceSection = useCallback(function scrollToWorkspaceSection(
     ref: React.RefObject<HTMLElement | null>,
+    targetId: string,
     attempt = 0
   ) {
     if (ref.current) {
@@ -427,27 +434,50 @@ export default function MarketplaceWorkspacePage() {
 
       if (alreadyComfortablyVisible) return;
 
-      ref.current.scrollIntoView({
-        behavior: "auto",
-        block: "start",
-        inline: "nearest",
+      scrollElementToMarketplaceLanding(ref.current, {
+        surface: "marketplace-workspace",
+        targetId,
+        reason: "section-open",
+        attempt,
       });
       return;
     }
-    if (attempt >= 5) return;
-    window.requestAnimationFrame(() => {
-      scrollToWorkspaceSection(ref, attempt + 1);
+    traceMarketplaceLanding({
+      surface: "marketplace-workspace",
+      targetId,
+      reason: "section-target-missing",
+      attempt,
     });
+    if (attempt >= 7) return;
+    window.requestAnimationFrame(() => {
+      scrollToWorkspaceSection(ref, targetId, attempt + 1);
+    });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      scrollTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      scrollTimeoutRefs.current = [];
+    };
   }, []);
 
   const revealWorkspaceSection = useCallback(
     (
       setter: React.Dispatch<React.SetStateAction<boolean>>,
-      ref: React.RefObject<HTMLElement | null>
+      ref: React.RefObject<HTMLElement | null>,
+      targetId: string
     ) => {
       setter(true);
+      scrollTimeoutRefs.current.forEach((timeoutId) => window.clearTimeout(timeoutId));
+      scrollTimeoutRefs.current = [];
       window.requestAnimationFrame(() => {
-        scrollToWorkspaceSection(ref);
+        scrollToWorkspaceSection(ref, targetId);
+      });
+      [80, 180, 360, 720, 1200].forEach((delay, index) => {
+        const timeoutId = window.setTimeout(() => {
+          scrollToWorkspaceSection(ref, targetId, index + 1);
+        }, delay);
+        scrollTimeoutRefs.current.push(timeoutId);
       });
     },
     [scrollToWorkspaceSection]
@@ -1028,14 +1058,26 @@ export default function MarketplaceWorkspacePage() {
           <CardActionRow>
             <SecondaryButton
               type="button"
-              onClick={() => revealWorkspaceSection(setAlertsOpen, alertsSectionRef)}
+              onClick={() =>
+                revealWorkspaceSection(
+                  setAlertsOpen,
+                  alertsSectionRef,
+                  "marketplace-workspace-alerts"
+                )
+              }
               debugId="marketplace-workspace.open-alerts-section"
             >
               Open Alerts
             </SecondaryButton>
             <SecondaryButton
               type="button"
-              onClick={() => revealWorkspaceSection(setMembersOpen, membersSectionRef)}
+              onClick={() =>
+                revealWorkspaceSection(
+                  setMembersOpen,
+                  membersSectionRef,
+                  "marketplace-workspace-members"
+                )
+              }
               debugId="marketplace-workspace.open-members-section"
             >
               Open Members
@@ -1305,7 +1347,11 @@ export default function MarketplaceWorkspacePage() {
         </div>
       ) : null}
 
-      <div ref={alertsSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
+      <div
+        id="marketplace-workspace-alerts"
+        ref={alertsSectionRef}
+        style={{ ...pageCard(), ...marketplaceSectionStyle(), marginTop: 18 }}
+      >
         <div
           style={{
             display: "flex",
@@ -1368,7 +1414,11 @@ export default function MarketplaceWorkspacePage() {
         ) : null}
       </div>
 
-      <div ref={membersSectionRef} style={{ ...pageCard(), marginTop: 18 }}>
+      <div
+        id="marketplace-workspace-members"
+        ref={membersSectionRef}
+        style={{ ...pageCard(), ...marketplaceSectionStyle(), marginTop: 18 }}
+      >
         <div
           style={{
             display: "flex",

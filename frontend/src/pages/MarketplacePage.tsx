@@ -44,6 +44,11 @@ import {
   type CommunityMoneySettlement,
   type CommunityMoneySurface,
 } from "../lib/communityMoney";
+import {
+  marketplaceSectionStyle,
+  scrollElementToMarketplaceLanding,
+  traceMarketplaceLanding,
+} from "../lib/marketplaceActionStability";
 
 type CommunityRow = {
   id?: number;
@@ -2218,20 +2223,21 @@ export default function MarketplacePage() {
       document.getElementById(id) ||
       (id === "marketplace-loans-support" ? supportSectionRef.current : null);
     if (target) {
-      const topNavOffset = Math.min(
-        96,
-        Math.max(18, Math.round((window.innerHeight || 0) * 0.08))
-      );
-      const targetTop =
-        target.getBoundingClientRect().top + window.scrollY - topNavOffset;
-
-      window.scrollTo({
-        top: Math.max(0, targetTop),
-        behavior: "auto",
+      scrollElementToMarketplaceLanding(target as HTMLElement, {
+        surface: "marketplace",
+        targetId: id,
+        reason: "section-open",
+        attempt,
       });
       return;
     }
-    if (attempt >= 5) return;
+    traceMarketplaceLanding({
+      surface: "marketplace",
+      targetId: id,
+      reason: "section-target-missing",
+      attempt,
+    });
+    if (attempt >= 7) return;
     scrollFrameRef.current = window.requestAnimationFrame(() => {
       scrollFrameRef.current = null;
       scrollToMarketplaceSection(id, attempt + 1);
@@ -2254,9 +2260,9 @@ export default function MarketplacePage() {
         scrollToMarketplaceSection(sectionId);
       });
 
-      [120, 320, 700, 1100].forEach((delay) => {
+      [80, 180, 360, 720, 1200, 1800].forEach((delay, index) => {
         const timeoutId = window.setTimeout(() => {
-          scrollToMarketplaceSection(sectionId);
+          scrollToMarketplaceSection(sectionId, index + 1);
         }, delay);
         scrollTimeoutRefs.current.push(timeoutId);
       });
@@ -2279,6 +2285,7 @@ export default function MarketplacePage() {
     }
 
     if (item.id === "support") {
+      setSectionsTouched((prev) => ({ ...prev, support: true }));
       setSectionsOpen((prev) => ({ ...prev, support: true }));
       clearStaleMarketplaceHash("marketplace-loans-support");
       scheduleMarketplaceSectionScroll("marketplace-loans-support");
@@ -2286,6 +2293,7 @@ export default function MarketplacePage() {
     }
 
     if (item.id === "invite") {
+      setSectionsTouched((prev) => ({ ...prev, tools: true }));
       setSectionsOpen((prev) => ({ ...prev, tools: true }));
       clearStaleMarketplaceHash("marketplace-owned-links");
       scheduleMarketplaceSectionScroll("marketplace-owned-links");
@@ -2889,6 +2897,7 @@ export default function MarketplacePage() {
     sectionId: string
   ) {
     consumeMarketplaceButtonEvent(event);
+    setSectionsTouched((prev) => ({ ...prev, [key]: true }));
     setSectionsOpen((prev) => ({ ...prev, [key]: true }));
     clearStaleMarketplaceHash(sectionId);
     scheduleMarketplaceSectionScroll(sectionId);
@@ -3973,7 +3982,7 @@ export default function MarketplacePage() {
       {sectionsOpen.money || sectionsTouched.money ? (
       <section
         id="marketplace-money-routes"
-        style={{ ...pageCard("#FFFFFF"), order: 8 }}
+        style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 8 }}
       >
         <div
           style={{
@@ -4255,7 +4264,7 @@ export default function MarketplacePage() {
       {sectionsOpen.tools || sectionsTouched.tools ? (
       <section
         id="marketplace-owned-links"
-        style={{ ...pageCard("#FFFFFF"), order: 4 }}
+        style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 4 }}
       >
         <div
           style={{
@@ -4928,7 +4937,7 @@ export default function MarketplacePage() {
       {sectionsOpen.members || sectionsTouched.members ? (
       <section
         id="marketplace-members-shops"
-        style={{ ...pageCard("#FFFFFF"), order: 3 }}
+        style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 3 }}
       >
         <div
           style={{
@@ -5124,7 +5133,7 @@ export default function MarketplacePage() {
       <section
         id="marketplace-loans-support"
         ref={supportSectionRef}
-        style={{ ...pageCard("#FFFFFF"), order: 6 }}
+        style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 6 }}
       >
         <div
           style={{
