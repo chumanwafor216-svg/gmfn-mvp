@@ -1636,19 +1636,22 @@ function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function marketplaceOsTileStyle(): React.CSSProperties {
+function marketplaceOsTileStyle(isCompact: boolean): React.CSSProperties {
   return {
     width: "100%",
-    height: 154,
-    minHeight: 154,
-    maxHeight: 154,
-    borderRadius: 20,
+    height: isCompact ? 184 : 154,
+    minHeight: isCompact ? 184 : 154,
+    maxHeight: isCompact ? 184 : 154,
+    borderRadius: isCompact ? 18 : 20,
     border: "1px solid var(--gsn-border)",
     background:
       "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
-    padding: 14,
+    padding: isCompact ? 12 : 14,
     display: "grid",
-    gap: 9,
+    gridTemplateRows: isCompact
+      ? "54px minmax(0, 2.35em) minmax(0, 1.4em) minmax(0, 2.7em)"
+      : "62px minmax(0, 2.35em) minmax(0, 1.4em) minmax(0, 2.7em)",
+    gap: isCompact ? 7 : 9,
     alignContent: "start",
     color: "var(--gsn-text-main)",
     textAlign: "center",
@@ -1665,37 +1668,87 @@ function marketplaceOsTileStyle(): React.CSSProperties {
   };
 }
 
-function marketplaceOsIconStyle(bg: string): React.CSSProperties {
+function marketplaceOsIconStyle(bg: string, isCompact = false): React.CSSProperties {
   return {
-    width: 62,
-    height: 62,
-    borderRadius: 19,
+    width: isCompact ? 54 : 62,
+    height: isCompact ? 54 : 62,
+    borderRadius: isCompact ? 17 : 19,
     margin: "0 auto",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     background: bg,
     color: "#FFFFFF",
-    fontSize: 30,
+    fontSize: isCompact ? 26 : 30,
     boxShadow:
       "0 14px 26px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.22)",
   };
 }
 
-function marketplaceOsRowStyle(): React.CSSProperties {
+function marketplaceOsTileTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    color: "var(--gsn-text-main)",
+    fontSize: isCompact ? 16 : 18,
+    fontWeight: 950,
+    lineHeight: 1.15,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+  };
+}
+
+function marketplaceOsTileMetricStyle(
+  color: string,
+  isCompact: boolean
+): React.CSSProperties {
+  return {
+    minWidth: 0,
+    display: "block",
+    color,
+    fontSize: isCompact ? 17 : 20,
+    fontWeight: 950,
+    lineHeight: 1.15,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+}
+
+function marketplaceOsTileHelperStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...helperText(),
+    minWidth: 0,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    fontSize: isCompact ? 11 : 12,
+    lineHeight: 1.3,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+  };
+}
+
+function marketplaceOsRowStyle(isCompact: boolean): React.CSSProperties {
   return {
     width: "100%",
-    height: 78,
-    minHeight: 78,
-    maxHeight: 78,
-    borderRadius: 16,
+    height: isCompact ? 92 : 86,
+    minHeight: isCompact ? 92 : 86,
+    maxHeight: isCompact ? 92 : 86,
+    borderRadius: isCompact ? 18 : 16,
     border: "1px solid var(--gsn-border)",
     background:
       "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
-    padding: 12,
+    padding: isCompact ? 12 : 13,
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr) auto",
-    gap: 12,
+    gap: isCompact ? 10 : 12,
     alignItems: "center",
     color: "var(--gsn-text-main)",
     textAlign: "left",
@@ -1712,19 +1765,62 @@ function marketplaceOsRowStyle(): React.CSSProperties {
   };
 }
 
-function marketplaceOsRowIconStyle(bg: string): React.CSSProperties {
+function marketplaceOsRowIconStyle(bg: string, isCompact = false): React.CSSProperties {
   return {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
+    width: isCompact ? 42 : 46,
+    height: isCompact ? 42 : 46,
+    borderRadius: isCompact ? 14 : 15,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     background: bg,
     color: "#FFFFFF",
-    fontSize: 22,
+    fontSize: isCompact ? 20 : 22,
     boxShadow:
       "0 12px 22px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.2)",
+  };
+}
+
+function marketplaceOsRowTextStackStyle(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    display: "grid",
+    gap: 4,
+    alignContent: "center",
+  };
+}
+
+function marketplaceOsRowTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    color: "var(--gsn-text-main)",
+    fontSize: isCompact ? 16 : 18,
+    fontWeight: 950,
+    lineHeight: 1.12,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+  };
+}
+
+function marketplaceOsRowDetailStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    color: "#4A6178",
+    fontSize: isCompact ? 12 : 13,
+    fontWeight: 750,
+    lineHeight: 1.25,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
   };
 }
 
@@ -3389,30 +3485,24 @@ export default function MarketplacePage() {
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
-              style={marketplaceOsTileStyle()}
+              style={marketplaceOsTileStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)"
+                  "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)",
+                  isCompact
                 )}
               >
                 💳
               </span>
-              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+              <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Dues & Contributions
               </span>
-              <span
-                style={{
-                  color: "#0B63D1",
-                  fontSize: 20,
-                  fontWeight: 950,
-                  lineHeight: 1.15,
-                }}
-              >
+              <span style={marketplaceOsTileMetricStyle("#0B63D1", isCompact)}>
                 {marketplacePoolLabel}
               </span>
-              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+              <span style={marketplaceOsTileHelperStyle(isCompact)}>
                 Shared money position
               </span>
             </StableButton>
@@ -3427,30 +3517,24 @@ export default function MarketplacePage() {
                   "marketplace-loans-support"
                 )
               }
-              style={marketplaceOsTileStyle()}
+              style={marketplaceOsTileStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)"
+                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
+                  isCompact
                 )}
               >
                 🤝
               </span>
-              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+              <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Support Requests
               </span>
-              <span
-                style={{
-                  color: "#18864A",
-                  fontSize: 20,
-                  fontWeight: 950,
-                  lineHeight: 1.15,
-                }}
-              >
+              <span style={marketplaceOsTileMetricStyle("#18864A", isCompact)}>
                 {marketplaceSupportLabel}
               </span>
-              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+              <span style={marketplaceOsTileHelperStyle(isCompact)}>
                 Help, loans, guarantors
               </span>
             </StableButton>
@@ -3465,30 +3549,24 @@ export default function MarketplacePage() {
                   "marketplace-members-shops"
                 )
               }
-              style={marketplaceOsTileStyle()}
+              style={marketplaceOsTileStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)"
+                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)",
+                  isCompact
                 )}
               >
                 🛒
               </span>
-              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+              <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Trusted Trade
               </span>
-              <span
-                style={{
-                  color: "#4338CA",
-                  fontSize: 20,
-                  fontWeight: 950,
-                  lineHeight: 1.15,
-                }}
-              >
+              <span style={marketplaceOsTileMetricStyle("#4338CA", isCompact)}>
                 {marketplaceTradeLabel}
               </span>
-              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+              <span style={marketplaceOsTileHelperStyle(isCompact)}>
                 Members and visible shops
               </span>
             </StableButton>
@@ -3498,30 +3576,24 @@ export default function MarketplacePage() {
               debugId="marketplace.tile.trust"
               onClick={toggleProfileDetails}
               aria-expanded={profileDetailsOpen}
-              style={marketplaceOsTileStyle()}
+              style={marketplaceOsTileStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                  isCompact
                 )}
               >
                 🛡️
               </span>
-              <span style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+              <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Trust
               </span>
-              <span
-                style={{
-                  color: "#A16A08",
-                  fontSize: 20,
-                  fontWeight: 950,
-                  lineHeight: 1.15,
-                }}
-              >
+              <span style={marketplaceOsTileMetricStyle("#A16A08", isCompact)}>
                 {marketplaceTrustDisplay}
               </span>
-              <span style={{ ...helperText(), fontSize: 12, lineHeight: 1.35 }}>
+              <span style={marketplaceOsTileHelperStyle(isCompact)}>
                 This community only
               </span>
             </StableButton>
@@ -3595,32 +3667,22 @@ export default function MarketplacePage() {
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
-              style={marketplaceOsRowStyle()}
+              style={marketplaceOsRowStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #1177CC 0%, #05365F 100%)"
+                  "linear-gradient(180deg, #1177CC 0%, #05365F 100%)",
+                  isCompact
                 )}
               >
                 💷
               </span>
-              <span style={{ minWidth: 0 }}>
-                <span
-                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
-                >
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
                   Money In / Money Out
                 </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    color: "#4A6178",
-                    fontSize: 13,
-                    fontWeight: 750,
-                    lineHeight: 1.35,
-                  }}
-                >
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Pay into this community or start a guided withdrawal.
                 </span>
               </span>
@@ -3635,32 +3697,22 @@ export default function MarketplacePage() {
               onClick={(event) =>
                 openMarketplaceCta(event, "paymentRails")
               }
-              style={marketplaceOsRowStyle()}
+              style={marketplaceOsRowStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #C9952F 0%, #6D470B 100%)"
+                  "linear-gradient(180deg, #C9952F 0%, #6D470B 100%)",
+                  isCompact
                 )}
               >
                 🏦
               </span>
-              <span style={{ minWidth: 0 }}>
-                <span
-                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
-                >
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
                   Banking Rails
                 </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    color: "#4A6178",
-                    fontSize: 13,
-                    fontWeight: 750,
-                    lineHeight: 1.35,
-                  }}
-                >
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Review payment rails, bank transfer routes, and settlement setup.
                 </span>
               </span>
@@ -3679,32 +3731,22 @@ export default function MarketplacePage() {
                   "marketplace-loans-support"
                 )
               }
-              style={marketplaceOsRowStyle()}
+              style={marketplaceOsRowStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)"
+                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
+                  isCompact
                 )}
               >
                 💚
               </span>
-              <span style={{ minWidth: 0 }}>
-                <span
-                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
-                >
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
                   Loan Process
                 </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    color: "#4A6178",
-                    fontSize: 13,
-                    fontWeight: 750,
-                    lineHeight: 1.35,
-                  }}
-                >
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Start support, check readiness, choose guarantors, and continue the loan workbench.
                 </span>
               </span>
@@ -3723,32 +3765,22 @@ export default function MarketplacePage() {
                   "marketplace-members-shops"
                 )
               }
-              style={marketplaceOsRowStyle()}
+              style={marketplaceOsRowStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)"
+                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)",
+                  isCompact
                 )}
               >
                 📋
               </span>
-              <span style={{ minWidth: 0 }}>
-                <span
-                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
-                >
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
                   Member Ledger
                 </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    color: "#4A6178",
-                    fontSize: 13,
-                    fontWeight: 750,
-                    lineHeight: 1.35,
-                  }}
-                >
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   See visible members, GSN IDs, and connected shops.
                 </span>
               </span>
@@ -3761,32 +3793,22 @@ export default function MarketplacePage() {
               type="button"
               debugId="marketplace.row.demand-box"
               onClick={(event) => openMarketplaceCta(event, "demandBox")}
-              style={marketplaceOsRowStyle()}
+              style={marketplaceOsRowStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                  isCompact
                 )}
               >
                 📣
               </span>
-              <span style={{ minWidth: 0 }}>
-                <span
-                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
-                >
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
                   Demand Box
                 </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    color: "#4A6178",
-                    fontSize: 13,
-                    fontWeight: 750,
-                    lineHeight: 1.35,
-                  }}
-                >
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Open requests and community needs when demand appears.
                 </span>
               </span>
@@ -3801,32 +3823,22 @@ export default function MarketplacePage() {
               onClick={(event) =>
                 openMarketplaceSection(event, "tools", "marketplace-owned-links")
               }
-              style={marketplaceOsRowStyle()}
+              style={marketplaceOsRowStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #158BA0 0%, #075064 100%)"
+                  "linear-gradient(180deg, #158BA0 0%, #075064 100%)",
+                  isCompact
                 )}
               >
                 🗂️
               </span>
-              <span style={{ minWidth: 0 }}>
-                <span
-                  style={{ display: "block", fontSize: 18, fontWeight: 950 }}
-                >
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
                   Records & Links
                 </span>
-                <span
-                  style={{
-                    display: "block",
-                    marginTop: 4,
-                    color: "#4A6178",
-                    fontSize: 13,
-                    fontWeight: 750,
-                    lineHeight: 1.35,
-                  }}
-                >
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Join links, public faces, and controlled outward links.
                 </span>
               </span>
@@ -3842,9 +3854,9 @@ export default function MarketplacePage() {
             onClick={toggleIntentGuide}
             aria-expanded={intentGuideOpen}
             style={{
-              ...marketplaceOsRowStyle(),
+              ...marketplaceOsRowStyle(isCompact),
               marginTop: 14,
-              minHeight: 78,
+              minHeight: isCompact ? 92 : 86,
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(238,244,250,0.98) 100%)",
             }}
@@ -3852,25 +3864,17 @@ export default function MarketplacePage() {
             <span
               aria-hidden="true"
               style={marketplaceOsRowIconStyle(
-                "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)"
+                "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)",
+                isCompact
               )}
             >
               ✨
             </span>
-            <span style={{ minWidth: 0 }}>
-              <span style={{ display: "block", fontSize: 18, fontWeight: 950 }}>
+            <span style={marketplaceOsRowTextStackStyle()}>
+              <span style={marketplaceOsRowTitleStyle(isCompact)}>
                 {intentGuideOpen ? "Hide extra marketplace tools" : "Open extra marketplace tools"}
               </span>
-              <span
-                style={{
-                  display: "block",
-                  marginTop: 4,
-                  color: "#4A6178",
-                  fontSize: 13,
-                  fontWeight: 750,
-                  lineHeight: 1.35,
-                }}
-              >
+              <span style={marketplaceOsRowDetailStyle(isCompact)}>
                 Use this only when the four main blocks are not enough.
               </span>
             </span>

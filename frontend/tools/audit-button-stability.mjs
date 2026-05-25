@@ -115,8 +115,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 48,[\s\S]*?maxHeight: 48,[\s\S]*?function marketplaceOsTileStyle\(\): React\.CSSProperties \{[\s\S]*?height: 154,[\s\S]*?maxHeight: 154,[\s\S]*?overflowAnchor: "none"[\s\S]*?function marketplaceOsRowStyle\(\): React\.CSSProperties \{[\s\S]*?height: 78,[\s\S]*?maxHeight: 78,[\s\S]*?overflowAnchor: "none"/,
-  "Marketplace route/action tiles must keep fixed phone-safe heights without layout containment so card text cannot stretch buttons into unstable tap targets."
+  /function marketplaceActionStyle[\s\S]*?height: 48,[\s\S]*?maxHeight: 48,[\s\S]*?function marketplaceOsTileStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 184 : 154,[\s\S]*?maxHeight: isCompact \? 184 : 154,[\s\S]*?function marketplaceOsTileTitleStyle[\s\S]*?WebkitLineClamp: 2,[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 92 : 86,[\s\S]*?maxHeight: isCompact \? 92 : 86,[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: 2,/,
+  "Marketplace route/action tiles must keep fixed phone-safe heights with clamped text so card content cannot stretch, overlap, or create unstable tap targets."
 );
 
 assertContains(

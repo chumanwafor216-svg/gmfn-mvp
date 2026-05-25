@@ -1,3 +1,45 @@
+### Marketplace mobile OS tile/row alignment repair (2026-05-25)
+
+- Owner phone screenshots showed a real Marketplace layout failure:
+  - the four main marketplace tiles clipped long labels such as `Dues &
+    Contributions`;
+  - Operating Lanes rows were too short for wrapped title/detail text;
+  - fixed-height cards were visually stacking over neighboring rows, making the
+    surface feel jumpy even though the route had improved from earlier tests.
+- Blunt root cause:
+  - `MarketplacePage.tsx` had fixed action heights (`154px` tiles and `78px`
+    rows) while letting titles/details wrap freely.
+  - On the phone viewport, content height exceeded the tap surface height, so
+    text was clipped and appeared misaligned across rows.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - Marketplace OS tiles now accept `isCompact` and use taller phone-safe fixed
+    heights.
+  - Operating Lanes rows now accept `isCompact` and use taller phone-safe fixed
+    heights.
+  - Added shared Marketplace OS title, metric, helper, row-title, and row-detail
+    style helpers with line clamps, no hyphenation, no forced word splitting,
+    and stable overflow handling.
+  - Replaced repeated inline tile/row text styles with those shared helpers so
+    the fix is applied consistently across Dues, Support, Trade, Trust, Money,
+    Banking Rails, Loan Process, Member Ledger, Demand Box, Records & Links,
+    and Extra Marketplace Tools.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - audit now expects the safer fixed-height + clamped-text Marketplace OS
+    contract instead of the old too-short row/tile heights.
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-button-stability.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This fixes the source-level layout and tap-surface contract. A real phone
+    retest is still required because screenshots showed the failure under the
+    phone browser's actual rendering conditions.
+
 ### Deeper system-level mobile action repair after phone failure (2026-05-25)
 
 - Owner's phone retest showed the previous fix was not good enough. The hard
