@@ -9,6 +9,7 @@ import NextActionGuide, {
 import PageTopNav from "../components/PageTopNav";
 import { StableButton } from "../components/StableButton";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
+import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import {
@@ -706,6 +707,10 @@ function communityToolRowStyle(): React.CSSProperties {
     pointerEvents: "auto",
     appearance: "none",
     WebkitAppearance: "none",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transform: "none",
+    transition: "none",
     boxShadow:
       "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",
   };
@@ -2634,6 +2639,7 @@ export default function CommunityHomePage() {
                     </span>
                     <span
                       style={{
+                        ...brandSingleLine(),
                         color: "#07172C",
                         fontSize: isCompact ? 13.5 : 14,
                         fontWeight: 950,
@@ -2644,17 +2650,18 @@ export default function CommunityHomePage() {
                     </span>
                     <span
                       style={{
+                        ...brandSingleLine(),
                         color: item.tone,
                         fontSize: isCompact ? 16 : 22,
                         fontWeight: 950,
                         lineHeight: 1.12,
-                        wordBreak: "break-word",
                       }}
                     >
                       {item.value}
                     </span>
                     <span
                       style={{
+                        ...brandClampLines(2),
                         color: "#5F7287",
                         fontSize: isCompact ? 10.5 : 12.5,
                         fontWeight: 760,
@@ -2695,7 +2702,7 @@ export default function CommunityHomePage() {
                 <span style={{ minWidth: 0 }}>
                   <span
                     style={{
-                      display: "block",
+                      ...brandClampLines(2),
                       color: "#07172C",
                       fontSize: isCompact ? 14.5 : 16,
                       fontWeight: 950,
@@ -2706,7 +2713,7 @@ export default function CommunityHomePage() {
                   </span>
                   <span
                     style={{
-                      display: "block",
+                      ...brandClampLines(2),
                       marginTop: 4,
                       color: "#617085",
                       fontSize: isCompact ? 12 : 13,
@@ -2805,13 +2812,12 @@ export default function CommunityHomePage() {
                   <span style={{ minWidth: 0 }}>
                     <span
                       style={{
-                        display: "block",
+                        ...brandClampLines(2),
                         fontSize: isCompact ? 13.5 : 14,
                         fontWeight: 940,
                         lineHeight: isCompact ? 1.18 : 1.15,
                         whiteSpace: "normal",
                         wordBreak: "normal",
-                        overflowWrap: "break-word",
                       }}
                     >
                       {item.title}
@@ -2937,6 +2943,7 @@ export default function CommunityHomePage() {
               >
                 <span
                   style={{
+                    ...brandClampLines(2),
                     fontSize: 16,
                     fontWeight: 900,
                     lineHeight: 1.18,
@@ -2947,6 +2954,7 @@ export default function CommunityHomePage() {
                 </span>
                 <span
                   style={{
+                    ...brandClampLines(2),
                     fontSize: 12.5,
                     lineHeight: 1.4,
                     fontWeight: 760,
@@ -3105,7 +3113,7 @@ export default function CommunityHomePage() {
               <span style={{ minWidth: 0 }}>
                 <span
                   style={{
-                    display: "block",
+                    ...brandClampLines(2),
                     color:
                       item.id === "vault-control" ? "#F8FBFF" : "#07172C",
                     fontSize: isCompact ? 15 : 16,
@@ -3117,7 +3125,7 @@ export default function CommunityHomePage() {
                 </span>
                 <span
                   style={{
-                    display: "block",
+                    ...brandClampLines(2),
                     marginTop: 4,
                     color:
                       item.id === "vault-control"
@@ -3746,7 +3754,7 @@ export default function CommunityHomePage() {
           <span style={{ minWidth: 0 }}>
             <span
               style={{
-                display: "block",
+                ...brandSingleLine(),
                 color: "#07172C",
                 fontSize: isCompact ? 15 : 16,
                 fontWeight: 940,
@@ -3757,7 +3765,7 @@ export default function CommunityHomePage() {
             </span>
             <span
               style={{
-                display: "block",
+                ...brandSingleLine(),
                 marginTop: 4,
                 color: "#617085",
                 fontSize: isCompact ? 12.2 : 13,

@@ -85,8 +85,26 @@ assertContains(
 
 assertContains(
   "src/pages/LoansPage.tsx",
-  /overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"/,
-  "Loans route labels must not inherit anywhere-breaking text that can turn labels into one-letter columns."
+  /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false, compact = false\): React\.CSSProperties \{[\s\S]*?height: compact \? 66 : 88,[\s\S]*?maxHeight: compact \? 66 : 88,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTitleStyle\(compact = false\): React\.CSSProperties \{[\s\S]*?brandSingleLine\(\)[\s\S]*?function routeHelperStyle\(compact = false\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)/,
+  "Loans overview route labels must keep fixed phone-safe heights and clamped text so they cannot turn labels into one-letter columns or overlap route cards."
+);
+
+[
+  "src/pages/LoanReadinessPage.tsx",
+  "src/pages/LoanSuggestionsPage.tsx",
+  "src/pages/LoanWorkbenchPage.tsx",
+].forEach((file) => {
+  assertContains(
+    file,
+    /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false\): React\.CSSProperties \{[\s\S]*?height: 104,[\s\S]*?maxHeight: 104,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTileTitleStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?function routeTileDetailStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)/,
+    `${file} route cards must keep fixed phone-safe heights and clamped title/detail text.`
+  );
+});
+
+assertContains(
+  "src/pages/LoanSummaryPage.tsx",
+  /import \{ brandClampLines \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false\): React\.CSSProperties \{[\s\S]*?height: 104,[\s\S]*?maxHeight: 104,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTileTitleStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?function routeTileDetailStyle\(\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="loan-summary\.route\.workbench"[\s\S]*?stableHeight=\{104\}/,
+  "Loan Summary route cards must keep fixed phone-safe heights, stableHeight props, and clamped title/detail text."
 );
 
 assertContains(

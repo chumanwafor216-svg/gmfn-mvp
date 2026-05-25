@@ -19,6 +19,7 @@ import {
 } from "../lib/institutionalSurface";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
+import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 
 type CollapseState = {
   overview: boolean;
@@ -527,7 +528,9 @@ function badge(primary = false): React.CSSProperties {
 
 function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
   return {
+    height: isCompact ? 120 : 144,
     minHeight: isCompact ? 120 : 144,
+    maxHeight: isCompact ? 120 : 144,
     borderRadius: 22,
     border: "1px solid rgba(19, 95, 209, 0.14)",
     background:
@@ -542,12 +545,15 @@ function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
     padding: isCompact ? 12 : 16,
     textAlign: "center",
     minWidth: 0,
+    overflow: "hidden",
   };
 }
 
 function financeMiniToolButtonStyle(isCompact: boolean): React.CSSProperties {
   return {
+    height: isCompact ? 82 : 76,
     minHeight: isCompact ? 82 : 76,
+    maxHeight: isCompact ? 82 : 76,
     padding: isCompact ? "12px 10px" : "12px",
     borderRadius: 20,
     border: "1px solid rgba(216, 227, 238, 0.95)",
@@ -558,6 +564,7 @@ function financeMiniToolButtonStyle(isCompact: boolean): React.CSSProperties {
     textAlign: "left",
     display: "block",
     minWidth: 0,
+    overflow: "hidden",
   };
 }
 
@@ -1752,11 +1759,19 @@ export default function FinancePage() {
               >
                 {item.mark}
               </span>
-              <span style={{ fontSize: 15, fontWeight: 950, lineHeight: 1.18 }}>
+              <span
+                style={{
+                  ...brandClampLines(2),
+                  fontSize: 15,
+                  fontWeight: 950,
+                  lineHeight: 1.18,
+                }}
+              >
                 {item.label}
               </span>
               <span
                 style={{
+                  ...brandClampLines(2),
                   color: "#52697F",
                   fontSize: 12,
                   fontWeight: 750,
@@ -1832,11 +1847,11 @@ export default function FinancePage() {
                   }}
                 >
                   <span style={{ fontSize: 20, lineHeight: 1 }}>{tool.icon}</span>
-                  <span>{tool.label}</span>
+                  <span style={brandSingleLine()}>{tool.label}</span>
                 </span>
                 <span
                   style={{
-                    display: "block",
+                    ...brandClampLines(2),
                     marginTop: 5,
                     color: "#52677D",
                     fontWeight: 800,

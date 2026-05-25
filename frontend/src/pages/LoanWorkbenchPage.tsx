@@ -17,6 +17,7 @@ import {
   institutionalStatTile,
 } from "../lib/institutionalSurface";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { brandClampLines } from "../styles/gmfnBrand";
 
 type NoticeTone = "success" | "error";
 
@@ -369,7 +370,9 @@ function routeTileStyle(primary = false): React.CSSProperties {
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
+    height: 104,
     minHeight: 104,
+    maxHeight: 104,
     minWidth: 0,
     borderRadius: 18,
     border: primary
@@ -384,12 +387,33 @@ function routeTileStyle(primary = false): React.CSSProperties {
     boxSizing: "border-box",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
+    overflow: "hidden",
     overflowAnchor: "none",
     transition: "none",
     flexShrink: 0,
     boxShadow: primary
       ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
       : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+  };
+}
+
+function routeTileTitleStyle(): React.CSSProperties {
+  return {
+    ...brandClampLines(2),
+    color: "#F8FBFF",
+    fontWeight: 900,
+    fontSize: 17,
+    lineHeight: 1.3,
+  };
+}
+
+function routeTileDetailStyle(): React.CSSProperties {
+  return {
+    ...brandClampLines(2),
+    marginTop: 10,
+    ...helperText(),
+    fontSize: 13,
+    lineHeight: 1.35,
   };
 }
 
@@ -2074,20 +2098,13 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(true)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 {nextRoute.ctaLabel}
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 {nextRoute.title}
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 {nextRoute.detail}
               </div>
             </StableCtaLink>
@@ -2099,17 +2116,10 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Readiness
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open this when the question is whether the current support flow is clean enough to continue.
               </div>
             </StableCtaLink>
@@ -2121,17 +2131,10 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Suggestions
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open this when the next question is candidate fit rather than deeper workbench state.
               </div>
             </StableCtaLink>
@@ -2149,17 +2152,10 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Summary
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Return to the current support item summary.
               </div>
             </StableCtaLink>
@@ -2171,17 +2167,10 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 {canOpenCommandRevenue ? "Revenue Allocation" : "Finance File"}
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 {canOpenCommandRevenue
                   ? "Read fee and distribution logic when the finance breakdown matters."
                   : "Open the money record visible to you for this community."}
@@ -2201,17 +2190,10 @@ export default function LoanWorkbenchPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Payment Instructions
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open this when the support item has moved into repayment.
               </div>
             </StableCtaLink>
@@ -2224,17 +2206,10 @@ export default function LoanWorkbenchPage() {
                 fullWidth
                 style={routeTileStyle(false)}
               >
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontWeight: 900,
-                    fontSize: 17,
-                    lineHeight: 1.3,
-                  }}
-                >
+                <div style={routeTileTitleStyle()}>
                   Loans & Support
                 </div>
-                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                <div style={routeTileDetailStyle()}>
                   Return to the broader support overview only after the current workbench stage is complete.
                 </div>
               </StableCtaLink>

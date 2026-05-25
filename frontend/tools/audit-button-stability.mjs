@@ -101,6 +101,12 @@ assertContains(
   "Community Home must use the shared stable button primitive and shared CTA resolution for community selection, owner routes, and local action rows."
 );
 
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?overflow: "hidden",[\s\S]*?overflowAnchor: "none",[\s\S]*?transform: "none",[\s\S]*?transition: "none",[\s\S]*?brandSingleLine\(\)[\s\S]*?brandClampLines\(2\)/,
+  "Community Home action rows and summary tiles must keep stable geometry and clamped text so labels cannot stretch, overlap, or create unstable tap targets."
+);
+
 assertNotContains(
   "src/pages/CommunityHomePage.tsx",
   /(<button|<\/button>|<a\s|OriginLink|buttonGuardProps|communityButtonGuardProps|actionTapGuardProps|brandStableTapTarget|stableTapTarget|actionBtn\(|homeTo="\/app|backTo="\/app|to="\/app|withClanQuery\("\/app|openCommunityRoute\(event, "\/app|navigateWithOrigin\(navigate, `\/app|navigateWithOrigin\(navigate, "\/app)/,

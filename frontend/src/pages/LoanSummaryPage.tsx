@@ -14,6 +14,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { brandClampLines } from "../styles/gmfnBrand";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   decideLoanGuarantor,
@@ -243,7 +244,9 @@ function routeTileStyle(primary = false): React.CSSProperties {
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
+    height: 104,
     minHeight: 104,
+    maxHeight: 104,
     minWidth: 0,
     borderRadius: 18,
     border: primary
@@ -258,12 +261,33 @@ function routeTileStyle(primary = false): React.CSSProperties {
     boxSizing: "border-box",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
+    overflow: "hidden",
     overflowAnchor: "none",
     transition: "none",
     flexShrink: 0,
     boxShadow: primary
       ? "0 16px 34px rgba(29,95,212,0.10)"
       : "0 14px 30px rgba(15,23,42,0.05)",
+  };
+}
+
+function routeTileTitleStyle(): React.CSSProperties {
+  return {
+    ...brandClampLines(2),
+    color: "#07172C",
+    fontWeight: 950,
+    fontSize: 17,
+    lineHeight: 1.25,
+  };
+}
+
+function routeTileDetailStyle(): React.CSSProperties {
+  return {
+    ...brandClampLines(2),
+    marginTop: 10,
+    ...helperText(),
+    fontSize: 13,
+    lineHeight: 1.35,
   };
 }
 
@@ -2216,19 +2240,14 @@ export default function LoanSummaryPage() {
             <StableCtaLink
               to={routes.workbench}
               debugId="loan-summary.route.workbench"
+              stableHeight={104}
+              fullWidth
               style={routeTileStyle(true)}
             >
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Workbench
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Continue deeper support handling here.
               </div>
             </StableCtaLink>
@@ -2236,19 +2255,14 @@ export default function LoanSummaryPage() {
             <StableCtaLink
               to={routes.suggestions}
               debugId="loan-summary.route.suggestions"
+              stableHeight={104}
+              fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Suggestions
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open this when the next question is guarantor fit.
               </div>
             </StableCtaLink>
@@ -2256,19 +2270,14 @@ export default function LoanSummaryPage() {
             <StableCtaLink
               to={routes.readiness}
               debugId="loan-summary.route.readiness"
+              stableHeight={104}
+              fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Readiness
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open this when the question is whether the path is clean enough to continue.
               </div>
             </StableCtaLink>
@@ -2276,19 +2285,14 @@ export default function LoanSummaryPage() {
             <StableCtaLink
               to={revenueRoute}
               debugId="loan-summary.route.revenue"
+              stableHeight={104}
+              fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 {canOpenCommandRevenue ? "Revenue Allocation" : "Finance File"}
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 {canOpenCommandRevenue
                   ? "Read fee and distribution logic here."
                   : "Open the money record visible to you for this community."}
@@ -2304,19 +2308,14 @@ export default function LoanSummaryPage() {
                   : routes.finance
               }
               debugId="loan-summary.route.payment-or-finance"
+              stableHeight={104}
+              fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 {canRepay ? "Loan Payment Instructions" : "Finance"}
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 {canRepay
                   ? "Open this when the support item has moved into repayment."
                   : "Open this when the next question is the broader money truth."}
@@ -2327,19 +2326,14 @@ export default function LoanSummaryPage() {
               <StableCtaLink
                 to={routes.loans}
                 debugId="loan-summary.route.loans"
+                stableHeight={104}
+                fullWidth
                 style={routeTileStyle(false)}
               >
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    fontSize: 17,
-                    lineHeight: 1.3,
-                  }}
-                >
+                <div style={routeTileTitleStyle()}>
                   Loans & Support
                 </div>
-                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                <div style={routeTileDetailStyle()}>
                   Return to the broader support overview.
                 </div>
               </StableCtaLink>

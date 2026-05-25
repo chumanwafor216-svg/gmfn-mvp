@@ -12,6 +12,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { brandClampLines } from "../styles/gmfnBrand";
 
 type LoanRow = {
   id?: number;
@@ -320,7 +321,9 @@ function routeTileStyle(primary = false): React.CSSProperties {
     display: "flex",
     flexDirection: "column",
     justifyContent: "space-between",
+    height: 104,
     minHeight: 104,
+    maxHeight: 104,
     minWidth: 0,
     borderRadius: 18,
     border: primary
@@ -335,12 +338,33 @@ function routeTileStyle(primary = false): React.CSSProperties {
     boxSizing: "border-box",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
+    overflow: "hidden",
     overflowAnchor: "none",
     transition: "none",
     flexShrink: 0,
     boxShadow: primary
       ? "0 16px 34px rgba(19,79,191,0.24), inset 0 1px 0 rgba(255,255,255,0.10)"
       : "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+  };
+}
+
+function routeTileTitleStyle(): React.CSSProperties {
+  return {
+    ...brandClampLines(2),
+    color: "#F8FBFF",
+    fontWeight: 900,
+    fontSize: 17,
+    lineHeight: 1.3,
+  };
+}
+
+function routeTileDetailStyle(): React.CSSProperties {
+  return {
+    ...brandClampLines(2),
+    marginTop: 10,
+    ...helperText(),
+    fontSize: 13,
+    lineHeight: 1.35,
   };
 }
 
@@ -1722,20 +1746,13 @@ export default function LoanReadinessPage() {
               fullWidth
               style={routeTileStyle(true)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 {recommendedNext.ctaLabel}
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 {recommendedNext.title}
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 {recommendedNext.detail}
               </div>
             </StableCtaLink>
@@ -1747,17 +1764,10 @@ export default function LoanReadinessPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Suggestions
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open this when the next question is candidate fit after readiness is clear.
               </div>
             </StableCtaLink>
@@ -1769,17 +1779,10 @@ export default function LoanReadinessPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Loan Workbench
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open this for deeper support handling once readiness is clear.
               </div>
             </StableCtaLink>
@@ -1791,17 +1794,10 @@ export default function LoanReadinessPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Open Focus Commitments
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open the Dashboard focus section when readiness depends on steadier
                 repayment follow-through, savings discipline, or a clearer action plan.
               </div>
@@ -1815,17 +1811,10 @@ export default function LoanReadinessPage() {
                 fullWidth
                 style={routeTileStyle(false)}
               >
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontWeight: 900,
-                    fontSize: 17,
-                    lineHeight: 1.3,
-                  }}
-                >
+                <div style={routeTileTitleStyle()}>
                   Support Start Page
                 </div>
-                <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                <div style={routeTileDetailStyle()}>
                   Return here when the draft itself must be started or resumed.
                 </div>
               </StableCtaLink>
@@ -1838,17 +1827,10 @@ export default function LoanReadinessPage() {
               fullWidth
               style={routeTileStyle(false)}
             >
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
+              <div style={routeTileTitleStyle()}>
                 Incoming Guarantor Requests
               </div>
-              <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+              <div style={routeTileDetailStyle()}>
                 Open the queue if someone is waiting directly on your decision.
               </div>
             </StableCtaLink>
@@ -1862,17 +1844,10 @@ export default function LoanReadinessPage() {
                   fullWidth
                   style={routeTileStyle(false)}
                 >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
+                  <div style={routeTileTitleStyle()}>
                     Money Out
                   </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  <div style={routeTileDetailStyle()}>
                     Return to the originating withdrawal path only when you need to verify the handoff source.
                   </div>
                 </StableCtaLink>
@@ -1884,17 +1859,10 @@ export default function LoanReadinessPage() {
                   fullWidth
                   style={routeTileStyle(false)}
                 >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
+                  <div style={routeTileTitleStyle()}>
                     Action Inbox
                   </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
+                  <div style={routeTileDetailStyle()}>
                     Open this when the broader waiting picture matters around support response.
                   </div>
                 </StableCtaLink>

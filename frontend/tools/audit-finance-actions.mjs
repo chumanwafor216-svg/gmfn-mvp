@@ -89,6 +89,12 @@ assertContains(
 
 assertContains(
   "src/pages/FinancePage.tsx",
+  /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function financeToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 120 : 144,[\s\S]*?maxHeight: isCompact \? 120 : 144,[\s\S]*?overflow: "hidden",[\s\S]*?function financeMiniToolButtonStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 82 : 76,[\s\S]*?maxHeight: isCompact \? 82 : 76,[\s\S]*?overflow: "hidden",[\s\S]*?brandClampLines\(2\)[\s\S]*?brandSingleLine\(\)/,
+  "Finance tool and mini-tool cards must keep fixed phone-safe heights and clamped text so labels cannot stretch or overlap action surfaces."
+);
+
+assertContains(
+  "src/pages/FinancePage.tsx",
   /to=\{routes\.loans\}[\s\S]*?debugId="finance\.open-loans"/,
   "Finance Loans & Support action must stay routed to the Loans surface."
 );

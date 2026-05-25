@@ -15,6 +15,7 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import { brandClampLines, brandSingleLine } from "../styles/gmfnBrand";
 
 type LoanRow = {
   id?: number;
@@ -242,7 +243,9 @@ function routeTileStyle(primary = false, compact = false): React.CSSProperties {
     gridTemplateColumns: compact ? "36px minmax(0, 1fr)" : "44px minmax(0, 1fr)",
     alignItems: "center",
     gap: compact ? 8 : 10,
+    height: compact ? 66 : 88,
     minHeight: compact ? 66 : 88,
+    maxHeight: compact ? 66 : 88,
     minWidth: 0,
     borderRadius: compact ? 16 : 20,
     border: primary
@@ -263,6 +266,7 @@ function routeTileStyle(primary = false, compact = false): React.CSSProperties {
     overflowAnchor: "none",
     overflowWrap: "normal",
     wordBreak: "normal",
+    overflow: "hidden",
     transition: "none",
     flexShrink: 0,
     boxShadow: primary
@@ -333,6 +337,7 @@ function routeIconCircle(primary = false, compact = false): React.CSSProperties 
 
 function routeTitleStyle(compact = false): React.CSSProperties {
   return {
+    ...brandSingleLine(),
     color: "#07172C",
     fontWeight: 950,
     fontSize: compact ? 14.25 : 15.5,
@@ -347,7 +352,8 @@ function routeHelperStyle(compact = false): React.CSSProperties {
   return {
     marginTop: compact ? 0 : 6,
     ...helperText(),
-    display: compact ? "none" : "block",
+    ...(compact ? {} : brandClampLines(2)),
+    display: compact ? "none" : "-webkit-box",
     fontSize: 13,
     lineHeight: 1.35,
     overflowWrap: "normal",

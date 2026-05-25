@@ -1,3 +1,72 @@
+### Page-by-page mobile action geometry pass (2026-05-25)
+
+- Owner correctly identified that the Marketplace failure was the same family
+  as the earlier jumping-button issue, but showing up as visual card/row
+  overlap:
+  - fixed tap surfaces;
+  - unconstrained wrapping text;
+  - phone-width labels/details exceeding their action boxes.
+- Used two read-only code auditors before editing:
+  - one traced the Marketplace fix back to the stable geometry + clamped text
+    contract;
+  - one audited remaining non-admin/non-shop app pages and ranked Community
+    Home, Loan Summary, Finance, and loan route clusters as the next useful
+    page-by-page targets.
+- Updated `frontend/src/styles/gmfnBrand.ts`:
+  - added shared `brandClampLines(lines)` and `brandSingleLine()` helpers so
+    page surfaces can reserve text space instead of repeating local line-clamp
+    rules.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - applied shared clamp/single-line helpers to summary tiles, quick actions,
+    trust summary row, owner/tool rows, and the community list header;
+  - hardened `communityToolRowStyle()` with hidden overflow, no transform, no
+    transition, and stable overflow anchoring.
+- Updated `frontend/src/pages/FinancePage.tsx`:
+  - main finance tools and mini-tools now use fixed `height`/`maxHeight`
+    matching their `stableHeight` values;
+  - labels/details are clamped or single-lined so they cannot stretch fixed
+    action cards.
+- Updated loan/support route-card surfaces:
+  - `frontend/src/pages/LoansPage.tsx`
+  - `frontend/src/pages/LoanReadinessPage.tsx`
+  - `frontend/src/pages/LoanSuggestionsPage.tsx`
+  - `frontend/src/pages/LoanSummaryPage.tsx`
+  - `frontend/src/pages/LoanWorkbenchPage.tsx`
+  - route cards now use fixed heights/max-heights and clamped title/detail
+    helpers where they previously relied on free inline text inside fixed or
+    min-height cards.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs` now guards the Community Home
+    geometry/clamp contract;
+  - `frontend/tools/audit-finance-actions.mjs` now guards the Finance tool-card
+    fixed-height/clamp contract;
+  - `frontend/tools/audit-loans-actions.mjs` now guards the Loans overview,
+    readiness, suggestions, summary, and workbench route-card contracts.
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:finance-actions` passed.
+  - `npm run audit:loans-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm exec -- eslint src/styles/gmfnBrand.ts src/pages/CommunityHomePage.tsx src/pages/FinancePage.tsx src/pages/LoansPage.tsx src/pages/LoanReadinessPage.tsx src/pages/LoanSuggestionsPage.tsx src/pages/LoanSummaryPage.tsx src/pages/LoanWorkbenchPage.tsx tools/audit-button-stability.mjs tools/audit-finance-actions.mjs tools/audit-loans-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This is the first page-by-page geometry slice, not the end of the entire
+    app audit.
+  - Marketplace already had the stronger local contract from the previous
+    commit; this pass spreads the same principle to Community Home, Finance,
+    and core Loan/Support route surfaces.
+  - Real phone retest is still mandatory. Static audits cannot prove every
+    Android browser font/zoom/rendering condition.
+  - Admin pages, Shop Control, and public Shop were intentionally left alone in
+    this slice per owner instruction.
+
 ### Marketplace mobile OS tile/row alignment repair (2026-05-25)
 
 - Owner phone screenshots showed a real Marketplace layout failure:

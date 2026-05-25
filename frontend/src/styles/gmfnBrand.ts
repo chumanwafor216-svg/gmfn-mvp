@@ -117,6 +117,34 @@ export function brandHelperText(): React.CSSProperties {
   };
 }
 
+export function brandClampLines(lines = 1): React.CSSProperties {
+  return {
+    minWidth: 0,
+    maxWidth: "100%",
+    display: "-webkit-box",
+    WebkitLineClamp: lines,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+  };
+}
+
+export function brandSingleLine(): React.CSSProperties {
+  return {
+    minWidth: 0,
+    maxWidth: "100%",
+    display: "block",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+  };
+}
+
 export function brandBadge(primary = false): React.CSSProperties {
   return {
     display: "inline-flex",
