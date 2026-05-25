@@ -1,3 +1,33 @@
+### Marketplace buttons falling to entry/public flow follow-up (2026-05-25)
+
+- Owner reported some Marketplace buttons still appear to fall toward the
+  Welcome/entry flow.
+- Confirmed in code:
+  - Marketplace front-page section buttons do not directly target `/welcome`;
+  - the public inner Marketplace Workspace route (`/community/:clanId`) can
+    render buttons to private `/app/...` routes while the phone has no valid app
+    token on that host.
+- Updated `frontend/src/pages/MarketplaceWorkspacePage.tsx`:
+  - added `workspaceCtaPath()` so public Workspace CTAs route unsigned users to
+    `/login?session=expired&next=<private app target>` instead of silently
+    dropping them into a private app route first;
+  - applied it to Community Home, Marketplace, community list, Demand Box,
+    money-route buttons, and join-request buttons.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - Marketplace OS tiles and operating-lane rows now keep fixed tap geometry but
+    with larger phone-safe height reserves instead of exact-fit boxes that could
+    clip or visually spill text on narrow phones;
+  - compact tile metrics can wrap to two lines, and operating-lane details can
+    use three compact lines.
+- Updated `frontend/tools/audit-marketplace-actions.mjs` to lock these two
+  fixes.
+- Remaining truth:
+  - If the phone still reaches Welcome from an authenticated `/app/marketplace`
+    button, pull `sessionStorage.gmfn_mobile_tap_trace`, the current URL after
+    the bad tap, and whether the phone is using local `192.168...` or Render.
+  - A host change can make the same user appear signed out because auth storage
+    is origin-specific.
+
 ### Marketplace front/workspace phone landing repair (2026-05-25)
 
 - Owner phone retest still showed Marketplace actions not landing in the right

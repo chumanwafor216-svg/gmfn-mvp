@@ -1644,9 +1644,9 @@ function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsTileStyle(isCompact: boolean): React.CSSProperties {
   return {
     width: "100%",
-    height: isCompact ? 184 : 154,
-    minHeight: isCompact ? 184 : 154,
-    maxHeight: isCompact ? 184 : 154,
+    height: isCompact ? 218 : 178,
+    minHeight: isCompact ? 218 : 178,
+    maxHeight: isCompact ? 218 : 178,
     borderRadius: isCompact ? 18 : 20,
     border: "1px solid var(--gsn-border)",
     background:
@@ -1654,8 +1654,8 @@ function marketplaceOsTileStyle(isCompact: boolean): React.CSSProperties {
     padding: isCompact ? 12 : 14,
     display: "grid",
     gridTemplateRows: isCompact
-      ? "54px minmax(0, 2.35em) minmax(0, 1.4em) minmax(0, 2.7em)"
-      : "62px minmax(0, 2.35em) minmax(0, 1.4em) minmax(0, 2.7em)",
+      ? "54px 2.45em 2.35em 2.8em"
+      : "62px 2.35em 1.45em 2.7em",
     gap: isCompact ? 7 : 9,
     alignContent: "start",
     color: "var(--gsn-text-main)",
@@ -1698,10 +1698,10 @@ function marketplaceOsTileTitleStyle(isCompact: boolean): React.CSSProperties {
     WebkitBoxOrient: "vertical",
     overflow: "hidden",
     color: "var(--gsn-text-main)",
-    fontSize: isCompact ? 16 : 18,
+    fontSize: isCompact ? 14 : 18,
     fontWeight: 950,
     lineHeight: 1.15,
-    overflowWrap: "normal",
+    overflowWrap: "break-word",
     wordBreak: "normal",
     hyphens: "none",
   };
@@ -1713,14 +1713,17 @@ function marketplaceOsTileMetricStyle(
 ): React.CSSProperties {
   return {
     minWidth: 0,
-    display: "block",
+    display: "-webkit-box",
+    WebkitLineClamp: 2,
+    WebkitBoxOrient: "vertical",
     color,
-    fontSize: isCompact ? 17 : 20,
+    fontSize: isCompact ? 15 : 20,
     fontWeight: 950,
     lineHeight: 1.15,
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
     overflow: "hidden",
-    textOverflow: "ellipsis",
+    overflowWrap: "break-word",
+    wordBreak: "normal",
   };
 }
 
@@ -1743,16 +1746,18 @@ function marketplaceOsTileHelperStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsRowStyle(isCompact: boolean): React.CSSProperties {
   return {
     width: "100%",
-    height: isCompact ? 92 : 86,
-    minHeight: isCompact ? 92 : 86,
-    maxHeight: isCompact ? 92 : 86,
+    height: isCompact ? 116 : 96,
+    minHeight: isCompact ? 116 : 96,
+    maxHeight: isCompact ? 116 : 96,
     borderRadius: isCompact ? 18 : 16,
     border: "1px solid var(--gsn-border)",
     background:
       "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
     padding: isCompact ? 12 : 13,
     display: "grid",
-    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+    gridTemplateColumns: isCompact
+      ? "42px minmax(0, 1fr) 18px"
+      : "46px minmax(0, 1fr) 20px",
     gap: isCompact ? 10 : 12,
     alignItems: "center",
     color: "var(--gsn-text-main)",
@@ -1789,9 +1794,11 @@ function marketplaceOsRowIconStyle(bg: string, isCompact = false): React.CSSProp
 function marketplaceOsRowTextStackStyle(): React.CSSProperties {
   return {
     minWidth: 0,
+    maxWidth: "100%",
     display: "grid",
     gap: 4,
     alignContent: "center",
+    overflow: "hidden",
   };
 }
 
@@ -1806,7 +1813,7 @@ function marketplaceOsRowTitleStyle(isCompact: boolean): React.CSSProperties {
     fontSize: isCompact ? 16 : 18,
     fontWeight: 950,
     lineHeight: 1.12,
-    overflowWrap: "normal",
+    overflowWrap: "break-word",
     wordBreak: "normal",
     hyphens: "none",
   };
@@ -1816,14 +1823,14 @@ function marketplaceOsRowDetailStyle(isCompact: boolean): React.CSSProperties {
   return {
     minWidth: 0,
     display: "-webkit-box",
-    WebkitLineClamp: 2,
+    WebkitLineClamp: isCompact ? 3 : 2,
     WebkitBoxOrient: "vertical",
     overflow: "hidden",
     color: "#4A6178",
     fontSize: isCompact ? 12 : 13,
     fontWeight: 750,
     lineHeight: 1.25,
-    overflowWrap: "normal",
+    overflowWrap: "break-word",
     wordBreak: "normal",
     hyphens: "none",
   };
@@ -1835,6 +1842,9 @@ function marketplaceOsArrowStyle(): React.CSSProperties {
     fontSize: 28,
     fontWeight: 900,
     lineHeight: 1,
+    width: 18,
+    minWidth: 18,
+    textAlign: "center",
   };
 }
 

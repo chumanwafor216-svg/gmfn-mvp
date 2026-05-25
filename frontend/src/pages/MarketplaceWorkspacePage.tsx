@@ -16,6 +16,7 @@ import {
 } from "../lib/institutionalSurface";
 import {
   getClanInviteLink,
+  getAccessToken,
   getMarketplaceShops,
   getSelectedClanId,
   listClanMembers,
@@ -25,7 +26,6 @@ import {
 } from "../lib/api";
 import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 import {
-  navigateToCta,
   resolveCtaTarget,
   type CtaTarget,
   type CtaIntent,
@@ -60,6 +60,16 @@ function rowsOf(input: any): any[] {
 
 function ctaPath(target: CtaTarget): string {
   return typeof target.to === "string" ? target.to : String(target.to);
+}
+
+function workspaceCtaPath(target: CtaTarget): string {
+  const path = ctaPath(target);
+  if (!path.startsWith("/app/") || getAccessToken()) return path;
+
+  const next = new URLSearchParams();
+  next.set("session", "expired");
+  next.set("next", path);
+  return `/login?${next.toString()}`;
 }
 
 function memberGmfnId(member: any): string {
@@ -969,21 +979,21 @@ export default function MarketplaceWorkspacePage() {
 
             <CardActionRow style={{ marginTop: 16 }}>
               <StableCtaLink
-                to={ctaPath(communityHomeCta)}
+                to={workspaceCtaPath(communityHomeCta)}
                 kind="secondary"
                 debugId={communityHomeCta.debugId}
               >
                 Open Community Home
               </StableCtaLink>
               <StableCtaLink
-                to={ctaPath(marketplaceCta)}
+                to={workspaceCtaPath(marketplaceCta)}
                 kind="secondary"
                 debugId={marketplaceCta.debugId}
               >
                 Open Marketplace
               </StableCtaLink>
               <StableCtaLink
-                to={ctaPath(communityListCta)}
+                to={workspaceCtaPath(communityListCta)}
                 kind="secondary"
                 debugId={communityListCta.debugId}
               >
@@ -1216,21 +1226,21 @@ export default function MarketplaceWorkspacePage() {
 
               <CardActionRow style={{ marginTop: 10 }}>
                 <StableCtaLink
-                  to={ctaPath(demandBoxCta)}
+                  to={workspaceCtaPath(demandBoxCta)}
                   kind="secondary"
                   debugId={demandBoxCta.debugId}
                 >
                   Open Demand Box
                 </StableCtaLink>
                 <StableCtaLink
-                  to={ctaPath(marketplaceCta)}
+                  to={workspaceCtaPath(marketplaceCta)}
                   kind="secondary"
                   debugId={marketplaceCta.debugId}
                 >
                   Open Marketplace
                 </StableCtaLink>
                 <StableCtaLink
-                  to={ctaPath(communityHomeCta)}
+                  to={workspaceCtaPath(communityHomeCta)}
                   kind="secondary"
                   debugId={communityHomeCta.debugId}
                 >
@@ -1319,7 +1329,13 @@ export default function MarketplaceWorkspacePage() {
               <SecondaryButton
                 key={item.label}
                 type="button"
-                onClick={() => navigateToCta(navigate, location, item.target)}
+                onClick={() =>
+                  navigate(workspaceCtaPath(item.target), {
+                    state: {
+                      from: `${location.pathname || ""}${location.search || ""}${location.hash || ""}`,
+                    },
+                  })
+                }
                 debugId={item.target.debugId}
               >
                 {item.label}
@@ -1399,7 +1415,7 @@ export default function MarketplaceWorkspacePage() {
 
                     <CardActionRow minHeight={50}>
                       <StableCtaLink
-                        to={ctaPath(joinRequestsCta)}
+                        to={workspaceCtaPath(joinRequestsCta)}
                         kind="primary"
                         debugId={joinRequestsCta.debugId}
                       >

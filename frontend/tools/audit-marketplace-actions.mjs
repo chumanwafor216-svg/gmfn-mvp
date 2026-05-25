@@ -117,9 +117,21 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceOsTileStyle[\s\S]*?height: isCompact \? 218 : 178[\s\S]*?maxHeight: isCompact \? 218 : 178[\s\S]*?54px 2\.45em 2\.35em 2\.8em[\s\S]*?function marketplaceOsTileMetricStyle[\s\S]*?WebkitLineClamp: 2[\s\S]*?whiteSpace: "normal"[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
+  "Marketplace front-page tiles and operating-lane rows must keep fixed phone-safe action geometry with enough reserve so text cannot escape button boxes."
+);
+
+assertContains(
   "src/pages/MarketplaceWorkspacePage.tsx",
   /scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200\]\.forEach[\s\S]*?id="marketplace-workspace-alerts"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-workspace-members"[\s\S]*?marketplaceSectionStyle\(\)/,
   "Marketplace Workspace inner buttons must use shared phone-safe section landing instead of raw scrollIntoView."
+);
+
+assertContains(
+  "src/pages/MarketplaceWorkspacePage.tsx",
+  /getAccessToken[\s\S]*?function workspaceCtaPath\(target: CtaTarget\): string[\s\S]*?path\.startsWith\("\/app\/"\)[\s\S]*?next\.set\("session", "expired"\)[\s\S]*?next\.set\("next", path\)[\s\S]*?workspaceCtaPath\(communityHomeCta\)[\s\S]*?workspaceCtaPath\(marketplaceCta\)[\s\S]*?workspaceCtaPath\(item\.target\)[\s\S]*?workspaceCtaPath\(joinRequestsCta\)/,
+  "Public Marketplace Workspace CTAs must send unsigned users through login recovery instead of dumping them directly into private app routes."
 );
 
 if (findings.length > 0) {
