@@ -377,7 +377,6 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
       "0 12px 28px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
     overflow: "hidden",
     overflowAnchor: "none",
-    contain: "layout paint",
   };
 }
 
@@ -463,7 +462,6 @@ function communityActionStyle(
     overflowAnchor: "none",
     transform: "none",
     transition: "none",
-    contain: "layout paint",
   };
 
   if (kind === "primary") {

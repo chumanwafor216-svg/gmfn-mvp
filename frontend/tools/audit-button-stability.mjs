@@ -43,13 +43,13 @@ assertContains(
 
 assertContains(
   "src/components/StableButton.tsx",
-  /export function StableButton[\s\S]*?inFlight[\s\S]*?function handleClick[\s\S]*?const customClick = Boolean\(onClick\);[\s\S]*?if \(locked \|\| inFlight\.current\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?if \(type !== "submit" \|\| customClick\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?tabIndex=\{locked \? -1 : tabIndex\}[\s\S]*?onPointerDown=\{stopTap\}[\s\S]*?onPointerUp=\{stopTap\}[\s\S]*?export function StableCtaLink[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?export function PrimaryButton[\s\S]*?export function SecondaryButton[\s\S]*?export function SubtleButton[\s\S]*?export function DangerButton[\s\S]*?export function CardActionRow[\s\S]*?export function StableDisclosureSummary[\s\S]*?onPointerUp=\{\(event\) => \{[\s\S]*?stopTap\(event\);/,
+  /export function StableButton[\s\S]*?inFlight[\s\S]*?function handleClick[\s\S]*?const customClick = Boolean\(onClick\);[\s\S]*?if \(locked \|\| inFlight\.current\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?if \(type !== "submit" \|\| customClick\)[\s\S]*?event\.preventDefault\(\);[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?tabIndex=\{locked \? -1 : tabIndex\}[\s\S]*?onPointerDown=\{composeTapGuard\(onPointerDown\)\}[\s\S]*?onPointerUp=\{composeTapGuard\(onPointerUp\)\}[\s\S]*?export function StableCtaLink[\s\S]*?aria-disabled=\{locked \|\| undefined\}[\s\S]*?export function PrimaryButton[\s\S]*?export function SecondaryButton[\s\S]*?export function SubtleButton[\s\S]*?export function DangerButton[\s\S]*?export function CardActionRow[\s\S]*?export function StableDisclosureSummary[\s\S]*?onPointerUp=\{\(event\) => \{[\s\S]*?stopTap\(event\);/,
   "Shared button primitives must include duplicate-click protection, guarded default-action prevention that preserves plain submit buttons, guarded aria-disabled state, pointer-down/up tap guards, link support, stable action rows, and stable disclosure summaries."
 );
 
 assertContains(
   "src/components/OriginLink.tsx",
-  /onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => guardLinkTap\(event, rest\.onClick\)\}[\s\S]*?<Link[\s\S]*?onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?\}\}/,
+  /onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => guardLinkTap\(event, rest\.onClick\)\}[\s\S]*?<Link[\s\S]*?onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?if \(!event\.defaultPrevented\) \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?\}[\s\S]*?\}\}/,
   "OriginLink must guard pointer-down, pointer-up, mouse-down, and click for both external anchors and React Router links."
 );
 
@@ -115,8 +115,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 48,[\s\S]*?maxHeight: 48,[\s\S]*?function marketplaceOsTileStyle\(\): React\.CSSProperties \{[\s\S]*?height: 154,[\s\S]*?maxHeight: 154,[\s\S]*?contain: "layout paint"[\s\S]*?function marketplaceOsRowStyle\(\): React\.CSSProperties \{[\s\S]*?height: 78,[\s\S]*?maxHeight: 78,[\s\S]*?contain: "layout paint"/,
-  "Marketplace route/action tiles must keep fixed phone-safe heights and layout containment so card text cannot stretch buttons into unstable tap targets."
+  /function marketplaceActionStyle[\s\S]*?height: 48,[\s\S]*?maxHeight: 48,[\s\S]*?function marketplaceOsTileStyle\(\): React\.CSSProperties \{[\s\S]*?height: 154,[\s\S]*?maxHeight: 154,[\s\S]*?overflowAnchor: "none"[\s\S]*?function marketplaceOsRowStyle\(\): React\.CSSProperties \{[\s\S]*?height: 78,[\s\S]*?maxHeight: 78,[\s\S]*?overflowAnchor: "none"/,
+  "Marketplace route/action tiles must keep fixed phone-safe heights without layout containment so card text cannot stretch buttons into unstable tap targets."
 );
 
 assertContains(

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
@@ -20,6 +21,7 @@ import {
   publicShopPath,
 } from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
+import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_ROTATION_MS,
@@ -105,21 +107,6 @@ function firstMeaningful(...values: any[]): string {
     if (text) return text;
   }
   return "";
-}
-
-function identityKeys(value: any): string[] {
-  const text = safeStr(value).toUpperCase();
-  if (!text) return [];
-
-  const keys = new Set<string>([text]);
-  if (text.startsWith("GMFN-")) keys.add(`GSN-${text.slice(5)}`);
-  if (text.startsWith("GSN-")) keys.add(`GMFN-${text.slice(4)}`);
-  return Array.from(keys);
-}
-
-function identityMatches(left: any, right: any): boolean {
-  const rightKeys = new Set(identityKeys(right));
-  return identityKeys(left).some((key) => rightKeys.has(key));
 }
 
 function isDisconnectedPublicShopError(message: any): boolean {
@@ -1162,7 +1149,7 @@ export default function ShopGalleryPage() {
           if (alive) {
             setNotice({
               tone: "success",
-              text: identityMatches(refreshedGmfnId, cleanedGmfnId)
+              text: ownerSurfaceIdentityMatches(refreshedGmfnId, cleanedGmfnId)
                 ? "Public shop reconnected. Shop Diaries is ready."
                 : "Stale shop link refreshed to your current GSN shop.",
             });
@@ -1523,6 +1510,11 @@ export default function ShopGalleryPage() {
 
   const shopLoadFailed = Boolean(error);
   const ownerSessionPresent = Boolean(getAccessToken());
+  const shopOwnerGmfnId = firstMeaningful(
+    effectiveShop?.gmfnId,
+    broadcast?.authorGmfnId,
+    gmfnId
+  );
   const loginReconnectPath = `/login?next=${encodeURIComponent(
     publicShopReturnPath
   )}`;
@@ -1845,6 +1837,11 @@ export default function ShopGalleryPage() {
       <div className="public-shop-inner">
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
       {error ? <div style={noticeCard("error")}>{error}</div> : null}
+      <OwnerOnlySurfaceNav
+        ownerGmfnId={shopOwnerGmfnId}
+        compact={isCompact}
+        refreshKey={shopReconnectRetryKey}
+      />
 
       <section
         className="public-shop-stack"
@@ -2802,7 +2799,6 @@ export default function ShopGalleryPage() {
                       boxSizing: "border-box",
                       isolation: "isolate",
                       overflowAnchor: "none",
-                      contain: "layout paint",
                       minHeight: isProductOpen
                         ? isCompact
                           ? 430
@@ -2852,7 +2848,6 @@ export default function ShopGalleryPage() {
                             fontSize: isCompact ? 10.5 : 12,
                             boxShadow: "0 10px 18px rgba(2, 12, 27, 0.24)",
                             overflowAnchor: "none",
-                            contain: "layout paint",
                           }}
                           maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                           frameStyle={{
@@ -3016,7 +3011,6 @@ export default function ShopGalleryPage() {
                           boxSizing: "border-box",
                           overflow: "hidden",
                           overflowAnchor: "none",
-                          contain: "layout paint",
                         }}
                       >
                         <SecondaryButton
@@ -3043,7 +3037,6 @@ export default function ShopGalleryPage() {
                             textOverflow: "ellipsis",
                             overflowWrap: "normal",
                             overflowAnchor: "none",
-                            contain: "layout paint",
                             background:
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
@@ -3072,7 +3065,6 @@ export default function ShopGalleryPage() {
                             textOverflow: "ellipsis",
                             overflowWrap: "normal",
                             overflowAnchor: "none",
-                            contain: "layout paint",
                             background:
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}

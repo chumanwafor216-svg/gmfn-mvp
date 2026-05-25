@@ -193,7 +193,6 @@ function routeTile(primary = false): React.CSSProperties {
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     overflowAnchor: "none",
-    contain: "layout paint",
     transition: "none",
     flexShrink: 0,
     boxShadow: primary ? "0 18px 38px rgba(29,95,212,0.12)" : "0 16px 32px rgba(15,23,42,0.065)",

@@ -76,10 +76,44 @@ html, body {
 
 :where(a, button, [role="button"], summary, input[type="button"], input[type="submit"], .gmfn-btn) {
   transform: none !important;
-  contain: layout paint !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+  filter: none !important;
   transition-property: none !important;
   transition-duration: 0ms !important;
   transition-delay: 0ms !important;
+}
+
+:where(.gmfn-stable-action, [data-gmfn-action-root="true"]) {
+  -webkit-tap-highlight-color: transparent !important;
+  background-clip: padding-box !important;
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+  filter: none !important;
+  transition: none !important;
+}
+
+:where(.gmfn-action-press-lock) {
+  -webkit-tap-highlight-color: transparent !important;
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+  filter: none !important;
+  transition: none !important;
+}
+
+:where(a, button, [role="button"], summary, input[type="button"], input[type="submit"], .gmfn-btn, .gmfn-stable-action, [data-gmfn-action-root="true"]):active {
+  -webkit-tap-highlight-color: transparent !important;
+  transform: none !important;
+  translate: none !important;
+  scale: none !important;
+  rotate: none !important;
+  filter: none !important;
+  transition: none !important;
 }
 
 :where(button, [role="button"], .gmfn-btn) > :where(span, div, strong, small, b, i, svg) {

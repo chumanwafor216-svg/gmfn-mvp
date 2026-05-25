@@ -14,6 +14,7 @@ import {
   getMe,
   getMyNotifications,
   getMyTrustSlip,
+  getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
   listMarketplaceRequests,
   removeMyProfileImage,
@@ -283,10 +284,7 @@ const DASHBOARD_AVATAR_MAX_DIMENSION = 1280;
 const MARKET_WISDOM_ROTATION_MS = 45000;
 
 const PUBLIC_ROUTE_PREFIXES = [
-  "cover",
-  "welcome",
   "guide",
-  "login",
   "create",
   "join",
   "pending-approval",
@@ -304,6 +302,8 @@ const PUBLIC_ROUTE_PREFIXES = [
   "financials",
   "open-finance",
 ];
+
+const PRE_AUTH_ROUTE_PREFIXES = ["cover", "welcome", "login"];
 
 const DASHBOARD_TARGETS = {
   DASHBOARD: "/app/dashboard",
@@ -993,6 +993,89 @@ function positiveNumber(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function normalizeSpotlightItem(raw: any): SpotlightItem | null {
+  const source = raw?.item || raw?.broadcast || raw;
+  if (!source || typeof source !== "object") return null;
+
+  const id = positiveNumber(source.id);
+  const clanId = source.clan_id ?? source.clanId ?? source.source_clan_id;
+  const sourceClanId =
+    source.source_clan_id ?? source.sourceClanId ?? source.clan_id;
+
+  return {
+    id: id || undefined,
+    title: safeStr(source.title) || null,
+    message: safeStr(source.message || source.content || source.text) || null,
+    body: safeStr(source.body || source.description) || null,
+    image_url: safeStr(source.image_url || source.imageUrl) || null,
+    image: safeStr(source.image || source.image_url || source.imageUrl) || null,
+    video_url: safeStr(source.video_url || source.videoUrl) || null,
+    source_shop_name:
+      safeStr(source.source_shop_name || source.sourceShopName) || null,
+    source_clan_name:
+      safeStr(source.source_clan_name || source.sourceClanName) || null,
+    source_clan_id: sourceClanId ?? null,
+    source_marketplace_id:
+      source.source_marketplace_id ?? source.sourceMarketplaceId ?? null,
+    clan_id: clanId ?? null,
+    marketplace_id: source.marketplace_id ?? source.marketplaceId ?? null,
+    author_name: safeStr(source.author_name || source.authorName) || null,
+    author_gmfn_id:
+      safeStr(source.author_gmfn_id || source.authorGmfnId) || null,
+    trust_band: safeStr(source.trust_band || source.trustBand) || null,
+    trust_score: source.trust_score ?? source.trustScore ?? null,
+    price: source.price ?? null,
+    currency: safeStr(source.currency) || null,
+    created_at: safeStr(source.created_at || source.createdAt) || null,
+    expires_at: safeStr(source.expires_at || source.expiresAt) || null,
+  };
+}
+
+function spotlightSortTime(item: SpotlightItem | null): number {
+  return (
+    toDateSafe(item?.created_at)?.getTime() ||
+    positiveNumber(item?.id) ||
+    0
+  );
+}
+
+function spotlightIsActive(item: SpotlightItem | null): boolean {
+  const expiresAt = toDateSafe(item?.expires_at);
+  return !expiresAt || expiresAt.getTime() > Date.now();
+}
+
+function normalizePublicShopSpotlights(raw: any): SpotlightItem[] {
+  const candidates = [
+    raw?.primary_broadcast,
+    raw?.primaryBroadcast,
+    ...(Array.isArray(raw?.broadcasts) ? raw.broadcasts : []),
+    ...(Array.isArray(raw?.items) ? raw.items : []),
+  ];
+  const seen = new Set<string>();
+  const items: SpotlightItem[] = [];
+
+  for (const candidate of candidates) {
+    const item = normalizeSpotlightItem(candidate);
+    if (!item || !spotlightIsActive(item)) continue;
+
+    const key = safeStr(item.id) || [
+      item.author_gmfn_id,
+      item.created_at,
+      item.message,
+      item.image_url,
+      item.video_url,
+    ]
+      .map(safeStr)
+      .join("|");
+
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    items.push(item);
+  }
+
+  return items.sort((a, b) => spotlightSortTime(b) - spotlightSortTime(a));
+}
+
 function dashboardAvatarStorageKeysForUser(user: any): string[] {
   const identityKeys = [
     user?.gmfn_id,
@@ -1471,6 +1554,10 @@ function normalizeActionTargetPath(value: unknown): string {
   const lowerPath = normalizedPath.toLowerCase();
 
   if (!lowerPath) return DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
+
+  if (matchesRoutePrefix(lowerPath, PRE_AUTH_ROUTE_PREFIXES)) {
+    return DASHBOARD_TARGETS.WHAT_MATTERS_NOW;
+  }
 
   const aliased = EXACT_TARGET_ALIASES[lowerPath];
   if (aliased) {
@@ -2696,6 +2783,10 @@ export default function DashboardPage() {
     () => dashboardUserStorageIdentity(me),
     [me]
   );
+  const dashboardGmfnId = useMemo(
+    () => firstNonEmpty(me?.gmfn_id, me?.gmfnId, me?.gmfnID),
+    [me]
+  );
   const dashboardIdentityReady = dashboardStorageIdentity !== "visitor";
   const dashboardAttentionStorageKey = useMemo(
     () =>
@@ -2789,6 +2880,7 @@ export default function DashboardPage() {
   const [attentionClockMs, setAttentionClockMs] = useState<number>(() =>
     Date.now()
   );
+  const dashboardTapLockUntilRef = useRef<number>(0);
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -2967,6 +3059,33 @@ export default function DashboardPage() {
           return;
         }
 
+        if (dashboardGmfnId) {
+          const publicShopRes = await getPublicMarketplaceShopByGmfnId(
+            dashboardGmfnId,
+            {
+              product_limit: 1,
+              broadcast_limit: 24,
+            }
+          ).catch(() => null);
+
+          if (!alive) return;
+
+          const publicShopSpotlights =
+            normalizePublicShopSpotlights(publicShopRes);
+
+          if (publicShopSpotlights.length > 0) {
+            setSpotlights(publicShopSpotlights);
+            setSpotlightQueueTotal(
+              Math.max(
+                publicShopSpotlights.length,
+                Number((publicShopRes as any)?.broadcasts?.length || 0)
+              )
+            );
+            setLatestSpotlightSnapshot(publicShopSpotlights[0] || null);
+            return;
+          }
+        }
+
         const recentRes = await getMarketplaceBroadcasts({
           active_only: false,
           limit: 5,
@@ -3026,7 +3145,7 @@ export default function DashboardPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [selectedClanId]);
+  }, [dashboardGmfnId, selectedClanId]);
 
   useEffect(() => {
     let alive = true;
@@ -4814,12 +4933,14 @@ export default function DashboardPage() {
   function consumeDashboardPointerEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
+    event?.preventDefault();
     stopDashboardPointerEvent(event);
   }
 
   function consumeDashboardButtonEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
+    event?.preventDefault();
     event?.stopPropagation();
   }
 
@@ -4828,17 +4949,18 @@ export default function DashboardPage() {
     to: string
   ) {
     consumeDashboardButtonEvent(event);
+    if (Date.now() < dashboardTapLockUntilRef.current) return;
     navigateWithOrigin(navigate, to, location);
   }
 
   function runDashboardUiMutation(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     action: () => void,
-    _durationMs = 420
+    durationMs = 520
   ) {
-    void _durationMs;
     consumeDashboardButtonEvent(event);
     action();
+    dashboardTapLockUntilRef.current = Date.now() + durationMs;
   }
 
   function openAttentionTarget(
@@ -4846,6 +4968,7 @@ export default function DashboardPage() {
     to: string
   ) {
     consumeDashboardButtonEvent(event);
+    if (Date.now() < dashboardTapLockUntilRef.current) return;
     const nowIso = new Date().toISOString();
     setAttentionPopupVisible(false);
     setAttentionState(markDashboardAttentionActed(attentionSignal.state, nowIso));
@@ -4856,6 +4979,7 @@ export default function DashboardPage() {
     event?: React.SyntheticEvent<HTMLElement>
   ) {
     consumeDashboardButtonEvent(event);
+    if (Date.now() < dashboardTapLockUntilRef.current) return;
     const nowIso = new Date().toISOString();
     setAttentionPopupVisible(false);
     setAttentionState(markDashboardAttentionActed(attentionSignal.state, nowIso));
@@ -4895,17 +5019,16 @@ export default function DashboardPage() {
   }
 
   function toggleSpotlightGuide(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeDashboardButtonEvent(event);
-    setSpotlightGuideOpen((open) => !open);
+    runDashboardUiMutation(event, () => setSpotlightGuideOpen((open) => !open));
   }
 
   function toggleDemandGuide(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeDashboardButtonEvent(event);
-    setDemandGuideOpen((open) => !open);
+    runDashboardUiMutation(event, () => setDemandGuideOpen((open) => !open));
   }
 
   function openSpotlightShop(event?: React.SyntheticEvent<HTMLElement>) {
     consumeDashboardButtonEvent(event);
+    if (Date.now() < dashboardTapLockUntilRef.current) return;
     const spotlightGmfnId = safeStr(activeSpotlight?.author_gmfn_id || "");
     if (!spotlightGmfnId) return;
 
@@ -4935,6 +5058,7 @@ export default function DashboardPage() {
   }
 
   function openTrackedApp(app: AppUseRecord) {
+    if (Date.now() < dashboardTapLockUntilRef.current) return;
     navigateWithOrigin(navigate, app.to, location);
   }
 

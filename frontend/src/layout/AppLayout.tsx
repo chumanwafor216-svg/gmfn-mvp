@@ -25,8 +25,8 @@ type NavGroup = {
   items: NavLinkItem[];
 };
 
-const MOBILE_BOTTOM_NAV_RESERVED_SPACE =
-  "calc(150px + env(safe-area-inset-bottom, 0px))";
+const MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX = 28;
+const MOBILE_BOTTOM_NAV_EXTRA_SPACE_PX = 0;
 
 type RouteMeta = {
   section: string;
@@ -924,13 +924,20 @@ function navItem(active = false, disabled = false): React.CSSProperties {
   };
 }
 
-function mainContent(isMobile: boolean, taskMode: boolean): React.CSSProperties {
+function mainContent(
+  isMobile: boolean,
+  taskMode: boolean,
+  _bottomNavReservePx: number
+): React.CSSProperties {
+  void _bottomNavReservePx;
+  const mobileBottomPadding = "calc(16px + env(safe-area-inset-bottom, 0px))";
+
   return {
     minWidth: 0,
     padding: isMobile
       ? taskMode
-        ? `16px 16px ${MOBILE_BOTTOM_NAV_RESERVED_SPACE}`
-        : `16px 16px ${MOBILE_BOTTOM_NAV_RESERVED_SPACE}`
+        ? `16px 16px ${mobileBottomPadding}`
+        : `16px 16px ${mobileBottomPadding}`
       : "24px 28px 34px",
     overflowX: "hidden",
     flex: isMobile ? "1 1 auto" : undefined,
@@ -1002,7 +1009,7 @@ function overlayBackdrop(open: boolean, zIndex: number): React.CSSProperties {
     background: "rgba(11,31,51,0.34)",
     opacity: open ? 1 : 0,
     pointerEvents: open ? "auto" : "none",
-    transition: "opacity 0.2s ease",
+    transition: "none",
     zIndex,
   };
 }
@@ -1022,7 +1029,7 @@ function drawerPanel(open: boolean): React.CSSProperties {
     overflowY: "auto",
     transform: open ? "translateX(0)" : "translateX(-100%)",
     pointerEvents: open ? "auto" : "none",
-    transition: "transform 0.25s ease",
+    transition: "none",
     zIndex: 1300,
     boxShadow: "12px 0 30px rgba(11,31,51,0.18)",
   };
@@ -1114,7 +1121,7 @@ function actionsPanel(open: boolean): React.CSSProperties {
     transform: open ? "translateY(0)" : "translateY(-12px)",
     opacity: open ? 1 : 0,
     pointerEvents: open ? "auto" : "none",
-    transition: "opacity 0.2s ease, transform 0.2s ease",
+    transition: "none",
     zIndex: 1300,
   };
 }
@@ -1155,11 +1162,9 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
 
 function bottomNav(): React.CSSProperties {
   return {
-    position: "fixed",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 24,
+    position: "relative",
+    zIndex: 1,
+    flexShrink: 0,
     display: "flex",
     gap: 8,
     justifyContent: "flex-start",
@@ -1172,6 +1177,7 @@ function bottomNav(): React.CSSProperties {
     boxShadow: "0 -14px 36px rgba(15,23,42,0.12)",
     WebkitOverflowScrolling: "touch",
     overscrollBehaviorX: "contain",
+    pointerEvents: "none",
     scrollSnapType: "x proximity",
     scrollbarWidth: "none",
     msOverflowStyle: "none",
@@ -1214,6 +1220,8 @@ export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const mobileBottomNavRef = useRef<HTMLElement | null>(null);
+  const [mobileBottomNavReservePx, setMobileBottomNavReservePx] =
+    useState<number>(MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX);
 
   const [isMobile, setIsMobile] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -1481,6 +1489,46 @@ export default function AppLayout() {
 
     return () => window.cancelAnimationFrame(frame);
   }, [isMobile, location.pathname, location.search, canUseAdminTools]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileBottomNavReservePx(MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX);
+      return;
+    }
+
+    const bottomNav = mobileBottomNavRef.current;
+    if (!bottomNav) return;
+
+    function updateBottomReserve() {
+      const height = bottomNav?.getBoundingClientRect().height || 0;
+      const nextReserve = Math.max(
+        MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX,
+        Math.ceil(height + MOBILE_BOTTOM_NAV_EXTRA_SPACE_PX)
+      );
+      setMobileBottomNavReservePx((current) =>
+        current === nextReserve ? current : nextReserve
+      );
+    }
+
+    updateBottomReserve();
+    window.addEventListener("resize", updateBottomReserve);
+
+    const Observer = window.ResizeObserver;
+    const observer = Observer ? new Observer(updateBottomReserve) : null;
+    observer?.observe(bottomNav);
+
+    return () => {
+      window.removeEventListener("resize", updateBottomReserve);
+      observer?.disconnect();
+    };
+  }, [
+    isMobile,
+    location.pathname,
+    location.search,
+    canUseAdminTools,
+    myShopGalleryDisabled,
+    myShopGalleryTo,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1973,7 +2021,7 @@ export default function AppLayout() {
       )}
 
       <main
-        style={mainContent(isMobile, !!taskMode)}
+        style={mainContent(isMobile, !!taskMode, mobileBottomNavReservePx)}
       >
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />
@@ -1981,13 +2029,18 @@ export default function AppLayout() {
       </main>
 
       {isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname)) ? (
-        <nav ref={mobileBottomNavRef} style={bottomNav()}>
+        <nav
+          ref={mobileBottomNavRef}
+          data-gmfn-bottom-nav="true"
+          style={bottomNav()}
+        >
           {mobileBottomItems.map((item) => (
             <StableCtaLink
               key={`bottom-${item.label}-${item.to}`}
               to={item.to}
               kind="soft"
               disabled={!!item.disabled}
+              data-gmfn-bottom-nav-item="true"
               data-bottom-nav-active={
                 isItemActive(item, location.pathname, location.search)
                   ? "true"

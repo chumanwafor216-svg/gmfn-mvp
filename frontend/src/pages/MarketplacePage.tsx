@@ -989,7 +989,6 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     backdropFilter: "blur(8px)",
     overflow: "hidden",
     overflowAnchor: "none",
-    contain: "layout paint",
   };
 }
 
@@ -1411,7 +1410,6 @@ function publicShopFaceCardStyle(isCompact: boolean): React.CSSProperties {
     minHeight: isCompact ? 0 : 330,
     alignSelf: "stretch",
     overflowAnchor: "none",
-    contain: "layout paint",
   };
 }
 
@@ -1664,7 +1662,6 @@ function marketplaceOsTileStyle(): React.CSSProperties {
     boxSizing: "border-box",
     overflow: "hidden",
     overflowAnchor: "none",
-    contain: "layout paint",
   };
 }
 
@@ -1712,7 +1709,6 @@ function marketplaceOsRowStyle(): React.CSSProperties {
     boxSizing: "border-box",
     overflow: "hidden",
     overflowAnchor: "none",
-    contain: "layout paint",
   };
 }
 

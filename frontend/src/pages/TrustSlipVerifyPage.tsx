@@ -739,7 +739,6 @@ export default function TrustSlipVerifyPage() {
           border: "2px solid rgba(180,83,9,0.5)",
           boxShadow: "0 18px 42px rgba(146,64,14,0.13)",
           overflowAnchor: "none",
-          contain: "layout paint",
         }}
       >
         <StableDisclosureSummary

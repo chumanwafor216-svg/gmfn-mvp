@@ -35,6 +35,10 @@ const forbiddenPatterns = [
     pattern: /willChange\s*:\s*["'][^"']*transform[^"']*["']|will-change\s*:\s*[^;]*transform/,
   },
   {
+    label: "Layout paint containment can cause mobile button hit-box drift",
+    pattern: /contain\s*:\s*["']layout paint["']/,
+  },
+  {
     label: "Offscreen legacy copy fields can make mobile browsers re-anchor after tap",
     pattern: /\.(?:left|top)\s*=\s*["']-9999px["']/,
   },
@@ -64,6 +68,12 @@ for (const filePath of listSourceFiles(sourceRoot)) {
 
   lines.forEach((line, index) => {
     for (const forbidden of forbiddenPatterns) {
+      const allowedStableNoopActive =
+        forbidden.pattern.source === ":active\\b" &&
+        line.includes(".gmfn-stable-action");
+
+      if (allowedStableNoopActive) continue;
+
       if (forbidden.pattern.test(line)) {
         findings.push({
           file: relativePath,
@@ -230,6 +240,34 @@ if (
 }
 
 if (
+  !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?root\.setPointerCapture\?\.\(event\.pointerId\)/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must require a strict action-root match and capture the pointer stream when possible",
+    text: "Expected strict action-root matching and pointer capture were not found.",
+  });
+}
+
+if (
+  !/const BOTTOM_NAV_SELECTOR[\s\S]*?data-gmfn-bottom-nav[\s\S]*?function coveredDashboardActionFromBottomNav\(event: PointerEvent \| MouseEvent\): Element \| null[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?bottom-nav-covered-dashboard-suppressed/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must stop fixed bottom rail links from stealing dashboard controls underneath them",
+    text: "Expected dashboard-under-bottom-nav suppression was not found.",
+  });
+}
+
+if (
   !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-suppressed[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
     mobileTapGuardSource
   )
@@ -240,6 +278,21 @@ if (
     label:
       "Global mobile tap guard must suppress orphan clicks after pointer cancel/loss so a late phone click cannot land on a different action",
     text: "Expected pointer-context orphan/cancel click suppression was not found.",
+  });
+}
+
+if (
+  !/const recentPointer = elapsedSinceStart <= 900;[\s\S]*?const canCommitOriginalPointer = recentPointer && moved <= 40;[\s\S]*?const wrongRoot = endRoot && !sameRoot;[\s\S]*?if \(\(recentPointer && \(wrongRoot \|\| unsafeGeometry\)\) \|\| recentCancel\)[\s\S]*?if \(!recentCancel && \(canCommitOriginalPointer \|\| unsafeGeometry\)\)/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Orphan mobile clicks must suppress any recent wrong-root target but only recommit deliberate original taps",
+    text:
+      "Expected strict orphan wrong-root suppression with separate original-action commit threshold was not found.",
   });
 }
 
@@ -299,6 +352,77 @@ if (
 }
 
 if (
+  !/const STABLE_ACTION_CLASS = "gmfn-stable-action";[\s\S]*?function stableActionClassName[\s\S]*?className=\{stableActionClassName\(className\)\}[\s\S]*?className=\{stableActionClassName\(className\)\}[\s\S]*?className=\{stableActionClassName\(className\)\}/.test(
+    stableButtonSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, stableButtonPath),
+    line: 1,
+    label:
+      "Stable action primitives must carry a shared class for press-state visual stabilization",
+    text: "Expected gmfn-stable-action class wiring was not found.",
+  });
+}
+
+if (
+  !/:where\(\.gmfn-stable-action,[\s\S]*?\[data-gmfn-action-root="true"\]\)[\s\S]*?transition: none !important;[\s\S]*?:where\([\s\S]*?\.gmfn-stable-action,[\s\S]*?\[data-gmfn-action-root="true"\]\):active[\s\S]*?transform: none !important;[\s\S]*?transition: none !important;/.test(
+    indexCssSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, indexCssPath),
+    line: 1,
+    label:
+      "Stable action press state must not introduce a temporary visual layer or shifted alignment",
+    text: "Expected stable-action no-op active-state rule was not found.",
+  });
+}
+
+if (
+  !/:where\(\.gmfn-action-press-lock\)[\s\S]*?transform: none !important;[\s\S]*?transition: none !important;/.test(
+    indexCssSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, indexCssPath),
+    line: 1,
+    label:
+      "Global active action lock must neutralize press-time movement for every action captured by the mobile tap guard",
+    text: "Expected gmfn-action-press-lock no-op movement rule was not found.",
+  });
+}
+
+if (
+  !/type ActionRect = \{/.test(mobileTapGuardSource) ||
+  !/function rectForAction\(root: Element \| null\): ActionRect \| null/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function geometryBecameUnsafe\([\s\S]*?rectHasShifted/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function markActiveAction\(root: Element \| null\): void[\s\S]*?ACTIVE_ACTION_CLASS/.test(
+    mobileTapGuardSource
+  ) ||
+  !/function clearActiveTap\(\): void/.test(mobileTapGuardSource) ||
+  !/function commitOriginalAction\([\s\S]*?click-original-action-committed/.test(
+    mobileTapGuardSource
+  ) ||
+  !/click-redispatch-accepted/.test(mobileTapGuardSource) ||
+  !/pointerup-geometry-shift/.test(mobileTapGuardSource) ||
+  !/click-geometry-shift-suppressed/.test(mobileTapGuardSource)
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must commit the original action when a valid tap shifts under the finger",
+    text:
+      "Expected action-geometry guard, active action lock, and original-action commit were not found.",
+  });
+}
+
+if (
   !/data-gmfn-action-root="true"[\s\S]*?style=\{stableStyle\}[\s\S]*?<Link[\s\S]*?data-gmfn-action-root="true"[\s\S]*?style=\{stableStyle\}/.test(
     originLinkSource
   )
@@ -313,7 +437,7 @@ if (
 }
 
 if (
-  !/onPointerDown=\{stopTap\}[\s\S]*?onPointerUp=\{stopTap\}[\s\S]*?onMouseDown=\{stopTap\}[\s\S]*?onClick=\{handleClick\}/.test(
+  !/onPointerDown=\{composeTapGuard\(onPointerDown\)\}[\s\S]*?onPointerUp=\{composeTapGuard\(onPointerUp\)\}[\s\S]*?onMouseDown=\{composeTapGuard\(onMouseDown\)\}[\s\S]*?onClick=\{handleClick\}/.test(
     stableButtonSource
   )
 ) {
@@ -337,6 +461,20 @@ if (
     label:
       "OriginLink must guard pointer-up as well as pointer-down so route links cannot fall through parent mobile cards",
     text: "Expected OriginLink pointer-up guard was not found.",
+  });
+}
+
+if (
+  !/onClick=\{\(event\) => \{[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?if \(!event\.defaultPrevented\) \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);/.test(
+    originLinkSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, originLinkPath),
+    line: 1,
+    label:
+      "OriginLink must record route recovery only after disabled/default-prevented handlers run",
+    text: "Expected route recovery to happen after guardLinkTap and defaultPrevented check.",
   });
 }
 
@@ -528,15 +666,27 @@ const gmfnBrandSource = readFileSync(gmfnBrandPath, "utf8");
 const appShellChecks = [
   {
     label:
-      "Mobile app shell must reserve enough bottom space so page buttons cannot sit under the fixed bottom rail",
+      "Mobile app shell must keep the in-flow bottom rail from injecting dynamic page padding",
     pattern:
-      /const MOBILE_BOTTOM_NAV_RESERVED_SPACE =\s*"calc\(150px \+ env\(safe-area-inset-bottom, 0px\)\)";[\s\S]*?padding: isMobile[\s\S]*?MOBILE_BOTTOM_NAV_RESERVED_SPACE/,
+      /function mainContent\([\s\S]*?_bottomNavReservePx: number[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)"/,
+  },
+  {
+    label:
+      "Mobile overlays must not animate into a visible-but-tap-through closing state",
+    pattern:
+      /function overlayBackdrop\([\s\S]*?transition: "none"[\s\S]*?function drawerPanel\([\s\S]*?transition: "none"[\s\S]*?function actionsPanel\([\s\S]*?transition: "none"/,
   },
   {
     label:
       "Mobile bottom rail must scroll horizontally without scrollIntoView moving the page",
     pattern:
       /const bottomNav = mobileBottomNavRef\.current;[\s\S]*?bottomNav\.scrollTo\(\{[\s\S]*?left: Math\.max\(nextLeft, 0\),[\s\S]*?behavior: "auto",[\s\S]*?}\);/,
+  },
+  {
+    label:
+      "Mobile bottom rail must mark its container and items so the shared tap guard can detect bottom-nav interception",
+    pattern:
+      /<nav[\s\S]*?data-gmfn-bottom-nav="true"[\s\S]*?<StableCtaLink[\s\S]*?data-gmfn-bottom-nav-item="true"/,
   },
   {
     label:
@@ -552,6 +702,18 @@ const sharedTapTargetChecks = [
       "Shared stable tap target must not put every button/link into a z-index stacking layer",
     forbiddenPattern:
       /export function brandStableTapTarget\(\): React\.CSSProperties \{[\s\S]*?\b(?:zIndex|isolation)\s*:/,
+  },
+  {
+    label:
+      "Shared stable tap target must not use layout containment because it can drift mobile hit testing",
+    forbiddenPattern:
+      /export function brandStableTapTarget\(\): React\.CSSProperties \{[\s\S]*?\bcontain\s*:/,
+  },
+  {
+    label:
+      "Shared card helpers must not use layout containment around interactive controls",
+    forbiddenPattern:
+      /export function brand(?:Page|Soft|Inner)Card\([\s\S]*?\bcontain\s*:/,
   },
 ];
 
@@ -575,6 +737,32 @@ for (const check of sharedTapTargetChecks) {
       text: "Unexpected stacking-layer style found in brandStableTapTarget().",
     });
   }
+}
+
+if (
+  /function stableStyle\([\s\S]*?\bcontain\s*:/.test(stableButtonSource)
+) {
+  findings.push({
+    file: relative(frontendRoot, stableButtonPath),
+    line: 1,
+    label:
+      "StableButton action styles must not use layout containment because it can drift mobile hit testing",
+    text: "Unexpected contain style found in stableStyle().",
+  });
+}
+
+if (
+  /:where\(a,\s*button,\s*\[role="button"\],\s*summary,\s*input\[type="button"\],\s*input\[type="submit"\],\s*\.gmfn-btn\)\s*\{[\s\S]*?contain\s*:/m.test(
+    indexCssSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, indexCssPath),
+    line: 1,
+    label:
+      "Global interactive controls must not force CSS contain because it can drift mobile hit testing",
+    text: "Unexpected contain rule found on global action surfaces.",
+  });
 }
 
 const apiPath = join(sourceRoot, "lib", "api.ts");

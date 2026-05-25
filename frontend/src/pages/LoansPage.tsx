@@ -263,7 +263,6 @@ function routeTileStyle(primary = false, compact = false): React.CSSProperties {
     overflowAnchor: "none",
     overflowWrap: "normal",
     wordBreak: "normal",
-    contain: "layout paint",
     transition: "none",
     flexShrink: 0,
     boxShadow: primary

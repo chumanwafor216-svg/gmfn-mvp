@@ -315,7 +315,6 @@ function routeTile(primary = false): React.CSSProperties {
     textDecoration: "none",
     boxSizing: "border-box",
     overflowAnchor: "none",
-    contain: "layout paint",
     transition: "none",
     flexShrink: 0,
     boxShadow: primary

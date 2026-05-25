@@ -168,7 +168,6 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
     padding: 18,
     overflow: "hidden",
     overflowAnchor: "none",
-    contain: "layout paint",
   };
 }
 

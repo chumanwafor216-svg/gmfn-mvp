@@ -37,6 +37,11 @@ type StableDisclosureSummaryProps = Omit<
 };
 
 const CLICK_DEBOUNCE_MS = 360;
+const STABLE_ACTION_CLASS = "gmfn-stable-action";
+
+function stableActionClassName(className?: string): string {
+  return [STABLE_ACTION_CLASS, className].filter(Boolean).join(" ");
+}
 
 function stableStyle(
   kind: BrandActionKind | "danger",
@@ -68,13 +73,21 @@ function stableStyle(
     textDecoration: "none",
     whiteSpace: "normal",
     wordBreak: "normal",
-    contain: "layout paint",
     ...args.style,
   };
 }
 
 function stopTap(event: React.SyntheticEvent<HTMLElement>) {
   event.stopPropagation();
+}
+
+function composeTapGuard<E extends React.SyntheticEvent<HTMLElement>>(
+  handler?: (event: E) => void
+) {
+  return (event: E) => {
+    stopTap(event);
+    handler?.(event);
+  };
 }
 
 function isPromiseLike(value: unknown): value is Promise<unknown> {
@@ -92,7 +105,11 @@ export function StableButton({
   stableHeight,
   debugId,
   style,
+  className,
   onClick,
+  onPointerDown,
+  onPointerUp,
+  onMouseDown,
   tabIndex,
   type = "button",
   ...rest
@@ -138,12 +155,13 @@ export function StableButton({
       type={type}
       data-gmfn-action-root="true"
       data-cta-id={debugId}
+      className={stableActionClassName(className)}
       aria-busy={busy || localBusy || undefined}
       aria-disabled={locked || undefined}
       tabIndex={locked ? -1 : tabIndex}
-      onPointerDown={stopTap}
-      onPointerUp={stopTap}
-      onMouseDown={stopTap}
+      onPointerDown={composeTapGuard(onPointerDown)}
+      onPointerUp={composeTapGuard(onPointerUp)}
+      onMouseDown={composeTapGuard(onMouseDown)}
       onClick={handleClick}
       style={stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style })}
     >
@@ -163,7 +181,11 @@ export function StableCtaLink({
   stableHeight,
   debugId,
   style,
+  className,
   onClick,
+  onPointerDown,
+  onPointerUp,
+  onMouseDown,
   tabIndex,
   ...rest
 }: StableLinkProps) {
@@ -192,9 +214,13 @@ export function StableCtaLink({
       {...rest}
       data-gmfn-action-root="true"
       data-cta-id={debugId}
+      className={stableActionClassName(className)}
       aria-busy={busy || undefined}
       aria-disabled={locked || undefined}
       tabIndex={locked ? -1 : tabIndex}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onMouseDown={onMouseDown}
       onClick={handleClick}
       style={stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style })}
     >
@@ -242,7 +268,6 @@ export function CardActionRow({
         minHeight,
         boxSizing: "border-box",
         overflowAnchor: "none",
-        contain: "layout paint",
         transition: "none",
         ...style,
       }}
@@ -257,7 +282,9 @@ export function StableDisclosureSummary({
   debugId,
   stableHeight = 40,
   style,
+  className,
   onPointerDown,
+  onPointerUp,
   onMouseDown,
   onClick,
   onKeyDown,
@@ -268,6 +295,7 @@ export function StableDisclosureSummary({
       {...rest}
       data-gmfn-action-root="true"
       data-cta-id={debugId}
+      className={stableActionClassName(className)}
       onPointerDown={(event) => {
         stopTap(event);
         onPointerDown?.(event);
@@ -282,6 +310,7 @@ export function StableDisclosureSummary({
       }}
       onPointerUp={(event) => {
         stopTap(event);
+        onPointerUp?.(event);
       }}
       onKeyDown={(event) => {
         event.stopPropagation();

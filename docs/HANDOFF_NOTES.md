@@ -1,3 +1,344 @@
+### Deeper system-level mobile action repair after phone failure (2026-05-25)
+
+- Owner's phone retest showed the previous fix was not good enough. The hard
+  truth: the guard could still allow a wrong-target click after larger movement,
+  and some UI layers could still create tap-through or hit-box drift conditions.
+- Two code auditors were used for the deeper pass:
+  - global tap/event audit found that wrong-root clicks must be suppressed
+    regardless of movement, `OriginLink` route recovery must happen after the
+    disabled/default-prevented guard, and mobile shell close transitions could
+    produce visible-but-tap-through layers;
+  - layout/overlay audit found remaining `contain: "layout paint"` styles around
+    action surfaces and shared institutional cards, which can confuse mobile
+    hit testing.
+- Updated:
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - now records the original action root and rectangle at pointer-down;
+    - if the phone sends the click to the wrong action after a valid tap, the
+      guard suppresses the wrong target and commits the original action with
+      `root.click()`;
+    - wrong-root clicks are now suppressed even when movement is larger than the
+      old 40px threshold;
+    - tightened the orphan-click path too: recent wrong-root clicks are
+      suppressed regardless of movement, but the original action is only
+      replayed when the touch still looks like a deliberate tap or a verified
+      geometry shift;
+    - dashboard controls hidden beneath the bottom rail are recovered using the
+      same global original-action commit path;
+    - trace events include `click-original-action-committed`,
+      `click-redispatch-accepted`, `click-mismatch-suppressed`, and
+      `click-geometry-shift-suppressed`.
+  - `frontend/src/layout/AppLayout.tsx`
+    - removed mobile drawer/action-panel close animations that could leave
+      visible controls tap-through during close;
+    - stopped dynamic bottom-nav height from changing page bottom padding while
+      the phone is interacting with controls.
+  - `frontend/src/components/OriginLink.tsx`
+    - records route recovery only after `guardLinkTap` runs and only when the
+      event was not prevented.
+  - `frontend/src/index.css`
+    - keeps the global no-op press lock for active action roots.
+  - Removed `contain: "layout paint"` from frontend source action/card surfaces,
+    including institutional helpers and route pages affected by the audit.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - now forbids layout-paint containment in source files and requires the
+      original-action commit, overlay no-transition rule, bottom-nav markers,
+      strict action-root matching, strict orphan wrong-root suppression, and
+      route-recovery ordering.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now expects fixed marketplace action heights without layout containment
+      and the safer `OriginLink` recovery order.
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:finance-actions` passed.
+  - `npm run audit:loans-actions` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:admin-ops-actions` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts src/layout/AppLayout.tsx src/components/OriginLink.tsx tools/audit-mobile-tap-stability.mjs tools/audit-button-stability.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This is system-level work, not a Dashboard-only patch.
+  - The fix prevents a valid tap from becoming the wrong route/control when the
+    final click lands somewhere else.
+  - Phone retest is still mandatory. Automated checks cannot fully prove a real
+    phone's touch stack. If the phone still mislands, the next evidence source
+    is `sessionStorage.gmfn_mobile_tap_trace`, especially action labels and
+    mismatch/commit events.
+  - Known next risks if retest still fails: route-local high z-index overlays,
+    blocked actions that use disabled semantics instead of an explanatory click
+    handler, and any dynamic wrapper that swaps action DOM nodes mid-tap.
+
+### Owner-only public-surface navigation promoted to shared layer (2026-05-25)
+
+- Owner noticed the public Shop Gallery had no way for the shop owner to move
+  back into the app after opening their own user-facing gallery.
+- Owner then correctly challenged whether this was truly system-level or only
+  another page patch.
+- Blunt product distinction:
+  - visitors should keep seeing a clean public gallery with no internal app
+    navigation;
+  - the signed-in shop owner should be able to move between their public gallery
+    and GSN work areas.
+- Updated:
+  - `frontend/src/lib/ownerSurfaceIdentity.ts`
+    - shared owner identity helpers;
+    - keeps GMFN/GSN id equivalence in one place.
+  - `frontend/src/components/OwnerOnlySurfaceNav.tsx`
+    - shared owner-only navigation component for public owner surfaces;
+    - loads the signed-in user's GMFN id when an owner session token is present;
+    - only renders when the signed-in identity matches the public surface owner;
+    - default links go to Dashboard, Marketplace, and Shop Control.
+  - `frontend/src/pages/ShopGalleryPage.tsx`
+    - now consumes the shared owner navigation component instead of carrying
+      page-local navigation/auth display logic.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx src/components/OwnerOnlySurfaceNav.tsx src/lib/ownerSurfaceIdentity.ts`
+    passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This is now a reusable system-level frontend layer, not just a Shop Gallery
+    one-off.
+  - It still only appears on pages that explicitly mount the shared component;
+    that is intentional so outside visitor pages stay clean.
+  - This does not expose internal navigation to outside visitors.
+  - A signed-in non-owner viewing someone else's public shop also should not see
+    the owner navigation strip.
+
+### Dashboard spotlight now falls back to public shop spotlight (2026-05-25)
+
+- Owner phone test found the active spotlight visible on Shop Gallery but not
+  on `/app/dashboard`.
+- Blunt root cause:
+  - Shop Gallery reads active broadcasts from the public shop endpoint for the
+    shop owner.
+  - Dashboard first reads authenticated marketplace broadcasts for the current
+    selected/active community context.
+  - Those two views can legitimately disagree when the shop owner's active
+    spotlight is public/owner-visible but not returned by the dashboard's
+    current community broadcast query.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - imports `getPublicMarketplaceShopByGmfnId`;
+  - normalizes public shop broadcasts into the existing `SpotlightItem` shape;
+  - keeps the authenticated community broadcast list as the first source;
+  - only when that list is empty, falls back to the signed-in member's public
+    shop spotlight using their GMFN id.
+- Verification:
+  - `npm exec -- eslint src/pages/DashboardPage.tsx` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This should make Amara's active shop spotlight appear on Dashboard after a
+    phone hard refresh, provided her signed-in account has the same GMFN id as
+    the public shop gallery being tested.
+  - If Shop Gallery is showing another seller's spotlight, Dashboard should not
+    mirror it as Amara's personal active spotlight.
+
+### Stable action press-state blink neutralized (2026-05-25)
+
+- Owner phone testing reported a new useful clue: when tapping Dashboard
+  controls, some buttons briefly blinked or showed a different underlay/aligned
+  layer. The owner described it as feeling like stacked button layers where the
+  visible button and touch target were not fully aligned.
+- Blunt conclusion: even when routing guards pass, a visible press-state shift
+  destroys tester confidence and can indicate a tap-time hit-test mismatch.
+- Updated:
+  - `frontend/src/components/StableButton.tsx`
+    - `StableButton`, `StableCtaLink`, and `StableDisclosureSummary` now carry
+      a shared `gmfn-stable-action` class while preserving caller class names.
+  - `frontend/src/index.css`
+    - shared stable actions now force no-op pressed state:
+      no transform, translate, scale, rotate, filter, transition, or tap
+      highlight during active press.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - permits only the shared no-op stable active rule;
+    - requires stable action class wiring and the no-op active-state CSS.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx src/index.css tools/audit-mobile-tap-stability.mjs`
+    passed, with a warning that CSS files are ignored by the current ESLint
+    config.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This specifically targets the blink/underlay/alignment symptom; phone
+    retest is still required before the Dashboard is safe for external testers.
+
+### Mobile bottom rail changed from fixed overlay to in-flow nav (2026-05-25)
+
+- Follow-up owner phone test after the second-pass repair still showed
+  intermittent Dashboard mislandings. New wrong target included Finance, which
+  is also a bottom-nav route.
+- Blunt conclusion: the fixed mobile bottom rail was still the most likely
+  system-level hit-test layer. The visible button and the phone's active hit
+  target could still disagree intermittently, especially while the Dashboard
+  reflowed after accordion open/close.
+- Updated `frontend/src/layout/AppLayout.tsx`:
+  - mobile bottom rail is no longer `position: fixed`;
+  - it now sits in normal page flow with `position: relative`;
+  - fallback bottom reserve was reduced because the rail no longer overlays the
+    screen;
+  - top Menu / Tools remain available for movement while the bottom rail no
+    longer floats above Dashboard or inner-page controls.
+- Verification:
+  - `npm exec -- eslint src/layout/AppLayout.tsx src/lib/mobileTapGuard.ts tools/audit-mobile-tap-stability.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This is the strongest system-level fix so far because it removes the
+    overlay layer instead of trying to guard around it.
+  - Owner still needs a hard refresh on phone and a focused retest of Dashboard
+    accordions before the Amara/Amana test can be called safe.
+
+### Dashboard phone tap mislanding second-pass audit repair (2026-05-25)
+
+- Follow-up phone test showed the first fix improved the Dashboard but did not
+  make it safe enough for the Amara/Amana rehearsal:
+  - Demand Box mostly opened correctly but still missed once in repeated taps.
+  - What Needs Attention opened but close attempts were still inconsistent.
+  - Focus Commitments could still fall into Trust / Trust Passport.
+- Two independent auditors were used:
+  - Dashboard auditor found 51 Dashboard `StableButton` declarations and 1
+    `StableDisclosureSummary`, with no raw Dashboard `<button>` actions.
+  - Shared mobile auditor agreed the likely system causes were fixed bottom-nav
+    interception, loose action-root matching, dynamic Dashboard route CTAs, and
+    layout shifts after accordion open/close.
+- Updated:
+  - `frontend/src/lib/mobileTapGuard.ts`
+    - added detection for bottom-nav actions covering Dashboard actions using
+      `elementsFromPoint()`;
+    - suppresses bottom-nav clicks when a Dashboard action is directly under
+      the fixed rail at the tap point;
+    - tightened action-root matching so a tap must end on the exact same action
+      root or the same `data-cta-id`, not merely a contained child/root;
+    - uses `setPointerCapture()` best-effort on pointerdown.
+  - `frontend/src/layout/AppLayout.tsx`
+    - bottom nav container/items are now explicitly marked for the shared tap
+      guard;
+    - bottom nav container no longer steals background taps
+      (`pointerEvents: none`; items remain `pointerEvents: auto`);
+    - mobile main content now reserves measured bottom-nav height plus extra
+      spacing using `ResizeObserver`, with a larger fallback reserve.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - authenticated Dashboard action normalization now rejects pre-auth
+      `cover`, `welcome`, and `login` targets, mapping them back to
+      Notifications / What Matters Now;
+    - Dashboard pointer consumption now also calls `preventDefault()`;
+    - Dashboard UI mutations now set a short tap lock after accordion/panel
+      changes so late/ghost clicks do not hit newly shifted routed CTAs.
+  - `frontend/src/components/StableButton.tsx`
+    - `StableDisclosureSummary` now composes caller `onPointerUp`.
+  - `frontend/src/styles/gmfnBrand.ts`
+    - removed `contain: layout paint` from shared page/soft/inner card helpers
+      as well as shared stable tap targets.
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - added guardrails for strict action-root matching, pointer capture,
+      bottom-nav Dashboard interception suppression, bottom-nav markers, dynamic
+      bottom reserve, and no shared-card layout containment.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx src/layout/AppLayout.tsx src/lib/mobileTapGuard.ts src/pages/DashboardPage.tsx src/styles/gmfnBrand.ts tools/audit-mobile-tap-stability.mjs tools/audit-button-stability.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run build` still hits sandbox Vite/esbuild `spawn EPERM` inside the
+    sandbox, then passed with approved escalation.
+- Remaining truth:
+  - This is now a stronger system-level fix, but it still needs the owner’s
+    real phone retest before declaring the Dashboard safe for the school test.
+  - If a wrong landing remains, the next move is a runtime geometry audit that
+    samples each Dashboard CTA with `elementFromPoint()` on phone viewport.
+
+### Dashboard phone tap mislanding repair during Amara rehearsal (2026-05-25)
+
+- Live phone rehearsal with the Amara demo account exposed a real Dashboard
+  blocker: multiple Dashboard buttons felt jumpy and several taps appeared to
+  fall into Action Inbox / Notifications instead of the intended Dashboard
+  control.
+- Blunt root cause found in source:
+  - pages were passing route-local pointer guards into `StableButton`;
+  - `StableButton` accepted those props but overwrote them with its own
+    `onPointerDown`, `onPointerUp`, and `onMouseDown` handlers;
+  - this meant Dashboard-specific tap protection was not actually being run.
+- Updated:
+  - `frontend/src/components/StableButton.tsx`
+    - added `composeTapGuard()` so shared stop-propagation still runs while
+      preserving page-provided pointer/mouse handlers.
+    - `StableCtaLink` now forwards pointer/mouse handlers through to
+      `OriginLink`, whose own guard composes them.
+    - removed layout containment from shared action styles after checking
+      `frontend/docs/CONTROL_SURFACE_PROTOCOL.md`; the protocol explicitly
+      warns that `contain` on shared tap targets can cause phone hit-test drift.
+  - `frontend/src/pages/DashboardPage.tsx`
+    - Dashboard click consumption now calls `preventDefault()` before stopping
+      propagation, so Dashboard toggle/navigation clicks own the tap more
+      aggressively.
+  - `frontend/src/styles/gmfnBrand.ts`
+    - `brandStableTapTarget()` no longer applies `contain: layout paint`.
+  - `frontend/src/index.css`
+    - global action controls no longer force CSS `contain`.
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+    - updated the guardrails to require the composed shared tap guard and to
+      reject layout containment on shared/global action tap targets.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx src/pages/DashboardPage.tsx tools/audit-button-stability.mjs tools/audit-mobile-tap-stability.mjs`
+    passed.
+  - `npm exec -- eslint src/components/StableButton.tsx src/styles/gmfnBrand.ts src/pages/DashboardPage.tsx tools/audit-mobile-tap-stability.mjs`
+    passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run build` hit the known sandbox Vite/esbuild `spawn EPERM`, then
+    passed with approved escalation.
+- Remaining truth:
+  - This fixes a real shared-button bug and should improve the Dashboard phone
+    taps immediately through Vite HMR, but the owner still needs to refresh the
+    phone page and retest the exact failing Dashboard controls.
+  - If any Dashboard action still lands wrongly, inspect
+    `sessionStorage.gmfn_mobile_tap_trace`; the trace should now show the
+    accepted `dashboard.*` action id.
+
 ### Public shop stale production-link owner recovery (2026-05-18)
 
 - Live Render checks confirmed the public frontend route for
