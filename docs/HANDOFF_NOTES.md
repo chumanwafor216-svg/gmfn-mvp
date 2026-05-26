@@ -1,3 +1,121 @@
+### Create Community phone-check stability pass (2026-05-26)
+
+- Owner shared a phone screenshot of the Create Community Block 2 phone check
+  on `frontend.onrender.com`.
+- Confirmed visible issues from screenshot:
+  - the `Verification code` label was low-contrast on the dark stage panel;
+  - Chrome could place `+44` into the code field, meaning the input was not
+    strongly constrained as an OTP/code field;
+  - the `Clear` and `Confirm phone code` action row still used flexible wrapping
+    geometry, leaving the buttons vulnerable to phone-width layout shifts.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - added `fieldLabelOnDark()` and used it for the phone-code and bank/wallet
+    labels inside Block 2;
+  - added `otpDigits()` and normalized the verification code before enabling or
+    submitting confirmation;
+  - changed the verification input to numeric one-time-code semantics with
+    `inputMode="numeric"`, `autoComplete="one-time-code"`, `pattern="[0-9]*"`,
+    `maxLength={8}`, and `name="entry-phone-code"`;
+  - replaced the phone-code action flex row with fixed `56px` grid rows and
+    fixed-height button styling through `entryActionRowStyle()` and
+    `entryActionStyle()`.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-member-entry-actions.mjs`
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx tools/audit-button-stability.mjs tools/audit-member-entry-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
+    then passed with approved escalation.
+- Remaining truth:
+  - The screenshot is from Render. Local repo changes will not change that URL
+    until the frontend is deployed/rebuilt there.
+  - This is a source fix for the Create Community phone-check screen, not yet a
+    real-device confirmation on the deployed Render build.
+
+### Dashboard-wide button stability pass (2026-05-26)
+
+- Owner reported dashboard button unsteadiness is high on phone.
+- Constraint checked first:
+  - `frontend/src/pages/DashboardPage.tsx` has frozen dashboard Market Wisdom
+    presentation and dashboard profile picture frame tools.
+  - This pass did not redesign those areas; it tightened route-local action
+    geometry and tap-surface stability.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - hardened `primaryBtn()`, `secondaryBtn()`, `subtleBtn()`, and
+    `trustWhiteBtn()` with no-transform/no-transition/no-shrink/no-anchor
+    movement settings;
+  - added `dashboardStableActionFrame()` so dashboard action surfaces with a
+    declared height/min-height become fixed-height controls with matching
+    height/minHeight/maxHeight;
+  - routed `dashboardFillButton()` through the fixed action frame;
+  - converted dashboard accordion controls to fixed `74px` phone / `76px`
+    desktop heights;
+  - clamped accordion title/summary text to one line so wrapped text cannot
+    enlarge the button;
+  - made launcher buttons reserve fixed `76px` phone / `74px` desktop heights;
+  - stabilized custom dashboard controls that bypassed fill helpers, including
+    the attention reminder, passport signal buttons, Spotlight guide toggle,
+    legacy Spotlight overlay controls, and hidden regular-app buttons;
+  - removed chevron transition movement.
+- Updated `frontend/tools/audit-dashboard-actions.mjs`:
+  - audit now requires the dashboard fixed-action frame, fixed accordion
+    contract, clamped accordion text, and fixed launcher height contract.
+- Verification:
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/pages/DashboardPage.tsx tools/audit-dashboard-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
+    then passed with approved escalation.
+- Remaining truth:
+  - This is a dashboard-wide source-level action geometry pass, not proof that
+    every phone/browser tap now feels perfect.
+  - Because the owner reported high unsteadiness, the next useful evidence is a
+    real phone retest on `/app/dashboard`; if any button still jumps, capture
+    the exact label plus `sessionStorage.gmfn_mobile_tap_trace`.
+
+### Demand Box phone button stability pass (2026-05-26)
+
+- Owner reported the Demand Box button felt jumpy on phone while testing local
+  GSN access.
+- Updated `frontend/src/pages/DemandBoxPage.tsx`:
+  - added `demandActionRowStyle()` and `demandActionStyle()` so Demand Box
+    route buttons reserve fixed phone-safe grid rows and fixed button heights;
+  - converted the main hero actions, create/post actions, request status
+    actions, missing-community route actions, and bottom route actions away from
+    flex-wrap auto-height rows;
+  - raised community choice buttons from flexible `52px` min-height to fixed
+    `58px` height so busy/selected labels cannot resize the tap surface.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - added explicit no-transform/no-shrink/no-transition markers to Marketplace
+    OS tiles and rows, including the Demand Box shortcut row.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-marketplace-actions.mjs`
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/pages/DemandBoxPage.tsx src/pages/MarketplacePage.tsx tools/audit-button-stability.mjs tools/audit-marketplace-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
+    then passed with approved escalation.
+- Remaining truth:
+  - This fixes the source-level Demand Box action geometry and the Marketplace
+    Demand Box shortcut stability contract, but it still needs a real phone
+    retest on `http://192.168.1.38:5173/`.
+  - If the button still feels jumpy, pull
+    `sessionStorage.gmfn_mobile_tap_trace` and the exact route/button label
+    before changing broader mobile tap logic.
+
 ### Marketplace inner action tightening pass (2026-05-25)
 
 - Owner confirmed Marketplace improved but still misses roughly 3 out of 4

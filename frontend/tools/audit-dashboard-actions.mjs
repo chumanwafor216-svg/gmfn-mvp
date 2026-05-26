@@ -105,6 +105,21 @@ assertContains(
   "Dashboard focus commitment row actions must keep item-specific debug IDs."
 );
 
+assertContains(
+  /const dashboardStableActionFrame = \([\s\S]*?height: stableHeight,[\s\S]*?minHeight: stableHeight,[\s\S]*?maxHeight: style\.maxHeight \?\? stableHeight[\s\S]*?transition: "none"[\s\S]*?const dashboardFillButton = \([\s\S]*?dashboardStableActionFrame\(\{/,
+  "Dashboard route-local action helpers must turn min-height actions into fixed-height no-transition tap surfaces."
+);
+
+assertContains(
+  /const dashboardAccordionButtonStyle = \([\s\S]*?const height = isPhone \? 74 : 76;[\s\S]*?return dashboardStableActionFrame\(\{[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height[\s\S]*?transition: "none"[\s\S]*?const dashboardAccordionTitleStyle[\s\S]*?WebkitLineClamp: 1[\s\S]*?const dashboardAccordionSummaryStyle[\s\S]*?WebkitLineClamp: 1/,
+  "Dashboard accordion buttons must keep fixed heights, no transition movement, and clamped title/summary text."
+);
+
+assertContains(
+  /const dashboardLauncherHeight = isPhone \? 76 : 74;[\s\S]*?const dashboardLauncherButtonStyle: React\.CSSProperties = dashboardStableActionFrame\(\{[\s\S]*?height: dashboardLauncherHeight,[\s\S]*?maxHeight: dashboardLauncherHeight/,
+  "Dashboard app launcher buttons must reserve fixed phone-safe heights."
+);
+
 if (findings.length > 0) {
   console.error("Dashboard action audit failed:");
   for (const finding of findings) {

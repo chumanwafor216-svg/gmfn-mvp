@@ -121,7 +121,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceOsTileStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 218 : 178,[\s\S]*?maxHeight: isCompact \? 218 : 178,[\s\S]*?function marketplaceOsTileTitleStyle[\s\S]*?WebkitLineClamp: 2,[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
+  /function marketplaceActionStyle[\s\S]*?height: 56,[\s\S]*?maxHeight: 56,[\s\S]*?function marketplaceOsTileStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 218 : 178,[\s\S]*?maxHeight: isCompact \? 218 : 178,[\s\S]*?function marketplaceOsTileTitleStyle[\s\S]*?WebkitLineClamp: 2,[\s\S]*?function marketplaceOsRowStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?height: isCompact \? 116 : 96,[\s\S]*?maxHeight: isCompact \? 116 : 96,[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2,/,
   "Marketplace route/action tiles must keep fixed phone-safe heights with clamped text so card content cannot stretch, overlap, or create unstable tap targets."
 );
 
@@ -204,6 +204,12 @@ assertContains(
   "src/pages/CreateEntryPage.tsx",
   /import \{ PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="create-entry\.existing-member\.toggle"[\s\S]*?debugId="create-entry\.existing-member\.sign-in"[\s\S]*?debugId="create-entry\.guide\.done"[\s\S]*?debugId="create-entry\.details\.submit"[\s\S]*?debugId="create-entry\.verification\.confirm-code"[\s\S]*?debugId="create-entry\.bank\.save"[\s\S]*?debugId="create-entry\.community\.submit"/,
   "Create entry must use shared stable button primitives across existing-member, guide, details, verification, bank, and final submit actions."
+);
+
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /function fieldLabelOnDark[\s\S]*?color: "#D7E3F1"[\s\S]*?function entryActionRowStyle\(height = 56\)[\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?overflowAnchor: "none"[\s\S]*?function entryActionStyle\(height = 56\)[\s\S]*?height,[\s\S]*?maxHeight: height[\s\S]*?function otpDigits[\s\S]*?replace\(\/\\D\/g, ""\)\.slice\(0, 8\)[\s\S]*?const normalizedOtpCode = otpDigits\(otpCode\)[\s\S]*?code: normalizedOtpCode[\s\S]*?inputMode="numeric"[\s\S]*?autoComplete="one-time-code"[\s\S]*?name="entry-phone-code"[\s\S]*?style=\{entryActionRowStyle\(56\)\}[\s\S]*?stableHeight=\{56\}[\s\S]*?debugId="create-entry\.verification\.confirm-code"/,
+  "Create entry phone-code controls must reject phone autofill leakage, keep the verification label readable on the dark panel, and use fixed-height action geometry."
 );
 
 assertNotContains(
@@ -516,6 +522,12 @@ assertContains(
   "src/pages/DemandBoxPage.tsx",
   /import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="demand-box\.open-community"[\s\S]*?debugId="demand-box\.create"[\s\S]*?debugId="demand-box\.post"[\s\S]*?debugId="demand-box\.more-detail"[\s\S]*?debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.fulfilled`\}[\s\S]*?debugId="demand-box\.bottom-dashboard"/,
   "Demand Box must use shared stable primitives and shared CTA resolution for community selection, create/post, disclosure, status updates, and route actions."
+);
+
+assertContains(
+  "src/pages/DemandBoxPage.tsx",
+  /function demandActionRowStyle\([\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?overflowAnchor: "none"[\s\S]*?transition: "none"[\s\S]*?function demandActionStyle\(height = 54\)[\s\S]*?height,[\s\S]*?minHeight: height,[\s\S]*?maxHeight: height,[\s\S]*?overflow: "hidden"[\s\S]*?transition: "none"[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="demand-box\.post"[\s\S]*?style=\{demandActionStyle\(54\)\}/,
+  "Demand Box action rows must reserve fixed phone-safe row heights and fixed button heights for create/post/status/route actions."
 );
 
 assertNotContains(

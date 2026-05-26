@@ -533,8 +533,21 @@ function primaryBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     lineHeight: 1.18,
     maxWidth: "100%",
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    flexShrink: 0,
+    overflowAnchor: "none",
+    touchAction: "manipulation",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    transform: "none",
+    transition: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
     boxShadow: disabled
       ? "none"
       : "0 16px 30px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
@@ -562,8 +575,21 @@ function secondaryBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     lineHeight: 1.18,
     maxWidth: "100%",
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    flexShrink: 0,
+    overflowAnchor: "none",
+    touchAction: "manipulation",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    transform: "none",
+    transition: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
     boxShadow: disabled
       ? "none"
       : "0 10px 22px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
@@ -590,8 +616,21 @@ function subtleBtn(disabled = false): React.CSSProperties {
     textAlign: "center",
     lineHeight: 1.16,
     maxWidth: "100%",
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
+    boxSizing: "border-box",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    flexShrink: 0,
+    overflowAnchor: "none",
+    touchAction: "manipulation",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    transform: "none",
+    transition: "none",
+    appearance: "none",
+    WebkitAppearance: "none",
     boxShadow: disabled
       ? "none"
       : "0 8px 18px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.82)",
@@ -834,7 +873,7 @@ function DashboardChevronIcon({ expanded }: { expanded: boolean }) {
       style={{
         display: "block",
         transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
-        transition: "transform 140ms ease",
+        transition: "none",
       }}
     >
       <path
@@ -3382,6 +3421,16 @@ export default function DashboardPage() {
       cursor: "pointer",
       whiteSpace: "normal",
       textAlign: "center",
+      boxSizing: "border-box",
+      overflow: "hidden",
+      overflowAnchor: "none",
+      touchAction: "manipulation",
+      userSelect: "none",
+      WebkitUserSelect: "none",
+      WebkitTapHighlightColor: "transparent",
+      transform: "none",
+      transition: "none",
+      flexShrink: 0,
       boxShadow:
         "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.86)",
       letterSpacing: 0.08,
@@ -5613,17 +5662,51 @@ export default function DashboardPage() {
       : `repeat(auto-fit, minmax(${minWidth}px, 1fr))`,
     gap: isPhone ? 7 : 8,
     alignItems: "stretch",
+    justifyContent: "stretch",
+    overflowAnchor: "none",
+    transition: "none",
   });
+  const dashboardStableActionFrame = (
+    style: React.CSSProperties
+  ): React.CSSProperties => {
+    const stableHeight = style.height ?? style.minHeight;
+
+    return {
+      ...style,
+      ...(stableHeight
+        ? {
+            height: stableHeight,
+            minHeight: stableHeight,
+            maxHeight: style.maxHeight ?? stableHeight,
+          }
+        : {}),
+      boxSizing: "border-box",
+      overflow: "hidden",
+      overflowAnchor: "none",
+      transform: "none",
+      flexShrink: 0,
+      transition: "none",
+      touchAction: "manipulation",
+      userSelect: "none",
+      WebkitUserSelect: "none",
+      WebkitTapHighlightColor: "transparent",
+      whiteSpace: style.whiteSpace ?? "normal",
+      overflowWrap: "normal",
+      wordBreak: "normal",
+      hyphens: "none",
+    };
+  };
   const dashboardFillButton = (
     base: React.CSSProperties,
     overrides: React.CSSProperties = {}
-  ): React.CSSProperties => ({
-    ...base,
-    width: "100%",
-    minWidth: 0,
-    maxWidth: "100%",
-    ...overrides,
-  });
+  ): React.CSSProperties =>
+    dashboardStableActionFrame({
+      ...base,
+      width: "100%",
+      minWidth: 0,
+      maxWidth: "100%",
+      ...overrides,
+    });
   const spotlightWhiteButton = (
     overrides: React.CSSProperties = {}
   ): React.CSSProperties =>
@@ -5699,29 +5782,34 @@ export default function DashboardPage() {
   const dashboardAccordionButtonStyle = (
     border: string,
     background: string
-  ): React.CSSProperties => ({
-    width: "100%",
-    display: "grid",
-    gridTemplateColumns: isPhone
-      ? "auto minmax(0, 1fr) auto"
-      : "auto minmax(0, 1fr) auto auto",
-    gap: isPhone ? 10 : 13,
-    alignItems: "center",
-    minHeight: isPhone ? 68 : 70,
-    padding: isPhone ? "11px 12px" : "12px 15px",
-    borderRadius: isPhone ? 20 : 22,
-    border,
-    background,
-    color: DASHBOARD_BRAND.ink,
-    boxShadow:
-      "0 14px 26px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.94)",
-    cursor: "pointer",
-    textAlign: "left",
-    fontFamily: "inherit",
-    overflow: "hidden",
-    transition:
-      "box-shadow 140ms ease, border-color 140ms ease, background 140ms ease",
-  });
+  ): React.CSSProperties => {
+    const height = isPhone ? 74 : 76;
+
+    return dashboardStableActionFrame({
+      width: "100%",
+      height,
+      minHeight: height,
+      maxHeight: height,
+      display: "grid",
+      gridTemplateColumns: isPhone
+        ? "auto minmax(0, 1fr) auto"
+        : "auto minmax(0, 1fr) auto auto",
+      gap: isPhone ? 10 : 13,
+      alignItems: "center",
+      padding: isPhone ? "0 12px" : "0 15px",
+      borderRadius: isPhone ? 20 : 22,
+      border,
+      background,
+      color: DASHBOARD_BRAND.ink,
+      boxShadow:
+        "0 14px 26px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.94)",
+      cursor: "pointer",
+      textAlign: "left",
+      fontFamily: "inherit",
+      overflow: "hidden",
+      transition: "none",
+    });
+  };
   const dashboardAccordionIconStyle = (
     background = "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(221,234,250,0.86) 100%)",
     border = "1px solid rgba(11,99,209,0.16)",
@@ -5742,22 +5830,36 @@ export default function DashboardPage() {
     flexShrink: 0,
   });
   const dashboardAccordionTitleStyle: React.CSSProperties = {
-    display: "block",
+    minWidth: 0,
+    display: "-webkit-box",
+    WebkitLineClamp: 1,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
     color: DASHBOARD_BRAND.ink,
     fontSize: isPhone ? 16 : 21,
     fontWeight: 900,
     lineHeight: 1.12,
     letterSpacing: 0,
     textRendering: "geometricPrecision",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
   };
   const dashboardAccordionSummaryStyle: React.CSSProperties = {
-    display: "block",
+    minWidth: 0,
+    display: "-webkit-box",
+    WebkitLineClamp: 1,
+    WebkitBoxOrient: "vertical",
     marginTop: 5,
     color: DASHBOARD_BRAND.helper,
     fontSize: isPhone ? 12.2 : 13.4,
     fontWeight: 700,
     lineHeight: 1.32,
     letterSpacing: 0,
+    overflow: "hidden",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
   };
   const dashboardAccordionChevronStyle = (
     expanded: boolean
@@ -5791,9 +5893,11 @@ export default function DashboardPage() {
     lineHeight: 1.05,
     whiteSpace: "nowrap",
   });
-  const dashboardLauncherButtonStyle: React.CSSProperties = {
-    minHeight: isPhone ? 70 : 68,
-    height: isPhone ? 70 : undefined,
+  const dashboardLauncherHeight = isPhone ? 76 : 74;
+  const dashboardLauncherButtonStyle: React.CSSProperties = dashboardStableActionFrame({
+    height: dashboardLauncherHeight,
+    minHeight: dashboardLauncherHeight,
+    maxHeight: dashboardLauncherHeight,
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr)",
     alignItems: "center",
@@ -5813,7 +5917,7 @@ export default function DashboardPage() {
     textAlign: "left",
     overflow: "hidden",
     fontFamily: "inherit",
-  };
+  });
   const attentionConnectionText = isPhone
     ? "Focus shows follow-through. Local trust is how your community reads it. Wider consistency is how outsiders may read it. TrustSlip keeps later proof."
     : trustAttentionCore.connectionText;
@@ -6047,7 +6151,7 @@ export default function DashboardPage() {
                         runDashboardUiMutation(event, dismissAttentionPopup, 260)
                       }
                       onPointerDown={consumeDashboardPointerEvent}
-                      style={{
+                      style={dashboardStableActionFrame({
                         ...subtleBtn(false),
                         minHeight: isPhone ? 26 : 32,
                         padding: isPhone ? "4px 9px" : "5px 10px",
@@ -6059,7 +6163,7 @@ export default function DashboardPage() {
                         color: attentionPopupChrome.stageText,
                         boxShadow:
                           "inset 0 1px 0 rgba(255,255,255,0.14), 0 10px 20px rgba(7,16,28,0.10)",
-                      }}
+                      })}
                     >
                       Hide for now
                     </StableButton>
@@ -6348,7 +6452,7 @@ export default function DashboardPage() {
               }
               onPointerDown={consumeDashboardPointerEvent}
               onMouseDown={consumeDashboardPointerEvent}
-              style={{
+              style={dashboardStableActionFrame({
                 position: "fixed",
                 top: isCompact ? 12 : 18,
                 right: isCompact ? 12 : 18,
@@ -6376,7 +6480,7 @@ export default function DashboardPage() {
                 WebkitAppearance: "none",
                 isolation: "isolate",
                 overflow: "hidden",
-              }}
+              })}
             >
               <span
                 style={{
@@ -6697,7 +6801,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={(event) => openDashboardRoute(event, item.to)}
                 onPointerDown={consumeDashboardPointerEvent}
-                style={{
+                style={dashboardStableActionFrame({
                   minWidth: 0,
                   minHeight: isPhone ? 58 : 74,
                   display: "grid",
@@ -6713,7 +6817,7 @@ export default function DashboardPage() {
                   color: "#F8FBFF",
                   cursor: "pointer",
                   textAlign: isPhone ? "center" : "left",
-                }}
+                })}
               >
                 <span
                   style={{
@@ -7925,7 +8029,7 @@ export default function DashboardPage() {
                 type="button"
                 onClick={openDashboardSpotlightGuide}
                 onPointerDown={consumeDashboardPointerEvent}
-                style={secondaryBtn(false)}
+                style={dashboardStableActionFrame(secondaryBtn(false))}
               >
                 Open your Spotlight tasks
               </StableButton>
@@ -8010,7 +8114,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={openDashboardSpotlightGuide}
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={primaryBtn(false)}
+                  style={dashboardStableActionFrame(primaryBtn(false))}
                 >
                   Open your Spotlight tasks
                 </StableButton>
@@ -8375,7 +8479,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={toggleSpotlightGuide}
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={{
+                  style={dashboardStableActionFrame({
                     width: "100%",
                     minHeight: isPhone ? 54 : 42,
                     padding: isPhone ? "10px 14px" : "8px 14px",
@@ -8392,7 +8496,7 @@ export default function DashboardPage() {
                     letterSpacing: 0.12,
                     touchAction: "manipulation",
                     userSelect: "none",
-                  }}
+                  })}
                 >
                   {spotlightGuideOpen ? "Close Spotlight" : "About Spotlight"}
                 </StableButton>
@@ -8710,7 +8814,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={openSellerIdentityDock}
                     onPointerDown={consumeDashboardPointerEvent}
-                    style={{
+                    style={dashboardStableActionFrame({
                       minWidth: isCompact ? 82 : 118,
                       minHeight: isCompact ? 36 : 44,
                       padding: isCompact ? "6px 10px" : "9px 15px",
@@ -8728,7 +8832,7 @@ export default function DashboardPage() {
                         "0 16px 28px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.94), inset 0 -10px 18px rgba(15,59,116,0.12)",
                       backdropFilter: "blur(12px)",
                       textTransform: "uppercase",
-                    }}
+                    })}
                   >
                     Open seller details
                   </StableButton>
@@ -8739,7 +8843,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={minimizeSpotlight}
                   onPointerDown={consumeDashboardPointerEvent}
-                  style={{
+                  style={dashboardStableActionFrame({
                       minWidth: isCompact ? 82 : 118,
                     minHeight: isCompact ? 34 : 38,
                     padding: isCompact ? "6px 10px" : "7px 14px",
@@ -8757,7 +8861,7 @@ export default function DashboardPage() {
                       "0 12px 22px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.96), inset 0 -8px 14px rgba(100,116,139,0.12)",
                     backdropFilter: "blur(12px)",
                     textTransform: "uppercase",
-                  }}
+                  })}
                 >
                   Minimize
                 </StableButton>
@@ -9020,7 +9124,7 @@ export default function DashboardPage() {
                         type="button"
                         onClick={openSpotlightMarketplace}
                         onPointerDown={consumeDashboardPointerEvent}
-                        style={secondaryBtn(false)}
+                        style={dashboardStableActionFrame(secondaryBtn(false))}
                       >
                         Open your Marketplace
                       </StableButton>
@@ -9038,7 +9142,7 @@ export default function DashboardPage() {
                         type="button"
                         onClick={closeSellerIdentityDock}
                         onPointerDown={consumeDashboardPointerEvent}
-                        style={{
+                        style={dashboardStableActionFrame({
                           ...subtleBtn(false),
                           minHeight: isCompact ? 32 : 34,
                           minWidth: isCompact ? 70 : 78,
@@ -9054,7 +9158,7 @@ export default function DashboardPage() {
                           letterSpacing: 0.2,
                           touchAction: "manipulation",
                           textTransform: "uppercase",
-                        }}
+                        })}
                       >
                         Close
                       </StableButton>
@@ -10124,7 +10228,7 @@ export default function DashboardPage() {
                   )
                 }
                 onPointerDown={consumeDashboardPointerEvent}
-                style={{
+                style={dashboardStableActionFrame({
                   ...secondaryBtn(false),
                   minHeight: 40,
                   padding: "8px 12px",
@@ -10133,7 +10237,7 @@ export default function DashboardPage() {
                   color: "#173654",
                   border: "1px solid rgba(23,54,84,0.14)",
                   boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
-                }}
+                })}
               >
                 Open Focus Commitments
               </StableButton>
@@ -10201,7 +10305,7 @@ export default function DashboardPage() {
                     type="button"
                     onClick={() => openTrackedApp(app)}
                     onPointerDown={consumeDashboardPointerEvent}
-                    style={{
+                    style={dashboardStableActionFrame({
                       width: "100%",
                       borderRadius: 12,
                       border:
@@ -10223,7 +10327,7 @@ export default function DashboardPage() {
                         index === 0
                           ? "linear-gradient(180deg, #F2F8FF 0%, #E3F0FF 100%)"
                           : DASHBOARD_BRAND.quietPanel,
-                    }}
+                    })}
                   >
                     <div
                       style={{

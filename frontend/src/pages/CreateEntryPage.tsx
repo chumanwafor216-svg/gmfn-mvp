@@ -72,6 +72,14 @@ function fieldLabel(): React.CSSProperties {
   };
 }
 
+function fieldLabelOnDark(): React.CSSProperties {
+  return {
+    ...fieldLabel(),
+    color: "#D7E3F1",
+    textShadow: "0 1px 0 rgba(0,0,0,0.18)",
+  };
+}
+
 function input(): React.CSSProperties {
   return {
     width: "100%",
@@ -84,6 +92,41 @@ function input(): React.CSSProperties {
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,250,255,0.98) 100%)",
     color: "#0B1F33",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function entryActionRowStyle(height = 56): React.CSSProperties {
+  return {
+    marginTop: 4,
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(138px, 1fr))",
+    gridAutoRows: `${height}px`,
+    gap: 10,
+    alignItems: "stretch",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function entryActionStyle(height = 56): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    height,
+    minHeight: height,
+    maxHeight: height,
+    boxSizing: "border-box",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
+    transform: "none",
+    flexShrink: 0,
+    whiteSpace: "normal",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
   };
@@ -747,6 +790,10 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function otpDigits(value: any): string {
+  return safeStr(value).replace(/\D/g, "").slice(0, 8);
+}
+
 function structuredErrorDetail(err: any): Record<string, any> | null {
   const raw = safeStr(err?.message || err);
   if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
@@ -971,7 +1018,8 @@ export default function CreateEntryPage() {
     passwordReady;
   const canContinueDetails =
     !!safeStr(displayName) && !!safeStr(phone) && !!safeStr(email) && passwordReady;
-  const canConfirmOtp = Number(verificationId) > 0 && safeStr(otpCode).length >= 4;
+  const normalizedOtpCode = otpDigits(otpCode);
+  const canConfirmOtp = Number(verificationId) > 0 && normalizedOtpCode.length >= 4;
   const canContinueBank =
     Number(verificationId) > 0 &&
     !!safeStr(bankAccountName) &&
@@ -1443,7 +1491,7 @@ export default function CreateEntryPage() {
         code: previewCode,
       });
 
-      setOtpCode(previewCode);
+      setOtpCode(otpDigits(previewCode));
       setPhoneVerificationProof({
         display_name: safeStr(confirmed?.display_name),
         phone_e164: safeStr(confirmed?.phone_e164),
@@ -1517,7 +1565,7 @@ export default function CreateEntryPage() {
     try {
       const out = await confirmEntryPhoneVerification({
         verification_id: verificationId,
-        code: otpCode,
+        code: normalizedOtpCode,
       });
 
       setPhoneVerificationProof({
@@ -2735,11 +2783,19 @@ export default function CreateEntryPage() {
                     </div>
 
                     <div>
-                      <div style={fieldLabel()}>Verification code</div>
+                      <div style={fieldLabelOnDark()}>Verification code</div>
                       <input
                         value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
+                        onChange={(e) => setOtpCode(otpDigits(e.target.value))}
                         placeholder="Enter the code sent to your phone"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        pattern="[0-9]*"
+                        maxLength={8}
+                        name="entry-phone-code"
+                        aria-label="SMS verification code"
                         style={input()}
                       />
                     </div>
@@ -2787,20 +2843,13 @@ export default function CreateEntryPage() {
                       </div>
                     ) : null}
 
-                    <div
-                      style={{
-                        marginTop: 4,
-                        display: "flex",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div style={entryActionRowStyle(56)}>
                       <SecondaryButton
                         onClick={clearVerificationBlock}
-                        minWidth={116}
-                        stableHeight={44}
+                        minWidth={0}
+                        stableHeight={56}
                         debugId="create-entry.verification.clear-code"
-                        style={{ ...secondaryBtn(), minWidth: 116 }}
+                        style={{ ...secondaryBtn(), ...entryActionStyle(56) }}
                       >
                         Clear
                       </SecondaryButton>
@@ -2809,14 +2858,12 @@ export default function CreateEntryPage() {
                         busy={busy}
                         busyLabel="Verifying..."
                         disabled={!canConfirmOtp}
-                        minWidth={180}
-                        stableHeight={52}
+                        minWidth={0}
+                        stableHeight={56}
                         debugId="create-entry.verification.confirm-code"
                         style={{
                           ...primaryBtn(!canConfirmOtp || busy),
-                          width: "auto",
-                          minWidth: 180,
-                          flex: "1 1 220px",
+                          ...entryActionStyle(56),
                         }}
                       >
                         Confirm phone code
@@ -2826,7 +2873,7 @@ export default function CreateEntryPage() {
                 ) : (
                   <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
                     <div>
-                      <div style={fieldLabel()}>Account name</div>
+                      <div style={fieldLabelOnDark()}>Account name</div>
                       <input
                         value={bankAccountName}
                         onChange={(e) => setBankAccountName(e.target.value)}
@@ -2836,7 +2883,7 @@ export default function CreateEntryPage() {
                     </div>
 
                     <div>
-                      <div style={fieldLabel()}>Bank or wallet provider</div>
+                      <div style={fieldLabelOnDark()}>Bank or wallet provider</div>
                       <input
                         value={bankName}
                         onChange={(e) => setBankName(e.target.value)}
@@ -2846,7 +2893,7 @@ export default function CreateEntryPage() {
                     </div>
 
                     <div>
-                      <div style={fieldLabel()}>Account number or wallet number</div>
+                      <div style={fieldLabelOnDark()}>Account number or wallet number</div>
                       <input
                         value={bankAccountNumber}
                         onChange={(e) => setBankAccountNumber(e.target.value)}
@@ -2863,7 +2910,7 @@ export default function CreateEntryPage() {
                       }}
                     >
                       <div>
-                        <div style={fieldLabel()}>Sort code or branch code (optional)</div>
+                        <div style={fieldLabelOnDark()}>Sort code or branch code (optional)</div>
                         <input
                           value={bankSortCode}
                           onChange={(e) => setBankSortCode(e.target.value)}
@@ -2873,7 +2920,7 @@ export default function CreateEntryPage() {
                       </div>
 
                       <div>
-                        <div style={fieldLabel()}>IBAN (optional)</div>
+                        <div style={fieldLabelOnDark()}>IBAN (optional)</div>
                         <input
                           value={bankIban}
                           onChange={(e) => setBankIban(e.target.value)}
@@ -2891,7 +2938,7 @@ export default function CreateEntryPage() {
                       }}
                     >
                       <div>
-                        <div style={fieldLabel()}>Country (optional)</div>
+                        <div style={fieldLabelOnDark()}>Country (optional)</div>
                         <select
                           value={bankCountry}
                           onChange={(e) => handleBankCountryChange(e.target.value)}
@@ -2933,7 +2980,7 @@ export default function CreateEntryPage() {
                       </div>
 
                       <div>
-                        <div style={fieldLabel()}>Currency</div>
+                        <div style={fieldLabelOnDark()}>Currency</div>
                         <select
                           value={bankCurrency}
                           onChange={(e) => setBankCurrency(e.target.value)}
@@ -2954,7 +3001,7 @@ export default function CreateEntryPage() {
                     </div>
 
                     <div>
-                      <div style={fieldLabel()}>Note or cross-region explanation</div>
+                      <div style={fieldLabelOnDark()}>Note or cross-region explanation</div>
                       <textarea
                         value={bankNote}
                         onChange={(e) => setBankNote(e.target.value)}

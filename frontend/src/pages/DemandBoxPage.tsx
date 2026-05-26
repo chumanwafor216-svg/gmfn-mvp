@@ -218,11 +218,13 @@ function demandBrandShell(): React.CSSProperties {
 
 function communityChoiceStyle(active: boolean): React.CSSProperties {
   return {
-    minHeight: 52,
+    height: 58,
+    minHeight: 58,
+    maxHeight: 58,
     justifyContent: "space-between",
     textAlign: "left",
     borderRadius: 16,
-    padding: "11px 13px",
+    padding: "0 13px",
     lineHeight: 1.24,
     border: active ? "1px solid rgba(11,99,209,0.24)" : undefined,
     background: active
@@ -230,6 +232,54 @@ function communityChoiceStyle(active: boolean): React.CSSProperties {
       : undefined,
     color: active ? "#123055" : undefined,
     fontWeight: active ? 900 : undefined,
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function demandActionRowStyle(
+  isCompact: boolean,
+  height = 54,
+  minColumn = 156,
+  marginTop = 0
+): React.CSSProperties {
+  return {
+    marginTop,
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "1fr"
+      : `repeat(auto-fit, minmax(${minColumn}px, 1fr))`,
+    gridAutoRows: `${height}px`,
+    gap: 10,
+    alignItems: "stretch",
+    justifyContent: "stretch",
+    minHeight: height,
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function demandActionStyle(height = 54): React.CSSProperties {
+  return {
+    width: "100%",
+    height,
+    minHeight: height,
+    maxHeight: height,
+    padding: "0 13px",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 900,
+    lineHeight: 1.16,
+    textAlign: "center",
+    whiteSpace: "normal",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    flexShrink: 0,
+    overflowAnchor: "none",
+    transition: "none",
   };
 }
 
@@ -800,7 +850,7 @@ export default function DemandBoxPage() {
                       </>
                     }
                     fullWidth
-                    stableHeight={52}
+                    stableHeight={58}
                     debugId={`demand-box.community-missing.${clanId || index}`}
                     style={communityChoiceStyle(false)}
                   >
@@ -818,20 +868,20 @@ export default function DemandBoxPage() {
               </div>
             )}
 
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <div style={demandActionRowStyle(isCompact, 54, 168)}>
               <StableCtaLink
                 to={routes.community}
                 debugId="demand-box.open-community"
-                stableHeight={44}
-                style={{ fontWeight: 900 }}
+                stableHeight={54}
+                style={demandActionStyle(54)}
               >
                 Open Community Home
               </StableCtaLink>
               <StableCtaLink
                 to={routes.dashboard}
                 debugId="demand-box.missing-community-dashboard"
-                stableHeight={44}
-                style={{ fontWeight: 900 }}
+                stableHeight={54}
+                style={demandActionStyle(54)}
               >
                 Dashboard
               </StableCtaLink>
@@ -938,7 +988,7 @@ export default function DemandBoxPage() {
                     </>
                   }
                   fullWidth
-                  stableHeight={52}
+                  stableHeight={58}
                   debugId={`demand-box.create-community.${clanId || index}`}
                   style={communityChoiceStyle(active)}
                 >
@@ -1047,36 +1097,30 @@ export default function DemandBoxPage() {
               <span style={badge(false)}>Visible needs: {visibleRows.length}</span>
             </div>
 
-            <div
-              style={{
-                marginTop: 18,
-                display: "flex",
-                gap: 10,
-                flexWrap: "wrap",
-              }}
-            >
+            <div style={demandActionRowStyle(isCompact, 54, 156, 18)}>
               <SecondaryButton
                 onClick={() => {
                   revealDemandCreate();
                 }}
                 debugId="demand-box.create"
-                stableHeight={44}
-                style={{ fontWeight: 900 }}
+                stableHeight={54}
+                style={demandActionStyle(54)}
               >
                 Create demand
               </SecondaryButton>
               <StableCtaLink
                 to={demandReturnTo}
                 debugId="demand-box.return"
-                stableHeight={44}
-                style={{ fontWeight: 900 }}
+                stableHeight={54}
+                style={demandActionStyle(54)}
               >
                 {demandReturnLabel}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.dashboard}
                 debugId="demand-box.hero-dashboard"
-                stableHeight={44}
+                stableHeight={54}
+                style={demandActionStyle(54)}
               >
                 Dashboard
               </StableCtaLink>
@@ -1287,7 +1331,7 @@ export default function DemandBoxPage() {
                       </>
                     }
                     fullWidth
-                    stableHeight={52}
+                    stableHeight={58}
                     debugId={`demand-box.form-community.${clanId || index}`}
                     style={communityChoiceStyle(active)}
                   >
@@ -1454,25 +1498,16 @@ export default function DemandBoxPage() {
               <span style={badge(false)}>From {currentCommunityName}</span>
             </div>
 
-            <div
-              style={{
-                marginTop: 14,
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(2, minmax(160px, 220px))",
-                gap: 10,
-                alignItems: "stretch",
-              }}
-            >
+            <div style={demandActionRowStyle(isCompact, 54, 180, 14)}>
               <PrimaryButton
                 onClick={() => handleCreateDemand()}
                 disabled={creating || !safeStr(title)}
                 busy={creating}
                 busyLabel="Posting..."
                 fullWidth
-                stableHeight={46}
+                stableHeight={54}
                 debugId="demand-box.post"
+                style={demandActionStyle(54)}
               >
                 Post demand
               </PrimaryButton>
@@ -1480,9 +1515,9 @@ export default function DemandBoxPage() {
               <StableCtaLink
                 to={routes.notifications}
                 fullWidth
-                stableHeight={46}
+                stableHeight={54}
                 debugId="demand-box.open-notifications"
-                style={{ fontWeight: 900 }}
+                style={demandActionStyle(54)}
               >
                 Open notifications
               </StableCtaLink>
@@ -1646,20 +1681,14 @@ export default function DemandBoxPage() {
                       ) : null}
                     </div>
 
-                    <div
-                      style={{
-                        marginTop: 12,
-                        display: "flex",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
                       <SecondaryButton
                         onClick={() => handleUpdateDemandStatus(row, "fulfilled")}
                         disabled={busy}
                         busy={busy}
                         busyLabel="Updating..."
                         debugId={`demand-box.request.${row?.id || index}.fulfilled`}
+                        style={demandActionStyle(54)}
                       >
                         Mark fulfilled
                       </SecondaryButton>
@@ -1670,6 +1699,7 @@ export default function DemandBoxPage() {
                         busy={busy}
                         busyLabel="Updating..."
                         debugId={`demand-box.request.${row?.id || index}.cancelled`}
+                        style={demandActionStyle(54)}
                       >
                         Cancel demand
                       </SubtleButton>
@@ -1778,16 +1808,20 @@ export default function DemandBoxPage() {
             )}
           </div>
 
-          <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+          <div style={demandActionRowStyle(isCompact, 54, 156, 14)}>
             <StableCtaLink
               to={demandReturnTo}
               debugId="demand-box.bottom-return"
+              stableHeight={54}
+              style={demandActionStyle(54)}
             >
               {demandReturnLabel}
             </StableCtaLink>
             <StableCtaLink
               to={routes.dashboard}
               debugId="demand-box.bottom-dashboard"
+              stableHeight={54}
+              style={demandActionStyle(54)}
             >
               Dashboard
             </StableCtaLink>

@@ -78,6 +78,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /function entryActionRowStyle\(height = 56\)[\s\S]*?gridAutoRows: `\$\{height\}px`[\s\S]*?function entryActionStyle\(height = 56\)[\s\S]*?maxHeight: height[\s\S]*?function otpDigits[\s\S]*?const normalizedOtpCode = otpDigits\(otpCode\)[\s\S]*?inputMode="numeric"[\s\S]*?autoComplete="one-time-code"[\s\S]*?name="entry-phone-code"[\s\S]*?stableHeight=\{56\}[\s\S]*?debugId="create-entry\.verification\.confirm-code"/,
+  "Create Community phone confirmation must keep a numeric one-time-code field and fixed-height verification actions."
+);
+
+assertContains(
   "src/pages/JoinEntryPage.tsx",
   /debugId="join-entry\.resume-saved-request"[\s\S]*?debugId="join-entry\.existing-identity"[\s\S]*?debugId="join-entry\.submit-new-request"/,
   "Join Entry request actions must remain traceable."

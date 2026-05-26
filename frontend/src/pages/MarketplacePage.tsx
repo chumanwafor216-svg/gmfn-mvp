@@ -1670,6 +1670,9 @@ function marketplaceOsTileStyle(isCompact: boolean): React.CSSProperties {
     boxSizing: "border-box",
     overflow: "hidden",
     overflowAnchor: "none",
+    transform: "none",
+    flexShrink: 0,
+    transition: "none",
   };
 }
 
@@ -1772,6 +1775,9 @@ function marketplaceOsRowStyle(isCompact: boolean): React.CSSProperties {
     boxSizing: "border-box",
     overflow: "hidden",
     overflowAnchor: "none",
+    transform: "none",
+    flexShrink: 0,
+    transition: "none",
   };
 }
 
