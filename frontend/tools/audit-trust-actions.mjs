@@ -100,6 +100,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /TRUST_SLIP_MOBILE_SCROLL_CLEARANCE[\s\S]*?function trustSlipScrollClearance\(isCompact: boolean\)[\s\S]*?scrollMarginTop: isCompact \? TRUST_SLIP_MOBILE_SCROLL_CLEARANCE : 24[\s\S]*?if \(location\.hash\) return undefined;[\s\S]*?window\.scrollTo\(\{ left: 0, top: 0, behavior: "auto" \}\);/,
+  "TrustSlip must reset non-hash route loads and reserve mobile scroll clearance so sticky app chrome cannot hide paper section headings."
+);
+
+assertContains(
   "src/pages/TrustScorePage.tsx",
   /if \(verifyPath\) \{[\s\S]*?openTrustRoute\(verifyPath\);[\s\S]*?Open TrustSlip first and refresh or generate the current TrustSlip\.[\s\S]*?openTrustRoute\(routes\.trustSlip\);[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport verify action must open a coded verify path when available and fall back to TrustSlip preparation when no code is visible."

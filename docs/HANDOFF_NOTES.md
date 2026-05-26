@@ -1,3 +1,28 @@
+### TrustSlip mobile sticky-header clearance pass (2026-05-26)
+
+- Owner shared a phone screenshot of local `/app/trust-slip` where the sticky
+  authenticated app header sat over the `2. Current TrustSlip status` heading.
+- Updated `frontend/src/pages/TrustSlipPage.tsx`:
+  - non-hash TrustSlip route loads now reset scroll to the top in a short
+    two-pass sequence so mobile browser scroll restoration does not reopen the
+    page halfway down under the sticky app chrome;
+  - TrustSlip paper sections now reserve mobile `scrollMarginTop` clearance for
+    the sticky app header, while preserving hash/deep-link behavior.
+- Updated `frontend/tools/audit-trust-actions.mjs` so this route-local mobile
+  clearance contract does not silently disappear.
+- Verification:
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
+    then passed with approved escalation.
+- Remaining truth:
+  - This addresses the visible sticky-header overlap in the screenshot. It does
+    not change the shared app header globally.
+
 ### Create Community phone-check stability pass (2026-05-26)
 
 - Owner shared a phone screenshot of the Create Community Block 2 phone check

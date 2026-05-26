@@ -258,6 +258,7 @@ type CommunityConfirmationOutcome = {
 
 const TRUST_SLIP_UI_STORAGE_KEY = "gmfn.trustSlip.sections.v4";
 const GMFN_EXEC_SUMMARY_URL = "/gmfn-executive-summary.pdf";
+const TRUST_SLIP_MOBILE_SCROLL_CLEARANCE = 116;
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -603,6 +604,12 @@ function helperText(): React.CSSProperties {
     color: "#4F657B",
     fontSize: 14.5,
     lineHeight: 1.75,
+  };
+}
+
+function trustSlipScrollClearance(isCompact: boolean): React.CSSProperties {
+  return {
+    scrollMarginTop: isCompact ? TRUST_SLIP_MOBILE_SCROLL_CLEARANCE : 24,
   };
 }
 
@@ -970,6 +977,24 @@ export default function TrustSlipPage() {
     () => buildTrustDocumentUseCaseItems(trustDocumentFamilyItems, "trust-slip"),
     [trustDocumentFamilyItems]
   );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    if (location.hash) return undefined;
+
+    const restoreTop = () => {
+      window.scrollTo({ left: 0, top: 0, behavior: "auto" });
+    };
+
+    restoreTop();
+    const frame = window.requestAnimationFrame(restoreTop);
+    const timer = window.setTimeout(restoreTop, 180);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [location.hash, location.pathname, location.search]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1698,6 +1723,7 @@ export default function TrustSlipPage() {
           className="print-trust-document"
           style={{
             ...pageCard("#FFFFFF"),
+            ...trustSlipScrollClearance(isCompact),
             border: "1px solid rgba(37,78,119,0.14)",
             boxShadow: "0 22px 60px rgba(7,23,44,0.10)",
             padding: isCompact ? 16 : 22,
@@ -1778,6 +1804,7 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...innerCard("#F8FBFF"),
+              ...trustSlipScrollClearance(isCompact),
               border: "1px solid rgba(37,78,119,0.14)",
               display: "grid",
               gridTemplateColumns: isCompact ? "1fr" : "150px minmax(0, 1fr) minmax(220px, 0.78fr)",
@@ -1887,6 +1914,7 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...innerCard("#FFFFFF"),
+              ...trustSlipScrollClearance(isCompact),
               border: "1px solid rgba(216,227,238,0.9)",
               marginTop: 14,
               position: "relative",
@@ -2011,6 +2039,7 @@ export default function TrustSlipPage() {
 
           <section
             style={{
+              ...trustSlipScrollClearance(isCompact),
               display: "grid",
               gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
               gap: 14,
@@ -2159,6 +2188,7 @@ export default function TrustSlipPage() {
 
           <section
             style={{
+              ...trustSlipScrollClearance(isCompact),
               display: "grid",
               gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
               gap: 14,
@@ -2231,6 +2261,7 @@ export default function TrustSlipPage() {
 
           <section
             style={{
+              ...trustSlipScrollClearance(isCompact),
               display: "grid",
               gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
               gap: 14,
@@ -2271,6 +2302,7 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...innerCard("#FFFFFF"),
+              ...trustSlipScrollClearance(isCompact),
               border: "1px solid rgba(216,227,238,0.9)",
               marginTop: 14,
             }}
