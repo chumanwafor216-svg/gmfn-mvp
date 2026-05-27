@@ -1596,6 +1596,15 @@ export default function CreateEntryPage() {
       });
   }, [phone, restoredDraft?.verificationId, verificationId]);
 
+  useEffect(() => {
+    if (!isLegacyBankRequirementMessage(error)) return;
+
+    setError("");
+    setResumeNotice(
+      "Bank or wallet details are optional founder evidence now. You can name the community and create it first."
+    );
+  }, [error]);
+
   const existingMemberPanel = (
     <div style={existingMemberCard(existingMemberOpen)}>
       <div
@@ -1776,6 +1785,14 @@ export default function CreateEntryPage() {
   function isPhoneAlreadyRegisteredError(err: any): boolean {
     const message = safeStr(err?.message || err).toLowerCase();
     return message.includes("phone number already registered");
+  }
+
+  function isLegacyBankRequirementMessage(value: any): boolean {
+    const message = safeStr(value).toLowerCase();
+    return (
+      message.includes("bank details must be completed before community creation") ||
+      message.includes("bank or wallet details must be completed before community creation")
+    );
   }
 
   function isCompletedAccountError(err: any): boolean {
