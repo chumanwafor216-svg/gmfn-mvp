@@ -1,3 +1,49 @@
+### TrustSlip Verify holder name and superseded-paper clarity (2026-05-27)
+
+- Owner reported that the TrustSlip Verify public paper showed the holder as
+  the GSN/GMFN ID, while also showing a separate GSN ID field. That duplicated
+  the identifier and made the `Holder` label misleading.
+- Confirmed frontend bug:
+  - `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`
+    received both `holderName` and `gsnId`, but rendered `{gsnId}` in the
+    visible `Holder` value.
+- Confirmed backend risk:
+  - public TrustSlip verification could fall back from `display_name` to the
+    public identity code, so `holder_name` could become `GMFN-U-...` when the
+    member had not set a display name.
+- Updated `gmfn_backend/app/api/routes/trust_slips.py`:
+  - added `_public_holder_name()` and `_looks_like_public_identity_code()`;
+  - public verification now uses the holder's chosen `display_name` when set;
+  - if no display name exists, it returns `Member name not set` instead of
+    pretending the GSN/GMFN ID is the holder name;
+  - GSN/GMFN ID remains available only in the dedicated ID fields.
+- Updated `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`:
+  - `Holder` now renders `holderName`;
+  - `GSN ID` remains a separate visible line.
+- Updated `frontend/src/pages/trustSlipVerify/trustSlipVerifyData.ts`:
+  - `deriveBanner()` now treats `is_current === false` as `Needs fresh
+    TrustSlip`, so an old QR/code that was replaced by a refreshed TrustSlip
+    does not look current just because it has not expired yet.
+- Updated tests/audits:
+  - `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+  - `frontend/tools/audit-trust-actions.mjs`
+- Verification:
+  - `python -m pytest -q tests/test_focus_commitment_trust_events.py` passed.
+  - `python -m py_compile app/api/routes/trust_slips.py` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx src/pages/trustSlipVerify/trustSlipVerifyData.ts tools/audit-trust-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
+    then passed with approved escalation.
+- Remaining truth:
+  - Existing old QR/code links keep their historical issue date. The fix makes
+    them visibly warn as replaced when `is_current` is false. The latest date
+    appears only on the latest refreshed TrustSlip/code.
+  - Members still need a saved `display_name` for a real name to appear. If no
+    name is saved, the public paper now says `Member name not set` rather than
+    using the ID as a fake name.
+
 ### Community Verify accepts GSN/GMFN and TrustSlip fallback keys (2026-05-27)
 
 - Owner reported that opening Community Verify from the TrustSlip/verification

@@ -392,6 +392,15 @@ export function deriveBanner(record: TrustSlipVerifyRecord | null): VerifyBanner
       ? expiresDate.getTime() < Date.now()
       : false;
 
+  if (record.is_current === false) {
+    return {
+      tone: "warning",
+      title: "Needs fresh TrustSlip",
+      detail:
+        "This public paper has been replaced by a newer TrustSlip. Ask the holder to share the latest QR or code before relying on it.",
+    };
+  }
+
   if (isExpired || statusText.includes("expired")) {
     return {
       tone: "warning",

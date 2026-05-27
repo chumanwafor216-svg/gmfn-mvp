@@ -401,7 +401,7 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
                 <div>
                   <div style={{ ...sectionLabel(), color: "#64748B" }}>Holder</div>
-                  <div style={{ color: "#07172C", fontWeight: 1000 }}>{gsnId}</div>
+                  <div style={{ color: "#07172C", fontWeight: 1000 }}>{holderName}</div>
                   <div style={{ color: "#64748B", fontSize: 12, fontWeight: 800 }}>
                     GSN ID: {gsnId}
                   </div>

@@ -142,6 +142,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /<div style=\{\{ \.\.\.sectionLabel\(\), color: "#64748B" \}\}>Holder<\/div>[\s\S]*?\{holderName\}[\s\S]*?GSN ID: \{gsnId\}/,
+  "TrustSlip Verify public paper must show the holder name in the Holder field and keep the GSN ID as a separate identifier."
+);
+
+assertContains(
+  "src/pages/trustSlipVerify/trustSlipVerifyData.ts",
+  /if \(record\.is_current === false\) \{[\s\S]*?title: "Needs fresh TrustSlip"[\s\S]*?replaced by a newer TrustSlip/,
+  "TrustSlip Verify must warn when a public paper has been superseded by a newer TrustSlip instead of presenting old issue dates as current."
+);
+
+assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /debugId="trust-slip-verify\.copy-code"[\s\S]*?debugId="trust-slip-verify\.copy-link"[\s\S]*?debugId="trust-slip-verify\.copy-gmfn-id"[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
   "TrustSlip Verify page actions must keep traceable copy and Trust Passport actions."

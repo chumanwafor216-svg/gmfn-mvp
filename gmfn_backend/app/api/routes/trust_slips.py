@@ -123,6 +123,24 @@ def _mask_email(email: Optional[str]) -> Optional[str]:
     return f"{user_mask}@{domain}"
 
 
+def _looks_like_public_identity_code(value: Any) -> bool:
+    text = _safe_str(value).upper()
+    return bool(re.match(r"^(GMFN|GSN|GMFM)-U-", text))
+
+
+def _public_holder_name(holder: Optional[User], *fallbacks: Any) -> str:
+    display_name = _safe_str(getattr(holder, "display_name", None) if holder else None)
+    if display_name and not _looks_like_public_identity_code(display_name):
+        return display_name
+
+    for fallback in fallbacks:
+        candidate = _safe_str(fallback)
+        if candidate and not _looks_like_public_identity_code(candidate):
+            return candidate
+
+    return "Member name not set"
+
+
 def _safe_visibility_level(user: Optional[User], requested_level: Optional[str]) -> str:
     raw = requested_level or getattr(user, "merchant_visibility_level", "standard") or "standard"
     level = str(raw).strip().lower()
@@ -760,12 +778,11 @@ def verify_trust_slip_public(
         else None
     )
 
-    display_name = (
-        merchant_view.get("display_name")
-        or merchant_summary.get("display_name")
-        or gmfn_id
-        or _mask_email(getattr(holder, "email", None))
-        or "Member"
+    display_name = _public_holder_name(
+        holder,
+        merchant_view.get("display_name"),
+        merchant_summary.get("display_name"),
+        full_summary.get("display_name"),
     )
 
     community = (
@@ -1180,11 +1197,11 @@ def trust_slip_verify_page(
     trust_limit = _safe_str(merchant_summary.get("trust_limit") or full_summary.get("trust_limit"))
     currency = _safe_str(merchant_summary.get("currency") or full_summary.get("currency"))
     holder_gmfn_id = _safe_str(merchant_summary.get("gmfn_id") or getattr(holder, "gmfn_id", None), "Hidden")
-    display_name = _safe_str(
-        merchant_view.get("display_name")
-        or merchant_summary.get("display_name")
-        or full_summary.get("display_name"),
-        "Hidden",
+    display_name = _public_holder_name(
+        holder,
+        merchant_view.get("display_name"),
+        merchant_summary.get("display_name"),
+        full_summary.get("display_name"),
     )
     community_name = _safe_str(
         merchant_view.get("community")
