@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
+import secrets
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -49,6 +52,7 @@ class VerificationCheckOut(BaseModel):
     region_code: Optional[str] = None
     confidence_score: Optional[int] = None
     explanation: str
+    evidence_url: Optional[str] = None
     verified_at: Optional[str] = None
 
 
@@ -96,6 +100,98 @@ def _json_text(data: Any) -> str:
     return json.dumps(data, sort_keys=True, default=str)
 
 
+ENTRY_IDENTITY_PHOTO_MAX_BYTES = 5 * 1024 * 1024
+ENTRY_IDENTITY_PHOTO_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+ENTRY_IDENTITY_PHOTO_ALLOWED_CONTENT_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+}
+ENTRY_IDENTITY_PHOTO_CONTENT_TYPE_ALIASES = {
+    "image/jpg": "image/jpeg",
+    "image/pjpeg": "image/jpeg",
+    "image/x-png": "image/png",
+}
+
+
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def _entry_identity_upload_dir() -> Path:
+    return _uploads_root() / "entry" / "identity"
+
+
+def _normalize_upload_content_type(content_type: str) -> str:
+    ct = str(content_type or "").strip().lower()
+    if ";" in ct:
+        ct = ct.split(";", 1)[0].strip().lower()
+    return ENTRY_IDENTITY_PHOTO_CONTENT_TYPE_ALIASES.get(ct, ct)
+
+
+def _safe_upload_ext(filename: Optional[str]) -> str:
+    if not filename:
+        return ""
+    return Path(filename).suffix.lower().strip()
+
+
+def _validate_identity_photo_type(upload: UploadFile) -> str:
+    ext = _safe_upload_ext(getattr(upload, "filename", None))
+    if ext not in ENTRY_IDENTITY_PHOTO_ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported identity photo format. Use jpg, jpeg, png, or webp.",
+        )
+
+    content_type = _normalize_upload_content_type(
+        getattr(upload, "content_type", "") or ""
+    )
+    if content_type not in ENTRY_IDENTITY_PHOTO_ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Unsupported identity photo content type.",
+        )
+    return ext
+
+
+async def _read_identity_photo_bytes(upload: UploadFile) -> bytes:
+    raw = await upload.read()
+    if not raw:
+        raise HTTPException(status_code=400, detail="Uploaded identity photo is empty.")
+    if len(raw) > ENTRY_IDENTITY_PHOTO_MAX_BYTES:
+        raise HTTPException(
+            status_code=400,
+            detail="Identity photo is too large. Maximum allowed is 5MB.",
+        )
+    return raw
+
+
+def _entry_phone_registration_only_enabled() -> bool:
+    configured = str(os.getenv("GMFN_ENTRY_PHONE_DELIVERY") or "").strip().lower()
+    if configured in {"sms", "live", "provider", "pending-sms"}:
+        return False
+    if configured in {"preview", "pilot", "manual"} or str(os.getenv("GMFN_DEV_MODE") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        return False
+    return True
+
+
+def _provider_response_dict(row: IdentityVerificationCheck) -> dict[str, Any]:
+    raw = row.provider_response_json
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
 def _utc_aware(dt: Optional[datetime]) -> Optional[datetime]:
     if dt is None:
         return None
@@ -121,13 +217,14 @@ def _require_verified_session(verification_id: int, db: Session) -> EntryPhoneVe
         raise HTTPException(status_code=400, detail="Verified phone session has already been used")
     if _verification_expired(row):
         raise HTTPException(status_code=400, detail="Verified phone session has expired")
-    if row.verified_at is None:
+    if row.verified_at is None and not _entry_phone_registration_only_enabled():
         raise HTTPException(status_code=400, detail="Phone verification must be completed first")
     return row
 
 
 def _serialize_check(row: IdentityVerificationCheck) -> dict[str, Any]:
     verified_at = _utc_aware(row.verified_at)
+    provider_response = _provider_response_dict(row)
     return {
         "ok": True,
         "verification_check_id": int(row.id),
@@ -137,6 +234,7 @@ def _serialize_check(row: IdentityVerificationCheck) -> dict[str, Any]:
         "region_code": row.region_code,
         "confidence_score": row.confidence_score,
         "explanation": _clean_text(row.explanation) or "Verification was recorded.",
+        "evidence_url": _clean_text(provider_response.get("evidence_url")) or None,
         "verified_at": verified_at.isoformat() if verified_at else None,
     }
 
@@ -213,6 +311,88 @@ def verify_drivers_licence(
         normalized_identity_json=_json_text(adapter_result.normalized_identity),
         provider_response_json=_json_text(adapter_result.provider_response),
         verified_at=_now() if adapter_result.status == "matched" else None,
+    )
+    db.add(check)
+    db.commit()
+    db.refresh(check)
+    return _serialize_check(check)
+
+
+@router.post(
+    "/identity-photo/record",
+    response_model=VerificationCheckOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def record_identity_photo(
+    verification_id: int = Form(..., gt=0),
+    document_type: str = Form(default="selfie"),
+    note: Optional[str] = Form(default=None, max_length=500),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    session_row = _require_verified_session(int(verification_id), db)
+    ext = _validate_identity_photo_type(file)
+    raw = await _read_identity_photo_bytes(file)
+
+    upload_dir = _entry_identity_upload_dir()
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    normalized_document_type = _clean_text(document_type).lower().replace(" ", "_") or "selfie"
+    allowed_document_types = {"selfie", "passport_photo", "identity_photo"}
+    if normalized_document_type not in allowed_document_types:
+        raise HTTPException(
+            status_code=400,
+            detail="Identity photo type must be selfie, passport_photo, or identity_photo.",
+        )
+
+    generated = (
+        f"entry_{int(session_row.id)}_"
+        f"{normalized_document_type}_"
+        f"{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}_"
+        f"{secrets.token_hex(6)}{ext}"
+    )
+    target = upload_dir / generated
+    target.write_bytes(raw)
+    evidence_url = f"/uploads/entry/identity/{generated}"
+
+    explanation = (
+        "Founder photo evidence was recorded for identity continuity. "
+        "No live passport or face-match provider is connected yet, so this evidence requires review before it is treated as provider-verified."
+    )
+    check = IdentityVerificationCheck(
+        entry_phone_verification_id=int(session_row.id),
+        verification_type="identity_photo",
+        region_code=None,
+        provider_key="identity-photo.manual-review",
+        status="manual_review_required",
+        subject_reference=_clean_text(session_row.display_name),
+        confidence_score=25,
+        explanation=explanation,
+        submitted_payload_json=_json_text(
+            {
+                "verification_id": int(session_row.id),
+                "document_type": normalized_document_type,
+                "note": _clean_text(note) or None,
+            }
+        ),
+        normalized_identity_json=_json_text(
+            {
+                "display_name": _clean_text(session_row.display_name),
+                "phone_e164": _clean_text(session_row.phone_e164),
+                "document_type": normalized_document_type,
+            }
+        ),
+        provider_response_json=_json_text(
+            {
+                "provider_configured": False,
+                "provider_key": "identity-photo.manual-review",
+                "evidence_url": evidence_url,
+                "document_type": normalized_document_type,
+                "review_required": True,
+                "private_evidence": True,
+            }
+        ),
+        verified_at=None,
     )
     db.add(check)
     db.commit()

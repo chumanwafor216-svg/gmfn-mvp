@@ -1,9 +1,11 @@
 import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from app.core.security import get_password_hash
 from app.db.database import SessionLocal
 from app.db.models import Clan, ClanJoinRequest, ClanMembership, TrustEvent, User, UserPayoutDestination
+from app.db.verification_models import IdentityVerificationCheck
 
 
 def _parse_api_datetime(value: str) -> datetime:
@@ -853,6 +855,81 @@ def test_entry_create_allows_community_creation_without_bank_details(client):
             .first()
         )
         assert bank_event is None
+
+
+def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkeypatch):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+    upload_root = Path("test_uploads/entry_photo")
+    upload_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Photo Founder",
+            "phone_e164": "+447700900444",
+            "email": "photo.founder@example.com",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    verification_id = start_res.json()["verification_id"]
+
+    photo_res = client.post(
+        "/entry/identity-photo/record",
+        data={
+            "verification_id": str(verification_id),
+            "document_type": "selfie",
+            "note": "Founder face photo for continuity",
+        },
+        files={
+            "file": (
+                "selfie.png",
+                b"\x89PNG\r\n\x1a\nfounder-selfie-bytes",
+                "image/png",
+            )
+        },
+    )
+    assert photo_res.status_code == 201, photo_res.text
+    photo_body = photo_res.json()
+    assert photo_body["verification_type"] == "identity_photo"
+    assert photo_body["status"] == "manual_review_required"
+    assert photo_body["evidence_url"].startswith("/uploads/entry/identity/")
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": verification_id,
+            "clan_name": "Photo Founder Circle",
+            "email": "photo.founder@example.com",
+            "password": "strongpass",
+            "confirm_password": "strongpass",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.id == create_body["user_id"]).one()
+        assert user.profile_image_url == photo_body["evidence_url"]
+        check = (
+            db.query(IdentityVerificationCheck)
+            .filter(
+                IdentityVerificationCheck.user_id == create_body["user_id"],
+                IdentityVerificationCheck.verification_type == "identity_photo",
+            )
+            .one()
+        )
+        assert check.status == "manual_review_required"
+        photo_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.subject_user_id == create_body["user_id"],
+                TrustEvent.event_type == "identity.photo_evidence_recorded",
+            )
+            .one()
+        )
+        assert "provider-verified" in str(photo_event.meta_json or photo_event.meta)
 
 
 def test_entry_phone_confirm_rejects_wrong_code(client):

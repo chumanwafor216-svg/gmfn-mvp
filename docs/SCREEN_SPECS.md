@@ -179,6 +179,9 @@ Rules:
 - Step 3 is optional at the front door and should explain that stronger checks
   such as bank/wallet, driver licence, passport/selfie, NIN, or other regional
   IDs can raise founder assurance later without blocking basic community setup.
+- Passport/selfie evidence may be recorded as photo identity-continuity
+  evidence before a live provider is connected. The UI must not claim provider
+  verification until an actual provider or review decision exists.
 - After Step 3, show CommunityCreatedPage.
 - Then return to SignInPage or allow Open Community Home after sign-in.
 

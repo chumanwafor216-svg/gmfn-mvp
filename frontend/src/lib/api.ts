@@ -452,6 +452,19 @@ async function httpForm(path: string, form: Record<string, any>): Promise<any> {
   return readJsonOrTextSafe(res);
 }
 
+async function httpMultipart(path: string, form: FormData): Promise<any> {
+  const res = await fetch(buildUrl(path), {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+    },
+    body: form,
+  });
+
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
+  return readJsonOrTextSafe(res);
+}
+
 /* =========================
    AUTH
    ========================= */
@@ -747,6 +760,21 @@ export async function verifyEntryDriversLicence(payload: {
     country: String(payload?.country || "").trim(),
     note: String(payload?.note || "").trim() || undefined,
   });
+}
+
+export async function recordEntryIdentityPhoto(payload: {
+  verification_id: number | string;
+  file: File;
+  document_type?: string | null;
+  note?: string | null;
+}): Promise<any> {
+  const form = new FormData();
+  form.append("verification_id", String(Number(payload?.verification_id || 0)));
+  form.append("document_type", String(payload?.document_type || "selfie").trim() || "selfie");
+  const note = String(payload?.note || "").trim();
+  if (note) form.append("note", note);
+  form.append("file", payload.file);
+  return httpMultipart("/entry/identity-photo/record", form);
 }
 
 export async function getEntryVerificationCheck(

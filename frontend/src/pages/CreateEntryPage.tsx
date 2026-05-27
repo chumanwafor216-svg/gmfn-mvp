@@ -12,6 +12,7 @@ import {
   isAuthenticated,
   listMyClans,
   loginAndStore,
+  recordEntryIdentityPhoto,
   saveEntryBankDetails,
   setSelectedClanId,
   startEntryPhoneVerification,
@@ -934,6 +935,7 @@ type EntryVerificationResult = {
   region_code?: string | null;
   confidence_score?: number | null;
   explanation?: string;
+  evidence_url?: string | null;
   verified_at?: string | null;
 } | null;
 
@@ -1278,9 +1280,14 @@ export default function CreateEntryPage() {
   const [driverLicenceNumber, setDriverLicenceNumber] = useState("");
   const [driverLicenceCountry, setDriverLicenceCountry] = useState("");
   const [driverLicenceNote, setDriverLicenceNote] = useState("");
+  const [identityPhotoFile, setIdentityPhotoFile] = useState<File | null>(null);
+  const [identityPhotoKind, setIdentityPhotoKind] = useState("selfie");
+  const [identityPhotoNote, setIdentityPhotoNote] = useState("");
   const [bankVerificationResult, setBankVerificationResult] =
     useState<EntryVerificationResult>(null);
   const [licenceVerificationResult, setLicenceVerificationResult] =
+    useState<EntryVerificationResult>(null);
+  const [identityPhotoResult, setIdentityPhotoResult] =
     useState<EntryVerificationResult>(null);
   const [guideDone, setGuideDone] = useState(hasInitialCommunityContext);
   const [procedureOpen, setProcedureOpen] = useState(false);
@@ -1318,9 +1325,14 @@ export default function CreateEntryPage() {
       community: step === "community",
       detailsDone:
         step === "verify" || step === "bank" || step === "community",
-      verificationDone: Boolean(bankRecordProof || bankVerificationResult || licenceVerificationResult),
+      verificationDone: Boolean(
+        bankRecordProof ||
+          bankVerificationResult ||
+          licenceVerificationResult ||
+          identityPhotoResult
+      ),
     }),
-    [step, bankRecordProof, bankVerificationResult, licenceVerificationResult]
+    [step, bankRecordProof, bankVerificationResult, licenceVerificationResult, identityPhotoResult]
   );
 
   const canOpenDetails = guideDone;
@@ -1588,8 +1600,12 @@ export default function CreateEntryPage() {
     setDriverLicenceNumber("");
     setDriverLicenceCountry("");
     setDriverLicenceNote("");
+    setIdentityPhotoFile(null);
+    setIdentityPhotoKind("selfie");
+    setIdentityPhotoNote("");
     setBankVerificationResult(null);
     setLicenceVerificationResult(null);
+    setIdentityPhotoResult(null);
     setPhoneVerificationProof(null);
     setBankRecordProof(null);
     setError("");
@@ -2022,6 +2038,55 @@ export default function CreateEntryPage() {
         }
       } else {
         setError(err?.message || "Bank details could not be recorded.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleRecordIdentityPhoto() {
+    if (!identityPhotoFile || !Number(verificationId) || busy) return;
+
+    setError("");
+    setSuccess("");
+    setBusy(true);
+
+    try {
+      const out = await recordEntryIdentityPhoto({
+        verification_id: verificationId,
+        file: identityPhotoFile,
+        document_type: identityPhotoKind,
+        note: identityPhotoNote,
+      });
+      setIdentityPhotoResult(out);
+      setSuccess(
+        safeStr(out?.explanation) ||
+          "Photo/selfie evidence recorded. It can support identity continuity after review."
+      );
+      setOpenPanel("verification");
+      focusPanel("verification");
+    } catch (err: any) {
+      if (isPhoneSessionExpiredError(err) && canContinueDetails) {
+        try {
+          const refreshedVerificationId = await refreshPilotPhoneSession();
+          const out = await recordEntryIdentityPhoto({
+            verification_id: refreshedVerificationId,
+            file: identityPhotoFile,
+            document_type: identityPhotoKind,
+            note: identityPhotoNote,
+          });
+          setIdentityPhotoResult(out);
+          setSuccess(
+            "Your phone proof had timed out, so GSN refreshed it and recorded the photo/selfie evidence."
+          );
+        } catch (retryErr: any) {
+          setError(
+            retryErr?.message ||
+              "Photo/selfie evidence could not be recorded. Start the phone step again and retry."
+          );
+        }
+      } else {
+        setError(err?.message || "Photo/selfie evidence could not be recorded.");
       }
     } finally {
       setBusy(false);
@@ -3115,7 +3180,7 @@ export default function CreateEntryPage() {
                 >
                   {[
                     ["Bank/ID", "Available"],
-                    ["Passport/selfie", "Next"],
+                    ["Passport/selfie", "Available"],
                     ["NIN/regional ID", "Next"],
                   ].map(([label, statusLabel]) => (
                     <div
@@ -3377,6 +3442,31 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
+              {openPanel === "verification" && identityPhotoResult ? (
+                <div
+                  style={{
+                    ...verificationCard(identityPhotoResult.status),
+                    marginTop: 12,
+                  }}
+                >
+                  <div style={sectionLabel()}>Photo/selfie evidence</div>
+                  <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
+                    {safeStr(identityPhotoResult.status || "recorded")
+                      .replace(/_/g, " ")
+                      .replace(/\b\w/g, (char) => char.toUpperCase())}
+                  </div>
+                  <div style={{ marginTop: 8, lineHeight: 1.7 }}>
+                    {safeStr(identityPhotoResult.explanation) ||
+                      "Photo/selfie evidence is attached for identity continuity review."}
+                  </div>
+                  {safeStr(identityPhotoResult.evidence_url) ? (
+                    <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
+                      Trust Passport picture source recorded.
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
               {openPanel === "verification" ? (
                 step === "verify" ? (
                   <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
@@ -3486,6 +3576,83 @@ export default function CreateEntryPage() {
                   </div>
                 ) : (
                   <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
+                    <div
+                      style={{
+                        borderRadius: 18,
+                        border: "1px solid rgba(242,199,102,0.28)",
+                        background:
+                          "linear-gradient(180deg, rgba(242,199,102,0.12) 0%, rgba(13,45,73,0.62) 100%)",
+                        padding: 12,
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={bankFieldLabelStyle()}>
+                        <EntryDetailIcon kind="person" size={14} />
+                        <span>
+                          Photo / selfie proof <span style={{ color: "#B9CBE0", fontWeight: 800 }}>(optional)</span>
+                        </span>
+                      </div>
+                      <div style={{ color: "#B9CBE0", fontSize: 12, fontWeight: 760, marginTop: -5 }}>
+                        Use a clear face photo. GSN records it for identity continuity; provider verification comes later.
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "minmax(0, 0.42fr) minmax(0, 1fr)",
+                          gap: 10,
+                        }}
+                      >
+                        <select
+                          value={identityPhotoKind}
+                          onChange={(e) => setIdentityPhotoKind(e.target.value)}
+                          style={bankInputStyle()}
+                          aria-label="Identity photo type"
+                        >
+                          <option value="selfie">Selfie</option>
+                          <option value="passport_photo">Passport photo</option>
+                          <option value="identity_photo">ID photo</option>
+                        </select>
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          capture="user"
+                          onChange={(e) => setIdentityPhotoFile(e.target.files?.[0] || null)}
+                          style={bankInputStyle()}
+                          aria-label="Upload photo or selfie evidence"
+                        />
+                      </div>
+
+                      <textarea
+                        value={identityPhotoNote}
+                        onChange={(e) => setIdentityPhotoNote(e.target.value)}
+                        placeholder="Short note (optional)"
+                        style={{ ...bankTextAreaStyle(), minHeight: 44 }}
+                      />
+
+                      <PrimaryButton
+                        onClick={handleRecordIdentityPhoto}
+                        busy={busy}
+                        busyLabel="Recording..."
+                        disabled={!identityPhotoFile || !Number(verificationId)}
+                        minWidth={0}
+                        stableHeight={48}
+                        debugId="create-entry.identity-photo.record"
+                        style={{
+                          ...primaryBtn(!identityPhotoFile || !Number(verificationId) || busy),
+                          width: "100%",
+                          minWidth: 0,
+                          minHeight: 48,
+                          borderRadius: 14,
+                          gap: 8,
+                        }}
+                      >
+                        <EntryDetailIcon kind="id" size={14} />
+                        Record photo evidence
+                      </PrimaryButton>
+                    </div>
+
                     <div
                       style={{
                         borderRadius: 18,

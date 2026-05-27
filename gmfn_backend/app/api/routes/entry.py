@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import secrets
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
@@ -583,16 +584,37 @@ def _verification_event_type(verification_type: object) -> str:
         return "identity.bank_verification_checked"
     if vt == "drivers_licence":
         return "identity.drivers_licence_verification_checked"
+    if vt == "identity_photo":
+        return "identity.photo_evidence_checked"
     return "identity.verification_checked"
 
 
 def _verification_summary_line(check: IdentityVerificationCheck) -> str:
-    subject = "Bank details" if _clean_text(check.verification_type).lower() == "bank" else "Driver's licence"
+    vt = _clean_text(check.verification_type).lower()
+    if vt == "bank":
+        subject = "Bank details"
+    elif vt == "drivers_licence":
+        subject = "Driver's licence"
+    elif vt == "identity_photo":
+        subject = "Photo/selfie evidence"
+    else:
+        subject = "Identity evidence"
     explanation = _clean_text(check.explanation)
     base = f"{subject}: {_verification_status_label(check.status)}."
     if explanation:
         return f"{base} {explanation}"
     return base
+
+
+def _verification_provider_response(check: IdentityVerificationCheck) -> dict:
+    raw = getattr(check, "provider_response_json", None)
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
 
 
 @router.post("/phone/start", response_model=EntryPhoneStartOut, status_code=status.HTTP_201_CREATED)
@@ -991,10 +1013,15 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     )
 
     verification_summary_lines: list[str] = []
+    identity_photo_url: Optional[str] = None
     for check in verification_checks:
         check.user_id = int(user.id)
         db.add(check)
         verification_summary_lines.append(_verification_summary_line(check))
+
+        if _clean_text(check.verification_type).lower() == "identity_photo" and not identity_photo_url:
+            response_payload = _verification_provider_response(check)
+            identity_photo_url = _clean_text(response_payload.get("evidence_url")) or None
 
         verification_meta = build_trust_meta(
             reason="identity_verification_check_recorded_at_registration",
@@ -1017,6 +1044,35 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             subject_user_id=int(user.id),
             meta=verification_meta,
             dedupe_key=f"entry:verification-check:{int(check.id)}",
+            commit=False,
+            refresh=False,
+        )
+
+    if identity_photo_url:
+        user.profile_image_url = identity_photo_url
+        db.add(user)
+        photo_event_meta = build_trust_meta(
+            reason="identity_photo_recorded_at_registration",
+            note=(
+                "Founder photo/selfie evidence was recorded during onboarding. "
+                "It can be used for identity continuity on Trust Passport and TrustSlip, but it is not provider-verified yet."
+            ),
+            system=True,
+            extra={
+                "profile_image_url": identity_photo_url,
+                "verification_status": "manual_review_required",
+                "provider_verified": False,
+                "requires_review": True,
+            },
+        )
+        log_trust_event(
+            db,
+            event_type="identity.photo_evidence_recorded",
+            clan_id=int(clan.id),
+            actor_user_id=int(user.id),
+            subject_user_id=int(user.id),
+            meta=photo_event_meta,
+            dedupe_key=f"entry:{int(verification.id)}:user:{int(user.id)}:identity-photo",
             commit=False,
             refresh=False,
         )
@@ -1165,6 +1221,8 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         proof_bits.append("bank destination")
     if starter_summary.get("drivers_licence_recorded"):
         proof_bits.append("driver's licence")
+    if identity_photo_url:
+        proof_bits.append("photo/selfie evidence")
     if starter_summary.get("region_consistent"):
         proof_bits.append("matched region signals")
 

@@ -1,3 +1,37 @@
+### Start Community photo/selfie evidence lane (2026-05-27)
+
+- Owner approved making the picture angle a real part of founder verification:
+  a selfie/passport/identity photo should support the person's Trust Passport,
+  TrustSlip, and identity continuity surfaces.
+- Implemented the first honest backend lane:
+  - `POST /entry/identity-photo/record` accepts multipart image upload during
+    entry onboarding;
+  - allowed formats are jpg, jpeg, png, and webp, capped at 5MB;
+  - files are stored under `/uploads/entry/identity/...`;
+  - the evidence is recorded as an `IdentityVerificationCheck` with
+    `verification_type="identity_photo"` and
+    `status="manual_review_required"`.
+- Updated `/entry/create`:
+  - attaches the identity-photo check to the created user;
+  - sets `User.profile_image_url` from the uploaded evidence URL so Trust
+    Passport and TrustSlip can use the same identity-continuity picture;
+  - logs `identity.photo_evidence_recorded` Trust Events;
+  - includes photo/selfie evidence in starter-proof notification language.
+- Updated the Start Community UI:
+  - `Passport/selfie` is now available, not just a future label;
+  - users can choose selfie, passport photo, or ID photo and upload the image
+    from the optional founder trust block;
+  - the success state explicitly says this is recorded evidence requiring
+    review, not live provider verification.
+- Updated `trust_score_service` so photo evidence is counted in the starter
+  proof summary and latest-reason language without awarding fake provider
+  verification credit.
+- Added backend coverage in `gmfn_backend/tests/test_entry_create.py`.
+- Remaining truth:
+  - Live face match, liveness, passport OCR, NIN checks, and external KYC
+    providers are not connected yet. The system now captures and carries the
+    evidence correctly, but verification is still manual-review status.
+
 ### Start Community founder trust remodel (2026-05-27)
 
 - Owner approved the product change for `StartCommunityPage`:

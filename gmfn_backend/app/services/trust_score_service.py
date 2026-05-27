@@ -35,6 +35,7 @@ EV_FRAUD_FLAG = "fraud_flag"
 EV_IDENTITY_PHONE_VERIFIED = "identity.phone_verified"
 EV_IDENTITY_BANK_RECORDED = "identity.bank_destination_recorded"
 EV_IDENTITY_DRIVERS_LICENCE = "identity.drivers_licence_recorded"
+EV_IDENTITY_PHOTO_RECORDED = "identity.photo_evidence_recorded"
 EV_IDENTITY_REGION_CONSISTENT = "identity.region_consistent"
 EV_IDENTITY_REGION_MISMATCH_EXPLAINED = "identity.region_mismatch_explained"
 EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED = "community_confirmation.review_case_resolved"
@@ -85,6 +86,9 @@ _EVENT_ALIASES = {
     },
     EV_IDENTITY_DRIVERS_LICENCE: {
         "identity.drivers_licence_recorded",
+    },
+    EV_IDENTITY_PHOTO_RECORDED: {
+        "identity.photo_evidence_recorded",
     },
     EV_IDENTITY_REGION_CONSISTENT: {
         "identity.region_consistent",
@@ -245,6 +249,7 @@ def recompute_trust_for_user(
         EV_IDENTITY_PHONE_VERIFIED: 0,
         EV_IDENTITY_BANK_RECORDED: 0,
         EV_IDENTITY_DRIVERS_LICENCE: 0,
+        EV_IDENTITY_PHOTO_RECORDED: 0,
         EV_IDENTITY_REGION_CONSISTENT: 0,
         EV_IDENTITY_REGION_MISMATCH_EXPLAINED: 0,
         EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED: 0,
@@ -301,6 +306,7 @@ def recompute_trust_for_user(
     identity_phone_verified = counts[EV_IDENTITY_PHONE_VERIFIED]
     identity_bank_recorded = counts[EV_IDENTITY_BANK_RECORDED]
     identity_drivers_licence = counts[EV_IDENTITY_DRIVERS_LICENCE]
+    identity_photo_recorded = counts[EV_IDENTITY_PHOTO_RECORDED]
     identity_region_consistent = counts[EV_IDENTITY_REGION_CONSISTENT]
     identity_region_mismatch_explained = counts[EV_IDENTITY_REGION_MISMATCH_EXPLAINED]
     full_repayments_rev = counts[EV_BORROWER_FULL_REPAID_REV]
@@ -380,6 +386,9 @@ def recompute_trust_for_user(
     elif identity_region_mismatch_explained > 0:
         latest_reason = "A cross-region onboarding explanation was recorded for trust review"
         latest_source = EV_IDENTITY_REGION_MISMATCH_EXPLAINED
+    elif identity_photo_recorded > 0:
+        latest_reason = "Photo/selfie evidence was recorded for identity continuity"
+        latest_source = EV_IDENTITY_PHOTO_RECORDED
     elif identity_phone_verified > 0:
         latest_reason = "Verified phone established a starter trust standing"
         latest_source = EV_IDENTITY_PHONE_VERIFIED
@@ -425,6 +434,7 @@ def recompute_trust_for_user(
             "identity_phone_verified": identity_phone_verified,
             "identity_bank_recorded": identity_bank_recorded,
             "identity_drivers_licence": identity_drivers_licence,
+            "identity_photo_recorded": identity_photo_recorded,
             "identity_region_consistent": identity_region_consistent,
             "identity_region_mismatch_explained": identity_region_mismatch_explained,
             "community_confirmation_reviews_resolved": counts[
@@ -460,6 +470,7 @@ def recompute_trust_for_user(
             "phone_verified": identity_phone_verified > 0,
             "bank_recorded": identity_bank_recorded > 0,
             "drivers_licence_recorded": identity_drivers_licence > 0,
+            "photo_evidence_recorded": identity_photo_recorded > 0,
             "region_consistent": identity_region_consistent > 0,
             "region_mismatch_explained": identity_region_mismatch_explained > 0,
         },
