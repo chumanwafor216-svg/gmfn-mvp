@@ -1167,6 +1167,10 @@ function buildIdentityEvidenceNotices(params: {
   me: any | null;
   voice: GuidanceVoice;
 }): GuidanceNotice[] {
+  if (!params.rawTrustEvents) {
+    return [];
+  }
+
   if (!params.me && toArrayRows(params.rawTrustEvents).length === 0) {
     return [];
   }
@@ -1187,11 +1191,7 @@ function buildIdentityEvidenceNotices(params: {
   const ctaLabel =
     primary === "bank"
       ? "Open payout details"
-      : primary === "photo"
-        ? "Review photo proof"
-        : primary === "official_id"
-          ? "Review ID proof"
-          : "Open Trust Passport";
+      : "Open Trust Passport";
   const title = isRepair
     ? "Identity proof needs follow-up"
     : completion.score <= 35
@@ -1201,13 +1201,17 @@ function buildIdentityEvidenceNotices(params: {
     params.voice === "direct"
       ? `${completion.label}: ${completion.score}%.`
       : `${completion.label} so far: ${completion.score}%.`;
+  const routeHint =
+    primary === "bank"
+      ? "Use payout details to record bank or wallet evidence."
+      : "Open Trust Passport to see what is already recorded and what still needs proof.";
 
   return [
     {
       id: `identity-evidence-${primary || completion.status}-${completion.score}`,
       kind: "identity.evidence-completion",
       title,
-      detail: `${detailLead} ${completion.next}`,
+      detail: `${detailLead} ${completion.next} ${routeHint}`,
       ctaLabel,
       ctaTo,
       bucket: isRepair || completion.score < 55 ? "dueSoon" : "watchAndWait",
@@ -2592,7 +2596,7 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
     listTrustEvents({
       clan_id: selectedClanId || undefined,
       limit: 80,
-    }).catch(() => ({ items: [] })),
+    }).catch(() => null),
     getDailyInsight().catch(() => null),
     listMarketplaceRequests({
       clan_id: selectedClanId || undefined,

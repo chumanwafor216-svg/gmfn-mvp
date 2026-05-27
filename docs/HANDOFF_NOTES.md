@@ -28695,3 +28695,22 @@ GSN-branded invite composer and invite-entry continuity.
   - `Currency` still defaults to `NGN`, matching the current app state and the
     reference screenshot. If this should also stay blank, update the form state
     and backend fallback rules together.
+
+### Identity evidence guidance audit hardening (2026-05-27)
+
+- Follow-up to the shared identity evidence completion/guidance work after a
+  line-auditor pass.
+- Corrections:
+  - `frontend/src/lib/guidance.ts` no longer creates identity-evidence Action
+    Inbox notices when Trust Events could not be loaded. A failed Trust Events
+    request is not treated as missing evidence.
+  - `frontend/src/lib/identityEvidenceCompletion.ts` no longer counts
+    `identity.region_consistent` as official licence/passport/ID evidence.
+  - Historical photo `needs_more` or `rejected` events no longer poison guidance
+    after a later verified or review-corrected photo event.
+  - Non-bank identity evidence CTAs now say `Open Trust Passport` instead of
+    implying that a direct post-signup upload route already exists.
+- Remaining truth:
+  - Post-auth routes for adding/replacing photo proof and official ID proof are
+    still not built. Trust Passport can explain current evidence, but a
+    dedicated completion route remains separate work.

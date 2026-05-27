@@ -41,7 +41,6 @@ const IDENTITY_EVENT_TYPES = {
   phoneVerified: "identity.phone_verified",
   bankRecorded: "identity.bank_destination_recorded",
   licenceRecorded: "identity.drivers_licence_recorded",
-  regionConsistent: "identity.region_consistent",
   photoRecorded: "identity.photo_evidence_recorded",
   photoVerified: "identity.photo_evidence_verified",
   photoVerifiedReversed: "identity.photo_evidence_verified_reversed",
@@ -194,6 +193,11 @@ export function buildIdentityEvidenceCompletionFromTrustEvents(
       countEvents(rows, IDENTITY_EVENT_TYPES.photoVerified) -
         countEvents(rows, IDENTITY_EVENT_TYPES.photoVerifiedReversed)
     ) > 0;
+  const photoReviewCorrected = hasEvent(
+    rows,
+    IDENTITY_EVENT_TYPES.photoReviewCorrected
+  );
+  const photoRepairStillActive = !photoVerified && !photoReviewCorrected;
 
   return buildIdentityEvidenceCompletion({
     detailsDone: Boolean(
@@ -205,13 +209,14 @@ export function buildIdentityEvidenceCompletionFromTrustEvents(
     photoRecorded:
       hasEvent(rows, IDENTITY_EVENT_TYPES.photoRecorded) || photoVerified,
     photoVerified,
-    photoNeedsMore: hasEvent(rows, IDENTITY_EVENT_TYPES.photoNeedsMore),
-    photoRejected: hasEvent(rows, IDENTITY_EVENT_TYPES.photoRejected),
+    photoNeedsMore:
+      photoRepairStillActive &&
+      hasEvent(rows, IDENTITY_EVENT_TYPES.photoNeedsMore),
+    photoRejected:
+      photoRepairStillActive &&
+      hasEvent(rows, IDENTITY_EVENT_TYPES.photoRejected),
     bankRecorded: hasEvent(rows, IDENTITY_EVENT_TYPES.bankRecorded),
-    officialIdRecorded:
-      hasEvent(rows, IDENTITY_EVENT_TYPES.licenceRecorded) ||
-      hasEvent(rows, IDENTITY_EVENT_TYPES.regionConsistent),
+    officialIdRecorded: hasEvent(rows, IDENTITY_EVENT_TYPES.licenceRecorded),
     countReadyAsProgress: false,
   });
 }
-
