@@ -1404,6 +1404,8 @@ export default function CreateEntryPage() {
   const verificationRef = useRef<HTMLDivElement | null>(null);
   const communityRef = useRef<HTMLDivElement | null>(null);
   const panelRevealFrameRef = useRef<number | null>(null);
+  const selfiePhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   const passwordReady =
     safeStr(password).length >= 6 && safeStr(password) === safeStr(confirmPassword);
@@ -4032,25 +4034,75 @@ export default function CreateEntryPage() {
                           gap: 10,
                         }}
                       >
-                        <select
-                          value={identityPhotoKind}
-                          onChange={(e) => setIdentityPhotoKind(e.target.value)}
-                          style={bankInputStyle()}
-                          aria-label="Identity photo type"
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIdentityPhotoKind("selfie");
+                            if (selfiePhotoInputRef.current) {
+                              selfiePhotoInputRef.current.value = "";
+                              selfiePhotoInputRef.current.click();
+                            }
+                          }}
+                          style={{
+                            ...bankInputStyle(),
+                            color: "#07172C",
+                            cursor: "pointer",
+                            textAlign: "center",
+                            whiteSpace: "nowrap",
+                          }}
+                          aria-label="Open phone camera for selfie"
                         >
-                          <option value="selfie">Selfie</option>
-                          <option value="passport_photo">Passport photo</option>
-                          <option value="identity_photo">ID photo</option>
-                        </select>
+                          Selfie
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIdentityPhotoKind("identity_photo");
+                            if (galleryPhotoInputRef.current) {
+                              galleryPhotoInputRef.current.value = "";
+                              galleryPhotoInputRef.current.click();
+                            }
+                          }}
+                          style={{
+                            ...bankInputStyle(),
+                            color: "#07172C",
+                            cursor: "pointer",
+                            textAlign: "center",
+                          }}
+                          aria-label="Choose photo from gallery or files"
+                        >
+                          Choose file
+                        </button>
                         <input
+                          ref={selfiePhotoInputRef}
+                          type="file"
+                          accept="image/*"
+                          capture="user"
+                          onChange={(e) => {
+                            setIdentityPhotoKind("selfie");
+                            setIdentityPhotoFile(e.target.files?.[0] || null);
+                          }}
+                          style={{ display: "none" }}
+                          aria-label="Take selfie evidence"
+                        />
+                        <input
+                          ref={galleryPhotoInputRef}
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
-                          capture="user"
-                          onChange={(e) => setIdentityPhotoFile(e.target.files?.[0] || null)}
-                          style={bankInputStyle()}
-                          aria-label="Upload photo or selfie evidence"
+                          onChange={(e) => {
+                            setIdentityPhotoKind("identity_photo");
+                            setIdentityPhotoFile(e.target.files?.[0] || null);
+                          }}
+                          style={{ display: "none" }}
+                          aria-label="Choose photo evidence from gallery"
                         />
                       </div>
+
+                      {identityPhotoFile ? (
+                        <div style={{ color: "#D6E6F6", fontSize: 11.5, fontWeight: 820 }}>
+                          Selected: {identityPhotoFile.name}
+                        </div>
+                      ) : null}
 
                       <textarea
                         value={identityPhotoNote}
