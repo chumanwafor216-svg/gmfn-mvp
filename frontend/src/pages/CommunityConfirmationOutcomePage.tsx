@@ -1791,19 +1791,29 @@ function Stat({
     <div style={statTile(tone === "bad" ? "#FEF2F2" : tone === "warn" ? "#FFF7E6" : "#F7FAFF", compact)}>
       <span
         style={{
-          display: "inline-flex",
-          alignItems: "center",
+          display: "grid",
+          gridTemplateColumns: compact ? "16px minmax(0, 1fr)" : "22px minmax(0, 1fr)",
+          alignItems: "start",
           gap: compact ? 5 : 8,
           color,
           fontSize: compact ? 11 : undefined,
           fontWeight: 1000,
           lineHeight: 1.15,
+          minWidth: 0,
         }}
       >
         <TrustPaperIcon name={icon} size={compact ? 14 : 19} />
-        {label}
+        <span style={{ minWidth: 0 }}>{label}</span>
       </span>
-      <strong style={{ color: "#07172C", fontSize: compact ? 24 : 30, fontWeight: 1000, lineHeight: 1 }}>
+      <strong
+        style={{
+          color: "#07172C",
+          fontSize: compact ? 24 : 30,
+          fontWeight: 1000,
+          lineHeight: 1,
+          paddingLeft: compact ? 21 : 30,
+        }}
+      >
         {value}
       </strong>
     </div>
