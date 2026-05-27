@@ -31,6 +31,7 @@ import {
   readCreateEntryDraft,
   saveCreateEntryDraft,
 } from "../lib/entryDraft";
+import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
 
 type FeedbackTarget =
   | "global"
@@ -1448,85 +1449,27 @@ export default function CreateEntryPage() {
     !!safeStr(bankAccountName) &&
     !!safeStr(bankName) &&
     !!safeStr(bankAccountNumber);
-  const founderEvidence = useMemo(() => {
-    const photoRecorded = Boolean(identityPhotoResult);
-    const photoReady = Boolean(identityPhotoFile && !identityPhotoResult);
-    const items = [
-      {
-        key: "details",
-        label: "Name, phone, email",
-        done: canContinueDetails,
-        ready: false,
-        weight: 15,
-      },
-      {
-        key: "phone",
-        label: "Phone evidence",
-        done: Boolean(phoneVerificationProof),
-        ready: false,
-        weight: 20,
-      },
-      {
-        key: "photo",
-        label: "Photo/selfie",
-        done: photoRecorded,
-        ready: photoReady,
-        weight: 20,
-      },
-      {
-        key: "bank",
-        label: "Bank or wallet",
-        done: Boolean(bankRecordProof || bankVerificationResult),
-        ready: false,
-        weight: 25,
-      },
-      {
-        key: "id",
-        label: "Licence/passport/ID",
-        done: Boolean(licenceVerificationResult),
-        ready: false,
-        weight: 20,
-      },
-    ];
-    const score = Math.min(
-      100,
-      items.reduce(
-        (total, item) => total + (item.done || item.ready ? item.weight : 0),
-        0
-      )
-    );
-    const degrees = Math.round(score * 3.6);
-    const label =
-      score >= 80
-        ? "High evidence"
-        : score >= 55
-          ? "Strong evidence"
-          : score >= 35
-            ? "Medium evidence"
-            : score >= 15
-              ? "Light evidence"
-              : "Not started";
-    const next =
-      photoReady
-        ? "Photo is ready on this phone. Record it now so a real Trust Event can be written."
-        : !photoRecorded
-        ? "Add a clear photo/selfie so Trust Passport and TrustSlip can keep the founder face consistent."
-        : !(bankRecordProof || bankVerificationResult)
-          ? "Add bank or wallet evidence to connect this founder to real-world financial records where available."
-          : !licenceVerificationResult
-            ? "Add licence, passport, NIN, or other ID evidence to strengthen official identity confidence."
-            : "Founder evidence is broad. Keep evidence fresh when records change.";
-
-    return { score, degrees, label, items, next };
-  }, [
-    bankRecordProof,
-    bankVerificationResult,
-    canContinueDetails,
-    identityPhotoFile,
-    identityPhotoResult,
-    licenceVerificationResult,
-    phoneVerificationProof,
-  ]);
+  const founderEvidence = useMemo(
+    () =>
+      buildIdentityEvidenceCompletion({
+        detailsDone: canContinueDetails,
+        phoneDone: Boolean(phoneVerificationProof),
+        photoRecorded: Boolean(identityPhotoResult),
+        photoReady: Boolean(identityPhotoFile && !identityPhotoResult),
+        bankRecorded: Boolean(bankRecordProof || bankVerificationResult),
+        officialIdRecorded: Boolean(licenceVerificationResult),
+        countReadyAsProgress: true,
+      }),
+    [
+      bankRecordProof,
+      bankVerificationResult,
+      canContinueDetails,
+      identityPhotoFile,
+      identityPhotoResult,
+      licenceVerificationResult,
+      phoneVerificationProof,
+    ]
+  );
   const stepProgress = useMemo(
     () => ({
       details: step === "details",

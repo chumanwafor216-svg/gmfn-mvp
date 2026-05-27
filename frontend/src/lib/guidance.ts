@@ -11,6 +11,7 @@ import {
   listMyLoans,
   listTrustEvents,
 } from "./api";
+import { buildIdentityEvidenceCompletionFromTrustEvents } from "./identityEvidenceCompletion";
 
 export type GuidanceSeverity = "normal" | "important" | "urgent";
 export type GuidanceInboxBucketKey =
@@ -166,6 +167,7 @@ const GUIDANCE_TARGETS = {
   FINANCE: "/app/finance",
   MONEY_IN: "/app/payment/pool",
   MONEY_OUT: "/app/withdrawal-instructions",
+  PAYOUT_DETAILS: "/app/payout-details",
   TRUST: "/app/trust",
   TRUST_SLIP: "/app/trust-slip",
   TRUST_SLIP_VERIFY: "/app/trust-slip/verify",
@@ -1160,6 +1162,60 @@ function buildGuarantorInboxNotices(raw: any): GuidanceNotice[] {
   });
 }
 
+function buildIdentityEvidenceNotices(params: {
+  rawTrustEvents: any;
+  me: any | null;
+  voice: GuidanceVoice;
+}): GuidanceNotice[] {
+  if (!params.me && toArrayRows(params.rawTrustEvents).length === 0) {
+    return [];
+  }
+
+  const completion = buildIdentityEvidenceCompletionFromTrustEvents(
+    params.rawTrustEvents,
+    params.me
+  );
+
+  if (completion.score >= 80 && completion.primaryMissingKey !== "review") {
+    return [];
+  }
+
+  const primary = completion.primaryMissingKey;
+  const isRepair = primary === "review";
+  const ctaTo =
+    primary === "bank" ? GUIDANCE_TARGETS.PAYOUT_DETAILS : GUIDANCE_TARGETS.TRUST;
+  const ctaLabel =
+    primary === "bank"
+      ? "Open payout details"
+      : primary === "photo"
+        ? "Review photo proof"
+        : primary === "official_id"
+          ? "Review ID proof"
+          : "Open Trust Passport";
+  const title = isRepair
+    ? "Identity proof needs follow-up"
+    : completion.score <= 35
+      ? "Strengthen your identity evidence"
+      : "Add the next identity proof";
+  const detailLead =
+    params.voice === "direct"
+      ? `${completion.label}: ${completion.score}%.`
+      : `${completion.label} so far: ${completion.score}%.`;
+
+  return [
+    {
+      id: `identity-evidence-${primary || completion.status}-${completion.score}`,
+      kind: "identity.evidence-completion",
+      title,
+      detail: `${detailLead} ${completion.next}`,
+      ctaLabel,
+      ctaTo,
+      bucket: isRepair || completion.score < 55 ? "dueSoon" : "watchAndWait",
+      unread: false,
+    },
+  ];
+}
+
 function sortNotices(rows: GuidanceNotice[]): GuidanceNotice[] {
   return [...rows].sort((a, b) => {
     const unreadA = a.unread ? 1 : 0;
@@ -1773,13 +1829,25 @@ function buildRecoveryPath(params: {
 function buildActionInboxSummary(params: {
   rawNotifications: any;
   rawGuarantorInbox: any;
+  rawTrustEvents?: any;
+  me?: any | null;
+  voice?: GuidanceVoice;
 }): GuidanceActionInboxSummary {
   const notificationRows = toArrayRows(params.rawNotifications).map(
     normalizeNotificationNotice
   );
   const guarantorRows = buildGuarantorInboxNotices(params.rawGuarantorInbox);
+  const identityRows = buildIdentityEvidenceNotices({
+    rawTrustEvents: params.rawTrustEvents,
+    me: params.me || null,
+    voice: params.voice || "balanced",
+  });
 
-  const all = sortNotices([...guarantorRows, ...notificationRows]);
+  const all = sortNotices([
+    ...guarantorRows,
+    ...identityRows,
+    ...notificationRows,
+  ]);
 
   const actNow = all.filter((item) => item.bucket === "actNow");
   const dueSoon = all.filter((item) => item.bucket === "dueSoon");
@@ -2553,6 +2621,9 @@ export async function buildGuidanceSnapshot(): Promise<GuidanceSnapshot> {
   const actionInboxSummary = buildActionInboxSummary({
     rawNotifications: notificationsRaw,
     rawGuarantorInbox: guarantorInboxRaw,
+    rawTrustEvents: trustEventsRaw,
+    me,
+    voice,
   });
 
   const trustJourneySummary = buildTrustJourneySummary(trustEventsRaw, voice);

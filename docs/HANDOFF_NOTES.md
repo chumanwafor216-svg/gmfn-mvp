@@ -1,3 +1,35 @@
+### Shared identity evidence guidance signal (2026-05-27)
+
+- Added `frontend/src/lib/identityEvidenceCompletion.ts` as the shared source
+  for founder/member identity evidence meter logic:
+  - details/name baseline;
+  - phone evidence;
+  - photo/selfie evidence;
+  - bank or wallet evidence;
+  - licence/passport/NIN-style official ID evidence.
+- `CreateEntryPage` now uses this helper for the Start Community founder
+  evidence meter instead of keeping a page-local scoring copy.
+- `frontend/src/lib/guidance.ts` now reads the same signal from Trust Events
+  and feeds identity-evidence gaps into the existing Action Inbox / dashboard
+  attention machine:
+  - low or incomplete evidence appears as due-soon or watch guidance;
+  - rejected / needs-clearer-photo evidence is treated as follow-up guidance;
+  - missing bank/wallet evidence routes to `/app/payout-details`;
+  - other identity proof guidance routes to Trust Passport.
+- This intentionally reuses the existing dashboard attention and notification
+  guidance machinery. It does not create a second reminder system.
+- Remaining truth:
+  - Post-auth photo/selfie and official-ID capture still need a dedicated
+    completion route if the product wants users to add those after onboarding.
+    The current dashboard guidance can explain the gap, but only bank/wallet
+    has an obvious post-auth destination today.
+- Verification:
+  - `.\node_modules\.bin\eslint src\lib\identityEvidenceCompletion.ts src\lib\guidance.ts src\pages\CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Start Community local feedback and founder evidence meter (2026-05-27)
 
 - Updated `frontend/src/pages/CreateEntryPage.tsx` so create-entry feedback now
