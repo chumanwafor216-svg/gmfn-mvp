@@ -2443,6 +2443,50 @@ export async function getAdminPilotIntake(limit: number = 50): Promise<any> {
   return httpJson(`/admin/pilot-intake${buildQuery({ limit })}`, "GET");
 }
 
+export async function reviewIdentityVerificationCheck(
+  checkId: number,
+  payload: { decision: "verify" | "reject" | "needs_more"; reviewer_note?: string }
+): Promise<any> {
+  return httpJson(
+    `/admin/identity-verification-checks/${encodeURIComponent(String(checkId))}/decision`,
+    "POST",
+    payload
+  );
+}
+
+export async function fetchIdentityVerificationEvidenceBlob(
+  checkId: number
+): Promise<Blob> {
+  const headers: Record<string, string> = { Accept: "*/*" };
+  const tok = getAccessToken();
+  if (tok) headers["Authorization"] = `Bearer ${tok}`;
+
+  const res = await fetch(
+    buildUrl(
+      `/admin/identity-verification-checks/${encodeURIComponent(String(checkId))}/evidence`
+    ),
+    {
+      method: "GET",
+      headers,
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
+  return res.blob();
+}
+
+export async function correctIdentityVerificationCheck(
+  checkId: number,
+  payload: { reason: string }
+): Promise<any> {
+  return httpJson(
+    `/admin/identity-verification-checks/${encodeURIComponent(String(checkId))}/correction`,
+    "POST",
+    payload
+  );
+}
+
 export async function adminConfirmPoolEvent(
   eventId: number,
   note?: string

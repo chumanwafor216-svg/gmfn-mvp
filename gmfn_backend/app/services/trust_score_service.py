@@ -15,6 +15,7 @@ from app.core.constants import (
     GUARANTOR_SUCCESS_GAIN,
     IDENTITY_BANK_RECORDED_GAIN,
     IDENTITY_DRIVERS_LICENCE_GAIN,
+    IDENTITY_PHOTO_VERIFIED_GAIN,
     IDENTITY_PHONE_VERIFIED_GAIN,
     IDENTITY_REGION_CONSISTENT_GAIN,
     INACTIVITY_DECAY_FLOOR,
@@ -36,6 +37,11 @@ EV_IDENTITY_PHONE_VERIFIED = "identity.phone_verified"
 EV_IDENTITY_BANK_RECORDED = "identity.bank_destination_recorded"
 EV_IDENTITY_DRIVERS_LICENCE = "identity.drivers_licence_recorded"
 EV_IDENTITY_PHOTO_RECORDED = "identity.photo_evidence_recorded"
+EV_IDENTITY_PHOTO_VERIFIED = "identity.photo_evidence_verified"
+EV_IDENTITY_PHOTO_VERIFIED_REV = "identity.photo_evidence_verified_reversed"
+EV_IDENTITY_PHOTO_REJECTED = "identity.photo_evidence_rejected"
+EV_IDENTITY_PHOTO_NEEDS_MORE = "identity.photo_evidence_needs_more"
+EV_IDENTITY_PHOTO_REVIEW_CORRECTED = "identity.photo_evidence_review_corrected"
 EV_IDENTITY_REGION_CONSISTENT = "identity.region_consistent"
 EV_IDENTITY_REGION_MISMATCH_EXPLAINED = "identity.region_mismatch_explained"
 EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED = "community_confirmation.review_case_resolved"
@@ -89,6 +95,21 @@ _EVENT_ALIASES = {
     },
     EV_IDENTITY_PHOTO_RECORDED: {
         "identity.photo_evidence_recorded",
+    },
+    EV_IDENTITY_PHOTO_VERIFIED: {
+        "identity.photo_evidence_verified",
+    },
+    EV_IDENTITY_PHOTO_VERIFIED_REV: {
+        "identity.photo_evidence_verified_reversed",
+    },
+    EV_IDENTITY_PHOTO_REJECTED: {
+        "identity.photo_evidence_rejected",
+    },
+    EV_IDENTITY_PHOTO_NEEDS_MORE: {
+        "identity.photo_evidence_needs_more",
+    },
+    EV_IDENTITY_PHOTO_REVIEW_CORRECTED: {
+        "identity.photo_evidence_review_corrected",
     },
     EV_IDENTITY_REGION_CONSISTENT: {
         "identity.region_consistent",
@@ -250,6 +271,11 @@ def recompute_trust_for_user(
         EV_IDENTITY_BANK_RECORDED: 0,
         EV_IDENTITY_DRIVERS_LICENCE: 0,
         EV_IDENTITY_PHOTO_RECORDED: 0,
+        EV_IDENTITY_PHOTO_VERIFIED: 0,
+        EV_IDENTITY_PHOTO_VERIFIED_REV: 0,
+        EV_IDENTITY_PHOTO_REJECTED: 0,
+        EV_IDENTITY_PHOTO_NEEDS_MORE: 0,
+        EV_IDENTITY_PHOTO_REVIEW_CORRECTED: 0,
         EV_IDENTITY_REGION_CONSISTENT: 0,
         EV_IDENTITY_REGION_MISMATCH_EXPLAINED: 0,
         EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED: 0,
@@ -264,6 +290,7 @@ def recompute_trust_for_user(
     review_positive = 0
     review_caution = 0
     review_negative = 0
+    photo_review_state_by_check: Dict[int, str] = {}
 
     for row in rows:
         et = _normalize_event_type(getattr(row, "event_type", "") or "")
@@ -271,6 +298,28 @@ def recompute_trust_for_user(
             continue
 
         counts[et] += 1
+        if et in {
+            EV_IDENTITY_PHOTO_VERIFIED,
+            EV_IDENTITY_PHOTO_VERIFIED_REV,
+            EV_IDENTITY_PHOTO_REJECTED,
+            EV_IDENTITY_PHOTO_NEEDS_MORE,
+            EV_IDENTITY_PHOTO_REVIEW_CORRECTED,
+        }:
+            meta = _safe_event_meta(row)
+            try:
+                check_id = int(meta.get("verification_check_id") or 0)
+            except Exception:
+                check_id = 0
+            if check_id > 0:
+                if et == EV_IDENTITY_PHOTO_VERIFIED:
+                    photo_review_state_by_check[check_id] = "verify"
+                elif et == EV_IDENTITY_PHOTO_REJECTED:
+                    photo_review_state_by_check[check_id] = "reject"
+                elif et == EV_IDENTITY_PHOTO_NEEDS_MORE:
+                    photo_review_state_by_check[check_id] = "needs_more"
+                elif et in {EV_IDENTITY_PHOTO_VERIFIED_REV, EV_IDENTITY_PHOTO_REVIEW_CORRECTED}:
+                    photo_review_state_by_check[check_id] = "reopened"
+
         if et == EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED:
             meta = _safe_event_meta(row)
             if meta.get("affects_trust_reading") is True:
@@ -307,6 +356,11 @@ def recompute_trust_for_user(
     identity_bank_recorded = counts[EV_IDENTITY_BANK_RECORDED]
     identity_drivers_licence = counts[EV_IDENTITY_DRIVERS_LICENCE]
     identity_photo_recorded = counts[EV_IDENTITY_PHOTO_RECORDED]
+    identity_photo_verified = counts[EV_IDENTITY_PHOTO_VERIFIED]
+    identity_photo_verified_rev = counts[EV_IDENTITY_PHOTO_VERIFIED_REV]
+    identity_photo_rejected = counts[EV_IDENTITY_PHOTO_REJECTED]
+    identity_photo_needs_more = counts[EV_IDENTITY_PHOTO_NEEDS_MORE]
+    identity_photo_review_corrected = counts[EV_IDENTITY_PHOTO_REVIEW_CORRECTED]
     identity_region_consistent = counts[EV_IDENTITY_REGION_CONSISTENT]
     identity_region_mismatch_explained = counts[EV_IDENTITY_REGION_MISMATCH_EXPLAINED]
     full_repayments_rev = counts[EV_BORROWER_FULL_REPAID_REV]
@@ -317,6 +371,24 @@ def recompute_trust_for_user(
     gain_identity_phone = IDENTITY_PHONE_VERIFIED_GAIN * _d(identity_phone_verified)
     gain_identity_bank = IDENTITY_BANK_RECORDED_GAIN * _d(identity_bank_recorded)
     gain_identity_licence = IDENTITY_DRIVERS_LICENCE_GAIN * _d(identity_drivers_licence)
+    if photo_review_state_by_check:
+        active_identity_photo_verified = sum(
+            1 for state in photo_review_state_by_check.values() if state == "verify"
+        )
+        active_identity_photo_rejected = sum(
+            1 for state in photo_review_state_by_check.values() if state == "reject"
+        )
+        active_identity_photo_needs_more = sum(
+            1 for state in photo_review_state_by_check.values() if state == "needs_more"
+        )
+    else:
+        active_identity_photo_verified = max(
+            0, identity_photo_verified - identity_photo_verified_rev
+        )
+        active_identity_photo_rejected = identity_photo_rejected
+        active_identity_photo_needs_more = identity_photo_needs_more
+    identity_photo_verified_net = min(1, active_identity_photo_verified)
+    gain_identity_photo = IDENTITY_PHOTO_VERIFIED_GAIN * _d(identity_photo_verified_net)
     gain_identity_region = IDENTITY_REGION_CONSISTENT_GAIN * _d(identity_region_consistent)
     rev_borrower = BORROWER_FULL_REPAY_GAIN * _d(full_repayments_rev)
     rev_guarantor = GUARANTOR_SUCCESS_GAIN * _d(guarantor_success_rev)
@@ -333,6 +405,7 @@ def recompute_trust_for_user(
         + gain_identity_phone
         + gain_identity_bank
         + gain_identity_licence
+        + gain_identity_photo
         + gain_identity_region
         + gain_review
     ) - (rev_borrower + rev_guarantor)
@@ -377,6 +450,12 @@ def recompute_trust_for_user(
     elif review_caution > 0:
         latest_reason = "A resolved community confirmation review added caution to the trust reading"
         latest_source = EV_COMMUNITY_CONFIRMATION_REVIEW_RESOLVED
+    elif identity_photo_verified_rev > 0 and identity_photo_verified_net <= 0:
+        latest_reason = "A previous photo/selfie acceptance was corrected and reopened for review"
+        latest_source = EV_IDENTITY_PHOTO_VERIFIED_REV
+    elif active_identity_photo_rejected > 0:
+        latest_reason = "Photo/selfie evidence was reviewed and could not be accepted yet"
+        latest_source = EV_IDENTITY_PHOTO_REJECTED
     elif identity_bank_recorded > 0:
         latest_reason = "Verified onboarding proofs established your starter trust standing"
         latest_source = EV_IDENTITY_BANK_RECORDED
@@ -386,6 +465,12 @@ def recompute_trust_for_user(
     elif identity_region_mismatch_explained > 0:
         latest_reason = "A cross-region onboarding explanation was recorded for trust review"
         latest_source = EV_IDENTITY_REGION_MISMATCH_EXPLAINED
+    elif identity_photo_verified_net > 0:
+        latest_reason = "Photo/selfie evidence was reviewed and accepted for identity continuity"
+        latest_source = EV_IDENTITY_PHOTO_VERIFIED
+    elif active_identity_photo_needs_more > 0:
+        latest_reason = "Photo/selfie evidence needs a clearer manual review before it can support trust"
+        latest_source = EV_IDENTITY_PHOTO_NEEDS_MORE
     elif identity_photo_recorded > 0:
         latest_reason = "Photo/selfie evidence was recorded for identity continuity"
         latest_source = EV_IDENTITY_PHOTO_RECORDED
@@ -435,6 +520,15 @@ def recompute_trust_for_user(
             "identity_bank_recorded": identity_bank_recorded,
             "identity_drivers_licence": identity_drivers_licence,
             "identity_photo_recorded": identity_photo_recorded,
+            "identity_photo_verified": identity_photo_verified,
+            "identity_photo_verified_reversed": identity_photo_verified_rev,
+            "identity_photo_verified_net": identity_photo_verified_net,
+            "identity_photo_verified_active": active_identity_photo_verified,
+            "identity_photo_rejected": identity_photo_rejected,
+            "identity_photo_rejected_active": active_identity_photo_rejected,
+            "identity_photo_needs_more": identity_photo_needs_more,
+            "identity_photo_needs_more_active": active_identity_photo_needs_more,
+            "identity_photo_review_corrected": identity_photo_review_corrected,
             "identity_region_consistent": identity_region_consistent,
             "identity_region_mismatch_explained": identity_region_mismatch_explained,
             "community_confirmation_reviews_resolved": counts[
@@ -452,6 +546,7 @@ def recompute_trust_for_user(
             "identity_phone": str(_q(gain_identity_phone)),
             "identity_bank": str(_q(gain_identity_bank)),
             "identity_drivers_licence": str(_q(gain_identity_licence)),
+            "identity_photo": str(_q(gain_identity_photo)),
             "identity_region": str(_q(gain_identity_region)),
             "community_confirmation_review": str(_q(gain_review)),
             "reversals": str(_q(rev_borrower + rev_guarantor)),
@@ -471,6 +566,10 @@ def recompute_trust_for_user(
             "bank_recorded": identity_bank_recorded > 0,
             "drivers_licence_recorded": identity_drivers_licence > 0,
             "photo_evidence_recorded": identity_photo_recorded > 0,
+            "photo_evidence_verified": identity_photo_verified_net > 0,
+            "photo_evidence_needs_more": active_identity_photo_needs_more > 0,
+            "photo_evidence_rejected": active_identity_photo_rejected > 0,
+            "photo_evidence_verified_reversed": identity_photo_verified_rev > 0,
             "region_consistent": identity_region_consistent > 0,
             "region_mismatch_explained": identity_region_mismatch_explained > 0,
         },

@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 import json
+import mimetypes
+import os
 from datetime import datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -23,6 +28,8 @@ from app.db.models import (
     UserPayoutDestination,
 )
 from app.db.verification_models import IdentityVerificationCheck
+from app.services.trust_events_services import build_trust_meta, log_trust_event
+from app.services.trust_score_service import apply_trust_score
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -74,6 +81,90 @@ def _utc_dt(x: Any) -> Optional[datetime]:
 def _last4(x: Any) -> Optional[str]:
     digits = "".join(ch for ch in _safe_str(x) if ch.isdigit())
     return digits[-4:] if digits else None
+
+
+def _uploads_root() -> Path:
+    raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
+    return Path(raw or "uploads").expanduser()
+
+
+def _local_upload_path(upload_url: Any) -> Optional[Path]:
+    value = _safe_str(upload_url).split("?", 1)[0].split("#", 1)[0].replace("\\", "/")
+    if not value.startswith("/uploads/"):
+        return None
+
+    relative = value[len("/uploads/") :].lstrip("/")
+    if not relative:
+        return None
+
+    try:
+        root = _uploads_root().resolve()
+        candidate = (root / relative).resolve()
+        candidate.relative_to(root)
+    except Exception:
+        return None
+
+    return candidate
+
+
+class IdentityVerificationDecisionIn(BaseModel):
+    decision: str = Field(..., min_length=3, max_length=16)
+    reviewer_note: Optional[str] = Field(default=None, max_length=500)
+
+
+class IdentityVerificationCorrectionIn(BaseModel):
+    reason: str = Field(..., min_length=4, max_length=500)
+
+
+def _json_text(data: Any) -> str:
+    return json.dumps(data, ensure_ascii=False, sort_keys=True, default=str)
+
+
+def _check_provider_response(check: IdentityVerificationCheck) -> dict[str, Any]:
+    raw = getattr(check, "provider_response_json", None)
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def _serialize_identity_check(check: IdentityVerificationCheck) -> dict[str, Any]:
+    provider_response = _check_provider_response(check)
+    return {
+        "ok": True,
+        "verification_check_id": int(check.id),
+        "verification_type": check.verification_type,
+        "status": check.status,
+        "provider_key": check.provider_key,
+        "region_code": check.region_code,
+        "confidence_score": check.confidence_score,
+        "explanation": check.explanation,
+        "evidence_url": _safe_str(provider_response.get("evidence_url")) or None,
+        "verified_at": _dt_iso(check.verified_at),
+        "manual_review": bool(provider_response.get("manual_review")),
+        "provider_verified": bool(provider_response.get("provider_verified")),
+        "review_decision": _safe_str(provider_response.get("review_decision")) or None,
+        "reviewed_at": _safe_str(provider_response.get("reviewed_at")) or None,
+        "provider_response": provider_response,
+    }
+
+
+def _primary_membership_clan_id(db: Session, user_id: int) -> Optional[int]:
+    row = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.id.asc())
+        .first()
+    )
+    if row is None:
+        return None
+    return int(row.clan_id)
 
 
 def _entry_stage(row: EntryPhoneVerification, user: Optional[User], now: datetime) -> str:
@@ -129,6 +220,362 @@ def _join_next_action(stage: str) -> str:
     if stage == "rejected":
         return "No action unless the community wants to invite this person again."
     return "Review this join request."
+
+
+@router.post("/identity-verification-checks/{check_id}/decision")
+def admin_identity_verification_decision(
+    check_id: int,
+    payload: IdentityVerificationDecisionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Admin/manual review decision for founder identity photo evidence.
+
+    This does not pretend to be provider KYC or liveness. It records a human
+    review decision and feeds the append-only Trust Event trail.
+    """
+    _require_platform_admin(current_user)
+
+    decision = _safe_str(payload.decision).lower().replace("-", "_")
+    decision_aliases = {
+        "accept": "verify",
+        "accepted": "verify",
+        "approved": "verify",
+        "verify": "verify",
+        "verified": "verify",
+        "reject": "reject",
+        "rejected": "reject",
+        "fail": "reject",
+        "failed": "reject",
+        "needs_more": "needs_more",
+        "needs_more_evidence": "needs_more",
+        "more": "needs_more",
+    }
+    decision = decision_aliases.get(decision, decision)
+    if decision not in {"verify", "reject", "needs_more"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Decision must be verify, reject, or needs_more.",
+        )
+
+    check = (
+        db.query(IdentityVerificationCheck)
+        .filter(IdentityVerificationCheck.id == int(check_id))
+        .with_for_update()
+        .one_or_none()
+    )
+    if check is None:
+        raise HTTPException(status_code=404, detail="Identity verification check not found")
+    if _safe_str(check.verification_type) != "identity_photo":
+        raise HTTPException(
+            status_code=400,
+            detail="Only identity photo checks can be reviewed with this endpoint.",
+        )
+    subject_user = db.get(User, int(check.user_id)) if check.user_id else None
+    if subject_user is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Identity photo review can only be decided after account creation "
+                "attaches this evidence to a user."
+            ),
+        )
+
+    now = datetime.now(timezone.utc)
+    provider_response = _check_provider_response(check)
+    evidence_url = _safe_str(provider_response.get("evidence_url")) or None
+    reviewer_note = _safe_str(payload.reviewer_note) or None
+    previous_decision = _safe_str(provider_response.get("review_decision")).lower()
+    try:
+        review_cycle = max(1, int(provider_response.get("review_cycle") or 1))
+    except Exception:
+        review_cycle = 1
+    if previous_decision in {"verify", "reject"}:
+        if decision == previous_decision:
+            return {
+                **_serialize_identity_check(check),
+                "decision": previous_decision,
+                "trust_summary": apply_trust_score(db, user_id=int(subject_user.id)),
+                "already_reviewed": True,
+            }
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "This identity photo already has a terminal review decision. "
+                "Use a correction/reversal flow before changing it."
+            ),
+        )
+
+    if decision == "verify":
+        check.status = "matched"
+        check.verified_at = now
+        check.confidence_score = max(int(check.confidence_score or 0), 70)
+        check.explanation = (
+            "Photo/selfie evidence was reviewed and accepted for identity continuity. "
+            "This is manual review evidence, not external liveness or passport-provider verification."
+        )
+        event_type = "identity.photo_evidence_verified"
+        event_reason = "identity_photo_manual_review_accepted"
+        trust_delta = "0.20"
+    elif decision == "reject":
+        check.status = "failed"
+        check.verified_at = None
+        check.confidence_score = 0
+        check.explanation = (
+            "Photo/selfie evidence was reviewed and could not be accepted. "
+            "A clearer selfie, passport photo, or identity photo is needed before this proof can support trust."
+        )
+        event_type = "identity.photo_evidence_rejected"
+        event_reason = "identity_photo_manual_review_rejected"
+        trust_delta = "0.00"
+    else:
+        check.status = "manual_review_required"
+        check.verified_at = None
+        check.confidence_score = max(int(check.confidence_score or 0), 25)
+        check.explanation = (
+            "Photo/selfie evidence needs a clearer review before it can be accepted for identity continuity."
+        )
+        event_type = "identity.photo_evidence_needs_more"
+        event_reason = "identity_photo_manual_review_needs_more"
+        trust_delta = "0.00"
+
+    provider_response.update(
+        {
+            "provider_configured": False,
+            "provider_verified": False,
+            "manual_review": True,
+            "review_decision": decision,
+            "reviewer_user_id": int(current_user.id),
+            "reviewed_at": now.isoformat(),
+            "reviewer_note": reviewer_note,
+            "review_verified": decision == "verify",
+            "review_cycle": review_cycle,
+            "correction_required": False,
+        }
+    )
+    check.provider_response_json = _json_text(provider_response)
+
+    if decision == "verify" and evidence_url:
+        subject_user.profile_image_url = evidence_url
+        db.add(subject_user)
+    elif decision == "reject" and evidence_url and subject_user.profile_image_url == evidence_url:
+        subject_user.profile_image_url = None
+        db.add(subject_user)
+
+    meta = build_trust_meta(
+        reason=event_reason,
+        note=reviewer_note
+        or (
+            "Founder identity photo evidence was reviewed by a platform admin. "
+            "No external liveness or KYC provider was connected for this decision."
+        ),
+        trust_delta=trust_delta,
+        system=True,
+        extra={
+            "verification_check_id": int(check.id),
+            "decision": decision,
+            "evidence_url": evidence_url,
+            "provider_verified": False,
+            "manual_review": True,
+            "review_cycle": review_cycle,
+            "affects_trust_reading": decision == "verify",
+        },
+    )
+    log_trust_event(
+        db,
+        event_type=event_type,
+        clan_id=_primary_membership_clan_id(db, int(subject_user.id)),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(subject_user.id),
+        meta=meta,
+        dedupe_key=f"identity_photo_review:{int(check.id)}:{review_cycle}:{decision}",
+        commit=False,
+        refresh=False,
+    )
+
+    db.add(check)
+    db.commit()
+    db.refresh(check)
+
+    trust_summary = apply_trust_score(db, user_id=int(subject_user.id))
+
+    return {
+        **_serialize_identity_check(check),
+        "decision": decision,
+        "trust_summary": trust_summary,
+    }
+
+
+@router.get("/identity-verification-checks/{check_id}/evidence")
+def admin_identity_verification_evidence(
+    check_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Authenticated admin-only preview of private identity-photo evidence.
+
+    The stored upload URL is still an internal pointer; admin UI should use
+    this route instead of opening the raw /uploads path.
+    """
+    _require_platform_admin(current_user)
+
+    check = db.get(IdentityVerificationCheck, int(check_id))
+    if check is None:
+        raise HTTPException(status_code=404, detail="Identity verification check not found")
+    if _safe_str(check.verification_type) != "identity_photo":
+        raise HTTPException(
+            status_code=400,
+            detail="Only identity photo evidence can be opened with this endpoint.",
+        )
+
+    evidence_url = _safe_str(_check_provider_response(check).get("evidence_url"))
+    candidate = _local_upload_path(evidence_url)
+    if candidate is None or not candidate.is_file():
+        raise HTTPException(status_code=404, detail="Identity photo evidence file not found")
+
+    media_type = mimetypes.guess_type(str(candidate))[0] or "application/octet-stream"
+    return FileResponse(
+        path=str(candidate),
+        media_type=media_type,
+        filename=candidate.name,
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@router.post("/identity-verification-checks/{check_id}/correction")
+def admin_identity_verification_correction(
+    check_id: int,
+    payload: IdentityVerificationCorrectionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Reopen a terminal identity-photo review without deleting the old decision.
+
+    If the previous decision strengthened trust, a reversal TrustEvent removes
+    that score effect before the check returns to manual review.
+    """
+    _require_platform_admin(current_user)
+
+    check = (
+        db.query(IdentityVerificationCheck)
+        .filter(IdentityVerificationCheck.id == int(check_id))
+        .with_for_update()
+        .one_or_none()
+    )
+    if check is None:
+        raise HTTPException(status_code=404, detail="Identity verification check not found")
+    if _safe_str(check.verification_type) != "identity_photo":
+        raise HTTPException(
+            status_code=400,
+            detail="Only identity photo checks can be corrected with this endpoint.",
+        )
+    subject_user = db.get(User, int(check.user_id)) if check.user_id else None
+    if subject_user is None:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Identity photo correction can only run after account creation "
+                "attaches this evidence to a user."
+            ),
+        )
+
+    provider_response = _check_provider_response(check)
+    previous_decision = _safe_str(provider_response.get("review_decision")).lower()
+    if previous_decision not in {"verify", "reject"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Only accepted or rejected identity photo decisions can be reopened.",
+        )
+
+    try:
+        previous_cycle = max(1, int(provider_response.get("review_cycle") or 1))
+    except Exception:
+        previous_cycle = 1
+    next_cycle = previous_cycle + 1
+    reason = _safe_str(payload.reason)
+    now = datetime.now(timezone.utc)
+    evidence_url = _safe_str(provider_response.get("evidence_url")) or None
+
+    event_type = (
+        "identity.photo_evidence_verified_reversed"
+        if previous_decision == "verify"
+        else "identity.photo_evidence_review_corrected"
+    )
+    meta = build_trust_meta(
+        reason=(
+            "identity_photo_verified_review_reopened"
+            if previous_decision == "verify"
+            else "identity_photo_rejected_review_reopened"
+        ),
+        note=reason,
+        trust_delta="-0.20" if previous_decision == "verify" else "0.00",
+        system=True,
+        extra={
+            "verification_check_id": int(check.id),
+            "previous_decision": previous_decision,
+            "review_cycle_reopened": previous_cycle,
+            "next_review_cycle": next_cycle,
+            "evidence_url": evidence_url,
+            "provider_verified": False,
+            "manual_review": True,
+            "affects_trust_reading": previous_decision == "verify",
+        },
+    )
+    log_trust_event(
+        db,
+        event_type=event_type,
+        clan_id=_primary_membership_clan_id(db, int(subject_user.id)),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(subject_user.id),
+        meta=meta,
+        dedupe_key=f"identity_photo_review:{int(check.id)}:{previous_cycle}:correction",
+        commit=False,
+        refresh=False,
+    )
+
+    if previous_decision == "verify" and evidence_url and subject_user.profile_image_url == evidence_url:
+        subject_user.profile_image_url = None
+        db.add(subject_user)
+
+    provider_response.update(
+        {
+            "provider_verified": False,
+            "manual_review": True,
+            "review_decision": "reopened",
+            "review_verified": False,
+            "previous_review_decision": previous_decision,
+            "previous_review_cycle": previous_cycle,
+            "review_cycle": next_cycle,
+            "correction_required": True,
+            "corrected_by_user_id": int(current_user.id),
+            "corrected_at": now.isoformat(),
+            "correction_reason": reason,
+        }
+    )
+    check.provider_response_json = _json_text(provider_response)
+    check.status = "manual_review_required"
+    check.verified_at = None
+    check.confidence_score = max(25, int(check.confidence_score or 0))
+    check.explanation = (
+        "A previous photo/selfie review decision was reopened. "
+        "This evidence needs a fresh admin decision before it can strengthen trust."
+    )
+
+    db.add(check)
+    db.commit()
+    db.refresh(check)
+
+    trust_summary = apply_trust_score(db, user_id=int(subject_user.id))
+
+    return {
+        **_serialize_identity_check(check),
+        "decision": "reopened",
+        "previous_decision": previous_decision,
+        "trust_summary": trust_summary,
+    }
 
 
 @router.get("/trust-events/recent")
@@ -359,6 +806,22 @@ def admin_pilot_intake(
                         "region_code": check.region_code,
                         "confidence_score": check.confidence_score,
                         "explanation": check.explanation,
+                        "has_user": bool(check.user_id),
+                        "user_id": int(check.user_id) if check.user_id else None,
+                        "manual_review": bool(
+                            _check_provider_response(check).get("manual_review")
+                        ),
+                        "provider_verified": bool(
+                            _check_provider_response(check).get("provider_verified")
+                        ),
+                        "review_decision": _safe_str(
+                            _check_provider_response(check).get("review_decision")
+                        )
+                        or None,
+                        "evidence_url": _safe_str(
+                            _check_provider_response(check).get("evidence_url")
+                        )
+                        or None,
                         "created_at": _dt_iso(check.created_at),
                     }
                     for check in checks

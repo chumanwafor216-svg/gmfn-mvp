@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -860,6 +861,7 @@ def test_entry_create_allows_community_creation_without_bank_details(client):
 def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkeypatch):
     monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
     monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+    monkeypatch.setenv("GMFN_DEV_MODE", "1")
     upload_root = Path("test_uploads/entry_photo")
     upload_root.mkdir(parents=True, exist_ok=True)
     monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
@@ -873,7 +875,17 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
         },
     )
     assert start_res.status_code == 201, start_res.text
-    verification_id = start_res.json()["verification_id"]
+    start_body = start_res.json()
+    verification_id = start_body["verification_id"]
+
+    confirm_res = client.post(
+        "/entry/phone/confirm",
+        json={
+            "verification_id": verification_id,
+            "code": start_body["otp_preview"],
+        },
+    )
+    assert confirm_res.status_code == 200, confirm_res.text
 
     photo_res = client.post(
         "/entry/identity-photo/record",
@@ -895,6 +907,16 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     assert photo_body["verification_type"] == "identity_photo"
     assert photo_body["status"] == "manual_review_required"
     assert photo_body["evidence_url"].startswith("/uploads/entry/identity/")
+
+    early_review_res = client.post(
+        f"/admin/identity-verification-checks/{photo_body['verification_check_id']}/decision",
+        json={
+            "decision": "verify",
+            "reviewer_note": "This must not be accepted before a user exists.",
+        },
+    )
+    assert early_review_res.status_code == 400, early_review_res.text
+    assert "account creation" in early_review_res.text
 
     create_res = client.post(
         "/entry/create",
@@ -930,6 +952,155 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
             .one()
         )
         assert "provider-verified" in str(photo_event.meta_json or photo_event.meta)
+
+    review_res = client.post(
+        f"/admin/identity-verification-checks/{photo_body['verification_check_id']}/decision",
+        json={
+            "decision": "verify",
+            "reviewer_note": "Photo is clear enough for manual identity-continuity review.",
+        },
+    )
+    assert review_res.status_code == 200, review_res.text
+    review_body = review_res.json()
+    assert review_body["status"] == "matched"
+    assert review_body["decision"] == "verify"
+    assert review_body["provider_response"]["provider_verified"] is False
+    assert review_body["provider_response"]["manual_review"] is True
+    assert review_body["trust_summary"]["counts"]["identity_photo_verified"] == 1
+    assert review_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified"] is True
+
+    with SessionLocal() as db:
+        reviewed_check = (
+            db.query(IdentityVerificationCheck)
+            .filter(
+                IdentityVerificationCheck.user_id == create_body["user_id"],
+                IdentityVerificationCheck.verification_type == "identity_photo",
+            )
+            .one()
+        )
+        assert reviewed_check.status == "matched"
+        assert reviewed_check.verified_at is not None
+        verified_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.subject_user_id == create_body["user_id"],
+                TrustEvent.event_type == "identity.photo_evidence_verified",
+            )
+            .one()
+        )
+        verified_meta = str(verified_event.meta_json or verified_event.meta)
+        assert '"provider_verified": false' in verified_meta
+        assert '"manual_review": true' in verified_meta
+
+    correction_res = client.post(
+        f"/admin/identity-verification-checks/{photo_body['verification_check_id']}/correction",
+        json={
+            "reason": "Reviewer reopened this because the photo must be checked again.",
+        },
+    )
+    assert correction_res.status_code == 200, correction_res.text
+    correction_body = correction_res.json()
+    assert correction_body["status"] == "manual_review_required"
+    assert correction_body["decision"] == "reopened"
+    assert correction_body["previous_decision"] == "verify"
+    assert correction_body["provider_response"]["review_decision"] == "reopened"
+    assert correction_body["trust_summary"]["counts"]["identity_photo_verified"] == 1
+    assert correction_body["trust_summary"]["counts"]["identity_photo_verified_reversed"] == 1
+    assert correction_body["trust_summary"]["counts"]["identity_photo_verified_net"] == 0
+    assert correction_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified"] is False
+    assert correction_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified_reversed"] is True
+
+    needs_more_res = client.post(
+        f"/admin/identity-verification-checks/{photo_body['verification_check_id']}/decision",
+        json={
+            "decision": "needs_more",
+            "reviewer_note": "Second review needs a clearer identity continuity photo.",
+        },
+    )
+    assert needs_more_res.status_code == 200, needs_more_res.text
+    needs_more_body = needs_more_res.json()
+    assert needs_more_body["status"] == "manual_review_required"
+    assert needs_more_body["trust_summary"]["counts"]["identity_photo_needs_more"] == 1
+    assert needs_more_body["trust_summary"]["counts"]["identity_photo_needs_more_active"] == 1
+    assert needs_more_body["trust_summary"]["starter_proof_summary"]["photo_evidence_needs_more"] is True
+
+    rereview_res = client.post(
+        f"/admin/identity-verification-checks/{photo_body['verification_check_id']}/decision",
+        json={
+            "decision": "verify",
+            "reviewer_note": "Second review accepted the clearer identity continuity evidence.",
+        },
+    )
+    assert rereview_res.status_code == 200, rereview_res.text
+    rereview_body = rereview_res.json()
+    assert rereview_body["status"] == "matched"
+    assert rereview_body["trust_summary"]["counts"]["identity_photo_verified"] == 2
+    assert rereview_body["trust_summary"]["counts"]["identity_photo_verified_reversed"] == 1
+    assert rereview_body["trust_summary"]["counts"]["identity_photo_verified_net"] == 1
+    assert rereview_body["trust_summary"]["counts"]["identity_photo_needs_more_active"] == 0
+    assert rereview_body["trust_summary"]["latest_source"] == "identity.photo_evidence_verified"
+    assert rereview_body["trust_summary"]["starter_proof_summary"]["photo_evidence_verified"] is True
+    assert rereview_body["trust_summary"]["starter_proof_summary"]["photo_evidence_needs_more"] is False
+
+    with SessionLocal() as db:
+        reversed_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.subject_user_id == create_body["user_id"],
+                TrustEvent.event_type == "identity.photo_evidence_verified_reversed",
+            )
+            .one()
+        )
+        reversed_meta = str(reversed_event.meta_json or reversed_event.meta)
+        assert '"previous_decision": "verify"' in reversed_meta
+        assert '"next_review_cycle": 2' in reversed_meta
+
+        second_check = IdentityVerificationCheck(
+            user_id=create_body["user_id"],
+            verification_type="identity_photo",
+            provider_key="manual_founder_photo",
+            status="manual_review_required",
+            confidence_score=25,
+            explanation="Second manual photo check for correction coverage.",
+            provider_response_json=json.dumps(
+                {
+                    "evidence_url": "/uploads/entry/identity/rejected-later.png",
+                    "provider_configured": False,
+                    "provider_verified": False,
+                    "manual_review": True,
+                    "review_cycle": 1,
+                }
+            ),
+        )
+        db.add(second_check)
+        db.commit()
+        db.refresh(second_check)
+        second_check_id = int(second_check.id)
+
+    reject_res = client.post(
+        f"/admin/identity-verification-checks/{second_check_id}/decision",
+        json={
+            "decision": "reject",
+            "reviewer_note": "Second check is not clear enough.",
+        },
+    )
+    assert reject_res.status_code == 200, reject_res.text
+    reject_body = reject_res.json()
+    assert reject_body["trust_summary"]["counts"]["identity_photo_rejected"] == 1
+    assert reject_body["trust_summary"]["counts"]["identity_photo_rejected_active"] == 1
+    assert reject_body["trust_summary"]["starter_proof_summary"]["photo_evidence_rejected"] is True
+
+    reject_correction_res = client.post(
+        f"/admin/identity-verification-checks/{second_check_id}/correction",
+        json={
+            "reason": "Reopening rejected photo check for corrected evidence path.",
+        },
+    )
+    assert reject_correction_res.status_code == 200, reject_correction_res.text
+    reject_correction_body = reject_correction_res.json()
+    assert reject_correction_body["trust_summary"]["counts"]["identity_photo_rejected"] == 1
+    assert reject_correction_body["trust_summary"]["counts"]["identity_photo_rejected_active"] == 0
+    assert reject_correction_body["trust_summary"]["starter_proof_summary"]["photo_evidence_rejected"] is False
 
 
 def test_entry_phone_confirm_rejects_wrong_code(client):

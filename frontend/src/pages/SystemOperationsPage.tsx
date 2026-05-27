@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
-import { SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { SecondaryButton, StableButton, StableCtaLink } from "../components/StableButton";
 import {
   institutionalInnerCard,
   institutionalPageCard,
@@ -16,10 +16,13 @@ import {
   getMe,
   getSelectedClanId,
   getSystemDiagnostics,
+  correctIdentityVerificationCheck,
+  fetchIdentityVerificationEvidenceBlob,
   listAdminPoolPending,
   listExpectedPayments,
   listRecentBankEvents,
   listUnmatchedBankEvents,
+  reviewIdentityVerificationCheck,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
@@ -420,6 +423,8 @@ export default function SystemOperationsPage() {
   const [bankUnmatched, setBankUnmatched] = useState<any[]>([]);
   const [expectedPayments, setExpectedPayments] = useState<any[]>([]);
   const [pilotIntake, setPilotIntake] = useState<any>(null);
+  const [reviewingCheckId, setReviewingCheckId] = useState<number | null>(null);
+  const [reviewMessage, setReviewMessage] = useState<string>("");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -533,6 +538,118 @@ export default function SystemOperationsPage() {
       firstTruthy(me?.role, me?.account_role, me?.user_role) || "admin"
     );
   }, [me]);
+
+  async function handleIdentityPhotoDecision(
+    checkId: number,
+    decision: "verify" | "reject" | "needs_more"
+  ) {
+    if (!checkId || reviewingCheckId) return;
+
+    const note =
+      decision === "verify"
+        ? "Accepted from System Operations entry-support review."
+        : decision === "reject"
+          ? "Rejected from System Operations entry-support review."
+          : "Clearer evidence requested from System Operations entry-support review.";
+
+    setReviewingCheckId(checkId);
+    setReviewMessage("");
+
+    try {
+      await reviewIdentityVerificationCheck(checkId, {
+        decision,
+        reviewer_note: note,
+      });
+      const refreshed = await getAdminPilotIntake(80).catch(() => null);
+      setPilotIntake(refreshed || null);
+      setReviewMessage(
+        decision === "verify"
+          ? "Manual photo review accepted and recorded in the Trust Event trail. This is not provider KYC."
+          : decision === "reject"
+            ? "Manual photo review rejected and recorded for follow-up."
+            : "Photo evidence marked as needing clearer proof before trust can use it."
+      );
+    } catch (err: any) {
+      setReviewMessage(
+        firstTruthy(
+          err?.message,
+          "GSN could not update this identity photo review. Confirm platform-admin access."
+        )
+      );
+    } finally {
+      setReviewingCheckId(null);
+    }
+  }
+
+  async function handleIdentityPhotoCorrection(checkId: number) {
+    if (!checkId || reviewingCheckId) return;
+
+    const reason =
+      typeof window === "undefined"
+        ? ""
+        : window.prompt(
+            "Reopen this manual photo review only if the previous decision was wrong or incomplete. Type the factual reason for the audit trail."
+          );
+    const cleanReason = safeStr(reason);
+    if (!cleanReason) {
+      setReviewMessage("Reopen cancelled. A factual correction reason is required.");
+      return;
+    }
+
+    setReviewingCheckId(checkId);
+    setReviewMessage("");
+
+    try {
+      await correctIdentityVerificationCheck(checkId, {
+        reason: cleanReason,
+      });
+      const refreshed = await getAdminPilotIntake(80).catch(() => null);
+      setPilotIntake(refreshed || null);
+      setReviewMessage(
+        "Photo review reopened. Any previous accepted-photo trust effect was corrected in the Trust Event trail."
+      );
+    } catch (err: any) {
+      setReviewMessage(
+        firstTruthy(
+          err?.message,
+          "GSN could not reopen this identity photo review. Confirm platform-admin access."
+        )
+      );
+    } finally {
+      setReviewingCheckId(null);
+    }
+  }
+
+  async function handleOpenIdentityPhotoEvidence(checkId: number) {
+    if (!checkId || reviewingCheckId) return;
+
+    setReviewingCheckId(checkId);
+    setReviewMessage("");
+
+    try {
+      const blob = await fetchIdentityVerificationEvidenceBlob(checkId);
+      const objectUrl = URL.createObjectURL(blob);
+      const opened =
+        typeof window !== "undefined"
+          ? window.open(objectUrl, "_blank", "noopener,noreferrer")
+          : null;
+      if (!opened) {
+        URL.revokeObjectURL(objectUrl);
+        setReviewMessage("Photo opened only after browser pop-ups are allowed for this admin page.");
+      } else {
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      }
+    } catch (err: any) {
+      setReviewMessage(
+        firstTruthy(
+          err?.message,
+          "GSN could not open this private photo evidence. Confirm platform-admin access."
+        )
+      );
+    } finally {
+      setReviewingCheckId(null);
+    }
+  }
 
   const summary = useMemo(() => {
     return {
@@ -1183,6 +1300,24 @@ export default function SystemOperationsPage() {
               </div>
             </div>
 
+            {reviewMessage ? (
+              <div
+                style={{
+                  ...innerCard(
+                    reviewMessage.toLowerCase().includes("could not")
+                      ? "#FFF5F5"
+                      : "#ECFDF5"
+                  ),
+                  color: reviewMessage.toLowerCase().includes("could not")
+                    ? "#991B1B"
+                    : "#065F46",
+                  fontWeight: 900,
+                }}
+              >
+                {reviewMessage}
+              </div>
+            ) : null}
+
             <div
               style={{
                 display: "grid",
@@ -1261,6 +1396,10 @@ export default function SystemOperationsPage() {
                           )
                         )
                         .filter(Boolean);
+                      const verificationChecks = rowsOf<any>(row?.verification_checks);
+                      const identityPhotoChecks = verificationChecks.filter(
+                        (check) => safeStr(check?.type) === "identity_photo"
+                      );
 
                       return (
                         <div
@@ -1328,13 +1467,149 @@ export default function SystemOperationsPage() {
                               Region: {firstTruthy(row?.region_consistency_status, "unknown")}
                             </span>
                             <span style={badge(false)}>
-                              Checks: {rowsOf<any>(row?.verification_checks).length}
+                              Checks: {verificationChecks.length}
                             </span>
                           </div>
 
                           {communityNames.length > 0 ? (
                             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                               Community: {communityNames.join(", ")}
+                            </div>
+                          ) : null}
+
+                          {identityPhotoChecks.length > 0 ? (
+                            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                              {identityPhotoChecks.map((check) => {
+                                const checkId = Number(check?.id || 0);
+                                const checkStatus = safeStr(check?.status);
+                                const hasAttachedUser = Boolean(check?.has_user || check?.user_id || row?.user?.id);
+                                const terminal =
+                                  checkStatus === "matched" || checkStatus === "failed";
+
+                                return (
+                                  <div
+                                    key={`identity-photo-check-${checkId}`}
+                                    style={innerCard(
+                                      checkStatus === "matched"
+                                        ? "#ECFDF5"
+                                        : checkStatus === "failed"
+                                          ? "#FFF5F5"
+                                          : "#FFFBEF"
+                                    )}
+                                  >
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        gap: 8,
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <div style={{ color: "#0B1F33", fontWeight: 900 }}>
+                                        Photo evidence
+                                      </div>
+                                      <span style={badge(checkStatus === "matched")}>
+                                        {pilotStageLabel(checkStatus || "review")}
+                                      </span>
+                                    </div>
+
+                                    <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                                      {firstTruthy(
+                                        check?.explanation,
+                                        "Manual admin review only. This is not provider KYC, passport OCR, or liveness verification."
+                                      )}
+                                    </div>
+                                    {!hasAttachedUser ? (
+                                      <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                                        Review unlocks after account creation attaches this photo to a user.
+                                      </div>
+                                    ) : null}
+
+                                    <div
+                                      style={{
+                                        marginTop: 10,
+                                        display: "grid",
+                                        gridTemplateColumns: isCompact
+                                          ? "1fr"
+                                          : "repeat(5, minmax(126px, max-content))",
+                                        gap: 8,
+                                        alignItems: "stretch",
+                                      }}
+                                    >
+                                      {check?.evidence_url ? (
+                                        <StableButton
+                                          kind="soft"
+                                          stableHeight={50}
+                                          minWidth={126}
+                                          debugId={`system-operations.identity-photo.${checkId}.open`}
+                                          disabled={reviewingCheckId === checkId}
+                                          busy={reviewingCheckId === checkId}
+                                          onClick={() => handleOpenIdentityPhotoEvidence(checkId)}
+                                        >
+                                          Open photo
+                                        </StableButton>
+                                      ) : null}
+
+                                      <StableButton
+                                        kind="primary"
+                                        stableHeight={50}
+                                        minWidth={104}
+                                        disabled={!hasAttachedUser || terminal || reviewingCheckId === checkId}
+                                        busy={reviewingCheckId === checkId}
+                                        debugId={`system-operations.identity-photo.${checkId}.verify`}
+                                        onClick={() =>
+                                          handleIdentityPhotoDecision(checkId, "verify")
+                                        }
+                                      >
+                                        Accept manual review
+                                      </StableButton>
+
+                                      <StableButton
+                                        kind="secondary"
+                                        stableHeight={50}
+                                        minWidth={126}
+                                        disabled={!hasAttachedUser || terminal || reviewingCheckId === checkId}
+                                        busy={reviewingCheckId === checkId}
+                                        debugId={`system-operations.identity-photo.${checkId}.needs-more`}
+                                        onClick={() =>
+                                          handleIdentityPhotoDecision(checkId, "needs_more")
+                                        }
+                                      >
+                                        Request clearer proof
+                                      </StableButton>
+
+                                      <StableButton
+                                        kind="danger"
+                                        stableHeight={50}
+                                        minWidth={96}
+                                        disabled={!hasAttachedUser || terminal || reviewingCheckId === checkId}
+                                        busy={reviewingCheckId === checkId}
+                                        debugId={`system-operations.identity-photo.${checkId}.reject`}
+                                        onClick={() =>
+                                          handleIdentityPhotoDecision(checkId, "reject")
+                                        }
+                                      >
+                                        Reject
+                                      </StableButton>
+
+                                      {terminal ? (
+                                        <StableButton
+                                          kind="secondary"
+                                          stableHeight={50}
+                                          minWidth={128}
+                                          disabled={!hasAttachedUser || reviewingCheckId === checkId}
+                                          busy={reviewingCheckId === checkId}
+                                          debugId={`system-operations.identity-photo.${checkId}.reopen`}
+                                          onClick={() => handleIdentityPhotoCorrection(checkId)}
+                                        >
+                                          Reopen review
+                                        </StableButton>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           ) : null}
 

@@ -1,3 +1,151 @@
+### Entry resume coverage normalized for create and join (2026-05-27)
+
+- Extended the safe interrupted-entry resume behavior beyond `/create` to the
+  invited `/join` route.
+- `frontend/src/lib/entryDraft.ts` now owns both create-entry and join-entry
+  draft helpers.
+  - Create-entry drafts remain keyed by create code.
+  - Join-entry drafts remain compatible with the existing invite/community
+    local key while adding expiry and safer shape validation.
+  - Drafts expire after 24 hours.
+  - Create-entry verification summaries are now compacted before storage; full
+    identity-photo evidence URLs and broad provider payloads are not kept in
+    local draft storage.
+- `frontend/src/pages/JoinEntryPage.tsx` now:
+  - restores first name, surname, phone, country, work/trade summary, short
+    detail, note, and whether the form was open;
+  - shows a compact `Continue unfinished join request` card with Continue and
+    Start again actions;
+  - clears the draft after a request is submitted, converted into an existing
+    pending request, or manually restarted.
+  - also expires the saved submitted-request pointer after 24 hours and no
+    longer keeps the stored phone number or GSN ID in that pointer.
+- Safety rule kept:
+  - no password, SMS/OTP code, photo file, raw bank details, licence number, or
+    passport/NIN-style document number is stored in the browser draft.
+- Remaining truth:
+  - This is same-device/browser recovery only. Cross-device recovery needs a
+    backend draft-session endpoint with expiry, ownership, and private evidence
+    rules.
+
+### Create-entry resume draft layer (2026-05-27)
+
+- Added a safe local resume layer for `/create` so a founder who stops during
+  registration can return without losing ordinary entry progress.
+- New helper: `frontend/src/lib/entryDraft.ts`.
+  - Stores only safe resume fields: display name, phone, email, community name,
+    community description, current step/panel, `verification_id`, and backend
+    proof/result summaries.
+  - Does not store passwords, confirmation codes, uploaded files, raw bank
+    account numbers, sort codes, IBANs, or licence numbers.
+  - Drafts expire locally after 24 hours.
+- `CreateEntryPage` now:
+  - restores the safe draft on load;
+  - shows a compact “Continue unfinished entry” card with Continue and Start
+    again actions;
+  - clears the draft after successful account/community handoff or when the
+    user chooses Existing Member sign-in.
+- Remaining truth:
+  - This is browser-local recovery. A fuller multi-device resume would need a
+    backend draft-session endpoint and tighter private evidence storage.
+
+### Founder photo review pre-commit audit hardening (2026-05-27)
+
+- Ran a backend/frontend pre-commit audit of the manual identity-photo review
+  lane before committing it.
+- Fixed audit blockers:
+  - Admin review/correction now refuses to decide a photo check until account
+    creation has attached that evidence to a user. This prevents accepted
+    reviews from silently missing TrustEvents or profile-image updates.
+  - Admin review/correction now locks the identity check row during the
+    decision transaction where the database supports row locks.
+  - Trust scoring now treats accepted photo review as a capped starter-proof
+    lane, not an unlimited score ladder. Multiple accepted photo checks do not
+    keep stacking the `0.20` photo gain.
+  - Trust scoring now derives the active photo-review state per
+    `verification_check_id`, so rejected or needs-more history no longer stays
+    current after a later correction/review cycle.
+  - System Operations now opens private photo evidence through an authenticated
+    admin endpoint instead of opening the raw `/uploads/...` pointer directly.
+  - Reopen review now requires a factual admin reason before it can reverse an
+    accepted/rejected manual review.
+  - Admin copy now says manual photo review, not provider KYC, passport OCR, or
+    liveness verification.
+- Remaining truth:
+  - The app still mounts `/uploads` as static media for existing product media
+    routes. The admin UI no longer opens raw identity-photo URLs, but full
+    private-media hardening would require moving identity evidence outside the
+    public static mount or changing the global upload-serving strategy.
+
+### Founder photo evidence review decision path (2026-05-27)
+
+- Built the next layer after photo/selfie evidence capture:
+  - `POST /admin/identity-verification-checks/{check_id}/decision` lets a
+    platform admin mark an `identity_photo` check as accepted, rejected, or
+    needing clearer proof.
+  - Decisions are deliberately recorded as manual review, not provider KYC,
+    passport OCR, or live liveness verification.
+  - Accepted photo evidence updates the check to `matched`, preserves
+    `provider_verified=false`, records `manual_review=true`, and logs
+    `identity.photo_evidence_verified`.
+  - Rejected and clearer-proof decisions log
+    `identity.photo_evidence_rejected` or
+    `identity.photo_evidence_needs_more` without giving provider credit.
+  - Terminal accepted/rejected decisions are protected from accidental
+    overwrite until a future correction/reversal flow exists.
+- Added a small starter-proof score lane:
+  - `IDENTITY_PHOTO_VERIFIED_GAIN = 0.20`;
+  - trust breakdown now reports recorded, verified, rejected, and needs-more
+    photo evidence counts;
+  - the Trust Event trail remains the source of truth.
+- Admin UI:
+  - `SystemOperationsPage` now surfaces identity-photo checks inside the
+    Entry support monitor;
+  - platform admins can open evidence through the authenticated admin evidence
+    route and choose Accept manual review, Request clearer proof, or Reject
+    from the applicant card.
+- Verification:
+  - `python -m pytest gmfn_backend\tests\test_entry_create.py -q` passed.
+  - targeted frontend eslint passed for `SystemOperationsPage.tsx` and
+    `api.ts`.
+  - `.\node_modules\.bin\tsc -b` passed from `frontend/`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+- Remaining truth:
+  - This is still not biometric liveness, passport OCR, NIN, bank-name-match,
+    or paid third-party identity verification. It is a usable manual review
+    lane with a Trust Event audit trail and a small, honest trust effect.
+
+### Founder photo review correction/reversal path (2026-05-27)
+
+- Built the correction layer for wrong identity-photo decisions:
+  - `POST /admin/identity-verification-checks/{check_id}/correction` reopens a
+    terminal accepted/rejected photo decision without deleting the old decision.
+  - If the previous decision was accepted, GSN now logs
+    `identity.photo_evidence_verified_reversed` and removes the accepted-photo
+    starter-proof score effect through trust recomputation.
+  - The verification check returns to `manual_review_required` with a new
+    `review_cycle`, so a platform admin can make a fresh decision afterwards.
+  - The previous profile image is cleared when the reversed evidence URL was
+    the active Trust Passport / TrustSlip picture source.
+- Updated `trust_score_service`:
+  - tracks `identity_photo_verified_reversed`;
+  - calculates `identity_photo_verified_net`;
+  - only reports `photo_evidence_verified=true` when accepted photo reviews
+    remain net-positive after reversals.
+- Updated System Operations:
+  - terminal photo evidence cards now show `Reopen review` for platform admins.
+- Verification:
+  - `python -m pytest gmfn_backend\tests\test_entry_create.py -q` passed.
+  - targeted frontend eslint passed for `SystemOperationsPage.tsx` and
+    `api.ts`.
+  - `.\node_modules\.bin\tsc -b` passed from `frontend/`.
+  - `npm run build` passed with approved Vite/esbuild escalation.
+- Remaining truth:
+  - This is still manual review infrastructure. Full provider-grade correction
+    would need provider evidence IDs, reviewer assignment/audit roles, and
+    stricter dual-control for reversals before high-stakes public use.
+
 ### Start Community photo/selfie evidence lane (2026-05-27)
 
 - Owner approved making the picture angle a real part of founder verification:

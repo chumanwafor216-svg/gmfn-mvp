@@ -26,6 +26,11 @@ import {
   readStorage,
   writeStorage,
 } from "../lib/entryFlow";
+import {
+  clearJoinEntryDraft,
+  readJoinEntryDraft,
+  saveJoinEntryDraft,
+} from "../lib/entryDraft";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -587,16 +592,34 @@ function buildInviteLetter(args: {
   return lines;
 }
 
-function joinDraftStorageKey(inviteCode: string, communityCode: string): string {
-  const invite = cleanText(inviteCode) || "unknown-invite";
-  const community = cleanText(communityCode) || "unknown-community";
-  return `gmfn_join_draft:${community}:${invite}`;
-}
-
 function joinRequestStorageKey(inviteCode: string, communityCode: string): string {
   const invite = cleanText(inviteCode) || "unknown-invite";
   const community = cleanText(communityCode) || "unknown-community";
   return `gmfn_join_request:${community}:${invite}`;
+}
+
+const JOIN_REQUEST_RESUME_TTL_MS = 24 * 60 * 60 * 1000;
+
+function readStoredJoinRequest(key: string): any | null {
+  const raw = readStorage(key);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    const updatedAt = Number(parsed?.updatedAt || 0);
+    if (
+      !Number.isFinite(updatedAt) ||
+      updatedAt <= 0 ||
+      Date.now() - updatedAt > JOIN_REQUEST_RESUME_TTL_MS
+    ) {
+      writeStorage(key, null);
+      return null;
+    }
+    return parsed;
+  } catch {
+    writeStorage(key, null);
+    return null;
+  }
 }
 
 export default function JoinEntryPage() {
@@ -658,6 +681,10 @@ export default function JoinEntryPage() {
     return cleanText(searchParams.get("community_code") || "");
   }, [searchParams]);
 
+  const restoredJoinDraft = useMemo(() => {
+    return readJoinEntryDraft(inviteCode, communityCode);
+  }, [inviteCode, communityCode]);
+
   const marketplaceName = useMemo(() => {
     return decodeFriendly(searchParams.get("marketplace_name") || "");
   }, [searchParams]);
@@ -702,14 +729,17 @@ export default function JoinEntryPage() {
     );
   }, [searchParams]);
 
-  const [firstName, setFirstName] = useState("");
-  const [surname, setSurname] = useState("");
-  const [phone, setPhone] = useState("");
-  const [country, setCountry] = useState("");
-  const [workCategory, setWorkCategory] = useState("");
-  const [workDetail, setWorkDetail] = useState("");
-  const [note, setNote] = useState("");
+  const [firstName, setFirstName] = useState(() => restoredJoinDraft?.firstName || "");
+  const [surname, setSurname] = useState(() => restoredJoinDraft?.surname || "");
+  const [phone, setPhone] = useState(() => restoredJoinDraft?.phone || "");
+  const [country, setCountry] = useState(() => restoredJoinDraft?.country || "");
+  const [workCategory, setWorkCategory] = useState(
+    () => restoredJoinDraft?.workCategory || ""
+  );
+  const [workDetail, setWorkDetail] = useState(() => restoredJoinDraft?.workDetail || "");
+  const [note, setNote] = useState(() => restoredJoinDraft?.note || "");
   const [formOpen, setFormOpen] = useState<boolean>(() => {
+    if (typeof restoredJoinDraft?.formOpen === "boolean") return restoredJoinDraft.formOpen;
     if (typeof window === "undefined") return true;
     return window.innerWidth > 980;
   });
@@ -762,11 +792,11 @@ export default function JoinEntryPage() {
   const [success, setSuccess] = useState<any>(null);
   const [storedRequest, setStoredRequest] = useState<any>(null);
   const [resumeBusy, setResumeBusy] = useState(false);
-
-  const joinDraftKey = useMemo(() => {
-    if (!inviteCode) return "";
-    return joinDraftStorageKey(inviteCode, communityCode);
-  }, [inviteCode, communityCode]);
+  const [joinResumeNotice, setJoinResumeNotice] = useState<string | null>(() =>
+    restoredJoinDraft
+      ? "GSN restored your unfinished join request on this device. No password, code, or private document number is stored."
+      : null
+  );
 
   const joinRequestKey = useMemo(() => {
     if (!inviteCode) return "";
@@ -1008,7 +1038,7 @@ export default function JoinEntryPage() {
   );
 
   const storeExistingRequest = useCallback(
-    (result: any, fallbackPhone = "") => {
+    (result: any) => {
       if (!joinRequestKey) return;
 
       const requestId = cleanText(result?.request_id || "");
@@ -1024,11 +1054,14 @@ export default function JoinEntryPage() {
           ),
           marketplace_name: cleanText(result?.marketplace_name || ""),
           submitted_at: cleanText(result?.submitted_at || ""),
-          gmfn_id: cleanText(result?.gmfn_id || ""),
           activation_path: cleanText(result?.activation_path || ""),
           approval_path: cleanText(result?.approval_path || ""),
           pending_status_path: cleanText(result?.pending_status_path || ""),
-          phone_e164: cleanText(result?.phone_e164 || fallbackPhone),
+          result_path: cleanText(result?.result_path || ""),
+          result_channel: cleanText(result?.result_channel || ""),
+          activation_required: result?.activation_required !== false,
+          community_id: cleanText(result?.community_id || ""),
+          updatedAt: Date.now(),
         })
       );
     },
@@ -1042,80 +1075,24 @@ export default function JoinEntryPage() {
   }, [joinRequestKey]);
 
   useEffect(() => {
-    if (!joinDraftKey) return;
-
-    const raw = readStorage(joinDraftKey);
-    if (!raw) return;
-
-    try {
-      const draft = JSON.parse(raw) as Partial<{
-        first_name: string;
-        surname: string;
-        phone: string;
-        country: string;
-        work_category: string;
-        work_detail: string;
-        note: string;
-      }>;
-
-      if (!cleanText(firstName) && cleanText(draft.first_name)) {
-        setFirstName(cleanText(draft.first_name));
-      }
-      if (!cleanText(surname) && cleanText(draft.surname)) {
-        setSurname(cleanText(draft.surname));
-      }
-      if (!cleanText(phone) && cleanText(draft.phone)) {
-        setPhone(cleanText(draft.phone));
-      }
-      if (!cleanText(country) && cleanText(draft.country)) {
-        setCountry(cleanText(draft.country));
-      }
-      if (!cleanText(workCategory) && cleanText(draft.work_category)) {
-        setWorkCategory(cleanText(draft.work_category));
-      }
-      if (!cleanText(workDetail) && cleanText(draft.work_detail)) {
-        setWorkDetail(cleanText(draft.work_detail));
-      }
-      if (!cleanText(note) && cleanText(draft.note)) {
-        setNote(cleanText(draft.note));
-      }
-    } catch {
-      // Ignore malformed local draft data and let the normal form flow continue.
-    }
-  }, [
-    country,
-    firstName,
-    joinDraftKey,
-    note,
-    phone,
-    surname,
-    workCategory,
-    workDetail,
-  ]);
-
-  useEffect(() => {
     if (!joinRequestKey) {
       setStoredRequest(null);
       return;
     }
 
-    const raw = readStorage(joinRequestKey);
-    if (!raw) {
+    const stored = readStoredJoinRequest(joinRequestKey);
+    if (!stored) {
       setStoredRequest(null);
       return;
     }
 
-    try {
-      setStoredRequest(JSON.parse(raw));
-    } catch {
-      setStoredRequest(null);
-    }
+    setStoredRequest(stored);
   }, [joinRequestKey]);
 
   useEffect(() => {
-    if (!joinDraftKey) return;
+    if (!inviteCode) return;
 
-    const hasAnyDraftValue = [
+    saveJoinEntryDraft(inviteCode, communityCode, {
       firstName,
       surname,
       phone,
@@ -1123,29 +1100,14 @@ export default function JoinEntryPage() {
       workCategory,
       workDetail,
       note,
-    ].some((value) => cleanText(value));
-
-    if (!hasAnyDraftValue) {
-      writeStorage(joinDraftKey, null);
-      return;
-    }
-
-    writeStorage(
-      joinDraftKey,
-      JSON.stringify({
-        first_name: cleanText(firstName),
-        surname: cleanText(surname),
-        phone: cleanText(phone),
-        country: cleanText(country),
-        work_category: cleanText(workCategory),
-        work_detail: cleanText(workDetail),
-        note: cleanText(note),
-      })
-    );
+      formOpen,
+    });
   }, [
     country,
+    communityCode,
     firstName,
-    joinDraftKey,
+    formOpen,
+    inviteCode,
     note,
     phone,
     surname,
@@ -1177,7 +1139,7 @@ export default function JoinEntryPage() {
         .then((out) => {
           if (!alive) return;
           if (!out?.found) return;
-          storeExistingRequest(out, safePhone);
+          storeExistingRequest(out);
           continueExistingRequest(out);
         })
         .catch(() => {
@@ -1292,13 +1254,15 @@ export default function JoinEntryPage() {
         /_request_exists$/.test(cleanText(res?.code).toLowerCase());
 
       if (existingRequest) {
-        storeExistingRequest(res, safePhone);
+        storeExistingRequest(res);
+        clearJoinEntryDraft(inviteCode, communityCode);
         if (continueExistingRequest(res)) {
           return;
         }
       }
 
       setSuccess(res);
+      clearJoinEntryDraft(inviteCode, communityCode);
       setFirstName("");
       setSurname("");
       setPhone("");
@@ -1325,8 +1289,7 @@ export default function JoinEntryPage() {
                 new Date().toISOString()
             ),
             pending_status_path: res?.pending_status_path || "",
-          },
-          safePhone
+          }
         );
 
         const pendingTo = mergeSearchIntoPath(
@@ -1394,13 +1357,15 @@ export default function JoinEntryPage() {
         /_request_exists$/.test(cleanText(res?.code).toLowerCase());
 
       if (existingRequest) {
-        storeExistingRequest(res, cleanText(currentMember?.phone_e164 || ""));
+        storeExistingRequest(res);
+        clearJoinEntryDraft(inviteCode, communityCode);
         if (continueExistingRequest(res)) {
           return;
         }
       }
 
       setSuccess(res);
+      clearJoinEntryDraft(inviteCode, communityCode);
 
       const resultStatus = cleanText(res?.result_status || res?.code || "").toLowerCase();
       if (resultStatus === "already_member") {
@@ -1424,9 +1389,7 @@ export default function JoinEntryPage() {
                 new Date().toISOString()
             ),
             pending_status_path: res?.pending_status_path || "",
-            gmfn_id: cleanText(res?.gmfn_id || currentGmfnId),
-          },
-          cleanText(currentMember?.phone_e164 || "")
+          }
         );
 
         const pendingTo = mergeSearchIntoPath(
@@ -1466,7 +1429,7 @@ export default function JoinEntryPage() {
         ...live,
         request_id: requestId,
       };
-      storeExistingRequest(merged, cleanText(storedRequest?.phone_e164 || ""));
+      storeExistingRequest(merged);
       continueExistingRequest(merged);
     } catch {
       if (!continueExistingRequest(storedRequest)) {
@@ -1477,6 +1440,21 @@ export default function JoinEntryPage() {
     } finally {
       setResumeBusy(false);
     }
+  }
+
+  function startFreshJoinDraft() {
+    clearJoinEntryDraft(inviteCode, communityCode);
+    setFirstName("");
+    setSurname("");
+    setPhone("");
+    setCountry("");
+    setWorkCategory("");
+    setWorkDetail("");
+    setNote("");
+    setFormOpen(true);
+    setJoinResumeNotice(null);
+    setErr(null);
+    setSuccess(null);
   }
 
   return (
@@ -1692,6 +1670,32 @@ export default function JoinEntryPage() {
               request still goes back to people for review, because trust stays
               protected.
             </div>
+
+            {joinResumeNotice ? (
+              <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>
+                <div style={labelText()}>Continue unfinished join request</div>
+                <div style={{ marginTop: 8, ...helperText() }}>
+                  {joinResumeNotice}
+                </div>
+                <CardActionRow style={{ marginTop: 14 }}>
+                  <PrimaryButton
+                    type="button"
+                    onClick={() => setJoinResumeNotice(null)}
+                    debugId="join-entry.resume-draft-continue"
+                    style={{ width: "min(100%, 64%)" }}
+                  >
+                    Continue entry
+                  </PrimaryButton>
+                  <SecondaryButton
+                    type="button"
+                    onClick={startFreshJoinDraft}
+                    debugId="join-entry.resume-draft-start-fresh"
+                  >
+                    Start again
+                  </SecondaryButton>
+                </CardActionRow>
+              </div>
+            ) : null}
 
             {currentMemberChecked && usingExistingIdentity ? (
               <div style={{ marginTop: 14, ...innerCard("#F8FBFF") }}>

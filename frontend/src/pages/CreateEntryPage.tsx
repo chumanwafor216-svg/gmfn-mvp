@@ -25,6 +25,11 @@ import {
   ENTRY_MODE_KEY,
   writeStorage,
 } from "../lib/entryFlow";
+import {
+  clearCreateEntryDraft,
+  readCreateEntryDraft,
+  saveCreateEntryDraft,
+} from "../lib/entryDraft";
 
 function pageShell(): React.CSSProperties {
   return {
@@ -936,6 +941,7 @@ type EntryVerificationResult = {
   confidence_score?: number | null;
   explanation?: string;
   evidence_url?: string | null;
+  evidence_recorded?: boolean;
   verified_at?: string | null;
 } | null;
 
@@ -1205,10 +1211,23 @@ export default function CreateEntryPage() {
       };
     } | null)?.create_entry || null;
 
+  const createCode = safeStr(
+    stateCreateEntry?.create_code ||
+      search.get("create_code") ||
+      getCreateCode() ||
+      ""
+  );
+
+  const restoredDraft = useMemo(
+    () => readCreateEntryDraft(createCode),
+    [createCode]
+  );
+
   const initialCommunityName = safeStr(
     stateCreateEntry?.clan_name ||
       search.get("clan_name") ||
       search.get("community_name") ||
+      restoredDraft?.communityName ||
       ""
   );
 
@@ -1216,17 +1235,19 @@ export default function CreateEntryPage() {
     stateCreateEntry?.clan_description ||
       search.get("clan_description") ||
       search.get("community_description") ||
+      restoredDraft?.description ||
       ""
   );
 
   const initialEmail = safeStr(
-    stateCreateEntry?.email || search.get("email") || ""
+    stateCreateEntry?.email || search.get("email") || restoredDraft?.email || ""
   );
   const initialDisplayName = safeStr(
     stateCreateEntry?.display_name ||
       stateCreateEntry?.nickname ||
       search.get("display_name") ||
       search.get("nickname") ||
+      restoredDraft?.displayName ||
       ""
   );
   const initialPhone = safeStr(
@@ -1234,18 +1255,16 @@ export default function CreateEntryPage() {
       stateCreateEntry?.phone ||
       search.get("phone_e164") ||
       search.get("phone") ||
+      restoredDraft?.phone ||
       ""
   );
 
-  const createCode = safeStr(
-    stateCreateEntry?.create_code ||
-      search.get("create_code") ||
-      getCreateCode() ||
-      ""
-  );
   const hasInitialCommunityContext = Boolean(
     initialCommunityName || initialDescription
   );
+  const initialStep =
+    restoredDraft?.step ||
+    (hasInitialCommunityContext ? "community" : "details");
 
   const [communityName, setCommunityName] = useState(initialCommunityName);
   const [description, setDescription] = useState(initialDescription);
@@ -1259,16 +1278,25 @@ export default function CreateEntryPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [step, setStep] = useState<"details" | "verify" | "bank" | "community">(
-    hasInitialCommunityContext ? "community" : "details"
+  const [resumeNotice, setResumeNotice] = useState(
+    restoredDraft
+      ? "GSN restored your unfinished entry. Passwords, SMS codes, photos, and bank numbers are not stored."
+      : ""
   );
-  const [verificationId, setVerificationId] = useState<number>(0);
+  const [step, setStep] = useState<"details" | "verify" | "bank" | "community">(
+    initialStep
+  );
+  const [verificationId, setVerificationId] = useState<number>(
+    Number(restoredDraft?.verificationId || 0)
+  );
   const [otpCode, setOtpCode] = useState("");
   const [otpPreview, setOtpPreview] = useState("");
   const [otpDeliveryMode, setOtpDeliveryMode] = useState("");
   const [phoneVerificationProof, setPhoneVerificationProof] =
-    useState<PhoneVerificationProof>(null);
-  const [bankRecordProof, setBankRecordProof] = useState<BankRecordProof>(null);
+    useState<PhoneVerificationProof>(restoredDraft?.phoneVerificationProof || null);
+  const [bankRecordProof, setBankRecordProof] = useState<BankRecordProof>(
+    restoredDraft?.bankRecordProof || null
+  );
   const [bankAccountName, setBankAccountName] = useState("");
   const [bankName, setBankName] = useState("");
   const [bankAccountNumber, setBankAccountNumber] = useState("");
@@ -1284,17 +1312,23 @@ export default function CreateEntryPage() {
   const [identityPhotoKind, setIdentityPhotoKind] = useState("selfie");
   const [identityPhotoNote, setIdentityPhotoNote] = useState("");
   const [bankVerificationResult, setBankVerificationResult] =
-    useState<EntryVerificationResult>(null);
+    useState<EntryVerificationResult>(restoredDraft?.bankVerificationResult || null);
   const [licenceVerificationResult, setLicenceVerificationResult] =
-    useState<EntryVerificationResult>(null);
+    useState<EntryVerificationResult>(restoredDraft?.licenceVerificationResult || null);
   const [identityPhotoResult, setIdentityPhotoResult] =
-    useState<EntryVerificationResult>(null);
-  const [guideDone, setGuideDone] = useState(hasInitialCommunityContext);
+    useState<EntryVerificationResult>(restoredDraft?.identityPhotoResult || null);
+  const [guideDone, setGuideDone] = useState(
+    Boolean(restoredDraft?.guideDone || hasInitialCommunityContext)
+  );
   const [procedureOpen, setProcedureOpen] = useState(false);
   const [guideStepOpen, setGuideStepOpen] = useState<GuideStepKey | null>(null);
   const [existingMemberOpen, setExistingMemberOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
-    hasInitialCommunityContext ? "community" : null
+    restoredDraft?.openPanel !== undefined
+      ? restoredDraft.openPanel
+      : hasInitialCommunityContext
+        ? "community"
+        : null
   );
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const verificationRef = useRef<HTMLDivElement | null>(null);
@@ -1453,12 +1487,75 @@ export default function CreateEntryPage() {
     writeStorage(ENTRY_MODE_KEY, "existing");
     writeStorage(ENTRY_CREATE_CODE_KEY, null);
     writeStorage(ENTRY_INVITE_CODE_KEY, null);
+    clearCreateEntryDraft(createCode);
     nav(existingMemberLoginTo, { replace: false });
+  }
+
+  function handleStartFreshEntry() {
+    clearCreateEntryDraft(createCode);
+    setCommunityName("");
+    setDescription("");
+    setDisplayName("");
+    setPhone("");
+    setEmail("");
+    setPassword("");
+    setConfirmPassword("");
+    setVerificationId(0);
+    setOtpCode("");
+    setOtpPreview("");
+    setOtpDeliveryMode("");
+    setPhoneVerificationProof(null);
+    setBankRecordProof(null);
+    setBankVerificationResult(null);
+    setLicenceVerificationResult(null);
+    setIdentityPhotoResult(null);
+    setStep("details");
+    setGuideDone(false);
+    setOpenPanel(null);
+    setError("");
+    setSuccess("");
+    setResumeNotice("");
   }
 
   useEffect(() => {
     return () => cancelPendingPanelReveal();
   }, []);
+
+  useEffect(() => {
+    saveCreateEntryDraft(createCode, {
+      communityName,
+      description,
+      displayName,
+      phone,
+      email,
+      createCode,
+      step,
+      openPanel,
+      guideDone,
+      verificationId,
+      phoneVerificationProof,
+      bankRecordProof,
+      bankVerificationResult,
+      licenceVerificationResult,
+      identityPhotoResult,
+    });
+  }, [
+    bankRecordProof,
+    bankVerificationResult,
+    communityName,
+    createCode,
+    description,
+    displayName,
+    email,
+    guideDone,
+    identityPhotoResult,
+    licenceVerificationResult,
+    openPanel,
+    phone,
+    phoneVerificationProof,
+    step,
+    verificationId,
+  ]);
 
   const existingMemberPanel = (
     <div style={existingMemberCard(existingMemberOpen)}>
@@ -1692,6 +1789,8 @@ export default function CreateEntryPage() {
 
   async function openCreatedWorkspace(out?: any): Promise<void> {
     await selectCreatedOrFirstClan(out);
+    clearCreateEntryDraft(createCode);
+    clearCreateEntryDraft(createCode);
     clearPublicEntryState();
     nav("/app/build-first-circle", { replace: true });
   }
@@ -2132,6 +2231,7 @@ export default function CreateEntryPage() {
         );
       }
 
+      clearCreateEntryDraft(createCode);
       clearPublicEntryState();
 
       const next = new URLSearchParams();
@@ -2585,6 +2685,55 @@ export default function CreateEntryPage() {
           </div>
 
         </div>
+
+        {resumeNotice ? (
+          <div
+            style={{
+              ...softCard("#FFFBEF"),
+              display: "grid",
+              gap: 12,
+              border: "1px solid rgba(214,170,69,0.32)",
+            }}
+          >
+            <div
+              style={{
+                color: "#0B1F33",
+                fontSize: 16,
+                fontWeight: 950,
+                lineHeight: 1.35,
+              }}
+            >
+              Continue unfinished entry
+            </div>
+            <div style={{ color: "#52677C", fontSize: 14, fontWeight: 800, lineHeight: 1.55 }}>
+              {resumeNotice}
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+                gap: 10,
+              }}
+            >
+              <PrimaryButton
+                onClick={() => setResumeNotice("")}
+                stableHeight={54}
+                debugId="create-entry.resume.continue"
+                style={primaryBtn(false)}
+              >
+                Continue entry
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={handleStartFreshEntry}
+                stableHeight={54}
+                debugId="create-entry.resume.start-fresh"
+                style={secondaryBtn()}
+              >
+                Start again
+              </SecondaryButton>
+            </div>
+          </div>
+        ) : null}
 
         {error ? <div style={feedbackCard(false)}>{error}</div> : null}
         {success ? <div style={feedbackCard(true)}>{success}</div> : null}
@@ -3459,7 +3608,8 @@ export default function CreateEntryPage() {
                     {safeStr(identityPhotoResult.explanation) ||
                       "Photo/selfie evidence is attached for identity continuity review."}
                   </div>
-                  {safeStr(identityPhotoResult.evidence_url) ? (
+                  {safeStr(identityPhotoResult.evidence_url) ||
+                  identityPhotoResult.evidence_recorded ? (
                     <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
                       Trust Passport picture source recorded.
                     </div>
