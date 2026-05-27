@@ -32,6 +32,15 @@ import {
   saveCreateEntryDraft,
 } from "../lib/entryDraft";
 
+type FeedbackTarget =
+  | "global"
+  | "details"
+  | "phone"
+  | "photo"
+  | "bank"
+  | "verification"
+  | "community";
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100svh",
@@ -575,6 +584,64 @@ function feedbackCard(success = false): React.CSSProperties {
     background: success ? "#ECFDF5" : "#FEF2F2",
     color: success ? "#065F46" : "#991B1B",
     fontWeight: 900,
+  };
+}
+
+function localFeedbackCard(success = false): React.CSSProperties {
+  return {
+    ...feedbackCard(success),
+    marginTop: 12,
+    borderRadius: 14,
+    padding: "12px 13px",
+    boxShadow: success
+      ? "0 14px 28px rgba(6,95,70,0.10)"
+      : "0 14px 28px rgba(153,27,27,0.10)",
+  };
+}
+
+function evidenceMeterCard(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(242,199,102,0.30)",
+    background:
+      "linear-gradient(180deg, rgba(242,199,102,0.13) 0%, rgba(13,45,73,0.62) 100%)",
+    padding: 12,
+    display: "grid",
+    gridTemplateColumns: "82px minmax(0, 1fr)",
+    gap: 12,
+    alignItems: "center",
+    overflow: "hidden",
+  };
+}
+
+function evidenceDialStyle(degrees: number): React.CSSProperties {
+  const clamped = Math.max(0, Math.min(360, Number(degrees) || 0));
+  return {
+    width: 76,
+    height: 76,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: `conic-gradient(#F2C766 0deg ${clamped}deg, rgba(255,255,255,0.13) ${clamped}deg 360deg)`,
+    boxShadow:
+      "0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.30)",
+    position: "relative",
+  };
+}
+
+function evidenceDialInner(): React.CSSProperties {
+  return {
+    width: 54,
+    height: 54,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: "linear-gradient(180deg, #102A43 0%, #07172C 100%)",
+    color: "#F8FBFF",
+    border: "1px solid rgba(255,255,255,0.15)",
+    fontSize: 14,
+    fontWeight: 1000,
+    lineHeight: 1,
   };
 }
 
@@ -1279,6 +1346,7 @@ export default function CreateEntryPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget>("global");
   const [resumeNotice, setResumeNotice] = useState(
     restoredDraft
       ? "GSN restored your unfinished entry. Passwords, SMS codes, photos, and bank numbers are not stored."
@@ -1354,6 +1422,72 @@ export default function CreateEntryPage() {
     !!safeStr(bankAccountName) &&
     !!safeStr(bankName) &&
     !!safeStr(bankAccountNumber);
+  const founderEvidence = useMemo(() => {
+    const items = [
+      {
+        key: "details",
+        label: "Name, phone, email",
+        done: canContinueDetails,
+        weight: 15,
+      },
+      {
+        key: "phone",
+        label: "Phone evidence",
+        done: Boolean(phoneVerificationProof),
+        weight: 20,
+      },
+      {
+        key: "photo",
+        label: "Photo/selfie",
+        done: Boolean(identityPhotoResult),
+        weight: 20,
+      },
+      {
+        key: "bank",
+        label: "Bank or wallet",
+        done: Boolean(bankRecordProof || bankVerificationResult),
+        weight: 25,
+      },
+      {
+        key: "id",
+        label: "Licence/passport/ID",
+        done: Boolean(licenceVerificationResult),
+        weight: 20,
+      },
+    ];
+    const score = Math.min(
+      100,
+      items.reduce((total, item) => total + (item.done ? item.weight : 0), 0)
+    );
+    const degrees = Math.round(score * 3.6);
+    const label =
+      score >= 80
+        ? "High evidence"
+        : score >= 55
+          ? "Strong evidence"
+          : score >= 35
+            ? "Medium evidence"
+            : score >= 15
+              ? "Light evidence"
+              : "Not started";
+    const next =
+      !identityPhotoResult
+        ? "Add a clear photo/selfie so Trust Passport and TrustSlip can keep the founder face consistent."
+        : !(bankRecordProof || bankVerificationResult)
+          ? "Add bank or wallet evidence to connect this founder to real-world financial records where available."
+          : !licenceVerificationResult
+            ? "Add licence, passport, NIN, or other ID evidence to strengthen official identity confidence."
+            : "Founder evidence is broad. Keep evidence fresh when records change.";
+
+    return { score, degrees, label, items, next };
+  }, [
+    bankRecordProof,
+    bankVerificationResult,
+    canContinueDetails,
+    identityPhotoResult,
+    licenceVerificationResult,
+    phoneVerificationProof,
+  ]);
   const stepProgress = useMemo(
     () => ({
       details: step === "details",
@@ -1382,7 +1516,7 @@ export default function CreateEntryPage() {
   const verificationBlockHelp =
     step === "verify"
       ? "Register this phone against your entry name. SMS ownership verification is suspended during controlled testing, so GSN will record the phone and open the bank or wallet fields."
-      : "Optional checks. More proof can strengthen founder assurance, but community creation can continue without bank details at the front door.";
+      : "Important founder proof. Community creation can continue without it, but every recorded check feeds the trust record and raises the founder evidence meter.";
 
   function applyPhonePrefix(prefix: string) {
     setPhone((current) => {
@@ -1721,14 +1855,85 @@ export default function CreateEntryPage() {
     </div>
   );
 
+  function showError(target: FeedbackTarget, message: string) {
+    setFeedbackTarget(target);
+    setSuccess("");
+    setError(message);
+  }
+
+  function showSuccess(target: FeedbackTarget, message: string) {
+    setFeedbackTarget(target);
+    setError("");
+    setSuccess(message);
+  }
+
+  function clearFeedback(target?: FeedbackTarget) {
+    if (target) setFeedbackTarget(target);
+    setError("");
+    setSuccess("");
+  }
+
+  function renderLocalFeedback(target: FeedbackTarget) {
+    if (feedbackTarget !== target) return null;
+    if (error) return <div style={localFeedbackCard(false)}>{error}</div>;
+    if (success) return <div style={localFeedbackCard(true)}>{success}</div>;
+    return null;
+  }
+
+  function FounderEvidenceMeter({ compact = false }: { compact?: boolean }) {
+    return (
+      <div style={{ ...evidenceMeterCard(), gridTemplateColumns: compact ? "68px minmax(0, 1fr)" : "82px minmax(0, 1fr)" }}>
+        <div style={evidenceDialStyle(founderEvidence.degrees)}>
+          <div style={evidenceDialInner()}>{founderEvidence.score}%</div>
+        </div>
+        <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
+          <div style={{ display: "grid", gap: 3 }}>
+            <div style={{ ...sectionLabel(), color: "#F2C766" }}>
+              Founder evidence meter
+            </div>
+            <div style={{ color: "#F8FBFF", fontSize: compact ? 16 : 18, fontWeight: 1000, lineHeight: 1.2 }}>
+              {founderEvidence.label}
+            </div>
+          </div>
+          <div style={{ color: "#B9CBE0", fontSize: compact ? 12 : 13, fontWeight: 780, lineHeight: 1.55 }}>
+            {founderEvidence.next}
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {founderEvidence.items.map((item) => (
+              <span
+                key={item.key}
+                style={{
+                  borderRadius: 999,
+                  border: item.done
+                    ? "1px solid rgba(167,243,208,0.42)"
+                    : "1px solid rgba(255,255,255,0.15)",
+                  background: item.done
+                    ? "rgba(16,185,129,0.16)"
+                    : "rgba(255,255,255,0.07)",
+                  color: item.done ? "#D1FAE5" : "#AFC4D8",
+                  padding: "5px 8px",
+                  fontSize: 10.5,
+                  fontWeight: 950,
+                  lineHeight: 1,
+                }}
+              >
+                {item.done ? "Done: " : "Add: "}
+                {item.label}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function clearDetailsBlock() {
     setDisplayName("");
     setPhone("");
     setEmail("");
     setPassword("");
     setConfirmPassword("");
-    setError("");
-    setSuccess("");
+    clearFeedback("details");
   }
 
   function clearVerificationBlock() {
@@ -1753,15 +1958,13 @@ export default function CreateEntryPage() {
     setIdentityPhotoResult(null);
     setPhoneVerificationProof(null);
     setBankRecordProof(null);
-    setError("");
-    setSuccess("");
+    clearFeedback("verification");
   }
 
   function clearCommunityBlock() {
     setCommunityName("");
     setDescription("");
-    setError("");
-    setSuccess("");
+    clearFeedback("community");
   }
 
   function handleBankCountryChange(nextCountry: string) {
@@ -1994,13 +2197,12 @@ export default function CreateEntryPage() {
   async function handleStartVerification() {
     if (!canContinueDetails || busy) return;
 
-    setError("");
-    setSuccess("");
+    clearFeedback("details");
     setBusy(true);
 
     try {
       const started = await startAndMaybeConfirmPhoneSession();
-      setSuccess(started.message);
+      showSuccess("details", started.message);
     } catch (err: any) {
       if (openActivationFromStructuredError(err)) return;
 
@@ -2009,11 +2211,12 @@ export default function CreateEntryPage() {
         if (recovered) return;
 
         setExistingMemberOpen(true);
-        setError(
+        showError(
+          "details",
           "This phone number already belongs to a completed GSN account. Please use Already a member to sign in instead of starting a second community entry."
         );
       } else {
-        setError(err?.message || "Phone verification could not be started.");
+        showError("details", err?.message || "Phone verification could not be started.");
       }
     } finally {
       setBusy(false);
@@ -2023,8 +2226,7 @@ export default function CreateEntryPage() {
   async function handleConfirmVerification() {
     if (!canConfirmOtp || busy) return;
 
-    setError("");
-    setSuccess("");
+    clearFeedback("phone");
     setBusy(true);
 
     try {
@@ -2043,12 +2245,13 @@ export default function CreateEntryPage() {
       setStep("community");
       setOpenPanel("community");
       focusPanel("community");
-      setSuccess(
+      showSuccess(
+        "phone",
         safeStr(out?.confirmation_message) ||
           "Phone verified. Set up the community now. Optional founder checks can be added for stronger trust."
       );
     } catch (err: any) {
-      setError(err?.message || "Phone verification could not be completed.");
+      showError("phone", err?.message || "Phone verification could not be completed.");
     } finally {
       setBusy(false);
     }
@@ -2146,7 +2349,8 @@ export default function CreateEntryPage() {
     setStep("community");
     setOpenPanel("verification");
     focusPanel("verification");
-    setSuccess(
+    showSuccess(
+      "bank",
       safeStr(out?.confirmation_message) ||
         safeStr(nextBankVerification?.explanation) ||
         safeStr(out?.verification_note) ||
@@ -2169,8 +2373,7 @@ export default function CreateEntryPage() {
   async function handleSaveBankDetails() {
     if (!canContinueBank || busy) return;
 
-    setError("");
-    setSuccess("");
+    clearFeedback("bank");
     setBusy(true);
 
     try {
@@ -2182,17 +2385,19 @@ export default function CreateEntryPage() {
           const refreshedVerificationId = await refreshPilotPhoneSession();
           const saved = await saveBankDetailsForVerification(refreshedVerificationId);
           finishBankStep(saved.out, saved.bankVerification);
-          setSuccess(
+          showSuccess(
+            "bank",
             "Your phone proof had timed out, so GSN refreshed it and saved your bank or wallet details."
           );
         } catch (retryErr: any) {
-          setError(
+          showError(
+            "bank",
             retryErr?.message ||
               "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
       } else {
-        setError(err?.message || "Bank details could not be recorded.");
+        showError("bank", err?.message || "Bank details could not be recorded.");
       }
     } finally {
       setBusy(false);
@@ -2202,8 +2407,7 @@ export default function CreateEntryPage() {
   async function handleRecordIdentityPhoto() {
     if (!identityPhotoFile || !Number(verificationId) || busy) return;
 
-    setError("");
-    setSuccess("");
+    clearFeedback("photo");
     setBusy(true);
 
     try {
@@ -2214,7 +2418,8 @@ export default function CreateEntryPage() {
         note: identityPhotoNote,
       });
       setIdentityPhotoResult(out);
-      setSuccess(
+      showSuccess(
+        "photo",
         safeStr(out?.explanation) ||
           "Photo/selfie evidence recorded. It can support identity continuity after review."
       );
@@ -2231,17 +2436,19 @@ export default function CreateEntryPage() {
             note: identityPhotoNote,
           });
           setIdentityPhotoResult(out);
-          setSuccess(
+          showSuccess(
+            "photo",
             "Your phone proof had timed out, so GSN refreshed it and recorded the photo/selfie evidence."
           );
         } catch (retryErr: any) {
-          setError(
+          showError(
+            "photo",
             retryErr?.message ||
               "Photo/selfie evidence could not be recorded. Start the phone step again and retry."
           );
         }
       } else {
-        setError(err?.message || "Photo/selfie evidence could not be recorded.");
+        showError("photo", err?.message || "Photo/selfie evidence could not be recorded.");
       }
     } finally {
       setBusy(false);
@@ -2322,8 +2529,7 @@ export default function CreateEntryPage() {
     e.preventDefault();
     if (!canContinue || busy || !verificationId) return;
 
-    setError("");
-    setSuccess("");
+    clearFeedback("community");
     setBusy(true);
 
     try {
@@ -2343,7 +2549,8 @@ export default function CreateEntryPage() {
             if (recovered) return;
           }
 
-          setError(
+          showError(
+            "community",
             retryErr?.message ||
               "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
@@ -2355,11 +2562,12 @@ export default function CreateEntryPage() {
         if (recovered) return;
 
         setExistingMemberOpen(true);
-        setError(
+        showError(
+          "community",
           "This phone or email already has a completed GSN account. Use Already a member to sign in with the email and password you entered. If that does not work, ask the person helping you to review the intake record."
         );
       } else {
-        setError(err?.message || "Founder entry could not be completed.");
+        showError("community", err?.message || "Founder entry could not be completed.");
       }
     } finally {
       setBusy(false);
@@ -2382,9 +2590,9 @@ export default function CreateEntryPage() {
     {
       key: "verification",
       number: "2",
-      title: "Bank and wallet details",
+      title: "Founder trust level",
       detail:
-        "Add the bank or wallet record linked to you.",
+        "Add photo, bank, wallet, or ID proof when ready.",
     },
     {
       key: "community",
@@ -2791,8 +2999,12 @@ export default function CreateEntryPage() {
           </div>
         ) : null}
 
-        {error ? <div style={feedbackCard(false)}>{error}</div> : null}
-        {success ? <div style={feedbackCard(true)}>{success}</div> : null}
+        {feedbackTarget === "global" && error ? (
+          <div style={feedbackCard(false)}>{error}</div>
+        ) : null}
+        {feedbackTarget === "global" && success ? (
+          <div style={feedbackCard(true)}>{success}</div>
+        ) : null}
 
         <div
           style={{
@@ -3215,9 +3427,11 @@ export default function CreateEntryPage() {
                       }}
                     >
                       Submit 1
-                      <span aria-hidden="true" style={{ marginLeft: 10 }}>›</span>
+                      <span aria-hidden="true" style={{ marginLeft: 10 }}>{">"}</span>
                     </PrimaryButton>
                   </div>
+
+                  {renderLocalFeedback("details")}
 
                   <div
                     style={{
@@ -3371,6 +3585,12 @@ export default function CreateEntryPage() {
                   }}
                 >
                   {verificationBlockHelp}
+                </div>
+              ) : null}
+
+              {openPanel === "verification" && step !== "verify" ? (
+                <div style={{ marginTop: 12 }}>
+                  <FounderEvidenceMeter />
                 </div>
               ) : null}
 
@@ -3779,6 +3999,8 @@ export default function CreateEntryPage() {
                         Confirm phone code
                       </PrimaryButton>
                     </div>
+
+                    {renderLocalFeedback("phone")}
                   </div>
                 ) : (
                   <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
@@ -3857,6 +4079,8 @@ export default function CreateEntryPage() {
                         <EntryDetailIcon kind="id" size={14} />
                         Record photo evidence
                       </PrimaryButton>
+
+                      {renderLocalFeedback("photo")}
                     </div>
 
                     <div
@@ -4163,6 +4387,8 @@ export default function CreateEntryPage() {
                         Save bank and wallet details
                       </PrimaryButton>
                     </div>
+
+                    {renderLocalFeedback("bank")}
                   </div>
                 )
               ) : null}
@@ -4222,7 +4448,13 @@ export default function CreateEntryPage() {
                     fontWeight: 760,
                   }}
                 >
-                  Name the community first. Founder trust checks can be added as optional evidence.
+                  Name the community now. Extra proof is not required here, but every recorded check strengthens the founder trust record.
+                </div>
+              ) : null}
+
+              {openPanel === "community" ? (
+                <div style={{ marginTop: 12 }}>
+                  <FounderEvidenceMeter compact />
                 </div>
               ) : null}
 
@@ -4286,6 +4518,8 @@ export default function CreateEntryPage() {
                       Create community
                     </PrimaryButton>
                   </div>
+
+                  {renderLocalFeedback("community")}
                 </form>
               ) : null}
             </div>

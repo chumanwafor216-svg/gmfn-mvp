@@ -1,3 +1,31 @@
+### Start Community local feedback and founder evidence meter (2026-05-27)
+
+- Updated `frontend/src/pages/CreateEntryPage.tsx` so create-entry feedback now
+  appears next to the action that caused it:
+  - details / phone registration start;
+  - phone confirmation;
+  - photo/selfie evidence upload;
+  - bank or wallet evidence save;
+  - final community creation.
+- Added a founder evidence meter to the Start Community route:
+  - name/phone/email starter details;
+  - phone evidence;
+  - photo/selfie evidence;
+  - bank or wallet evidence;
+  - licence/passport/NIN-style ID evidence.
+- The meter is visual guidance for the founder during onboarding. It does not
+  claim provider-grade verification. Backend Trust Events and review/provider
+  decisions remain the source of truth.
+- Updated wording so optional evidence is framed as important founder proof:
+  community creation is not blocked, but each recorded check strengthens the
+  founder trust record.
+- Verification:
+  - `.\node_modules\.bin\eslint src\pages\CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed from `frontend/`.
+  - `python -m pytest gmfn_backend\tests\test_entry_create.py -q` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Restored create-entry backend session check (2026-05-27)
 
 - Added `POST /entry/phone/resume` so the frontend can check whether a locally
