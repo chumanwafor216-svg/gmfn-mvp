@@ -148,6 +148,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /setConfirmationOutcome\(result\);[\s\S]*?result\?\.public_token[\s\S]*?navigateWithOrigin\([\s\S]*?`\/community-confirmations\/public\/\$\{encodeURIComponent\(String\(result\.public_token\)\)\}`/,
+  "TrustSlip Verify must move a live community confirmation request into the focused public outcome lane instead of leaving the result buried in the TrustSlip page."
+);
+
+assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   /<div style=\{\{ \.\.\.sectionLabel\(\), color: "#64748B" \}\}>Holder<\/div>[\s\S]*?\{holderName\}[\s\S]*?GSN ID: \{gsnId\}/,
   "TrustSlip Verify public paper must show the holder name in the Holder field and keep the GSN ID as a separate identifier."
@@ -181,6 +187,12 @@ assertContains(
   "src/pages/TrustSlipPage.tsx",
   /debugId="trust-slip\.community-confirmation\.request"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-outcome"/,
   "TrustSlip community-confirmation actions must stay traceable and grouped."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /setConfirmationOutcome\(result\);[\s\S]*?result\?\.public_token[\s\S]*?navigateWithOrigin\([\s\S]*?`\/community-confirmations\/public\/\$\{encodeURIComponent\(String\(result\.public_token\)\)\}`/,
+  "TrustSlip page must move a live community confirmation request into the focused public outcome lane instead of leaving the result buried in the TrustSlip page."
 );
 
 assertContains(

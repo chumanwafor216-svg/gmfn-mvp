@@ -1,3 +1,24 @@
+### TrustSlip live confirmation focused lane (2026-05-27)
+
+- Owner clarified the product intent for `Request instant confirmation`:
+  when a merchant/public reader starts a live community confirmation, the user
+  should not remain buried in the busy TrustSlip page with the result mixed
+  among unrelated TrustSlip blocks.
+- Confirmed implementation gap:
+  - `TrustSlipVerifyPage.tsx` and `TrustSlipPage.tsx` created a confirmation
+    request and rendered the response as a small in-page card;
+  - `CommunityConfirmationOutcomePage.tsx` already exists as the dedicated
+    public outcome lane at `/community-confirmations/public/:token`.
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx` and
+  `frontend/src/pages/TrustSlipPage.tsx`:
+  - after a confirmation request opens and returns `public_token`, the user is
+    moved directly to `/community-confirmations/public/{token}`;
+  - this suspends the surrounding TrustSlip evidence page and keeps the reader
+    on the live request/result lane.
+- Updated `frontend/tools/audit-trust-actions.mjs`:
+  - added guards so both TrustSlip request entry points must route live
+    confirmation requests into the focused outcome page.
+
 ### TrustSlip page community record highlight parity (2026-05-27)
 
 - Owner clarified that the `Open public community record` action was highlighted

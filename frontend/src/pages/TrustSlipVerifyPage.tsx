@@ -435,6 +435,13 @@ export default function TrustSlipVerifyPage() {
       });
       setConfirmationOutcome(result);
       showNotice("success", "Community confirmation request opened.");
+      if (result?.public_token) {
+        navigateWithOrigin(
+          navigate,
+          `/community-confirmations/public/${encodeURIComponent(String(result.public_token))}`,
+          location
+        );
+      }
     } catch {
       showNotice("error", "Community confirmation could not be opened yet.");
     } finally {
