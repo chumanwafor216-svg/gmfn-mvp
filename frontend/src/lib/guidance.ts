@@ -1069,6 +1069,8 @@ function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
     .toLowerCase();
 
   if (
+    text.includes("community_confirmation.request_to_respond") ||
+    text.includes("community confirmation request") ||
     text.includes("guarantor") ||
     text.includes("approve") ||
     text.includes("decline") ||

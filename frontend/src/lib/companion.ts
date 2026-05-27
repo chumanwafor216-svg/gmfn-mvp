@@ -60,6 +60,18 @@ export type CompanionCycleResult = {
   blockedReason?: string;
 };
 
+export type UrgentCompanionNotificationInput = {
+  id?: string | number | null;
+  kind?: string | null;
+  title?: string | null;
+  detail?: string | null;
+  message?: string | null;
+  ctaLabel?: string | null;
+  actionLabel?: string | null;
+  ctaTo?: string | null;
+  actionUrl?: string | null;
+};
+
 type Candidate = {
   title: string;
   detail: string;
@@ -671,7 +683,15 @@ export function subscribeCompanionToasts(
 
 async function playCompanionChime(priority: CompanionPriority): Promise<boolean> {
   if (!isBrowser()) return false;
-  if (!isAudioUnlocked()) return false;
+  let vibrated = false;
+  if (priority === "urgent" && "vibrate" in window.navigator) {
+    try {
+      vibrated = window.navigator.vibrate([180, 70, 180]);
+    } catch {
+      vibrated = false;
+    }
+  }
+  if (!isAudioUnlocked()) return vibrated;
 
   try {
     const AudioContextCtor =
@@ -712,7 +732,7 @@ async function playCompanionChime(priority: CompanionPriority): Promise<boolean>
 
     return true;
   } catch {
-    return false;
+    return vibrated;
   }
 }
 
@@ -821,6 +841,108 @@ export async function deliverCompanionDecision(
   }
 
   return delivered;
+}
+
+export function buildUrgentCompanionNotificationDecision(
+  notification: UrgentCompanionNotificationInput,
+  rawSettings?: Partial<CompanionSettings> | null
+): CompanionDecision {
+  const settings = normalizeCompanionSettings(rawSettings);
+  const quietHours = isWithinQuietHours(
+    settings.quietHoursStart,
+    settings.quietHoursEnd
+  );
+  const title = safeStr(notification.title || "Community confirmation needs you");
+  const detail = safeStr(
+    notification.detail ||
+      notification.message ||
+      "A GSN community member needs a quick confirmation response."
+  );
+  const ctaLabel = safeStr(
+    notification.ctaLabel || notification.actionLabel || "Respond now"
+  );
+  const ctaTo = safeStr(
+    notification.ctaTo || notification.actionUrl || "/app/community-confirmations"
+  );
+  const source = "urgent-community-confirmation";
+  const notificationId = safeStr(notification.id || "");
+  const channels: CompanionDecision["channels"] = [];
+
+  if (shouldUseToast("urgent", settings)) {
+    channels.push("toast");
+  }
+
+  if (shouldUseSound("urgent", settings, quietHours)) {
+    channels.push("sound");
+  }
+
+  if (shouldUseSpeech("urgent", settings, quietHours)) {
+    channels.push("speech");
+  }
+
+  if (shouldUseBrowserNotification("urgent", settings)) {
+    channels.push("browser");
+  }
+
+  return {
+    shouldNotify: channels.length > 0,
+    priority: "urgent",
+    title,
+    detail,
+    speechText: "Urgent GSN community confirmation needs your response.",
+    ctaLabel,
+    ctaTo,
+    source,
+    fingerprint: hashText(
+      [
+        source,
+        notificationId,
+        safeStr(notification.kind),
+        title,
+        detail,
+        ctaTo,
+      ].join("|")
+    ),
+    channels,
+    quietHours,
+  };
+}
+
+export async function runUrgentCompanionNotificationCycle(params: {
+  notification: UrgentCompanionNotificationInput;
+  settings?: Partial<CompanionSettings> | null;
+  force?: boolean;
+}): Promise<CompanionCycleResult> {
+  installCompanionInteractionCapture();
+
+  const settings = normalizeCompanionSettings(params.settings);
+  const decision = buildUrgentCompanionNotificationDecision(
+    params.notification,
+    settings
+  );
+
+  if (!params.force) {
+    const allowed = canDeliverCompanionDecision(decision, settings);
+    if (!allowed.ok) {
+      return {
+        decision,
+        delivered: [],
+        blockedReason: allowed.reason,
+      };
+    }
+  }
+
+  const delivered = await deliverCompanionDecision(decision, settings);
+
+  if (delivered.length > 0) {
+    registerCompanionDelivery(decision);
+  }
+
+  return {
+    decision,
+    delivered,
+    blockedReason: delivered.length === 0 ? "nothing-delivered" : undefined,
+  };
 }
 
 export async function runCompanionCycle(params: {

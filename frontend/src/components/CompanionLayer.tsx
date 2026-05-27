@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "./StableButton";
-import { getMySettings } from "../lib/api";
+import { getMyNotifications, getMySettings } from "../lib/api";
 import { type GuidanceSnapshot } from "../lib/guidance";
 import { subscribeCompanionSettingsUpdated } from "../lib/workspaceEvents";
 import {
@@ -9,6 +9,7 @@ import {
   markCompanionUserInteraction,
   normalizeCompanionSettings,
   runCompanionCycle,
+  runUrgentCompanionNotificationCycle,
   subscribeCompanionToasts,
   type CompanionSettings,
   type CompanionToastPayload,
@@ -19,6 +20,8 @@ type CompanionLayerProps = {
 };
 
 const LOCAL_COMPANION_SETTINGS_KEY = "gmfn_companion_settings_local";
+const URGENT_CONFIRMATION_KIND = "community_confirmation.request_to_respond";
+const URGENT_CONFIRMATION_POLL_MS = 15000;
 
 function readLocalCompanionSettings(): Partial<CompanionSettings> {
   try {
@@ -128,6 +131,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
   const [toasts, setToasts] = useState<CompanionToastPayload[]>([]);
 
   const timerMapRef = useRef<Record<string, number>>({});
+  const lastUrgentPollRef = useRef(0);
 
   const clearToastTimer = useCallback((id: string) => {
     const timerId = timerMapRef.current[id];
@@ -252,6 +256,79 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [snapshot, settings]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function pollUrgentConfirmationNotifications(force = false) {
+      const now = Date.now();
+      if (!force && now - lastUrgentPollRef.current < URGENT_CONFIRMATION_POLL_MS - 500) {
+        return;
+      }
+      lastUrgentPollRef.current = now;
+
+      const result = await getMyNotifications(20, true).catch(() => null);
+      if (!alive || !result) return;
+
+      const rows = Array.isArray(result?.items) ? result.items : [];
+      const urgent = rows.find(
+        (row: any) =>
+          String(row?.kind || "").trim() === URGENT_CONFIRMATION_KIND &&
+          row?.is_read !== true
+      );
+
+      if (!urgent) return;
+
+      const localSettings = readLocalCompanionSettings();
+      const merged = normalizeCompanionSettings({
+        ...settings,
+        ...(localSettings || {}),
+      });
+
+      if (JSON.stringify(merged) !== JSON.stringify(settings)) {
+        setSettings(merged);
+      }
+
+      await runUrgentCompanionNotificationCycle({
+        settings: merged,
+        notification: {
+          id: urgent.id,
+          kind: urgent.kind,
+          title: urgent.title || "Community confirmation needs you",
+          message: urgent.message,
+          actionLabel: urgent.action_label,
+          actionUrl: urgent.action_url,
+        },
+      });
+    }
+
+    void pollUrgentConfirmationNotifications(true);
+
+    const intervalId = window.setInterval(() => {
+      void pollUrgentConfirmationNotifications();
+    }, URGENT_CONFIRMATION_POLL_MS);
+
+    function handleFocusLikeEvent() {
+      void pollUrgentConfirmationNotifications(true);
+    }
+
+    function handleVisibilityChange() {
+      if (typeof document === "undefined") return;
+      if (!document.hidden) {
+        void pollUrgentConfirmationNotifications(true);
+      }
+    }
+
+    window.addEventListener("focus", handleFocusLikeEvent);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      alive = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocusLikeEvent);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [settings]);
 
   if (toasts.length === 0) return null;
 

@@ -13,6 +13,7 @@ function read(relativePath) {
 const findings = [];
 
 const trustDomainFiles = [
+  "src/components/CompanionLayer.tsx",
   "src/pages/TrustPage.tsx",
   "src/pages/TrustScorePage.tsx",
   "src/pages/TrustSlipPage.tsx",
@@ -199,6 +200,24 @@ assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
   /function formatCountdown\(totalSeconds: number\)[\s\S]*?loadOutcome\(\{ silent: true \}\)[\s\S]*?Live\s+confirmation\s+window[\s\S]*?Time\s+left[\s\S]*?responded/,
   "Community confirmation outcome page must behave as a focused live waiting lane with countdown and silent refresh while a request is open."
+);
+
+assertContains(
+  "src/lib/companion.ts",
+  /navigator\.vibrate[\s\S]*?export function buildUrgentCompanionNotificationDecision[\s\S]*?urgent-community-confirmation/,
+  "Companion alerts must support urgent no-cash community confirmation notifications with phone vibration when browser support allows it."
+);
+
+assertContains(
+  "src/components/CompanionLayer.tsx",
+  /URGENT_CONFIRMATION_KIND = "community_confirmation\.request_to_respond"[\s\S]*?URGENT_CONFIRMATION_POLL_MS = 15000[\s\S]*?getMyNotifications\(20, true\)[\s\S]*?runUrgentCompanionNotificationCycle/,
+  "The workspace companion layer must poll unread urgent community confirmation requests and raise no-cash phone/browser alerts while the app is open."
+);
+
+assertContains(
+  "src/lib/guidance.ts",
+  /text\.includes\("community_confirmation\.request_to_respond"\)[\s\S]*?return "actNow";/,
+  "Community confirmation request notifications must be classified as Act Now guidance."
 );
 
 assertContains(

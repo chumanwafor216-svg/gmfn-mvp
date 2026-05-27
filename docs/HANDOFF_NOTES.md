@@ -1,3 +1,29 @@
+### No-cash urgent phone/browser alerts for confirmation responders (2026-05-27)
+
+- Owner approved the low-cost first step for instant community confirmation:
+  no SMS yet, but phone/browser attention while GSN is open or recently active.
+- Updated `frontend/src/lib/companion.ts`:
+  - added an urgent companion-notification decision builder for
+    `community_confirmation.request_to_respond`;
+  - urgent alerts can use existing companion toast, browser notification,
+    sound, speech, and best-effort `navigator.vibrate()` when browser support
+    and user settings allow.
+- Updated `frontend/src/components/CompanionLayer.tsx`:
+  - polls unread notifications every 15 seconds for
+    `community_confirmation.request_to_respond`;
+  - triggers the urgent companion alert path with the notification's action URL
+    so responders can open the confirmation request quickly.
+- Updated `frontend/src/lib/guidance.ts`:
+  - community confirmation request notifications are classified as `Act Now`.
+- Updated `frontend/tools/audit-trust-actions.mjs`:
+  - added guards for the urgent companion alert path and Act Now
+    classification.
+- Remaining truth:
+  - This is not closed-phone PWA push. It improves real phone attention when
+    GSN is open/active, and browser notifications work only after user/browser
+    permission. True closed-phone push still needs service worker,
+    subscription storage, VAPID keys, and backend push delivery.
+
 ### Community confirmation expiry and Trust Event accountability (2026-05-27)
 
 - Owner clarified that instant community confirmation must behave like a timed
