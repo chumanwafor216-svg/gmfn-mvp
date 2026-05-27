@@ -63,6 +63,23 @@ class EntryPhoneConfirmIn(BaseModel):
     code: str = Field(..., min_length=4, max_length=12)
 
 
+class EntryPhoneResumeIn(BaseModel):
+    verification_id: int = Field(..., gt=0)
+    phone_e164: str = Field(..., min_length=8, max_length=32)
+
+
+class EntryPhoneResumeOut(BaseModel):
+    ok: bool
+    verification_id: int
+    status: str
+    can_continue: bool
+    expires_at: Optional[str] = None
+    verified: bool = False
+    registered_only: bool = False
+    bank_details_recorded: bool = False
+    message: str
+
+
 class EntryTrustEventResponse(BaseModel):
     event_type: str
     status: str
@@ -773,6 +790,67 @@ def confirm_entry_phone_verification(
                 "GSN will write this as a permanent trust event on your record."
             ),
         },
+    }
+
+
+@router.post("/phone/resume", response_model=EntryPhoneResumeOut)
+def resume_entry_phone_verification(
+    payload: EntryPhoneResumeIn,
+    db: Session = Depends(get_db),
+):
+    """Check whether a locally restored entry session is still usable.
+
+    This endpoint deliberately returns no OTP, no email, and no private evidence.
+    The caller must already know the phone number tied to the local draft.
+    """
+
+    phone_e164 = _normalize_phone(payload.phone_e164)
+    row = (
+        db.query(EntryPhoneVerification)
+        .filter(EntryPhoneVerification.id == int(payload.verification_id))
+        .first()
+    )
+
+    if not row or _normalize_phone(row.phone_e164) != phone_e164:
+        return {
+            "ok": False,
+            "verification_id": int(payload.verification_id),
+            "status": "not_found",
+            "can_continue": False,
+            "message": "This saved entry cannot be reopened. Start the phone step again.",
+        }
+
+    if row.consumed_at is not None:
+        return {
+            "ok": False,
+            "verification_id": int(row.id),
+            "status": "consumed",
+            "can_continue": False,
+            "message": "This entry session has already been completed.",
+        }
+
+    if _verification_expired(row):
+        return {
+            "ok": False,
+            "verification_id": int(row.id),
+            "status": "expired",
+            "can_continue": False,
+            "expires_at": row.expires_at.isoformat(),
+            "message": "This saved entry has expired. Start the phone step again.",
+        }
+
+    verified_at = _utc_aware(row.verified_at)
+    registration_only = _entry_phone_registration_only_enabled()
+    return {
+        "ok": True,
+        "verification_id": int(row.id),
+        "status": "active",
+        "can_continue": True,
+        "expires_at": row.expires_at.isoformat(),
+        "verified": verified_at is not None,
+        "registered_only": registration_only and verified_at is None,
+        "bank_details_recorded": row.bank_details_recorded_at is not None,
+        "message": "This saved entry is still active. You can continue.",
     }
 
 

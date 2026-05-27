@@ -1,3 +1,24 @@
+### Restored create-entry backend session check (2026-05-27)
+
+- Added `POST /entry/phone/resume` so the frontend can check whether a locally
+  restored create-entry phone session is still usable before sending the user
+  deeper into community creation.
+- The resume check requires the saved `verification_id` and phone number. It
+  returns only safe session state:
+  - active / expired / consumed / not found;
+  - whether the session can continue;
+  - expiry time, verified flag, registration-only flag, and whether bank
+    details were recorded.
+- It deliberately does not return OTP preview, email, phone number,
+  bank details, licence data, or photo evidence.
+- `CreateEntryPage` now validates a restored backend session once on load. If
+  the backend session is expired or consumed, it keeps the ordinary name,
+  phone, email, and community text visible, but clears the stale verification
+  state and sends the user back to the phone/details step with a plain message.
+- Remaining truth:
+  - This is not yet cross-device resume. It prevents false local resume from
+    walking the user into an expired backend session.
+
 ### Entry resume coverage normalized for create and join (2026-05-27)
 
 - Extended the safe interrupted-entry resume behavior beyond `/create` to the

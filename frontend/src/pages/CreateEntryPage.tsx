@@ -13,6 +13,7 @@ import {
   listMyClans,
   loginAndStore,
   recordEntryIdentityPhoto,
+  resumeEntryPhoneVerification,
   saveEntryBankDetails,
   setSelectedClanId,
   startEntryPhoneVerification,
@@ -1317,6 +1318,7 @@ export default function CreateEntryPage() {
     useState<EntryVerificationResult>(restoredDraft?.licenceVerificationResult || null);
   const [identityPhotoResult, setIdentityPhotoResult] =
     useState<EntryVerificationResult>(restoredDraft?.identityPhotoResult || null);
+  const restoredSessionCheckedRef = useRef(false);
   const [guideDone, setGuideDone] = useState(
     Boolean(restoredDraft?.guideDone || hasInitialCommunityContext)
   );
@@ -1556,6 +1558,43 @@ export default function CreateEntryPage() {
     step,
     verificationId,
   ]);
+
+  useEffect(() => {
+    if (restoredSessionCheckedRef.current) return;
+    if (!restoredDraft?.verificationId) return;
+    if (!verificationId || !safeStr(phone)) return;
+
+    restoredSessionCheckedRef.current = true;
+
+    resumeEntryPhoneVerification({
+      verification_id: verificationId,
+      phone_e164: phone,
+    })
+      .then((out) => {
+        if (out?.can_continue) return;
+
+        setResumeNotice(
+          safeStr(out?.message) ||
+            "Your saved entry is still on this phone, but the secure backend session is no longer active. Start the phone step again."
+        );
+        setVerificationId(0);
+        setOtpCode("");
+        setOtpPreview("");
+        setOtpDeliveryMode("");
+        setPhoneVerificationProof(null);
+        setBankRecordProof(null);
+        setBankVerificationResult(null);
+        setLicenceVerificationResult(null);
+        setIdentityPhotoResult(null);
+        setStep("details");
+        setOpenPanel("details");
+      })
+      .catch(() => {
+        setResumeNotice(
+          "GSN restored your local entry details, but could not confirm the secure backend session. If the next step fails, start the phone step again."
+        );
+      });
+  }, [phone, restoredDraft?.verificationId, verificationId]);
 
   const existingMemberPanel = (
     <div style={existingMemberCard(existingMemberOpen)}>

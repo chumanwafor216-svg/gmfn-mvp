@@ -691,6 +691,16 @@ export async function confirmEntryPhoneVerification(payload: {
   });
 }
 
+export async function resumeEntryPhoneVerification(payload: {
+  verification_id: number | string;
+  phone_e164: string;
+}): Promise<any> {
+  return httpJson("/entry/phone/resume", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    phone_e164: String(payload?.phone_e164 || "").trim(),
+  });
+}
+
 export async function saveEntryBankDetails(payload: {
   verification_id: number | string;
   destination_name: string;

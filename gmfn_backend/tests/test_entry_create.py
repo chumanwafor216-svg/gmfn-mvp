@@ -5,7 +5,15 @@ from pathlib import Path
 
 from app.core.security import get_password_hash
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanJoinRequest, ClanMembership, TrustEvent, User, UserPayoutDestination
+from app.db.models import (
+    Clan,
+    ClanJoinRequest,
+    ClanMembership,
+    EntryPhoneVerification,
+    TrustEvent,
+    User,
+    UserPayoutDestination,
+)
 from app.db.verification_models import IdentityVerificationCheck
 
 
@@ -110,6 +118,71 @@ def test_entry_phone_preview_session_lasts_one_day_for_pilot_onboarding(client):
     expires_at = _parse_api_datetime(start_body["expires_at"])
     assert expires_at - started_at > timedelta(hours=23, minutes=59)
     assert expires_at - started_at < timedelta(hours=24, minutes=1)
+
+
+def test_entry_phone_resume_check_is_safe_and_expiry_aware(client, monkeypatch):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Resume Tester",
+            "phone_e164": "+2348011111212",
+            "email": "resume-tester@example.com",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    verification_id = start_res.json()["verification_id"]
+
+    active_res = client.post(
+        "/entry/phone/resume",
+        json={
+            "verification_id": verification_id,
+            "phone_e164": "+2348011111212",
+        },
+    )
+    assert active_res.status_code == 200, active_res.text
+    active_body = active_res.json()
+    assert active_body["ok"] is True
+    assert active_body["can_continue"] is True
+    assert active_body["status"] == "active"
+    assert active_body["registered_only"] is True
+    assert "phone_e164" not in active_body
+    assert "email" not in active_body
+    assert "otp_preview" not in active_body
+
+    mismatch_res = client.post(
+        "/entry/phone/resume",
+        json={
+            "verification_id": verification_id,
+            "phone_e164": "+2348011119999",
+        },
+    )
+    assert mismatch_res.status_code == 200, mismatch_res.text
+    mismatch_body = mismatch_res.json()
+    assert mismatch_body["ok"] is False
+    assert mismatch_body["status"] == "not_found"
+    assert mismatch_body["can_continue"] is False
+
+    with SessionLocal() as db:
+        row = db.get(EntryPhoneVerification, verification_id)
+        row.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+        db.add(row)
+        db.commit()
+
+    expired_res = client.post(
+        "/entry/phone/resume",
+        json={
+            "verification_id": verification_id,
+            "phone_e164": "+2348011111212",
+        },
+    )
+    assert expired_res.status_code == 200, expired_res.text
+    expired_body = expired_res.json()
+    assert expired_body["ok"] is False
+    assert expired_body["status"] == "expired"
+    assert expired_body["can_continue"] is False
 
 
 def test_entry_phone_start_releases_abandoned_pending_identity(client):
