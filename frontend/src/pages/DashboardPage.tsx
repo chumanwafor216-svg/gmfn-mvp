@@ -6788,7 +6788,7 @@ export default function DashboardPage() {
           >
             {[
               { label: "Trust", value: openTrust.classText, to: DASHBOARD_TARGETS.TRUST },
-              { label: "Wider", value: cci.classText, to: DASHBOARD_TARGETS.CCI },
+              { label: "CCI", value: cci.classText, to: DASHBOARD_TARGETS.CCI },
               {
                 label: "TrustSlip",
                 value: trustSlipCode || "Pending",
@@ -7630,7 +7630,7 @@ export default function DashboardPage() {
                         </span>
                       </span>
                       <span style={trustMetricTile(false, "blue")}>
-                        <span style={trustMetricLabel()}>Wider</span>
+                        <span style={trustMetricLabel()}>CCI</span>
                         <span style={trustMetricValue()}>{cci.classText}</span>
                       </span>
                       <span style={trustMetricTile(false, "steel")}>
