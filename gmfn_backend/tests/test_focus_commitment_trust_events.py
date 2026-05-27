@@ -253,6 +253,7 @@ def test_holder_can_force_fresh_trustslip_for_new_public_qr(
     data = response.json()
     assert data["reissued"] is True
     assert data["code"] != "CURRENT-TRUSTSLIP"
+    assert data["issued_at"]
 
     with SessionLocal() as db:
         old_slip = db.get(TrustSlip, old_id)
@@ -265,6 +266,7 @@ def test_holder_can_force_fresh_trustslip_for_new_public_qr(
         assert new_slip.supersedes_trust_slip_id == old_id
         assert aware(new_slip.created_at) >= now - timedelta(seconds=5)
         assert aware(new_slip.created_at) > old_created_at
+        assert aware(datetime.fromisoformat(data["issued_at"])) == aware(new_slip.created_at)
         assert new_slip.expires_at is not None
         assert aware(new_slip.expires_at) > now
 

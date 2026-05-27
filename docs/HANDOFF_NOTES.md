@@ -1,3 +1,45 @@
+### TrustSlip refresh date and community record action (2026-05-27)
+
+- Owner reported two live-phone issues from TrustSlip/public verify screens:
+  - the public verify `Open community record` action was too visually soft and
+    did not read as the available community verification path;
+  - after refreshing a TrustSlip, the visible QR/code/date could still show the
+    old slip, e.g. `UFCGZ6JGNQ` issued `25/05/2026`, even when a fresh paper
+    was expected on `27/05/2026`.
+- Confirmed risk:
+  - the frontend refresh flow could re-fetch through helper endpoints and keep
+    a stale TrustSlip summary immediately after the reissue call;
+  - backend `reissue_trust_slip()` did not return `issued_at`/`created_at`, so
+    the frontend had less reliable fresh data to seed the visible paper.
+- Updated `gmfn_backend/app/services/trust_slips_services.py`:
+  - reissue response now includes `trust_slip_id`, `created_at`, `issued_at`,
+    and `is_current` for the newly issued slip.
+- Updated `frontend/src/pages/TrustSlipPage.tsx`:
+  - refresh now forces a network-first, cache-busted summary reload;
+  - refresh merges the reissue response into the visible summary so the new
+    code, issue date, expiry date, current flag, and public verify URL win over
+    stale helper data.
+- Updated `frontend/src/pages/TrustSlipVerifyPage.tsx`:
+  - `Open community record` is now a primary action when a community verify
+    route exists.
+- Updated tests/audits:
+  - `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+  - `frontend/tools/audit-trust-actions.mjs`
+- Verification:
+  - `python -m pytest -q tests/test_focus_commitment_trust_events.py` passed.
+  - `python -m py_compile app/services/trust_slips_services.py` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx tools/audit-trust-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+- Remaining truth:
+  - Old QR/code links do not mutate into new papers. They keep their original
+    issue date and should be treated as old once replaced.
+  - If a phone still shows `UFCGZ6JGNQ` after the new build is deployed, it is
+    reading an old code, old bundle, or stale API response. A real fresh
+    TrustSlip must show a new code and a new `issued_at` date from the reissue
+    response.
+
 ### TrustSlip Verify holder name and superseded-paper clarity (2026-05-27)
 
 - Owner reported that the TrustSlip Verify public paper showed the holder as

@@ -530,9 +530,9 @@ export default function TrustSlipVerifyPage() {
       </SecondaryButton>
       <StableCtaLink
         to={communityVerifyPath || "#"}
-        kind="soft"
+        kind={communityVerifyPath ? "primary" : "soft"}
         disabled={!communityVerifyPath}
-        stableHeight={44}
+        stableHeight={52}
         debugId="trust-slip-verify.public.open-community-record"
       >
         Open community record

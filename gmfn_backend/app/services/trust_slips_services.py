@@ -1396,11 +1396,15 @@ def reissue_trust_slip(
 
     return {
         "ok": True,
+        "trust_slip_id": int(new_slip.id),
         "old_trust_slip_id": int(current_slip.id) if current_slip else None,
         "new_trust_slip_id": int(new_slip.id),
         "code": new_slip.code,
         "reason": new_slip.issued_reason,
+        "created_at": new_slip.created_at.isoformat() if new_slip.created_at else None,
+        "issued_at": new_slip.created_at.isoformat() if new_slip.created_at else None,
         "expires_at": new_slip.expires_at.isoformat() if new_slip.expires_at else None,
+        "is_current": bool(new_slip.is_current),
     }
 
 

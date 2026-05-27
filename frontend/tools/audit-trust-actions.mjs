@@ -118,6 +118,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /fetchTrustSlipPageData\(selectedClanId, \{[\s\S]*?networkFirst: true[\s\S]*?\}\)[\s\S]*?mergeFreshTrustSlipSummary\(data\.summary, reissueResult\)/,
+  "TrustSlip refresh must reload the current slip network-first and seed the visible code/date from the reissue response so stale helper responses cannot keep an old QR/date on screen."
+);
+
+assertContains(
   "src/pages/TrustScorePage.tsx",
   /if \(verifyPath\) \{[\s\S]*?openTrustRoute\(verifyPath\);[\s\S]*?Open TrustSlip first and refresh or generate the current TrustSlip\.[\s\S]*?openTrustRoute\(routes\.trustSlip\);[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport verify action must open a coded verify path when available and fall back to TrustSlip preparation when no code is visible."
@@ -157,6 +163,12 @@ assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /debugId="trust-slip-verify\.copy-code"[\s\S]*?debugId="trust-slip-verify\.copy-link"[\s\S]*?debugId="trust-slip-verify\.copy-gmfn-id"[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
   "TrustSlip Verify page actions must keep traceable copy and Trust Passport actions."
+);
+
+assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /to=\{communityVerifyPath \|\| "#"\}[\s\S]*?kind=\{communityVerifyPath \? "primary" : "soft"\}[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"/,
+  "TrustSlip Verify community record action must be visually highlighted when a community verification route is available."
 );
 
 assertContains(

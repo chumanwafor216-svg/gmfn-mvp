@@ -880,7 +880,31 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
-async function fetchTrustSlipPageData(selectedClanId: number) {
+function cacheBust(path: string): string {
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}_ts=${Date.now()}`;
+}
+
+async function fetchTrustSlipPageData(
+  selectedClanId: number,
+  options: { networkFirst?: boolean } = {}
+) {
+  const clanHeaders: Record<string, string> = {};
+  if (selectedClanId) {
+    clanHeaders["X-Clan-Id"] = String(selectedClanId);
+  }
+
+  const fetchNetworkSummary = () =>
+    fetchFirstJson(
+      [
+        cacheBust("/trust-slips/me/summary"),
+        cacheBust("/trust-slips/me"),
+        cacheBust("/trust-slips/me-summary"),
+        cacheBust("/trust-slips/summary/me"),
+      ],
+      clanHeaders
+    );
+
   const [meRes, clanRes, summaryRes] = await Promise.all([
     typeof (api as any).getMe === "function"
       ? (api as any).getMe().catch(() => null)
@@ -889,6 +913,11 @@ async function fetchTrustSlipPageData(selectedClanId: number) {
       ? (api as any).getCurrentClan().catch(() => null)
       : Promise.resolve(null),
     (async () => {
+      if (options.networkFirst) {
+        const direct = await fetchNetworkSummary();
+        if (direct) return direct;
+      }
+
       const viaFn = await callFirstAvailable(
         [
           "getMyTrustSlipSummary",
@@ -910,19 +939,7 @@ async function fetchTrustSlipPageData(selectedClanId: number) {
 
       if (viaFn) return viaFn;
 
-      const clanHeaders: Record<string, string> = {};
-      if (selectedClanId) {
-        clanHeaders["X-Clan-Id"] = String(selectedClanId);
-      }
-
-      return fetchFirstJson(
-        [
-          "/trust-slips/me/summary",
-          "/trust-slips/me-summary",
-          "/trust-slips/summary/me",
-        ],
-        clanHeaders
-      );
+      return fetchNetworkSummary();
     })(),
   ]);
 
@@ -930,6 +947,47 @@ async function fetchTrustSlipPageData(selectedClanId: number) {
     me: meRes || null,
     clan: clanRes || null,
     summary: normalizeTrustSlipSummary(summaryRes),
+  };
+}
+
+function mergeFreshTrustSlipSummary(
+  summary: TrustSlipSummary | null,
+  reissueResult: any
+): TrustSlipSummary | null {
+  if (!summary || !reissueResult) return summary;
+
+  const freshCode = firstTruthy(reissueResult.code, reissueResult.trust_slip_code);
+  if (!freshCode) return summary;
+
+  const issuedAt = firstTruthy(reissueResult.issued_at, reissueResult.created_at);
+  const expiresAt = firstTruthy(reissueResult.expires_at);
+  const freshVerifyUrl = `/trust-slips/verify/${encodeURIComponent(freshCode)}/page`;
+
+  return {
+    ...summary,
+    code: freshCode,
+    verification_code: freshCode,
+    verification_token: freshCode,
+    token: freshCode,
+    public_verify_url: freshVerifyUrl,
+    created_at: issuedAt || summary.created_at,
+    issued_at: issuedAt || summary.issued_at,
+    expires_at: expiresAt || summary.expires_at,
+    is_current: true,
+    merchant_view: {
+      ...(summary.merchant_view || {}),
+      code: freshCode,
+      merchant_summary: {
+        ...((summary.merchant_view || {}).merchant_summary || {}),
+        code: freshCode,
+        expires_at: expiresAt || (summary.merchant_view || {}).merchant_summary?.expires_at,
+      },
+    },
+    merchant_summary: {
+      ...(summary.merchant_summary || {}),
+      code: freshCode,
+      expires_at: expiresAt || summary.merchant_summary?.expires_at,
+    },
   };
 }
 
@@ -1052,14 +1110,16 @@ export default function TrustSlipPage() {
     setRefreshing(true);
 
     try {
-      await api.reissueMyTrustSlip({
+      const reissueResult = await api.reissueMyTrustSlip({
         reason: "holder_requested_fresh_public_trustslip",
         force: true,
       });
-      const data = await fetchTrustSlipPageData(selectedClanId);
+      const data = await fetchTrustSlipPageData(selectedClanId, {
+        networkFirst: true,
+      });
       setMe(data.me);
       setCurrentClan(data.clan);
-      setSummary(data.summary);
+      setSummary(mergeFreshTrustSlipSummary(data.summary, reissueResult));
       setConfirmationOutcome(null);
       showNotice("success", "Fresh TrustSlip issued.");
     } catch {
