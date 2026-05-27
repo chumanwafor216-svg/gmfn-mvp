@@ -198,11 +198,11 @@ function normalizeOutcome(raw: any): PublicOutcome {
   };
 }
 
-function pageShell(): React.CSSProperties {
+function pageShell(compact = false): React.CSSProperties {
   return {
     maxWidth: 900,
     margin: "0 auto",
-    padding: "0 12px 42px",
+    padding: compact ? "0 6px 28px" : "0 12px 42px",
     display: "grid",
     gap: 0,
   };
@@ -219,25 +219,25 @@ function paperCard(): React.CSSProperties {
   };
 }
 
-function paperHero(): React.CSSProperties {
+function paperHero(compact = false): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    padding: "32px 36px 34px",
-    minHeight: 258,
+    padding: compact ? "22px 22px 30px" : "32px 36px 34px",
+    minHeight: compact ? 214 : 258,
     color: "#FFFFFF",
     background:
       "radial-gradient(circle at 92% 38%, rgba(11,99,209,0.18), transparent 26%), linear-gradient(135deg, #061827 0%, #0B2D4A 100%)",
   };
 }
 
-function paperBody(): React.CSSProperties {
+function paperBody(compact = false): React.CSSProperties {
   return {
     position: "relative",
     zIndex: 1,
-    padding: "22px 34px 0",
+    padding: compact ? "16px 16px 0" : "22px 34px 0",
     display: "grid",
-    gap: 14,
+    gap: compact ? 12 : 14,
     background: "#FFFFFF",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -277,16 +277,16 @@ function helperText(): React.CSSProperties {
   };
 }
 
-function statTile(background = "#F7FAFF"): React.CSSProperties {
+function statTile(background = "#F7FAFF", compact = false): React.CSSProperties {
   return {
-    borderRadius: 16,
+    borderRadius: compact ? 12 : 16,
     background,
     border: "1px solid rgba(8,35,58,0.10)",
-    padding: 15,
-    minHeight: 104,
+    padding: compact ? 9 : 15,
+    minHeight: compact ? 74 : 104,
     display: "grid",
     alignContent: "space-between",
-    gap: 8,
+    gap: compact ? 6 : 8,
   };
 }
 
@@ -382,6 +382,7 @@ export default function CommunityConfirmationOutcomePage() {
   const [evidenceTitle, setEvidenceTitle] = useState("");
   const [evidenceBody, setEvidenceBody] = useState("");
   const [evidenceRef, setEvidenceRef] = useState("");
+  const [isCompactPaper, setIsCompactPaper] = useState(false);
 
   const tokenText = safeStr(token);
   const outcomeLink = useMemo(
@@ -416,6 +417,15 @@ export default function CommunityConfirmationOutcomePage() {
   useEffect(() => {
     void loadOutcome();
   }, [loadOutcome]);
+
+  useEffect(() => {
+    const updateCompactPaper = () => {
+      setIsCompactPaper(typeof window !== "undefined" && window.innerWidth < 620);
+    };
+    updateCompactPaper();
+    window.addEventListener("resize", updateCompactPaper);
+    return () => window.removeEventListener("resize", updateCompactPaper);
+  }, []);
 
   useEffect(() => {
     if (!outcome?.expires_at) {
@@ -764,13 +774,13 @@ export default function CommunityConfirmationOutcomePage() {
         paddingTop: 16,
       }}
     >
-      <div style={pageShell()}>
+      <div style={pageShell(isCompactPaper)}>
         <article style={paperCard()}>
-          <header style={paperHero()}>
+          <header style={paperHero(isCompactPaper)}>
             <TrustPaperWatermark
               name="shield"
               color="#FFFFFF"
-              size={230}
+              size={isCompactPaper ? 175 : 230}
               opacity={0.075}
               style={{ right: -18, bottom: -22 }}
             />
@@ -795,16 +805,16 @@ export default function CommunityConfirmationOutcomePage() {
                   fontWeight: 1000,
                 }}
               >
-                <span style={{ fontSize: 39, lineHeight: 0.95, letterSpacing: 0 }}>GSN</span>
+                <span style={{ fontSize: isCompactPaper ? 32 : 39, lineHeight: 0.95, letterSpacing: 0 }}>GSN</span>
                 <span
                   style={{
                     width: 2,
-                    height: 42,
+                    height: isCompactPaper ? 34 : 42,
                     background: "#D6AA45",
                     transform: "skew(-14deg)",
                   }}
                 />
-                <span style={{ fontSize: 13, lineHeight: 1.05 }}>
+                <span style={{ fontSize: isCompactPaper ? 11 : 13, lineHeight: 1.05 }}>
                   Global
                   <br />
                   Support
@@ -817,18 +827,18 @@ export default function CommunityConfirmationOutcomePage() {
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 8,
-                  minHeight: 42,
+                  minHeight: isCompactPaper ? 34 : 42,
                   borderRadius: 999,
-                  padding: "0 16px",
+                  padding: isCompactPaper ? "0 11px" : "0 16px",
                   color: "#FFFFFF",
                   background: "rgba(255,255,255,0.10)",
                   border: "1px solid rgba(255,255,255,0.16)",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-                  fontSize: 14,
+                  fontSize: isCompactPaper ? 12 : 14,
                   fontWeight: 1000,
                 }}
               >
-                <TrustPaperIcon name="shield" size={18} color="#F6D77A" />
+                <TrustPaperIcon name="shield" size={isCompactPaper ? 15 : 18} color="#F6D77A" />
                 Public Paper
               </span>
             </div>
@@ -837,7 +847,7 @@ export default function CommunityConfirmationOutcomePage() {
                 display: "grid",
                 gap: 9,
                 maxWidth: 680,
-                marginTop: 42,
+                marginTop: isCompactPaper ? 30 : 42,
                 position: "relative",
                 zIndex: 1,
               }}
@@ -845,7 +855,7 @@ export default function CommunityConfirmationOutcomePage() {
               <span
                 style={{
                   color: "#F6D77A",
-                  fontSize: 13,
+                  fontSize: isCompactPaper ? 12 : 13,
                   fontWeight: 1000,
                   letterSpacing: 0.9,
                   textTransform: "uppercase",
@@ -857,8 +867,8 @@ export default function CommunityConfirmationOutcomePage() {
                 style={{
                   margin: 0,
                   color: "#FFFFFF",
-                  fontSize: "clamp(34px, 7vw, 56px)",
-                  lineHeight: 0.98,
+                  fontSize: isCompactPaper ? 32 : "clamp(34px, 7vw, 56px)",
+                  lineHeight: isCompactPaper ? 1.02 : 0.98,
                   fontWeight: 1000,
                   letterSpacing: 0,
                 }}
@@ -870,7 +880,7 @@ export default function CommunityConfirmationOutcomePage() {
                   margin: 0,
                   maxWidth: 560,
                   color: "rgba(255,255,255,0.84)",
-                  fontSize: 19,
+                  fontSize: isCompactPaper ? 18 : 19,
                   fontWeight: 760,
                   lineHeight: 1.35,
                 }}
@@ -880,7 +890,7 @@ export default function CommunityConfirmationOutcomePage() {
             </div>
           </header>
 
-          <div style={paperBody()}>
+          <div style={paperBody(isCompactPaper)}>
             {notice ? (
               <div
                 role="status"
@@ -920,10 +930,10 @@ export default function CommunityConfirmationOutcomePage() {
                   style={{
                     ...sectionCard(liveWindowOpen ? "#EAF3FF" : status === "expired" ? "#FEF2F2" : "#F7FAFF"),
                     display: "grid",
-                    gridTemplateColumns: "72px minmax(0, 1fr) 168px",
-                    gap: 18,
+                    gridTemplateColumns: isCompactPaper ? "48px minmax(0, 1fr) 116px" : "72px minmax(0, 1fr) 168px",
+                    gap: isCompactPaper ? 10 : 18,
                     alignItems: "center",
-                    padding: 18,
+                    padding: isCompactPaper ? 12 : 18,
                     borderColor:
                       liveWindowOpen
                         ? "rgba(11,99,209,0.16)"
@@ -935,8 +945,8 @@ export default function CommunityConfirmationOutcomePage() {
                   <div
                     aria-hidden="true"
                     style={{
-                      width: 60,
-                      height: 60,
+                      width: isCompactPaper ? 44 : 60,
+                      height: isCompactPaper ? 44 : 60,
                       borderRadius: 999,
                       display: "grid",
                       placeItems: "center",
@@ -952,19 +962,19 @@ export default function CommunityConfirmationOutcomePage() {
                   >
                     <TrustPaperIcon
                       name={liveWindowOpen ? "community" : status === "expired" ? "alert" : "shield"}
-                      size={36}
+                      size={isCompactPaper ? 27 : 36}
                       strokeWidth={1.9}
                     />
                   </div>
-                  <div style={{ display: "grid", gap: 7, minWidth: 0 }}>
-                    <h2 style={{ ...sectionTitle(), fontSize: 23 }}>
+                  <div style={{ display: "grid", gap: isCompactPaper ? 4 : 7, minWidth: 0 }}>
+                    <h2 style={{ ...sectionTitle(), fontSize: isCompactPaper ? 18 : 23 }}>
                       {liveWindowOpen
                         ? "Live request"
                         : status === "expired"
                           ? "Expired request"
                           : outcomeTitle(status, confidence)}
                     </h2>
-                    <p style={{ ...helperText(), color: "#1F3145" }}>
+                    <p style={{ ...helperText(), color: "#1F3145", fontSize: isCompactPaper ? 12 : 14, lineHeight: isCompactPaper ? 1.35 : 1.5 }}>
                       {outcomeMeaning(status, confidence)}
                     </p>
                     {liveWindowOpen ? (
@@ -993,22 +1003,22 @@ export default function CommunityConfirmationOutcomePage() {
                   <div
                     style={{
                       minWidth: 0,
-                      minHeight: 94,
-                      borderRadius: 15,
-                      padding: "13px 14px",
+                      minHeight: isCompactPaper ? 74 : 94,
+                      borderRadius: isCompactPaper ? 12 : 15,
+                      padding: isCompactPaper ? "9px 8px" : "13px 14px",
                       background: "#FFFFFF",
                       border: "1px solid rgba(8,35,58,0.12)",
                       textAlign: "center",
                       boxShadow: "0 10px 24px rgba(6,24,39,0.08)",
                     }}
                   >
-                    <div style={{ color: "#526579", fontSize: 12, fontWeight: 1000, textTransform: "uppercase" }}>
+                    <div style={{ color: "#526579", fontSize: isCompactPaper ? 10 : 12, fontWeight: 1000, textTransform: "uppercase" }}>
                       Time left
                     </div>
-                    <div style={{ color: "#07172C", fontSize: 36, fontWeight: 1000, lineHeight: 1.05, letterSpacing: 1.5 }}>
+                    <div style={{ color: "#07172C", fontSize: isCompactPaper ? 28 : 36, fontWeight: 1000, lineHeight: 1.05, letterSpacing: isCompactPaper ? 0.8 : 1.5 }}>
                       {liveWindowOpen ? formatCountdown(remainingSeconds) : "00:00"}
                     </div>
-                    <div style={{ marginTop: 8, color: "#526579", fontSize: 12, fontWeight: 900 }}>
+                    <div style={{ marginTop: isCompactPaper ? 5 : 8, color: "#526579", fontSize: isCompactPaper ? 10 : 12, fontWeight: 900 }}>
                       {responsesReceived} / {requestsSent} responded
                     </div>
                   </div>
@@ -1017,8 +1027,8 @@ export default function CommunityConfirmationOutcomePage() {
                 <section
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                    gap: 16,
+                    gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(300px, 1fr))",
+                    gap: isCompactPaper ? 12 : 16,
                   }}
                 >
                   <div style={sectionCard("#FFFFFF")}>
@@ -1027,12 +1037,13 @@ export default function CommunityConfirmationOutcomePage() {
                       Who is being confirmed?
                     </h2>
                     <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                      <InfoRow label="Community" value={outcome.community_name || "Not shown"} />
+                      <InfoRow compact={isCompactPaper} label="Community" value={outcome.community_name || "Not shown"} />
                       <InfoRow
+                        compact={isCompactPaper}
                         label="Community ID"
                         value={firstTruthy(outcome.community_code, outcome.community_id)}
                       />
-                      <InfoRow label="Member reference" value={outcome.subject_user_id || "Protected"} />
+                      <InfoRow compact={isCompactPaper} label="Member reference" value={outcome.subject_user_id || "Protected"} />
                     </div>
                   </div>
 
@@ -1042,9 +1053,9 @@ export default function CommunityConfirmationOutcomePage() {
                       What was requested?
                     </h2>
                     <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                      <InfoRow label="Reason" value={reasonMeaning(safeStr(outcome.reason_type))} />
-                      <InfoRow label="Risk level" value={labelize(outcome.risk_level)} />
-                      <InfoRow label="Mode" value={labelize(outcome.mode)} />
+                      <InfoRow compact={isCompactPaper} label="Reason" value={reasonMeaning(safeStr(outcome.reason_type))} />
+                      <InfoRow compact={isCompactPaper} label="Risk level" value={labelize(outcome.risk_level)} />
+                      <InfoRow compact={isCompactPaper} label="Mode" value={labelize(outcome.mode)} />
                     </div>
                   </div>
                 </section>
@@ -1062,16 +1073,16 @@ export default function CommunityConfirmationOutcomePage() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-                      gap: 12,
+                      gridTemplateColumns: isCompactPaper ? "repeat(3, minmax(0, 1fr))" : "repeat(auto-fit, minmax(190px, 1fr))",
+                      gap: isCompactPaper ? 8 : 12,
                     }}
                   >
-                    <Stat label="Requests sent" value={requestsSent} icon="spark" />
-                    <Stat label="Responses received" value={responsesReceived} icon="document" />
-                    <Stat label="Active members" value={activeMemberCount} icon="community" />
-                    <Stat label="Confirmed known" value={confirmedKnown} icon="check" />
-                    <Stat label="Caution raised" value={cautionCount} icon="alert" tone="warn" />
-                    <Stat label="Objections" value={objectionCount} icon="lock" tone="bad" />
+                    <Stat compact={isCompactPaper} label="Requests sent" value={requestsSent} icon="spark" />
+                    <Stat compact={isCompactPaper} label="Responses received" value={responsesReceived} icon="document" />
+                    <Stat compact={isCompactPaper} label="Active members" value={activeMemberCount} icon="community" />
+                    <Stat compact={isCompactPaper} label="Confirmed known" value={confirmedKnown} icon="check" />
+                    <Stat compact={isCompactPaper} label="Caution raised" value={cautionCount} icon="alert" tone="warn" />
+                    <Stat compact={isCompactPaper} label="Objections" value={objectionCount} icon="lock" tone="bad" />
                   </div>
                 </section>
 
@@ -1111,8 +1122,8 @@ export default function CommunityConfirmationOutcomePage() {
                 <section
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-                    gap: 14,
+                    gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(250px, 1fr))",
+                    gap: isCompactPaper ? 12 : 14,
                   }}
                 >
                   <div style={sectionCard("#ECFDF3")}>
@@ -1145,8 +1156,8 @@ export default function CommunityConfirmationOutcomePage() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-                      gap: 12,
+                      gridTemplateColumns: isCompactPaper ? "1fr" : "repeat(auto-fit, minmax(190px, 1fr))",
+                      gap: isCompactPaper ? 10 : 12,
                       marginTop: 14,
                     }}
                   >
@@ -1716,20 +1727,28 @@ export default function CommunityConfirmationOutcomePage() {
   );
 }
 
-function InfoRow({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
+function InfoRow({
+  label,
+  value,
+  compact = false,
+}: {
+  label: React.ReactNode;
+  value: React.ReactNode;
+  compact?: boolean;
+}) {
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(110px, 0.75fr) minmax(0, 1fr)",
-        gap: 12,
+        gridTemplateColumns: compact ? "minmax(88px, 0.72fr) minmax(0, 1fr)" : "minmax(110px, 0.75fr) minmax(0, 1fr)",
+        gap: compact ? 9 : 12,
         alignItems: "start",
         borderBottom: "1px dashed rgba(8,35,58,0.12)",
-        paddingBottom: 9,
+        paddingBottom: compact ? 8 : 9,
       }}
     >
-      <span style={{ color: "#617085", fontWeight: 900, lineHeight: 1.28 }}>{label}</span>
-      <strong style={{ color: "#07172C", fontWeight: 1000, lineHeight: 1.28 }}>{value}</strong>
+      <span style={{ color: "#617085", fontSize: compact ? 13 : undefined, fontWeight: 900, lineHeight: 1.28 }}>{label}</span>
+      <strong style={{ color: "#07172C", fontSize: compact ? 13 : undefined, fontWeight: 1000, lineHeight: 1.28 }}>{value}</strong>
     </div>
   );
 }
@@ -1758,21 +1777,33 @@ function Stat({
   value,
   icon,
   tone = "info",
+  compact = false,
 }: {
   label: string;
   value: number;
   icon: React.ComponentProps<typeof TrustPaperIcon>["name"];
   tone?: "good" | "warn" | "bad" | "info";
+  compact?: boolean;
 }) {
   const color =
     tone === "bad" ? "#991B1B" : tone === "warn" ? "#92400E" : tone === "good" ? "#166534" : "#073E83";
   return (
-    <div style={statTile(tone === "bad" ? "#FEF2F2" : tone === "warn" ? "#FFF7E6" : "#F7FAFF")}>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color, fontWeight: 1000 }}>
-        <TrustPaperIcon name={icon} size={19} />
+    <div style={statTile(tone === "bad" ? "#FEF2F2" : tone === "warn" ? "#FFF7E6" : "#F7FAFF", compact)}>
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: compact ? 5 : 8,
+          color,
+          fontSize: compact ? 11 : undefined,
+          fontWeight: 1000,
+          lineHeight: 1.15,
+        }}
+      >
+        <TrustPaperIcon name={icon} size={compact ? 14 : 19} />
         {label}
       </span>
-      <strong style={{ color: "#07172C", fontSize: 30, fontWeight: 1000, lineHeight: 1 }}>
+      <strong style={{ color: "#07172C", fontSize: compact ? 24 : 30, fontWeight: 1000, lineHeight: 1 }}>
         {value}
       </strong>
     </div>
