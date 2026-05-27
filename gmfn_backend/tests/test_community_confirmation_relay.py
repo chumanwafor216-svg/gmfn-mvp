@@ -363,6 +363,51 @@ def test_trustslip_verify_includes_privacy_safe_community_confirmation(
     assert "private contact details stay protected" in summary["plain_language"]
 
 
+def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: TestClient):
+    _seed_relay_fixture()
+
+    for key in ("GSN-C-000001", "gsn-c-000001", "GMFN-C-000001", "GSN-COM-0001", "1"):
+        response = client.get(f"/verify/community/{key}")
+        assert response.status_code == 200, {"key": key, "body": response.text}
+        data = response.json()
+        assert data["community_id"] == 1
+        assert data["community_name"] == "Test Clan"
+        assert data["community_code"] == "GSN-C-000001"
+
+
+def test_public_community_verify_accepts_trustslip_fallback_for_uncoded_clan(client: TestClient):
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO clans (
+                    id,
+                    name,
+                    invite_code,
+                    status,
+                    invite_uses,
+                    created_at
+                )
+                VALUES (
+                    8,
+                    'Uncoded Clan',
+                    'uncoded-invite',
+                    'active',
+                    0,
+                    CURRENT_TIMESTAMP
+                )
+                """
+            )
+        )
+
+    response = client.get("/verify/community/GSN-COM-0008")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["community_id"] == 8
+    assert data["community_name"] == "Uncoded Clan"
+    assert data["status"] == "active"
+
+
 def test_expired_community_confirmation_records_trust_event(client: TestClient):
     _seed_relay_fixture()
 

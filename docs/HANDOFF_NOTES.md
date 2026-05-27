@@ -1,3 +1,37 @@
+### Community Verify accepts GSN/GMFN and TrustSlip fallback keys (2026-05-27)
+
+- Owner reported that opening Community Verify from the TrustSlip/verification
+  area showed `Community not found`.
+- Confirmed root cause:
+  - frontend `/verify/community/:communityKey` correctly called backend
+    `/verify/community/{community_key}` and displayed the backend error;
+  - backend `public_community_verification()` only accepted numeric clan id,
+    exact `Clan.community_code`, or exact `Clan.name`;
+  - TrustSlip/community surfaces can pass `GSN-C-...`, `GMFN-C-...`,
+    lowercase variants, or the legacy TrustSlip fallback shape
+    `GSN-COM-0001`, so a valid community could fail public verification.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - added community verify alias parsing for `GMFN-C-`, `GSN-C-`,
+    `GMFM-C-`, `GSN-COM-`, `GMFN-COM-`, and `GMFM-COM-`;
+  - lookup is now case-insensitive for community codes and can recover the
+    numeric community id from those code shapes;
+  - name lookup also has a case-insensitive fallback.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - added coverage for `GSN-C-000001`, `gsn-c-000001`, `GMFN-C-000001`,
+    `GSN-COM-0001`, and bare `1`;
+  - added coverage for `GSN-COM-0008` resolving an uncoded clan row.
+- Verification:
+  - `python -m pytest -q tests/test_community_confirmation_relay.py` passed.
+  - `python -m py_compile app/services/community_confirmation_service.py`
+    passed.
+  - `npm exec -- eslint src/pages/CommunityVerifyPage.tsx src/lib/api.ts`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+- Remaining truth:
+  - This is a source/backend fix. Render will still show the old
+    `Community not found` behavior until the backend is committed, pushed, and
+    redeployed.
+
 ### TrustSlip refresh must issue a fresh QR/date (2026-05-27)
 
 - Owner reported that after refreshing TrustSlip on May 27, the visible

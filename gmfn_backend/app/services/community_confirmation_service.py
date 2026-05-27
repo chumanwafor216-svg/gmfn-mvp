@@ -84,6 +84,14 @@ VALID_CONFIRMATION_EVIDENCE_TYPES = {
 }
 DEFAULT_REVIEW_ATTENTION_AFTER_HOURS = 24
 DEFAULT_REVIEW_OVERDUE_AFTER_HOURS = 72
+COMMUNITY_VERIFY_PREFIXES = (
+    "GMFN-C-",
+    "GSN-C-",
+    "GMFM-C-",
+    "GSN-COM-",
+    "GMFN-COM-",
+    "GMFM-COM-",
+)
 
 
 def _response_category(response_type: str) -> str:
@@ -3319,16 +3327,53 @@ def public_confirmation_outcome(db: Session, *, public_token: str) -> Dict[str, 
     }
 
 
+def _community_verify_lookup_parts(community_key: str) -> tuple[str, list[str], Optional[int]]:
+    raw_key = str(community_key or "").strip()
+    normalized_key = raw_key.upper()
+    candidates: list[str] = []
+
+    def add_candidate(value: str) -> None:
+        candidate = str(value or "").strip()
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+
+    add_candidate(raw_key)
+    add_candidate(normalized_key)
+
+    lookup_id: Optional[int] = int(normalized_key) if normalized_key.isdigit() else None
+    for prefix in COMMUNITY_VERIFY_PREFIXES:
+        if not normalized_key.startswith(prefix):
+            continue
+        suffix = normalized_key[len(prefix) :].strip()
+        if not suffix.isdigit():
+            continue
+        lookup_id = int(suffix)
+        for code_prefix in ("GMFN-C-", "GSN-C-", "GMFM-C-"):
+            add_candidate(f"{code_prefix}{lookup_id:06d}")
+        for code_prefix in ("GSN-COM-", "GMFN-COM-", "GMFM-COM-"):
+            add_candidate(f"{code_prefix}{lookup_id:04d}")
+        break
+
+    return normalized_key, candidates, lookup_id
+
+
 def public_community_verification(db: Session, *, community_key: str) -> Dict[str, Any]:
     key = str(community_key or "").strip()
+    normalized_key, code_candidates, lookup_id = _community_verify_lookup_parts(key)
     query = db.query(Clan)
     community = None
-    if key.isdigit():
-        community = query.filter(Clan.id == int(key)).first()
+    if lookup_id is not None and key.isdigit():
+        community = query.filter(Clan.id == int(lookup_id)).first()
     if not community:
-        community = query.filter(Clan.community_code == key).first()
+        candidate_keys = [candidate.upper() for candidate in code_candidates]
+        if candidate_keys:
+            community = query.filter(func.upper(Clan.community_code).in_(candidate_keys)).first()
+    if not community and lookup_id is not None:
+        community = query.filter(Clan.id == int(lookup_id)).first()
     if not community:
         community = query.filter(Clan.name == key).first()
+    if not community and normalized_key:
+        community = query.filter(func.upper(Clan.name) == normalized_key).first()
     if not community:
         raise ValueError("Community not found")
 
