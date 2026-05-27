@@ -1,3 +1,28 @@
+### TrustSlip page community record highlight parity (2026-05-27)
+
+- Owner clarified that the `Open public community record` action was highlighted
+  on some TrustSlip Verify/public surfaces, but not on the main
+  `/app/trust-slip` TrustSlip page.
+- Confirmed mismatch:
+  - `TrustSlipVerifyPage.tsx` already used
+    `kind={communityVerifyPath ? "primary" : "soft"}`;
+  - `TrustSlipPage.tsx` still hardcoded the same community-record action as
+    `kind="soft"`.
+- Updated `frontend/src/pages/TrustSlipPage.tsx`:
+  - `trust-slip.community-confirmation.open-community-record` is now primary
+    when a `communityVerifyPath` exists;
+  - stable height increased to `58` to match the highlighted action treatment
+    and keep the mobile button frame steady.
+- Updated `frontend/tools/audit-trust-actions.mjs`:
+  - added a guard so the main TrustSlip page cannot regress back to a soft
+    community-record action while a community verify route exists.
+- Verification:
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx tools/audit-trust-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+
 ### Shared button fixed-height stabilization (2026-05-27)
 
 - Owner reported that system buttons were still unstable/jumpy after the

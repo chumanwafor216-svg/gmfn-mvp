@@ -2055,9 +2055,9 @@ export default function TrustSlipPage() {
                 </PrimaryButton>
                 <StableCtaLink
                   to={communityVerifyPath || "#"}
-                  kind="soft"
+                  kind={communityVerifyPath ? "primary" : "soft"}
                   disabled={!communityVerifyPath}
-                  stableHeight={48}
+                  stableHeight={58}
                   debugId="trust-slip.community-confirmation.open-community-record"
                   style={{ width: "100%" }}
                 >

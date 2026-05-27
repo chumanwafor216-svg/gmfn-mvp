@@ -184,6 +184,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /to=\{communityVerifyPath \|\| "#"\}[\s\S]*?kind=\{communityVerifyPath \? "primary" : "soft"\}[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
+  "TrustSlip page community record action must be visually highlighted when a community verification route is available."
+);
+
+assertContains(
   "src/pages/CommunityConfirmationInboxPage.tsx",
   /debugId=\{`community-confirmation-inbox\.review-cases\.\$\{row\.reviewCaseId\}\.assignment-claim`\}[\s\S]*?debugId=\{`community-confirmation-inbox\.review-cases\.\$\{row\.reviewCaseId\}\.assignment-release`\}[\s\S]*?debugId=\{`community-confirmation-inbox\.review-cases\.\$\{row\.reviewCaseId\}\.assignment-manual`\}/,
   "Community confirmation review assignment actions must stay separately traceable."
