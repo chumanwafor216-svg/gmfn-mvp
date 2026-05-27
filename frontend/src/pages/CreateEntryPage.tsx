@@ -97,6 +97,196 @@ function input(): React.CSSProperties {
   };
 }
 
+type EntryDetailIconKind = "person" | "phone" | "email" | "password" | "shield";
+
+function EntryDetailIcon({
+  kind,
+  size = 19,
+}: {
+  kind: EntryDetailIconKind;
+  size?: number;
+}): React.ReactElement {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size + 19,
+        height: size + 19,
+        borderRadius: 11,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#F2C766",
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.035) 100%)",
+        border: "1px solid rgba(242,199,102,0.20)",
+        boxShadow:
+          "0 12px 24px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.10)",
+        flex: "0 0 auto",
+      }}
+    >
+      <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+        {kind === "person" ? (
+          <>
+            <circle cx="12" cy="8" r="3.5" {...common} />
+            <path d="M5 20c1.5-4 12.5-4 14 0" {...common} />
+          </>
+        ) : null}
+        {kind === "phone" ? (
+          <path
+            d="M7 4h3l1 4-2 1c1 2 3 4 5 5l1-2 4 1v3c0 1-1 2-2 2C10 18 6 14 6 7c0-2 1-3 1-3Z"
+            {...common}
+          />
+        ) : null}
+        {kind === "email" ? (
+          <>
+            <rect x="4" y="6" width="16" height="12" rx="2" {...common} />
+            <path d="m5 8 7 5 7-5" {...common} />
+          </>
+        ) : null}
+        {kind === "password" ? (
+          <>
+            <rect x="5" y="10" width="14" height="10" rx="2" {...common} />
+            <path d="M8 10V7a4 4 0 0 1 8 0v3" {...common} />
+            <path d="M12 14v2" {...common} />
+          </>
+        ) : null}
+        {kind === "shield" ? (
+          <>
+            <path d="M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Z" {...common} />
+            <path d="m9 12 2 2 4-5" {...common} />
+          </>
+        ) : null}
+      </svg>
+    </span>
+  );
+}
+
+function EyeGlyph({ closed = false }: { closed?: boolean }): React.ReactElement {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle
+        cx="12"
+        cy="12"
+        r="2.6"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      {closed ? (
+        <path
+          d="M4 20 20 4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+        />
+      ) : null}
+    </svg>
+  );
+}
+
+function detailFieldLabelStyle(): React.CSSProperties {
+  return {
+    color: "#F8FBFF",
+    fontSize: "clamp(12.5px, 3.35vw, 15px)",
+    fontWeight: 1000,
+    lineHeight: 1.18,
+    letterSpacing: 0,
+  };
+}
+
+function detailFieldHelpStyle(): React.CSSProperties {
+  return {
+    marginTop: 3,
+    color: "#B9CBE0",
+    fontSize: "clamp(10px, 2.75vw, 12px)",
+    fontWeight: 740,
+    lineHeight: 1.42,
+  };
+}
+
+function credentialInputStyle(): React.CSSProperties {
+  return {
+    ...input(),
+    minHeight: 47,
+    marginTop: 7,
+    borderRadius: 13,
+    padding: "11px 14px",
+    border: "1px solid rgba(255,255,255,0.74)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,249,252,0.99) 100%)",
+    boxShadow:
+      "0 14px 26px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
+    color: "#10253B",
+    fontSize: "clamp(13.5px, 3.65vw, 16px)",
+    fontWeight: 760,
+  };
+}
+
+function countryChipStyle(active = false): React.CSSProperties {
+  return {
+    minHeight: 28,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    padding: "5px 6px",
+    borderRadius: 999,
+    border: active
+      ? "1px solid rgba(242,199,102,0.56)"
+      : "1px solid rgba(126,164,204,0.26)",
+    background: active
+      ? "linear-gradient(180deg, rgba(242,199,102,0.18) 0%, rgba(242,199,102,0.08) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%)",
+    color: "#F8FBFF",
+    fontSize: 10.5,
+    fontWeight: 900,
+    boxShadow:
+      "0 10px 18px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
+    touchAction: "manipulation",
+    WebkitTapHighlightColor: "transparent",
+  };
+}
+
+function countryFlagMark(country: "uk" | "ng" | "us"): React.ReactElement {
+  const colors =
+    country === "uk"
+      ? ["#143A73", "#FFFFFF", "#C52233"]
+      : country === "ng"
+        ? ["#15803D", "#FFFFFF", "#15803D"]
+        : ["#B91C1C", "#FFFFFF", "#1D4ED8"];
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: 16,
+        height: 11,
+        borderRadius: 4,
+        border: "1px solid rgba(255,255,255,0.34)",
+        background: `linear-gradient(90deg, ${colors[0]} 0%, ${colors[0]} 33%, ${colors[1]} 33%, ${colors[1]} 66%, ${colors[2]} 66%, ${colors[2]} 100%)`,
+        boxShadow: "0 4px 10px rgba(0,0,0,0.18)",
+        flex: "0 0 auto",
+      }}
+    />
+  );
+}
+
 function entryActionRowStyle(height = 56): React.CSSProperties {
   return {
     marginTop: 4,
@@ -969,6 +1159,8 @@ export default function CreateEntryPage() {
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -1052,6 +1244,13 @@ export default function CreateEntryPage() {
       : step === "bank"
         ? "Add the account or wallet where trusted support, repayment records, and future payment references should point."
         : "After your first details are accepted, this block records the bank or wallet destination for trusted support, repayments, and future payout references.";
+
+  function applyPhonePrefix(prefix: string) {
+    setPhone((current) => {
+      const cleaned = safeStr(current).replace(/^\+\d{1,4}\s*/, "").trim();
+      return cleaned ? `${prefix} ${cleaned}` : `${prefix} `;
+    });
+  }
 
   const existingMemberLoginTo = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -2255,24 +2454,67 @@ export default function CreateEntryPage() {
           <div style={{ display: "grid", gap: 8 }}>
             <div
               ref={detailsRef}
-              style={stageShell(
-                guideDone && openPanel !== null,
-                stepProgress.detailsDone
-              )}
+              style={{
+                ...stageShell(
+                  guideDone && openPanel !== null,
+                  stepProgress.detailsDone
+                ),
+                ...(guideDone && openPanel === "details"
+                  ? {
+                      padding: 18,
+                      borderRadius: 26,
+                      border: "1px solid rgba(242,199,102,0.38)",
+                      background:
+                        "linear-gradient(180deg, rgba(8,31,53,0.97) 0%, rgba(5,22,39,0.99) 100%)",
+                      boxShadow:
+                        "0 24px 48px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.10)",
+                    }
+                  : null),
+              }}
             >
               <SecondaryButton
                 onClick={handleToggleDetailsGroup}
                 fullWidth
-                stableHeight={58}
+                stableHeight={guideDone && openPanel === "details" ? 82 : 58}
                 debugId="create-entry.details.toggle"
-                style={stageDropDownHeader(guideDone && openPanel !== null, stepProgress.detailsDone)}
+                style={{
+                  ...stageDropDownHeader(guideDone && openPanel !== null, stepProgress.detailsDone),
+                  ...(guideDone && openPanel === "details"
+                    ? {
+                        minHeight: 82,
+                        borderRadius: 20,
+                        border: "1px solid rgba(242,199,102,0.42)",
+                        background:
+                          "linear-gradient(180deg, rgba(13,45,73,0.72) 0%, rgba(7,28,48,0.48) 100%)",
+                        padding: "10px 12px",
+                        gap: 10,
+                        boxShadow:
+                          "0 18px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+                      }
+                    : null),
+                }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                   <span
-                    style={stageBadge(
-                      guideDone && stepProgress.details,
-                      stepProgress.detailsDone
-                    )}
+                    style={{
+                      ...stageBadge(
+                        guideDone && stepProgress.details,
+                        stepProgress.detailsDone
+                      ),
+                      ...(guideDone && openPanel === "details"
+                        ? {
+                            width: 52,
+                            height: 52,
+                            border: "1px solid rgba(242,199,102,0.68)",
+                            background:
+                              "linear-gradient(180deg, rgba(18,54,82,0.95) 0%, rgba(6,24,39,0.98) 100%)",
+                            color: "#FFFFFF",
+                            fontSize: 26,
+                            boxShadow:
+                              "0 0 0 3px rgba(242,199,102,0.10), 0 18px 30px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.18)",
+                          }
+                        : null),
+                    }}
                   >
                     1
                   </span>
@@ -2343,108 +2585,250 @@ export default function CreateEntryPage() {
               ) : null}
 
               {guideDone && openPanel === "details" ? (
-                <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
-                  <div>
-                    <div style={fieldLabel()}>Street name or nickname</div>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 12,
+                    marginTop: 12,
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      right: -42,
+                      top: 210,
+                      width: 150,
+                      height: 150,
+                      opacity: 0.10,
+                      border: "8px solid rgba(255,255,255,0.70)",
+                      borderRadius: "38% 38% 48% 48%",
+                      transform: "rotate(45deg)",
+                      pointerEvents: "none",
+                    }}
+                  />
+
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="person" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Display name or nickname</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Known name.
+                        </div>
+                      </div>
+                    </div>
                     <input
                       value={displayName}
                       onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="What people know you by"
-                      style={input()}
+                      placeholder="e.g. Chuma International"
+                      autoComplete="name"
+                      style={credentialInputStyle()}
                     />
                   </div>
 
-                  <div>
-                    <div style={fieldLabel()}>Phone number</div>
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="phone" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Phone number</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Use country code.
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                        gap: 6,
+                      }}
+                    >
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => applyPhonePrefix("+44")}
+                        stableHeight={34}
+                        debugId="create-entry.details.phone-prefix-uk"
+                        style={countryChipStyle(safeStr(phone).startsWith("+44"))}
+                      >
+                        {countryFlagMark("uk")} UK +44
+                      </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => applyPhonePrefix("+234")}
+                        stableHeight={34}
+                        debugId="create-entry.details.phone-prefix-ng"
+                        style={countryChipStyle(safeStr(phone).startsWith("+234"))}
+                      >
+                        {countryFlagMark("ng")} Nigeria +234
+                      </SecondaryButton>
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => applyPhonePrefix("+1")}
+                        stableHeight={34}
+                        debugId="create-entry.details.phone-prefix-us"
+                        style={countryChipStyle(safeStr(phone).startsWith("+1"))}
+                      >
+                        {countryFlagMark("us")} USA +1
+                      </SecondaryButton>
+                    </div>
                     <input
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+44 7..., +234..., +1..."
-                      style={input()}
+                      placeholder="+44 7123 456789"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      style={credentialInputStyle()}
                     />
-                    <div
-                      style={{
-                        marginTop: 6,
-                        fontSize: 12,
-                        lineHeight: 1.6,
-                        color: "#5F7287",
-                        fontWeight: 700,
-                      }}
-                    >
-                      Start with your international country code so the app can recognise your region correctly.
-                    </div>
                   </div>
 
-                  <div>
-                    <div style={fieldLabel()}>Email</div>
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="email" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Email address</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Sign-in email.
+                        </div>
+                      </div>
+                    </div>
                     <input
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter the email you will use to sign in"
-                      style={input()}
+                      placeholder="name@example.com"
+                      type="email"
+                      autoComplete="email"
+                      style={credentialInputStyle()}
                     />
                   </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                      gap: 12,
-                    }}
-                  >
-                    <div>
-                      <div style={fieldLabel()}>Password</div>
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="password" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Password</div>
+                        <div style={detailFieldHelpStyle()}>Use at least 6 characters.</div>
+                      </div>
+                    </div>
+                    <div style={{ position: "relative" }}>
                       <input
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        type="password"
-                        placeholder="At least 6 characters"
+                        type={passwordVisible ? "text" : "password"}
+                        placeholder="Create your password"
                         autoComplete="new-password"
-                        style={input()}
+                        style={{ ...credentialInputStyle(), paddingRight: 58 }}
                       />
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => setPasswordVisible((visible) => !visible)}
+                        stableHeight={38}
+                        minWidth={38}
+                        debugId="create-entry.details.password-toggle"
+                        aria-label={passwordVisible ? "Hide password" : "Show password"}
+                        style={{
+                          position: "absolute",
+                          right: 8,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: 34,
+                          minWidth: 34,
+                          height: 34,
+                          minHeight: 34,
+                          padding: 0,
+                          borderRadius: 999,
+                          border: "none",
+                          background: "transparent",
+                          boxShadow: "none",
+                          color: "#66758A",
+                          fontSize: 0,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <EyeGlyph closed={passwordVisible} />
+                      </SecondaryButton>
                     </div>
+                  </div>
 
-                    <div>
-                      <div style={fieldLabel()}>Repeat password</div>
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="shield" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Confirm password</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Repeat password.
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ position: "relative" }}>
                       <input
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        type="password"
-                        placeholder="Type the password again"
+                        type={confirmPasswordVisible ? "text" : "password"}
+                        placeholder="Repeat your password"
                         autoComplete="new-password"
-                        style={input()}
+                        style={{ ...credentialInputStyle(), paddingRight: 58 }}
                       />
+                      <SecondaryButton
+                        type="button"
+                        onClick={() => setConfirmPasswordVisible((visible) => !visible)}
+                        stableHeight={38}
+                        minWidth={38}
+                        debugId="create-entry.details.confirm-password-toggle"
+                        aria-label={confirmPasswordVisible ? "Hide repeated password" : "Show repeated password"}
+                        style={{
+                          position: "absolute",
+                          right: 8,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          width: 34,
+                          minWidth: 34,
+                          height: 34,
+                          minHeight: 34,
+                          padding: 0,
+                          borderRadius: 999,
+                          border: "none",
+                          background: "transparent",
+                          boxShadow: "none",
+                          color: "#66758A",
+                          fontSize: 0,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <EyeGlyph closed={confirmPasswordVisible} />
+                      </SecondaryButton>
                     </div>
                   </div>
 
                   <div
                     style={{
-                      marginTop: -4,
-                      color: passwordReady ? "#166534" : "#5F7287",
-                      fontSize: 12,
-                      lineHeight: 1.6,
-                      fontWeight: 800,
-                    }}
-                  >
-                    {passwordReady
-                      ? "Password is ready. This email and password will be used for sign in."
-                      : "Use at least 6 characters and repeat the same password so the app can create your sign-in safely."}
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 4,
-                      display: "flex",
-                      gap: 10,
-                      flexWrap: "wrap",
+                      marginTop: 0,
+                      paddingTop: 12,
+                      borderTop: "1px solid rgba(242,199,102,0.16)",
+                      display: "grid",
+                      gridTemplateColumns: "minmax(96px, 0.36fr) minmax(0, 1fr)",
+                      gap: 9,
+                      alignItems: "center",
                     }}
                   >
                     <SecondaryButton
                       onClick={clearDetailsBlock}
                       minWidth={116}
-                      stableHeight={44}
+                      stableHeight={46}
                       debugId="create-entry.details.clear"
-                      style={{ ...secondaryBtn(), minWidth: 116 }}
+                      style={{
+                        ...secondaryBtn(),
+                        minWidth: 96,
+                        minHeight: 46,
+                        borderRadius: 999,
+                        border: "1px solid rgba(242,199,102,0.50)",
+                        background: "transparent",
+                        color: "#F2C766",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                        textShadow: "none",
+                      }}
                     >
                       Clear
                     </SecondaryButton>
@@ -2454,17 +2838,71 @@ export default function CreateEntryPage() {
                       busyLabel="Sending..."
                       disabled={!canContinueDetails}
                       minWidth={180}
-                      stableHeight={52}
+                      stableHeight={48}
                       debugId="create-entry.details.submit"
                       style={{
                         ...primaryBtn(!canContinueDetails || busy),
-                        width: "auto",
-                        minWidth: 180,
-                        flex: "1 1 220px",
+                        width: "100%",
+                        minWidth: 0,
+                        minHeight: 48,
+                        borderRadius: 999,
+                        border: !canContinueDetails || busy
+                          ? "1px solid rgba(161,179,199,0.42)"
+                          : "1px solid rgba(255,245,204,0.74)",
+                        background: !canContinueDetails || busy
+                          ? "linear-gradient(180deg, rgba(215,222,232,0.90) 0%, rgba(190,200,213,0.86) 100%)"
+                          : "linear-gradient(180deg, #FFE795 0%, #F2C766 52%, #D6AA45 100%)",
+                        color: !canContinueDetails || busy ? "#5F7287" : "#10253B",
+                        boxShadow: !canContinueDetails || busy
+                          ? "0 10px 20px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.42)"
+                          : "0 18px 34px rgba(214,170,69,0.28), inset 0 1px 0 rgba(255,255,255,0.58)",
                       }}
                     >
-                      Submit Block 1
+                      Submit 1
+                      <span aria-hidden="true" style={{ marginLeft: 10 }}>›</span>
                     </PrimaryButton>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 8,
+                      color: passwordReady ? "#E4EEF8" : "#B9CBE0",
+                      fontSize: "clamp(10.5px, 2.8vw, 12px)",
+                      lineHeight: 1.35,
+                      fontWeight: 760,
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: "inline-flex",
+                        color: "#F2C766",
+                      }}
+                    >
+                      <svg width="19" height="19" viewBox="0 0 24 24">
+                        <path
+                          d="M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Z"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="m9 12 2 2 4-5"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    </span>
+                    Your sign-in details stay protected inside GSN.
                   </div>
                 </div>
               ) : null}

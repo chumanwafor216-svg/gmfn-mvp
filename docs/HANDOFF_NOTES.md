@@ -28346,3 +28346,27 @@ GSN-branded invite composer and invite-entry continuity.
     existing demand-record deep-link contract on the dashboard side. A true
     per-request detail route should be added separately if the owner wants that
     second action to land on one exact record.
+
+### Start Community Block 1 compact credential polish (2026-05-27)
+
+- Route/screen affected:
+  - `/create`, Start Community / Create Entry Block 1 only.
+- Frontend change:
+  - `frontend/src/pages/CreateEntryPage.tsx` upgrades the opened `Your details`
+    block to the supplied navy/gold credential-card model.
+  - The compact version keeps the block shorter: smaller icon fields, short
+    helper copy, country-code chips in one row, lower white inputs, icon-only
+    password reveal controls, `Clear`, `Submit 1`, and the protected-details
+    footer.
+- Guardrails:
+  - No backend, auth, schema, SMS, bank, or community-create behavior changed.
+  - Pre-auth bottom navigation remains absent.
+- Verification:
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This is a compact visual upgrade, not a new onboarding contract. The next
+    blocks still appear under Block 1 according to the existing wizard behavior.
