@@ -1,3 +1,42 @@
+### TrustSlip refresh must issue a fresh QR/date (2026-05-27)
+
+- Owner reported that after refreshing TrustSlip on May 27, the visible
+  TrustSlip/Verify paper still showed the May 25 issue date and old QR/code.
+- Confirmed root cause:
+  - `frontend/src/pages/TrustSlipPage.tsx` `refreshTrustSlip()` only reloaded
+    the current summary;
+  - backend `/trust-slips/me/reissue` refused to reissue while an active
+    TrustSlip was still valid unless there was a material trust-data change.
+- Updated `gmfn_backend/app/api/routes/trust_slips.py`:
+  - `TrustSlipReissueIn` now accepts `force: bool = False`;
+  - holder-requested force reissue bypasses the no-material-change guard while
+    still using `reissue_trust_slip()`, so frozen/revoked slips remain blocked
+    by the existing service rule.
+- Updated `frontend/src/lib/api.ts`:
+  - added `reissueMyTrustSlip()` for `/trust-slips/me/reissue`.
+- Updated `frontend/src/pages/TrustSlipPage.tsx`:
+  - `Refresh TrustSlip` now calls `reissueMyTrustSlip({ force: true })` before
+    reloading page data;
+  - success copy now says `Fresh TrustSlip issued.`
+- Updated tests/audits:
+  - `gmfn_backend/tests/test_focus_commitment_trust_events.py`
+  - `frontend/tools/audit-trust-actions.mjs`
+- Verification:
+  - `python -m pytest -q tests/test_focus_commitment_trust_events.py` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/pages/TrustSlipPage.tsx src/lib/api.ts tools/audit-trust-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
+    then passed with approved escalation.
+- Remaining truth:
+  - This changes the meaning of the TrustSlip page refresh button from “reload
+    current slip” to “issue a fresh public slip for a new sharing session.”
+  - Existing already-shared old QR links will still show their original issue
+    date by design; new refresh produces the new QR/code/date.
+
 ### TrustSlip mobile sticky-header clearance pass (2026-05-26)
 
 - Owner shared a phone screenshot of local `/app/trust-slip` where the sticky

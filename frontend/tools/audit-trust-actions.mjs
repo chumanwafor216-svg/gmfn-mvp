@@ -106,6 +106,18 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/api.ts",
+  /export async function reissueMyTrustSlip[\s\S]*?\/trust-slips\/me\/reissue[\s\S]*?force: params\?\.force \?\? true/,
+  "TrustSlip refresh must have an API client path that can request a fresh public code/date instead of only reloading the current slip."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /await api\.reissueMyTrustSlip\(\{[\s\S]*?reason: "holder_requested_fresh_public_trustslip"[\s\S]*?force: true[\s\S]*?Fresh TrustSlip issued\./,
+  "TrustSlip page refresh must force a fresh public TrustSlip so the QR, issued date, and expiry update for a new sharing session."
+);
+
+assertContains(
   "src/pages/TrustScorePage.tsx",
   /if \(verifyPath\) \{[\s\S]*?openTrustRoute\(verifyPath\);[\s\S]*?Open TrustSlip first and refresh or generate the current TrustSlip\.[\s\S]*?openTrustRoute\(routes\.trustSlip\);[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport verify action must open a coded verify path when available and fall back to TrustSlip preparation when no code is visible."

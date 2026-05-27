@@ -1698,6 +1698,16 @@ export async function getMyTrustSlip(): Promise<any> {
   return httpJson("/trust-slips/me", "GET");
 }
 
+export async function reissueMyTrustSlip(params?: {
+  reason?: string;
+  force?: boolean;
+}): Promise<any> {
+  return httpJson("/trust-slips/me/reissue", "POST", {
+    reason: params?.reason || "holder_requested_fresh_public_trustslip",
+    force: params?.force ?? true,
+  });
+}
+
 export async function verifyTrustSlip(
   code: string,
   level?: "minimal" | "standard" | "detailed"

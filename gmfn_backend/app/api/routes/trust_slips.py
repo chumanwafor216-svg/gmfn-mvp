@@ -504,6 +504,7 @@ class TrustSlipExtendIn(BaseModel):
 
 class TrustSlipReissueIn(BaseModel):
     reason: str = Field(default="manual_reissue", min_length=3, max_length=255)
+    force: bool = False
 
 
 @router.get("/ping")
@@ -636,7 +637,8 @@ def reissue_my_trust_slip(
 
     slip = get_current_trust_slip_for_user(db, user_id=int(current_user.id))
     slip_needs_refresh = _trust_slip_needs_refresh(slip)
-    if slip and not slip_needs_refresh:
+    force_reissue = bool(payload.force)
+    if slip and not slip_needs_refresh and not force_reissue:
         check = has_material_trustslip_change(
             db,
             slip=slip,

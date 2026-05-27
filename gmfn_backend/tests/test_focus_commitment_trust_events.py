@@ -199,3 +199,71 @@ def test_expired_current_trustslip_reissues_with_fresh_expiry(seed_clan_member_m
         assert new_slip.supersedes_trust_slip_id == old_id
         assert new_slip.expires_at is not None
         assert aware(new_slip.expires_at) > now
+
+
+def test_holder_can_force_fresh_trustslip_for_new_public_qr(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    def aware(dt):
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+    now = datetime.now(timezone.utc)
+    old_created_at = now - timedelta(days=2)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE users
+                SET phone_e164 = '+2348000000000',
+                    phone_verified_at = CURRENT_TIMESTAMP
+                WHERE id = 1
+                """
+            )
+        )
+
+    with SessionLocal() as db:
+        old_slip = TrustSlip(
+            code="CURRENT-TRUSTSLIP",
+            clan_id=1,
+            holder_user_id=1,
+            trust_limit=Decimal("0.00"),
+            currency="NGN",
+            status="active",
+            expires_at=now + timedelta(days=5),
+            created_at=old_created_at,
+            is_current=True,
+        )
+        db.add(old_slip)
+        db.commit()
+        db.refresh(old_slip)
+        old_id = int(old_slip.id)
+
+    response = client.post(
+        "/trust-slips/me/reissue",
+        json={
+            "reason": "holder_requested_fresh_public_trustslip",
+            "force": True,
+        },
+    )
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["reissued"] is True
+    assert data["code"] != "CURRENT-TRUSTSLIP"
+
+    with SessionLocal() as db:
+        old_slip = db.get(TrustSlip, old_id)
+        new_slip = db.query(TrustSlip).filter(TrustSlip.code == data["code"]).one()
+
+        assert old_slip is not None
+        assert old_slip.is_current is False
+        assert old_slip.superseded_by_trust_slip_id == new_slip.id
+        assert new_slip.is_current is True
+        assert new_slip.supersedes_trust_slip_id == old_id
+        assert aware(new_slip.created_at) >= now - timedelta(seconds=5)
+        assert aware(new_slip.created_at) > old_created_at
+        assert new_slip.expires_at is not None
+        assert aware(new_slip.expires_at) > now

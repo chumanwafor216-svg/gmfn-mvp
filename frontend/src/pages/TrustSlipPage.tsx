@@ -1052,12 +1052,16 @@ export default function TrustSlipPage() {
     setRefreshing(true);
 
     try {
+      await api.reissueMyTrustSlip({
+        reason: "holder_requested_fresh_public_trustslip",
+        force: true,
+      });
       const data = await fetchTrustSlipPageData(selectedClanId);
       setMe(data.me);
       setCurrentClan(data.clan);
       setSummary(data.summary);
       setConfirmationOutcome(null);
-      showNotice("success", "TrustSlip refreshed.");
+      showNotice("success", "Fresh TrustSlip issued.");
     } catch {
       showNotice("error", "TrustSlip could not refresh. Try again in a moment.");
     } finally {
