@@ -1875,6 +1875,27 @@ export default function CreateEntryPage() {
     setSuccess("");
   }
 
+  function handleIdentityPhotoSelected(
+    file: File | null | undefined,
+    kind: string,
+    sourceLabel: string
+  ) {
+    setIdentityPhotoKind(kind);
+    const selectedFile = file || null;
+    setIdentityPhotoFile(selectedFile);
+    if (selectedFile) {
+      showSuccess(
+        "photo",
+        `${sourceLabel} received. Tap Record photo evidence to save it into the founder trust record.`
+      );
+    } else {
+      showError(
+        "photo",
+        "No photo was selected. Try Selfie again or choose a file from your phone."
+      );
+    }
+  }
+
   function renderLocalFeedback(target: FeedbackTarget) {
     if (feedbackTarget !== target) return null;
     if (error) return <div style={localFeedbackCard(false)}>{error}</div>;
@@ -4038,6 +4059,7 @@ export default function CreateEntryPage() {
                           type="button"
                           onClick={() => {
                             setIdentityPhotoKind("selfie");
+                            clearFeedback("photo");
                             if (selfiePhotoInputRef.current) {
                               selfiePhotoInputRef.current.value = "";
                               selfiePhotoInputRef.current.click();
@@ -4058,6 +4080,7 @@ export default function CreateEntryPage() {
                           type="button"
                           onClick={() => {
                             setIdentityPhotoKind("identity_photo");
+                            clearFeedback("photo");
                             if (galleryPhotoInputRef.current) {
                               galleryPhotoInputRef.current.value = "";
                               galleryPhotoInputRef.current.click();
@@ -4079,8 +4102,11 @@ export default function CreateEntryPage() {
                           accept="image/*"
                           capture="user"
                           onChange={(e) => {
-                            setIdentityPhotoKind("selfie");
-                            setIdentityPhotoFile(e.target.files?.[0] || null);
+                            handleIdentityPhotoSelected(
+                              e.target.files?.[0],
+                              "selfie",
+                              "Selfie"
+                            );
                           }}
                           style={{ display: "none" }}
                           aria-label="Take selfie evidence"
@@ -4090,8 +4116,11 @@ export default function CreateEntryPage() {
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
                           onChange={(e) => {
-                            setIdentityPhotoKind("identity_photo");
-                            setIdentityPhotoFile(e.target.files?.[0] || null);
+                            handleIdentityPhotoSelected(
+                              e.target.files?.[0],
+                              "identity_photo",
+                              "Photo"
+                            );
                           }}
                           style={{ display: "none" }}
                           aria-label="Choose photo evidence from gallery"
@@ -4103,6 +4132,8 @@ export default function CreateEntryPage() {
                           Selected: {identityPhotoFile.name}
                         </div>
                       ) : null}
+
+                      {renderLocalFeedback("photo")}
 
                       <textarea
                         value={identityPhotoNote}
@@ -4131,8 +4162,6 @@ export default function CreateEntryPage() {
                         <EntryDetailIcon kind="id" size={14} />
                         Record photo evidence
                       </PrimaryButton>
-
-                      {renderLocalFeedback("photo")}
                     </div>
 
                     <div
