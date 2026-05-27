@@ -28370,3 +28370,31 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This is a compact visual upgrade, not a new onboarding contract. The next
     blocks still appear under Block 1 according to the existing wizard behavior.
+
+### Start Community Block 2 bank/wallet polish and blank account name (2026-05-27)
+
+- Route/screen affected:
+  - `/create`, Start Community / Create Entry Block 2 bank/wallet details.
+- Frontend change:
+  - `frontend/src/pages/CreateEntryPage.tsx` now keeps `bankAccountName` blank
+    until the user types it. It no longer copies the founder display name into
+    the account-name field.
+  - The bank/wallet form was restyled to the supplied compact navy/gold model:
+    account name, bank/wallet provider, account/wallet number, sort code, IBAN,
+    country, currency, extra note, optional ID proof, and compact clear/save
+    actions.
+  - Example copy is now placeholder text only, so sample-looking names do not
+    become real submitted values by accident.
+- Guardrails:
+  - No backend, schema, SMS, bank verification, or community-create contract was
+    changed.
+- Verification:
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - `Currency` still defaults to `NGN`, matching the current app state and the
+    reference screenshot. If this should also stay blank, update the form state
+    and backend fallback rules together.

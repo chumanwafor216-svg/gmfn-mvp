@@ -97,7 +97,20 @@ function input(): React.CSSProperties {
   };
 }
 
-type EntryDetailIconKind = "person" | "phone" | "email" | "password" | "shield";
+type EntryDetailIconKind =
+  | "person"
+  | "phone"
+  | "email"
+  | "password"
+  | "shield"
+  | "bank"
+  | "number"
+  | "hash"
+  | "globe"
+  | "note"
+  | "id"
+  | "trash"
+  | "group";
 
 function EntryDetailIcon({
   kind,
@@ -162,6 +175,54 @@ function EntryDetailIcon({
           <>
             <path d="M12 3 5 6v5c0 4.5 3 7.5 7 10 4-2.5 7-5.5 7-10V6l-7-3Z" {...common} />
             <path d="m9 12 2 2 4-5" {...common} />
+          </>
+        ) : null}
+        {kind === "bank" ? (
+          <>
+            <path d="M4 9h16L12 4 4 9Z" {...common} />
+            <path d="M6 10v7M10 10v7M14 10v7M18 10v7M4 19h16" {...common} />
+          </>
+        ) : null}
+        {kind === "number" ? (
+          <>
+            <rect x="5" y="5" width="14" height="14" rx="2" {...common} />
+            <path d="M9 9h6M9 12h6M9 15h3" {...common} />
+          </>
+        ) : null}
+        {kind === "hash" ? (
+          <>
+            <path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" {...common} />
+          </>
+        ) : null}
+        {kind === "globe" ? (
+          <>
+            <circle cx="12" cy="12" r="8" {...common} />
+            <path d="M4 12h16M12 4c2 2 3 5 3 8s-1 6-3 8M12 4c-2 2-3 5-3 8s1 6 3 8" {...common} />
+          </>
+        ) : null}
+        {kind === "note" ? (
+          <>
+            <path d="M5 5h10l4 4v10H5V5Z" {...common} />
+            <path d="M15 5v4h4M8 13h8M8 16h6" {...common} />
+          </>
+        ) : null}
+        {kind === "id" ? (
+          <>
+            <rect x="4" y="6" width="16" height="12" rx="2" {...common} />
+            <circle cx="9" cy="12" r="2" {...common} />
+            <path d="M13 10h4M13 14h3" {...common} />
+          </>
+        ) : null}
+        {kind === "trash" ? (
+          <>
+            <path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" {...common} />
+          </>
+        ) : null}
+        {kind === "group" ? (
+          <>
+            <circle cx="9" cy="9" r="3" {...common} />
+            <circle cx="17" cy="10" r="2.2" {...common} />
+            <path d="M3 20c1-4 11-4 12 0M14 18c1.5-2 5-2 7 0" {...common} />
           </>
         ) : null}
       </svg>
@@ -236,6 +297,38 @@ function credentialInputStyle(): React.CSSProperties {
     color: "#10253B",
     fontSize: "clamp(13.5px, 3.65vw, 16px)",
     fontWeight: 760,
+  };
+}
+
+function bankInputStyle(): React.CSSProperties {
+  return {
+    ...credentialInputStyle(),
+    minHeight: 43,
+    marginTop: 5,
+    borderRadius: 10,
+    padding: "9px 12px",
+    fontSize: "clamp(12px, 3.2vw, 14px)",
+    fontWeight: 700,
+  };
+}
+
+function bankTextAreaStyle(): React.CSSProperties {
+  return {
+    ...bankInputStyle(),
+    minHeight: 58,
+    resize: "vertical",
+  };
+}
+
+function bankFieldLabelStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    color: "#F8FBFF",
+    fontSize: "clamp(11.5px, 3vw, 13.5px)",
+    fontWeight: 1000,
+    lineHeight: 1.14,
   };
 }
 
@@ -1174,7 +1267,7 @@ export default function CreateEntryPage() {
   const [phoneVerificationProof, setPhoneVerificationProof] =
     useState<PhoneVerificationProof>(null);
   const [bankRecordProof, setBankRecordProof] = useState<BankRecordProof>(null);
-  const [bankAccountName, setBankAccountName] = useState(initialDisplayName);
+  const [bankAccountName, setBankAccountName] = useState("");
   const [bankName, setBankName] = useState("");
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [bankSortCode, setBankSortCode] = useState("");
@@ -1237,12 +1330,12 @@ export default function CreateEntryPage() {
   const verificationBlockTitle =
     step === "verify"
       ? "Phone confirmation"
-      : "Bank and wallet details";
+      : "Bank / Wallet details";
   const verificationBlockHelp =
     step === "verify"
       ? "Register this phone against your entry name. SMS ownership verification is suspended during controlled testing, so GSN will record the phone and open the bank or wallet fields."
       : step === "bank"
-        ? "Add the account or wallet where trusted support, repayment records, and future payment references should point."
+        ? "Where should support money go?"
         : "After your first details are accepted, this block records the bank or wallet destination for trusted support, repayments, and future payout references.";
 
   function applyPhonePrefix(prefix: string) {
@@ -1486,7 +1579,7 @@ export default function CreateEntryPage() {
   function clearVerificationBlock() {
     setOtpCode("");
     setOtpDeliveryMode("");
-    setBankAccountName(initialDisplayName);
+    setBankAccountName("");
     setBankName("");
     setBankAccountNumber("");
     setBankSortCode("");
@@ -1661,8 +1754,6 @@ export default function CreateEntryPage() {
         confirmation_message: safeStr(out?.confirmation_message),
         trust_event_response: undefined,
       });
-      setBankAccountName((current) => safeStr(current) || safeStr(displayName));
-
       if (out?.bank_details_recorded) {
         setStep("community");
         setOpenPanel("community");
@@ -1705,7 +1796,6 @@ export default function CreateEntryPage() {
         confirmation_message: safeStr(confirmed?.confirmation_message),
         trust_event_response: confirmed?.trust_event_response || null,
       });
-      setBankAccountName((current) => safeStr(current) || safeStr(displayName));
       setStep("bank");
       setOpenPanel("verification");
       focusPanel("verification");
@@ -1781,7 +1871,6 @@ export default function CreateEntryPage() {
         confirmation_message: safeStr(out?.confirmation_message),
         trust_event_response: out?.trust_event_response || null,
       });
-      setBankAccountName((current) => safeStr(current) || safeStr(displayName));
       setStep("bank");
       setOpenPanel("verification");
       focusPanel("verification");
@@ -2931,10 +3020,23 @@ export default function CreateEntryPage() {
 
             <div
               ref={verificationRef}
-              style={stageShell(
-                openPanel === "verification",
-                stepProgress.verificationDone
-              )}
+              style={{
+                ...stageShell(
+                  openPanel === "verification",
+                  stepProgress.verificationDone
+                ),
+                ...(openPanel === "verification" && step === "bank"
+                  ? {
+                      padding: 14,
+                      borderRadius: 24,
+                      border: "1px solid rgba(242,199,102,0.36)",
+                      background:
+                        "linear-gradient(180deg, rgba(8,31,53,0.97) 0%, rgba(5,22,39,0.99) 100%)",
+                      boxShadow:
+                        "0 22px 44px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.10)",
+                    }
+                  : null),
+              }}
             >
               <SecondaryButton
                 onClick={() =>
@@ -2944,9 +3046,21 @@ export default function CreateEntryPage() {
                 }
                 disabled={!canOpenVerification}
                 fullWidth
-                stableHeight={74}
+                stableHeight={openPanel === "verification" && step === "bank" ? 82 : 74}
                 debugId="create-entry.verification.toggle"
-                style={stageDropDownHeader(openPanel === "verification", stepProgress.verificationDone)}
+                style={{
+                  ...stageDropDownHeader(openPanel === "verification", stepProgress.verificationDone),
+                  ...(openPanel === "verification" && step === "bank"
+                    ? {
+                        minHeight: 82,
+                        borderRadius: 18,
+                        border: "1px solid rgba(242,199,102,0.46)",
+                        background:
+                          "linear-gradient(180deg, rgba(13,45,73,0.72) 0%, rgba(7,28,48,0.48) 100%)",
+                        padding: "10px 12px",
+                      }
+                    : null),
+                }}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                   <span
@@ -3323,198 +3437,278 @@ export default function CreateEntryPage() {
                     </div>
                   </div>
                 ) : (
-                  <div style={{ display: "grid", gap: 14, marginTop: 16 }}>
-                    <div>
-                      <div style={fieldLabelOnDark()}>Account name</div>
-                      <input
-                        value={bankAccountName}
-                        onChange={(e) => setBankAccountName(e.target.value)}
-                        placeholder="Name on the bank or wallet account"
-                        style={input()}
-                      />
-                    </div>
-
-                    <div>
-                      <div style={fieldLabelOnDark()}>Bank or wallet provider</div>
-                      <input
-                        value={bankName}
-                        onChange={(e) => setBankName(e.target.value)}
-                        placeholder="Enter the bank or wallet provider"
-                        style={input()}
-                      />
-                    </div>
-
-                    <div>
-                      <div style={fieldLabelOnDark()}>Account number or wallet number</div>
-                      <input
-                        value={bankAccountNumber}
-                        onChange={(e) => setBankAccountNumber(e.target.value)}
-                        placeholder="Enter the destination number"
-                        style={input()}
-                      />
-                    </div>
-
+                  <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
                     <div
                       style={{
+                        borderRadius: 18,
+                        border: "1px solid rgba(126,164,204,0.22)",
+                        background:
+                          "linear-gradient(180deg, rgba(13,45,73,0.66) 0%, rgba(8,31,53,0.72) 100%)",
+                        padding: 12,
                         display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: 12,
+                        gap: 10,
                       }}
                     >
                       <div>
-                        <div style={fieldLabelOnDark()}>Sort code or branch code (optional)</div>
-                        <input
-                          value={bankSortCode}
-                          onChange={(e) => setBankSortCode(e.target.value)}
-                          placeholder="Needed for UK and similar rails"
-                          style={input()}
-                        />
-                      </div>
-
-                      <div>
-                        <div style={fieldLabelOnDark()}>IBAN (optional)</div>
-                        <input
-                          value={bankIban}
-                          onChange={(e) => setBankIban(e.target.value)}
-                          placeholder="Use this where IBAN is standard"
-                          style={input()}
-                        />
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 160px",
-                        gap: 12,
-                      }}
-                    >
-                      <div>
-                        <div style={fieldLabelOnDark()}>Country (optional)</div>
-                        <select
-                          value={bankCountry}
-                          onChange={(e) => handleBankCountryChange(e.target.value)}
-                          style={input()}
-                        >
-                          <option value="">Select bank country</option>
-                          {BANK_COUNTRY_OPTIONS.map((item) => (
-                            <option key={item} value={item}>
-                              {item}
-                            </option>
-                          ))}
-                        </select>
-                        <div
-                          style={{
-                            marginTop: 7,
-                            color: "#64748B",
-                            fontSize: 12.5,
-                            lineHeight: 1.55,
-                            fontWeight: 800,
-                          }}
-                        >
-                          For Scotland, England, Wales, or Northern Ireland, use
-                          United Kingdom or GB.
+                        <div style={bankFieldLabelStyle()}>
+                          <EntryDetailIcon kind="person" size={14} />
+                          Account name
                         </div>
-                        {bankCountry === "Other" ? (
-                          <div
-                            style={{
-                              marginTop: 7,
-                              color: "#92400E",
-                              fontSize: 12.5,
-                              lineHeight: 1.55,
-                              fontWeight: 800,
-                            }}
-                          >
-                            If your country is not listed, leave this as Other
-                            and explain it in the note below.
-                          </div>
-                        ) : null}
+                        <input
+                          value={bankAccountName}
+                          onChange={(e) => setBankAccountName(e.target.value)}
+                          placeholder="Account name"
+                          autoComplete="name"
+                          style={bankInputStyle()}
+                        />
                       </div>
 
                       <div>
-                        <div style={fieldLabelOnDark()}>Currency</div>
-                        <select
-                          value={bankCurrency}
-                          onChange={(e) => setBankCurrency(e.target.value)}
-                          style={input()}
-                        >
-                          <option value="NGN">NGN</option>
-                          <option value="GBP">GBP</option>
-                          <option value="USD">USD</option>
-                          <option value="EUR">EUR</option>
-                          <option value="KES">KES</option>
-                          <option value="GHS">GHS</option>
-                          <option value="ZAR">ZAR</option>
-                          <option value="UGX">UGX</option>
-                          <option value="TZS">TZS</option>
-                          <option value="RWF">RWF</option>
-                        </select>
+                        <div style={bankFieldLabelStyle()}>
+                          <EntryDetailIcon kind="bank" size={14} />
+                          Bank or wallet
+                        </div>
+                        <input
+                          value={bankName}
+                          onChange={(e) => setBankName(e.target.value)}
+                          placeholder="Choose or type provider"
+                          list="entry-bank-wallet-providers"
+                          style={bankInputStyle()}
+                        />
+                        <datalist id="entry-bank-wallet-providers">
+                          <option value="Monzo" />
+                          <option value="Barclays" />
+                          <option value="Lloyds" />
+                          <option value="NatWest" />
+                          <option value="Opay" />
+                          <option value="PalmPay" />
+                          <option value="GTBank" />
+                          <option value="Access Bank" />
+                        </datalist>
                       </div>
-                    </div>
 
-                    <div>
-                      <div style={fieldLabelOnDark()}>Note or cross-region explanation</div>
-                      <textarea
-                        value={bankNote}
-                        onChange={(e) => setBankNote(e.target.value)}
-                        placeholder="If your phone country and bank country do not match, explain briefly here"
-                        style={textArea()}
-                      />
-                    </div>
+                      <div>
+                        <div style={bankFieldLabelStyle()}>
+                          <EntryDetailIcon kind="number" size={14} />
+                          Account / wallet number
+                        </div>
+                        <input
+                          value={bankAccountNumber}
+                          onChange={(e) => setBankAccountNumber(e.target.value)}
+                          placeholder="Enter number"
+                          inputMode="numeric"
+                          style={bankInputStyle()}
+                        />
+                      </div>
 
-                    <div style={softCard("#F8FBFF")}>
-                      <div style={sectionLabel()}>Optional licence proof</div>
                       <div
                         style={{
-                          marginTop: 10,
-                          color: "#475569",
-                          lineHeight: 1.8,
-                          fontSize: 14,
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 10,
                         }}
                       >
-                        If you have a driver's licence or similar strong identity document,
-                        you can record it here as an extra trust signal. It is optional.
+                        <div>
+                          <div style={bankFieldLabelStyle()}>
+                            <EntryDetailIcon kind="hash" size={14} />
+                            <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+                              Sort code
+                              <span style={{ color: "#F2C766", fontSize: 10, fontWeight: 900 }}>UK only</span>
+                            </span>
+                          </div>
+                          <input
+                            value={bankSortCode}
+                            onChange={(e) => setBankSortCode(e.target.value)}
+                            placeholder="Enter sort code"
+                            inputMode="numeric"
+                            style={bankInputStyle()}
+                          />
+                        </div>
+
+                        <div>
+                          <div style={bankFieldLabelStyle()}>
+                            <EntryDetailIcon kind="globe" size={14} />
+                            <span style={{ display: "inline-flex", alignItems: "baseline", gap: 6, minWidth: 0 }}>
+                              IBAN
+                              <span style={{ color: "#F2C766", fontSize: 10, fontWeight: 900 }}>If used</span>
+                            </span>
+                          </div>
+                          <input
+                            value={bankIban}
+                            onChange={(e) => setBankIban(e.target.value)}
+                            placeholder="Enter IBAN (if used)"
+                            style={bankInputStyle()}
+                          />
+                        </div>
                       </div>
 
-                      <div style={{ display: "grid", gap: 12, marginTop: 12 }}>
-                        <input
-                          value={driverLicenceNumber}
-                          onChange={(e) => setDriverLicenceNumber(e.target.value)}
-                          placeholder="Driver's licence number (optional)"
-                          style={input()}
-                        />
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 10,
+                        }}
+                      >
+                        <div>
+                          <div style={bankFieldLabelStyle()}>
+                            <EntryDetailIcon kind="globe" size={14} />
+                            Country
+                          </div>
+                          <select
+                            value={bankCountry}
+                            onChange={(e) => handleBankCountryChange(e.target.value)}
+                            style={bankInputStyle()}
+                          >
+                            <option value="">Select</option>
+                            {BANK_COUNTRY_OPTIONS.map((item) => (
+                              <option key={item} value={item}>
+                                {item}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
 
-                        <input
-                          value={driverLicenceCountry}
-                          onChange={(e) => setDriverLicenceCountry(e.target.value)}
-                          placeholder="Issuing country (optional)"
-                          style={input()}
-                        />
+                        <div>
+                          <div style={bankFieldLabelStyle()}>
+                            <EntryDetailIcon kind="globe" size={14} />
+                            Currency
+                          </div>
+                          <select
+                            value={bankCurrency}
+                            onChange={(e) => setBankCurrency(e.target.value)}
+                            style={bankInputStyle()}
+                          >
+                            <option value="NGN">NGN</option>
+                            <option value="GBP">GBP</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="KES">KES</option>
+                            <option value="GHS">GHS</option>
+                            <option value="ZAR">ZAR</option>
+                            <option value="UGX">UGX</option>
+                            <option value="TZS">TZS</option>
+                            <option value="RWF">RWF</option>
+                          </select>
+                        </div>
+                      </div>
 
+                      <div
+                        style={{
+                          color: "#F2C766",
+                          fontSize: 11.5,
+                          fontWeight: 820,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        UK = United Kingdom / GB
+                      </div>
+
+                      <div>
+                        <div style={bankFieldLabelStyle()}>
+                          <EntryDetailIcon kind="note" size={14} />
+                          Extra note
+                        </div>
+                        <textarea
+                          value={bankNote}
+                          onChange={(e) => setBankNote(e.target.value)}
+                          placeholder="If phone country and bank country are different, explain briefly"
+                          style={bankTextAreaStyle()}
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        borderRadius: 18,
+                        border: "1px solid rgba(126,164,204,0.22)",
+                        background:
+                          "linear-gradient(180deg, rgba(13,45,73,0.58) 0%, rgba(8,31,53,0.66) 100%)",
+                        padding: 12,
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={bankFieldLabelStyle()}>
+                        <EntryDetailIcon kind="id" size={14} />
+                        <span>
+                          Extra ID proof <span style={{ color: "#B9CBE0", fontWeight: 800 }}>(optional)</span>
+                        </span>
+                      </div>
+                      <div style={{ color: "#B9CBE0", fontSize: 12, fontWeight: 760, marginTop: -5 }}>
+                        Add a licence or other ID for extra trust.
+                      </div>
+
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 10,
+                        }}
+                      >
+                        <div>
+                          <div style={{ ...detailFieldHelpStyle(), color: "#F8FBFF", marginTop: 0 }}>
+                            Licence number
+                          </div>
+                          <input
+                            value={driverLicenceNumber}
+                            onChange={(e) => setDriverLicenceNumber(e.target.value)}
+                            placeholder="Enter licence number"
+                            style={bankInputStyle()}
+                          />
+                        </div>
+                        <div>
+                          <div style={{ ...detailFieldHelpStyle(), color: "#F8FBFF", marginTop: 0 }}>
+                            Issuing country
+                          </div>
+                          <input
+                            value={driverLicenceCountry}
+                            onChange={(e) => setDriverLicenceCountry(e.target.value)}
+                            placeholder="Select country"
+                            style={bankInputStyle()}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ ...detailFieldHelpStyle(), color: "#F8FBFF", marginTop: 0 }}>
+                          Short note
+                        </div>
                         <textarea
                           value={driverLicenceNote}
                           onChange={(e) => setDriverLicenceNote(e.target.value)}
-                          placeholder="Optional note about the licence or document"
-                          style={textArea()}
+                          placeholder="Add a short note (optional)"
+                          style={{ ...bankTextAreaStyle(), minHeight: 48 }}
                         />
                       </div>
                     </div>
 
                     <div
                       style={{
-                        marginTop: 4,
-                        display: "flex",
+                        display: "grid",
+                        gridTemplateColumns: "minmax(96px, 0.36fr) minmax(0, 1fr)",
                         gap: 10,
-                        flexWrap: "wrap",
                       }}
                     >
                       <SecondaryButton
                         onClick={clearVerificationBlock}
-                        minWidth={116}
-                        stableHeight={44}
+                        minWidth={0}
+                        stableHeight={48}
                         debugId="create-entry.bank.clear"
-                        style={{ ...secondaryBtn(), minWidth: 116 }}
+                        style={{
+                          ...secondaryBtn(),
+                          width: "100%",
+                          minWidth: 0,
+                          minHeight: 48,
+                          borderRadius: 14,
+                          border: "1px solid rgba(242,199,102,0.56)",
+                          background: "transparent",
+                          color: "#F2C766",
+                          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+                          textShadow: "none",
+                          gap: 8,
+                        }}
                       >
+                        <EntryDetailIcon kind="trash" size={14} />
                         Clear
                       </SecondaryButton>
                       <PrimaryButton
@@ -3522,16 +3716,29 @@ export default function CreateEntryPage() {
                         busy={busy}
                         busyLabel="Saving..."
                         disabled={!canContinueBank}
-                        minWidth={180}
-                        stableHeight={52}
+                        minWidth={0}
+                        stableHeight={48}
                         debugId="create-entry.bank.save"
                         style={{
                           ...primaryBtn(!canContinueBank || busy),
-                          width: "auto",
-                          minWidth: 180,
-                          flex: "1 1 220px",
+                          width: "100%",
+                          minWidth: 0,
+                          minHeight: 48,
+                          borderRadius: 14,
+                          border: !canContinueBank || busy
+                            ? "1px solid rgba(161,179,199,0.42)"
+                            : "1px solid rgba(255,245,204,0.74)",
+                          background: !canContinueBank || busy
+                            ? "linear-gradient(180deg, rgba(215,222,232,0.90) 0%, rgba(190,200,213,0.86) 100%)"
+                            : "linear-gradient(180deg, #FFE795 0%, #F2C766 52%, #D6AA45 100%)",
+                          color: !canContinueBank || busy ? "#5F7287" : "#10253B",
+                          boxShadow: !canContinueBank || busy
+                            ? "0 10px 20px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.42)"
+                            : "0 18px 34px rgba(214,170,69,0.28), inset 0 1px 0 rgba(255,255,255,0.58)",
+                          gap: 8,
                         }}
                       >
+                        <EntryDetailIcon kind="password" size={14} />
                         Save bank and wallet details
                       </PrimaryButton>
                     </div>
