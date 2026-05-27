@@ -200,9 +200,9 @@ function normalizeOutcome(raw: any): PublicOutcome {
 
 function pageShell(): React.CSSProperties {
   return {
-    maxWidth: 960,
+    maxWidth: 900,
     margin: "0 auto",
-    padding: "0 16px 42px",
+    padding: "0 12px 42px",
     display: "grid",
     gap: 0,
   };
@@ -212,10 +212,10 @@ function paperCard(): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 22,
+    borderRadius: 24,
     background: "#FFFFFF",
-    border: "1px solid rgba(8,35,58,0.14)",
-    boxShadow: "0 24px 70px rgba(6,24,39,0.14)",
+    border: "1px solid rgba(8,35,58,0.12)",
+    boxShadow: "0 26px 76px rgba(6,24,39,0.16)",
   };
 }
 
@@ -223,8 +223,8 @@ function paperHero(): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    padding: "34px 38px 30px",
-    minHeight: 238,
+    padding: "32px 36px 34px",
+    minHeight: 258,
     color: "#FFFFFF",
     background:
       "radial-gradient(circle at 92% 38%, rgba(11,99,209,0.18), transparent 26%), linear-gradient(135deg, #061827 0%, #0B2D4A 100%)",
@@ -235,13 +235,13 @@ function paperBody(): React.CSSProperties {
   return {
     position: "relative",
     zIndex: 1,
-    padding: "24px 36px 0",
+    padding: "22px 34px 0",
     display: "grid",
-    gap: 16,
+    gap: 14,
     background: "#FFFFFF",
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    marginTop: -22,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
   };
 }
 
@@ -249,9 +249,9 @@ function sectionCard(background = "#FFFFFF"): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 16,
+    borderRadius: 17,
     background,
-    border: "1px solid rgba(8,35,58,0.12)",
+    border: "1px solid rgba(8,35,58,0.13)",
     padding: 16,
     boxShadow: "0 8px 22px rgba(6,24,39,0.04)",
   };
@@ -279,11 +279,11 @@ function helperText(): React.CSSProperties {
 
 function statTile(background = "#F7FAFF"): React.CSSProperties {
   return {
-    borderRadius: 15,
+    borderRadius: 16,
     background,
     border: "1px solid rgba(8,35,58,0.10)",
-    padding: 13,
-    minHeight: 98,
+    padding: 15,
+    minHeight: 104,
     display: "grid",
     alignContent: "space-between",
     gap: 8,
@@ -920,7 +920,7 @@ export default function CommunityConfirmationOutcomePage() {
                   style={{
                     ...sectionCard(liveWindowOpen ? "#EAF3FF" : status === "expired" ? "#FEF2F2" : "#F7FAFF"),
                     display: "grid",
-                    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                    gridTemplateColumns: "72px minmax(0, 1fr) 168px",
                     gap: 18,
                     alignItems: "center",
                     padding: 18,
@@ -935,8 +935,8 @@ export default function CommunityConfirmationOutcomePage() {
                   <div
                     aria-hidden="true"
                     style={{
-                      width: 64,
-                      height: 64,
+                      width: 60,
+                      height: 60,
                       borderRadius: 999,
                       display: "grid",
                       placeItems: "center",
@@ -957,7 +957,7 @@ export default function CommunityConfirmationOutcomePage() {
                     />
                   </div>
                   <div style={{ display: "grid", gap: 7, minWidth: 0 }}>
-                    <h2 style={{ ...sectionTitle(), fontSize: 22 }}>
+                    <h2 style={{ ...sectionTitle(), fontSize: 23 }}>
                       {liveWindowOpen
                         ? "Live request"
                         : status === "expired"
@@ -992,9 +992,10 @@ export default function CommunityConfirmationOutcomePage() {
                   </div>
                   <div
                     style={{
-                      minWidth: 132,
-                      borderRadius: 14,
-                      padding: "14px 16px",
+                      minWidth: 0,
+                      minHeight: 94,
+                      borderRadius: 15,
+                      padding: "13px 14px",
                       background: "#FFFFFF",
                       border: "1px solid rgba(8,35,58,0.12)",
                       textAlign: "center",
@@ -1004,7 +1005,7 @@ export default function CommunityConfirmationOutcomePage() {
                     <div style={{ color: "#526579", fontSize: 12, fontWeight: 1000, textTransform: "uppercase" }}>
                       Time left
                     </div>
-                    <div style={{ color: "#07172C", fontSize: 30, fontWeight: 1000, lineHeight: 1.05 }}>
+                    <div style={{ color: "#07172C", fontSize: 36, fontWeight: 1000, lineHeight: 1.05, letterSpacing: 1.5 }}>
                       {liveWindowOpen ? formatCountdown(remainingSeconds) : "00:00"}
                     </div>
                     <div style={{ marginTop: 8, color: "#526579", fontSize: 12, fontWeight: 900 }}>
@@ -1016,7 +1017,7 @@ export default function CommunityConfirmationOutcomePage() {
                 <section
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
                     gap: 16,
                   }}
                 >
@@ -1061,7 +1062,7 @@ export default function CommunityConfirmationOutcomePage() {
                   <div
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "repeat(auto-fit, minmax(136px, 1fr))",
+                      gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
                       gap: 12,
                     }}
                   >
