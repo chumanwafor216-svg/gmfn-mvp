@@ -196,6 +196,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityConfirmationOutcomePage.tsx",
+  /function formatCountdown\(totalSeconds: number\)[\s\S]*?loadOutcome\(\{ silent: true \}\)[\s\S]*?Live\s+confirmation\s+window[\s\S]*?Time\s+left[\s\S]*?responded/,
+  "Community confirmation outcome page must behave as a focused live waiting lane with countdown and silent refresh while a request is open."
+);
+
+assertContains(
   "src/pages/TrustSlipPage.tsx",
   /to=\{communityVerifyPath \|\| "#"\}[\s\S]*?kind=\{communityVerifyPath \? "primary" : "soft"\}[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
   "TrustSlip page community record action must be visually highlighted when a community verification route is available."

@@ -95,6 +95,10 @@ COMMUNITY_VERIFY_PREFIXES = (
 )
 
 
+def _confirmation_request_action_url(request_id: int) -> str:
+    return f"/app/community-confirmations?request_id={int(request_id)}"
+
+
 def _response_category(response_type: str) -> str:
     if response_type in POSITIVE_RESPONSES:
         return "positive"
@@ -344,7 +348,7 @@ def _notify_confirmation_contacts(
     contacts: list[CommunityConfirmationContact],
 ) -> int:
     created = 0
-    action_url = f"/app/community-confirmations?request_id={int(request.id)}"
+    action_url = _confirmation_request_action_url(int(request.id))
     reason_label = str(request.reason_type or "community confirmation").replace("_", " ")
     risk_label = str(request.risk_level or "low").replace("_", " ")
     mode_label = (
@@ -389,7 +393,7 @@ def _mark_confirmation_request_notification_read(
     request_id: int,
     responder_user_id: int,
 ) -> bool:
-    action_url = f"/app/community-confirmations?request_id={int(request_id)}"
+    action_url = _confirmation_request_action_url(int(request_id))
     row = (
         db.query(Notification)
         .filter(Notification.user_id == int(responder_user_id))
@@ -403,6 +407,76 @@ def _mark_confirmation_request_notification_read(
     row.read_at = _now_utc()
     db.add(row)
     return True
+
+
+def _notified_non_response_user_ids(
+    db: Session,
+    *,
+    request: CommunityConfirmationRequest,
+) -> list[int]:
+    action_url = _confirmation_request_action_url(int(request.id))
+    notified_ids = {
+        int(user_id)
+        for (user_id,) in (
+            db.query(Notification.user_id)
+            .filter(Notification.kind == "community_confirmation.request_to_respond")
+            .filter(Notification.action_url == action_url)
+            .all()
+        )
+        if int(user_id or 0) > 0
+    }
+    responded_ids = {
+        int(user_id)
+        for (user_id,) in (
+            db.query(CommunityConfirmationResponse.responder_user_id)
+            .filter(CommunityConfirmationResponse.request_id == int(request.id))
+            .all()
+        )
+        if int(user_id or 0) > 0
+    }
+    notified_ids.discard(int(request.subject_user_id))
+    return sorted(notified_ids - responded_ids)
+
+
+def _log_confirmation_non_response_events(
+    db: Session,
+    *,
+    request: CommunityConfirmationRequest,
+    user_ids: list[int],
+) -> int:
+    created = 0
+    expires_at = (
+        _to_aware(request.expires_at).isoformat() if request.expires_at else None
+    )
+    for user_id in user_ids:
+        log_trust_event(
+            db,
+            event_type="community_confirmation.non_response_recorded",
+            clan_id=int(request.community_id),
+            actor_user_id=int(user_id),
+            subject_user_id=int(request.subject_user_id),
+            meta=build_trust_meta(
+                reason="community_confirmation_no_timely_response",
+                trust_delta="0.00",
+                system=True,
+                extra={
+                    "request_id": int(request.id),
+                    "mode": request.mode,
+                    "reason_type": request.reason_type,
+                    "risk_level": request.risk_level,
+                    "status": "expired",
+                    "expires_at": expires_at,
+                    "outwardly_anonymous": True,
+                    "internally_attributable": True,
+                    "private_contacts_exposed": False,
+                },
+            ),
+            dedupe_key=f"cc-non-response:{int(request.id)}:{int(user_id)}",
+            commit=False,
+            refresh=False,
+        )
+        created += 1
+    return created
 
 
 def build_community_confirmation_summary(
@@ -1622,6 +1696,7 @@ def _mark_confirmation_request_expired(
         return
 
     previous_status = request.status
+    non_response_user_ids = _notified_non_response_user_ids(db, request=request)
     request.status = "expired"
     log_trust_event(
         db,
@@ -1643,12 +1718,18 @@ def _mark_confirmation_request_expired(
                 "expires_at": _to_aware(request.expires_at).isoformat()
                 if request.expires_at
                 else None,
+                "non_response_count": len(non_response_user_ids),
                 "private_contacts_exposed": False,
             },
         ),
         dedupe_key=f"cc-request-expired:{int(request.id)}",
         commit=False,
         refresh=False,
+    )
+    _log_confirmation_non_response_events(
+        db,
+        request=request,
+        user_ids=non_response_user_ids,
     )
     db.flush()
     if commit:

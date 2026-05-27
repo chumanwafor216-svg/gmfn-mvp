@@ -118,6 +118,25 @@ function safeDateTime(value: any): string {
   return d.toLocaleString();
 }
 
+function terminalStatus(status: string): boolean {
+  return ["closed", "expired", "cancelled", "under_review"].includes(status);
+}
+
+function secondsUntil(value: any): number {
+  const raw = safeStr(value);
+  if (!raw) return 0;
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return 0;
+  return Math.max(0, Math.ceil((d.getTime() - Date.now()) / 1000));
+}
+
+function formatCountdown(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds || 0));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
 function labelize(value: any): string {
   const text = safeStr(value).replace(/[_-]+/g, " ");
   if (!text) return "Not shown";
@@ -353,29 +372,45 @@ export default function CommunityConfirmationOutcomePage() {
     () => publicFrontendUrl(`/community-confirmations/public/${encodeURIComponent(tokenText)}`),
     [tokenText]
   );
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
 
-  const loadOutcome = useCallback(async () => {
+  const loadOutcome = useCallback(async (options?: { silent?: boolean }) => {
     if (!tokenText) {
       setError("Community confirmation token is missing.");
       setLoading(false);
       return;
     }
-    setLoading(true);
-    setError("");
+    if (!options?.silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const result = await getPublicCommunityConfirmation(tokenText);
       setOutcome(normalizeOutcome(result));
     } catch (err: any) {
-      setOutcome(null);
-      setError(err?.message || "Community confirmation could not be loaded.");
+      if (!options?.silent) {
+        setOutcome(null);
+        setError(err?.message || "Community confirmation could not be loaded.");
+      }
     } finally {
-      setLoading(false);
+      if (!options?.silent) setLoading(false);
     }
   }, [tokenText]);
 
   useEffect(() => {
     void loadOutcome();
   }, [loadOutcome]);
+
+  useEffect(() => {
+    if (!outcome?.expires_at) {
+      setRemainingSeconds(0);
+      return undefined;
+    }
+    const update = () => setRemainingSeconds(secondsUntil(outcome.expires_at));
+    update();
+    const timer = window.setInterval(update, 1000);
+    return () => window.clearInterval(timer);
+  }, [outcome?.expires_at]);
 
   useEffect(() => {
     const requestId = outcome?.request_id;
@@ -438,6 +473,16 @@ export default function CommunityConfirmationOutcomePage() {
   const confirmedKnown = asNumber(response.confirmed_known_count);
   const cautionCount = asNumber(response.caution_count);
   const objectionCount = asNumber(response.objection_count);
+  const liveWindowOpen = Boolean(outcome && !terminalStatus(status) && remainingSeconds > 0);
+  const responseProgress = requestsSent > 0 ? Math.min(100, Math.round((responsesReceived / requestsSent) * 100)) : 0;
+
+  useEffect(() => {
+    if (!outcome || terminalStatus(status) || remainingSeconds <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      void loadOutcome({ silent: true });
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [loadOutcome, outcome, remainingSeconds, status]);
 
   async function copyLink() {
     const copied = await safeCopy(outcomeLink);
@@ -827,6 +872,78 @@ export default function CommunityConfirmationOutcomePage() {
               </section>
             ) : outcome ? (
               <>
+                <section
+                  style={{
+                    ...sectionCard(liveWindowOpen ? "#EAF3FF" : status === "expired" ? "#FEF2F2" : "#F7FAFF"),
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
+                    gap: 14,
+                    alignItems: "center",
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 8 }}>
+                    <span style={badgeStyle(liveWindowOpen ? "info" : status === "expired" ? "bad" : "warn")}>
+                      <TrustPaperIcon name={liveWindowOpen ? "community" : status === "expired" ? "alert" : "shield"} size={18} />
+                      {liveWindowOpen ? "Live confirmation window" : status === "expired" ? "Expired request" : "Confirmation window"}
+                    </span>
+                    <h2 style={sectionTitle()}>
+                      {liveWindowOpen
+                        ? "Waiting for community responders"
+                        : status === "expired"
+                          ? "The response window has ended"
+                          : "Community response lane"}
+                    </h2>
+                    <p style={helperText()}>
+                      {liveWindowOpen
+                        ? "Keep this page open. GSN refreshes the outcome while eligible responders answer from their confirmation inbox."
+                        : status === "expired"
+                          ? "The request is now closed for late responses. Any non-response has been recorded internally as part of the Trust Event trail."
+                          : "This page keeps the confirmation request separate from the full TrustSlip so the reader can follow one decision lane."}
+                    </p>
+                    <div
+                      aria-label="Community confirmation response progress"
+                      style={{
+                        width: "100%",
+                        height: 10,
+                        borderRadius: 999,
+                        overflow: "hidden",
+                        background: "rgba(8,35,58,0.10)",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${responseProgress}%`,
+                          height: "100%",
+                          borderRadius: 999,
+                          background: liveWindowOpen ? "#0B63D1" : status === "expired" ? "#C83A3A" : "#D6AA45",
+                          transition: "width 180ms ease",
+                        }}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      minWidth: 112,
+                      borderRadius: 24,
+                      padding: "14px 16px",
+                      background: "#FFFFFF",
+                      border: "1px solid rgba(8,35,58,0.12)",
+                      textAlign: "center",
+                      boxShadow: "0 10px 24px rgba(6,24,39,0.08)",
+                    }}
+                  >
+                    <div style={{ color: "#526579", fontSize: 12, fontWeight: 1000, textTransform: "uppercase" }}>
+                      Time left
+                    </div>
+                    <div style={{ color: "#07172C", fontSize: 30, fontWeight: 1000, lineHeight: 1.05 }}>
+                      {liveWindowOpen ? formatCountdown(remainingSeconds) : "00:00"}
+                    </div>
+                    <div style={{ marginTop: 8, color: "#526579", fontSize: 12, fontWeight: 900 }}>
+                      {responsesReceived} / {requestsSent} responded
+                    </div>
+                  </div>
+                </section>
+
                 <section
                   style={{
                     ...sectionCard(

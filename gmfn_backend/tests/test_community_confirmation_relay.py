@@ -475,6 +475,7 @@ def test_expired_community_confirmation_records_trust_event(client: TestClient):
             "community_confirmation.requested",
             "community_confirmation.delivery_pool_prepared",
             "community_confirmation.request_expired",
+            "community_confirmation.non_response_recorded",
         ]
         expired_meta = json.loads(
             db.query(TrustEvent)
@@ -486,7 +487,21 @@ def test_expired_community_confirmation_records_trust_event(client: TestClient):
         assert expired_meta["request_id"] == request.id
         assert expired_meta["previous_status"] == "pending"
         assert expired_meta["status"] == "expired"
+        assert expired_meta["non_response_count"] == 1
         assert expired_meta["private_contacts_exposed"] is False
+        non_response_event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community_confirmation.non_response_recorded")
+            .one()
+        )
+        assert non_response_event.actor_user_id == 2
+        assert non_response_event.subject_user_id == 1
+        non_response_meta = json.loads(non_response_event.meta_json or "{}")
+        assert non_response_meta["request_id"] == request.id
+        assert non_response_meta["status"] == "expired"
+        assert non_response_meta["outwardly_anonymous"] is True
+        assert non_response_meta["internally_attributable"] is True
+        assert non_response_meta["private_contacts_exposed"] is False
 
 
 def test_confirmation_request_status_update_records_trust_event(client: TestClient):

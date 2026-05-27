@@ -1,3 +1,35 @@
+### Community confirmation expiry and Trust Event accountability (2026-05-27)
+
+- Owner clarified that instant community confirmation must behave like a timed
+  community-living responsibility:
+  - responders get a short window to answer;
+  - the request should become expired when the window closes;
+  - timely responses and non-responses should feed the Trust Event trail.
+- Confirmed existing backend facts:
+  - `instant_pulse` already uses `INSTANT_WINDOW_SECONDS = 300` (5 minutes);
+  - normal relay confirmation uses the community policy response window
+    (default 24 hours);
+  - responder answers already create
+    `community_confirmation.response_recorded` Trust Events;
+  - request expiry already creates
+    `community_confirmation.request_expired`.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - shared the confirmation inbox notification action URL through
+    `_confirmation_request_action_url()`;
+  - when a request expires, GSN now finds notified responders who did not
+    answer and records internal
+    `community_confirmation.non_response_recorded` Trust Events for each;
+  - non-response events are internally attributable, outwardly anonymous, and
+    keep `private_contacts_exposed: false`.
+- Updated `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`:
+  - added a focused live confirmation waiting lane with countdown, response
+    progress, and silent auto-refresh while the request is still open;
+  - expired requests now plainly state that the late-response window has ended
+    and non-response was recorded internally.
+- Updated tests/audits:
+  - `gmfn_backend/tests/test_community_confirmation_relay.py`
+  - `frontend/tools/audit-trust-actions.mjs`
+
 ### TrustSlip live confirmation focused lane (2026-05-27)
 
 - Owner clarified the product intent for `Request instant confirmation`:
