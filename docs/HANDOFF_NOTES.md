@@ -28237,3 +28237,45 @@ GSN-branded invite composer and invite-entry continuity.
   - It does not prove every destination is product-correct; it proves pages are
     no longer using raw action elements that can bypass the shared mobile tap
     protection.
+
+### Community confirmation requester result loop (2026-05-27)
+
+- Follow-up to the public Community Confirmation paper work. The exposed gap was
+  real: responders received in-app requests, but the signed-in merchant/requester
+  did not get a system notification when the result changed or expired.
+- Backend:
+  - `POST /community-confirmations/request` now captures the optional signed-in
+    requester as `requester_user_id` when an auth token is present.
+  - community response recomputation creates
+    `community_confirmation.outcome_updated` for that requester, pointing to
+    `/community-confirmations/public/{public_token}`.
+  - request expiry creates `community_confirmation.request_expired` for that
+    requester, also pointing to the same focused public paper.
+  - both requester notifications create
+    `community_confirmation.requester_notified` Trust Events with no private
+    contact exposure.
+- Frontend:
+  - the companion alert poll now treats requester outcome/expiry notifications
+    as urgent no-cash confirmation notifications while the app is open.
+  - Notifications and Guidance now preserve
+    `/community-confirmations/public/...` as a public route instead of forcing it
+    back into the app shell.
+  - requester outcome/expiry notifications are classified as `Act Now`.
+- Guardrail:
+  - `npm run audit:trust-actions` now checks the requester-result route,
+    frontend public-route handling, companion alert kinds, and backend requester
+    notification contracts.
+- Verification:
+  - `python -m pytest gmfn_backend\tests\test_community_confirmation_relay.py`
+    passed: 10 tests.
+  - `npm run audit:trust-actions` passed.
+  - Additional gap guardrails passed: `audit:global-action-debugids`,
+    `audit:global-raw-action-elements`, `audit:tap-stability`, and
+    `audit:button-stability`.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This is still in-app/browser-open notification behavior. True closed-phone
+    push, SMS, or email would need a separate delivery channel and user consent.
+  - Anonymous public requesters still cannot receive account notifications; they
+    must keep/copy the public result link unless they are signed in.

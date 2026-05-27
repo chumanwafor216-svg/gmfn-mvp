@@ -9,6 +9,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy import text
 
 from app.core.auth import get_current_user
+from app.core.security import create_access_token
 from app.db.database import SessionLocal, engine
 from app.db.models import (
     CommunityConfirmationContact,
@@ -58,6 +59,14 @@ def _seed_relay_fixture() -> None:
                 """
                 INSERT OR IGNORE INTO users (id, email, hashed_password, role)
                 VALUES (2, 'user2@example.com', 'hashed', 'user')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT OR IGNORE INTO users (id, email, hashed_password, role)
+                VALUES (3, 'merchant@example.com', 'hashed', 'merchant')
                 """
             )
         )
@@ -125,11 +134,15 @@ def _seed_relay_fixture() -> None:
 
 def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
     client: TestClient,
+    monkeypatch,
 ):
     _seed_relay_fixture()
+    monkeypatch.setenv("GMFN_SECRET_KEY", "test-secret")
+    requester_token = create_access_token({"sub": "merchant@example.com"})
 
     created = client.post(
         "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
         json={
             "trust_slip_code": "CCR-TRUSTSLIP-1",
             "requester_external_label": "Merchant counter check",
@@ -257,6 +270,7 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
         request = db.query(CommunityConfirmationRequest).one()
         assert request.subject_user_id == 1
         assert request.community_id == 1
+        assert request.requester_user_id == 3
         assert request.status == "responded"
         decision_row = db.query(CommunityConfirmationDecision).one()
         assert decision_row.request_id == request.id
@@ -274,6 +288,7 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
             "community_confirmation.delivery_pool_prepared",
             "community_confirmation.response_recorded",
             "community_confirmation.outcome_recorded",
+            "community_confirmation.requester_notified",
             "community_confirmation.merchant_decision_recorded",
             "community_confirmation.decision_status_updated",
         ]
@@ -317,6 +332,22 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
         assert outcome_meta["eligible_contact_count"] == 1
         assert outcome_meta["active_member_count"] == 2
         assert outcome_meta["private_contacts_exposed"] is False
+        requester_notice = (
+            db.query(Notification)
+            .filter(Notification.user_id == 3)
+            .filter(Notification.kind == "community_confirmation.outcome_updated")
+            .one()
+        )
+        assert requester_notice.is_read is False
+        assert requester_notice.action_url == f"/community-confirmations/public/{token}"
+        assert requester_notice.action_label == "Open result"
+        assert "1 of 1 requested community responders have answered" in requester_notice.message
+        assert "phone_e164" not in requester_notice.message
+        requester_notify_meta = events["community_confirmation.requester_notified"]
+        assert requester_notify_meta["request_id"] == request.id
+        assert requester_notify_meta["notification_kind"] == "community_confirmation.outcome_updated"
+        assert requester_notify_meta["action_url"] == f"/community-confirmations/public/{token}"
+        assert requester_notify_meta["private_contacts_exposed"] is False
 
         decision_meta = events["community_confirmation.merchant_decision_recorded"]
         assert decision_meta["decision_id"] == decision_row.id
@@ -441,11 +472,14 @@ def test_public_community_verify_degrades_when_confirmation_schema_missing(
     assert "SELECT" not in response.text
 
 
-def test_expired_community_confirmation_records_trust_event(client: TestClient):
+def test_expired_community_confirmation_records_trust_event(client: TestClient, monkeypatch):
     _seed_relay_fixture()
+    monkeypatch.setenv("GMFN_SECRET_KEY", "test-secret")
+    requester_token = create_access_token({"sub": "merchant@example.com"})
 
     created = client.post(
         "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
         json={
             "trust_slip_code": "CCR-TRUSTSLIP-1",
             "requester_external_label": "Merchant counter check",
@@ -476,6 +510,7 @@ def test_expired_community_confirmation_records_trust_event(client: TestClient):
             "community_confirmation.delivery_pool_prepared",
             "community_confirmation.request_expired",
             "community_confirmation.non_response_recorded",
+            "community_confirmation.requester_notified",
         ]
         expired_meta = json.loads(
             db.query(TrustEvent)
@@ -502,6 +537,27 @@ def test_expired_community_confirmation_records_trust_event(client: TestClient):
         assert non_response_meta["outwardly_anonymous"] is True
         assert non_response_meta["internally_attributable"] is True
         assert non_response_meta["private_contacts_exposed"] is False
+        requester_notice = (
+            db.query(Notification)
+            .filter(Notification.user_id == 3)
+            .filter(Notification.kind == "community_confirmation.request_expired")
+            .one()
+        )
+        assert requester_notice.is_read is False
+        assert requester_notice.action_url == f"/community-confirmations/public/{token}"
+        assert requester_notice.action_label == "Open expired result"
+        assert "response window has closed" in requester_notice.message
+        requester_notify_meta = json.loads(
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community_confirmation.requester_notified")
+            .one()
+            .meta_json
+            or "{}"
+        )
+        assert requester_notify_meta["request_id"] == request.id
+        assert requester_notify_meta["notification_kind"] == "community_confirmation.request_expired"
+        assert requester_notify_meta["action_url"] == f"/community-confirmations/public/{token}"
+        assert requester_notify_meta["private_contacts_exposed"] is False
 
 
 def test_confirmation_request_status_update_records_trust_event(client: TestClient):

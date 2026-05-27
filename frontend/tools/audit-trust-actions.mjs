@@ -210,14 +210,38 @@ assertContains(
 
 assertContains(
   "src/components/CompanionLayer.tsx",
-  /URGENT_CONFIRMATION_KIND = "community_confirmation\.request_to_respond"[\s\S]*?URGENT_CONFIRMATION_POLL_MS = 15000[\s\S]*?getMyNotifications\(20, true\)[\s\S]*?runUrgentCompanionNotificationCycle/,
-  "The workspace companion layer must poll unread urgent community confirmation requests and raise no-cash phone/browser alerts while the app is open."
+  /URGENT_CONFIRMATION_KIND = "community_confirmation\.request_to_respond"[\s\S]*?URGENT_CONFIRMATION_OUTCOME_KINDS[\s\S]*?community_confirmation\.outcome_updated[\s\S]*?community_confirmation\.request_expired[\s\S]*?URGENT_CONFIRMATION_POLL_MS = 15000[\s\S]*?getMyNotifications\(20, true\)[\s\S]*?runUrgentCompanionNotificationCycle/,
+  "The workspace companion layer must poll unread urgent community confirmation request and outcome notifications and raise no-cash phone/browser alerts while the app is open."
 );
 
 assertContains(
   "src/lib/guidance.ts",
-  /text\.includes\("community_confirmation\.request_to_respond"\)[\s\S]*?return "actNow";/,
-  "Community confirmation request notifications must be classified as Act Now guidance."
+  /text\.includes\("community_confirmation\.request_to_respond"\)[\s\S]*?text\.includes\("community_confirmation\.outcome_updated"\)[\s\S]*?text\.includes\("community_confirmation\.request_expired"\)[\s\S]*?return "actNow";/,
+  "Community confirmation request and requester outcome notifications must be classified as Act Now guidance."
+);
+
+assertContains(
+  "src/pages/NotificationsPage.tsx",
+  /PUBLIC_ROUTE_PREFIXES = \[[\s\S]*?"community-confirmations"[\s\S]*?\]/,
+  "Notifications must allow community confirmation public result links to open their public paper instead of being forced back into the app shell."
+);
+
+assertContains(
+  "src/lib/guidance.ts",
+  /PUBLIC_ROUTE_PREFIXES = \[[\s\S]*?"community-confirmations"[\s\S]*?\]/,
+  "Guidance notification targets must allow community confirmation public result links to open their public paper."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/community_confirmations.py",
+  /def _optional_current_user[\s\S]*?requester_user_id=\(/,
+  "Community confirmation requests must capture the signed-in requester when one exists so outcome notifications can return them to the result paper."
+);
+
+assertContains(
+  "../gmfn_backend/app/services/community_confirmation_service.py",
+  /def _confirmation_public_outcome_action_url[\s\S]*?community_confirmation\.outcome_updated[\s\S]*?community_confirmation\.request_expired[\s\S]*?community_confirmation\.requester_notified/,
+  "Community confirmation outcomes and expiries must notify the signed-in requester and record that requester notification in Trust Events."
 );
 
 assertContains(

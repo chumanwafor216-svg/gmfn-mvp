@@ -94,6 +94,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "pending-approval",
   "join-request",
   "join-approval",
+  "community-confirmations",
   "approved",
   "activate",
   "activate-membership",

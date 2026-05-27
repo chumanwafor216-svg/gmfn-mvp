@@ -4,12 +4,15 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy import or_
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, oauth2_scheme
+from app.core.security import decode_token
 from app.core.rate_limit import client_ip, rate_limiter
 from app.db.database import get_db
+from app.db.models import User
 from app.services.community_confirmation_service import (
     add_confirmation_review_evidence,
     assign_confirmation_review_case,
@@ -37,6 +40,26 @@ from app.services.community_confirmation_service import (
 
 
 router = APIRouter(tags=["community-confirmations"])
+
+
+def _optional_current_user(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(oauth2_scheme),
+) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+    except Exception:
+        return None
+    subject = str((payload.get("sub") if isinstance(payload, dict) else "") or "").strip()
+    if not subject:
+        return None
+    return (
+        db.query(User)
+        .filter(or_(User.email == subject, User.gmfn_id == subject))
+        .first()
+    )
 
 
 def _throttle_public(request: Request, route_name: str, *, max_requests: int) -> None:
@@ -163,6 +186,7 @@ def request_community_confirmation(
     payload: CommunityConfirmationRequestIn,
     request: Request,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(_optional_current_user),
 ) -> Dict[str, Any]:
     """
     Public-safe entry point.
@@ -176,6 +200,11 @@ def request_community_confirmation(
             trust_slip_code=payload.trust_slip_code,
             subject_user_id=payload.subject_user_id,
             community_id=payload.community_id,
+            requester_user_id=(
+                int(getattr(current_user, "id"))
+                if current_user is not None and getattr(current_user, "id", None)
+                else None
+            ),
             requester_external_label=payload.requester_external_label,
             reason_type=payload.reason_type,
             risk_level=payload.risk_level,

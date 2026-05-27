@@ -21,6 +21,11 @@ type CompanionLayerProps = {
 
 const LOCAL_COMPANION_SETTINGS_KEY = "gmfn_companion_settings_local";
 const URGENT_CONFIRMATION_KIND = "community_confirmation.request_to_respond";
+const URGENT_CONFIRMATION_OUTCOME_KINDS = new Set([
+  URGENT_CONFIRMATION_KIND,
+  "community_confirmation.outcome_updated",
+  "community_confirmation.request_expired",
+]);
 const URGENT_CONFIRMATION_POLL_MS = 15000;
 
 function readLocalCompanionSettings(): Partial<CompanionSettings> {
@@ -273,7 +278,7 @@ export default function CompanionLayer({ snapshot }: CompanionLayerProps) {
       const rows = Array.isArray(result?.items) ? result.items : [];
       const urgent = rows.find(
         (row: any) =>
-          String(row?.kind || "").trim() === URGENT_CONFIRMATION_KIND &&
+          URGENT_CONFIRMATION_OUTCOME_KINDS.has(String(row?.kind || "").trim()) &&
           row?.is_read !== true
       );
 

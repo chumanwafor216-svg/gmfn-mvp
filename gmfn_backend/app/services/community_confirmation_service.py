@@ -99,6 +99,10 @@ def _confirmation_request_action_url(request_id: int) -> str:
     return f"/app/community-confirmations?request_id={int(request_id)}"
 
 
+def _confirmation_public_outcome_action_url(request: CommunityConfirmationRequest) -> str:
+    return f"/community-confirmations/public/{str(request.public_token)}"
+
+
 def _response_category(response_type: str) -> str:
     if response_type in POSITIVE_RESPONSES:
         return "positive"
@@ -385,6 +389,45 @@ def _notify_confirmation_contacts(
         )
         created += 1
     return created
+
+
+def _notify_confirmation_requester(
+    db: Session,
+    *,
+    request: CommunityConfirmationRequest,
+    kind: str,
+    title: str,
+    message: str,
+    action_label: str = "Open result",
+) -> bool:
+    requester_user_id = int(getattr(request, "requester_user_id", None) or 0)
+    if requester_user_id <= 0:
+        return False
+
+    action_url = _confirmation_public_outcome_action_url(request)
+    existing_unread = (
+        db.query(Notification.id)
+        .filter(Notification.user_id == requester_user_id)
+        .filter(Notification.kind == kind)
+        .filter(Notification.action_url == action_url)
+        .filter(Notification.is_read.is_(False))
+        .first()
+    )
+    if existing_unread:
+        return False
+
+    create_notification(
+        db,
+        user_id=requester_user_id,
+        kind=kind,
+        title=title,
+        message=message,
+        action_url=action_url,
+        action_label=action_label,
+        commit=False,
+        refresh=False,
+    )
+    return True
 
 
 def _mark_confirmation_request_notification_read(
@@ -1686,6 +1729,52 @@ def _log_confirmation_outcome_event(
     )
 
 
+def _notify_confirmation_requester_outcome(
+    db: Session,
+    *,
+    request: CommunityConfirmationRequest,
+    summary: Dict[str, Any],
+    visible_summary: str,
+) -> bool:
+    responses_received = (
+        int(summary.get("positive_count") or 0)
+        + int(summary.get("caution_count") or 0)
+        + int(summary.get("objection_count") or 0)
+    )
+    eligible = int(summary.get("eligible_contact_count") or 0)
+    confidence = str(summary.get("confidence_level") or "pending").replace("_", " ")
+    return _notify_confirmation_requester(
+        db,
+        request=request,
+        kind="community_confirmation.outcome_updated",
+        title="Community confirmation updated",
+        message=(
+            f"{responses_received} of {eligible} requested community responders have answered. "
+            f"Current reading: {confidence}. {visible_summary}"
+        ),
+        action_label="Open result",
+    )
+
+
+def _notify_confirmation_requester_expired(
+    db: Session,
+    *,
+    request: CommunityConfirmationRequest,
+    non_response_count: int,
+) -> bool:
+    return _notify_confirmation_requester(
+        db,
+        request=request,
+        kind="community_confirmation.request_expired",
+        title="Community confirmation expired",
+        message=(
+            "The community confirmation response window has closed. "
+            f"{int(non_response_count or 0)} notified responder(s) did not answer before expiry."
+        ),
+        action_label="Open expired result",
+    )
+
+
 def _mark_confirmation_request_expired(
     db: Session,
     *,
@@ -1731,6 +1820,33 @@ def _mark_confirmation_request_expired(
         request=request,
         user_ids=non_response_user_ids,
     )
+    requester_expiry_notification_created = _notify_confirmation_requester_expired(
+        db,
+        request=request,
+        non_response_count=len(non_response_user_ids),
+    )
+    if requester_expiry_notification_created:
+        log_trust_event(
+            db,
+            event_type="community_confirmation.requester_notified",
+            clan_id=int(request.community_id),
+            actor_user_id=int(request.subject_user_id),
+            subject_user_id=int(request.subject_user_id),
+            meta=build_trust_meta(
+                reason="community_confirmation_requester_notified",
+                trust_delta="0.00",
+                system=True,
+                extra={
+                    "request_id": int(request.id),
+                    "notification_kind": "community_confirmation.request_expired",
+                    "action_url": _confirmation_public_outcome_action_url(request),
+                    "private_contacts_exposed": False,
+                },
+            ),
+            dedupe_key=f"cc-requester-expired-notified:{int(request.id)}",
+            commit=False,
+            refresh=False,
+        )
     db.flush()
     if commit:
         db.commit()
@@ -1817,6 +1933,34 @@ def recompute_confirmation_outcome(db: Session, *, request_id: int) -> Dict[str,
         visible_summary=visible,
         required_positive_responses=int(policy.minimum_positive_responses or 2),
     )
+    requester_outcome_notification_created = _notify_confirmation_requester_outcome(
+        db,
+        request=request,
+        summary=summary,
+        visible_summary=visible,
+    )
+    if requester_outcome_notification_created:
+        log_trust_event(
+            db,
+            event_type="community_confirmation.requester_notified",
+            clan_id=int(request.community_id),
+            actor_user_id=int(request.subject_user_id),
+            subject_user_id=int(request.subject_user_id),
+            meta=build_trust_meta(
+                reason="community_confirmation_requester_notified",
+                trust_delta="0.00",
+                system=True,
+                extra={
+                    "request_id": int(request.id),
+                    "notification_kind": "community_confirmation.outcome_updated",
+                    "action_url": _confirmation_public_outcome_action_url(request),
+                    "private_contacts_exposed": False,
+                },
+            ),
+            dedupe_key=f"cc-requester-notified:{int(request.id)}:{received}",
+            commit=False,
+            refresh=False,
+        )
 
     db.flush()
     return public_confirmation_outcome(db, public_token=str(request.public_token))

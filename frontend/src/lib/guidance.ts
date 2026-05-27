@@ -149,6 +149,7 @@ const PUBLIC_ROUTE_PREFIXES = [
   "pending-approval",
   "join-request",
   "join-approval",
+  "community-confirmations",
   "approved",
   "activate",
   "activate-membership",
@@ -1070,7 +1071,11 @@ function bucketFromNotification(raw: any): GuidanceInboxBucketKey {
 
   if (
     text.includes("community_confirmation.request_to_respond") ||
+    text.includes("community_confirmation.outcome_updated") ||
+    text.includes("community_confirmation.request_expired") ||
     text.includes("community confirmation request") ||
+    text.includes("community confirmation updated") ||
+    text.includes("community confirmation expired") ||
     text.includes("guarantor") ||
     text.includes("approve") ||
     text.includes("decline") ||
