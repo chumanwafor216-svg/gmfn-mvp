@@ -48,6 +48,7 @@ function stableStyle(
   disabled: boolean,
   args: Pick<StableActionProps, "fullWidth" | "minWidth" | "stableHeight" | "style">
 ): React.CSSProperties {
+  const fixedHeight = typeof args.stableHeight === "number" ? args.stableHeight : undefined;
   const base =
     kind === "danger"
       ? {
@@ -62,9 +63,14 @@ function stableStyle(
   return {
     ...brandStableTapTarget(),
     ...base,
+    display: base.display ?? "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
     width: args.fullWidth ? "100%" : base.width,
     minWidth: args.minWidth ?? base.minWidth,
-    minHeight: args.stableHeight ?? base.minHeight,
+    minHeight: fixedHeight ?? base.minHeight,
+    height: fixedHeight,
+    maxHeight: fixedHeight,
     flexShrink: 0,
     gap: 8,
     overflow: "hidden",
@@ -73,6 +79,9 @@ function stableStyle(
     textDecoration: "none",
     whiteSpace: "normal",
     wordBreak: "normal",
+    lineHeight: 1.15,
+    padding: fixedHeight ? (fixedHeight <= 44 ? "8px 12px" : "9px 14px") : base.padding,
+    transition: "none",
     ...args.style,
   };
 }

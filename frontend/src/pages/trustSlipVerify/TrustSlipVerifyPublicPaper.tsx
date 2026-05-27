@@ -84,6 +84,18 @@ function positiveNumber(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+function lockedActionFrame(compact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateRows: compact ? "56px minmax(128px, auto)" : "56px minmax(148px, auto)",
+    gap: 10,
+    alignSelf: "stretch",
+    minHeight: compact ? 194 : 214,
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
@@ -667,7 +679,7 @@ export default function TrustSlipVerifyPublicPaper({
                   )}
                 </div>
 
-                <div style={{ display: "grid", gap: 10, alignSelf: "stretch" }}>
+                <div style={lockedActionFrame(compact)}>
                   <PrimaryButton
                     type="button"
                     onClick={onRequestCommunityPulse}

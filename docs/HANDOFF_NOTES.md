@@ -1,3 +1,39 @@
+### Shared button fixed-height stabilization (2026-05-27)
+
+- Owner reported that system buttons were still unstable/jumpy after the
+  TrustSlip Verify explanation work.
+- Confirmed shared UI weakness:
+  - `StableButton`/`StableCtaLink` treated `stableHeight` as `minHeight`, so a
+    wrapped label or nearby explanation block could still grow the button
+    surface and push surrounding content on mobile.
+- Updated `frontend/src/components/StableButton.tsx`:
+  - when `stableHeight` is supplied, stable actions now use exact
+    `height`, `minHeight`, and `maxHeight`;
+  - fixed-height actions force centered alignment, no transition, and tighter
+    padding so two-line labels fit without growing the frame.
+- Updated `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`:
+  - the disabled community-confirmation button plus `Why this is locked`
+    explanation now sits in a reserved stable action frame with
+    `overflowAnchor: none`;
+  - this keeps the explanation from shifting the action stack while the user is
+    tapping or scrolling.
+- Updated audits:
+  - `frontend/tools/audit-button-stability.mjs`
+  - `frontend/tools/audit-trust-actions.mjs`
+- Verification:
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm exec -- eslint src/components/StableButton.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-button-stability.mjs tools/audit-trust-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run build` first hit the known sandbox Vite/esbuild `spawn EPERM`,
+    then passed with approved escalation.
+- Remaining truth:
+  - This stabilizes components that opt into `stableHeight`. Any older raw
+    `<button>` outside the shared primitives can still be jumpy until converted
+    to `StableButton`/`StableCtaLink`.
+
 ### TrustSlip Verify locked confirmation explanation (2026-05-27)
 
 - Owner showed that TrustSlip Verify still was not clear enough: the page
