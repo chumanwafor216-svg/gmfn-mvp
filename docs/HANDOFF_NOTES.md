@@ -1,3 +1,37 @@
+### Start Community founder trust remodel (2026-05-27)
+
+- Owner approved the product change for `StartCommunityPage`:
+  - Step 1 remains `Your details` with name, phone registration/verification,
+    email, and password.
+  - Step 2 is now `Community setup`, so a founder can create the community
+    after phone registration or phone verification is attached.
+  - Step 3 is `Founder trust level`, an optional evidence layer for stronger
+    assurance rather than a front-door blocker.
+- Updated backend `/entry/create` in `gmfn_backend/app/api/routes/entry.py`:
+  - removed the hard requirement that bank details must exist before community
+    creation;
+  - only creates `UserPayoutDestination` and
+    `identity.bank_destination_recorded` Trust Events when bank details were
+    actually recorded;
+  - still records phone registration or phone verification as the required
+    entry proof;
+  - onboarding trust notification now names a registration-only phone as
+    `registered phone` instead of falling back to vague starter-proof language.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - phone registration/verification now moves the user to community setup;
+  - bank/wallet and driver licence sit in the optional founder trust block;
+  - the optional block also presents future lanes for `Passport/selfie` and
+    `NIN/regional ID`.
+- Updated `gmfn_backend/tests/test_entry_create.py` so entry creation without
+  bank details is covered and no payout/bank Trust Event is created.
+- Updated `docs/SCREEN_SPECS.md` to make the Start Community step order and
+  optional evidence rule explicit.
+- Remaining truth:
+  - Passport/selfie/photo verification, NIN, and other regional ID providers
+    are not implemented yet. They are now represented as future trust-evidence
+    lanes, but still need backend upload/storage/provider checks and clear
+    privacy rules before they can feed Trust Passport or TrustSlip pictures.
+
 ### Community confirmation public paper reference layout (2026-05-27)
 
 - Owner supplied a phone screenshot reference for the public community

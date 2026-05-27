@@ -1318,25 +1318,23 @@ export default function CreateEntryPage() {
       community: step === "community",
       detailsDone:
         step === "verify" || step === "bank" || step === "community",
-      verificationDone: step === "community",
+      verificationDone: Boolean(bankRecordProof || bankVerificationResult || licenceVerificationResult),
     }),
-    [step]
+    [step, bankRecordProof, bankVerificationResult, licenceVerificationResult]
   );
 
   const canOpenDetails = guideDone;
-  const canOpenVerification = step !== "details";
+  const canOpenVerification = step !== "details" && Number(verificationId) > 0;
   const canOpenCommunity = step === "community";
 
   const verificationBlockTitle =
     step === "verify"
       ? "Phone confirmation"
-      : "Bank / Wallet details";
+      : "Founder trust level";
   const verificationBlockHelp =
     step === "verify"
       ? "Register this phone against your entry name. SMS ownership verification is suspended during controlled testing, so GSN will record the phone and open the bank or wallet fields."
-      : step === "bank"
-        ? "Where should support money go?"
-        : "After your first details are accepted, this block records the bank or wallet destination for trusted support, repayments, and future payout references.";
+      : "Optional checks. More proof can strengthen founder assurance, but community creation can continue without bank details at the front door.";
 
   function applyPhonePrefix(prefix: string) {
     setPhone((current) => {
@@ -1767,9 +1765,9 @@ export default function CreateEntryPage() {
         };
       }
 
-      setStep("bank");
-      setOpenPanel("verification");
-      focusPanel("verification");
+      setStep("community");
+      setOpenPanel("community");
+      focusPanel("community");
 
       return {
         verificationId: nextVerificationId,
@@ -1777,8 +1775,8 @@ export default function CreateEntryPage() {
         message:
           safeStr(out?.confirmation_message) ||
           (registeredOnly
-            ? "Phone registered for controlled testing. Continue with your bank or wallet details."
-            : "GSN found your verified phone record. Continue with your bank or wallet details."),
+            ? "Phone registered for controlled testing. Set up the community now. Stronger founder checks can be added as optional trust evidence."
+            : "GSN found your verified phone record. Set up the community now. Stronger founder checks can be added as optional trust evidence."),
       };
     }
 
@@ -1796,16 +1794,16 @@ export default function CreateEntryPage() {
         confirmation_message: safeStr(confirmed?.confirmation_message),
         trust_event_response: confirmed?.trust_event_response || null,
       });
-      setStep("bank");
-      setOpenPanel("verification");
-      focusPanel("verification");
+      setStep("community");
+      setOpenPanel("community");
+      focusPanel("community");
 
       return {
         verificationId: nextVerificationId,
         autoConfirmed: true,
         message:
           safeStr(confirmed?.confirmation_message) ||
-          "Phone check completed. Add your bank or wallet details now.",
+          "Phone check completed. Set up the community now. You can add stronger founder checks as optional trust evidence.",
       };
     }
 
@@ -1871,12 +1869,12 @@ export default function CreateEntryPage() {
         confirmation_message: safeStr(out?.confirmation_message),
         trust_event_response: out?.trust_event_response || null,
       });
-      setStep("bank");
-      setOpenPanel("verification");
-      focusPanel("verification");
+      setStep("community");
+      setOpenPanel("community");
+      focusPanel("community");
       setSuccess(
         safeStr(out?.confirmation_message) ||
-          "Phone verified. Add your bank details before community details continue."
+          "Phone verified. Set up the community now. Optional founder checks can be added for stronger trust."
       );
     } catch (err: any) {
       setError(err?.message || "Phone verification could not be completed.");
@@ -1975,13 +1973,13 @@ export default function CreateEntryPage() {
 
   function finishBankStep(out: any, nextBankVerification: EntryVerificationResult) {
     setStep("community");
-    setOpenPanel("community");
-    focusPanel("community");
+    setOpenPanel("verification");
+    focusPanel("verification");
     setSuccess(
       safeStr(out?.confirmation_message) ||
         safeStr(nextBankVerification?.explanation) ||
         safeStr(out?.verification_note) ||
-        "Bank details recorded. You can now continue with community details."
+        "Optional founder proof recorded. You can continue creating the community."
     );
   }
 
@@ -2112,10 +2110,9 @@ export default function CreateEntryPage() {
     } catch (err: any) {
       if (openActivationFromStructuredError(err)) return;
 
-      if (isPhoneSessionExpiredError(err) && canContinueBank) {
+      if (isPhoneSessionExpiredError(err) && canContinueDetails) {
         try {
           const refreshedVerificationId = await refreshPilotPhoneSession();
-          await saveBankDetailsForVerification(refreshedVerificationId);
           await submitCreateEntry(refreshedVerificationId);
         } catch (retryErr: any) {
           if (openActivationFromStructuredError(retryErr)) return;
@@ -3025,7 +3022,8 @@ export default function CreateEntryPage() {
                   openPanel === "verification",
                   stepProgress.verificationDone
                 ),
-                ...(openPanel === "verification" && step === "bank"
+                order: step === "verify" ? 2 : 3,
+                ...(openPanel === "verification" && step !== "verify"
                   ? {
                       padding: 14,
                       borderRadius: 24,
@@ -3046,11 +3044,11 @@ export default function CreateEntryPage() {
                 }
                 disabled={!canOpenVerification}
                 fullWidth
-                stableHeight={openPanel === "verification" && step === "bank" ? 82 : 74}
+                stableHeight={openPanel === "verification" && step !== "verify" ? 82 : 74}
                 debugId="create-entry.verification.toggle"
                 style={{
                   ...stageDropDownHeader(openPanel === "verification", stepProgress.verificationDone),
-                  ...(openPanel === "verification" && step === "bank"
+                  ...(openPanel === "verification" && step !== "verify"
                     ? {
                         minHeight: 82,
                         borderRadius: 18,
@@ -3069,11 +3067,11 @@ export default function CreateEntryPage() {
                       stepProgress.verificationDone
                     )}
                   >
-                    2
+                    {step === "verify" ? 2 : 3}
                   </span>
                   <span style={{ display: "grid", gap: 6 }}>
                     <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 2.2 }}>
-                      Second block
+                      {step === "verify" ? "Second block" : "Third block"}
                     </span>
                     <span
                       style={{
@@ -3103,6 +3101,56 @@ export default function CreateEntryPage() {
                   }}
                 >
                   {verificationBlockHelp}
+                </div>
+              ) : null}
+
+              {openPanel === "verification" && step !== "verify" ? (
+                <div
+                  style={{
+                    marginTop: 10,
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: 8,
+                  }}
+                >
+                  {[
+                    ["Bank/ID", "Available"],
+                    ["Passport/selfie", "Next"],
+                    ["NIN/regional ID", "Next"],
+                  ].map(([label, statusLabel]) => (
+                    <div
+                      key={label}
+                      style={{
+                        minHeight: 58,
+                        borderRadius: 14,
+                        border: "1px solid rgba(126,164,204,0.20)",
+                        background:
+                          statusLabel === "Available"
+                            ? "linear-gradient(180deg, rgba(242,199,102,0.14) 0%, rgba(242,199,102,0.05) 100%)"
+                            : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
+                        padding: "8px 7px",
+                        display: "grid",
+                        gap: 3,
+                        alignContent: "center",
+                        color: "#F8FBFF",
+                      }}
+                    >
+                      <div style={{ fontSize: 10.5, fontWeight: 1000, lineHeight: 1.1 }}>
+                        {label}
+                      </div>
+                      <div
+                        style={{
+                          color: statusLabel === "Available" ? "#F2C766" : "#9EB1C6",
+                          fontSize: 9.5,
+                          fontWeight: 900,
+                          textTransform: "uppercase",
+                          letterSpacing: 0.6,
+                        }}
+                      >
+                        {statusLabel}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : null}
 
@@ -3747,7 +3795,13 @@ export default function CreateEntryPage() {
               ) : null}
             </div>
 
-            <div ref={communityRef} style={stageShell(openPanel === "community", false)}>
+            <div
+              ref={communityRef}
+              style={{
+                ...stageShell(openPanel === "community", false),
+                order: step === "verify" ? 3 : 2,
+              }}
+            >
               <SecondaryButton
                 onClick={() =>
                   openPanel === "community"
@@ -3761,10 +3815,12 @@ export default function CreateEntryPage() {
                 style={stageDropDownHeader(openPanel === "community", false)}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                  <span style={stageBadge(stepProgress.community, false)}>3</span>
+                  <span style={stageBadge(stepProgress.community, false)}>
+                    {step === "verify" ? 3 : 2}
+                  </span>
                   <span style={{ display: "grid", gap: 6 }}>
                     <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 2.2 }}>
-                      Third block
+                      {step === "verify" ? "Third block" : "Second block"}
                     </span>
                     <span
                       style={{
@@ -3793,7 +3849,7 @@ export default function CreateEntryPage() {
                     fontWeight: 760,
                   }}
                 >
-                  Community details come last.
+                  Name the community first. Founder trust checks can be added as optional evidence.
                 </div>
               ) : null}
 
@@ -3854,7 +3910,7 @@ export default function CreateEntryPage() {
                         flex: "1 1 260px",
                       }}
                     >
-                      Final submit
+                      Create community
                     </PrimaryButton>
                   </div>
                 </form>

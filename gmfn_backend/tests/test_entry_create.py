@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.security import get_password_hash
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanJoinRequest, ClanMembership, TrustEvent, User
+from app.db.models import Clan, ClanJoinRequest, ClanMembership, TrustEvent, User, UserPayoutDestination
 
 
 def _parse_api_datetime(value: str) -> datetime:
@@ -800,7 +800,7 @@ def test_entry_create_requires_verified_phone_first(client):
     assert "Phone verification must be completed first" in create_res.text
 
 
-def test_entry_create_requires_bank_details_after_verified_phone(client):
+def test_entry_create_allows_community_creation_without_bank_details(client):
     os.environ["GMFN_DEV_MODE"] = "1"
 
     start_res = client.post(
@@ -827,10 +827,32 @@ def test_entry_create_requires_bank_details_after_verified_phone(client):
         json={
             "verification_id": start_body["verification_id"],
             "clan_name": "Awaiting Bank Circle",
+            "email": "market.chair@example.com",
+            "password": "strongpass",
+            "confirm_password": "strongpass",
         },
     )
-    assert create_res.status_code == 400, create_res.text
-    assert "Bank details must be completed before community creation" in create_res.text
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.id == create_body["user_id"]).one()
+        assert user.phone_verified_at is not None
+        payout = (
+            db.query(UserPayoutDestination)
+            .filter(UserPayoutDestination.user_id == create_body["user_id"])
+            .first()
+        )
+        assert payout is None
+        bank_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.subject_user_id == create_body["user_id"],
+                TrustEvent.event_type == "identity.bank_destination_recorded",
+            )
+            .first()
+        )
+        assert bank_event is None
 
 
 def test_entry_phone_confirm_rejects_wrong_code(client):

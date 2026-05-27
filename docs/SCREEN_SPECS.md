@@ -167,14 +167,18 @@ Create a new community as founder/starter.
 Must show:
 - 3-step wizard
 - Step 1: Your details
-- Step 2: Bank and wallet details
-- Step 3: Community setup
+- Step 2: Community setup
+- Step 3: Founder trust level / optional verification choices
 
 Rules:
 - Only one step expanded at a time.
-- Future steps collapsed.
+- Future steps collapsed or clearly marked optional.
 - User completes Step 1 before Step 2.
-- User completes Step 2 before Step 3.
+- User may create the community after Step 2 once phone registration or phone
+  verification is attached to the entry.
+- Step 3 is optional at the front door and should explain that stronger checks
+  such as bank/wallet, driver licence, passport/selfie, NIN, or other regional
+  IDs can raise founder assurance later without blocking basic community setup.
 - After Step 3, show CommunityCreatedPage.
 - Then return to SignInPage or allow Open Community Home after sign-in.
 

@@ -869,9 +869,6 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     registration_only = _entry_phone_registration_only_enabled()
     if verification.verified_at is None and not registration_only:
         raise HTTPException(status_code=400, detail="Phone verification must be completed first")
-    if verification.bank_details_recorded_at is None:
-        raise HTTPException(status_code=400, detail="Bank details must be completed before community creation")
-
     display_name = verification.display_name
     phone_e164 = verification.phone_e164
     email = _founder_email(payload_email=verification.email or payload.email, phone_e164=phone_e164)
@@ -956,6 +953,8 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             invite.is_active = False
         db.add(invite)
 
+    bank_recorded = verification.bank_details_recorded_at is not None
+
     if verification.verified_at is None:
         payout_status, payout_note = (
             "phone_registered_bank_recorded_sms_suspended",
@@ -963,24 +962,26 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         )
     else:
         payout_status, payout_note = _bank_status_note(verification.region_consistency_status)
-    payout = UserPayoutDestination(
-        user_id=int(user.id),
-        destination_name=_clean_text(verification.bank_account_name) or display_name,
-        bank_name=_clean_text(verification.bank_name),
-        account_number=_normalize_account_number(verification.bank_account_number),
-        phone_number=_normalize_phone(verification.bank_phone_number or phone_e164) or None,
-        country=_clean_text(verification.bank_country) or None,
-        currency=_clean_text(verification.bank_currency, upper=True) or "NGN",
-        note=_clean_text(verification.bank_note) or None,
-        verification_status=payout_status,
-        verification_note=payout_note,
-        phone_country_hint=_clean_text(verification.phone_country_hint, upper=True) or None,
-        locale_country_hint=_clean_text(verification.locale_country_hint, upper=True) or None,
-        region_consistency_status=_clean_text(verification.region_consistency_status) or None,
-        region_consistency_note=_clean_text(verification.region_consistency_note) or None,
-        verified_at=None,
-    )
-    db.add(payout)
+    payout: Optional[UserPayoutDestination] = None
+    if bank_recorded:
+        payout = UserPayoutDestination(
+            user_id=int(user.id),
+            destination_name=_clean_text(verification.bank_account_name) or display_name,
+            bank_name=_clean_text(verification.bank_name),
+            account_number=_normalize_account_number(verification.bank_account_number),
+            phone_number=_normalize_phone(verification.bank_phone_number or phone_e164) or None,
+            country=_clean_text(verification.bank_country) or None,
+            currency=_clean_text(verification.bank_currency, upper=True) or "NGN",
+            note=_clean_text(verification.bank_note) or None,
+            verification_status=payout_status,
+            verification_note=payout_note,
+            phone_country_hint=_clean_text(verification.phone_country_hint, upper=True) or None,
+            locale_country_hint=_clean_text(verification.locale_country_hint, upper=True) or None,
+            region_consistency_status=_clean_text(verification.region_consistency_status) or None,
+            region_consistency_note=_clean_text(verification.region_consistency_note) or None,
+            verified_at=None,
+        )
+        db.add(payout)
 
     verification_checks = (
         db.query(IdentityVerificationCheck)
@@ -1058,29 +1059,30 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         refresh=False,
     )
 
-    bank_event_meta = build_trust_meta(
-        reason="bank_destination_recorded_at_registration",
-        note="Founder bank destination was recorded server-side during onboarding.",
-        system=True,
-        extra={
-            "bank_name": payout.bank_name,
-            "currency": payout.currency,
-            "verification_status": payout.verification_status,
-        },
-    )
-    log_trust_event(
-        db,
-        event_type="identity.bank_destination_recorded",
-        clan_id=int(clan.id),
-        actor_user_id=int(user.id),
-        subject_user_id=int(user.id),
-        meta=bank_event_meta,
-        dedupe_key=f"entry:{int(verification.id)}:user:{int(user.id)}:bank",
-        commit=False,
-        refresh=False,
-    )
+    if bank_recorded and payout is not None:
+        bank_event_meta = build_trust_meta(
+            reason="bank_destination_recorded_at_registration",
+            note="Founder bank destination was recorded server-side during onboarding.",
+            system=True,
+            extra={
+                "bank_name": payout.bank_name,
+                "currency": payout.currency,
+                "verification_status": payout.verification_status,
+            },
+        )
+        log_trust_event(
+            db,
+            event_type="identity.bank_destination_recorded",
+            clan_id=int(clan.id),
+            actor_user_id=int(user.id),
+            subject_user_id=int(user.id),
+            meta=bank_event_meta,
+            dedupe_key=f"entry:{int(verification.id)}:user:{int(user.id)}:bank",
+            commit=False,
+            refresh=False,
+        )
 
-    if _clean_text(verification.region_consistency_status) == "matched":
+    if bank_recorded and _clean_text(verification.region_consistency_status) == "matched":
         region_event_meta = build_trust_meta(
             reason="region_consistency_confirmed_at_registration",
             note=_clean_text(verification.region_consistency_note) or "Phone and bank region evidence aligned at onboarding.",
@@ -1103,7 +1105,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             commit=False,
             refresh=False,
         )
-    elif _clean_text(verification.region_consistency_status) == "explained_mismatch":
+    elif bank_recorded and _clean_text(verification.region_consistency_status) == "explained_mismatch":
         region_event_meta = build_trust_meta(
             reason="cross_region_onboarding_explained",
             note=_clean_text(verification.region_consistency_note) or "Cross-region onboarding explanation was recorded.",
@@ -1155,7 +1157,9 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     trust_out = apply_trust_score(db, user_id=int(user.id))
     starter_summary = trust_out.get("starter_proof_summary", {}) if isinstance(trust_out, dict) else {}
     proof_bits = []
-    if starter_summary.get("phone_verified"):
+    if verification.verified_at is None:
+        proof_bits.append("registered phone")
+    elif starter_summary.get("phone_verified"):
         proof_bits.append("verified phone")
     if starter_summary.get("bank_recorded"):
         proof_bits.append("bank destination")
