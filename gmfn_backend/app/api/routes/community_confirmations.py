@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -142,6 +143,16 @@ class CommunityConfirmationContactAdminIn(BaseModel):
 def _service_error(exc: Exception) -> HTTPException:
     if isinstance(exc, PermissionError):
         return HTTPException(status_code=403, detail=str(exc))
+    if isinstance(exc, OperationalError):
+        message = str(exc).lower()
+        if "no such table" in message and "community_confirmation_" in message:
+            return HTTPException(
+                status_code=503,
+                detail=(
+                    "Community confirmation is temporarily unavailable on this server. "
+                    "The GSN owner needs to refresh the server database setup."
+                ),
+            )
     message = str(exc) or "Community confirmation request failed"
     status_code = 404 if "not found" in message.lower() else 400
     return HTTPException(status_code=status_code, detail=message)

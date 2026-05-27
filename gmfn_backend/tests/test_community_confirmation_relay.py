@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
 from sqlalchemy import text
 
 from app.core.auth import get_current_user
@@ -20,6 +21,7 @@ from app.db.models import (
 )
 from app.db.notification_models import Notification
 from app.main import app
+import app.services.community_confirmation_service as community_confirmation_service
 from app.services.community_confirmation_service import build_community_confirmation_summary
 from app.services.trust_score_service import compute_trust_breakdown
 
@@ -406,6 +408,37 @@ def test_public_community_verify_accepts_trustslip_fallback_for_uncoded_clan(cli
     assert data["community_id"] == 8
     assert data["community_name"] == "Uncoded Clan"
     assert data["status"] == "active"
+
+
+def test_public_community_verify_degrades_when_confirmation_schema_missing(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_relay_fixture()
+
+    def missing_policy(*args, **kwargs):
+        raise OperationalError(
+            "SELECT community_confirmation_policies.id FROM community_confirmation_policies",
+            {"community_id": 1},
+            Exception("no such table: community_confirmation_policies"),
+        )
+
+    monkeypatch.setattr(
+        community_confirmation_service,
+        "get_or_create_confirmation_policy",
+        missing_policy,
+    )
+
+    response = client.get("/verify/community/GSN-C-000001")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["community_id"] == 1
+    assert data["community_name"] == "Test Clan"
+    assert data["relay_available"] is False
+    assert data["instant_pulse_available"] is False
+    assert "live member confirmation is temporarily unavailable" in data["plain_language"]
+    assert "community_confirmation_policies" not in response.text
+    assert "SELECT" not in response.text
 
 
 def test_expired_community_confirmation_records_trust_event(client: TestClient):

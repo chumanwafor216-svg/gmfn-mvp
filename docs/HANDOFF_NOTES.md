@@ -1,3 +1,53 @@
+### Community Verify local missing-policy-table recovery (2026-05-27)
+
+- Owner showed local phone screenshots on `192.168.1.38:5173/verify/...`
+  where Community Verify rendered `Community not found` followed by raw SQLite
+  SQL for `no such table: community_confirmation_policies`.
+- Confirmed root cause:
+  - the local dev SQLite database had not been migrated past the community
+    confirmation relay migrations;
+  - `/verify/community/{community_key}` found the community but then called
+    `build_community_confirmation_summary()`, which queried
+    `community_confirmation_policies`;
+  - the route-level error handler converted the backend schema error into a
+    misleading public `Community not found` panel and leaked raw SQL.
+- Updated `gmfn_backend/app/services/community_confirmation_service.py`:
+  - `build_community_confirmation_summary()` now degrades gracefully when the
+    community confirmation schema is missing;
+  - the public community record can still return the community identity and
+    marks relay/instant confirmation unavailable instead of failing the whole
+    page;
+  - public verification now returns the summary plain-language text as
+    `public_policy`/`plain_language`.
+- Updated `gmfn_backend/app/api/routes/community_confirmations.py`:
+  - route error handling no longer exposes raw SQL for missing community
+    confirmation tables; it returns a bounded 503 message if the fallback path
+    cannot handle the error.
+- Updated `gmfn_backend/tests/test_community_confirmation_relay.py`:
+  - added coverage that forces a missing policy table error and confirms public
+    Community Verify still returns the community record without SQL leakage.
+- Local database action:
+  - ran `GMFN_DEV_MODE=1 python -m alembic upgrade head` in `gmfn_backend`;
+  - local `gmfn.db` now contains the community confirmation tables:
+    `community_confirmation_contacts`, `community_confirmation_decisions`,
+    `community_confirmation_outcomes`, `community_confirmation_policies`,
+    `community_confirmation_requests`, `community_confirmation_responses`,
+    `community_confirmation_review_cases`, and
+    `community_confirmation_review_evidence`.
+- Verification:
+  - `python -m pytest -q tests/test_community_confirmation_relay.py` passed.
+  - `python -m py_compile app/services/community_confirmation_service.py app/api/routes/community_confirmations.py`
+    passed.
+  - `GET http://127.0.0.1:8012/health` returned
+    `{"ok":true,"dev_mode":true}`.
+  - `GET http://127.0.0.1:8012/verify/community/3` returned active community
+    record `Aberdeen city ICA` instead of the missing-table error.
+- Remaining truth:
+  - If the local backend process was started before migration and still shows
+    the old error, restart the backend process. The database is now migrated,
+    but a stale process or stale browser tab can still display a previous
+    response until refreshed.
+
 ### TrustSlip refresh date and community record action (2026-05-27)
 
 - Owner reported two live-phone issues from TrustSlip/public verify screens:

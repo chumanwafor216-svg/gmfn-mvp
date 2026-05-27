@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from sqlalchemy import case, func, or_
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
 from app.db.models import (
@@ -176,6 +177,24 @@ def _last_confirmation_at(
     )
     created_at = _to_aware(getattr(row, "created_at", None)) if row else None
     return created_at.isoformat() if created_at else None
+
+
+def _is_missing_confirmation_schema_error(exc: Exception) -> bool:
+    message = str(exc).lower()
+    return (
+        "no such table" in message
+        and "community_confirmation_" in message
+    )
+
+
+def _safe_active_member_count(db: Session, community_id: int) -> int:
+    try:
+        return _active_member_count(db, int(community_id))
+    except OperationalError as exc:
+        if _is_missing_confirmation_schema_error(exc):
+            db.rollback()
+            return 0
+        raise
 
 
 def get_or_create_confirmation_policy(
@@ -407,20 +426,47 @@ def build_community_confirmation_summary(
             subject_user_id=int(subject_user_id),
         )
 
-    policy = get_or_create_confirmation_policy(db, community_id=int(community_id))
-    active_members = _active_member_count(db, int(community_id))
-    contactable = _eligible_contact_count(
-        db,
-        community_id=int(community_id),
-        subject_user_id=subject_user_id,
-    )
-    sponsor_signals = (
-        _sponsor_signal_count(db, int(community_id), int(subject_user_id))
-        if subject_user_id is not None
-        else 0
-    )
     community_status = str(getattr(community, "status", "") or "active")
-    relay_available = bool(policy.relay_enabled and contactable > 0)
+
+    try:
+        policy = get_or_create_confirmation_policy(db, community_id=int(community_id))
+        active_members = _active_member_count(db, int(community_id))
+        contactable = _eligible_contact_count(
+            db,
+            community_id=int(community_id),
+            subject_user_id=subject_user_id,
+        )
+        sponsor_signals = (
+            _sponsor_signal_count(db, int(community_id), int(subject_user_id))
+            if subject_user_id is not None
+            else 0
+        )
+        relay_available = bool(policy.relay_enabled and contactable > 0)
+        instant_pulse_available = bool(policy.instant_pulse_enabled and contactable > 0)
+        request_action = "request_community_confirmation" if relay_available else None
+        plain_language = (
+            "This person belongs to a real GSN community. If a higher-risk decision needs "
+            "stronger assurance, GSN can ask eligible community members to respond now. "
+            "The result is calculated from responses, not from an admin's personal approval, "
+            "and private contact details stay protected."
+            if relay_available
+            else "This community is visible, but no private relay contact path is currently available."
+        )
+    except OperationalError as exc:
+        if not _is_missing_confirmation_schema_error(exc):
+            raise
+        db.rollback()
+        active_members = _safe_active_member_count(db, int(community_id))
+        contactable = 0
+        sponsor_signals = 0
+        relay_available = False
+        instant_pulse_available = False
+        request_action = None
+        plain_language = (
+            "This community is visible in GSN, but live member confirmation is temporarily "
+            "unavailable on this server. The community record can still be checked, and "
+            "private member details remain protected."
+        )
 
     return {
         "community_status": community_status,
@@ -441,16 +487,9 @@ def build_community_confirmation_summary(
             else None
         ),
         "relay_available": relay_available,
-        "instant_pulse_available": bool(policy.instant_pulse_enabled and contactable > 0),
-        "request_action": "request_community_confirmation" if relay_available else None,
-        "plain_language": (
-            "This person belongs to a real GSN community. If a higher-risk decision needs "
-            "stronger assurance, GSN can ask eligible community members to respond now. "
-            "The result is calculated from responses, not from an admin's personal approval, "
-            "and private contact details stay protected."
-            if relay_available
-            else "This community is visible, but no private relay contact path is currently available."
-        ),
+        "instant_pulse_available": instant_pulse_available,
+        "request_action": request_action,
+        "plain_language": plain_language,
     }
 
 
@@ -3391,7 +3430,9 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         "active_member_count": summary["active_member_count"],
         "relay_available": summary["relay_available"],
         "instant_pulse_available": summary["instant_pulse_available"],
-        "public_policy": "Member confirmation is available through GSN relay when enabled. Private contact details are not publicly exposed.",
+        "public_policy": summary.get("plain_language")
+        or "Member confirmation is available through GSN relay when enabled. Private contact details are not publicly exposed.",
+        "plain_language": summary.get("plain_language"),
         "hidden_by_design": [
             "full member list",
             "raw member phone numbers",
