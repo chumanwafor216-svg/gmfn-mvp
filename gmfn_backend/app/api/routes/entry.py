@@ -51,6 +51,7 @@ class EntryPhoneStartOut(BaseModel):
     delivery_mode: str
     otp_preview: Optional[str] = None
     verified: bool = False
+    registered_only: bool = False
     verified_at: Optional[str] = None
     bank_details_recorded: bool = False
     confirmation_message: Optional[str] = None
@@ -288,8 +289,20 @@ def _dev_mode() -> bool:
 
 
 def _entry_otp_preview_enabled() -> bool:
+    return _entry_phone_delivery_mode() == "preview"
+
+
+def _entry_phone_delivery_mode() -> str:
     configured = str(os.getenv("GMFN_ENTRY_PHONE_DELIVERY") or "").strip().lower()
-    return _dev_mode() or configured in {"preview", "pilot", "manual"}
+    if configured in {"sms", "live", "provider", "pending-sms"}:
+        return "pending-sms"
+    if configured in {"preview", "pilot", "manual"} or _dev_mode():
+        return "preview"
+    return "registration-only"
+
+
+def _entry_phone_registration_only_enabled() -> bool:
+    return _entry_phone_delivery_mode() == "registration-only"
 
 
 def _entry_phone_session_minutes(*, preview_enabled: bool) -> int:
@@ -315,6 +328,13 @@ def _phone_confirmation_message(row: EntryPhoneVerification) -> str:
     return (
         f"{row.display_name}, your phone has been successfully linked to your name. "
         "GSN will use it to protect your onboarding record as you continue."
+    )
+
+
+def _phone_registration_only_message(row: EntryPhoneVerification) -> str:
+    return (
+        f"{row.display_name}, this phone number has been registered against your name for controlled testing. "
+        "SMS ownership verification is suspended for now and can be re-enabled when the SMS rail is paid for."
     )
 
 
@@ -604,7 +624,9 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
             field_label="phone number",
         )
 
-    preview_enabled = _entry_otp_preview_enabled()
+    delivery_mode = _entry_phone_delivery_mode()
+    preview_enabled = delivery_mode == "preview"
+    registration_only = delivery_mode == "registration-only"
     resumable = _find_resumable_entry_phone_session(
         db=db,
         phone_e164=phone_e164,
@@ -635,14 +657,17 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
             "verification_id": int(resumable.id),
             "phone_e164": resumable.phone_e164,
             "expires_at": resumable.expires_at.isoformat(),
-            "delivery_mode": "preview" if preview_enabled else "pending-sms",
+            "delivery_mode": delivery_mode,
             "otp_preview": resumable.code if preview_enabled and not is_verified else None,
             "verified": is_verified,
+            "registered_only": registration_only and not is_verified,
             "verified_at": verified_at.isoformat() if verified_at else None,
             "bank_details_recorded": resumable.bank_details_recorded_at is not None,
             "confirmation_message": (
                 "GSN found your unfinished entry record and reopened it so you can continue."
-                if not is_verified
+                if not is_verified and not registration_only
+                else _phone_registration_only_message(resumable)
+                if not is_verified and registration_only
                 else _phone_confirmation_message(resumable)
             ),
         }
@@ -670,8 +695,12 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
         "verification_id": int(verification.id),
         "phone_e164": phone_e164,
         "expires_at": verification.expires_at.isoformat(),
-        "delivery_mode": "preview" if preview_enabled else "pending-sms",
+        "delivery_mode": delivery_mode,
         "otp_preview": verification.code if preview_enabled else None,
+        "registered_only": registration_only,
+        "confirmation_message": _phone_registration_only_message(verification)
+        if registration_only
+        else None,
     }
 
 
@@ -744,7 +773,8 @@ def save_entry_bank_details(
     if _verification_expired(row):
         raise HTTPException(status_code=400, detail="Verified phone session has expired")
 
-    if row.verified_at is None:
+    registration_only = _entry_phone_registration_only_enabled()
+    if row.verified_at is None and not registration_only:
         raise HTTPException(status_code=400, detail="Phone verification must be completed first")
 
     bank_country = _normalize_country_hint(payload.country)
@@ -782,10 +812,21 @@ def save_entry_bank_details(
     db.commit()
     db.refresh(row)
 
-    verification_status, verification_note = _bank_status_note(region_consistency_status)
+    if row.verified_at is None:
+        verification_status, verification_note = (
+            "phone_registered_bank_recorded_sms_suspended",
+            "Bank destination is recorded server-side and tied to a registered phone number. SMS phone ownership verification is suspended for controlled testing.",
+        )
+    else:
+        verification_status, verification_note = _bank_status_note(region_consistency_status)
     confirmation_message = (
-        "Your bank or wallet destination has been recorded against this verified phone session. "
-        "GSN will attach this proof to your starter trust record when community creation is completed."
+        "Your bank or wallet destination has been recorded against this phone registration session. "
+        "SMS ownership verification is suspended for controlled testing and can be completed later."
+        if row.verified_at is None
+        else (
+            "Your bank or wallet destination has been recorded against this verified phone session. "
+            "GSN will attach this proof to your starter trust record when community creation is completed."
+        )
     )
 
     return {
@@ -825,7 +866,8 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     if _verification_expired(verification):
         raise HTTPException(status_code=400, detail="Verified phone session has expired")
 
-    if verification.verified_at is None:
+    registration_only = _entry_phone_registration_only_enabled()
+    if verification.verified_at is None and not registration_only:
         raise HTTPException(status_code=400, detail="Phone verification must be completed first")
     if verification.bank_details_recorded_at is None:
         raise HTTPException(status_code=400, detail="Bank details must be completed before community creation")
@@ -914,7 +956,13 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
             invite.is_active = False
         db.add(invite)
 
-    payout_status, payout_note = _bank_status_note(verification.region_consistency_status)
+    if verification.verified_at is None:
+        payout_status, payout_note = (
+            "phone_registered_bank_recorded_sms_suspended",
+            "Bank destination is recorded server-side and tied to a registered phone number. SMS phone ownership verification is suspended for controlled testing.",
+        )
+    else:
+        payout_status, payout_note = _bank_status_note(verification.region_consistency_status)
     payout = UserPayoutDestination(
         user_id=int(user.id),
         destination_name=_clean_text(verification.bank_account_name) or display_name,
@@ -973,17 +1021,34 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         )
 
     phone_event_meta = build_trust_meta(
-        reason="verified_phone_attached_at_registration",
-        note="Founder phone verification completed before community creation.",
+        reason=(
+            "entry_phone_registered_sms_suspended"
+            if verification.verified_at is None
+            else "verified_phone_attached_at_registration"
+        ),
+        note=(
+            "Founder phone number was registered before community creation while SMS verification was suspended for controlled testing."
+            if verification.verified_at is None
+            else "Founder phone verification completed before community creation."
+        ),
         system=True,
         extra={
-            "verification_source": "entry.phone.confirm",
+            "verification_source": (
+                "entry.phone.registration_only"
+                if verification.verified_at is None
+                else "entry.phone.confirm"
+            ),
             "phone_e164": phone_e164,
+            "sms_suspended": verification.verified_at is None,
         },
     )
     log_trust_event(
         db,
-        event_type="identity.phone_verified",
+        event_type=(
+            "identity.phone_registered"
+            if verification.verified_at is None
+            else "identity.phone_verified"
+        ),
         clan_id=int(clan.id),
         actor_user_id=int(user.id),
         subject_user_id=int(user.id),

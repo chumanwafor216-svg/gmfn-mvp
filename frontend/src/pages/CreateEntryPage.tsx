@@ -658,6 +658,7 @@ type PhoneVerificationProof = {
   display_name?: string;
   phone_e164?: string;
   verified_at?: string;
+  registered_only?: boolean;
   confirmation_message?: string;
   trust_event_response?: {
     event_type?: string;
@@ -1047,7 +1048,7 @@ export default function CreateEntryPage() {
       : "Bank and wallet details";
   const verificationBlockHelp =
     step === "verify"
-      ? "Confirm this phone only if the app asks for an SMS code. When automatic confirmation is available, GSN will finish this check and open the bank or wallet fields."
+      ? "Register this phone against your entry name. SMS ownership verification is suspended during controlled testing, so GSN will record the phone and open the bank or wallet fields."
       : step === "bank"
         ? "Add the account or wallet where trusted support, repayment records, and future payment references should point."
         : "After your first details are accepted, this block records the bank or wallet destination for trusted support, repayments, and future payout references.";
@@ -1444,16 +1445,20 @@ export default function CreateEntryPage() {
     setVerificationId(Number(out?.verification_id || 0));
     const nextVerificationId = Number(out?.verification_id || 0);
     const previewCode = safeStr(out?.otp_preview);
+    const registeredOnly =
+      Boolean(out?.registered_only) ||
+      safeStr(out?.delivery_mode).toLowerCase() === "registration-only";
     setOtpPreview(previewCode);
     setOtpDeliveryMode(safeStr(out?.delivery_mode));
     setPhoneVerificationProof(null);
     setBankRecordProof(null);
 
-    if (nextVerificationId > 0 && out?.verified) {
+    if (nextVerificationId > 0 && (out?.verified || registeredOnly)) {
       setPhoneVerificationProof({
         display_name: safeStr(displayName),
         phone_e164: safeStr(out?.phone_e164) || safeStr(phone),
         verified_at: safeStr(out?.verified_at),
+        registered_only: registeredOnly,
         confirmation_message: safeStr(out?.confirmation_message),
         trust_event_response: undefined,
       });
@@ -1481,7 +1486,9 @@ export default function CreateEntryPage() {
         autoConfirmed: true,
         message:
           safeStr(out?.confirmation_message) ||
-          "GSN found your verified phone record. Continue with your bank or wallet details.",
+          (registeredOnly
+            ? "Phone registered for controlled testing. Continue with your bank or wallet details."
+            : "GSN found your verified phone record. Continue with your bank or wallet details."),
       };
     }
 
@@ -2556,7 +2563,9 @@ export default function CreateEntryPage() {
                   }}
                 >
                   <div style={{ ...sectionLabel(), color: "#047857" }}>
-                    Phone verified
+                    {phoneVerificationProof.registered_only
+                      ? "Phone registered"
+                      : "Phone verified"}
                   </div>
                   <div
                     style={{
@@ -2567,7 +2576,9 @@ export default function CreateEntryPage() {
                     }}
                   >
                     {safeStr(phoneVerificationProof.confirmation_message) ||
-                      `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is now verified for ${safeStr(phoneVerificationProof.display_name) || "this founder"}.`}
+                      (phoneVerificationProof.registered_only
+                        ? `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is registered against ${safeStr(phoneVerificationProof.display_name) || "this founder"} for controlled testing.`
+                        : `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is now verified for ${safeStr(phoneVerificationProof.display_name) || "this founder"}.`)}
                   </div>
                   <div
                     style={{
@@ -2613,7 +2624,9 @@ export default function CreateEntryPage() {
                         {safeStr(
                           phoneVerificationProof.trust_event_response.message
                         ) ||
-                          "This phone proof is ready to become trust evidence when registration is completed."}
+                          (phoneVerificationProof.registered_only
+                            ? "This phone registration is ready to become starter evidence when registration is completed. SMS verification can be added later."
+                            : "This phone proof is ready to become trust evidence when registration is completed.")}
                       </div>
                       {safeStr(
                         phoneVerificationProof.trust_event_response.event_type
@@ -2778,7 +2791,8 @@ export default function CreateEntryPage() {
                         }}
                       >
                         Block 2 has two parts. First confirm this phone number.
-                        Then the bank or wallet details will open below it.
+                        If SMS is suspended, GSN records the phone against your
+                        name and opens the bank or wallet details below it.
                       </div>
                     </div>
 
@@ -2795,7 +2809,7 @@ export default function CreateEntryPage() {
                         pattern="[0-9]*"
                         maxLength={8}
                         name="entry-phone-code"
-                        aria-label="SMS verification code"
+                        aria-label="Phone verification code"
                         style={input()}
                       />
                     </div>
@@ -2838,7 +2852,7 @@ export default function CreateEntryPage() {
                             fontWeight: 800,
                           }}
                         >
-                          An SMS sender is expected to deliver this code. If no code arrives, use the verification support path before continuing.
+                          SMS delivery is only needed when the live SMS rail is enabled. During controlled testing, refresh this step to use phone registration mode.
                         </div>
                       </div>
                     ) : null}

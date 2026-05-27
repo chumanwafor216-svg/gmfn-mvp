@@ -28279,3 +28279,44 @@ GSN-branded invite composer and invite-entry continuity.
     push, SMS, or email would need a separate delivery channel and user consent.
   - Anonymous public requesters still cannot receive account notifications; they
     must keep/copy the public result link unless they are signed in.
+
+### Entry phone SMS suspended for controlled testing (2026-05-27)
+
+- Tester screenshots from Render showed `/create` still asking for a phone SMS
+  verification code even though no paid SMS delivery rail is active.
+- Blunt diagnosis:
+  - hiding the SMS field in the frontend would have been a false fix because
+    `/entry/bank-details` and `/entry/create` were still backend-blocked until
+    `EntryPhoneVerification.verified_at` existed;
+  - the previous preview/manual solution depends on Render backend env being
+    set correctly, and the screenshots prove that was not reliable enough for
+    testers.
+- Backend change:
+  - `/entry/phone/start` now defaults to `delivery_mode: "registration-only"`
+    when neither dev/preview nor live SMS is explicitly configured.
+  - registration-only starts an entry phone record, returns no OTP preview, and
+    returns `registered_only: true` plus clear copy that SMS ownership
+    verification is suspended for controlled testing.
+  - `/entry/bank-details` and `/entry/create` allow a registration-only phone
+    session to continue without SMS confirmation.
+  - created users from this route keep `phone_verified_at = None`; the Trust
+    Event is `identity.phone_registered`, not `identity.phone_verified`.
+  - live SMS can be re-enabled explicitly with
+    `GMFN_ENTRY_PHONE_DELIVERY=sms` / `live` / `provider` / `pending-sms`.
+- Frontend change:
+  - `CreateEntryPage` treats `registered_only` as a successful phone
+    registration step and opens the bank/wallet block directly.
+  - Block 2 copy now says phone registration/SMS suspended instead of implying
+    an SMS should arrive.
+- Verification:
+  - `python -m pytest gmfn_backend\tests\test_entry_create.py` passed: 21
+    tests.
+  - `npm run audit:button-stability` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - This intentionally reduces assurance during controlled testing. It records
+    the phone number against the person, but it does not prove they control the
+    phone through SMS.
+  - When public testing starts, re-enable the SMS rail explicitly and retest
+    the pending-SMS path before relying on phone verification as trust evidence.

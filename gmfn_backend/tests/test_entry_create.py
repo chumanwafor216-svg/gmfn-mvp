@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 
 from app.core.security import get_password_hash
 from app.db.database import SessionLocal
-from app.db.models import Clan, ClanJoinRequest, ClanMembership, User
+from app.db.models import Clan, ClanJoinRequest, ClanMembership, TrustEvent, User
 
 
 def _parse_api_datetime(value: str) -> datetime:
@@ -13,7 +13,7 @@ def _parse_api_datetime(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def test_entry_phone_default_does_not_expose_otp_preview(client, monkeypatch):
+def test_entry_phone_default_registers_without_sms_for_controlled_testing(client, monkeypatch):
     monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
     monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
 
@@ -27,8 +27,64 @@ def test_entry_phone_default_does_not_expose_otp_preview(client, monkeypatch):
     assert start_res.status_code == 201, start_res.text
     start_body = start_res.json()
 
+    assert start_body["delivery_mode"] == "registration-only"
+    assert start_body["otp_preview"] is None
+    assert start_body["registered_only"] is True
+    assert start_body["verified"] is False
+    assert "SMS ownership verification is suspended" in start_body["confirmation_message"]
+
+    bank_res = client.post(
+        "/entry/bank-details",
+        json={
+            "verification_id": start_body["verification_id"],
+            "destination_name": "Production Tester",
+            "bank_name": "Pilot Community Bank",
+            "account_number": "0123456789",
+            "country": "NG",
+        },
+    )
+    assert bank_res.status_code == 200, bank_res.text
+    assert "phone registration session" in bank_res.json()["confirmation_message"]
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "Production Tester Circle",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    with SessionLocal() as db:
+        user = db.query(User).filter(User.phone_e164 == "+2348011111010").one()
+        assert user.phone_verified_at is None
+        event = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "identity.phone_registered")
+            .one()
+        )
+        assert event.subject_user_id == create_body["user_id"]
+
+
+def test_entry_phone_sms_mode_can_be_reenabled_without_preview(client, monkeypatch):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Live SMS Tester",
+            "phone_e164": "+2348011111011",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
     assert start_body["delivery_mode"] == "pending-sms"
     assert start_body["otp_preview"] is None
+    assert start_body["registered_only"] is False
+    assert start_body["verified"] is False
 
 
 def test_entry_phone_preview_session_lasts_one_day_for_pilot_onboarding(client):
