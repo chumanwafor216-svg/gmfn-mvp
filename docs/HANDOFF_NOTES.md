@@ -28320,3 +28320,29 @@ GSN-branded invite composer and invite-entry continuity.
     phone through SMS.
   - When public testing starts, re-enable the SMS rail explicitly and retest
     the pending-SMS path before relying on phone verification as trust evidence.
+
+### Dashboard Demand Box response paper polish (2026-05-27)
+
+- Dashboard Demand Box now shows the current demand request as a branded
+  response paper instead of a plain row/card stack.
+- Route/screen affected:
+  - `/app/dashboard`, expanded Demand Box section only.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` renders the active demand with a
+    `Demand Box Response` label, title, Open/Urgent and date chips, item detail,
+    structured identity/trust/community rows, a response-proof notice, and two
+    stable actions: `Open your Demand Box` and `View full record`.
+- Guardrails:
+  - Did not touch the frozen Market Wisdom presentation area.
+  - Did not change backend contracts, schemas, permissions, or Demand Box API
+    behavior.
+- Verification:
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - `View full record` currently opens the Demand Box route because there is no
+    existing demand-record deep-link contract on the dashboard side. A true
+    per-request detail route should be added separately if the owner wants that
+    second action to land on one exact record.

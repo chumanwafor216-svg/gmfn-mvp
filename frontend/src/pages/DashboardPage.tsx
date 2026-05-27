@@ -9500,55 +9500,130 @@ export default function DashboardPage() {
             {currentDemandItem ? (
               <div
                 style={{
-                  ...softCard(demandSurfaceChrome.itemBg),
-                  border: demandSurfaceChrome.itemBorder,
-                  padding: isPhone ? 10 : 12,
-                  borderRadius: isPhone ? 14 : 18,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(252,254,255,0.98) 100%)",
+                  border: "1px solid rgba(214,170,69,0.46)",
+                  padding: isPhone ? 13 : 18,
+                  borderRadius: isPhone ? 18 : 22,
                   boxShadow:
-                    "inset 0 1px 0 rgba(255,255,255,0.84), 0 8px 18px rgba(10,24,49,0.05)",
+                    "0 18px 36px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    gap: 8,
                     alignItems: "center",
-                    flexWrap: "wrap",
+                    gap: 9,
+                    color: "#0B1F33",
+                    fontSize: isPhone ? 11 : 12,
+                    fontWeight: 1000,
+                    letterSpacing: 2,
+                    textTransform: "uppercase",
                   }}
                 >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      color: "#B88A1C",
+                      display: "inline-flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    <DashboardSignalIcon name="trust" size={isPhone ? 16 : 18} />
+                  </span>
+                  Demand Box Response
+                </div>
+
+                <div
+                  style={{
+                    marginTop: isPhone ? 11 : 14,
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0, 1fr)",
+                    gap: isPhone ? 10 : 14,
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: isPhone ? 42 : 48,
+                      height: isPhone ? 42 : 48,
+                      borderRadius: isPhone ? 12 : 14,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#F2C766",
+                      background:
+                        "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)",
+                      boxShadow: "0 10px 20px rgba(6,24,39,0.18)",
+                    }}
+                  >
+                    <DashboardSignalIcon name="package" size={isPhone ? 23 : 26} />
+                  </span>
                   <div
                     style={{
                       color: "#0B1F33",
-                      fontWeight: 800,
-                      fontSize: isPhone ? 15 : undefined,
-                      lineHeight: isPhone ? 1.24 : 1.3,
-                      flex: "1 1 220px",
+                      fontWeight: 1000,
+                      fontSize: isPhone ? 27 : 34,
+                      lineHeight: 1.04,
+                      letterSpacing: 0,
+                      minWidth: 0,
+                      overflowWrap: "anywhere",
                     }}
                   >
                     {safeStr(currentDemandItem.title || "Current demand request")}
-                  </div>
-
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(currentDemandIsUrgent)}>
-                      {currentDemandIsUrgent ? "Urgent" : "Open"}
-                    </span>
-                    {safeDateTime(currentDemandItem.created_at) ? (
-                      <span style={badge(false)}>
-                        {safeDateTime(currentDemandItem.created_at)}
-                      </span>
-                    ) : null}
                   </div>
                 </div>
 
                 <div
                   style={{
-                    marginTop: 6,
-                    ...helperText(),
-                    fontSize: isPhone ? 12.5 : 13,
-                    lineHeight: isPhone ? 1.46 : 1.75,
+                    marginTop: isPhone ? 13 : 16,
+                    display: "flex",
+                    gap: 8,
+                    flexWrap: "wrap",
                   }}
                 >
+                  <span
+                    style={{
+                      ...badge(false),
+                      minHeight: isPhone ? 30 : 34,
+                      color: "#0B63D1",
+                      border: "1px solid rgba(11,99,209,0.20)",
+                      background: "rgba(239,246,255,0.92)",
+                    }}
+                  >
+                    <span aria-hidden="true">•</span>
+                    {currentDemandIsUrgent ? "Urgent" : "Open"}
+                  </span>
+                  {safeDateTime(currentDemandItem.created_at) ? (
+                    <span
+                      style={{
+                        ...badge(false),
+                        minHeight: isPhone ? 30 : 34,
+                        color: "#425C78",
+                        border: "1px solid rgba(11,99,209,0.16)",
+                        background: "rgba(248,251,255,0.96)",
+                      }}
+                    >
+                      <DashboardSignalIcon name="calendar" size={isPhone ? 14 : 15} />
+                      {safeDateTime(currentDemandItem.created_at)}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: isPhone ? 14 : 18,
+                    paddingTop: isPhone ? 12 : 14,
+                    borderTop: "1px solid rgba(15,59,116,0.10)",
+                    ...helperText(),
+                    color: "#4F6073",
+                    fontSize: isPhone ? 14 : 15,
+                    lineHeight: isPhone ? 1.42 : 1.55,
+                    fontWeight: 760,
+                  }}
+                >
+                  Item detail:{" "}
                   {safeStr(
                     currentDemandItem.description ||
                       "Open your Demand Box to read the full request."
@@ -9557,50 +9632,257 @@ export default function DashboardPage() {
 
                 <div
                   style={{
-                    marginTop: 8,
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                    alignItems: "center",
+                    marginTop: isPhone ? 16 : 18,
+                    borderRadius: isPhone ? 15 : 18,
+                    border: "1px solid rgba(15,59,116,0.10)",
+                    background: "rgba(255,255,255,0.78)",
+                    overflow: "hidden",
                   }}
                 >
-                  <span style={badge(false)}>{demandCommunityLabel}</span>
-                  {safeStr(
-                    currentDemandItem.requester_name ||
-                      currentDemandItem.requester_nickname
-                  ) ? (
-                    <span style={badge(false)}>
-                      {safeStr(
-                        currentDemandItem.requester_name ||
-                          currentDemandItem.requester_nickname
-                      )}
+                  {[
+                    {
+                      icon: "community" as const,
+                      label: "Community",
+                      value: demandCommunityLabel,
+                    },
+                    {
+                      icon: "user" as const,
+                      label: "Requested by",
+                      value:
+                        safeStr(currentDemandItem.requester_email) ||
+                        safeStr(
+                          currentDemandItem.requester_name ||
+                            currentDemandItem.requester_nickname
+                        ) ||
+                        "Not shown",
+                    },
+                    {
+                      icon: "identity" as const,
+                      label: "GSN ID",
+                      value: demandRequesterId || "Not shown",
+                    },
+                    {
+                      icon: "trust" as const,
+                      label: "Trust reading",
+                      value: demandRequesterTrust
+                        ? safeStr(demandRequesterTrust).toLowerCase().startsWith("trust")
+                          ? demandRequesterTrust
+                          : `Trust ${demandRequesterTrust}`
+                        : "Not shown",
+                    },
+                    {
+                      icon: "demand" as const,
+                      label: "Support type / Credit line",
+                      value: currentDemandItem.allow_trust_credit
+                        ? "Trust credit"
+                        : demandPaymentMode || "Not stated",
+                    },
+                    {
+                      icon: "marketplace" as const,
+                      label: "Sender / courier location",
+                      value: demandArea || "Not stated",
+                    },
+                  ].map((row, rowIndex) => (
+                    <div
+                      key={row.label}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: isPhone
+                          ? "34px minmax(96px, 0.72fr) minmax(0, 1fr)"
+                          : "44px minmax(170px, 0.62fr) minmax(0, 1fr)",
+                        gap: isPhone ? 8 : 12,
+                        alignItems: "center",
+                        padding: isPhone ? "9px 10px" : "12px 14px",
+                        borderTop:
+                          rowIndex === 0
+                            ? "none"
+                            : "1px solid rgba(15,59,116,0.08)",
+                      }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: isPhone ? 30 : 34,
+                          height: isPhone ? 30 : 34,
+                          borderRadius: 999,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          background: "rgba(234,243,255,0.96)",
+                          color: "#0B2D4A",
+                        }}
+                      >
+                        <DashboardSignalIcon name={row.icon} size={isPhone ? 17 : 18} />
+                      </span>
+                      <span
+                        style={{
+                          color: "#66758A",
+                          fontWeight: 760,
+                          fontSize: isPhone ? 12.2 : 13,
+                          lineHeight: 1.22,
+                        }}
+                      >
+                        {row.label}
+                      </span>
+                      <span
+                        style={{
+                          color: "#0B1F33",
+                          fontWeight: 940,
+                          fontSize: isPhone ? 12.4 : 13.5,
+                          lineHeight: 1.24,
+                          overflowWrap: "anywhere",
+                        }}
+                      >
+                        {row.value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: isPhone ? 16 : 20,
+                    borderRadius: isPhone ? 15 : 18,
+                    border: "1px solid rgba(214,170,69,0.34)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,253,247,0.98) 0%, rgba(255,250,235,0.90) 100%)",
+                    display: "grid",
+                    gridTemplateColumns: isPhone ? "54px minmax(0, 1fr)" : "76px minmax(0, 1fr)",
+                    gap: isPhone ? 12 : 16,
+                    alignItems: "center",
+                    padding: isPhone ? 13 : 16,
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      width: isPhone ? 48 : 62,
+                      height: isPhone ? 48 : 62,
+                      borderRadius: 999,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#FFFFFF",
+                      background:
+                        "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)",
+                      boxShadow: "0 10px 22px rgba(214,170,69,0.20)",
+                    }}
+                  >
+                    <DashboardSignalIcon name="check" size={isPhone ? 24 : 30} />
+                  </span>
+                  <div
+                    style={{
+                      borderLeft: "1px solid rgba(214,170,69,0.44)",
+                      paddingLeft: isPhone ? 12 : 18,
+                      minWidth: 0,
+                    }}
+                  >
+                    <div
+                      style={{
+                        color: "#0B1F33",
+                        fontWeight: 1000,
+                        fontSize: isPhone ? 14 : 16,
+                        lineHeight: 1.28,
+                      }}
+                    >
+                      Response proof expected.
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 5,
+                        color: "#334155",
+                        fontWeight: 760,
+                        fontSize: isPhone ? 12.8 : 14,
+                        lineHeight: 1.42,
+                      }}
+                    >
+                      Please confirm GSN ID and TrustSlip before work starts.
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: isPhone ? 14 : 18,
+                    display: "grid",
+                    gap: isPhone ? 9 : 10,
+                  }}
+                >
+                  <StableButton
+                    debugId="dashboard.demand.response.open-demand-box"
+                    type="button"
+                    onClick={(event) =>
+                      openDashboardRoute(event, demandPrimaryActionTo)
+                    }
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      ...primaryBtn(false),
+                      width: "100%",
+                      minHeight: isPhone ? 54 : 58,
+                      borderRadius: isPhone ? 14 : 16,
+                      background:
+                        "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)",
+                      border: "1px solid rgba(214,170,69,0.42)",
+                      color: "#FFFFFF",
+                      boxShadow:
+                        "0 14px 28px rgba(6,24,39,0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
+                      gap: 10,
+                    }}
+                  >
+                    <DashboardSignalIcon name="package" size={isPhone ? 18 : 20} />
+                    Open your Demand Box
+                    <span aria-hidden="true" style={{ marginLeft: "auto", color: "#D6AA45" }}>
+                      ›
                     </span>
-                  ) : null}
-                  {demandRequesterId ? (
-                    <span style={badge(false)}>GSN ID {demandRequesterId}</span>
-                  ) : null}
-                  {demandRequesterTrust ? (
-                    <span style={badge(false)}>Trust {demandRequesterTrust}</span>
-                  ) : null}
-                  {demandPaymentMode ? (
-                    <span style={badge(false)}>{demandPaymentMode}</span>
-                  ) : null}
-                  {currentDemandItem.allow_trust_credit ? (
-                    <span style={badge(false)}>Trust credit accepted</span>
-                  ) : null}
-                  {demandArea ? (
-                    <span style={badge(false)}>{demandArea}</span>
-                  ) : null}
-                  {remainingDemandCount > 0 ? (
-                    <span style={badge(false)}>
-                      {remainingDemandCount} more waiting
+                  </StableButton>
+
+                  <StableButton
+                    debugId="dashboard.demand.response.view-record"
+                    type="button"
+                    onClick={(event) =>
+                      openDashboardRoute(event, demandPrimaryActionTo)
+                    }
+                    onPointerDown={consumeDashboardPointerEvent}
+                    style={{
+                      ...spotlightWhiteButton({
+                        ...dashboardPhoneButton,
+                        width: "100%",
+                        minHeight: isPhone ? 50 : 54,
+                        borderRadius: isPhone ? 13 : 15,
+                      }),
+                      gap: 10,
+                    }}
+                  >
+                    <DashboardSignalIcon name="identity" size={isPhone ? 17 : 18} />
+                    View full record
+                    <span aria-hidden="true" style={{ marginLeft: "auto", color: "#66758A" }}>
+                      ›
                     </span>
-                  ) : null}
-                  {urgentDemandItems.length > 1 ? (
-                    <span style={badge(true)}>
-                      {urgentDemandItems.length} urgent total
-                    </span>
-                  ) : null}
+                  </StableButton>
+                </div>
+
+                <div
+                  style={{
+                    marginTop: isPhone ? 18 : 24,
+                    textAlign: "center",
+                    color: "#0B2D4A",
+                    fontSize: isPhone ? 10.5 : 12,
+                    fontWeight: 1000,
+                    letterSpacing: isPhone ? 4 : 5,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Trust. Verify. Move.
+                  <div
+                    style={{
+                      marginTop: 5,
+                      color: "#66758A",
+                      letterSpacing: isPhone ? 3 : 4,
+                      fontSize: isPhone ? 9.5 : 10,
+                    }}
+                  >
+                    GSN / GMFN
+                  </div>
                 </div>
               </div>
             ) : (
