@@ -626,6 +626,28 @@ function evidenceDialStyle(degrees: number): React.CSSProperties {
     boxShadow:
       "0 18px 34px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.30)",
     position: "relative",
+    transition: "filter 220ms ease",
+  };
+}
+
+function evidenceDialBallStyle(degrees: number): React.CSSProperties {
+  const clamped = Math.max(0, Math.min(360, Number(degrees) || 0));
+  return {
+    position: "absolute",
+    left: "50%",
+    top: "50%",
+    width: 11,
+    height: 11,
+    marginLeft: -5.5,
+    marginTop: -5.5,
+    borderRadius: 999,
+    background: "#F8FBFF",
+    border: "2px solid #F2C766",
+    boxShadow: "0 6px 14px rgba(0,0,0,0.32)",
+    transform: `rotate(${clamped - 90}deg) translate(34px)`,
+    transition: "transform 360ms ease",
+    pointerEvents: "none",
+    zIndex: 2,
   };
 }
 
@@ -642,6 +664,8 @@ function evidenceDialInner(): React.CSSProperties {
     fontSize: 14,
     fontWeight: 1000,
     lineHeight: 1,
+    position: "relative",
+    zIndex: 1,
   };
 }
 
@@ -1425,41 +1449,51 @@ export default function CreateEntryPage() {
     !!safeStr(bankName) &&
     !!safeStr(bankAccountNumber);
   const founderEvidence = useMemo(() => {
+    const photoRecorded = Boolean(identityPhotoResult);
+    const photoReady = Boolean(identityPhotoFile && !identityPhotoResult);
     const items = [
       {
         key: "details",
         label: "Name, phone, email",
         done: canContinueDetails,
+        ready: false,
         weight: 15,
       },
       {
         key: "phone",
         label: "Phone evidence",
         done: Boolean(phoneVerificationProof),
+        ready: false,
         weight: 20,
       },
       {
         key: "photo",
         label: "Photo/selfie",
-        done: Boolean(identityPhotoResult),
+        done: photoRecorded,
+        ready: photoReady,
         weight: 20,
       },
       {
         key: "bank",
         label: "Bank or wallet",
         done: Boolean(bankRecordProof || bankVerificationResult),
+        ready: false,
         weight: 25,
       },
       {
         key: "id",
         label: "Licence/passport/ID",
         done: Boolean(licenceVerificationResult),
+        ready: false,
         weight: 20,
       },
     ];
     const score = Math.min(
       100,
-      items.reduce((total, item) => total + (item.done ? item.weight : 0), 0)
+      items.reduce(
+        (total, item) => total + (item.done || item.ready ? item.weight : 0),
+        0
+      )
     );
     const degrees = Math.round(score * 3.6);
     const label =
@@ -1473,7 +1507,9 @@ export default function CreateEntryPage() {
               ? "Light evidence"
               : "Not started";
     const next =
-      !identityPhotoResult
+      photoReady
+        ? "Photo is ready on this phone. Record it now so a real Trust Event can be written."
+        : !photoRecorded
         ? "Add a clear photo/selfie so Trust Passport and TrustSlip can keep the founder face consistent."
         : !(bankRecordProof || bankVerificationResult)
           ? "Add bank or wallet evidence to connect this founder to real-world financial records where available."
@@ -1486,6 +1522,7 @@ export default function CreateEntryPage() {
     bankRecordProof,
     bankVerificationResult,
     canContinueDetails,
+    identityPhotoFile,
     identityPhotoResult,
     licenceVerificationResult,
     phoneVerificationProof,
@@ -1907,6 +1944,7 @@ export default function CreateEntryPage() {
     return (
       <div style={{ ...evidenceMeterCard(), gridTemplateColumns: compact ? "68px minmax(0, 1fr)" : "82px minmax(0, 1fr)" }}>
         <div style={evidenceDialStyle(founderEvidence.degrees)}>
+          <span aria-hidden="true" style={evidenceDialBallStyle(founderEvidence.degrees)} />
           <div style={evidenceDialInner()}>{founderEvidence.score}%</div>
         </div>
         <div style={{ display: "grid", gap: 8, minWidth: 0 }}>
@@ -1929,18 +1967,22 @@ export default function CreateEntryPage() {
                   borderRadius: 999,
                   border: item.done
                     ? "1px solid rgba(167,243,208,0.42)"
-                    : "1px solid rgba(255,255,255,0.15)",
+                    : item.ready
+                      ? "1px solid rgba(242,199,102,0.48)"
+                      : "1px solid rgba(255,255,255,0.15)",
                   background: item.done
                     ? "rgba(16,185,129,0.16)"
-                    : "rgba(255,255,255,0.07)",
-                  color: item.done ? "#D1FAE5" : "#AFC4D8",
+                    : item.ready
+                      ? "rgba(242,199,102,0.16)"
+                      : "rgba(255,255,255,0.07)",
+                  color: item.done ? "#D1FAE5" : item.ready ? "#FCE7A3" : "#AFC4D8",
                   padding: "5px 8px",
                   fontSize: 10.5,
                   fontWeight: 950,
                   lineHeight: 1,
                 }}
               >
-                {item.done ? "Done: " : "Add: "}
+                {item.done ? "Done: " : item.ready ? "Ready: " : "Add: "}
                 {item.label}
               </span>
             ))}
@@ -4134,6 +4176,10 @@ export default function CreateEntryPage() {
                       ) : null}
 
                       {renderLocalFeedback("photo")}
+
+                      {identityPhotoFile || identityPhotoResult ? (
+                        <FounderEvidenceMeter compact />
+                      ) : null}
 
                       <textarea
                         value={identityPhotoNote}
