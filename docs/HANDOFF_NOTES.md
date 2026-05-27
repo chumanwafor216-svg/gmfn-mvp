@@ -1,3 +1,33 @@
+### TrustSlip Verify locked confirmation explanation (2026-05-27)
+
+- Owner showed that TrustSlip Verify still was not clear enough: the page
+  showed `Active members: 2`, `Eligible response pool: 0`, and a disabled
+  `Request instant confirmation` button, but it did not plainly explain why the
+  action was unavailable.
+- Updated `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`:
+  - reads the active member count and eligible response pool from the public
+    community confirmation rows;
+  - when the request button is disabled, the result card now explains the
+    blocker in plain language;
+  - adds a `Why this is locked` card beside the disabled button;
+  - for the current screenshot state, copy explains that GSN can see active
+    members but no eligible responders are set up for the public check yet, so
+    a community owner must enable confirmation contacts before the button can
+    open.
+- Updated `frontend/tools/audit-trust-actions.mjs`:
+  - added an audit guard so TrustSlip Verify cannot regress to a silent disabled
+    community-confirmation button.
+- Verification:
+  - `npm exec -- eslint src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-trust-actions.mjs`
+    passed.
+  - `npm exec -- tsc --noEmit` passed.
+  - `npm run audit:trust-actions` passed.
+- Remaining truth:
+  - This does not make the button active. The button is correctly disabled
+    while `Eligible response pool` is `0`. The product needs owner/admin setup
+    of eligible confirmation contacts before a live public confirmation request
+    can be sent.
+
 ### Community Verify local missing-policy-table recovery (2026-05-27)
 
 - Owner showed local phone screenshots on `192.168.1.38:5173/verify/...`

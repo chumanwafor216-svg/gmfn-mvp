@@ -75,6 +75,15 @@ function firstTruthy(...values: unknown[]): string {
   return "";
 }
 
+function rowValue(rows: Array<[string, string]>, label: string): string {
+  return rows.find(([name]) => name === label)?.[1] || "";
+}
+
+function positiveNumber(value: unknown): number {
+  const n = Number(safeText(value));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
@@ -243,6 +252,16 @@ export default function TrustSlipVerifyPublicPaper({
   onRequestCommunityPulse,
   publicActions,
 }: TrustSlipVerifyPublicPaperProps) {
+  const activeMemberCount = positiveNumber(rowValue(communityConfirmationRows, "Active members"));
+  const eligibleResponsePool = positiveNumber(rowValue(communityConfirmationRows, "Eligible response pool"));
+  const requestLockedReason = !canRequestCommunityPulse
+    ? "This paper does not have a usable TrustSlip code yet. Refresh the TrustSlip before asking for live community confirmation."
+    : !communityPulseAvailable && eligibleResponsePool <= 0
+      ? `GSN can see ${activeMemberCount || "the"} active member${activeMemberCount === 1 ? "" : "s"}, but no eligible responders are set up for this public check yet. A community owner must enable confirmation contacts before this button can open.`
+      : !communityPulseAvailable
+        ? "Community confirmation is not enabled for this paper yet. Open the community record and check the public community status first."
+        : "";
+
   return (
     <section
       className="print-trust-document"
@@ -642,23 +661,41 @@ export default function TrustSlipVerifyPublicPaper({
                     </>
                   ) : (
                     <p style={{ margin: "8px 0 0", color: "#64748B", fontWeight: 850, lineHeight: 1.45 }}>
-                      No live community confirmation has been requested from this paper yet.
+                      {requestLockedReason ||
+                        "No live community confirmation has been requested from this paper yet."}
                     </p>
                   )}
                 </div>
 
-                <PrimaryButton
-                  type="button"
-                  onClick={onRequestCommunityPulse}
-                  disabled={!communityPulseAvailable || !canRequestCommunityPulse}
-                  busy={confirmationBusy}
-                  busyLabel="Requesting..."
-                  fullWidth
-                  stableHeight={56}
-                  debugId="trust-slip-verify.community-confirmation.request"
-                >
-                  Request instant confirmation
-                </PrimaryButton>
+                <div style={{ display: "grid", gap: 10, alignSelf: "stretch" }}>
+                  <PrimaryButton
+                    type="button"
+                    onClick={onRequestCommunityPulse}
+                    disabled={!communityPulseAvailable || !canRequestCommunityPulse}
+                    busy={confirmationBusy}
+                    busyLabel="Requesting..."
+                    fullWidth
+                    stableHeight={56}
+                    debugId="trust-slip-verify.community-confirmation.request"
+                  >
+                    Request instant confirmation
+                  </PrimaryButton>
+                  {requestLockedReason ? (
+                    <div
+                      style={{
+                        ...documentMetaCard("#FFF7E6"),
+                        border: "1px solid rgba(245,158,11,0.24)",
+                      }}
+                    >
+                      <div style={{ color: "#92400E", fontWeight: 1000, fontSize: 13 }}>
+                        Why this is locked
+                      </div>
+                      <p style={{ margin: "7px 0 0", color: "#334155", fontWeight: 850, lineHeight: 1.45 }}>
+                        {requestLockedReason}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>

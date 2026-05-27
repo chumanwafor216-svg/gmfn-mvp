@@ -172,6 +172,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
+  /rowValue\(communityConfirmationRows, "Eligible response pool"\)[\s\S]*?no eligible responders are set up[\s\S]*?Why this is locked/,
+  "TrustSlip Verify must explain why instant community confirmation is locked when the eligible response pool is empty."
+);
+
+assertContains(
   "src/pages/TrustSlipPage.tsx",
   /debugId="trust-slip\.community-confirmation\.request"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-outcome"/,
   "TrustSlip community-confirmation actions must stay traceable and grouped."
