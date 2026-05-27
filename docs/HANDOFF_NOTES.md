@@ -1,3 +1,22 @@
+### Community confirmation public paper reference layout (2026-05-27)
+
+- Owner supplied a phone screenshot reference for the public community
+  confirmation result and asked that the page appear like it.
+- Updated `frontend/src/pages/CommunityConfirmationOutcomePage.tsx`:
+  - removed the extra `PageTopNav` framing from the public paper;
+  - made the page start with the dark GSN / Global Support Network header and
+    `Public Paper` badge;
+  - ordered the visible public sections as: status/time-left banner, confirmed
+    person/request cards, aggregate community response counts, simple reading,
+    reader decision note, use/does-not-mean cards, public actions, collapsed
+    signed-in/internal rows, and footer;
+  - kept private contact details out of the public surface and kept provider /
+    technical controls behind disclosures.
+- Updated `frontend/tools/audit-trust-actions.mjs` so the focused public-paper
+  layout remains guarded.
+- Verified with `npm run audit:trust-actions`, targeted `eslint`,
+  `tsc --noEmit`, and `npm run build`.
+
 ### No-cash urgent phone/browser alerts for confirmation responders (2026-05-27)
 
 - Owner approved the low-cost first step for instant community confirmation:

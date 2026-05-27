@@ -198,8 +198,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityConfirmationOutcomePage.tsx",
-  /function formatCountdown\(totalSeconds: number\)[\s\S]*?loadOutcome\(\{ silent: true \}\)[\s\S]*?Live\s+confirmation\s+window[\s\S]*?Time\s+left[\s\S]*?responded/,
-  "Community confirmation outcome page must behave as a focused live waiting lane with countdown and silent refresh while a request is open."
+  /function formatCountdown\(totalSeconds: number\)[\s\S]*?loadOutcome\(\{ silent: true \}\)[\s\S]*?Public Paper[\s\S]*?Community Confirmation[\s\S]*?Expired request[\s\S]*?Time\s+left[\s\S]*?Community response[\s\S]*?Public actions/,
+  "Community confirmation outcome page must keep the focused public-paper layout with countdown, response counts, and public actions."
 );
 
 assertContains(

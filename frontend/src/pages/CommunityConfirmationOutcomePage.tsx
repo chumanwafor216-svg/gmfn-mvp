@@ -1,10 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableDisclosureSummary } from "../components/StableButton";
 import {
   TrustPaperIcon,
-  TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
 import {
@@ -202,11 +200,11 @@ function normalizeOutcome(raw: any): PublicOutcome {
 
 function pageShell(): React.CSSProperties {
   return {
-    maxWidth: 1080,
+    maxWidth: 960,
     margin: "0 auto",
-    padding: "20px 16px 42px",
+    padding: "0 16px 42px",
     display: "grid",
-    gap: 16,
+    gap: 0,
   };
 }
 
@@ -214,10 +212,36 @@ function paperCard(): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 28,
+    borderRadius: 22,
     background: "#FFFFFF",
     border: "1px solid rgba(8,35,58,0.14)",
     boxShadow: "0 24px 70px rgba(6,24,39,0.14)",
+  };
+}
+
+function paperHero(): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    padding: "34px 38px 30px",
+    minHeight: 238,
+    color: "#FFFFFF",
+    background:
+      "radial-gradient(circle at 92% 38%, rgba(11,99,209,0.18), transparent 26%), linear-gradient(135deg, #061827 0%, #0B2D4A 100%)",
+  };
+}
+
+function paperBody(): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    padding: "24px 36px 0",
+    display: "grid",
+    gap: 16,
+    background: "#FFFFFF",
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    marginTop: -22,
   };
 }
 
@@ -225,11 +249,11 @@ function sectionCard(background = "#FFFFFF"): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
-    borderRadius: 22,
+    borderRadius: 16,
     background,
     border: "1px solid rgba(8,35,58,0.12)",
     padding: 16,
-    boxShadow: "0 10px 28px rgba(6,24,39,0.06)",
+    boxShadow: "0 8px 22px rgba(6,24,39,0.04)",
   };
 }
 
@@ -237,7 +261,7 @@ function sectionTitle(): React.CSSProperties {
   return {
     margin: 0,
     color: "#07172C",
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: 1000,
     lineHeight: 1.16,
   };
@@ -255,11 +279,11 @@ function helperText(): React.CSSProperties {
 
 function statTile(background = "#F7FAFF"): React.CSSProperties {
   return {
-    borderRadius: 18,
+    borderRadius: 15,
     background,
     border: "1px solid rgba(8,35,58,0.10)",
-    padding: 14,
-    minHeight: 92,
+    padding: 13,
+    minHeight: 98,
     display: "grid",
     alignContent: "space-between",
     gap: 8,
@@ -291,16 +315,8 @@ function badgeStyle(tone: "good" | "warn" | "bad" | "info" = "info"): React.CSSP
   };
 }
 
-function outcomeTone(status: string, confidence: string): "good" | "warn" | "bad" | "info" {
-  if (status === "expired") return "bad";
-  if (confidence === "strong" || confidence === "moderate") return "good";
-  if (confidence === "caution") return "bad";
-  if (confidence === "limited") return "warn";
-  return "info";
-}
-
 function outcomeTitle(status: string, confidence: string): string {
-  if (status === "expired") return "Request expired";
+  if (status === "expired") return "Expired request";
   if (confidence === "strong") return "Strong community confirmation";
   if (confidence === "moderate") return "Moderate community confirmation";
   if (confidence === "limited") return "Limited community confirmation";
@@ -311,7 +327,7 @@ function outcomeTitle(status: string, confidence: string): string {
 
 function outcomeMeaning(status: string, confidence: string): string {
   if (status === "expired") {
-    return "This confirmation window has passed. Ask the holder to request a fresh community confirmation before relying on it.";
+    return "The response window has passed. No valid responses were received.";
   }
   if (confidence === "strong") {
     return "Enough approved community contacts have confirmed this person for a low-risk first trust check.";
@@ -466,7 +482,6 @@ export default function CommunityConfirmationOutcomePage() {
   const confidence =
     safeStr(response.community_confidence).toLowerCase() ||
     (status === "expired" ? "expired" : "pending");
-  const tone = outcomeTone(status, confidence);
   const requestsSent = asNumber(response.requests_sent);
   const activeMemberCount = asNumber(response.active_member_count);
   const responsesReceived = asNumber(response.responses_received);
@@ -745,84 +760,46 @@ export default function CommunityConfirmationOutcomePage() {
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(180deg, #F7FAFF 0%, #EEF5FF 48%, #F8FAFC 100%)",
+          "linear-gradient(180deg, #F7FAFF 0%, #EEF5FF 54%, #F8FAFC 100%)",
+        paddingTop: 16,
       }}
     >
       <div style={pageShell()}>
-        <PageTopNav
-          sectionLabel="GSN verification"
-          title="Instant Community Confirmation"
-          subtitle="A live, privacy-safe community response for this specific trust decision."
-          homeTo="/"
-          homeLabel="Home"
-          backTo="/"
-          backLabel="Back"
-        />
-
         <article style={paperCard()}>
-          <TrustPaperWatermark name="community" color="#0B63D1" size={260} opacity={0.045} />
-          <div
-            style={{
-              position: "relative",
-              zIndex: 1,
-              padding: 22,
-              display: "grid",
-              gap: 16,
-            }}
-          >
-            <header
+          <header style={paperHero()}>
+            <TrustPaperWatermark
+              name="shield"
+              color="#FFFFFF"
+              size={230}
+              opacity={0.075}
+              style={{ right: -18, bottom: -22 }}
+            />
+            <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                gap: 16,
+                gap: 18,
                 alignItems: "flex-start",
                 flexWrap: "wrap",
+                position: "relative",
+                zIndex: 1,
               }}
             >
-              <div style={{ display: "grid", gap: 6 }}>
-                <span
-                  style={{
-                    color: "#0B63D1",
-                    fontSize: 12,
-                    fontWeight: 1000,
-                    letterSpacing: 0.9,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Main Movement
-                </span>
-                <h1
-                  style={{
-                    margin: 0,
-                    color: "#061827",
-                    fontSize: "clamp(30px, 7vw, 54px)",
-                    lineHeight: 0.98,
-                    fontWeight: 1000,
-                    letterSpacing: 0,
-                  }}
-                >
-                  Community Confirmation
-                </h1>
-                <p style={{ ...helperText(), maxWidth: 660 }}>
-                  This paper shows whether approved community contacts have confirmed that the
-                  person is known, reachable, and recognised inside a real GSN community.
-                </p>
-              </div>
               <div
                 aria-label="GSN Global Support Network"
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
-                  color: "#061827",
+                  gap: 12,
+                  color: "#FFFFFF",
                   fontWeight: 1000,
                 }}
               >
-                <span style={{ fontSize: 36, lineHeight: 1 }}>GSN</span>
+                <span style={{ fontSize: 39, lineHeight: 0.95, letterSpacing: 0 }}>GSN</span>
                 <span
                   style={{
                     width: 2,
-                    height: 38,
+                    height: 42,
                     background: "#D6AA45",
                     transform: "skew(-14deg)",
                   }}
@@ -835,8 +812,75 @@ export default function CommunityConfirmationOutcomePage() {
                   Network
                 </span>
               </div>
-            </header>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  minHeight: 42,
+                  borderRadius: 999,
+                  padding: "0 16px",
+                  color: "#FFFFFF",
+                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+                  fontSize: 14,
+                  fontWeight: 1000,
+                }}
+              >
+                <TrustPaperIcon name="shield" size={18} color="#F6D77A" />
+                Public Paper
+              </span>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gap: 9,
+                maxWidth: 680,
+                marginTop: 42,
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              <span
+                style={{
+                  color: "#F6D77A",
+                  fontSize: 13,
+                  fontWeight: 1000,
+                  letterSpacing: 0.9,
+                  textTransform: "uppercase",
+                }}
+              >
+                GSN verification
+              </span>
+              <h1
+                style={{
+                  margin: 0,
+                  color: "#FFFFFF",
+                  fontSize: "clamp(34px, 7vw, 56px)",
+                  lineHeight: 0.98,
+                  fontWeight: 1000,
+                  letterSpacing: 0,
+                }}
+              >
+                Community Confirmation
+              </h1>
+              <p
+                style={{
+                  margin: 0,
+                  maxWidth: 560,
+                  color: "rgba(255,255,255,0.84)",
+                  fontSize: 19,
+                  fontWeight: 760,
+                  lineHeight: 1.35,
+                }}
+              >
+                A privacy-safe community response for this specific trust decision.
+              </p>
+            </div>
+          </header>
 
+          <div style={paperBody()}>
             {notice ? (
               <div
                 role="status"
@@ -876,55 +920,80 @@ export default function CommunityConfirmationOutcomePage() {
                   style={{
                     ...sectionCard(liveWindowOpen ? "#EAF3FF" : status === "expired" ? "#FEF2F2" : "#F7FAFF"),
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
-                    gap: 14,
+                    gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                    gap: 18,
                     alignItems: "center",
+                    padding: 18,
+                    borderColor:
+                      liveWindowOpen
+                        ? "rgba(11,99,209,0.16)"
+                        : status === "expired"
+                          ? "rgba(200,58,58,0.18)"
+                          : "rgba(214,170,69,0.22)",
                   }}
                 >
-                  <div style={{ display: "grid", gap: 8 }}>
-                    <span style={badgeStyle(liveWindowOpen ? "info" : status === "expired" ? "bad" : "warn")}>
-                      <TrustPaperIcon name={liveWindowOpen ? "community" : status === "expired" ? "alert" : "shield"} size={18} />
-                      {liveWindowOpen ? "Live confirmation window" : status === "expired" ? "Expired request" : "Confirmation window"}
-                    </span>
-                    <h2 style={sectionTitle()}>
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: 64,
+                      height: 64,
+                      borderRadius: 999,
+                      display: "grid",
+                      placeItems: "center",
+                      color: "#FFFFFF",
+                      background:
+                        liveWindowOpen
+                          ? "linear-gradient(135deg,#0B63D1,#073E83)"
+                          : status === "expired"
+                            ? "linear-gradient(135deg,#D43D3D,#991B1B)"
+                            : "linear-gradient(135deg,#D6AA45,#92400E)",
+                      boxShadow: "0 14px 28px rgba(6,24,39,0.12)",
+                    }}
+                  >
+                    <TrustPaperIcon
+                      name={liveWindowOpen ? "community" : status === "expired" ? "alert" : "shield"}
+                      size={36}
+                      strokeWidth={1.9}
+                    />
+                  </div>
+                  <div style={{ display: "grid", gap: 7, minWidth: 0 }}>
+                    <h2 style={{ ...sectionTitle(), fontSize: 22 }}>
                       {liveWindowOpen
-                        ? "Waiting for community responders"
+                        ? "Live request"
                         : status === "expired"
-                          ? "The response window has ended"
-                          : "Community response lane"}
+                          ? "Expired request"
+                          : outcomeTitle(status, confidence)}
                     </h2>
-                    <p style={helperText()}>
-                      {liveWindowOpen
-                        ? "Keep this page open. GSN refreshes the outcome while eligible responders answer from their confirmation inbox."
-                        : status === "expired"
-                          ? "The request is now closed for late responses. Any non-response has been recorded internally as part of the Trust Event trail."
-                          : "This page keeps the confirmation request separate from the full TrustSlip so the reader can follow one decision lane."}
+                    <p style={{ ...helperText(), color: "#1F3145" }}>
+                      {outcomeMeaning(status, confidence)}
                     </p>
-                    <div
-                      aria-label="Community confirmation response progress"
-                      style={{
-                        width: "100%",
-                        height: 10,
-                        borderRadius: 999,
-                        overflow: "hidden",
-                        background: "rgba(8,35,58,0.10)",
-                      }}
-                    >
+                    {liveWindowOpen ? (
                       <div
+                        aria-label="Community confirmation response progress"
                         style={{
-                          width: `${responseProgress}%`,
-                          height: "100%",
+                          width: "100%",
+                          height: 8,
                           borderRadius: 999,
-                          background: liveWindowOpen ? "#0B63D1" : status === "expired" ? "#C83A3A" : "#D6AA45",
-                          transition: "width 180ms ease",
+                          overflow: "hidden",
+                          background: "rgba(8,35,58,0.10)",
                         }}
-                      />
-                    </div>
+                      >
+                        <div
+                          style={{
+                            width: `${responseProgress}%`,
+                            height: "100%",
+                            borderRadius: 999,
+                            background: "#0B63D1",
+                            transition: "width 180ms ease",
+                          }}
+                        />
+                      </div>
+                    ) : null}
                   </div>
                   <div
                     style={{
-                      minWidth: 112,
-                      borderRadius: 24,
+                      minWidth: 132,
+                      borderRadius: 14,
                       padding: "14px 16px",
                       background: "#FFFFFF",
                       border: "1px solid rgba(8,35,58,0.12)",
@@ -946,76 +1015,16 @@ export default function CommunityConfirmationOutcomePage() {
 
                 <section
                   style={{
-                    ...sectionCard(
-                      tone === "good"
-                        ? "#ECFDF3"
-                        : tone === "bad"
-                          ? "#FEF2F2"
-                          : tone === "warn"
-                            ? "#FFF7E6"
-                            : "#EAF3FF"
-                    ),
-                    display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
-                    gap: 16,
-                    alignItems: "center",
-                  }}
-                >
-                  <TrustPaperWatermark
-                    name={tone === "bad" ? "alert" : tone === "warn" ? "shield" : "check"}
-                    color={tone === "bad" ? "#C83A3A" : tone === "warn" ? "#D6AA45" : "#2E9B62"}
-                    size={150}
-                    opacity={0.08}
-                  />
-                  <div style={{ display: "grid", gap: 10 }}>
-                    <span style={badgeStyle(tone)}>
-                      <TrustPaperIcon
-                        name={tone === "bad" ? "alert" : tone === "warn" ? "shield" : "check"}
-                        size={18}
-                      />
-                      {labelize(status)}
-                    </span>
-                    <h2 style={{ ...sectionTitle(), fontSize: "clamp(25px, 6vw, 42px)" }}>
-                      {outcomeTitle(status, confidence)}
-                    </h2>
-                    <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
-                      {outcomeMeaning(status, confidence)}
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      width: 116,
-                      height: 116,
-                      borderRadius: 32,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "#FFFFFF",
-                      background:
-                        tone === "bad"
-                          ? "linear-gradient(135deg,#C83A3A,#7F1D1D)"
-                          : tone === "warn"
-                            ? "linear-gradient(135deg,#F2C766,#B7791F)"
-                            : "linear-gradient(135deg,#2E9B62,#166534)",
-                      boxShadow: "0 18px 34px rgba(6,24,39,0.16)",
-                    }}
-                  >
-                    <TrustPaperIcon
-                      name={tone === "bad" ? "alert" : tone === "warn" ? "shield" : "check"}
-                      size={64}
-                      strokeWidth={1.8}
-                    />
-                  </div>
-                </section>
-
-                <section
-                  style={{
                     display: "grid",
                     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                    gap: 14,
+                    gap: 16,
                   }}
                 >
                   <div style={sectionCard("#FFFFFF")}>
-                    <h2 style={sectionTitle()}>Who is being confirmed?</h2>
+                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                      <TrustPaperIcon name="user" size={22} color="#0B63D1" />
+                      Who is being confirmed?
+                    </h2>
                     <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
                       <InfoRow label="Community" value={outcome.community_name || "Not shown"} />
                       <InfoRow
@@ -1027,7 +1036,10 @@ export default function CommunityConfirmationOutcomePage() {
                   </div>
 
                   <div style={sectionCard("#F8FBFF")}>
-                    <h2 style={sectionTitle()}>What was requested?</h2>
+                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                      <TrustPaperIcon name="document" size={22} color="#0B63D1" />
+                      What was requested?
+                    </h2>
                     <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
                       <InfoRow label="Reason" value={reasonMeaning(safeStr(outcome.reason_type))} />
                       <InfoRow label="Risk level" value={labelize(outcome.risk_level)} />
@@ -1038,11 +1050,12 @@ export default function CommunityConfirmationOutcomePage() {
 
                 <section style={sectionCard("#FFFFFF")}>
                   <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
-                    <h2 style={sectionTitle()}>Community response</h2>
+                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                      <TrustPaperIcon name="community" size={23} color="#0B63D1" />
+                      Community response
+                    </h2>
                     <p style={helperText()}>
-                      These are aggregate counts only. GSN shows how many people were asked and
-                      how many active community members responded. It does not show private phone
-                      numbers or individual responder names on this public paper.
+                      Aggregate counts only. No personal details are shown.
                     </p>
                   </div>
                   <div
@@ -1052,7 +1065,7 @@ export default function CommunityConfirmationOutcomePage() {
                       gap: 12,
                     }}
                   >
-                    <Stat label="Requests sent" value={requestsSent} icon="community" />
+                    <Stat label="Requests sent" value={requestsSent} icon="spark" />
                     <Stat label="Responses received" value={responsesReceived} icon="document" />
                     <Stat label="Active members" value={activeMemberCount} icon="community" />
                     <Stat label="Confirmed known" value={confirmedKnown} icon="check" />
@@ -1064,22 +1077,32 @@ export default function CommunityConfirmationOutcomePage() {
                 <section
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                    gridTemplateColumns: "1fr",
                     gap: 14,
                   }}
                 >
                   <div style={sectionCard("#F7FAFF")}>
-                    <h2 style={sectionTitle()}>Plain reading</h2>
+                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                      <TrustPaperIcon name="document" size={22} color="#0B63D1" />
+                      Simple reading
+                    </h2>
                     <p style={{ ...helperText(), color: "#1F3145", marginTop: 10 }}>
                       {outcome.visible_summary ||
-                        "The instant community response is not complete yet. Refresh later or ask for more evidence."}
+                        (liveWindowOpen
+                          ? `Instant community confirmation is pending. ${responsesReceived} of ${activeMemberCount} active community members responded. Wait for responses or ask for more evidence.`
+                          : status === "expired"
+                            ? "Instant community confirmation is expired. No valid response was received before the window closed."
+                            : "Instant community confirmation is not complete yet. Refresh later or ask for more evidence.")}
                     </p>
                   </div>
                   <div style={sectionCard("#FFF7E6")}>
-                    <h2 style={sectionTitle()}>Reader decision note</h2>
-                    <p style={{ ...helperText(), color: "#1F3145", marginTop: 10 }}>
+                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                      <TrustPaperIcon name="shield" size={22} color="#B7791F" />
+                      Reader decision note
+                    </h2>
+                    <p style={{ ...helperText(), color: "#07172C", marginTop: 10, fontWeight: 900 }}>
                       {outcome.decision_note ||
-                        "Use this as evidence for judgement, not as an automatic approval."}
+                        "This is evidence for judgement, not a guarantee, payment instruction, or automatic approval."}
                     </p>
                   </div>
                 </section>
@@ -1114,7 +1137,10 @@ export default function CommunityConfirmationOutcomePage() {
                 </section>
 
                 <section style={sectionCard("#FFFFFF")}>
-                  <h2 style={sectionTitle()}>Public actions</h2>
+                  <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                    <TrustPaperIcon name="spark" size={22} color="#0B63D1" />
+                    Public actions
+                  </h2>
                   <div
                     style={{
                       display: "grid",
@@ -1656,7 +1682,33 @@ export default function CommunityConfirmationOutcomePage() {
               </>
             ) : null}
           </div>
-          <TrustPaperSecurityFooter text="Human-first community confirmation: public outcome, private contacts protected." />
+          <div
+            style={{
+              padding: "24px 38px",
+              background: "linear-gradient(90deg, #061827 0%, #0B2D4A 100%)",
+              color: "#F6D77A",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 14,
+              fontWeight: 1000,
+              flexWrap: "wrap",
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 12 }}>
+              <TrustPaperIcon name="shield" size={28} color="#F6D77A" />
+              <span>
+                Human-first community confirmation:{" "}
+                <span style={{ color: "#FFFFFF" }}>
+                  public outcome, private contacts protected.
+                </span>
+              </span>
+            </span>
+            <span style={{ display: "inline-flex", gap: 12, color: "#F6D77A" }} aria-hidden="true">
+              <TrustPaperIcon name="spark" size={22} />
+              <TrustPaperIcon name="lock" size={22} />
+            </span>
+          </div>
         </article>
       </div>
     </div>
