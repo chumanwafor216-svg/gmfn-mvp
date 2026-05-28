@@ -57,6 +57,14 @@ type CreateCommunityOutcome = {
   requestId?: string;
 };
 
+type OptionalEvidenceStep =
+  | "photo"
+  | "photo_done"
+  | "bank"
+  | "bank_done"
+  | "official_id"
+  | "official_id_done";
+
 type IdentityPhotoSelection = {
   id: string;
   file: File;
@@ -1384,6 +1392,8 @@ export default function CreateEntryPage() {
   const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget>("global");
   const [communityDetailsRecorded, setCommunityDetailsRecorded] = useState(false);
   const [createOutcome, setCreateOutcome] = useState<CreateCommunityOutcome | null>(null);
+  const [optionalEvidenceStep, setOptionalEvidenceStep] =
+    useState<OptionalEvidenceStep>("photo");
   const [resumeNotice, setResumeNotice] = useState(
     restoredDraft
       ? "GSN restored your unfinished entry. Passwords, SMS codes, photos, and bank numbers are not stored."
@@ -1527,6 +1537,13 @@ export default function CreateEntryPage() {
   const canOpenCommunity = step === "community" || communityDetailsRecorded || Boolean(createOutcome);
   const communityDecisionMode =
     openPanel === "community" && communityDetailsRecorded && !createOutcome;
+  const activeEvidenceMode = openPanel === "verification" && step !== "verify";
+  const showPhotoEvidenceBlock =
+    optionalEvidenceStep === "photo" && !identityPhotoResult;
+  const showBankEvidenceBlock =
+    optionalEvidenceStep === "bank" && !bankRecordProof && !bankVerificationResult;
+  const showOfficialIdEvidenceBlock =
+    optionalEvidenceStep === "official_id" && !licenceVerificationResult;
 
   const verificationBlockTitle =
     step === "verify"
@@ -2154,6 +2171,7 @@ export default function CreateEntryPage() {
     setIdentityPhotoResult(null);
     setPhoneVerificationProof(null);
     setBankRecordProof(null);
+    setOptionalEvidenceStep("photo");
     clearFeedback("verification");
   }
 
@@ -2162,6 +2180,7 @@ export default function CreateEntryPage() {
     setDescription("");
     setCommunityDetailsRecorded(false);
     setCreateOutcome(null);
+    setOptionalEvidenceStep("photo");
     clearFeedback("community");
   }
 
@@ -2530,6 +2549,7 @@ export default function CreateEntryPage() {
   function finishBankStep(out: any, nextBankVerification: EntryVerificationResult) {
     setStep("community");
     setOpenPanel("verification");
+    setOptionalEvidenceStep("bank_done");
     showSuccess(
       "bank",
       safeStr(out?.confirmation_message) ||
@@ -2553,6 +2573,7 @@ export default function CreateEntryPage() {
         note: safeStr(driverLicenceNote) || undefined,
       });
       setLicenceVerificationResult(out);
+      setOptionalEvidenceStep("official_id_done");
       showSuccess(
         "verification",
         safeStr(out?.explanation) ||
@@ -2571,6 +2592,7 @@ export default function CreateEntryPage() {
             note: safeStr(driverLicenceNote) || undefined,
           });
           setLicenceVerificationResult(out);
+          setOptionalEvidenceStep("official_id_done");
           showSuccess(
             "verification",
             `Your phone proof had timed out, so GSN refreshed it and recorded ${regionalEvidence.officialIdLabel} evidence.`
@@ -2672,6 +2694,7 @@ export default function CreateEntryPage() {
     try {
       const uploaded = await recordIdentityPhotoQueue(verificationId);
       const out = finishIdentityPhotoRecording(uploaded);
+      setOptionalEvidenceStep("photo_done");
       showSuccess(
         "photo",
         uploaded.length > 1
@@ -2686,6 +2709,7 @@ export default function CreateEntryPage() {
           const refreshedVerificationId = await refreshPilotPhoneSession();
           const uploaded = await recordIdentityPhotoQueue(refreshedVerificationId);
           finishIdentityPhotoRecording(uploaded);
+          setOptionalEvidenceStep("photo_done");
           showSuccess(
             "photo",
             `Your phone proof had timed out, so GSN refreshed it and recorded ${uploaded.length} photo/selfie evidence record${uploaded.length === 1 ? "" : "s"}.`
@@ -2881,8 +2905,21 @@ export default function CreateEntryPage() {
   function handleAddFounderEvidenceFromCommunity() {
     if (!Number(verificationId)) return;
     setStep("bank");
+    setOptionalEvidenceStep("photo");
     setOpenPanel("verification");
     focusPanel("verification");
+  }
+
+  function handleContinueToBankEvidence() {
+    setOptionalEvidenceStep("bank");
+    clearFeedback("bank");
+    setOpenPanel("verification");
+  }
+
+  function handleContinueToOfficialIdEvidence() {
+    setOptionalEvidenceStep("official_id");
+    clearFeedback("verification");
+    setOpenPanel("verification");
   }
 
   async function handleContinueAfterCreateOutcome() {
@@ -3355,7 +3392,7 @@ export default function CreateEntryPage() {
                   guideDone && openPanel !== null,
                   stepProgress.detailsDone
                 ),
-                display: communityDecisionMode ? "none" : undefined,
+                display: communityDecisionMode || activeEvidenceMode ? "none" : undefined,
                 ...(guideDone && openPanel === "details"
                   ? {
                       padding: 18,
@@ -3952,53 +3989,34 @@ export default function CreateEntryPage() {
                 <div
                   style={{
                     marginTop: 10,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                    gap: 8,
+                    borderRadius: 14,
+                    border: "1px solid rgba(242,199,102,0.26)",
+                    background: "rgba(242,199,102,0.09)",
+                    color: "#F8FBFF",
+                    padding: "10px 12px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    flexWrap: "wrap",
+                    fontSize: 12,
+                    fontWeight: 950,
                   }}
                 >
-                  {[
-                    ["Bank/ID", "Available"],
-                    ["Passport/selfie", "Available"],
-                    [regionalEvidence.officialIdLabel, "Available"],
-                  ].map(([label, statusLabel]) => (
-                    <div
-                      key={label}
-                      style={{
-                        minHeight: 58,
-                        borderRadius: 14,
-                        border: "1px solid rgba(126,164,204,0.20)",
-                        background:
-                          statusLabel === "Available"
-                            ? "linear-gradient(180deg, rgba(242,199,102,0.14) 0%, rgba(242,199,102,0.05) 100%)"
-                            : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
-                        padding: "8px 7px",
-                        display: "grid",
-                        gap: 3,
-                        alignContent: "center",
-                        color: "#F8FBFF",
-                      }}
-                    >
-                      <div style={{ fontSize: 10.5, fontWeight: 1000, lineHeight: 1.1 }}>
-                        {label}
-                      </div>
-                      <div
-                        style={{
-                          color: statusLabel === "Available" ? "#F2C766" : "#9EB1C6",
-                          fontSize: 9.5,
-                          fontWeight: 900,
-                          textTransform: "uppercase",
-                          letterSpacing: 0.6,
-                        }}
-                      >
-                        {statusLabel}
-                      </div>
-                    </div>
-                  ))}
+                  <span>
+                    Current:{" "}
+                    {optionalEvidenceStep.startsWith("bank")
+                      ? "Bank or wallet"
+                      : optionalEvidenceStep.startsWith("official")
+                        ? "Official ID"
+                        : "Photo/selfie"}
+                  </span>
+                  <span style={{ color: "#F2C766" }}>
+                    Integrity: {founderEvidence.label}
+                  </span>
                 </div>
               ) : null}
 
-              {openPanel === "verification" && phoneVerificationProof ? (
+              {openPanel === "verification" && phoneVerificationProof && !activeEvidenceMode ? (
                 <div
                   style={{
                     ...softCard("#ECFDF5"),
@@ -4094,7 +4112,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && bankRecordProof && shouldShowVerificationResult("bank") ? (
+              {openPanel === "verification" && bankRecordProof && !activeEvidenceMode && shouldShowVerificationResult("bank") ? (
                 <div
                   style={{
                     ...softCard("#ECFDF5"),
@@ -4177,7 +4195,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && bankVerificationResult && shouldShowVerificationResult("bank") ? (
+              {openPanel === "verification" && bankVerificationResult && !activeEvidenceMode && shouldShowVerificationResult("bank") ? (
                 <div style={{ ...verificationCard(bankVerificationResult.status), marginTop: 14 }}>
                   <div style={sectionLabel()}>Bank verification status</div>
                   <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
@@ -4196,7 +4214,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && licenceVerificationResult && shouldShowVerificationResult("verification") ? (
+              {openPanel === "verification" && licenceVerificationResult && !activeEvidenceMode && shouldShowVerificationResult("verification") ? (
                 <div
                   style={{
                     ...verificationCard(licenceVerificationResult.status),
@@ -4221,7 +4239,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && identityPhotoResult && shouldShowVerificationResult("photo") ? (
+              {openPanel === "verification" && identityPhotoResult && !activeEvidenceMode && shouldShowVerificationResult("photo") ? (
                 <div
                   style={{
                     ...verificationCard(identityPhotoResult.status),
@@ -4369,18 +4387,18 @@ export default function CreateEntryPage() {
                         background:
                           "linear-gradient(180deg, rgba(242,199,102,0.12) 0%, rgba(13,45,73,0.62) 100%)",
                         padding: 12,
-                        display: shouldShowVerificationBlock("photo") ? "grid" : "none",
+                        display: shouldShowVerificationBlock("photo") && showPhotoEvidenceBlock ? "grid" : "none",
                         gap: 10,
                       }}
                     >
                       <div style={bankFieldLabelStyle()}>
                         <EntryDetailIcon kind="person" size={14} />
                         <span>
-                          Photo / selfie proof <span style={{ color: "#B9CBE0", fontWeight: 800 }}>(optional)</span>
+                          Integrity photo <span style={{ color: "#B9CBE0", fontWeight: 800 }}>(optional)</span>
                         </span>
                       </div>
                       <div style={{ color: "#B9CBE0", fontSize: 12, fontWeight: 760, marginTop: -5 }}>
-                        Add up to 5 clear face or ID photos. GSN records them for identity continuity; provider verification comes later.
+                        Add a clear front face photo now. Side/profile angles can be added later for Trust Passport and TrustSlip review.
                       </div>
 
                       <div
@@ -4587,6 +4605,48 @@ export default function CreateEntryPage() {
                       </PrimaryButton>
                     </div>
 
+                    {optionalEvidenceStep === "photo_done" ? (
+                      <div
+                        style={{
+                          ...softCard("#ECFDF5"),
+                          border: "1px solid rgba(167,243,208,0.70)",
+                          display: "grid",
+                          gap: 10,
+                        }}
+                      >
+                        <div style={{ ...sectionLabel(), color: "#047857" }}>
+                          Photo recorded
+                        </div>
+                        <div style={{ color: "#065F46", fontWeight: 900, lineHeight: 1.5 }}>
+                          Integrity level: {founderEvidence.label}. Continue with bank or wallet evidence, or finish now.
+                        </div>
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <PrimaryButton
+                            type="button"
+                            onClick={handleContinueToBankEvidence}
+                            minWidth={0}
+                            stableHeight={48}
+                            debugId="create-entry.photo.continue-bank"
+                            style={{ ...primaryBtn(false), width: "100%", minWidth: 0 }}
+                          >
+                            Add bank or wallet
+                          </PrimaryButton>
+                          <SecondaryButton
+                            type="button"
+                            onClick={handleFinishRegistration}
+                            busy={busy && busyTarget === "community"}
+                            busyLabel="Registering..."
+                            minWidth={0}
+                            stableHeight={46}
+                            debugId="create-entry.photo.finish-registration"
+                            style={{ ...secondaryBtn(), width: "100%", minWidth: 0 }}
+                          >
+                            Finish registration now
+                          </SecondaryButton>
+                        </div>
+                      </div>
+                    ) : null}
+
                     <div
                       style={{
                         borderRadius: 18,
@@ -4594,7 +4654,7 @@ export default function CreateEntryPage() {
                         background:
                           "linear-gradient(180deg, rgba(13,45,73,0.66) 0%, rgba(8,31,53,0.72) 100%)",
                         padding: 12,
-                        display: shouldShowVerificationBlock("bank") ? "grid" : "none",
+                        display: shouldShowVerificationBlock("bank") && showBankEvidenceBlock ? "grid" : "none",
                         gap: 10,
                       }}
                     >
@@ -4774,7 +4834,7 @@ export default function CreateEntryPage() {
                         background:
                           "linear-gradient(180deg, rgba(13,45,73,0.58) 0%, rgba(8,31,53,0.66) 100%)",
                         padding: 12,
-                        display: shouldShowVerificationBlock("verification") ? "grid" : "none",
+                        display: shouldShowVerificationBlock("verification") && showOfficialIdEvidenceBlock ? "grid" : "none",
                         gap: 10,
                       }}
                     >
@@ -4855,9 +4915,39 @@ export default function CreateEntryPage() {
                       {renderLocalFeedback("verification")}
                     </div>
 
+                    {optionalEvidenceStep === "official_id_done" ? (
+                      <div
+                        style={{
+                          ...softCard("#ECFDF5"),
+                          border: "1px solid rgba(167,243,208,0.70)",
+                          display: "grid",
+                          gap: 10,
+                        }}
+                      >
+                        <div style={{ ...sectionLabel(), color: "#047857" }}>
+                          Official ID recorded
+                        </div>
+                        <div style={{ color: "#065F46", fontWeight: 900, lineHeight: 1.5 }}>
+                          Integrity level: {founderEvidence.label}. You can finish registration now.
+                        </div>
+                        <PrimaryButton
+                          type="button"
+                          onClick={handleFinishRegistration}
+                          busy={busy && busyTarget === "community"}
+                          busyLabel="Registering..."
+                          minWidth={0}
+                          stableHeight={48}
+                          debugId="create-entry.official-id.finish-registration"
+                          style={{ ...primaryBtn(false), width: "100%", minWidth: 0 }}
+                        >
+                          Finish registration now
+                        </PrimaryButton>
+                      </div>
+                    ) : null}
+
                     <div
                       style={{
-                        display: shouldShowVerificationBlock("bank") ? "grid" : "none",
+                        display: shouldShowVerificationBlock("bank") && showBankEvidenceBlock ? "grid" : "none",
                         gridTemplateColumns: "minmax(96px, 0.36fr) minmax(0, 1fr)",
                         gap: 10,
                       }}
@@ -4918,7 +5008,53 @@ export default function CreateEntryPage() {
 
                     {renderLocalFeedback("bank")}
 
-                    {communityDetailsRecorded && !createOutcome ? (
+                    {optionalEvidenceStep === "bank_done" ? (
+                      <div
+                        style={{
+                          ...softCard("#ECFDF5"),
+                          border: "1px solid rgba(167,243,208,0.70)",
+                          display: "grid",
+                          gap: 10,
+                        }}
+                      >
+                        <div style={{ ...sectionLabel(), color: "#047857" }}>
+                          Bank or wallet recorded
+                        </div>
+                        <div style={{ color: "#065F46", fontWeight: 900, lineHeight: 1.5 }}>
+                          Integrity level: {founderEvidence.label}. Add official ID if available, or finish now.
+                        </div>
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <PrimaryButton
+                            type="button"
+                            onClick={handleContinueToOfficialIdEvidence}
+                            minWidth={0}
+                            stableHeight={48}
+                            debugId="create-entry.bank.continue-official-id"
+                            style={{ ...primaryBtn(false), width: "100%", minWidth: 0 }}
+                          >
+                            Add official ID
+                          </PrimaryButton>
+                          <SecondaryButton
+                            type="button"
+                            onClick={handleFinishRegistration}
+                            busy={busy && busyTarget === "community"}
+                            busyLabel="Registering..."
+                            minWidth={0}
+                            stableHeight={46}
+                            debugId="create-entry.bank.finish-registration"
+                            style={{ ...secondaryBtn(), width: "100%", minWidth: 0 }}
+                          >
+                            Finish registration now
+                          </SecondaryButton>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {communityDetailsRecorded &&
+                    !createOutcome &&
+                    optionalEvidenceStep !== "photo_done" &&
+                    optionalEvidenceStep !== "bank_done" &&
+                    optionalEvidenceStep !== "official_id_done" ? (
                       <div
                         style={{
                           ...softCard("#ECFDF5"),
@@ -4966,7 +5102,8 @@ export default function CreateEntryPage() {
             <div
               ref={communityRef}
               style={{
-                ...stageShell(openPanel === "community", false),
+                ...stageShell(openPanel === "community", Boolean(communityDetailsRecorded || createOutcome)),
+                display: activeEvidenceMode ? "none" : undefined,
                 order: step === "verify" ? 3 : 2,
               }}
             >
@@ -4980,11 +5117,11 @@ export default function CreateEntryPage() {
                 fullWidth
                 stableHeight={74}
                 debugId="create-entry.community.toggle"
-                style={stageDropDownHeader(openPanel === "community", false)}
+                style={stageDropDownHeader(openPanel === "community", Boolean(communityDetailsRecorded || createOutcome))}
               >
                 <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                  <span style={stageBadge(stepProgress.community, false)}>
-                    {step === "verify" ? 3 : 2}
+                  <span style={stageBadge(stepProgress.community, Boolean(communityDetailsRecorded || createOutcome))}>
+                    {communityDetailsRecorded || createOutcome ? "OK" : step === "verify" ? 3 : 2}
                   </span>
                   <span style={{ display: "grid", gap: 6 }}>
                     <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 2.2 }}>
@@ -5118,6 +5255,23 @@ export default function CreateEntryPage() {
                       <div style={{ ...sectionLabel(), color: createOutcome ? "#047857" : "#92400E" }}>
                         {createOutcome ? "Community registered" : "Community details recorded"}
                       </div>
+                      {!createOutcome ? (
+                        <div
+                          style={{
+                            justifySelf: "start",
+                            borderRadius: 999,
+                            border: "1px solid rgba(4,120,87,0.28)",
+                            background: "rgba(16,185,129,0.13)",
+                            color: "#047857",
+                            padding: "6px 10px",
+                            fontSize: 11,
+                            fontWeight: 1000,
+                            lineHeight: 1,
+                          }}
+                        >
+                          Done: Community details
+                        </div>
+                      ) : null}
                       <div
                         style={{
                           color: createOutcome ? "#065F46" : "#92400E",

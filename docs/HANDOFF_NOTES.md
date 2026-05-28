@@ -1,3 +1,33 @@
+### Start Community optional evidence decision lane (2026-05-28)
+
+- Follow-up from phone testing: community name/story is not identity
+  verification, but the UI still needed a clear local `Done` mark and then a
+  calm choice about optional evidence.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - Community setup now marks the block complete with an `OK` badge and a
+    `Done: Community details` chip after the name/story are recorded locally.
+  - Founder evidence remains separate from community details; the evidence
+    meter still measures identity evidence only.
+  - Optional evidence is now one block at a time:
+    photo/selfie -> bank/wallet -> official ID.
+  - After each optional evidence step, the page asks whether to continue with
+    the next evidence type or finish registration now.
+  - When an optional evidence block is active, completed prior blocks and the
+    community setup block are hidden so the user can focus on the current
+    decision.
+  - The photo copy now frames the images as Integrity/Trust Passport/TrustSlip
+    source photos, with front-face capture now and side/profile angles later.
+- Truth/devil's advocate:
+  - The current photo capture still uses normal device camera/file inputs. It is
+    not yet a guided government-style front/side capture sequence with pose
+    enforcement.
+  - The photo is recorded as reviewable evidence for the integrity/trust record;
+    it is not a biometric scan or provider face match.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after approved Vite/esbuild escalation.
+
 ### Start Community inline community-record outcome (2026-05-28)
 
 - Follow-up from phone testing: the owner reported that after tapping the
