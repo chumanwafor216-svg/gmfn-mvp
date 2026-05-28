@@ -1,3 +1,29 @@
+### Start Community step-one handoff repair (2026-05-28)
+
+- Follow-up from phone testing: after the founder submitted Block 1 details /
+  phone registration, the page could land back on the compact `Guide ready`
+  surface instead of showing the success response and opening the Community
+  setup block.
+- Root cause found in `frontend/src/pages/CreateEntryPage.tsx`:
+  - completed/optional blocks were being hidden at the parent Block 1 container;
+  - Block 2 and Block 3 are nested inside that same parent container, so hiding
+    Block 1 could also hide the next block the app was trying to reveal;
+  - restored browser drafts with `step=community` and `openPanel=null` could
+    also reopen at the guide card even though phone evidence already existed.
+- Updated the route-local Start Community logic:
+  - restored drafts with completed phone evidence now reopen Community setup;
+  - restored verification/bank steps reopen the verification panel;
+  - the parent Block 1 container remains structurally visible so nested next
+    steps can render;
+  - when `Submit 1` auto-registers/confirms the phone, the success message is
+    attached to the newly opened Community setup block instead of the now-hidden
+    details form.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Start Community optional evidence decision lane (2026-05-28)
 
 - Follow-up from phone testing: community name/story is not identity

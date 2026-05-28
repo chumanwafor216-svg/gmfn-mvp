@@ -1374,6 +1374,15 @@ export default function CreateEntryPage() {
   const initialStep =
     restoredDraft?.step ||
     (hasInitialCommunityContext ? "community" : "details");
+  const initialOpenPanel =
+    restoredDraft?.openPanel ||
+    (restoredDraft?.step === "community" && restoredDraft?.phoneVerificationProof
+      ? "community"
+      : restoredDraft?.step === "verify" || restoredDraft?.step === "bank"
+        ? "verification"
+        : hasInitialCommunityContext
+          ? "community"
+          : null);
 
   const [communityName, setCommunityName] = useState(initialCommunityName);
   const [description, setDescription] = useState(initialDescription);
@@ -1446,11 +1455,7 @@ export default function CreateEntryPage() {
   const [guideStepOpen, setGuideStepOpen] = useState<GuideStepKey | null>(null);
   const [existingMemberOpen, setExistingMemberOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<"details" | "verification" | "community" | null>(
-    restoredDraft?.openPanel !== undefined
-      ? restoredDraft.openPanel
-      : hasInitialCommunityContext
-        ? "community"
-        : null
+    initialOpenPanel
   );
   const detailsRef = useRef<HTMLDivElement | null>(null);
   const verificationRef = useRef<HTMLDivElement | null>(null);
@@ -2434,7 +2439,7 @@ export default function CreateEntryPage() {
 
     try {
       const started = await startAndMaybeConfirmPhoneSession();
-      showSuccess("details", started.message);
+      showSuccess(started.autoConfirmed ? "community" : "phone", started.message);
     } catch (err: any) {
       if (openActivationFromStructuredError(err)) return;
 
@@ -3392,7 +3397,6 @@ export default function CreateEntryPage() {
                   guideDone && openPanel !== null,
                   stepProgress.detailsDone
                 ),
-                display: communityDecisionMode || activeEvidenceMode ? "none" : undefined,
                 ...(guideDone && openPanel === "details"
                   ? {
                       padding: 18,
