@@ -692,43 +692,19 @@ export default function App() {
       <Route path="/invite-composer-preview" element={<Navigate to="/cover" replace />} />
       <Route
         path="/start/join/:code"
-        element={
-          <RedirectToCover
-            entry="invite"
-            sourceParam="code"
-            targetQueryKey="invite_code"
-          />
-        }
+        element={<JoinEntryPage />}
       />
       <Route
         path="/start/invite/:code"
-        element={
-          <RedirectToCover
-            entry="invite"
-            sourceParam="code"
-            targetQueryKey="invite_code"
-          />
-        }
+        element={<JoinEntryPage />}
       />
       <Route
         path="/invite/:code"
-        element={
-          <RedirectToCover
-            entry="invite"
-            sourceParam="code"
-            targetQueryKey="invite_code"
-          />
-        }
+        element={<JoinEntryPage />}
       />
       <Route
         path="/get-invite/:code"
-        element={
-          <RedirectToCover
-            entry="invite"
-            sourceParam="code"
-            targetQueryKey="invite_code"
-          />
-        }
+        element={<JoinEntryPage />}
       />
 
       <Route path="/pending-approval" element={<JoinRequestPendingPage />} />

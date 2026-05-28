@@ -2016,7 +2016,7 @@ export default function CreateEntryPage() {
     if (identityPhotoResult) {
       showError(
         "photo",
-        "Photo evidence is already recorded for this entry. Use Clear if you need to rebuild this proof block before finishing."
+        "Photo evidence is already recorded for this entry. Use Clear if you need to choose the photos again before finishing."
       );
       return;
     }
@@ -2395,7 +2395,7 @@ export default function CreateEntryPage() {
         message:
           safeStr(out?.confirmation_message) ||
           (registeredOnly
-            ? "Phone registered for controlled testing. Set up the community now. Stronger founder checks can be added as optional trust evidence."
+            ? "Phone recorded. Set up the community now. Stronger checks can be added later."
             : "GSN found your verified phone record. Set up the community now. Stronger founder checks can be added as optional trust evidence."),
       };
     }
@@ -2836,7 +2836,7 @@ export default function CreateEntryPage() {
       if (!canFinishCommunityRegistration && communityDetailsRecorded) {
         showError(
           "community",
-          "Community details are recorded, but the protected account details are incomplete. Reopen Block 1 and make sure name, country, phone, email, and matching password are filled before finishing registration."
+          "Community details are recorded, but your account details are incomplete. Reopen Details and make sure name, country, phone, email, and matching password are filled before finishing registration."
         );
       }
       return;
@@ -3092,10 +3092,10 @@ export default function CreateEntryPage() {
             }}
           >
             {[
-              ["ID", "Details"],
-              ["TEL", "Phone"],
-              ["GSN", "Community"],
-              ["GO", "Invite"],
+              ["👤", "Details"],
+              ["📞", "Phone"],
+              ["🏘️", "Community"],
+              ["🤝", "Invite"],
             ].map(([mark, label]) => (
               <div
                 key={label}
@@ -3520,7 +3520,7 @@ export default function CreateEntryPage() {
                   </span>
                     <span style={{ display: "grid", gap: 3 }}>
                     <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 1.5, fontSize: 9.5 }}>
-                      First block
+                      Step 1
                     </span>
                     <span
                       style={{
@@ -3882,7 +3882,7 @@ export default function CreateEntryPage() {
                           : "0 18px 34px rgba(214,170,69,0.28), inset 0 1px 0 rgba(255,255,255,0.58)",
                       }}
                     >
-                      Submit 1
+                      Continue
                       <span aria-hidden="true" style={{ marginLeft: 10 }}>{">"}</span>
                     </PrimaryButton>
                   </div>
@@ -4012,7 +4012,7 @@ export default function CreateEntryPage() {
                   </span>
                   <span style={{ display: "grid", gap: 6 }}>
                     <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 2.2 }}>
-                      {step === "verify" ? "Second block" : "Third block"}
+                      {step === "verify" ? "Step 2" : "Step 3"}
                     </span>
                     <span
                       style={{
@@ -4105,8 +4105,8 @@ export default function CreateEntryPage() {
                   >
                     {safeStr(phoneVerificationProof.confirmation_message) ||
                       (phoneVerificationProof.registered_only
-                        ? `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is registered against ${safeStr(phoneVerificationProof.display_name) || "this founder"} for controlled testing.`
-                        : `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is now verified for ${safeStr(phoneVerificationProof.display_name) || "this founder"}.`)}
+                        ? `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is linked to ${safeStr(phoneVerificationProof.display_name) || "this person"}.`
+                        : `${safeStr(phoneVerificationProof.phone_e164) || "This phone"} is now linked to ${safeStr(phoneVerificationProof.display_name) || "this person"}.`)}
                   </div>
                   <div
                     style={{
@@ -4139,7 +4139,7 @@ export default function CreateEntryPage() {
                       }}
                     >
                       <div style={{ ...sectionLabel(), color: "#047857" }}>
-                        Trust event response
+                        Phone saved
                       </div>
                       <div
                         style={{
@@ -4153,8 +4153,8 @@ export default function CreateEntryPage() {
                           phoneVerificationProof.trust_event_response.message
                         ) ||
                           (phoneVerificationProof.registered_only
-                            ? "This phone registration is ready to become starter evidence when registration is completed. SMS verification can be added later."
-                            : "This phone proof is ready to become trust evidence when registration is completed.")}
+                            ? "This phone is saved for your entry. SMS proof can be added later."
+                            : "This phone is saved to strengthen your profile.")}
                       </div>
                       {safeStr(
                         phoneVerificationProof.trust_event_response.event_type
@@ -4167,10 +4167,7 @@ export default function CreateEntryPage() {
                             fontWeight: 1000,
                           }}
                         >
-                          Event:{" "}
-                          {safeStr(
-                            phoneVerificationProof.trust_event_response.event_type
-                          )}
+                          Saved for your profile
                         </div>
                       ) : null}
                     </div>
@@ -4230,7 +4227,7 @@ export default function CreateEntryPage() {
                       }}
                     >
                       <div style={{ ...sectionLabel(), color: "#047857" }}>
-                        Trust event response
+                        Bank or wallet saved
                       </div>
                       <div
                         style={{
@@ -4241,7 +4238,7 @@ export default function CreateEntryPage() {
                         }}
                       >
                         {safeStr(bankRecordProof.trust_event_response.message) ||
-                          "This bank or wallet proof is ready to become trust evidence when registration is completed."}
+                          "This bank or wallet detail is saved to strengthen your profile after review."}
                       </div>
                       {safeStr(bankRecordProof.trust_event_response.event_type) ? (
                         <div
@@ -4252,8 +4249,7 @@ export default function CreateEntryPage() {
                             fontWeight: 1000,
                           }}
                         >
-                          Event:{" "}
-                          {safeStr(bankRecordProof.trust_event_response.event_type)}
+                          Saved for your profile
                         </div>
                       ) : null}
                     </div>
@@ -4408,7 +4404,7 @@ export default function CreateEntryPage() {
                             fontWeight: 800,
                           }}
                         >
-                          SMS delivery is only needed when the live SMS rail is enabled. During controlled testing, refresh this step to use phone registration mode.
+                          SMS delivery is only needed when the live SMS rail is enabled. For this pilot, refresh this step to record the phone and continue.
                         </div>
                       </div>
                     ) : null}
@@ -5189,7 +5185,7 @@ export default function CreateEntryPage() {
                   </span>
                   <span style={{ display: "grid", gap: 6 }}>
                     <span style={{ ...sectionLabel(), color: "#8FA7BD", letterSpacing: 2.2 }}>
-                      {step === "verify" ? "Third block" : "Second block"}
+                      {step === "verify" ? "Step 3" : "Step 2"}
                     </span>
                     <span
                       style={{

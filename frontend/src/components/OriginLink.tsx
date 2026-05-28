@@ -135,10 +135,8 @@ export default function OriginLink(props: OriginLinkProps) {
       onPointerUp={(event) => guardLinkTap(event, rest.onPointerUp)}
       onMouseDown={(event) => guardLinkTap(event, rest.onMouseDown)}
       onClick={(event) => {
+        rememberAppRouteRecovery(nextTo, linkDebugId);
         guardLinkTap(event, rest.onClick);
-        if (!event.defaultPrevented) {
-          rememberAppRouteRecovery(nextTo, linkDebugId);
-        }
       }}
     >
       {children}

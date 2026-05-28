@@ -52,7 +52,7 @@ type CollapseState = {
 
 type NoticeTone = "success" | "error";
 
-const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v1";
+const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v2";
 const DRAFT_FALLBACK_KEY = "gmfn.firstCircle.fallback.v1";
 
 const ROLE_OPTIONS = firstCircle.FIRST_CIRCLE_ROLE_OPTIONS.map(
@@ -243,9 +243,9 @@ function defaultCollapseState(): CollapseState {
   return {
     progress: false,
     role: false,
-    add: false,
-    contacts: false,
-    invite: false,
+    add: true,
+    contacts: true,
+    invite: true,
   };
 }
 
@@ -853,12 +853,12 @@ export default function BuildFirstCirclePage() {
 
   function copyInviteBundle() {
     if (readyContacts.length === 0) {
-      showNotice("error", "No ready invite bundle is available yet.");
+      showNotice("error", "No ready invite message is available yet.");
       return;
     }
 
     safeCopy(inviteBundle);
-    showNotice("success", "Invite bundle copied.");
+    showNotice("success", "Invite message copied.");
   }
 
   async function copyJoinInvite() {
@@ -1029,9 +1029,8 @@ export default function BuildFirstCirclePage() {
             </div>
 
             <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              Choose people you already know: family, buyers, sellers,
-              suppliers, savings partners, or community officers. Keep it small,
-              serious, and real.
+              Start with people you can call today: family, buyers, sellers,
+              suppliers, savings partners, or community officers.
             </div>
 
             <div
@@ -1131,8 +1130,8 @@ export default function BuildFirstCirclePage() {
               Pick people from the handles you already use
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Open phone contacts, WhatsApp, email, Facebook, or the phone share
-              sheet. Then add the real people you want in your first circle.
+              Use contacts, WhatsApp, email, Facebook, share, or copy. Then add
+              the real people you want in your first circle.
             </div>
           </div>
 
@@ -1165,7 +1164,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.phone-contacts"
           >
-            Phone book
+            📱 Phone book
           </PrimaryButton>
           <SecondaryButton
             onClick={openWhatsAppInvite}
@@ -1173,7 +1172,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.whatsapp"
           >
-            WhatsApp
+            💬 WhatsApp
           </SecondaryButton>
           <SecondaryButton
             onClick={openEmailInvite}
@@ -1181,7 +1180,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.email"
           >
-            Email
+            ✉️ Email
           </SecondaryButton>
           <SecondaryButton
             onClick={openFacebookInvite}
@@ -1189,7 +1188,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.facebook"
           >
-            Facebook
+            📣 Facebook
           </SecondaryButton>
           <SecondaryButton
             onClick={() => {
@@ -1199,7 +1198,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.share"
           >
-            Share
+            ↗ Share
           </SecondaryButton>
           <SecondaryButton
             onClick={() => {
@@ -1209,7 +1208,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.copy"
           >
-            Copy
+            📋 Copy
           </SecondaryButton>
         </div>
       </section>
@@ -1679,7 +1678,7 @@ export default function BuildFirstCirclePage() {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Bundle preview</div>
+              <div style={sectionLabel()}>Message preview</div>
 
               <div
                 style={{
@@ -1696,12 +1695,12 @@ export default function BuildFirstCirclePage() {
                   wordBreak: "break-word",
                 }}
               >
-                {inviteBundle || "Invite bundle will appear here when ready."}
+                {inviteBundle || "Invite message will appear here when ready."}
               </div>
             </div>
 
             <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Bundle status</div>
+              <div style={sectionLabel()}>Message status</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 <div style={statTile()}>
@@ -1727,7 +1726,7 @@ export default function BuildFirstCirclePage() {
                       stableHeight={48}
                       debugId="build-first-circle.copy-invite-bundle"
                   >
-                    Copy Invite Bundle
+                    Copy message
                   </PrimaryButton>
 
                   <SecondaryButton

@@ -3401,7 +3401,7 @@ export default function CommunityHomePage() {
                     readyFirstCircleContacts.length === 0
                   )}
                 >
-                  Copy Invite Bundle
+                  Copy invite message
                 </StableButton>
               </div>
             </div>

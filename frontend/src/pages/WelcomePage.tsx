@@ -499,18 +499,18 @@ export default function WelcomePage() {
 
                   <div style={{ display: "grid", gap: 8 }}>
                     <div style={routePill()}>Create</div>
-                  <div
-                    style={{
-                      fontSize: isCompact ? 24 : 28,
-                      fontWeight: 900,
-                      lineHeight: 1.08,
-                      textShadow: "0 10px 24px rgba(0,0,0,0.12)",
-                    }}
-                  >
-                    Create a new community
-                  </div>
+                    <div
+                      style={{
+                        fontSize: isCompact ? 24 : 28,
+                        fontWeight: 900,
+                        lineHeight: 1.08,
+                        textShadow: "0 10px 24px rgba(0,0,0,0.12)",
+                      }}
+                    >
+                      Create a new community
+                    </div>
                     <div style={supportText()}>
-                      Start a new GSN community with its own owner path.
+                      Create your community and invite your first people.
                     </div>
                   </div>
 

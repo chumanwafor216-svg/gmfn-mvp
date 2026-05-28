@@ -1,3 +1,56 @@
+### Entry-to-dashboard line audit and fixes (2026-05-28)
+
+- Follow-up from product-owner phone testing: audit the whole entry line from
+  first landing through Create/Join, First Circle, Community Home, and
+  Dashboard instead of only fixing the visible screen currently being tested.
+- Used two read-only line auditors:
+  - route/state audit mapped Cover -> Welcome -> Login/Create/Join -> First
+    Circle/Community Home/Dashboard and found invite/join branch risks;
+  - UX/language audit found remaining owner-facing wording, internal evidence
+    language, and First Circle page clutter.
+- Updated flow/routing:
+  - `frontend/src/App.tsx` now sends canonical invite links
+    `/start/join/:code`, `/start/invite/:code`, `/invite/:code`, and
+    `/get-invite/:code` directly to `JoinEntryPage` so authenticated users do
+    not lose the invite by being redirected through Cover/Welcome.
+  - `frontend/src/pages/JoinEntryPage.tsx` now falls back to Community Home
+    for approved existing-member joins and offers a simple invite-code box when
+    `/join` opens without a code.
+  - `gmfn_backend/app/api/routes/clans.py` now returns
+    `/app/community/{community_id}` for approved existing-member join status
+    instead of `/app/marketplace?community=...`.
+  - `frontend/src/components/OriginLink.tsx` now marks `/app` recovery before
+    its tap handler runs, satisfying the route-fallthrough audit.
+- Updated user-facing language:
+  - `frontend/src/pages/CreateEntryPage.tsx` replaces `Submit 1`, visible
+    `Block` labels, and `Trust event response`/`Event` copy with simpler
+    user-facing wording and emoji step chips.
+  - `frontend/src/pages/BuildFirstCirclePage.tsx` opens with Invite/handles in
+    focus, collapses deeper manual/contact/message sections by default, adds
+    emoji labels to phone/WhatsApp/email/Facebook/share/copy, and renames
+    `Invite bundle` language to `Invite message`.
+  - `frontend/src/pages/WelcomePage.tsx` removes the owner-path wording from
+    the Create Community choice.
+  - `frontend/src/pages/CommunityHomePage.tsx` renames `Copy Invite Bundle` to
+    `Copy invite message`.
+- Truth/devil's advocate:
+  - the full end-to-end browser walk with a real backend account still needs
+    product-owner phone testing after deployment;
+  - generic community-code join is still not fully implemented; the safe
+    fallback added here accepts invite codes instead of pretending all community
+    codes can be resolved;
+  - the docs still say completed Create Community may return to Existing Member
+    Sign In, while the current implemented/product-tested path auto-authenticates
+    and opens First Circle. That product decision should be standardized later.
+- Verification:
+  - `npm exec -- eslint src/App.tsx src/components/OriginLink.tsx src/pages/CreateEntryPage.tsx src/pages/BuildFirstCirclePage.tsx src/pages/JoinEntryPage.tsx src/pages/WelcomePage.tsx src/pages/CommunityHomePage.tsx` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:route-fallthrough` passed after the `OriginLink` recovery
+    fix.
+  - `python -m py_compile gmfn_backend\app\api\routes\clans.py` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Start Community compact visual language pass (2026-05-28)
 
 - Follow-up from phone testing: Start Community still felt text-heavy after the

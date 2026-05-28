@@ -627,6 +627,7 @@ export default function JoinEntryPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const routeParams = useParams<Record<string, string | undefined>>();
+  const [manualInviteCode, setManualInviteCode] = useState("");
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -662,6 +663,12 @@ export default function JoinEntryPage() {
         ""
     );
   }, [searchParams, routeParams.code]);
+
+  function openManualInviteCode() {
+    const nextCode = cleanText(manualInviteCode);
+    if (!nextCode) return;
+    navigate(`/join/${encodeURIComponent(nextCode)}`, { replace: true });
+  }
 
   useEffect(() => {
     if (inviteCode) {
@@ -965,7 +972,7 @@ export default function JoinEntryPage() {
           const openTo = mergeSearchIntoPath(
             cleanText(result?.result_path || "") ||
               (communityId
-                ? `/app/marketplace?community=${encodeURIComponent(communityId)}`
+                ? `/app/community/${encodeURIComponent(communityId)}`
                 : "/app/community"),
             location.search
           );
@@ -1827,6 +1834,26 @@ export default function JoinEntryPage() {
                   {inviteBlocked ? "Fresh invite link needed." : "Join link needed."}
                 </div>
                 <div>{inviteHelpMessage}</div>
+                {!inviteCode ? (
+                  <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                    <input
+                      value={manualInviteCode}
+                      onChange={(event) => setManualInviteCode(event.target.value)}
+                      placeholder="Enter invite code"
+                      autoComplete="off"
+                      style={inputStyle()}
+                    />
+                    <PrimaryButton
+                      type="button"
+                      onClick={openManualInviteCode}
+                      disabled={!cleanText(manualInviteCode)}
+                      debugId="join-entry.manual-code.open"
+                      style={{ width: "min(100%, 320px)" }}
+                    >
+                      Check code
+                    </PrimaryButton>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

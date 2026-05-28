@@ -774,7 +774,7 @@ def _join_request_status_payload(
 
     if safe_status == "approved" and not activation_required:
         result_channel = "approved-existing-member"
-        result_path = f"/app/marketplace?community={int(req.clan_id)}"
+        result_path = f"/app/community/{int(req.clan_id)}"
     elif safe_status == "approved":
         result_channel = "activation-ready"
         result_path = saved_activation_path or approval_path
