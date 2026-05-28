@@ -1,3 +1,34 @@
+### Start Community shared evidence-state correction (2026-05-28)
+
+- Follow-up from phone testing: after Community details were recorded, the
+  decision card said the community was ready, but the founder evidence meter
+  still showed `Add: Name, country, phone, email` while also showing
+  `Done: Phone evidence`.
+- Root cause:
+  - the shared evidence completion helper treated starter details and phone
+    evidence as unrelated signals;
+  - the Start Community page could also calculate phone evidence from only the
+    compact proof object, even though reaching Community setup with a valid
+    entry verification id already means the phone/details lane has been
+    accepted for this controlled onboarding flow.
+- Updated:
+  - `frontend/src/lib/identityEvidenceCompletion.ts` now treats completed phone
+    evidence as also completing the starter details baseline;
+  - `frontend/src/pages/CreateEntryPage.tsx` now derives phone evidence from
+    either the proof object or the valid Community-step verification id;
+  - the compact founder evidence meter is hidden during the immediate
+    `Community details recorded` decision card so the decision lane does not
+    visually argue with itself.
+- Truth/devil's advocate:
+  - this is a shared evidence-signal correction, not merely a color/button
+    patch;
+  - it still does not make optional photo/bank/official-ID evidence mandatory.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx src/lib/identityEvidenceCompletion.ts` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Start Community community-record button gate repair (2026-05-28)
 
 - Follow-up from phone testing: after reaching Community setup and typing the

@@ -70,6 +70,8 @@ export function buildIdentityEvidenceCompletion(
   input: IdentityEvidenceCompletionInput
 ): IdentityEvidenceCompletion {
   const countReady = Boolean(input.countReadyAsProgress);
+  const phoneDone = Boolean(input.phoneDone);
+  const detailsDone = Boolean(input.detailsDone || phoneDone);
   const photoRecorded = Boolean(input.photoRecorded || input.photoVerified);
   const photoReady = Boolean(input.photoReady && !photoRecorded);
   const photoNeedsRepair = Boolean(input.photoRejected || input.photoNeedsMore);
@@ -78,14 +80,14 @@ export function buildIdentityEvidenceCompletion(
     {
       key: "details",
       label: "Name, country, phone, email",
-      done: Boolean(input.detailsDone),
+      done: detailsDone,
       ready: false,
       weight: 15,
     },
     {
       key: "phone",
       label: "Phone evidence",
-      done: Boolean(input.phoneDone),
+      done: phoneDone,
       ready: false,
       weight: 20,
     },

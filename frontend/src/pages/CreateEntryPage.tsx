@@ -1487,6 +1487,9 @@ export default function CreateEntryPage() {
     Number(verificationId) > 0 &&
     !!safeStr(communityName);
   const canFinishCommunityRegistration = canRecordCommunityDetails && canContinue;
+  const phoneEvidenceRecorded = Boolean(
+    phoneVerificationProof || (step === "community" && Number(verificationId) > 0)
+  );
   const canContinueDetails =
     !!safeStr(displayName) &&
     !!safeStr(phone) &&
@@ -1508,7 +1511,7 @@ export default function CreateEntryPage() {
     () =>
       buildIdentityEvidenceCompletion({
         detailsDone: canContinueDetails,
-        phoneDone: Boolean(phoneVerificationProof),
+        phoneDone: phoneEvidenceRecorded,
         photoRecorded: Boolean(identityPhotoResult),
         photoReady: identityPhotoReady,
         bankRecorded: Boolean(bankRecordProof || bankVerificationResult),
@@ -1522,7 +1525,7 @@ export default function CreateEntryPage() {
       identityPhotoReady,
       identityPhotoResult,
       licenceVerificationResult,
-      phoneVerificationProof,
+      phoneEvidenceRecorded,
     ]
   );
   const stepProgress = useMemo(
@@ -5175,7 +5178,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "community" && !busyTarget ? (
+              {openPanel === "community" && !busyTarget && !communityDecisionMode ? (
                 <div style={{ marginTop: 12 }}>
                   <FounderEvidenceMeter compact />
                 </div>
