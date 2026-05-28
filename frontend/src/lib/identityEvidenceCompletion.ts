@@ -41,6 +41,7 @@ const IDENTITY_EVENT_TYPES = {
   phoneVerified: "identity.phone_verified",
   bankRecorded: "identity.bank_destination_recorded",
   licenceRecorded: "identity.drivers_licence_recorded",
+  officialIdRecorded: "identity.official_id_recorded",
   photoRecorded: "identity.photo_evidence_recorded",
   photoVerified: "identity.photo_evidence_verified",
   photoVerifiedReversed: "identity.photo_evidence_verified_reversed",
@@ -76,7 +77,7 @@ export function buildIdentityEvidenceCompletion(
   const items: IdentityEvidenceItem[] = [
     {
       key: "details",
-      label: "Name, phone, email",
+      label: "Name, country, phone, email",
       done: Boolean(input.detailsDone),
       ready: false,
       weight: 15,
@@ -104,7 +105,7 @@ export function buildIdentityEvidenceCompletion(
     },
     {
       key: "official_id",
-      label: "Licence/passport/ID",
+      label: "Official ID",
       done: Boolean(input.officialIdRecorded),
       ready: false,
       weight: 20,
@@ -216,7 +217,9 @@ export function buildIdentityEvidenceCompletionFromTrustEvents(
       photoRepairStillActive &&
       hasEvent(rows, IDENTITY_EVENT_TYPES.photoRejected),
     bankRecorded: hasEvent(rows, IDENTITY_EVENT_TYPES.bankRecorded),
-    officialIdRecorded: hasEvent(rows, IDENTITY_EVENT_TYPES.licenceRecorded),
+    officialIdRecorded:
+      hasEvent(rows, IDENTITY_EVENT_TYPES.licenceRecorded) ||
+      hasEvent(rows, IDENTITY_EVENT_TYPES.officialIdRecorded),
     countReadyAsProgress: false,
   });
 }

@@ -12,13 +12,13 @@ import {
   isAuthenticated,
   listMyClans,
   loginAndStore,
+  recordEntryOfficialId,
   recordEntryIdentityPhoto,
   resumeEntryPhoneVerification,
   saveEntryBankDetails,
   setSelectedClanId,
   startEntryPhoneVerification,
   verifyEntryBankDetails,
-  verifyEntryDriversLicence,
 } from "../lib/api";
 import {
   ENTRY_CREATE_CODE_KEY,
@@ -32,6 +32,11 @@ import {
   saveCreateEntryDraft,
 } from "../lib/entryDraft";
 import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
+import {
+  countryFromPhone,
+  countryOptions,
+  evidenceRequirementForCountry,
+} from "../lib/identityEvidenceRequirements";
 
 type FeedbackTarget =
   | "global"
@@ -41,6 +46,26 @@ type FeedbackTarget =
   | "bank"
   | "verification"
   | "community";
+
+type CreateCommunityOutcome = {
+  kind: "workspace" | "activation";
+  message: string;
+  actionLabel: string;
+  path: string;
+  out?: any;
+  gmfnId?: string;
+  requestId?: string;
+};
+
+type IdentityPhotoSelection = {
+  id: string;
+  file: File;
+  kind: string;
+  previewUrl: string;
+};
+
+const MAX_IDENTITY_PHOTO_SELECTIONS = 5;
+const MAX_IDENTITY_PHOTO_BYTES = 5 * 1024 * 1024;
 
 function pageShell(): React.CSSProperties {
   return {
@@ -1210,35 +1235,10 @@ function resolveActivationRequestId(out: any): string {
   );
 }
 
-const BANK_COUNTRY_OPTIONS = [
-  "Nigeria",
-  "United Kingdom",
-  "Ghana",
-  "Kenya",
-  "United States",
-  "Ireland",
-  "South Africa",
-  "Uganda",
-  "Tanzania",
-  "Rwanda",
-  "Other",
-];
-
-const BANK_COUNTRY_CURRENCY: Record<string, string> = {
-  Nigeria: "NGN",
-  "United Kingdom": "GBP",
-  Ghana: "GHS",
-  Kenya: "KES",
-  "United States": "USD",
-  Ireland: "EUR",
-  "South Africa": "ZAR",
-  Uganda: "UGX",
-  Tanzania: "TZS",
-  Rwanda: "RWF",
-};
+const BANK_COUNTRY_OPTIONS = countryOptions();
 
 function currencyForBankCountry(country: string): string {
-  return BANK_COUNTRY_CURRENCY[safeStr(country)] || "";
+  return evidenceRequirementForCountry(country).currency || "";
 }
 
 function bankVerificationHelpText(result: EntryVerificationResult): string {
@@ -1300,6 +1300,7 @@ export default function CreateEntryPage() {
         phone_e164?: string;
         phone?: string;
         email?: string;
+        country?: string;
         create_code?: string;
       };
     } | null)?.create_entry || null;
@@ -1351,6 +1352,13 @@ export default function CreateEntryPage() {
       restoredDraft?.phone ||
       ""
   );
+  const initialCountry = safeStr(
+    stateCreateEntry?.country ||
+      search.get("country") ||
+      restoredDraft?.country ||
+      countryFromPhone(initialPhone) ||
+      "Nigeria"
+  );
 
   const hasInitialCommunityContext = Boolean(
     initialCommunityName || initialDescription
@@ -1364,14 +1372,18 @@ export default function CreateEntryPage() {
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [phone, setPhone] = useState(initialPhone);
   const [email, setEmail] = useState(initialEmail);
+  const [country, setCountry] = useState(initialCountry);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [busyTarget, setBusyTarget] = useState<FeedbackTarget | null>(null);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [feedbackTarget, setFeedbackTarget] = useState<FeedbackTarget>("global");
+  const [communityDetailsRecorded, setCommunityDetailsRecorded] = useState(false);
+  const [createOutcome, setCreateOutcome] = useState<CreateCommunityOutcome | null>(null);
   const [resumeNotice, setResumeNotice] = useState(
     restoredDraft
       ? "GSN restored your unfinished entry. Passwords, SMS codes, photos, and bank numbers are not stored."
@@ -1396,15 +1408,20 @@ export default function CreateEntryPage() {
   const [bankAccountNumber, setBankAccountNumber] = useState("");
   const [bankSortCode, setBankSortCode] = useState("");
   const [bankIban, setBankIban] = useState("");
-  const [bankCountry, setBankCountry] = useState("");
-  const [bankCurrency, setBankCurrency] = useState("NGN");
+  const [bankCountry, setBankCountry] = useState(initialCountry);
+  const [bankCurrency, setBankCurrency] = useState(
+    currencyForBankCountry(initialCountry) || "NGN"
+  );
   const [bankNote, setBankNote] = useState("");
   const [driverLicenceNumber, setDriverLicenceNumber] = useState("");
-  const [driverLicenceCountry, setDriverLicenceCountry] = useState("");
+  const [driverLicenceCountry, setDriverLicenceCountry] = useState(initialCountry);
   const [driverLicenceNote, setDriverLicenceNote] = useState("");
-  const [identityPhotoFile, setIdentityPhotoFile] = useState<File | null>(null);
+  const [identityPhotoItems, setIdentityPhotoItems] = useState<IdentityPhotoSelection[]>([]);
   const [identityPhotoKind, setIdentityPhotoKind] = useState("selfie");
   const [identityPhotoNote, setIdentityPhotoNote] = useState("");
+  const [identityPhotoRecordedCount, setIdentityPhotoRecordedCount] = useState(
+    restoredDraft?.identityPhotoResult ? 1 : 0
+  );
   const [bankVerificationResult, setBankVerificationResult] =
     useState<EntryVerificationResult>(restoredDraft?.bankVerificationResult || null);
   const [licenceVerificationResult, setLicenceVerificationResult] =
@@ -1429,8 +1446,17 @@ export default function CreateEntryPage() {
   const verificationRef = useRef<HTMLDivElement | null>(null);
   const communityRef = useRef<HTMLDivElement | null>(null);
   const panelRevealFrameRef = useRef<number | null>(null);
+  const feedbackTimerRef = useRef<number | null>(null);
   const selfiePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const galleryPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const identityPhotoItemsRef = useRef<IdentityPhotoSelection[]>([]);
+
+  const identityPhotoCount = identityPhotoItems.length;
+  const identityPhotoReady = identityPhotoCount > 0 && !identityPhotoResult;
+  const regionalEvidence = useMemo(
+    () => evidenceRequirementForCountry(country || bankCountry || driverLicenceCountry),
+    [bankCountry, country, driverLicenceCountry]
+  );
 
   const passwordReady =
     safeStr(password).length >= 6 && safeStr(password) === safeStr(confirmPassword);
@@ -1439,9 +1465,14 @@ export default function CreateEntryPage() {
     !!safeStr(displayName) &&
     !!safeStr(phone) &&
     !!safeStr(email) &&
+    !!safeStr(country) &&
     passwordReady;
   const canContinueDetails =
-    !!safeStr(displayName) && !!safeStr(phone) && !!safeStr(email) && passwordReady;
+    !!safeStr(displayName) &&
+    !!safeStr(phone) &&
+    !!safeStr(email) &&
+    !!safeStr(country) &&
+    passwordReady;
   const normalizedOtpCode = otpDigits(otpCode);
   const canConfirmOtp = Number(verificationId) > 0 && normalizedOtpCode.length >= 4;
   const canContinueBank =
@@ -1449,13 +1480,17 @@ export default function CreateEntryPage() {
     !!safeStr(bankAccountName) &&
     !!safeStr(bankName) &&
     !!safeStr(bankAccountNumber);
+  const canRecordOfficialId =
+    Number(verificationId) > 0 &&
+    !!safeStr(driverLicenceNumber) &&
+    !!safeStr(driverLicenceCountry || country);
   const founderEvidence = useMemo(
     () =>
       buildIdentityEvidenceCompletion({
         detailsDone: canContinueDetails,
         phoneDone: Boolean(phoneVerificationProof),
         photoRecorded: Boolean(identityPhotoResult),
-        photoReady: Boolean(identityPhotoFile && !identityPhotoResult),
+        photoReady: identityPhotoReady,
         bankRecorded: Boolean(bankRecordProof || bankVerificationResult),
         officialIdRecorded: Boolean(licenceVerificationResult),
         countReadyAsProgress: true,
@@ -1464,7 +1499,7 @@ export default function CreateEntryPage() {
       bankRecordProof,
       bankVerificationResult,
       canContinueDetails,
-      identityPhotoFile,
+      identityPhotoReady,
       identityPhotoResult,
       licenceVerificationResult,
       phoneVerificationProof,
@@ -1489,7 +1524,9 @@ export default function CreateEntryPage() {
 
   const canOpenDetails = guideDone;
   const canOpenVerification = step !== "details" && Number(verificationId) > 0;
-  const canOpenCommunity = step === "community";
+  const canOpenCommunity = step === "community" || communityDetailsRecorded || Boolean(createOutcome);
+  const communityDecisionMode =
+    openPanel === "community" && communityDetailsRecorded && !createOutcome;
 
   const verificationBlockTitle =
     step === "verify"
@@ -1505,6 +1542,10 @@ export default function CreateEntryPage() {
       const cleaned = safeStr(current).replace(/^\+\d{1,4}\s*/, "").trim();
       return cleaned ? `${prefix} ${cleaned}` : `${prefix} `;
     });
+    const nextCountry = countryFromPhone(prefix);
+    if (nextCountry) {
+      handleCountryChange(nextCountry);
+    }
   }
 
   const existingMemberLoginTo = useMemo(() => {
@@ -1601,6 +1642,13 @@ export default function CreateEntryPage() {
     }
   }
 
+  function clearIdentityPhotoSelections() {
+    setIdentityPhotoItems((items) => {
+      items.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      return [];
+    });
+  }
+
   function handleExistingMemberLogin() {
     writeStorage(ENTRY_MODE_KEY, "existing");
     writeStorage(ENTRY_CREATE_CODE_KEY, null);
@@ -1616,6 +1664,7 @@ export default function CreateEntryPage() {
     setDisplayName("");
     setPhone("");
     setEmail("");
+    setCountry("Nigeria");
     setPassword("");
     setConfirmPassword("");
     setVerificationId(0);
@@ -1627,6 +1676,8 @@ export default function CreateEntryPage() {
     setBankVerificationResult(null);
     setLicenceVerificationResult(null);
     setIdentityPhotoResult(null);
+    setIdentityPhotoRecordedCount(0);
+    clearIdentityPhotoSelections();
     setStep("details");
     setGuideDone(false);
     setOpenPanel(null);
@@ -1640,12 +1691,23 @@ export default function CreateEntryPage() {
   }, []);
 
   useEffect(() => {
+    identityPhotoItemsRef.current = identityPhotoItems;
+  }, [identityPhotoItems]);
+
+  useEffect(() => {
+    return () => {
+      identityPhotoItemsRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    };
+  }, []);
+
+  useEffect(() => {
     saveCreateEntryDraft(createCode, {
       communityName,
       description,
       displayName,
       phone,
       email,
+      country,
       createCode,
       step,
       openPanel,
@@ -1662,6 +1724,7 @@ export default function CreateEntryPage() {
     bankVerificationResult,
     communityName,
     createCode,
+    country,
     description,
     displayName,
     email,
@@ -1720,6 +1783,32 @@ export default function CreateEntryPage() {
       "Bank or wallet details are optional founder evidence now. You can name the community and create it first."
     );
   }, [error]);
+
+  useEffect(() => {
+    if (feedbackTimerRef.current) {
+      window.clearTimeout(feedbackTimerRef.current);
+      feedbackTimerRef.current = null;
+    }
+
+    if (!error && !success) return;
+
+    const targetAtSchedule = feedbackTarget;
+    const dismissAfterMs = error ? 7200 : 5200;
+    feedbackTimerRef.current = window.setTimeout(() => {
+      if (feedbackTarget === targetAtSchedule) {
+        setError("");
+        setSuccess("");
+      }
+      feedbackTimerRef.current = null;
+    }, dismissAfterMs);
+
+    return () => {
+      if (feedbackTimerRef.current) {
+        window.clearTimeout(feedbackTimerRef.current);
+        feedbackTimerRef.current = null;
+      }
+    };
+  }, [error, feedbackTarget, success]);
 
   const existingMemberPanel = (
     <div style={existingMemberCard(existingMemberOpen)}>
@@ -1855,25 +1944,122 @@ export default function CreateEntryPage() {
     setSuccess("");
   }
 
+  function beginAction(target: FeedbackTarget) {
+    clearFeedback(target);
+    setBusyTarget(target);
+    setBusy(true);
+  }
+
+  function finishAction() {
+    setBusy(false);
+    setBusyTarget(null);
+  }
+
+  function hasLiveFeedback(target: FeedbackTarget) {
+    return feedbackTarget === target && Boolean(error || success);
+  }
+
+  function isVerificationActionTarget(target: FeedbackTarget | null) {
+    return (
+      target === "phone" ||
+      target === "photo" ||
+      target === "bank" ||
+      target === "verification"
+    );
+  }
+
+  function shouldShowVerificationBlock(target: FeedbackTarget) {
+    if (!busyTarget || !isVerificationActionTarget(busyTarget)) return true;
+    return busyTarget === target;
+  }
+
+  function shouldShowVerificationResult(target: FeedbackTarget) {
+    if (!shouldShowVerificationBlock(target)) return false;
+    return !hasLiveFeedback(target);
+  }
+
   function handleIdentityPhotoSelected(
-    file: File | null | undefined,
+    files: FileList | File[] | null | undefined,
     kind: string,
     sourceLabel: string
   ) {
-    setIdentityPhotoKind(kind);
-    const selectedFile = file || null;
-    setIdentityPhotoFile(selectedFile);
-    if (selectedFile) {
-      showSuccess(
+    if (identityPhotoResult) {
+      showError(
         "photo",
-        `${sourceLabel} received. Tap Record photo evidence to save it into the founder trust record.`
+        "Photo evidence is already recorded for this entry. Use Clear if you need to rebuild this proof block before finishing."
       );
-    } else {
+      return;
+    }
+
+    setIdentityPhotoKind(kind);
+    const selectedFiles = Array.from(files || []);
+    if (!selectedFiles.length) {
       showError(
         "photo",
         "No photo was selected. Try Selfie again or choose a file from your phone."
       );
+      return;
     }
+
+    const acceptableFiles = selectedFiles.filter((file) => {
+      const type = safeStr(file.type).toLowerCase();
+      const name = safeStr(file.name).toLowerCase();
+      const looksSupported =
+        type === "image/jpeg" ||
+        type === "image/png" ||
+        type === "image/webp" ||
+        name.endsWith(".jpg") ||
+        name.endsWith(".jpeg") ||
+        name.endsWith(".png") ||
+        name.endsWith(".webp");
+      return looksSupported && file.size <= MAX_IDENTITY_PHOTO_BYTES;
+    });
+
+    if (!acceptableFiles.length) {
+      showError(
+        "photo",
+        "Use jpg, jpeg, png, or webp images under 5MB each. GSN cannot attach the selected file type."
+      );
+      return;
+    }
+
+    const remaining = Math.max(0, MAX_IDENTITY_PHOTO_SELECTIONS - identityPhotoItems.length);
+    const accepted = acceptableFiles.slice(0, remaining);
+    const addedCount = accepted.length;
+    const skippedCount = Math.max(0, selectedFiles.length - accepted.length);
+
+    if (accepted.length) {
+      const nextItems = accepted.map((file, index) => ({
+        id: `${Date.now()}-${index}-${Math.random().toString(36).slice(2)}`,
+        file,
+        kind,
+        previewUrl: URL.createObjectURL(file),
+      }));
+      setIdentityPhotoItems((current) => [...current, ...nextItems]);
+    }
+
+    if (addedCount > 0) {
+      showSuccess(
+        "photo",
+        `${sourceLabel} received. ${addedCount} photo${addedCount === 1 ? "" : "s"} queued. You can attach up to ${MAX_IDENTITY_PHOTO_SELECTIONS}, then tap Record photo evidence.`
+      );
+      return;
+    }
+
+    showError(
+      "photo",
+      skippedCount > 0
+        ? `GSN already has ${MAX_IDENTITY_PHOTO_SELECTIONS} photos queued. Remove one before adding another.`
+        : "No supported photo could be queued."
+    );
+  }
+
+  function removeIdentityPhotoSelection(id: string) {
+    setIdentityPhotoItems((items) => {
+      const removed = items.find((item) => item.id === id);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return items.filter((item) => item.id !== id);
+    });
   }
 
   function renderLocalFeedback(target: FeedbackTarget) {
@@ -1939,6 +2125,7 @@ export default function CreateEntryPage() {
     setDisplayName("");
     setPhone("");
     setEmail("");
+    setCountry("Nigeria");
     setPassword("");
     setConfirmPassword("");
     clearFeedback("details");
@@ -1952,15 +2139,16 @@ export default function CreateEntryPage() {
     setBankAccountNumber("");
     setBankSortCode("");
     setBankIban("");
-    setBankCountry("");
-    setBankCurrency("NGN");
+    setBankCountry(safeStr(country) || "Nigeria");
+    setBankCurrency(currencyForBankCountry(country) || "NGN");
     setBankNote("");
     setDriverLicenceNumber("");
-    setDriverLicenceCountry("");
+    setDriverLicenceCountry(safeStr(country) || "Nigeria");
     setDriverLicenceNote("");
-    setIdentityPhotoFile(null);
+    clearIdentityPhotoSelections();
     setIdentityPhotoKind("selfie");
     setIdentityPhotoNote("");
+    setIdentityPhotoRecordedCount(0);
     setBankVerificationResult(null);
     setLicenceVerificationResult(null);
     setIdentityPhotoResult(null);
@@ -1972,6 +2160,8 @@ export default function CreateEntryPage() {
   function clearCommunityBlock() {
     setCommunityName("");
     setDescription("");
+    setCommunityDetailsRecorded(false);
+    setCreateOutcome(null);
     clearFeedback("community");
   }
 
@@ -1980,6 +2170,21 @@ export default function CreateEntryPage() {
 
     const nextCurrency = currencyForBankCountry(nextCountry);
     if (nextCurrency) {
+      setBankCurrency(nextCurrency);
+    }
+  }
+
+  function handleCountryChange(nextCountry: string) {
+    const cleanCountry = safeStr(nextCountry);
+    setCountry(cleanCountry);
+    if (!safeStr(bankCountry) || safeStr(bankCountry) === safeStr(country)) {
+      setBankCountry(cleanCountry);
+    }
+    if (!safeStr(driverLicenceCountry) || safeStr(driverLicenceCountry) === safeStr(country)) {
+      setDriverLicenceCountry(cleanCountry);
+    }
+    const nextCurrency = currencyForBankCountry(cleanCountry);
+    if (nextCurrency && (!safeStr(bankCurrency) || safeStr(bankCurrency) === "NGN")) {
       setBankCurrency(nextCurrency);
     }
   }
@@ -2112,6 +2317,7 @@ export default function CreateEntryPage() {
       display_name: safeStr(displayName),
       phone_e164: safeStr(phone),
       email: safeStr(email) || undefined,
+      country: safeStr(country) || undefined,
     });
 
     setVerificationId(Number(out?.verification_id || 0));
@@ -2205,8 +2411,7 @@ export default function CreateEntryPage() {
   async function handleStartVerification() {
     if (!canContinueDetails || busy) return;
 
-    clearFeedback("details");
-    setBusy(true);
+    beginAction("details");
 
     try {
       const started = await startAndMaybeConfirmPhoneSession();
@@ -2227,15 +2432,14 @@ export default function CreateEntryPage() {
         showError("details", err?.message || "Phone verification could not be started.");
       }
     } finally {
-      setBusy(false);
+      finishAction();
     }
   }
 
   async function handleConfirmVerification() {
     if (!canConfirmOtp || busy) return;
 
-    clearFeedback("phone");
-    setBusy(true);
+    beginAction("phone");
 
     try {
       const out = await confirmEntryPhoneVerification({
@@ -2261,7 +2465,7 @@ export default function CreateEntryPage() {
     } catch (err: any) {
       showError("phone", err?.message || "Phone verification could not be completed.");
     } finally {
-      setBusy(false);
+      finishAction();
     }
   }
 
@@ -2275,12 +2479,9 @@ export default function CreateEntryPage() {
       bank_name: safeStr(bankName),
       account_number: safeStr(bankAccountNumber),
       phone_number: safeStr(phone) || undefined,
-      country: safeStr(bankCountry) || undefined,
+      country: safeStr(bankCountry || country) || undefined,
       currency: safeStr(bankCurrency) || "NGN",
       note: safeStr(bankNote) || undefined,
-      driver_licence_number: safeStr(driverLicenceNumber) || undefined,
-      driver_licence_country: safeStr(driverLicenceCountry) || undefined,
-      driver_licence_note: safeStr(driverLicenceNote) || undefined,
     });
 
     setBankRecordProof({
@@ -2291,7 +2492,6 @@ export default function CreateEntryPage() {
     });
 
     let nextBankVerification: EntryVerificationResult = null;
-    let nextLicenceVerification: EntryVerificationResult = null;
 
     try {
       const bankVerification = await verifyEntryBankDetails({
@@ -2302,7 +2502,7 @@ export default function CreateEntryPage() {
         sort_code: safeStr(bankSortCode) || undefined,
         iban: safeStr(bankIban) || undefined,
         phone_number: safeStr(phone) || undefined,
-        country: safeStr(bankCountry) || undefined,
+        country: safeStr(bankCountry || country) || undefined,
         currency: safeStr(bankCurrency) || "NGN",
         note: safeStr(bankNote) || undefined,
       });
@@ -2322,33 +2522,7 @@ export default function CreateEntryPage() {
       };
     }
 
-    if (safeStr(driverLicenceNumber) && safeStr(driverLicenceCountry)) {
-      try {
-        const licenceVerification = await verifyEntryDriversLicence({
-          verification_id: activeVerificationId,
-          licence_number: safeStr(driverLicenceNumber),
-          country: safeStr(driverLicenceCountry),
-          note: safeStr(driverLicenceNote) || undefined,
-        });
-        nextLicenceVerification = licenceVerification;
-
-        if (Number(licenceVerification?.verification_check_id || 0) > 0) {
-          nextLicenceVerification = await getEntryVerificationCheck(
-            licenceVerification.verification_check_id
-          ).catch(() => licenceVerification);
-        }
-      } catch (verificationErr: any) {
-        nextLicenceVerification = {
-          status: "failed",
-          explanation:
-            verificationErr?.message ||
-            "Driver's licence verification could not be checked right now.",
-        };
-      }
-    }
-
     setBankVerificationResult(nextBankVerification);
-    setLicenceVerificationResult(nextLicenceVerification);
 
     return { out, bankVerification: nextBankVerification };
   }
@@ -2356,7 +2530,6 @@ export default function CreateEntryPage() {
   function finishBankStep(out: any, nextBankVerification: EntryVerificationResult) {
     setStep("community");
     setOpenPanel("verification");
-    focusPanel("verification");
     showSuccess(
       "bank",
       safeStr(out?.confirmation_message) ||
@@ -2364,6 +2537,60 @@ export default function CreateEntryPage() {
         safeStr(out?.verification_note) ||
         "Optional founder proof recorded. You can continue creating the community."
     );
+  }
+
+  async function handleRecordOfficialId() {
+    if (!canRecordOfficialId || busy) return;
+
+    beginAction("verification");
+
+    try {
+      const out = await recordEntryOfficialId({
+        verification_id: verificationId,
+        document_type: regionalEvidence.officialIdLabel,
+        document_reference: safeStr(driverLicenceNumber),
+        country: safeStr(driverLicenceCountry || country),
+        note: safeStr(driverLicenceNote) || undefined,
+      });
+      setLicenceVerificationResult(out);
+      showSuccess(
+        "verification",
+        safeStr(out?.explanation) ||
+          `${regionalEvidence.officialIdLabel} evidence recorded for later review.`
+      );
+      setOpenPanel("verification");
+    } catch (err: any) {
+      if (isPhoneSessionExpiredError(err) && canContinueDetails) {
+        try {
+          const refreshedVerificationId = await refreshPilotPhoneSession();
+          const out = await recordEntryOfficialId({
+            verification_id: refreshedVerificationId,
+            document_type: regionalEvidence.officialIdLabel,
+            document_reference: safeStr(driverLicenceNumber),
+            country: safeStr(driverLicenceCountry || country),
+            note: safeStr(driverLicenceNote) || undefined,
+          });
+          setLicenceVerificationResult(out);
+          showSuccess(
+            "verification",
+            `Your phone proof had timed out, so GSN refreshed it and recorded ${regionalEvidence.officialIdLabel} evidence.`
+          );
+        } catch (retryErr: any) {
+          showError(
+            "verification",
+            retryErr?.message ||
+              "Official ID evidence could not be recorded. Start the phone step again and retry."
+          );
+        }
+      } else {
+        showError(
+          "verification",
+          err?.message || "Official ID evidence could not be recorded."
+        );
+      }
+    } finally {
+      finishAction();
+    }
   }
 
   async function refreshPilotPhoneSession(): Promise<number> {
@@ -2381,8 +2608,7 @@ export default function CreateEntryPage() {
   async function handleSaveBankDetails() {
     if (!canContinueBank || busy) return;
 
-    clearFeedback("bank");
-    setBusy(true);
+    beginAction("bank");
 
     try {
       const saved = await saveBankDetailsForVerification(verificationId);
@@ -2408,45 +2634,61 @@ export default function CreateEntryPage() {
         showError("bank", err?.message || "Bank details could not be recorded.");
       }
     } finally {
-      setBusy(false);
+      finishAction();
     }
   }
 
-  async function handleRecordIdentityPhoto() {
-    if (!identityPhotoFile || !Number(verificationId) || busy) return;
+  async function recordIdentityPhotoQueue(activeVerificationId: number) {
+    const selectedItems = [...identityPhotoItems];
+    const uploaded: EntryVerificationResult[] = [];
 
-    clearFeedback("photo");
-    setBusy(true);
-
-    try {
+    for (const item of selectedItems) {
       const out = await recordEntryIdentityPhoto({
-        verification_id: verificationId,
-        file: identityPhotoFile,
-        document_type: identityPhotoKind,
+        verification_id: activeVerificationId,
+        file: item.file,
+        document_type: item.kind || identityPhotoKind,
         note: identityPhotoNote,
       });
-      setIdentityPhotoResult(out);
+      uploaded.push(out);
+    }
+
+    return uploaded;
+  }
+
+  function finishIdentityPhotoRecording(uploaded: EntryVerificationResult[]) {
+    const finalResult = uploaded[uploaded.length - 1] || null;
+    if (finalResult) {
+      setIdentityPhotoResult(finalResult);
+      setIdentityPhotoRecordedCount(uploaded.length);
+    }
+    return finalResult;
+  }
+
+  async function handleRecordIdentityPhoto() {
+    if (!identityPhotoCount || !Number(verificationId) || busy || identityPhotoResult) return;
+
+    beginAction("photo");
+
+    try {
+      const uploaded = await recordIdentityPhotoQueue(verificationId);
+      const out = finishIdentityPhotoRecording(uploaded);
       showSuccess(
         "photo",
-        safeStr(out?.explanation) ||
-          "Photo/selfie evidence recorded. It can support identity continuity after review."
+        uploaded.length > 1
+          ? `${uploaded.length} photo/selfie evidence records attached for identity continuity review.`
+          : safeStr(out?.explanation) ||
+              "Photo/selfie evidence recorded. It can support identity continuity after review."
       );
       setOpenPanel("verification");
-      focusPanel("verification");
     } catch (err: any) {
       if (isPhoneSessionExpiredError(err) && canContinueDetails) {
         try {
           const refreshedVerificationId = await refreshPilotPhoneSession();
-          const out = await recordEntryIdentityPhoto({
-            verification_id: refreshedVerificationId,
-            file: identityPhotoFile,
-            document_type: identityPhotoKind,
-            note: identityPhotoNote,
-          });
-          setIdentityPhotoResult(out);
+          const uploaded = await recordIdentityPhotoQueue(refreshedVerificationId);
+          finishIdentityPhotoRecording(uploaded);
           showSuccess(
             "photo",
-            "Your phone proof had timed out, so GSN refreshed it and recorded the photo/selfie evidence."
+            `Your phone proof had timed out, so GSN refreshed it and recorded ${uploaded.length} photo/selfie evidence record${uploaded.length === 1 ? "" : "s"}.`
           );
         } catch (retryErr: any) {
           showError(
@@ -2459,7 +2701,7 @@ export default function CreateEntryPage() {
         showError("photo", err?.message || "Photo/selfie evidence could not be recorded.");
       }
     } finally {
-      setBusy(false);
+      finishAction();
     }
   }
 
@@ -2473,6 +2715,7 @@ export default function CreateEntryPage() {
     };
 
     payload.email = safeStr(email);
+    payload.country = safeStr(country) || undefined;
 
     if (createCode) {
       payload.create_code = createCode;
@@ -2481,7 +2724,7 @@ export default function CreateEntryPage() {
     return payload;
   }
 
-  async function submitCreateEntry(activeVerificationId: number) {
+  async function submitCreateEntry(activeVerificationId: number): Promise<CreateCommunityOutcome> {
     const out = await createEntry(buildCreateEntryPayload(activeVerificationId));
     const me = await getMe().catch(() => null);
 
@@ -2491,8 +2734,16 @@ export default function CreateEntryPage() {
     const authenticatedNow = isAuthenticated();
 
     if (nextStep === "build-first-circle" && authenticatedNow) {
-      await openCreatedWorkspace(out);
-      return;
+      return {
+        kind: "workspace",
+        message:
+          safeStr(out?.message) ||
+          `Community ${safeStr(out?.clan_name || communityName)} has been registered. You can open the first-circle workspace now.`,
+        actionLabel: "Open workspace",
+        path: "/app/build-first-circle",
+        out,
+        gmfnId: issuedGmfnId || undefined,
+      };
     }
 
     if (nextStep === "activate-membership" || issuedGmfnId || requestId) {
@@ -2502,26 +2753,24 @@ export default function CreateEntryPage() {
         );
       }
 
-      clearCreateEntryDraft(createCode);
-      clearPublicEntryState();
-
       const next = new URLSearchParams();
       if (issuedGmfnId) next.set("gmfn_id", issuedGmfnId);
       if (requestId) next.set("request_id", requestId);
+      const path = next.toString()
+        ? `/activate-membership?${next.toString()}`
+        : "/activate-membership";
 
-      nav(
-        next.toString()
-          ? `/activate-membership?${next.toString()}`
-          : "/activate-membership",
-        {
-          replace: true,
-          state: {
-            gmfn_id: issuedGmfnId || undefined,
-            request_id: requestId || undefined,
-          },
-        }
-      );
-      return;
+      return {
+        kind: "activation",
+        message:
+          safeStr(out?.message) ||
+          `Community ${safeStr(out?.clan_name || communityName)} has been registered. Activate the membership record to continue.`,
+        actionLabel: "Continue activation",
+        path,
+        out,
+        gmfnId: issuedGmfnId || undefined,
+        requestId: requestId || undefined,
+      };
     }
 
     throw new Error(
@@ -2533,22 +2782,64 @@ export default function CreateEntryPage() {
     );
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canContinue || busy || !verificationId) return;
+  function handleRecordCommunityDetails() {
+    if (!canContinue || busy || createOutcome) return;
 
-    clearFeedback("community");
-    setBusy(true);
+    beginAction("community");
+    setCommunityDetailsRecorded(true);
+    showSuccess(
+      "community",
+      "Community details recorded here. Add founder trust evidence now, or finish registration and continue."
+    );
+    finishAction();
+  }
+
+  async function handleFinishRegistration() {
+    if (!canContinue || busy || !verificationId || createOutcome) return;
+
+    beginAction("community");
 
     try {
-      await submitCreateEntry(verificationId);
+      const outcome = await submitCreateEntry(verificationId);
+      setCreateOutcome(outcome);
+      clearCreateEntryDraft(createCode);
+      clearPublicEntryState();
+      showSuccess("community", outcome.message);
+      if (outcome.kind === "workspace") {
+        await openCreatedWorkspace(outcome.out);
+        return;
+      }
+
+      nav(outcome.path, {
+        replace: true,
+        state: {
+          gmfn_id: outcome.gmfnId || undefined,
+          request_id: outcome.requestId || undefined,
+        },
+      });
     } catch (err: any) {
       if (openActivationFromStructuredError(err)) return;
 
       if (isPhoneSessionExpiredError(err) && canContinueDetails) {
         try {
           const refreshedVerificationId = await refreshPilotPhoneSession();
-          await submitCreateEntry(refreshedVerificationId);
+          const outcome = await submitCreateEntry(refreshedVerificationId);
+          setCreateOutcome(outcome);
+          clearCreateEntryDraft(createCode);
+          clearPublicEntryState();
+          showSuccess("community", outcome.message);
+          if (outcome.kind === "workspace") {
+            await openCreatedWorkspace(outcome.out);
+            return;
+          }
+
+          nav(outcome.path, {
+            replace: true,
+            state: {
+              gmfn_id: outcome.gmfnId || undefined,
+              request_id: outcome.requestId || undefined,
+            },
+          });
         } catch (retryErr: any) {
           if (openActivationFromStructuredError(retryErr)) return;
 
@@ -2578,8 +2869,37 @@ export default function CreateEntryPage() {
         showError("community", err?.message || "Founder entry could not be completed.");
       }
     } finally {
-      setBusy(false);
+      finishAction();
     }
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    handleRecordCommunityDetails();
+  }
+
+  function handleAddFounderEvidenceFromCommunity() {
+    if (!Number(verificationId)) return;
+    setStep("bank");
+    setOpenPanel("verification");
+    focusPanel("verification");
+  }
+
+  async function handleContinueAfterCreateOutcome() {
+    if (!createOutcome) return;
+
+    if (createOutcome.kind === "workspace") {
+      await openCreatedWorkspace(createOutcome.out);
+      return;
+    }
+
+    nav(createOutcome.path, {
+      replace: true,
+      state: {
+        gmfn_id: createOutcome.gmfnId || undefined,
+        request_id: createOutcome.requestId || undefined,
+      },
+    });
   }
 
   const guideStepItems: Array<{
@@ -2593,7 +2913,7 @@ export default function CreateEntryPage() {
       number: "1",
       title: "Your details",
       detail:
-        "Add your name, phone, email, and password.",
+        "Add your name, country, phone, email, and password.",
     },
     {
       key: "verification",
@@ -3035,6 +3355,7 @@ export default function CreateEntryPage() {
                   guideDone && openPanel !== null,
                   stepProgress.detailsDone
                 ),
+                display: communityDecisionMode ? "none" : undefined,
                 ...(guideDone && openPanel === "details"
                   ? {
                       padding: 18,
@@ -3258,6 +3579,30 @@ export default function CreateEntryPage() {
                       autoComplete="tel"
                       style={credentialInputStyle()}
                     />
+                  </div>
+
+                  <div style={{ display: "grid", gap: 5 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "44px minmax(0, 1fr)", gap: 9, alignItems: "center" }}>
+                      <EntryDetailIcon kind="globe" />
+                      <div>
+                        <div style={detailFieldLabelStyle()}>Country</div>
+                        <div style={detailFieldHelpStyle()}>
+                          Helps GSN ask for the right local evidence.
+                        </div>
+                      </div>
+                    </div>
+                    <select
+                      value={country}
+                      onChange={(e) => handleCountryChange(e.target.value)}
+                      autoComplete="country-name"
+                      style={credentialInputStyle()}
+                    >
+                      {BANK_COUNTRY_OPTIONS.map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div style={{ display: "grid", gap: 5 }}>
@@ -3514,6 +3859,7 @@ export default function CreateEntryPage() {
                   openPanel === "verification",
                   stepProgress.verificationDone
                 ),
+                display: communityDecisionMode ? "none" : undefined,
                 order: step === "verify" ? 2 : 3,
                 ...(openPanel === "verification" && step !== "verify"
                   ? {
@@ -3614,7 +3960,7 @@ export default function CreateEntryPage() {
                   {[
                     ["Bank/ID", "Available"],
                     ["Passport/selfie", "Available"],
-                    ["NIN/regional ID", "Next"],
+                    [regionalEvidence.officialIdLabel, "Available"],
                   ].map(([label, statusLabel]) => (
                     <div
                       key={label}
@@ -3748,7 +4094,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && bankRecordProof ? (
+              {openPanel === "verification" && bankRecordProof && shouldShowVerificationResult("bank") ? (
                 <div
                   style={{
                     ...softCard("#ECFDF5"),
@@ -3831,7 +4177,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && bankVerificationResult ? (
+              {openPanel === "verification" && bankVerificationResult && shouldShowVerificationResult("bank") ? (
                 <div style={{ ...verificationCard(bankVerificationResult.status), marginTop: 14 }}>
                   <div style={sectionLabel()}>Bank verification status</div>
                   <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
@@ -3850,14 +4196,14 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && licenceVerificationResult ? (
+              {openPanel === "verification" && licenceVerificationResult && shouldShowVerificationResult("verification") ? (
                 <div
                   style={{
                     ...verificationCard(licenceVerificationResult.status),
                     marginTop: 12,
                   }}
                 >
-                  <div style={sectionLabel()}>Licence verification status</div>
+                  <div style={sectionLabel()}>Official ID evidence</div>
                   <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
                     {safeStr(licenceVerificationResult.status || "recorded")
                       .replace(/_/g, " ")
@@ -3865,7 +4211,7 @@ export default function CreateEntryPage() {
                   </div>
                   <div style={{ marginTop: 8, lineHeight: 1.7 }}>
                     {safeStr(licenceVerificationResult.explanation) ||
-                      "The driver's licence check is now attached to this onboarding session."}
+                      "The official ID evidence is now attached to this onboarding session for later review."}
                   </div>
                   {safeStr(licenceVerificationResult.provider_key) ? (
                     <div style={{ marginTop: 8, fontSize: 12, fontWeight: 900, opacity: 0.84 }}>
@@ -3875,7 +4221,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "verification" && identityPhotoResult ? (
+              {openPanel === "verification" && identityPhotoResult && shouldShowVerificationResult("photo") ? (
                 <div
                   style={{
                     ...verificationCard(identityPhotoResult.status),
@@ -3884,12 +4230,16 @@ export default function CreateEntryPage() {
                 >
                   <div style={sectionLabel()}>Photo/selfie evidence</div>
                   <div style={{ marginTop: 8, fontWeight: 1000, fontSize: 16 }}>
-                    {safeStr(identityPhotoResult.status || "recorded")
+                    {identityPhotoRecordedCount > 1
+                      ? `${identityPhotoRecordedCount} photo records attached`
+                      : safeStr(identityPhotoResult.status || "recorded")
                       .replace(/_/g, " ")
                       .replace(/\b\w/g, (char) => char.toUpperCase())}
                   </div>
                   <div style={{ marginTop: 8, lineHeight: 1.7 }}>
-                    {safeStr(identityPhotoResult.explanation) ||
+                    {identityPhotoRecordedCount > 1
+                      ? "The selected photos are attached for identity continuity review."
+                      : safeStr(identityPhotoResult.explanation) ||
                       "Photo/selfie evidence is attached for identity continuity review."}
                   </div>
                   {safeStr(identityPhotoResult.evidence_url) ||
@@ -4019,7 +4369,7 @@ export default function CreateEntryPage() {
                         background:
                           "linear-gradient(180deg, rgba(242,199,102,0.12) 0%, rgba(13,45,73,0.62) 100%)",
                         padding: 12,
-                        display: "grid",
+                        display: shouldShowVerificationBlock("photo") ? "grid" : "none",
                         gap: 10,
                       }}
                     >
@@ -4030,7 +4380,7 @@ export default function CreateEntryPage() {
                         </span>
                       </div>
                       <div style={{ color: "#B9CBE0", fontSize: 12, fontWeight: 760, marginTop: -5 }}>
-                        Use a clear face photo. GSN records it for identity continuity; provider verification comes later.
+                        Add up to 5 clear face or ID photos. GSN records them for identity continuity; provider verification comes later.
                       </div>
 
                       <div
@@ -4079,7 +4429,7 @@ export default function CreateEntryPage() {
                           }}
                           aria-label="Choose photo from gallery or files"
                         >
-                          Choose file
+                          Choose up to 5
                         </button>
                         <input
                           ref={selfiePhotoInputRef}
@@ -4088,7 +4438,7 @@ export default function CreateEntryPage() {
                           capture="user"
                           onChange={(e) => {
                             handleIdentityPhotoSelected(
-                              e.target.files?.[0],
+                              e.target.files,
                               "selfie",
                               "Selfie"
                             );
@@ -4100,9 +4450,10 @@ export default function CreateEntryPage() {
                           ref={galleryPhotoInputRef}
                           type="file"
                           accept="image/png,image/jpeg,image/webp"
+                          multiple
                           onChange={(e) => {
                             handleIdentityPhotoSelected(
-                              e.target.files?.[0],
+                              e.target.files,
                               "identity_photo",
                               "Photo"
                             );
@@ -4112,15 +4463,91 @@ export default function CreateEntryPage() {
                         />
                       </div>
 
-                      {identityPhotoFile ? (
-                        <div style={{ color: "#D6E6F6", fontSize: 11.5, fontWeight: 820 }}>
-                          Selected: {identityPhotoFile.name}
+                      {identityPhotoCount ? (
+                        <div style={{ display: "grid", gap: 8 }}>
+                          <div style={{ color: "#D6E6F6", fontSize: 11.5, fontWeight: 820 }}>
+                            {identityPhotoCount} of {MAX_IDENTITY_PHOTO_SELECTIONS} photos ready to attach
+                          </div>
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "repeat(auto-fit, minmax(76px, 1fr))",
+                              gap: 8,
+                            }}
+                          >
+                            {identityPhotoItems.map((item, index) => (
+                              <div
+                                key={item.id}
+                                style={{
+                                  position: "relative",
+                                  minHeight: 92,
+                                  borderRadius: 14,
+                                  overflow: "hidden",
+                                  border: "1px solid rgba(242,199,102,0.34)",
+                                  background: "rgba(255,255,255,0.08)",
+                                  boxShadow: "0 12px 22px rgba(0,0,0,0.18)",
+                                }}
+                              >
+                                <img
+                                  src={item.previewUrl}
+                                  alt={`Selected identity evidence ${index + 1}`}
+                                  style={{
+                                    width: "100%",
+                                    height: 92,
+                                    objectFit: "cover",
+                                    display: "block",
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeIdentityPhotoSelection(item.id)}
+                                  aria-label={`Remove selected photo ${index + 1}`}
+                                  style={{
+                                    position: "absolute",
+                                    right: 6,
+                                    top: 6,
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(255,255,255,0.7)",
+                                    background: "rgba(7,23,44,0.78)",
+                                    color: "#FFFFFF",
+                                    fontSize: 16,
+                                    fontWeight: 1000,
+                                    lineHeight: 1,
+                                    display: "grid",
+                                    placeItems: "center",
+                                    cursor: "pointer",
+                                    touchAction: "manipulation",
+                                    WebkitTapHighlightColor: "transparent",
+                                  }}
+                                >
+                                  x
+                                </button>
+                                <div
+                                  style={{
+                                    position: "absolute",
+                                    left: 6,
+                                    bottom: 6,
+                                    borderRadius: 999,
+                                    background: "rgba(7,23,44,0.78)",
+                                    color: "#F2C766",
+                                    padding: "4px 7px",
+                                    fontSize: 10,
+                                    fontWeight: 1000,
+                                  }}
+                                >
+                                  {index + 1}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : null}
 
                       {renderLocalFeedback("photo")}
 
-                      {identityPhotoFile || identityPhotoResult ? (
+                      {!busyTarget && (identityPhotoCount || identityPhotoResult) ? (
                         <FounderEvidenceMeter compact />
                       ) : null}
 
@@ -4135,12 +4562,17 @@ export default function CreateEntryPage() {
                         onClick={handleRecordIdentityPhoto}
                         busy={busy}
                         busyLabel="Recording..."
-                        disabled={!identityPhotoFile || !Number(verificationId)}
+                        disabled={!identityPhotoCount || !Number(verificationId) || Boolean(identityPhotoResult)}
                         minWidth={0}
                         stableHeight={48}
                         debugId="create-entry.identity-photo.record"
                         style={{
-                          ...primaryBtn(!identityPhotoFile || !Number(verificationId) || busy),
+                          ...primaryBtn(
+                            !identityPhotoCount ||
+                              !Number(verificationId) ||
+                              busy ||
+                              Boolean(identityPhotoResult)
+                          ),
                           width: "100%",
                           minWidth: 0,
                           minHeight: 48,
@@ -4149,7 +4581,9 @@ export default function CreateEntryPage() {
                         }}
                       >
                         <EntryDetailIcon kind="id" size={14} />
-                        Record photo evidence
+                        {identityPhotoResult
+                          ? "Photo evidence recorded"
+                          : `Record ${identityPhotoCount > 1 ? `${identityPhotoCount} photos` : "photo evidence"}`}
                       </PrimaryButton>
                     </div>
 
@@ -4160,7 +4594,7 @@ export default function CreateEntryPage() {
                         background:
                           "linear-gradient(180deg, rgba(13,45,73,0.66) 0%, rgba(8,31,53,0.72) 100%)",
                         padding: 12,
-                        display: "grid",
+                        display: shouldShowVerificationBlock("bank") ? "grid" : "none",
                         gap: 10,
                       }}
                     >
@@ -4297,6 +4731,7 @@ export default function CreateEntryPage() {
                             <option value="GBP">GBP</option>
                             <option value="USD">USD</option>
                             <option value="EUR">EUR</option>
+                            <option value="INR">INR</option>
                             <option value="KES">KES</option>
                             <option value="GHS">GHS</option>
                             <option value="ZAR">ZAR</option>
@@ -4339,18 +4774,18 @@ export default function CreateEntryPage() {
                         background:
                           "linear-gradient(180deg, rgba(13,45,73,0.58) 0%, rgba(8,31,53,0.66) 100%)",
                         padding: 12,
-                        display: "grid",
+                        display: shouldShowVerificationBlock("verification") ? "grid" : "none",
                         gap: 10,
                       }}
                     >
                       <div style={bankFieldLabelStyle()}>
                         <EntryDetailIcon kind="id" size={14} />
                         <span>
-                          Extra ID proof <span style={{ color: "#B9CBE0", fontWeight: 800 }}>(optional)</span>
+                          {regionalEvidence.officialIdLabel} <span style={{ color: "#B9CBE0", fontWeight: 800 }}>(optional)</span>
                         </span>
                       </div>
                       <div style={{ color: "#B9CBE0", fontSize: 12, fontWeight: 760, marginTop: -5 }}>
-                        Add a licence or other ID for extra trust.
+                        {regionalEvidence.officialIdHelp}
                       </div>
 
                       <div
@@ -4362,12 +4797,12 @@ export default function CreateEntryPage() {
                       >
                         <div>
                           <div style={{ ...detailFieldHelpStyle(), color: "#F8FBFF", marginTop: 0 }}>
-                            Licence number
+                            Reference
                           </div>
                           <input
                             value={driverLicenceNumber}
                             onChange={(e) => setDriverLicenceNumber(e.target.value)}
-                            placeholder="Enter licence number"
+                            placeholder={regionalEvidence.officialIdPlaceholder}
                             style={bankInputStyle()}
                           />
                         </div>
@@ -4395,11 +4830,34 @@ export default function CreateEntryPage() {
                           style={{ ...bankTextAreaStyle(), minHeight: 48 }}
                         />
                       </div>
+
+                      <PrimaryButton
+                        onClick={handleRecordOfficialId}
+                        busy={busy}
+                        busyLabel="Recording..."
+                        disabled={!canRecordOfficialId || Boolean(licenceVerificationResult)}
+                        minWidth={0}
+                        stableHeight={48}
+                        debugId="create-entry.official-id.record"
+                        style={{
+                          ...primaryBtn(!canRecordOfficialId || busy || Boolean(licenceVerificationResult)),
+                          width: "100%",
+                          minWidth: 0,
+                          minHeight: 48,
+                          borderRadius: 14,
+                          gap: 8,
+                        }}
+                      >
+                        <EntryDetailIcon kind="id" size={14} />
+                        {licenceVerificationResult ? "Official ID evidence recorded" : "Record official ID evidence"}
+                      </PrimaryButton>
+
+                      {renderLocalFeedback("verification")}
                     </div>
 
                     <div
                       style={{
-                        display: "grid",
+                        display: shouldShowVerificationBlock("bank") ? "grid" : "none",
                         gridTemplateColumns: "minmax(96px, 0.36fr) minmax(0, 1fr)",
                         gap: 10,
                       }}
@@ -4459,6 +4917,47 @@ export default function CreateEntryPage() {
                     </div>
 
                     {renderLocalFeedback("bank")}
+
+                    {communityDetailsRecorded && !createOutcome ? (
+                      <div
+                        style={{
+                          ...softCard("#ECFDF5"),
+                          border: "1px solid rgba(167,243,208,0.70)",
+                          display: "grid",
+                          gap: 10,
+                        }}
+                      >
+                        <div style={{ ...sectionLabel(), color: "#047857" }}>
+                          Ready to finish
+                        </div>
+                        <div
+                          style={{
+                            color: "#065F46",
+                            fontWeight: 900,
+                            lineHeight: 1.55,
+                          }}
+                        >
+                          Your community details are recorded on this screen. Finish registration now, or add more founder evidence first.
+                        </div>
+                        <PrimaryButton
+                          type="button"
+                          onClick={handleFinishRegistration}
+                          busy={busy && busyTarget === "community"}
+                          busyLabel="Registering..."
+                          minWidth={0}
+                          stableHeight={50}
+                          debugId="create-entry.verification.finish-registration"
+                          style={{
+                            ...primaryBtn(busy),
+                            width: "100%",
+                            minWidth: 0,
+                            minHeight: 50,
+                          }}
+                        >
+                          Finish registration now
+                        </PrimaryButton>
+                      </div>
+                    ) : null}
                   </div>
                 )
               ) : null}
@@ -4522,7 +5021,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {openPanel === "community" ? (
+              {openPanel === "community" && !busyTarget ? (
                 <div style={{ marginTop: 12 }}>
                   <FounderEvidenceMeter compact />
                 </div>
@@ -4533,21 +5032,31 @@ export default function CreateEntryPage() {
                   onSubmit={onSubmit}
                   style={{ display: "grid", gap: 14, marginTop: 16 }}
                 >
-                  <div>
+                  <div style={{ display: communityDecisionMode ? "none" : undefined }}>
                     <div style={fieldLabel()}>Community name</div>
                     <input
                       value={communityName}
-                      onChange={(e) => setCommunityName(e.target.value)}
+                      onChange={(e) => {
+                        setCommunityName(e.target.value);
+                        setCommunityDetailsRecorded(false);
+                        setCreateOutcome(null);
+                        clearFeedback("community");
+                      }}
                       placeholder="Enter community name"
                       style={input()}
                     />
                   </div>
 
-                  <div>
+                  <div style={{ display: communityDecisionMode ? "none" : undefined }}>
                     <div style={fieldLabel()}>Short description</div>
                     <textarea
                       value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      onChange={(e) => {
+                        setDescription(e.target.value);
+                        setCommunityDetailsRecorded(false);
+                        setCreateOutcome(null);
+                        clearFeedback("community");
+                      }}
                       placeholder="Describe what this community represents"
                       style={textArea()}
                     />
@@ -4556,7 +5065,7 @@ export default function CreateEntryPage() {
                   <div
                     style={{
                       marginTop: 4,
-                      display: "flex",
+                      display: communityDecisionMode ? "none" : "flex",
                       gap: 10,
                       flexWrap: "wrap",
                     }}
@@ -4572,24 +5081,115 @@ export default function CreateEntryPage() {
                     </SecondaryButton>
                     <PrimaryButton
                       type="submit"
-                      busy={busy}
-                      busyLabel="Continuing..."
-                      disabled={!canContinue}
+                      busy={busy && busyTarget === "community" && !communityDetailsRecorded}
+                      busyLabel="Recording..."
+                      disabled={!canContinue || Boolean(createOutcome)}
                       minWidth={220}
                       stableHeight={52}
                       debugId="create-entry.community.submit"
                       style={{
-                        ...primaryBtn(!canContinue || busy),
+                        ...primaryBtn(!canContinue || busy || Boolean(createOutcome)),
                         width: "auto",
                         minWidth: 220,
                         flex: "1 1 260px",
                       }}
                     >
-                      Create community
+                      {createOutcome
+                        ? "Community registered"
+                        : communityDetailsRecorded
+                          ? "Update community details"
+                          : "Record community details"}
                     </PrimaryButton>
                   </div>
 
                   {renderLocalFeedback("community")}
+
+                  {communityDetailsRecorded || createOutcome ? (
+                    <div
+                      style={{
+                        ...softCard(createOutcome ? "#ECFDF5" : "#FFFBEB"),
+                        border: createOutcome
+                          ? "1px solid #A7F3D0"
+                          : "1px solid rgba(242,199,102,0.42)",
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ ...sectionLabel(), color: createOutcome ? "#047857" : "#92400E" }}>
+                        {createOutcome ? "Community registered" : "Community details recorded"}
+                      </div>
+                      <div
+                        style={{
+                          color: createOutcome ? "#065F46" : "#92400E",
+                          fontWeight: 900,
+                          lineHeight: 1.55,
+                        }}
+                      >
+                        {createOutcome
+                          ? createOutcome.message
+                          : "This community name and story are ready. Extra founder trust evidence is optional. Finish registration now to move ahead."}
+                      </div>
+
+                      {createOutcome ? (
+                        <PrimaryButton
+                          type="button"
+                          onClick={handleContinueAfterCreateOutcome}
+                          minWidth={0}
+                          stableHeight={50}
+                          debugId="create-entry.community.continue-after-create"
+                          style={{
+                            ...primaryBtn(false),
+                            width: "100%",
+                            minWidth: 0,
+                            minHeight: 50,
+                          }}
+                        >
+                          {createOutcome.actionLabel}
+                        </PrimaryButton>
+                      ) : (
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr",
+                            gap: 8,
+                          }}
+                        >
+                          <PrimaryButton
+                            type="button"
+                            onClick={handleFinishRegistration}
+                            busy={busy && busyTarget === "community"}
+                            busyLabel="Registering..."
+                            minWidth={0}
+                            stableHeight={50}
+                            debugId="create-entry.community.finish-registration"
+                            style={{
+                              ...primaryBtn(false),
+                              width: "100%",
+                              minWidth: 0,
+                              minHeight: 50,
+                            }}
+                          >
+                            Finish registration now
+                          </PrimaryButton>
+                          <SecondaryButton
+                            type="button"
+                            onClick={handleAddFounderEvidenceFromCommunity}
+                            minWidth={0}
+                            stableHeight={48}
+                            debugId="create-entry.community.add-founder-evidence"
+                            style={{
+                              ...secondaryBtn(),
+                              width: "100%",
+                              minWidth: 0,
+                              minHeight: 48,
+                            }}
+                          >
+                            Add founder trust evidence
+                          </SecondaryButton>
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                 </form>
               ) : null}
             </div>

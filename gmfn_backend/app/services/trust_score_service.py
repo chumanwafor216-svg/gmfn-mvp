@@ -36,6 +36,7 @@ EV_FRAUD_FLAG = "fraud_flag"
 EV_IDENTITY_PHONE_VERIFIED = "identity.phone_verified"
 EV_IDENTITY_BANK_RECORDED = "identity.bank_destination_recorded"
 EV_IDENTITY_DRIVERS_LICENCE = "identity.drivers_licence_recorded"
+EV_IDENTITY_OFFICIAL_ID = "identity.official_id_recorded"
 EV_IDENTITY_PHOTO_RECORDED = "identity.photo_evidence_recorded"
 EV_IDENTITY_PHOTO_VERIFIED = "identity.photo_evidence_verified"
 EV_IDENTITY_PHOTO_VERIFIED_REV = "identity.photo_evidence_verified_reversed"
@@ -92,6 +93,9 @@ _EVENT_ALIASES = {
     },
     EV_IDENTITY_DRIVERS_LICENCE: {
         "identity.drivers_licence_recorded",
+    },
+    EV_IDENTITY_OFFICIAL_ID: {
+        "identity.official_id_recorded",
     },
     EV_IDENTITY_PHOTO_RECORDED: {
         "identity.photo_evidence_recorded",
@@ -270,6 +274,7 @@ def recompute_trust_for_user(
         EV_IDENTITY_PHONE_VERIFIED: 0,
         EV_IDENTITY_BANK_RECORDED: 0,
         EV_IDENTITY_DRIVERS_LICENCE: 0,
+        EV_IDENTITY_OFFICIAL_ID: 0,
         EV_IDENTITY_PHOTO_RECORDED: 0,
         EV_IDENTITY_PHOTO_VERIFIED: 0,
         EV_IDENTITY_PHOTO_VERIFIED_REV: 0,
@@ -355,6 +360,7 @@ def recompute_trust_for_user(
     identity_phone_verified = counts[EV_IDENTITY_PHONE_VERIFIED]
     identity_bank_recorded = counts[EV_IDENTITY_BANK_RECORDED]
     identity_drivers_licence = counts[EV_IDENTITY_DRIVERS_LICENCE]
+    identity_official_id = counts[EV_IDENTITY_OFFICIAL_ID]
     identity_photo_recorded = counts[EV_IDENTITY_PHOTO_RECORDED]
     identity_photo_verified = counts[EV_IDENTITY_PHOTO_VERIFIED]
     identity_photo_verified_rev = counts[EV_IDENTITY_PHOTO_VERIFIED_REV]
@@ -371,6 +377,7 @@ def recompute_trust_for_user(
     gain_identity_phone = IDENTITY_PHONE_VERIFIED_GAIN * _d(identity_phone_verified)
     gain_identity_bank = IDENTITY_BANK_RECORDED_GAIN * _d(identity_bank_recorded)
     gain_identity_licence = IDENTITY_DRIVERS_LICENCE_GAIN * _d(identity_drivers_licence)
+    gain_identity_official_id = IDENTITY_DRIVERS_LICENCE_GAIN * _d(identity_official_id)
     if photo_review_state_by_check:
         active_identity_photo_verified = sum(
             1 for state in photo_review_state_by_check.values() if state == "verify"
@@ -405,6 +412,7 @@ def recompute_trust_for_user(
         + gain_identity_phone
         + gain_identity_bank
         + gain_identity_licence
+        + gain_identity_official_id
         + gain_identity_photo
         + gain_identity_region
         + gain_review
@@ -457,8 +465,11 @@ def recompute_trust_for_user(
         latest_reason = "Photo/selfie evidence was reviewed and could not be accepted yet"
         latest_source = EV_IDENTITY_PHOTO_REJECTED
     elif identity_bank_recorded > 0:
-        latest_reason = "Verified onboarding proofs established your starter trust standing"
+        latest_reason = "Recorded onboarding proofs established your starter trust standing"
         latest_source = EV_IDENTITY_BANK_RECORDED
+    elif identity_official_id > 0:
+        latest_reason = "Official ID evidence was recorded for later review"
+        latest_source = EV_IDENTITY_OFFICIAL_ID
     elif identity_region_consistent > 0:
         latest_reason = "Region consistency between onboarding proofs strengthened your starter trust standing"
         latest_source = EV_IDENTITY_REGION_CONSISTENT
@@ -519,6 +530,7 @@ def recompute_trust_for_user(
             "identity_phone_verified": identity_phone_verified,
             "identity_bank_recorded": identity_bank_recorded,
             "identity_drivers_licence": identity_drivers_licence,
+            "identity_official_id": identity_official_id,
             "identity_photo_recorded": identity_photo_recorded,
             "identity_photo_verified": identity_photo_verified,
             "identity_photo_verified_reversed": identity_photo_verified_rev,
@@ -546,6 +558,7 @@ def recompute_trust_for_user(
             "identity_phone": str(_q(gain_identity_phone)),
             "identity_bank": str(_q(gain_identity_bank)),
             "identity_drivers_licence": str(_q(gain_identity_licence)),
+            "identity_official_id": str(_q(gain_identity_official_id)),
             "identity_photo": str(_q(gain_identity_photo)),
             "identity_region": str(_q(gain_identity_region)),
             "community_confirmation_review": str(_q(gain_review)),
@@ -565,6 +578,7 @@ def recompute_trust_for_user(
             "phone_verified": identity_phone_verified > 0,
             "bank_recorded": identity_bank_recorded > 0,
             "drivers_licence_recorded": identity_drivers_licence > 0,
+            "official_id_recorded": identity_official_id > 0,
             "photo_evidence_recorded": identity_photo_recorded > 0,
             "photo_evidence_verified": identity_photo_verified_net > 0,
             "photo_evidence_needs_more": active_identity_photo_needs_more > 0,

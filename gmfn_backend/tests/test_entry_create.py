@@ -78,6 +78,73 @@ def test_entry_phone_default_registers_without_sms_for_controlled_testing(client
         assert event.subject_user_id == create_body["user_id"]
 
 
+def test_entry_records_country_and_official_id_without_provider_verification(client, monkeypatch):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "NIN Founder",
+            "phone_e164": "+2348011111112",
+            "email": "nin.founder@example.com",
+            "country": "Nigeria",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    verification_id = start_res.json()["verification_id"]
+
+    official_res = client.post(
+        "/entry/official-id/record",
+        json={
+            "verification_id": verification_id,
+            "document_type": "National Identification Number (NIN)",
+            "document_reference": "12345678901",
+            "country": "Nigeria",
+            "note": "Pilot NIN evidence only",
+        },
+    )
+    assert official_res.status_code == 201, official_res.text
+    official_body = official_res.json()
+    assert official_body["verification_type"] == "official_id"
+    assert official_body["status"] == "manual_review_required"
+    assert official_body["provider_key"] == "official-id.manual-record"
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": verification_id,
+            "clan_name": "NIN Founder Circle",
+            "email": "nin.founder@example.com",
+            "country": "Nigeria",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    with SessionLocal() as db:
+        check = (
+            db.query(IdentityVerificationCheck)
+            .filter(
+                IdentityVerificationCheck.user_id == create_body["user_id"],
+                IdentityVerificationCheck.verification_type == "official_id",
+            )
+            .one()
+        )
+        assert check.status == "manual_review_required"
+        assert check.verified_at is None
+        official_event = (
+            db.query(TrustEvent)
+            .filter(
+                TrustEvent.subject_user_id == create_body["user_id"],
+                TrustEvent.event_type == "identity.official_id_recorded",
+            )
+            .one()
+        )
+        assert "provider_verified" in str(check.provider_response_json)
+        assert "National Identification Number" in str(official_event.meta_json or official_event.meta)
+
+
 def test_entry_phone_sms_mode_can_be_reenabled_without_preview(client, monkeypatch):
     monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
     monkeypatch.setenv("GMFN_ENTRY_PHONE_DELIVERY", "sms")
@@ -1174,6 +1241,90 @@ def test_entry_identity_photo_becomes_trust_passport_image_source(client, monkey
     assert reject_correction_body["trust_summary"]["counts"]["identity_photo_rejected"] == 1
     assert reject_correction_body["trust_summary"]["counts"]["identity_photo_rejected_active"] == 0
     assert reject_correction_body["trust_summary"]["starter_proof_summary"]["photo_evidence_rejected"] is False
+
+
+def test_entry_identity_photo_allows_five_records_and_caps_session(client, monkeypatch):
+    monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
+    monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
+    upload_root = Path("test_uploads/entry_photo_five")
+    upload_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(upload_root))
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Five Photo Founder",
+            "phone_e164": "+2348011111113",
+            "email": "five.photo@example.com",
+            "country": "Nigeria",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    verification_id = start_res.json()["verification_id"]
+
+    photo_ids = []
+    for index in range(5):
+        photo_res = client.post(
+            "/entry/identity-photo/record",
+            data={
+                "verification_id": str(verification_id),
+                "document_type": "selfie",
+                "note": f"Photo {index + 1}",
+            },
+            files={
+                "file": (
+                    f"selfie-{index + 1}.png",
+                    b"\x89PNG\r\n\x1a\nfounder-selfie-bytes-" + str(index).encode(),
+                    "image/png",
+                )
+            },
+        )
+        assert photo_res.status_code == 201, photo_res.text
+        photo_ids.append(photo_res.json()["verification_check_id"])
+
+    overflow_res = client.post(
+        "/entry/identity-photo/record",
+        data={
+            "verification_id": str(verification_id),
+            "document_type": "selfie",
+            "note": "Overflow photo",
+        },
+        files={
+            "file": (
+                "selfie-6.png",
+                b"\x89PNG\r\n\x1a\noverflow-selfie-bytes",
+                "image/png",
+            )
+        },
+    )
+    assert overflow_res.status_code == 400, overflow_res.text
+    assert "maximum of 5" in overflow_res.text.lower()
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": verification_id,
+            "clan_name": "Five Photo Founder Circle",
+            "email": "five.photo@example.com",
+            "password": "strongpass",
+            "confirm_password": "strongpass",
+            "country": "Nigeria",
+        },
+    )
+    assert create_res.status_code == 201, create_res.text
+    create_body = create_res.json()
+
+    with SessionLocal() as db:
+        checks = (
+            db.query(IdentityVerificationCheck)
+            .filter(
+                IdentityVerificationCheck.user_id == create_body["user_id"],
+                IdentityVerificationCheck.verification_type == "identity_photo",
+            )
+            .all()
+        )
+        assert len(checks) == 5
+        assert {check.id for check in checks} == set(photo_ids)
 
 
 def test_entry_phone_confirm_rejects_wrong_code(client):

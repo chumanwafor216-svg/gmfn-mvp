@@ -3,6 +3,7 @@ import os
 from app.services.verification_adapters.base import (
     VERIFICATION_STATUS_MANUAL_REVIEW,
     VERIFICATION_STATUS_MATCHED,
+    VERIFICATION_STATUS_UNAVAILABLE,
 )
 from app.services.verification_adapters.bank_truelayer_gb import (
     TrueLayerGBBankVerificationAdapter,
@@ -10,7 +11,30 @@ from app.services.verification_adapters.bank_truelayer_gb import (
 from app.services.verification_router import route_bank_verification
 
 
-def test_route_bank_verification_uses_truelayer_for_gb(monkeypatch):
+def test_route_bank_verification_records_only_by_default_for_gb(monkeypatch):
+    monkeypatch.delenv("GMFN_VERIFICATION_MODE", raising=False)
+    monkeypatch.setenv("GMFN_BANK_PROVIDER_GB", "truelayer")
+    monkeypatch.delenv("TRUELAYER_ACCESS_TOKEN", raising=False)
+
+    adapter = route_bank_verification("GB")
+
+    result = adapter.verify(
+        request=type(
+            "Req",
+            (),
+            {
+                "verification_type": "bank",
+                "region_code": "GB",
+                "payload": {"destination_name": "John Doe"},
+            },
+        )()
+    )
+    assert result.status == VERIFICATION_STATUS_UNAVAILABLE
+    assert "suspended during pilot" in result.explanation.lower()
+
+
+def test_route_bank_verification_uses_truelayer_for_gb_when_live_enabled(monkeypatch):
+    monkeypatch.setenv("GMFN_VERIFICATION_MODE", "live")
     monkeypatch.setenv("GMFN_BANK_PROVIDER_GB", "truelayer")
     monkeypatch.delenv("TRUELAYER_ACCESS_TOKEN", raising=False)
 

@@ -40,6 +40,7 @@ class EntryPhoneStartIn(BaseModel):
     display_name: str = Field(..., min_length=2, max_length=120)
     phone_e164: str = Field(..., min_length=8, max_length=32)
     email: Optional[EmailStr] = None
+    country: Optional[str] = Field(default=None, max_length=64)
     browser_locale: Optional[str] = Field(default=None, max_length=32)
     browser_timezone: Optional[str] = Field(default=None, max_length=64)
 
@@ -130,6 +131,7 @@ class CreateEntryIn(BaseModel):
     display_name: Optional[str] = Field(default=None, min_length=2, max_length=120)
     phone_e164: Optional[str] = Field(default=None, min_length=8, max_length=32)
     email: Optional[EmailStr] = None
+    country: Optional[str] = Field(default=None, max_length=64)
     password: Optional[str] = Field(default=None, min_length=6, max_length=128)
     confirm_password: Optional[str] = Field(default=None, min_length=6, max_length=128)
     clan_name: str = Field(..., min_length=2, max_length=80)
@@ -601,6 +603,8 @@ def _verification_event_type(verification_type: object) -> str:
         return "identity.bank_verification_checked"
     if vt == "drivers_licence":
         return "identity.drivers_licence_verification_checked"
+    if vt == "official_id":
+        return "identity.official_id_recorded"
     if vt == "identity_photo":
         return "identity.photo_evidence_checked"
     return "identity.verification_checked"
@@ -612,6 +616,8 @@ def _verification_summary_line(check: IdentityVerificationCheck) -> str:
         subject = "Bank details"
     elif vt == "drivers_licence":
         subject = "Driver's licence"
+    elif vt == "official_id":
+        subject = "Official ID"
     elif vt == "identity_photo":
         subject = "Photo/selfie evidence"
     else:
@@ -644,8 +650,9 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
     email = _clean_text(payload.email).lower() or None
     browser_locale = _clean_text(payload.browser_locale) or None
     browser_timezone = _clean_text(payload.browser_timezone) or None
+    declared_country = _normalize_country_hint(payload.country)
     phone_country_hint = _infer_phone_country(phone_e164)
-    locale_country_hint = _infer_locale_country(browser_locale)
+    locale_country_hint = declared_country or _infer_locale_country(browser_locale)
 
     phone_clash = db.query(User).filter(User.phone_e164 == phone_e164).first()
     if phone_clash:
@@ -678,7 +685,7 @@ def start_entry_phone_verification(payload: EntryPhoneStartIn, db: Session = Dep
             resumable.email = email
         if browser_locale:
             resumable.browser_locale = browser_locale
-            resumable.locale_country_hint = _infer_locale_country(browser_locale)
+            resumable.locale_country_hint = declared_country or _infer_locale_country(browser_locale)
         if browser_timezone:
             resumable.browser_timezone = browser_timezone
 
@@ -1174,6 +1181,7 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
                 else "entry.phone.confirm"
             ),
             "phone_e164": phone_e164,
+            "declared_country": _normalize_country_hint(payload.country) or None,
             "sms_suspended": verification.verified_at is None,
         },
     )
@@ -1299,6 +1307,8 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         proof_bits.append("bank destination")
     if starter_summary.get("drivers_licence_recorded"):
         proof_bits.append("driver's licence")
+    if starter_summary.get("official_id_recorded"):
+        proof_bits.append("official ID")
     if identity_photo_url:
         proof_bits.append("photo/selfie evidence")
     if starter_summary.get("region_consistent"):

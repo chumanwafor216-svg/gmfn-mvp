@@ -62,8 +62,17 @@ def _region(value: object) -> Optional[str]:
 
 def _bank_provider_for_region(region: str) -> str:
     if region == "GB":
-        return str(os.getenv("GMFN_BANK_PROVIDER_GB") or "truelayer").strip().lower()
+        return str(os.getenv("GMFN_BANK_PROVIDER_GB") or "").strip().lower()
     return str(os.getenv(f"GMFN_BANK_PROVIDER_{region}") or "").strip().lower()
+
+
+def _pilot_record_only_enabled() -> bool:
+    raw = str(os.getenv("GMFN_VERIFICATION_MODE") or "").strip().lower()
+    if raw in {"live", "provider", "providers", "external"}:
+        return False
+    if raw in {"record-only", "record", "pilot", "manual", ""}:
+        return True
+    return True
 
 
 def route_bank_verification(region_code: object) -> VerificationAdapter:
@@ -75,6 +84,13 @@ def route_bank_verification(region_code: object) -> VerificationAdapter:
         )
 
     provider = _bank_provider_for_region(region)
+    if _pilot_record_only_enabled():
+        provider_key = f"bank.{region.lower()}.record-only"
+        return UnavailableVerificationAdapter(
+            provider_key,
+            f"Live bank verification is suspended during pilot testing for region {region}. The system recorded the details as reviewable evidence instead.",
+        )
+
     if region == "GB" and provider == "truelayer":
         return TrueLayerGBBankVerificationAdapter()
 

@@ -43,6 +43,14 @@ class DriversLicenceVerificationIn(BaseModel):
     note: Optional[str] = Field(default=None, max_length=500)
 
 
+class OfficialIdRecordIn(BaseModel):
+    verification_id: int = Field(..., gt=0)
+    document_type: str = Field(..., min_length=2, max_length=120)
+    document_reference: str = Field(..., min_length=2, max_length=160)
+    country: str = Field(..., min_length=2, max_length=64)
+    note: Optional[str] = Field(default=None, max_length=500)
+
+
 class VerificationCheckOut(BaseModel):
     ok: bool
     verification_check_id: int
@@ -101,6 +109,7 @@ def _json_text(data: Any) -> str:
 
 
 ENTRY_IDENTITY_PHOTO_MAX_BYTES = 5 * 1024 * 1024
+ENTRY_IDENTITY_PHOTO_MAX_PER_SESSION = 5
 ENTRY_IDENTITY_PHOTO_ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 ENTRY_IDENTITY_PHOTO_ALLOWED_CONTENT_TYPES = {
     "image/jpeg",
@@ -239,6 +248,11 @@ def _serialize_check(row: IdentityVerificationCheck) -> dict[str, Any]:
     }
 
 
+def _document_reference_last4(value: object) -> str:
+    compact = "".join(ch for ch in _clean_text(value) if ch.isalnum())
+    return compact[-4:] if compact else ""
+
+
 @router.post("/bank/verify", response_model=VerificationCheckOut, status_code=status.HTTP_201_CREATED)
 def verify_bank_details(payload: BankVerificationIn, db: Session = Depends(get_db)):
     session_row = _require_verified_session(payload.verification_id, db)
@@ -319,6 +333,62 @@ def verify_drivers_licence(
 
 
 @router.post(
+    "/official-id/record",
+    response_model=VerificationCheckOut,
+    status_code=status.HTTP_201_CREATED,
+)
+def record_official_id(payload: OfficialIdRecordIn, db: Session = Depends(get_db)):
+    session_row = _require_verified_session(payload.verification_id, db)
+    region_code = _normalize_region_code(payload.country)
+    document_type = _clean_text(payload.document_type) or "Official ID"
+
+    explanation = (
+        f"{document_type} evidence was recorded for identity confidence. "
+        "Live provider verification is suspended during pilot testing, so this is reviewable evidence, not provider-verified identity."
+    )
+    check = IdentityVerificationCheck(
+        entry_phone_verification_id=int(session_row.id),
+        verification_type="official_id",
+        region_code=region_code,
+        provider_key="official-id.manual-record",
+        status="manual_review_required",
+        subject_reference=document_type,
+        confidence_score=25,
+        explanation=explanation,
+        submitted_payload_json=_json_text(payload.model_dump()),
+        normalized_identity_json=_json_text(
+            {
+                "display_name": _clean_text(session_row.display_name),
+                "phone_e164": _clean_text(session_row.phone_e164),
+                "document_type": document_type,
+                "document_reference_last4": _document_reference_last4(
+                    payload.document_reference
+                ),
+                "country": region_code or _clean_text(payload.country),
+            }
+        ),
+        provider_response_json=_json_text(
+            {
+                "provider_configured": False,
+                "provider_verified": False,
+                "manual_review": True,
+                "verification_suspended_for_pilot": True,
+                "document_type": document_type,
+                "document_reference_last4": _document_reference_last4(
+                    payload.document_reference
+                ),
+                "country": region_code or _clean_text(payload.country),
+            }
+        ),
+        verified_at=None,
+    )
+    db.add(check)
+    db.commit()
+    db.refresh(check)
+    return _serialize_check(check)
+
+
+@router.post(
     "/identity-photo/record",
     response_model=VerificationCheckOut,
     status_code=status.HTTP_201_CREATED,
@@ -331,6 +401,19 @@ async def record_identity_photo(
     db: Session = Depends(get_db),
 ):
     session_row = _require_verified_session(int(verification_id), db)
+    existing_photo_count = (
+        db.query(IdentityVerificationCheck)
+        .filter(
+            IdentityVerificationCheck.entry_phone_verification_id == int(session_row.id),
+            IdentityVerificationCheck.verification_type == "identity_photo",
+        )
+        .count()
+    )
+    if existing_photo_count >= ENTRY_IDENTITY_PHOTO_MAX_PER_SESSION:
+        raise HTTPException(
+            status_code=400,
+            detail="A maximum of 5 identity photos can be attached to this entry session.",
+        )
     ext = _validate_identity_photo_type(file)
     raw = await _read_identity_photo_bytes(file)
 

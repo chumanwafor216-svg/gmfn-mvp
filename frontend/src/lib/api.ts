@@ -671,11 +671,13 @@ export async function startEntryPhoneVerification(payload: {
   display_name: string;
   phone_e164: string;
   email?: string | null;
+  country?: string | null;
 }): Promise<any> {
     return httpJson("/entry/phone/start", "POST", {
       display_name: String(payload?.display_name || "").trim(),
       phone_e164: String(payload?.phone_e164 || "").trim(),
       email: String(payload?.email || "").trim() || undefined,
+      country: String(payload?.country || "").trim() || undefined,
       browser_locale: detectBrowserLocale(),
       browser_timezone: detectBrowserTimezone(),
     });
@@ -767,6 +769,22 @@ export async function verifyEntryDriversLicence(payload: {
   return httpJson("/entry/licence/verify", "POST", {
     verification_id: Number(payload?.verification_id || 0),
     licence_number: String(payload?.licence_number || "").trim(),
+    country: String(payload?.country || "").trim(),
+    note: String(payload?.note || "").trim() || undefined,
+  });
+}
+
+export async function recordEntryOfficialId(payload: {
+  verification_id: number | string;
+  document_type: string;
+  document_reference: string;
+  country: string;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson("/entry/official-id/record", "POST", {
+    verification_id: Number(payload?.verification_id || 0),
+    document_type: String(payload?.document_type || "").trim(),
+    document_reference: String(payload?.document_reference || "").trim(),
     country: String(payload?.country || "").trim(),
     note: String(payload?.note || "").trim() || undefined,
   });

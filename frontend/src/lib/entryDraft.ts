@@ -9,6 +9,7 @@ export type CreateEntryDraft = {
   displayName?: string;
   phone?: string;
   email?: string;
+  country?: string;
   createCode?: string;
   step?: CreateEntryStep;
   openPanel?: CreateEntryPanel;
@@ -141,9 +142,10 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       safeStr(parsed?.communityName) ||
         safeStr(parsed?.description) ||
         safeStr(parsed?.displayName) ||
-        safeStr(parsed?.phone) ||
-        safeStr(parsed?.email) ||
-        Number(parsed?.verificationId || 0) > 0 ||
+      safeStr(parsed?.phone) ||
+      safeStr(parsed?.email) ||
+      safeStr(parsed?.country) ||
+      Number(parsed?.verificationId || 0) > 0 ||
         parsed?.phoneVerificationProof ||
         parsed?.bankRecordProof ||
         parsed?.bankVerificationResult ||
@@ -163,6 +165,7 @@ export function readCreateEntryDraft(createCode?: string | null): CreateEntryDra
       displayName: safeStr(parsed?.displayName),
       phone: safeStr(parsed?.phone),
       email: safeStr(parsed?.email),
+      country: safeStr(parsed?.country),
       createCode: safeStr(parsed?.createCode),
       step,
       openPanel,
@@ -191,6 +194,7 @@ export function saveCreateEntryDraft(
     displayName: safeStr(draft.displayName),
     phone: safeStr(draft.phone),
     email: safeStr(draft.email),
+    country: safeStr(draft.country),
     createCode: safeStr(draft.createCode || createCode || ""),
     step: isValidStep(draft.step) ? draft.step : "details",
     openPanel: isValidPanel(draft.openPanel) ? draft.openPanel : null,
@@ -210,6 +214,7 @@ export function saveCreateEntryDraft(
       safeDraft.displayName ||
       safeDraft.phone ||
       safeDraft.email ||
+      safeDraft.country ||
       safeDraft.verificationId ||
       safeDraft.phoneVerificationProof ||
       safeDraft.bankRecordProof ||

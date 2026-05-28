@@ -1,3 +1,136 @@
+### Start Community inline community-record outcome (2026-05-28)
+
+- Follow-up from phone testing: the owner reported that after tapping the
+  community action, the evidence meter changed but the user did not see a clear
+  local answer saying whether the community action succeeded.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` so the Community setup block
+  now behaves in two visible local steps:
+  - `Record community details` keeps the user at the button area and shows an
+    inline `Community details recorded` decision panel;
+  - that panel makes `Finish registration now` the primary action and keeps
+    `Add founder trust evidence` secondary;
+  - when the user chooses to finish, registration now moves directly to the next
+    route after the backend create succeeds instead of waiting on another local
+    outcome click;
+  - during the decision moment, the previous details block and Founder trust
+    block are hidden so the user is not distracted by already-completed or
+    optional sections;
+  - the Founder trust level block also shows a local `Ready to finish` panel
+    when community details have already been recorded.
+- This keeps action responses where the action happened and prevents the user
+  from needing to scroll back to decode success/failure.
+- Truth/devil's advocate:
+  - `Record community details` is a local step before the backend create call.
+    The real backend registration happens only when `Finish registration now`
+    succeeds.
+  - Evidence added after final backend registration still needs a dedicated
+    post-auth completion route if the product wants it to attach cleanly later.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after approved Vite/esbuild escalation.
+
+### Start Community action feedback cleanup (2026-05-28)
+
+- Tightened `frontend/src/pages/CreateEntryPage.tsx` action feedback behavior:
+  - each major action now records its exact busy target;
+  - temporary success/error feedback auto-dismisses after a short delay instead
+    of staying stale on the screen;
+  - photo, bank/wallet, and official-ID record actions no longer jump/focus the
+    user back to the top of the verification panel after success;
+  - while one verification action is running, unrelated verification blocks are
+    hidden until that action finishes;
+  - founder evidence meter/status cards are held back while the action-local
+    feedback is visible, so the user sees whether the upload/save succeeded
+    before the meter/status surface takes attention.
+- Truth/devil's advocate:
+  - this is a Start Community local UX fix, not a new global toast framework for
+    every page in the product;
+  - backend success/failure is still the source of truth. The UI now presents
+    that result in a less confusing place and clears it, but it does not create
+    offline retry or background queueing.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
+### Start Community country-led pilot evidence records (2026-05-28)
+
+- Implemented the pilot direction that onboarding should record identity
+  evidence now, not force provider-grade verification before users can proceed.
+- Start Community now asks for explicit country in the first details block and
+  uses that country to choose local evidence guidance:
+  - Nigeria: National Identification Number (NIN);
+  - UK / Ireland: driving licence or passport-style official ID;
+  - Ghana, Kenya, India, South Africa, Uganda, Tanzania, Rwanda, US, and
+    fallback countries have local official-ID labels and currency defaults.
+- Added shared frontend requirement mapping in
+  `frontend/src/lib/identityEvidenceRequirements.ts` and persisted country in
+  the create-entry draft.
+- Added backend record-only official ID support:
+  - `POST /entry/official-id/record`;
+  - stores an `official_id` `IdentityVerificationCheck`;
+  - marks it `manual_review_required`;
+  - does not set `verified_at`;
+  - emits Trust Event `identity.official_id_recorded` when attached during
+    entry creation.
+- Suspended live bank-provider verification by default during pilot:
+  - `route_bank_verification` now returns record-only/manual-review behavior by
+    default;
+  - TrueLayer for GB is used only when `GMFN_VERIFICATION_MODE=live` and the
+    provider is explicitly configured.
+- Hardened truth-picture evidence:
+  - frontend queue remains capped at 5 photos;
+  - backend now also rejects the 6th identity photo for the same entry session.
+- Truth/devil's advocate:
+  - country is carried through the draft/create payload and Trust Event metadata,
+    but it is not yet a dedicated database column on the starter/user model;
+  - official ID/NIN is recorded for review, not checked against a government or
+    provider source;
+  - the Start Community UI still uses some internal `driverLicence*` state names
+    to avoid a broad refactor, though user-facing copy says official ID/NIN;
+  - post-auth completion for photo/selfie and official ID is still not a full
+    standalone route. The current implementation records these during Start
+    Community and the guidance layer can highlight gaps later.
+- Verification:
+  - `python -m compileall gmfn_backend\app\api\routes\entry.py gmfn_backend\app\api\routes\entry_verification.py gmfn_backend\app\services\verification_router.py gmfn_backend\app\services\trust_score_service.py` passed.
+  - `python -m pytest gmfn_backend\tests\test_verification_router.py gmfn_backend\tests\test_entry_create.py -q` passed: 29 tests.
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx src/lib/entryDraft.ts src/lib/identityEvidenceCompletion.ts src/lib/identityEvidenceRequirements.ts src/lib/api.ts` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+  - `git diff --check` passed for the changed implementation files with only
+    existing Windows line-ending warnings.
+
+### Start Community truth-picture 5-photo queue (2026-05-28)
+
+- Product-owner reported from phone testing that the Start Community
+  photo/selfie proof block was not attaching pictures reliably enough.
+- Updated `frontend/src/pages/CreateEntryPage.tsx` only:
+  - photo/selfie proof now accepts a queue of up to 5 images;
+  - gallery/file selection supports multi-select;
+  - camera/selfie capture can add one photo at a time into the same queue;
+  - queued photos show thumbnails on the phone with remove controls before
+    upload;
+  - the Record action uploads each queued image to the existing
+    `/entry/identity-photo/record` backend route under the same phone proof;
+  - after recording, the card reports the number of attached photo evidence
+    records.
+- No backend route contract, schema, auth, permission, provider-verification,
+  TrustEvent scoring, or Dashboard frozen area changed.
+- Truth/devil's advocate:
+  - this improves capture and attachment reliability, but it is still manual
+    identity-continuity evidence, not provider-grade face match, liveness, OCR,
+    passport, or NIN verification.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `git diff --check -- frontend\src\pages\CreateEntryPage.tsx` passed with
+    only the existing Windows line-ending warning.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Shared identity evidence guidance signal (2026-05-27)
 
 - Added `frontend/src/lib/identityEvidenceCompletion.ts` as the shared source
