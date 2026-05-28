@@ -915,9 +915,9 @@ function CreateCommunityWatermark(): React.ReactElement {
 
 function WizardProgress({ guideDone }: { guideDone: boolean }): React.ReactElement {
   const steps = [
-    { number: "1", label: "Guide", active: true, done: guideDone },
-    { number: "2", label: "Form", active: false, done: false },
-    { number: "3", label: "Review", active: false, done: false },
+    { number: "1", label: "Details", active: true, done: guideDone },
+    { number: "2", label: "Community", active: false, done: false },
+    { number: "3", label: "Trust", active: false, done: false },
   ];
   return (
     <div
@@ -1378,11 +1378,11 @@ export default function CreateEntryPage() {
     restoredDraft?.openPanel ||
     (restoredDraft?.step === "community" && restoredDraft?.phoneVerificationProof
       ? "community"
-      : restoredDraft?.step === "verify" || restoredDraft?.step === "bank"
-        ? "verification"
-        : hasInitialCommunityContext
-          ? "community"
-          : null);
+        : restoredDraft?.step === "verify" || restoredDraft?.step === "bank"
+          ? "verification"
+          : hasInitialCommunityContext
+            ? "community"
+          : "details");
 
   const [communityName, setCommunityName] = useState(initialCommunityName);
   const [description, setDescription] = useState(initialDescription);
@@ -1449,7 +1449,7 @@ export default function CreateEntryPage() {
     useState<EntryVerificationResult>(restoredDraft?.identityPhotoResult || null);
   const restoredSessionCheckedRef = useRef(false);
   const [guideDone, setGuideDone] = useState(
-    Boolean(restoredDraft?.guideDone || hasInitialCommunityContext)
+    true
   );
   const [procedureOpen, setProcedureOpen] = useState(false);
   const [guideStepOpen, setGuideStepOpen] = useState<GuideStepKey | null>(null);
@@ -1709,8 +1709,8 @@ export default function CreateEntryPage() {
     setIdentityPhotoRecordedCount(0);
     clearIdentityPhotoSelections();
     setStep("details");
-    setGuideDone(false);
-    setOpenPanel(null);
+    setGuideDone(true);
+    setOpenPanel("details");
     setError("");
     setSuccess("");
     setResumeNotice("");
@@ -3082,7 +3082,14 @@ export default function CreateEntryPage() {
 
           <WizardProgress guideDone={guideDone} />
 
-          <div style={{ marginTop: 8, display: "grid", gap: 7, justifyItems: "start" }}>
+          <div
+            style={{
+              marginTop: 8,
+              display: "none",
+              gap: 7,
+              justifyItems: "start",
+            }}
+          >
             <div style={guideHeroCallout(guideDone)}>
               <div
                 aria-hidden="true"

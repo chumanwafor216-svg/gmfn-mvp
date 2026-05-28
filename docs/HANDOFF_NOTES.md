@@ -1,3 +1,35 @@
+### First Circle invite handles and Start Community fast entry (2026-05-28)
+
+- Follow-up from phone testing: after registration the First Circle page should
+  not make the founder hunt for the invite path. It should expose the real
+  handles people use: phone contacts, WhatsApp, email, Facebook, native share,
+  and copy.
+- Updated `frontend/src/pages/BuildFirstCirclePage.tsx`:
+  - fetches the selected community join invite link with `getClanInviteLink`;
+  - normalizes it through `normalizedJoinInviteUrl`;
+  - adds an `Invite first` action strip near the top of First Circle;
+  - exposes quick actions for Phone book, WhatsApp, Email, Facebook, Share, and
+    Copy;
+  - keeps the existing manual add / phone-contact picker below for building the
+    first-circle list.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - Start Community no longer requires the visible `Read guide first` gate;
+  - the wizard labels now read `Details`, `Community`, and `Trust`;
+  - fresh entries open directly into the details form;
+  - starting fresh also returns directly to the details form instead of the
+    guide card.
+- Truth/devil's advocate:
+  - the browser phone-contact picker only works on supported mobile browsers;
+    the WhatsApp/email/Facebook/share/copy actions are the fallback social
+    paths;
+  - the full Start Community visual/emoji overhaul is not done in this pass.
+    This removes the blocker and keeps the logic moving fast.
+- Verification:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx src/pages/CreateEntryPage.tsx src/lib/identityEvidenceCompletion.ts` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Start Community shared evidence-state correction (2026-05-28)
 
 - Follow-up from phone testing: after Community details were recorded, the

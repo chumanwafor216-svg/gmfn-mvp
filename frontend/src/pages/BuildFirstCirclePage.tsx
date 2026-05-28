@@ -6,9 +6,16 @@ import {
   StableButton,
   SubtleButton,
 } from "../components/StableButton";
-import { getCurrentClan, getMe, getSelectedClanId, safeCopy } from "../lib/api";
+import {
+  getClanInviteLink,
+  getCurrentClan,
+  getMe,
+  getSelectedClanId,
+  safeCopy,
+} from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import * as firstCircle from "../lib/firstCircle";
+import { normalizedJoinInviteUrl } from "../lib/joinLinks";
 
 type FirstCircleContact = {
   id: string;
@@ -501,6 +508,8 @@ export default function BuildFirstCirclePage() {
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [inviteLink, setInviteLink] = useState("");
+  const [inviteLoading, setInviteLoading] = useState(false);
   const [draft, setDraft] = useState<FirstCircleDraft>(defaultDraft());
   const [manualForm, setManualForm] = useState<ManualFormState>(defaultManualForm());
   const [pickingContacts, setPickingContacts] = useState(false);
@@ -572,6 +581,33 @@ export default function BuildFirstCirclePage() {
     saveDraft(draft);
   }, [draft]);
 
+  useEffect(() => {
+    const clanId = Number(
+      firstTruthy(currentClan?.id, currentClan?.clan_id, selectedClanId)
+    );
+    if (!clanId) return;
+
+    let alive = true;
+    setInviteLoading(true);
+
+    getClanInviteLink(clanId)
+      .then((out) => {
+        if (!alive) return;
+        setInviteLink(normalizedJoinInviteUrl(out));
+      })
+      .catch(() => {
+        if (!alive) return;
+        setInviteLink("");
+      })
+      .finally(() => {
+        if (alive) setInviteLoading(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [currentClan, selectedClanId]);
+
   const communityName = useMemo(() => {
     return (
       firstTruthy(
@@ -610,6 +646,17 @@ export default function BuildFirstCirclePage() {
       (item) => item.selected && contactInviteReady(item)
     );
   }, [draft.contacts]);
+
+  const joinInviteMessage = useMemo(() => {
+    const lines = [
+      `Hello, I am building my trusted first circle on GSN for ${communityName}.`,
+      "If you already know me and this community, use this invite link to request to join.",
+      inviteLink,
+      gmfnId ? `My GSN ID: ${gmfnId}` : "",
+    ].filter(Boolean);
+
+    return lines.join("\n\n");
+  }, [communityName, gmfnId, inviteLink]);
 
   const inviteBundle = useMemo(() => {
     return inviteBundleText({
@@ -814,7 +861,79 @@ export default function BuildFirstCirclePage() {
     showNotice("success", "Invite bundle copied.");
   }
 
-function resetDraft() {
+  async function copyJoinInvite() {
+    if (!inviteLink) {
+      showNotice("error", "Invite link is not ready yet.");
+      return;
+    }
+
+    await safeCopy(joinInviteMessage);
+    showNotice("success", "Invite message copied.");
+  }
+
+  async function shareJoinInvite() {
+    if (!inviteLink) {
+      showNotice("error", "Invite link is not ready yet.");
+      return;
+    }
+
+    const navAny = navigator as any;
+    if (navAny?.share) {
+      try {
+        await navAny.share({
+          title: `Join ${communityName} on GSN`,
+          text: joinInviteMessage,
+          url: inviteLink,
+        });
+        showNotice("success", "Invite share opened.");
+        return;
+      } catch (err: any) {
+        if (safeStr(err?.name) === "AbortError") return;
+      }
+    }
+
+    await copyJoinInvite();
+  }
+
+  function openWhatsAppInvite() {
+    if (!inviteLink) {
+      showNotice("error", "Invite link is not ready yet.");
+      return;
+    }
+
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(joinInviteMessage)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  function openEmailInvite() {
+    if (!inviteLink) {
+      showNotice("error", "Invite link is not ready yet.");
+      return;
+    }
+
+    const subject = `Join ${communityName} on GSN`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(joinInviteMessage)}`;
+  }
+
+  function openFacebookInvite() {
+    if (!inviteLink) {
+      showNotice("error", "Invite link is not ready yet.");
+      return;
+    }
+
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteLink)}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  function resetDraft() {
     const next = defaultDraft();
     clearSavedDraft();
     setDraft(next);
@@ -986,6 +1105,112 @@ function resetDraft() {
               <span style={badge(readyCount >= targetCount)}>Invite</span>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section style={pageCard()}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+            gap: 14,
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Invite first</div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#F8FBFF",
+                fontSize: 22,
+                fontWeight: 900,
+                lineHeight: 1.18,
+              }}
+            >
+              Pick people from the handles you already use
+            </div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              Open phone contacts, WhatsApp, email, Facebook, or the phone share
+              sheet. Then add the real people you want in your first circle.
+            </div>
+          </div>
+
+          <span style={badge(Boolean(inviteLink))}>
+            {inviteLoading
+              ? "Invite loading"
+              : inviteLink
+                ? "Invite link ready"
+                : "Invite link not ready"}
+          </span>
+        </div>
+
+        <div
+          style={{
+            marginTop: 14,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr 1fr"
+              : "repeat(6, minmax(120px, 1fr))",
+            gap: 10,
+          }}
+        >
+          <PrimaryButton
+            onClick={() => {
+              void addFromPhoneContacts();
+            }}
+            disabled={pickingContacts}
+            busy={pickingContacts}
+            busyLabel="Opening..."
+            stableHeight={52}
+            debugId="build-first-circle.quick.phone-contacts"
+          >
+            Phone book
+          </PrimaryButton>
+          <SecondaryButton
+            onClick={openWhatsAppInvite}
+            disabled={!inviteLink}
+            stableHeight={52}
+            debugId="build-first-circle.quick.whatsapp"
+          >
+            WhatsApp
+          </SecondaryButton>
+          <SecondaryButton
+            onClick={openEmailInvite}
+            disabled={!inviteLink}
+            stableHeight={52}
+            debugId="build-first-circle.quick.email"
+          >
+            Email
+          </SecondaryButton>
+          <SecondaryButton
+            onClick={openFacebookInvite}
+            disabled={!inviteLink}
+            stableHeight={52}
+            debugId="build-first-circle.quick.facebook"
+          >
+            Facebook
+          </SecondaryButton>
+          <SecondaryButton
+            onClick={() => {
+              void shareJoinInvite();
+            }}
+            disabled={!inviteLink}
+            stableHeight={52}
+            debugId="build-first-circle.quick.share"
+          >
+            Share
+          </SecondaryButton>
+          <SecondaryButton
+            onClick={() => {
+              void copyJoinInvite();
+            }}
+            disabled={!inviteLink}
+            stableHeight={52}
+            debugId="build-first-circle.quick.copy"
+          >
+            Copy
+          </SecondaryButton>
         </div>
       </section>
 
