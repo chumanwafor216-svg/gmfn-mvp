@@ -1,3 +1,27 @@
+### Start Community community-record button gate repair (2026-05-28)
+
+- Follow-up from phone testing: after reaching Community setup and typing the
+  community text, `Record community details` could remain grey/disabled.
+- Root cause in `frontend/src/pages/CreateEntryPage.tsx`:
+  - the local community-record action was guarded by `canContinue`, the older
+    full account/community readiness check;
+  - that check includes hidden Block 1 account fields and password readiness,
+    so the visible community action could appear blocked even when the user had
+    already passed phone/details and filled the community name.
+- Updated the route-local gate:
+  - `Record community details` now requires only Community step, a valid entry
+    verification id, and a community name;
+  - final registration still requires the full protected account details before
+    submitting to the backend;
+  - if community details were locally recorded but protected account details are
+    incomplete, the finish action now gives a local explanation instead of
+    silently doing nothing.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Start Community step-one handoff repair (2026-05-28)
 
 - Follow-up from phone testing: after the founder submitted Block 1 details /

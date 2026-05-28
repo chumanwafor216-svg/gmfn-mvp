@@ -1482,6 +1482,11 @@ export default function CreateEntryPage() {
     !!safeStr(email) &&
     !!safeStr(country) &&
     passwordReady;
+  const canRecordCommunityDetails =
+    step === "community" &&
+    Number(verificationId) > 0 &&
+    !!safeStr(communityName);
+  const canFinishCommunityRegistration = canRecordCommunityDetails && canContinue;
   const canContinueDetails =
     !!safeStr(displayName) &&
     !!safeStr(phone) &&
@@ -2812,7 +2817,7 @@ export default function CreateEntryPage() {
   }
 
   function handleRecordCommunityDetails() {
-    if (!canContinue || busy || createOutcome) return;
+    if (!canRecordCommunityDetails || busy || createOutcome) return;
 
     beginAction("community");
     setCommunityDetailsRecorded(true);
@@ -2824,7 +2829,15 @@ export default function CreateEntryPage() {
   }
 
   async function handleFinishRegistration() {
-    if (!canContinue || busy || !verificationId || createOutcome) return;
+    if (!canFinishCommunityRegistration || busy || !verificationId || createOutcome) {
+      if (!canFinishCommunityRegistration && communityDetailsRecorded) {
+        showError(
+          "community",
+          "Community details are recorded, but the protected account details are incomplete. Reopen Block 1 and make sure name, country, phone, email, and matching password are filled before finishing registration."
+        );
+      }
+      return;
+    }
 
     beginAction("community");
 
@@ -5224,12 +5237,12 @@ export default function CreateEntryPage() {
                       type="submit"
                       busy={busy && busyTarget === "community" && !communityDetailsRecorded}
                       busyLabel="Recording..."
-                      disabled={!canContinue || Boolean(createOutcome)}
+                      disabled={!canRecordCommunityDetails || Boolean(createOutcome)}
                       minWidth={220}
                       stableHeight={52}
                       debugId="create-entry.community.submit"
                       style={{
-                        ...primaryBtn(!canContinue || busy || Boolean(createOutcome)),
+                        ...primaryBtn(!canRecordCommunityDetails || busy || Boolean(createOutcome)),
                         width: "auto",
                         minWidth: 220,
                         flex: "1 1 260px",
