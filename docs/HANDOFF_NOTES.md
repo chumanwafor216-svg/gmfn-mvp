@@ -1,3 +1,25 @@
+### Start Community compact visual language pass (2026-05-28)
+
+- Follow-up from phone testing: Start Community still felt text-heavy after the
+  flow fixes. The user asked to remove the visible read-first burden and make
+  the route faster and easier to understand with more compact visual cues.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - tightened the hero guidance to `Details. Phone. Community. Then invite.`;
+  - added a compact four-chip step strip for Details, Phone, Community, and
+    Invite;
+  - shortened the identity, phone, photo/selfie, and community helper copy;
+  - kept the existing fast-entry behavior from the previous pass.
+- Truth/devil's advocate:
+  - this is a constrained clarity pass, not a full visual redesign;
+  - the old guide content is still retained in code but hidden from the user,
+    which keeps the change reversible but is not as clean as fully deleting it;
+  - the chips use short text markers instead of a full emoji/icon system.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### First Circle invite handles and Start Community fast entry (2026-05-28)
 
 - Follow-up from phone testing: after registration the First Circle page should

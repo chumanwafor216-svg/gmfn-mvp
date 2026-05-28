@@ -1564,8 +1564,8 @@ export default function CreateEntryPage() {
       : "Founder trust level";
   const verificationBlockHelp =
     step === "verify"
-      ? "Register this phone against your entry name. SMS ownership verification is suspended during controlled testing, so GSN will record the phone and open the bank or wallet fields."
-      : "Important founder proof. Community creation can continue without it, but every recorded check feeds the trust record and raises the founder evidence meter.";
+      ? "Record this phone against your entry name. SMS proof can come later."
+      : "Optional proof. Add what you have now, or finish and continue.";
 
   function applyPhonePrefix(prefix: string) {
     setPhone((current) => {
@@ -3077,10 +3077,49 @@ export default function CreateEntryPage() {
               maxWidth: 620,
             }}
           >
-            Set up safely in 3 steps.
+            Details. Phone. Community. Then invite.
           </div>
 
           <WizardProgress guideDone={guideDone} />
+
+          <div
+            aria-label="Create community steps"
+            style={{
+              marginTop: 10,
+              display: "grid",
+              gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+              gap: 6,
+            }}
+          >
+            {[
+              ["ID", "Details"],
+              ["TEL", "Phone"],
+              ["GSN", "Community"],
+              ["GO", "Invite"],
+            ].map(([mark, label]) => (
+              <div
+                key={label}
+                style={{
+                  minHeight: 42,
+                  borderRadius: 14,
+                  border: "1px solid rgba(126,164,204,0.20)",
+                  background: "rgba(255,255,255,0.07)",
+                  color: "#E6EEF8",
+                  display: "grid",
+                  placeItems: "center",
+                  gap: 2,
+                  padding: "7px 5px",
+                  fontSize: 10.5,
+                  fontWeight: 900,
+                  lineHeight: 1.1,
+                  textAlign: "center",
+                }}
+              >
+                <span style={{ color: "#F2C766", fontSize: 12 }}>{mark}</span>
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
 
           <div
             style={{
@@ -3510,7 +3549,7 @@ export default function CreateEntryPage() {
                     fontWeight: 760,
                   }}
                 >
-                  Founder identity starts here.
+                  Name, country, phone, email.
                 </div>
               ) : !guideDone ? (
                 <div
@@ -3913,7 +3952,7 @@ export default function CreateEntryPage() {
                       textTransform: "uppercase",
                     }}
                   >
-                    Next parts inside your details
+                    Next
                   </div>
 
             <div
@@ -4309,9 +4348,7 @@ export default function CreateEntryPage() {
                           fontSize: 14,
                         }}
                       >
-                        Block 2 has two parts. First confirm this phone number.
-                        If SMS is suspended, GSN records the phone against your
-                        name and opens the bank or wallet details below it.
+                        Record this phone to protect the entry. SMS proof can be added later.
                       </div>
                     </div>
 
@@ -4425,7 +4462,7 @@ export default function CreateEntryPage() {
                         </span>
                       </div>
                       <div style={{ color: "#B9CBE0", fontSize: 12, fontWeight: 760, marginTop: -5 }}>
-                        Add a clear front face photo now. Side/profile angles can be added later for Trust Passport and TrustSlip review.
+                        Clear front face now. Side/profile photos can come later.
                       </div>
 
                       <div
@@ -5181,7 +5218,7 @@ export default function CreateEntryPage() {
                     fontWeight: 760,
                   }}
                 >
-                  Name the community now. Extra proof is not required here, but every recorded check strengthens the founder trust record.
+                  Name it. Add a short story. Finish now or add optional proof.
                 </div>
               ) : null}
 
