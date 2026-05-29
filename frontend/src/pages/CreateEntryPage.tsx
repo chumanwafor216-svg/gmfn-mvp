@@ -76,6 +76,10 @@ type IdentityPhotoSelection = {
 const MAX_IDENTITY_PHOTO_SELECTIONS = 5;
 const MAX_IDENTITY_PHOTO_BYTES = 5 * 1024 * 1024;
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100svh",
@@ -1487,7 +1491,11 @@ export default function CreateEntryPage() {
     step === "community" &&
     Number(verificationId) > 0 &&
     !!safeStr(communityName);
-  const canFinishCommunityRegistration = canRecordCommunityDetails && canContinue;
+  const canFinishCommunityRegistration =
+    Boolean(communityDetailsRecorded || createOutcome) &&
+    Number(verificationId) > 0 &&
+    !!safeStr(communityName) &&
+    canContinue;
   const phoneEvidenceRecorded = Boolean(
     phoneVerificationProof || (step === "community" && Number(verificationId) > 0)
   );
@@ -1984,6 +1992,36 @@ export default function CreateEntryPage() {
   function finishAction() {
     setBusy(false);
     setBusyTarget(null);
+  }
+
+  function missingFinishItems(): string[] {
+    const missing: string[] = [];
+    if (!communityDetailsRecorded) missing.push("record community details");
+    if (!safeStr(communityName)) missing.push("community name");
+    if (!Number(verificationId)) missing.push("phone proof");
+    if (!safeStr(displayName)) missing.push("name");
+    if (!safeStr(country)) missing.push("country");
+    if (!safeStr(phone)) missing.push("phone");
+    if (!safeStr(email)) missing.push("email");
+    if (!passwordReady) missing.push("matching password");
+    return missing;
+  }
+
+  function finishBlockedMessage(): string {
+    const missing = missingFinishItems();
+    if (!missing.length) {
+      return "GSN cannot finish this registration yet. Please try again, or reopen the last completed step so the app can refresh the answer.";
+    }
+
+    const first = missing[0];
+    const rest = missing.slice(1);
+    const missingText = [first, ...rest].join(", ");
+
+    if (!communityDetailsRecorded) {
+      return `Finish is not ready yet. First record the community details, then GSN can create the community and move you to First Circle. Still needed: ${missingText}.`;
+    }
+
+    return `Finish is not ready yet. GSN still needs: ${missingText}. Reopen Details or Community setup, correct that item, then tap Finish registration now again.`;
   }
 
   function hasLiveFeedback(target: FeedbackTarget) {
@@ -2884,17 +2922,31 @@ export default function CreateEntryPage() {
     }
   }
 
-  async function handleFinishRegistration() {
+  async function handleFinishRegistration(feedbackTargetForFinish: FeedbackTarget = "community") {
     if (!canFinishCommunityRegistration || busy || !verificationId || createOutcome) {
-      if (!canFinishCommunityRegistration && communityDetailsRecorded) {
-        showError(
-          "community",
-          "Community details are recorded, but your account details are incomplete. Reopen Details and make sure name, country, phone, email, and matching password are filled before finishing registration."
+      if (createOutcome) {
+        showSuccess(
+          feedbackTargetForFinish,
+          "Congratulations. This community is already registered. Opening the next step now."
         );
+        await wait(650);
+        await handleContinueAfterCreateOutcome();
+        return;
       }
+
+      if (busy) {
+        showSuccess(
+          feedbackTargetForFinish,
+          "GSN is already finishing this registration. Please wait for the result."
+        );
+        return;
+      }
+
+      showError(feedbackTargetForFinish, finishBlockedMessage());
       return;
     }
 
+    clearFeedback(feedbackTargetForFinish);
     beginAction("community");
 
     try {
@@ -2902,12 +2954,19 @@ export default function CreateEntryPage() {
       setCreateOutcome(outcome);
       clearCreateEntryDraft(createCode);
       clearPublicEntryState();
-      showSuccess("community", outcome.message);
+      const successMessage =
+        outcome.kind === "workspace"
+          ? `Congratulations. ${outcome.message} Opening First Circle now.`
+          : `Congratulations. ${outcome.message}`;
+      showSuccess(feedbackTargetForFinish, successMessage);
+      showSuccess("community", successMessage);
       if (outcome.kind === "workspace") {
+        await wait(850);
         await openCreatedWorkspace(outcome.out);
         return;
       }
 
+      await wait(850);
       nav(outcome.path, {
         replace: true,
         state: {
@@ -2925,12 +2984,19 @@ export default function CreateEntryPage() {
           setCreateOutcome(outcome);
           clearCreateEntryDraft(createCode);
           clearPublicEntryState();
-          showSuccess("community", outcome.message);
+          const successMessage =
+            outcome.kind === "workspace"
+              ? `Congratulations. ${outcome.message} Opening First Circle now.`
+              : `Congratulations. ${outcome.message}`;
+          showSuccess(feedbackTargetForFinish, successMessage);
+          showSuccess("community", successMessage);
           if (outcome.kind === "workspace") {
+            await wait(850);
             await openCreatedWorkspace(outcome.out);
             return;
           }
 
+          await wait(850);
           nav(outcome.path, {
             replace: true,
             state: {
@@ -2945,7 +3011,7 @@ export default function CreateEntryPage() {
             setCommunityDetailsRecorded(false);
             setCreateOutcome(null);
             setOpenPanel("community");
-            showError("community", communityNameTakenMessage(retryErr));
+            showError(feedbackTargetForFinish, communityNameTakenMessage(retryErr));
             return;
           }
 
@@ -2955,7 +3021,7 @@ export default function CreateEntryPage() {
           }
 
           showError(
-            "community",
+            feedbackTargetForFinish,
             retryErr?.message ||
               "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
@@ -2964,7 +3030,7 @@ export default function CreateEntryPage() {
         setCommunityDetailsRecorded(false);
         setCreateOutcome(null);
         setOpenPanel("community");
-        showError("community", communityNameTakenMessage(err));
+        showError(feedbackTargetForFinish, communityNameTakenMessage(err));
       } else if (isCompletedAccountError(err)) {
         if (openActivationFromStructuredError(err)) return;
 
@@ -2973,11 +3039,15 @@ export default function CreateEntryPage() {
 
         setExistingMemberOpen(true);
         showError(
-          "community",
+          feedbackTargetForFinish,
           "This phone or email already has a completed GSN account. Use Already a member to sign in with the email and password you entered. If that does not work, ask the person helping you to review the intake record."
         );
       } else {
-        showError("community", err?.message || "Founder entry could not be completed.");
+        showError(
+          feedbackTargetForFinish,
+          err?.message ||
+            "Founder entry could not be completed. Check the message above, then try Finish registration now again."
+        );
       }
     } finally {
       finishAction();
@@ -4759,7 +4829,7 @@ export default function CreateEntryPage() {
                           </PrimaryButton>
                           <SecondaryButton
                             type="button"
-                            onClick={handleFinishRegistration}
+                            onClick={() => handleFinishRegistration("photo")}
                             busy={busy && busyTarget === "community"}
                             busyLabel="Registering..."
                             minWidth={0}
@@ -5056,9 +5126,10 @@ export default function CreateEntryPage() {
                         <div style={{ color: "#065F46", fontWeight: 900, lineHeight: 1.5 }}>
                           Integrity level: {founderEvidence.label}. You can finish registration now.
                         </div>
+                        {renderLocalFeedback("verification")}
                         <PrimaryButton
                           type="button"
-                          onClick={handleFinishRegistration}
+                          onClick={() => handleFinishRegistration("verification")}
                           busy={busy && busyTarget === "community"}
                           busyLabel="Registering..."
                           minWidth={0}
@@ -5162,7 +5233,7 @@ export default function CreateEntryPage() {
                           </PrimaryButton>
                           <SecondaryButton
                             type="button"
-                            onClick={handleFinishRegistration}
+                            onClick={() => handleFinishRegistration("bank")}
                             busy={busy && busyTarget === "community"}
                             busyLabel="Registering..."
                             minWidth={0}
@@ -5203,7 +5274,7 @@ export default function CreateEntryPage() {
                         </div>
                         <PrimaryButton
                           type="button"
-                          onClick={handleFinishRegistration}
+                          onClick={() => handleFinishRegistration("verification")}
                           busy={busy && busyTarget === "community"}
                           busyLabel="Registering..."
                           minWidth={0}
@@ -5436,7 +5507,7 @@ export default function CreateEntryPage() {
                         >
                           <PrimaryButton
                             type="button"
-                            onClick={handleFinishRegistration}
+                            onClick={() => handleFinishRegistration("community")}
                             busy={busy && busyTarget === "community"}
                             busyLabel="Registering..."
                             minWidth={0}

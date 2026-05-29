@@ -1,3 +1,39 @@
+### Start Community finish-registration response repair (2026-05-29)
+
+- Follow-up from product-owner phone test: after recording photo/selfie evidence,
+  tapping `Finish registration now` did not push the user into First Circle and
+  the app appeared silent.
+- Root cause in `frontend/src/pages/CreateEntryPage.tsx`:
+  - final registration readiness still depended on the main Community step being
+    the current internal step;
+  - optional evidence actions can leave the visible panel on photo/bank/ID, so
+    the final button could be blocked even though community details were already
+    recorded;
+  - the blocker message was written to the Community feedback target, which is
+    hidden during focused optional-evidence mode.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - final registration readiness now depends on recorded community details,
+    valid phone proof, community name, and complete account details rather than
+    the currently open optional evidence panel;
+  - every `Finish registration now` button passes its visible feedback target
+    so errors appear where the user tapped;
+  - blocked finish attempts now explain exactly what is missing and what to do
+    next instead of returning silently;
+  - successful finish attempts now show a brief `Congratulations` response
+    before opening First Circle or the activation route.
+- Truth/devil's advocate:
+  - this fixes the Start Community page-level silence and the photo-finish
+    blocker; it does not add a new global transaction/result framework for every
+    route;
+  - the visible First Circle move still depends on the backend returning the
+    expected create-entry response and the browser receiving the newly deployed
+    frontend bundle.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### First Circle focused invite action protocol (2026-05-29)
 
 - Follow-up from product-owner phone screenshot: First Circle still exposed the
