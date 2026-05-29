@@ -29388,3 +29388,26 @@ GSN-branded invite composer and invite-entry continuity.
   - The First Circle layout is now aligned to the supplied reference structure,
     but it is not a pixel-perfect screenshot clone; exact iconography was kept
     ASCII-safe and tied to existing app primitives.
+
+### Amara storyline audit across onboarding, setup, growth, and TrustSlip (2026-05-29)
+
+- Created `docs/AMARA_STORYLINE_AUDIT_2026-05-29.md`.
+- Audit scope:
+  - onboarding and setup (`/cover`, `/welcome`, `/login`, `/create`, `/join`,
+    `/activate`);
+  - community growth (`/app/build-first-circle`, `/app/community`);
+  - activity and proof (`/app/marketplace`, `/app/shop-control`, `/app/trust`,
+    `/app/trust-slip`, `/app/trust-slip/verify`, public TrustSlip verify).
+- Confirmed from repo:
+  - prior RGU/Amara docs already define the proof account and TrustSlip code;
+  - route structure exists in `frontend/src/App.tsx`;
+  - First Circle is now focused enough to serve the Amara growth step;
+  - TrustSlip and TrustSlip Verify already carry current/expired/not-ready
+    language and merchant/community-confirmation framing.
+- Devil's advocate finding:
+  - the story is not proven just because routes exist. The active pilot/Render
+    environment must actually contain usable Amara evidence, a current
+    TrustSlip, and visible activity behind the proof.
+  - the next safest product improvement is an Amara-facing trust activity lane:
+    Trust Passport -> TrustSlip -> activity behind the proof -> public
+    verification.
