@@ -1,3 +1,46 @@
+### Action Inbox reference remake (2026-05-29)
+
+- Follow-up from product-owner reference image: execute Action Inbox exactly in
+  that simplified picture direction.
+- Updated `frontend/src/pages/NotificationsPage.tsx`:
+  - first surface now matches the reference structure: top Action Inbox hero,
+    white inbox summary card, one urgent CTA, dark "First item to check" block,
+    dark "Handle in order" bucket list, and trust footer;
+  - removed the exposed explanatory/feed panels from the default surface so the
+    page is no longer a content dump;
+  - kept live data behind the design: unread, act-now, due-soon, watch, and
+    general update counts still come from the guidance/notification snapshot;
+  - kept stable action behavior: urgent button opens the first urgent item or
+    explains none are waiting; bucket rows open their first item or explain the
+    bucket is empty; selected item actions still route, mark read, or close;
+  - changed the page header label to `Identity & Settings` to match the
+    reference frame.
+- Updated `frontend/tools/audit-button-stability.mjs` so the new Action Inbox
+  button/debug-id structure is the protected contract.
+- Truth/devil's advocate:
+  - this is implemented from the screenshot and verified by code/build audits;
+  - it is not a pixel-perfect visual proof from a live phone screenshot yet;
+  - the earlier Render deploy workflow commit is on this branch and still needs
+    to be included in the next successful `main` push, because the previous
+    explicit SHA push to `main` used a bad SHA and was rejected.
+- Verification:
+  - `npm exec -- eslint src/pages/NotificationsPage.tsx tools/audit-button-stability.mjs` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:entry-auth` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Render deploy trigger protocol (2026-05-29)
 
 - Follow-up from product-owner agreement that pilot work needs a direct deploy

@@ -508,8 +508,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/NotificationsPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="notifications\.show-urgent"[\s\S]*?debugId="notifications\.onboarding-trust\.open-trust"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?debugId="notifications\.selected\.open"[\s\S]*?debugId=\{`notifications\.notice\.\$\{notice\.id\}\.primary`\}[\s\S]*?debugId="notifications\.toggle-reading"/,
-  "Notifications must use shared stable primitives and shared CTA resolution for urgent, onboarding, focus, selected, bucket notice, and collapse actions."
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableButton[\s\S]*?StableCtaLink[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?debugId="notifications\.show-urgent"[\s\S]*?debugId="notifications\.toggle-focus"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?debugId="notifications\.focus\.open-page"[\s\S]*?debugId="notifications\.toggle-buckets"[\s\S]*?debugId=\{`notifications\.bucket\.\$\{bucket\}`\}[\s\S]*?debugId="notifications\.selected\.open"[\s\S]*?debugId="notifications\.selected\.close"/,
+  "Notifications must use shared stable primitives and shared CTA resolution for hero, urgent, focus, bucket, selected, and collapse actions."
 );
 
 assertNotContains(

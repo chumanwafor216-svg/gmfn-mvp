@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import { navigateWithOrigin } from "../lib/nav";
 import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
   SecondaryButton,
+  StableButton,
   StableCtaLink,
   SubtleButton,
 } from "../components/StableButton";
@@ -57,26 +57,6 @@ const DEFAULT_SETTINGS: SettingsState = {
 };
 
 const NOTIFICATIONS_UI_STORAGE_KEY = "gmfn.notifications.ui.v1";
-
-const GSN_ACTION_BRAND = {
-  ink: "#F8FBFF",
-  muted: "#C8D8EA",
-  label: "#9CB4CF",
-  blue: "#CFE3FF",
-  blueSoft: "rgba(32,76,133,0.36)",
-  gold: "#A9791F",
-  goldSoft: "rgba(243,208,106,0.18)",
-  cardBorder: "rgba(123,161,204,0.18)",
-  cardBorderStrong: "rgba(123,161,204,0.26)",
-  hero:
-    "linear-gradient(145deg, #071F35 0%, #103657 46%, #1D5B86 100%)",
-  heroPanel:
-    "linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%)",
-  whiteButton:
-    "linear-gradient(180deg, #FFFFFF 0%, #F5F9FC 58%, #EDF4F9 100%)",
-  primaryButton:
-    "linear-gradient(180deg, #103A60 0%, #1C5A8A 55%, #2D72A8 100%)",
-};
 
 const BUCKET_ORDER: GuidanceInboxBucketKey[] = [
   "actNow",
@@ -315,51 +295,42 @@ function firstTruthy(...values: any[]): string {
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 28,
-    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background:
-      bg === "#FFFFFF" || bg === "#F8FBFF"
-        ? "linear-gradient(180deg, rgba(8,17,31,0.98) 0%, rgba(11,31,51,0.97) 56%, rgba(23,54,84,0.95) 100%)"
-        : bg,
-    padding: 20,
+    borderRadius: 24,
+    border: "1px solid rgba(17,42,68,0.10)",
+    background: bg,
+    padding: 18,
     boxShadow:
-      "0 22px 48px rgba(2,6,23,0.22), 0 2px 10px rgba(12,35,58,0.05)",
+      "0 16px 36px rgba(11,31,51,0.10), inset 0 1px 0 rgba(255,255,255,0.94)",
     overflow: "hidden",
   };
 }
 
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
-    borderRadius: 22,
-    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background:
-      bg === "#F8FBFF" || bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(13,28,45,0.96) 0%, rgba(18,40,64,0.94) 100%)"
-        : bg,
-    padding: 16,
+    borderRadius: 18,
+    border: "1px solid rgba(17,42,68,0.10)",
+    background: bg,
+    padding: 14,
     boxShadow:
-      "0 14px 30px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 10px 24px rgba(11,31,51,0.07), inset 0 1px 0 rgba(255,255,255,0.90)",
   };
 }
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    borderRadius: 20,
-    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background:
-      bg === "#FFFFFF" || bg === "#F8FBFF"
-        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
-        : bg,
+    borderRadius: 16,
+    border: "1px solid rgba(17,42,68,0.10)",
+    background: bg,
     padding: 14,
     boxShadow:
-      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 10px 22px rgba(11,31,51,0.06), inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: GSN_ACTION_BRAND.label,
+    color: "#50647C",
     fontWeight: 900,
     letterSpacing: 1.7,
     textTransform: "uppercase",
@@ -375,10 +346,10 @@ function badge(primary = false): React.CSSProperties {
     borderRadius: 999,
     padding: "6px 10px",
     border: primary
-      ? "1px solid rgba(169,121,31,0.24)"
-      : `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
-    background: primary ? GSN_ACTION_BRAND.goldSoft : GSN_ACTION_BRAND.blueSoft,
-    color: primary ? "#735315" : GSN_ACTION_BRAND.blue,
+      ? "1px solid rgba(245,158,11,0.22)"
+      : "1px solid rgba(17,42,68,0.10)",
+    background: primary ? "#FFF7E0" : "#EFF6FF",
+    color: primary ? "#8A5A00" : "#0B63D1",
     fontSize: 12,
     fontWeight: 900,
     whiteSpace: "normal",
@@ -394,10 +365,10 @@ function collapseToggle(): React.CSSProperties {
     minWidth: 108,
     padding: "10px 16px",
     borderRadius: 18,
-    border: `1px solid ${GSN_ACTION_BRAND.cardBorderStrong}`,
+    border: "1px solid rgba(255,255,255,0.16)",
     background:
-      "linear-gradient(180deg, rgba(16,36,58,0.96) 0%, rgba(21,48,74,0.94) 100%)",
-    color: GSN_ACTION_BRAND.blue,
+      "linear-gradient(180deg, rgba(18,54,86,0.96) 0%, rgba(12,38,65,0.94) 100%)",
+    color: "#F8FBFF",
     fontWeight: 900,
     fontSize: 13,
     letterSpacing: 0.15,
@@ -405,27 +376,27 @@ function collapseToggle(): React.CSSProperties {
     cursor: "pointer",
     whiteSpace: "normal",
     boxShadow:
-      "0 8px 18px rgba(12,35,58,0.055), inset 0 1px 0 rgba(255,255,255,0.9)",
+      "0 10px 22px rgba(2,12,27,0.14), inset 0 1px 0 rgba(255,255,255,0.10)",
   };
 }
 
 function statTile(): React.CSSProperties {
   return {
-    borderRadius: 20,
-    border: `1px solid ${GSN_ACTION_BRAND.cardBorder}`,
+    borderRadius: 16,
+    border: "1px solid rgba(17,42,68,0.10)",
     background:
-      "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
+      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
     padding: 14,
     boxShadow:
-      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      "0 10px 24px rgba(11,31,51,0.07), inset 0 1px 0 rgba(255,255,255,0.90)",
   };
 }
 
 function helperText(): React.CSSProperties {
   return {
-    color: GSN_ACTION_BRAND.muted,
+    color: "#465A72",
     fontSize: 14,
-    lineHeight: 1.75,
+    lineHeight: 1.55,
   };
 }
 
@@ -914,33 +885,11 @@ function isTrustOnboardingRow(row: RawNotificationRow | null | undefined): boole
   );
 }
 
-function onboardingProofBadges(detail: string): string[] {
-  const text = safeStr(detail).toLowerCase();
-  const badges: string[] = [];
-
-  if (text.includes("phone")) badges.push("Verified phone");
-  if (text.includes("bank")) badges.push("Bank destination saved");
-  if (text.includes("licence") || text.includes("license")) {
-    badges.push("Driver's licence");
-  }
-  if (text.includes("region")) badges.push("Region checked");
-
-  return badges;
-}
-
 function normalizeGuidanceNotice(item: GuidanceNotice): GuidanceNotice {
   return {
     ...item,
     ctaTo: normalizeActionTargetPath(item.ctaTo),
   };
-}
-
-function safeDateTime(x: any): string {
-  const raw = safeStr(x);
-  if (!raw) return "";
-  const d = new Date(raw);
-  if (!Number.isFinite(d.getTime())) return raw;
-  return d.toLocaleString();
 }
 
 function bucketTitle(bucket: GuidanceInboxBucketKey): string {
@@ -1016,27 +965,6 @@ function sortGuidanceNotices(
     }
 
     return safeStr(a.title).localeCompare(safeStr(b.title));
-  });
-
-  return next;
-}
-
-function sortRawNotifications(
-  rows: RawNotificationRow[],
-  unreadFirst: boolean
-): RawNotificationRow[] {
-  const next = [...rows];
-
-  next.sort((a, b) => {
-    if (unreadFirst) {
-      const aUnread = a.unread ? 1 : 0;
-      const bUnread = b.unread ? 1 : 0;
-      if (aUnread !== bUnread) return bUnread - aUnread;
-    }
-
-    const aTime = new Date(a.createdAt || 0).getTime();
-    const bTime = new Date(b.createdAt || 0).getTime();
-    return bTime - aTime;
   });
 
   return next;
@@ -1275,11 +1203,6 @@ export default function NotificationsPage() {
 
   const unreadCount = guidanceSnapshot?.actionInboxSummary?.unreadCount || 0;
 
-  const rawFeed = useMemo(
-    () => sortRawNotifications(rawNotifications, settings.unreadFirst).slice(0, 10),
-    [rawNotifications, settings.unreadFirst]
-  );
-
   const onboardingTrustNotice = useMemo(() => {
     const preferred = rawNotifications.find(
       (row) => isTrustOnboardingRow(row) && row.unread
@@ -1387,31 +1310,69 @@ export default function NotificationsPage() {
     }));
   }
 
+  const loadingInbox = guidanceLoading || rawLoading;
+  const focusNotice =
+    operationalFocus ||
+    normalizeGuidanceNotice({
+      id: "empty-focus",
+      kind: "empty",
+      title: "No urgent action is waiting",
+      detail: "You can check due soon items or return to Dashboard.",
+      ctaLabel: "Go to Dashboard",
+      ctaTo: routes.dashboard,
+      bucket: "watchAndWait" as GuidanceInboxBucketKey,
+      unread: false,
+    });
+
+  function showUrgentItems() {
+    setCollapsed((prev) => ({ ...prev, focus: false, buckets: false }));
+    if (bucketRows.actNow.length > 0) {
+      setSelectedNotice(bucketRows.actNow[0]);
+      setActionNotice({
+        tone: "info",
+        text: "First urgent item opened below.",
+      });
+      return;
+    }
+    setActionNotice({
+      tone: "info",
+      text: "No urgent item is waiting now. Check Due soon or return to Dashboard.",
+    });
+  }
+
+  function openBucket(bucket: GuidanceInboxBucketKey) {
+    setCollapsed((prev) => ({ ...prev, buckets: false }));
+    const first = bucketRows[bucket][0];
+    if (!first) {
+      setActionNotice({
+        tone: "info",
+        text: `${bucketTitle(bucket)} has no waiting item right now.`,
+      });
+      return;
+    }
+    setSelectedNotice(first);
+    setActionNotice({
+      tone: "info",
+      text: `${bucketTitle(bucket)} opened. Use Open page when you are ready.`,
+    });
+  }
+
   return (
     <div
       style={{
-        maxWidth: 1180,
+        maxWidth: 980,
         margin: "0 auto",
-        paddingBottom: 40,
+        padding: isPhone ? "0 2px 34px" : "0 10px 40px",
         display: "grid",
-        gap: isPhone ? 14 : 18,
+        gap: isPhone ? 12 : 16,
       }}
     >
       <PageTopNav
-        sectionLabel="Notifications"
+        sectionLabel="Identity & Settings"
         title="Action Inbox"
-        subtitle="Check what is waiting for you, then open the right page to answer it."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
-      />
-
-      <ExplainToggle
-        label="About Action Inbox"
-        what="Action Inbox shows the messages and requests that may need your answer."
-        why="It helps you start with the item that matters most instead of searching through every update."
-        next="Start with Act now. If nothing needs your answer, you can return to Dashboard."
-        tone="blue"
       />
 
       {actionNotice ? (
@@ -1422,53 +1383,131 @@ export default function NotificationsPage() {
 
       <section
         style={{
-          ...pageCard(GSN_ACTION_BRAND.hero),
-          border: "1px solid rgba(255,255,255,0.18)",
+          ...pageCard("linear-gradient(135deg, #061827 0%, #082B4A 64%, #0B3862 100%)"),
+          minHeight: isPhone ? 168 : 190,
+          padding: isPhone ? 18 : 32,
+          borderRadius: 24,
+          color: "#F8FBFF",
+          position: "relative",
           boxShadow:
-            "0 22px 52px rgba(7,31,53,0.22), inset 0 1px 0 rgba(255,255,255,0.14)",
+            "0 22px 50px rgba(7,31,53,0.24), inset 0 1px 0 rgba(255,255,255,0.12)",
         }}
       >
         <div
           style={{
-            ...sectionLabel(),
-            color: "#DCEBFA",
+            display: "grid",
+            gridTemplateColumns: isPhone ? "64px minmax(0, 1fr)" : "96px minmax(0, 1fr) 230px",
+            gap: isPhone ? 14 : 22,
+            alignItems: "center",
           }}
         >
-          Action inbox summary
-        </div>
+          <div
+            aria-hidden="true"
+            style={{
+              width: isPhone ? 64 : 92,
+              height: isPhone ? 64 : 92,
+              borderRadius: 20,
+              display: "grid",
+              placeItems: "center",
+              background: "linear-gradient(180deg, #0B63D1 0%, #064AAD 100%)",
+              boxShadow: "0 18px 34px rgba(4,58,138,0.34)",
+              fontSize: isPhone ? 34 : 44,
+            }}
+          >
+            ✉
+          </div>
 
+          <div>
+            <div
+              style={{
+                color: "#FFFFFF",
+                fontSize: isPhone ? 30 : 42,
+                fontWeight: 950,
+                lineHeight: 1.03,
+              }}
+            >
+              Action Inbox
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#D7E3F1",
+                fontSize: isPhone ? 15 : 19,
+                fontWeight: 750,
+                lineHeight: 1.45,
+                maxWidth: 430,
+              }}
+            >
+              Check what is waiting for you, then open the right page to answer it.
+            </div>
+            <div style={{ marginTop: 20, maxWidth: 260 }}>
+              <StableCtaLink
+                to={routes.dashboard}
+                kind="secondary"
+                stableHeight={52}
+                debugId="notifications.hero.dashboard"
+              >
+                Go to Dashboard
+              </StableCtaLink>
+            </div>
+          </div>
+
+          {!isPhone ? (
+            <div
+              aria-hidden="true"
+              style={{
+                justifySelf: "end",
+                width: 190,
+                height: 150,
+                borderRadius: 30,
+                opacity: 0.18,
+                border: "10px solid #B8D7F7",
+                transform: "rotate(-2deg)",
+              }}
+            />
+          ) : null}
+        </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
-            marginTop: 10,
-            color: "#F8FBFF",
-            fontSize: isPhone ? 24 : isCompact ? 28 : 34,
-            fontWeight: 900,
-            lineHeight: 1.08,
-            maxWidth: 860,
+            display: "grid",
+            gridTemplateColumns: "52px minmax(0, 1fr)",
+            gap: 12,
+            alignItems: "center",
           }}
         >
-          Check what needs your answer now.
+          <div
+            aria-hidden="true"
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: 14,
+              display: "grid",
+              placeItems: "center",
+              background: "#F0F7FF",
+              color: "#0B63D1",
+              fontSize: 28,
+            }}
+          >
+            ▮
+          </div>
+          <div>
+            <div style={sectionLabel()}>Inbox summary</div>
+            <div
+              style={{
+                marginTop: 2,
+                color: "#07172C",
+                fontSize: isPhone ? 20 : 24,
+                fontWeight: 950,
+                lineHeight: 1.15,
+              }}
+            >
+              What needs your attention
+            </div>
+          </div>
         </div>
-
-        <div
-          style={{
-            marginTop: 12,
-            ...helperText(),
-            color: "#D7E3F1",
-            maxWidth: 880,
-          }}
-        >
-          Start with Act now. If nothing is waiting, you can mark items as read or return to Dashboard.
-        </div>
-
-        <ExplainToggle
-          label="About this summary"
-          what="This summary shows how many items are unread, urgent, due soon, or safe to watch."
-          why="It helps you know where to begin without guessing."
-          next="Open the urgent items first. If there are none, check due soon or go back to Dashboard."
-          tone="dark"
-          style={{ marginTop: 14 }}
-        />
 
         <div
           style={{
@@ -1477,368 +1516,254 @@ export default function NotificationsPage() {
             gridTemplateColumns: isPhone
               ? "1fr 1fr"
               : isCompact
-              ? "1fr 1fr"
+              ? "repeat(4, minmax(0, 1fr))"
               : "repeat(4, minmax(0, 1fr))",
-            gap: 12,
+            gap: isPhone ? 10 : 16,
           }}
         >
           <div style={statTile()}>
-            <div style={sectionLabel()}>Unread</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 24 }}>
+                ✉
+              </span>
+              <div style={sectionLabel()}>Unread</div>
+            </div>
             <div
               style={{
                 marginTop: 8,
                 color: "#0B63D1",
-                fontWeight: 900,
-                fontSize: 26,
+                fontWeight: 950,
+                fontSize: isPhone ? 32 : 42,
+                lineHeight: 1,
+                textAlign: "center",
               }}
             >
               {unreadCount}
             </div>
+            <div style={{ ...helperText(), textAlign: "center", marginTop: 6 }}>
+              New items
+            </div>
           </div>
 
           <div style={statTile()}>
-            <div style={sectionLabel()}>Act now</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span aria-hidden="true" style={{ color: "#DC2626", fontSize: 24 }}>
+                ◷
+              </span>
+              <div style={sectionLabel()}>Act now</div>
+            </div>
             <div
               style={{
                 marginTop: 8,
-                color: "#991B1B",
-                fontWeight: 900,
-                fontSize: 26,
+                color: "#DC2626",
+                fontWeight: 950,
+                fontSize: isPhone ? 32 : 42,
+                lineHeight: 1,
+                textAlign: "center",
               }}
             >
               {bucketRows.actNow.length}
             </div>
+            <div style={{ ...helperText(), textAlign: "center", marginTop: 6 }}>
+              Waiting now
+            </div>
           </div>
 
           <div style={statTile()}>
-            <div style={sectionLabel()}>Due soon</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span aria-hidden="true" style={{ color: "#F59E0B", fontSize: 24 }}>
+                □
+              </span>
+              <div style={sectionLabel()}>Due soon</div>
+            </div>
             <div
               style={{
                 marginTop: 8,
-                color: "#92400E",
-                fontWeight: 900,
-                fontSize: 26,
+                color: "#F97316",
+                fontWeight: 950,
+                fontSize: isPhone ? 32 : 42,
+                lineHeight: 1,
+                textAlign: "center",
               }}
             >
               {bucketRows.dueSoon.length}
             </div>
+            <div style={{ ...helperText(), textAlign: "center", marginTop: 6 }}>
+              Due soon
+            </div>
           </div>
 
           <div style={statTile()}>
-            <div style={sectionLabel()}>Watch</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 24 }}>
+                ◉
+              </span>
+              <div style={sectionLabel()}>Watch</div>
+            </div>
             <div
               style={{
                 marginTop: 8,
                 color: "#0B63D1",
-                fontWeight: 900,
-                fontSize: 26,
+                fontWeight: 950,
+                fontSize: isPhone ? 32 : 42,
+                lineHeight: 1,
+                textAlign: "center",
               }}
             >
               {bucketRows.watchAndWait.length}
             </div>
+            <div style={{ ...helperText(), textAlign: "center", marginTop: 6 }}>
+              Keep an eye
+            </div>
           </div>
         </div>
 
-        <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
+        <div style={{ marginTop: 16 }}>
           <PrimaryButton
-            onClick={() =>
-              setCollapsed((prev) => ({
-                ...prev,
-                focus: false,
-                buckets: false,
-              }))
-            }
+            onClick={showUrgentItems}
+            fullWidth
+            stableHeight={56}
             debugId="notifications.show-urgent"
           >
-            Show urgent items
+            Show urgent items (Act now)
           </PrimaryButton>
         </div>
       </section>
 
-      {onboardingTrustNotice ? (
-        <section
-          style={pageCard(
-            "linear-gradient(180deg, rgba(10,22,36,0.96) 0%, rgba(14,31,50,0.94) 100%)"
-          )}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={sectionLabel()}>Trust update</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: isCompact ? 22 : 28,
-                  fontWeight: 900,
-                  lineHeight: 1.15,
-                }}
-              >
-                {onboardingTrustNotice.title}
-              </div>
-              <div style={{ marginTop: 10, ...helperText() }}>
-                {onboardingTrustNotice.detail}
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {onboardingTrustNotice.unread ? (
-                <span style={badge(true)}>Unread</span>
-              ) : (
-                <span style={badge(false)}>Reviewed</span>
-              )}
-              <span style={badge(false)}>Trust record</span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 14,
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
-            }}
-          >
-            {onboardingProofBadges(onboardingTrustNotice.detail).map((label) => (
-              <span key={label} style={badge(false)}>
-                {label}
-              </span>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
-            <StableCtaLink
-              to={routes.trust}
-              kind="primary"
-              debugId="notifications.onboarding-trust.open-trust"
-            >
-              Open Trust Passport
-            </StableCtaLink>
-
-            <StableCtaLink
-              to={routes.dashboard}
-              debugId="notifications.onboarding-trust.dashboard"
-            >
-              Return to Dashboard
-            </StableCtaLink>
-
-            {onboardingTrustNotice.unread && /^\d+$/.test(safeStr(onboardingTrustNotice.id)) ? (
-              <SubtleButton
-                onClick={() => void markAsRead(safeStr(onboardingTrustNotice.id))}
-                debugId="notifications.onboarding-trust.mark-read"
-              >
-                Mark as read
-              </SubtleButton>
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-
-      <section style={pageCard()}>
+      <section style={pageCard("linear-gradient(180deg, #061827 0%, #082B4A 100%)")}>
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             gap: 12,
             alignItems: "center",
-            flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Start here</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This is the first item to check.
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "56px minmax(0, 1fr)",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(219,234,254,0.12)",
+                color: "#F8FBFF",
+                fontSize: 28,
+              }}
+            >
+              ▶
+            </div>
+            <div>
+              <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>Start here</div>
+              <div
+                style={{
+                  color: "#F8FBFF",
+                  fontSize: isPhone ? 23 : 28,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                First item to check
+              </div>
             </div>
           </div>
-
           <SubtleButton
             onClick={() => toggleSection("focus")}
             style={collapseToggle()}
+            stableHeight={48}
             debugId="notifications.toggle-focus"
           >
-            {collapsed.focus ? "Open" : "Collapse"}
+            {collapsed.focus ? "Open ^" : "Collapse ^"}
           </SubtleButton>
         </div>
 
         {!collapsed.focus ? (
-          operationalFocus ? (
+          <div style={{ marginTop: 18, ...innerCard("#FFFFFF") }}>
             <div
               style={{
-                marginTop: 12,
                 display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "minmax(0, 1.1fr) minmax(320px, 0.9fr)",
-                gap: 16,
-                alignItems: "start",
+                gridTemplateColumns: isPhone ? "1fr" : "minmax(0, 1fr) 290px",
+                gap: 14,
+                alignItems: "center",
               }}
             >
-              <div style={innerCard("#FCFEFF")}>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span style={badge(true)}>Needs your attention</span>
-                  {operationalFocus.unread ? (
-                    <span style={badge(false)}>Unread</span>
-                  ) : (
-                    <span style={badge(false)}>Reviewed</span>
-                  )}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 12,
-                    color: "#F8FBFF",
-                    fontSize: isCompact ? 22 : 28,
-                    fontWeight: 900,
-                    lineHeight: 1.15,
-                  }}
-                >
-                  {operationalFocus.title}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 12,
-                    ...helperText(),
-                  }}
-                >
-                  {operationalFocus.detail}
-                </div>
-
-                <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
-                  <PrimaryButton
-                    onClick={() => void handlePrimaryNoticeAction(operationalFocus)}
-                    debugId="notifications.focus.primary"
-                  >
-                    {settings.openActionsDirectly ? operationalFocus.ctaLabel : "Review first"}
-                  </PrimaryButton>
-
-                  <StableCtaLink
-                    to={operationalFocus.ctaTo}
-                    debugId="notifications.focus.open-page"
-                  >
-                    Open page
-                  </StableCtaLink>
-                </div>
-              </div>
-
-              <div style={softCard("#F8FBFF")}>
-                <div style={sectionLabel()}>What to do</div>
-
-                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                  <div style={helperText()}>
-                    Open the first item if it needs your answer. Use Mark as read when you have already handled it.
-                  </div>
-
-                  <div style={helperText()}>
-                    If you only came to check messages, use Dashboard or Menu to return when you are done.
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ marginTop: 12, color: "#64748B", lineHeight: 1.8 }}>
-              Nothing needs your attention first right now.
-            </div>
-          )
-        ) : null}
-      </section>
-
-      {selectedNotice ? (
-        <section style={pageCard()}>
-          <div style={sectionLabel()}>Review this item</div>
-
-          <div
-            style={{
-              marginTop: 12,
-              display: "grid",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#FCFEFF")}>
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  flexWrap: "wrap",
+                  display: "grid",
+                  gridTemplateColumns: "72px minmax(0, 1fr)",
+                  gap: 14,
                   alignItems: "center",
                 }}
               >
                 <div
+                  aria-hidden="true"
                   style={{
-                    color: "#F8FBFF",
-                    fontSize: isCompact ? 22 : 26,
-                    fontWeight: 900,
-                    lineHeight: 1.2,
+                    width: 72,
+                    height: 72,
+                    borderRadius: 18,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "#FFF7E0",
+                    color: "#F59E0B",
+                    fontSize: 34,
                   }}
                 >
-                  {selectedNotice.title}
+                  !
                 </div>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <span style={badge(true)}>{bucketTitle(selectedNotice.bucket)}</span>
-                  {selectedNotice.unread ? (
-                    <span style={badge(false)}>Unread</span>
-                  ) : (
-                    <span style={badge(false)}>Reviewed</span>
-                  )}
-                </div>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 12,
-                  ...helperText(),
-                  color: "#F8FBFF",
-                }}
-              >
-                {selectedNotice.detail}
-              </div>
-
-              <div style={{ marginTop: 16, ...actionRow(isPhone) }}>
-                <StableCtaLink
-                  to={selectedNotice.ctaTo}
-                  kind="primary"
-                  debugId="notifications.selected.open"
-                >
-                  {selectedNotice.ctaLabel}
-                </StableCtaLink>
-
-                {selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)) ? (
-                  <SecondaryButton
-                    onClick={() => void markAsRead(safeStr(selectedNotice.id))}
-                    debugId="notifications.selected.mark-read"
+                <div>
+                  <div
+                    style={{
+                      color: "#07172C",
+                      fontSize: isPhone ? 17 : 20,
+                      fontWeight: 950,
+                      lineHeight: 1.2,
+                    }}
                   >
-                    Mark as read
-                  </SecondaryButton>
-                ) : null}
+                    {focusNotice.title}
+                    {focusNotice.unread ? (
+                      <span style={{ marginLeft: 8, ...badge(true) }}>
+                        Needs your attention
+                      </span>
+                    ) : null}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    {truncateText(focusNotice.detail, isPhone ? 112 : 150)}
+                  </div>
+                </div>
+              </div>
 
-                <SubtleButton
-                  onClick={() => setSelectedNotice(null)}
-                  debugId="notifications.selected.close"
+              <div style={{ display: "grid", gap: 10 }}>
+                <PrimaryButton
+                  onClick={() => void handlePrimaryNoticeAction(focusNotice)}
+                  stableHeight={54}
+                  debugId="notifications.focus.primary"
                 >
-                  Close review
-                </SubtleButton>
+                  {focusNotice.ctaLabel}
+                </PrimaryButton>
+
+                <StableCtaLink
+                  to={focusNotice.ctaTo}
+                  stableHeight={50}
+                  debugId="notifications.focus.open-page"
+                >
+                  Open page
+                </StableCtaLink>
               </div>
             </div>
           </div>
-        </section>
-      ) : null}
+        ) : null}
+      </section>
 
-      <section style={pageCard()}>
+      <section style={pageCard("linear-gradient(180deg, #061827 0%, #082B4A 100%)")}>
         <div
           style={{
             display: "flex",
@@ -1848,143 +1773,172 @@ export default function NotificationsPage() {
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>All waiting items</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Handle the most important group first.
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "56px minmax(0, 1fr)",
+              gap: 12,
+              alignItems: "center",
+            }}
+          >
+            <div
+              aria-hidden="true"
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(219,234,254,0.12)",
+                color: "#F8FBFF",
+                fontSize: 28,
+              }}
+            >
+              ≡
+            </div>
+            <div>
+              <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>
+                All waiting items
+              </div>
+              <div
+                style={{
+                  color: "#F8FBFF",
+                  fontSize: isPhone ? 23 : 28,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                Handle in order
+              </div>
             </div>
           </div>
 
           <SubtleButton
             onClick={() => toggleSection("buckets")}
             style={collapseToggle()}
+            stableHeight={48}
             debugId="notifications.toggle-buckets"
           >
-            {collapsed.buckets ? "Open" : "Collapse"}
+            {collapsed.buckets ? "Open ^" : "Collapse ^"}
           </SubtleButton>
         </div>
 
         {!collapsed.buckets ? (
-          guidanceLoading ? (
-            <div style={{ marginTop: 14, color: "#64748B", lineHeight: 1.8 }}>
+          loadingInbox ? (
+            <div style={{ marginTop: 14, color: "#D7E3F1", lineHeight: 1.8 }}>
               Loading your waiting items...
             </div>
           ) : (
-            <div style={{ marginTop: 14, display: "grid", gap: 14 }}>
-              {BUCKET_ORDER.map((bucket) => {
+            <div
+              style={{
+                marginTop: 18,
+                overflow: "hidden",
+                borderRadius: 18,
+                background: "#FFFFFF",
+                border: "1px solid rgba(17,42,68,0.10)",
+              }}
+            >
+              {BUCKET_ORDER.map((bucket, index) => {
                 const rows = bucketRows[bucket];
                 const tone = bucketTone(bucket);
+                const isLast = index === BUCKET_ORDER.length - 1;
+                const icon =
+                  bucket === "actNow"
+                    ? "ϟ"
+                    : bucket === "dueSoon"
+                    ? "◷"
+                    : bucket === "watchAndWait"
+                    ? "◉"
+                    : "◇";
 
                 return (
-                  <div
+                  <StableButton
                     key={bucket}
+                    type="button"
+                    onClick={() => openBucket(bucket)}
+                    fullWidth
+                    stableHeight={76}
+                    debugId={`notifications.bucket.${bucket}`}
                     style={{
-                      ...innerCard(tone.bg),
-                      border: tone.border,
+                      display: "grid",
+                      gridTemplateColumns: "56px minmax(0, 1fr) 54px 24px",
+                      gap: 12,
+                      alignItems: "center",
+                      justifyContent: "stretch",
+                      background: "#FFFFFF",
+                      border: "none",
+                      borderBottom: isLast ? "none" : "1px solid rgba(17,42,68,0.08)",
+                      borderRadius: 0,
+                      boxShadow: "none",
+                      color: "#07172C",
+                      padding: "10px 14px",
+                      textAlign: "left",
                     }}
                   >
-                    <div
+                    <span
+                      aria-hidden="true"
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 10,
-                        alignItems: "center",
-                        flexWrap: "wrap",
+                        width: 44,
+                        height: 44,
+                        borderRadius: 14,
+                        display: "grid",
+                        placeItems: "center",
+                        background: tone.bg,
+                        color: tone.text,
+                        fontSize: 23,
+                        fontWeight: 950,
                       }}
                     >
-                      <div>
-                        <div
-                          style={{
-                            color: tone.text,
-                            fontSize: 18,
-                            fontWeight: 900,
-                            lineHeight: 1.25,
-                          }}
-                        >
-                          {bucketTitle(bucket)}
-                        </div>
-
-                        <div style={{ marginTop: 8, ...helperText() }}>
-                          {bucketDescription(bucket)}
-                        </div>
-                      </div>
-
-                      <span style={badge(bucket === "actNow")}>{rows.length}</span>
-                    </div>
-
-                    <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                      {rows.length === 0 ? (
-                        <div style={innerCard("#FFFFFF")}>
-                          <div style={helperText()}>
-                            Nothing is waiting here right now.
-                          </div>
-                        </div>
-                      ) : (
-                        rows.map((notice) => (
-                          <div key={`${bucket}-${notice.id}`} style={innerCard("#FFFFFF")}>
-                            <div
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                gap: 10,
-                                flexWrap: "wrap",
-                                alignItems: "center",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  color: "#F8FBFF",
-                                  fontWeight: 900,
-                                  lineHeight: 1.35,
-                                }}
-                              >
-                                {notice.title}
-                              </div>
-
-                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                                {notice.unread ? (
-                                  <span style={badge(true)}>Unread</span>
-                                ) : (
-                                  <span style={badge(false)}>Reviewed</span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div style={{ marginTop: 8, ...helperText() }}>
-                              {settings.notificationsMode === "detailed"
-                                ? notice.detail
-                                : truncateText(notice.detail, 150)}
-                            </div>
-
-                            <div style={{ marginTop: 12, ...actionRow(isPhone) }}>
-                              <PrimaryButton
-                                onClick={() => void handlePrimaryNoticeAction(notice)}
-                                debugId={`notifications.notice.${notice.id}.primary`}
-                              >
-                                {settings.openActionsDirectly ? notice.ctaLabel : "Review first"}
-                              </PrimaryButton>
-
-                              <StableCtaLink
-                                to={notice.ctaTo}
-                                debugId={`notifications.notice.${notice.id}.open-page`}
-                              >
-                                Open page
-                              </StableCtaLink>
-
-                              {notice.unread && /^\d+$/.test(safeStr(notice.id)) ? (
-                                <SubtleButton
-                                  onClick={() => void markAsRead(safeStr(notice.id))}
-                                  debugId={`notifications.notice.${notice.id}.mark-read`}
-                                >
-                                  Mark as read
-                                </SubtleButton>
-                              ) : null}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
+                      {icon}
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span
+                        style={{
+                          display: "block",
+                          color: "#07172C",
+                          fontSize: isPhone ? 17 : 20,
+                          fontWeight: 950,
+                          lineHeight: 1.1,
+                        }}
+                      >
+                        {bucketTitle(bucket)}
+                      </span>
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 5,
+                          color: "#465A72",
+                          fontSize: isPhone ? 13 : 15,
+                          fontWeight: 700,
+                          lineHeight: 1.25,
+                        }}
+                      >
+                        {bucketDescription(bucket)}
+                      </span>
+                    </span>
+                    <span
+                      style={{
+                        justifySelf: "center",
+                        minWidth: 44,
+                        minHeight: 44,
+                        borderRadius: 999,
+                        display: "grid",
+                        placeItems: "center",
+                        background: tone.bg,
+                        color: tone.text,
+                        fontWeight: 950,
+                        fontSize: 19,
+                      }}
+                    >
+                      {rows.length}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      style={{ color: "#07172C", fontSize: 26, fontWeight: 950 }}
+                    >
+                      ›
+                    </span>
+                  </StableButton>
                 );
               })}
             </div>
@@ -1992,204 +1946,94 @@ export default function NotificationsPage() {
         ) : null}
       </section>
 
+      {selectedNotice ? (
+        <section style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Selected item</div>
+          <div style={{ marginTop: 8, color: "#07172C", fontSize: 22, fontWeight: 950 }}>
+            {selectedNotice.title}
+          </div>
+          <div style={{ marginTop: 8, ...helperText() }}>
+            {selectedNotice.detail}
+          </div>
+          <div style={{ marginTop: 14, ...actionRow(isPhone) }}>
+            <StableCtaLink
+              to={selectedNotice.ctaTo}
+              kind="primary"
+              stableHeight={52}
+              debugId="notifications.selected.open"
+            >
+              {selectedNotice.ctaLabel || "Open page"}
+            </StableCtaLink>
+            {selectedNotice.unread && /^\d+$/.test(safeStr(selectedNotice.id)) ? (
+              <SecondaryButton
+                onClick={() => void markAsRead(safeStr(selectedNotice.id))}
+                stableHeight={52}
+                debugId="notifications.selected.mark-read"
+              >
+                Mark as read
+              </SecondaryButton>
+            ) : null}
+            <SubtleButton
+              onClick={() => setSelectedNotice(null)}
+              stableHeight={52}
+              debugId="notifications.selected.close"
+            >
+              Close
+            </SubtleButton>
+          </div>
+        </section>
+      ) : null}
+
       <section
         style={{
+          ...softCard("#EAF3FF"),
           display: "grid",
-          gridTemplateColumns: isCompact
-            ? "1fr"
-            : "minmax(0, 1.15fr) minmax(320px, 0.85fr)",
-          gap: 16,
-          alignItems: "start",
+          gridTemplateColumns: "52px minmax(0, 1fr) 92px",
+          gap: 14,
+          alignItems: "center",
         }}
       >
-        <section style={pageCard()}>
+        <div
+          aria-hidden="true"
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: 14,
+            display: "grid",
+            placeItems: "center",
+            background: "#DBEAFE",
+            color: "#0B63D1",
+            fontSize: 28,
+          }}
+        >
+          ◆
+        </div>
+        <div>
           <div
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
+              color: "#12304C",
+              fontSize: isPhone ? 17 : 20,
+              fontWeight: 950,
+              lineHeight: 1.15,
             }}
           >
-            <div>
-              <div style={sectionLabel()}>Recent notifications</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  ...helperText(),
-                }}
-              >
-                See the latest messages in time order.
-              </div>
-            </div>
-
-            <SubtleButton
-              onClick={() => toggleSection("rawFeed")}
-              style={collapseToggle()}
-              debugId="notifications.toggle-raw-feed"
-            >
-              {collapsed.rawFeed ? "Open" : "Collapse"}
-            </SubtleButton>
+            Stay consistent. Build trust.
           </div>
-
-          {!collapsed.rawFeed ? (
-            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-              {rawLoading ? (
-                <div style={{ color: "#64748B", lineHeight: 1.8 }}>
-                  Loading recent notifications...
-                </div>
-              ) : rawFeed.length === 0 ? (
-                <div style={innerCard("#FCFEFF")}>
-                  <div style={helperText()}>
-                    No recent notification is shown right now.
-                  </div>
-                </div>
-              ) : (
-                rawFeed.map((item) => (
-                  <div key={`feed-${item.id}-${item.createdAt}`} style={innerCard("#FCFEFF")}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 10,
-                        flexWrap: "wrap",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div
-                        style={{
-                          color: "#F8FBFF",
-                          fontWeight: 900,
-                          lineHeight: 1.35,
-                        }}
-                      >
-                        {item.title}
-                      </div>
-
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <span style={badge(false)}>{item.kindLabel || item.kind}</span>
-                        {item.unread ? (
-                          <span style={badge(true)}>Unread</span>
-                        ) : (
-                          <span style={badge(false)}>Reviewed</span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: 8, ...helperText() }}>
-                      {settings.notificationsMode === "detailed"
-                        ? item.detail
-                        : truncateText(item.detail, 120)}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#64748B",
-                        fontSize: 12,
-                        fontWeight: 700,
-                      }}
-                    >
-                      {safeDateTime(item.createdAt)}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          ) : null}
-        </section>
-
-        <section style={pageCard()}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={sectionLabel()}>What the labels mean</div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                Use this if you are not sure where to start.
-              </div>
-            </div>
-
-            <SubtleButton
-              onClick={() => toggleSection("reading")}
-              style={collapseToggle()}
-              debugId="notifications.toggle-reading"
-            >
-              {collapsed.reading ? "Open" : "Collapse"}
-            </SubtleButton>
+          <div style={{ marginTop: 4, ...helperText() }}>
+            Every action here helps your identity and community grow stronger.
           </div>
-
-          {!collapsed.reading ? (
-            <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-              <div style={softCard("#FFFFFF")}>
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontSize: 15,
-                    fontWeight: 900,
-                  }}
-                >
-                  Act now
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Open this first. Someone may be waiting for you.
-                </div>
-              </div>
-
-              <div style={softCard("#FFFFFF")}>
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontSize: 15,
-                    fontWeight: 900,
-                  }}
-                >
-                  Due soon
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Not urgent yet, but better to handle soon.
-                </div>
-              </div>
-
-              <div style={softCard("#FFFFFF")}>
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontSize: 15,
-                    fontWeight: 900,
-                  }}
-                >
-                  Watch and wait
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Keep an eye on it. You may not need to do anything now.
-                </div>
-              </div>
-
-              <div style={softCard("#FFFFFF")}>
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontSize: 15,
-                    fontWeight: 900,
-                  }}
-                >
-                  General updates
-                </div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Useful information. It is not blocking you.
-                </div>
-              </div>
-            </div>
-          ) : null}
-        </section>
+        </div>
+        <div
+          aria-hidden="true"
+          style={{
+            justifySelf: "end",
+            color: "rgba(11,99,209,0.12)",
+            fontSize: 72,
+            lineHeight: 1,
+          }}
+        >
+          ◇
+        </div>
       </section>
     </div>
   );
