@@ -96,13 +96,13 @@ assertContains(
 );
 
 assertContains(
-  /reading: "CCI score"[\s\S]*?value: readableClassSignal\(cci\.classText, cci\.scoreText\)[\s\S]*?reading: "TrustSlip code"[\s\S]*?Pending setup/,
-  "Dashboard passport signals must show separated CCI and TrustSlip readings instead of attaching the class/code to the label."
+  /function readableTrustStatus\(classText: unknown\)[\s\S]*?return "Not enough info"[\s\S]*?return "Care needed"/,
+  "Dashboard passport trust language must stay plain-language and non-numeric."
 );
 
 assertContains(
-  /gridTemplateColumns: isPhone \? "1fr" : "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`dashboard\.passport-signal\.\$\{item\.label\.toLowerCase\(\)\}`\}/,
-  "Dashboard passport signals must stack on phone so CCI and TrustSlip stay readable."
+  /label: "Wider"[\s\S]*?value: readableTrustStatus\(cci\.classText\)[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Pending"/,
+  "Dashboard passport signals must keep compact non-score Trust, Wider, and TrustSlip readings."
 );
 
 assertContains(

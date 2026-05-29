@@ -724,6 +724,7 @@ function dashboardActionSignal(label: string): DashboardSignalName {
     case "Trust":
       return "trust";
     case "CCI":
+    case "Wider":
     case "Wider consistency":
       return "community";
     case "TrustSlip":
@@ -970,16 +971,26 @@ function safeStr(x: unknown): string {
   return String(x ?? "").trim();
 }
 
-function readableClassSignal(classText: unknown, scoreText?: unknown): string {
+function readableTrustStatus(classText: unknown): string {
   const classValue = safeStr(classText);
   if (!classValue || classValue.toLowerCase() === "pending") {
-    return "Pending";
+    return "Not enough info";
   }
 
-  const scoreValue = safeStr(scoreText);
-  const hasScore = Boolean(scoreValue && scoreValue !== "-" && scoreValue !== "\u2014");
-
-  return hasScore ? `Class ${classValue} / Score ${scoreValue}` : `Class ${classValue}`;
+  switch (classValue.toUpperCase()) {
+    case "A+":
+    case "A":
+      return "Strong";
+    case "B":
+      return "Growing";
+    case "C":
+      return "Needs care";
+    case "D":
+    case "E":
+      return "Care needed";
+    default:
+      return "Needs review";
+  }
 }
 
 function routeTarget(
@@ -3455,11 +3466,11 @@ export default function DashboardPage() {
   ): React.CSSProperties => ({
     display: "grid",
     alignContent: "center",
-    gap: isPhone ? 3 : 4,
-    minHeight: isPhone ? 54 : 50,
+    gap: isPhone ? 2 : 4,
+    minHeight: isPhone ? 46 : 50,
     minWidth: 0,
     borderRadius: isPhone ? 12 : 14,
-    padding: isPhone ? "7px 8px" : "8px 10px",
+    padding: isPhone ? "6px 7px" : "8px 10px",
     background: primary
       ? "linear-gradient(180deg, rgba(246,215,122,0.22) 0%, rgba(225,185,72,0.14) 100%)"
       : accent === "blue"
@@ -3475,7 +3486,7 @@ export default function DashboardPage() {
 
   const trustMetricLabel = (): React.CSSProperties => ({
     color: "rgba(226,232,240,0.68)",
-    fontSize: isPhone ? 8.6 : 10,
+    fontSize: isPhone ? 8.8 : 10,
     fontWeight: 900,
     letterSpacing: 0,
     textTransform: "uppercase",
@@ -3484,7 +3495,7 @@ export default function DashboardPage() {
 
   const trustMetricValue = (primary = false): React.CSSProperties => ({
     color: primary ? "#F6D77A" : "#FFFFFF",
-    fontSize: isPhone ? 10.8 : 13.5,
+    fontSize: isPhone ? 10.2 : 13.5,
     fontWeight: 950,
     lineHeight: 1.12,
     overflowWrap: "anywhere",
@@ -6797,12 +6808,10 @@ export default function DashboardPage() {
             style={{
               marginTop: isPhone ? 14 : 18,
               display: "grid",
-              gridTemplateColumns: isPhone ? "1fr" : "repeat(3, minmax(0, 1fr))",
-              gap: isPhone ? 8 : 0,
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               background:
                 "linear-gradient(180deg, #113A62 0%, #0A2035 100%)",
               borderRadius: isPhone ? 14 : 18,
-              padding: isPhone ? 8 : 0,
               overflow: "hidden",
               boxShadow: "0 16px 28px rgba(10,24,49,0.16)",
             }}
@@ -6810,20 +6819,17 @@ export default function DashboardPage() {
             {[
               {
                 label: "Trust",
-                reading: "Trust score",
-                value: readableClassSignal(openTrust.classText, openTrust.scoreText),
+                value: readableTrustStatus(openTrust.classText),
                 to: DASHBOARD_TARGETS.TRUST,
               },
               {
-                label: "CCI",
-                reading: "CCI score",
-                value: readableClassSignal(cci.classText, cci.scoreText),
+                label: "Wider",
+                value: readableTrustStatus(cci.classText),
                 to: DASHBOARD_TARGETS.CCI,
               },
               {
                 label: "TrustSlip",
-                reading: "TrustSlip code",
-                value: trustSlipCode ? `Code ${trustSlipCode}` : "Pending setup",
+                value: trustSlipCode || "Pending",
                 to: trustSlipCode ? `/app/trust-slip?code=${encodeURIComponent(trustSlipCode)}` : DASHBOARD_TARGETS.TRUST_SLIP,
               },
             ].map((item, index) => (
@@ -6835,77 +6841,57 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardStableActionFrame({
                   minWidth: 0,
-                  minHeight: isPhone ? 62 : 74,
+                  minHeight: isPhone ? 56 : 74,
                   display: "grid",
-                  gridTemplateColumns: "auto minmax(0, 1fr) auto",
-                  gridTemplateRows: "auto auto",
-                  columnGap: isPhone ? 10 : 12,
-                  rowGap: isPhone ? 3 : 4,
+                  gridTemplateColumns: "minmax(0, 1fr)",
+                  gap: isPhone ? 3 : 5,
                   alignItems: "center",
-                  justifyItems: "start",
-                  padding: isPhone ? "9px 11px" : "12px 16px",
+                  justifyItems: "center",
+                  padding: isPhone ? "7px 5px" : "12px 14px",
                   border: 0,
                   borderLeft:
-                    !isPhone && index > 0 ? "1px solid rgba(255,255,255,0.15)" : "0",
-                  borderTop:
-                    isPhone && index > 0 ? "1px solid rgba(255,255,255,0.11)" : "0",
-                  borderRadius: isPhone ? 10 : 0,
-                  background: isPhone ? "rgba(255,255,255,0.055)" : "transparent",
+                    index === 0 ? "0" : "1px solid rgba(255,255,255,0.15)",
+                  background: "transparent",
                   color: "#F8FBFF",
                   cursor: "pointer",
-                  textAlign: "left",
-                  overflow: "visible",
+                  textAlign: "center",
                 })}
               >
                 <span
                   style={{
-                    gridRow: "1 / span 2",
+                    color: "rgba(248,251,255,0.84)",
+                    fontSize: isPhone ? 11.2 : 13,
+                    fontWeight: 800,
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    gap: isPhone ? 4 : 6,
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
                   }}
                 >
                   <DashboardSignalIcon
                     name={dashboardActionSignal(item.label)}
-                    size={isPhone ? 22 : 18}
+                    size={isPhone ? 16 : 18}
                     strokeWidth={2.4}
                   />
-                </span>
-                <span
-                  style={{
-                    color: "rgba(248,251,255,0.84)",
-                    fontSize: isPhone ? 12.2 : 13,
-                    fontWeight: 800,
-                    display: "block",
-                    lineHeight: 1.05,
-                    whiteSpace: "nowrap",
-                  }}
-                >
                   <span>{item.label}</span>
                 </span>
                 <span
                   style={{
                     color: "#F3D06A",
-                    fontSize: isPhone ? 11.6 : 14.5,
+                    fontSize: isPhone ? 10.8 : 14.5,
                     fontWeight: 1000,
-                    lineHeight: 1.14,
+                    lineHeight: 1.08,
                     overflowWrap: "anywhere",
                     wordBreak: "break-word",
+                    maxWidth: "100%",
                   }}
                 >
-                  {item.reading}: {item.value}
+                  {item.value}
                 </span>
-                {!isPhone ? (
-                  <span
-                    style={{
-                      gridColumn: 3,
-                      gridRow: "1 / span 2",
-                      opacity: 0.72,
-                    }}
-                  >
-                    {">"}
-                  </span>
-                ) : null}
               </StableButton>
             ))}
           </div>
@@ -7675,32 +7661,32 @@ export default function DashboardPage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: isPhone ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
                         gap: isPhone ? 6 : 8,
                         alignItems: "center",
                       }}
                     >
                       <span style={trustMetricTile(true, "gold")}>
-                        <span style={trustMetricLabel()}>Trust score</span>
+                        <span style={trustMetricLabel()}>Trust</span>
                         <span style={trustMetricValue(true)}>
-                          {readableClassSignal(openTrust.classText, openTrust.scoreText)}
+                          {readableTrustStatus(openTrust.classText)}
                         </span>
                       </span>
                       <span style={trustMetricTile(false, "blue")}>
-                        <span style={trustMetricLabel()}>CCI score</span>
+                        <span style={trustMetricLabel()}>Wider</span>
                         <span style={trustMetricValue()}>
-                          {readableClassSignal(cci.classText, cci.scoreText)}
+                          {readableTrustStatus(cci.classText)}
                         </span>
                       </span>
                       <span style={trustMetricTile(false, "steel")}>
-                        <span style={trustMetricLabel()}>TrustSlip code</span>
+                        <span style={trustMetricLabel()}>TrustSlip</span>
                         <span
                           style={{
                             ...trustMetricValue(),
-                            fontSize: isPhone ? 10.2 : 12,
+                            fontSize: isPhone ? 9.8 : 12,
                           }}
                         >
-                          {trustSlipCode || "Pending setup"}
+                          {trustSlipCode || "Pending"}
                         </span>
                       </span>
                     </div>

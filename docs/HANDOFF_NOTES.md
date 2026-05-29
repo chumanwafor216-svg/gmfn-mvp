@@ -29872,3 +29872,22 @@ GSN-branded invite composer and invite-entry continuity.
     rechecked against the current branch after the previous stable-button
     rollback is loaded; this note does not claim that Admin Tools has been
     visually verified on the phone.
+
+### Dashboard passport non-score language correction (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport signal strip and trust detail
+    mini-reading row.
+- Frontend change:
+  - Removed `Score` language from the Dashboard passport signals.
+  - Trust and Wider now show concise plain-language states such as `Strong`,
+    `Growing`, `Needs care`, `Care needed`, or `Not enough info`.
+  - Restored the phone passport strip to a compact three-tile shape matching
+    the older direction, while keeping the label/value separated.
+  - TrustSlip stays compact and shows the code when available or `Pending`.
+- Guardrails:
+  - `frontend/tools/audit-dashboard-actions.mjs` now checks the passport area
+    for compact non-score Trust, Wider, and TrustSlip readings.
+- Remaining truth:
+  - This changes presentation language only. It does not change underlying
+    Trust/CCI calculations, storage, or route contracts.
