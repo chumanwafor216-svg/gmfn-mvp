@@ -171,6 +171,7 @@ export default function PictureFrameToolsControl({
                   tabIndex={0}
                   data-gmfn-action-root="true"
                   data-cta-id={`picture-frame-tools.action.${action.label.toLowerCase()}`}
+                  data-gmfn-file-input-id={action.inputId}
                   className="gmfn-stable-action"
                   onPointerDown={stopFrameToolEvent}
                   onPointerUp={stopFrameToolEvent}

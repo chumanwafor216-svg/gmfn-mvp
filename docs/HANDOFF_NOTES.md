@@ -1,3 +1,43 @@
+### Dashboard frame upload/change tap-guard correction (2026-05-29)
+
+- Follow-up from product-owner report that Dashboard frame `Upload` and
+  `Change` still were not active after the first frame-tools pass.
+- Root cause found by code inspection:
+  - frame `Upload` / `Change` were converted to file-input labels, but the
+    global mobile tap guard could treat the browser's associated file-input
+    click as a second, different action inside the settle window and suppress
+    it;
+  - result: the frame tool looked tapped, but the file picker could still fail
+    to open.
+- Updated `frontend/src/lib/mobileTapGuard.ts`:
+  - tracks the most recently accepted action root;
+  - allows a following `input[type="file"]` click when it is explicitly
+    associated with that action via `data-gmfn-file-input-id` or a label
+    `for` target;
+  - traces the allowance as `click-file-input-associated-accepted`.
+- Updated `frontend/src/components/PictureFrameToolsControl.tsx`:
+  - frame upload/change labels now include
+    `data-gmfn-file-input-id={action.inputId}` for the tap guard.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - protects the associated file-input allowance and the frame tool input-id
+    declaration.
+- Truth/devil's advocate:
+  - this is the actual guard-level blocker the first pass missed;
+  - it still needs a real phone/browser tap check to prove the OS file picker
+    opens on the pilot device, because automated local audits cannot open the
+    native file picker.
+- Verification:
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts src/components/PictureFrameToolsControl.tsx tools/audit-mobile-tap-stability.mjs` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Dashboard picture-frame inner action activation (2026-05-29)
 
 - Follow-up from product-owner report: Dashboard picture-frame inner buttons

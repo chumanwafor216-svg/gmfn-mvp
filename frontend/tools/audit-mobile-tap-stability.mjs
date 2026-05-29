@@ -240,6 +240,20 @@ if (
 }
 
 if (
+  !/let lastAcceptedActionRoot: Element \| null = null;[\s\S]*?function isFileInputAction\(root: Element \| null\): root is HTMLInputElement[\s\S]*?function isAssociatedFileInputClick\([\s\S]*?data-gmfn-file-input-id[\s\S]*?HTMLLabelElement[\s\S]*?click-file-input-associated-accepted/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must allow an associated file-input click after a frame/upload action",
+    text: "Expected associated file-input click allowance was not found.",
+  });
+}
+
+if (
   !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?root\.setPointerCapture\?\.\(event\.pointerId\)/.test(
     mobileTapGuardSource
   )
@@ -666,6 +680,12 @@ const pictureFrameSystemChecks = [
       "Picture frame tools must capture rail taps so they cannot fall through to route controls",
     pattern:
       /onPointerDown=\{stopFrameToolEvent\}[\s\S]*?onPointerUp=\{stopFrameToolEvent\}[\s\S]*?onClick=\{stopFrameToolEvent\}/,
+  },
+  {
+    label:
+      "Picture frame upload/change labels must declare their associated file input for the mobile tap guard",
+    pattern:
+      /htmlFor=\{action\.inputId\}[\s\S]*?data-gmfn-file-input-id=\{action\.inputId\}/,
   },
 ];
 

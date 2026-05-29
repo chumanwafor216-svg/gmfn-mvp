@@ -49,6 +49,7 @@ let activeTap: ActiveTap | null = null;
 let lastPointerContext: PointerContext | null = null;
 let installed = false;
 let lastAcceptedActionClickAt = 0;
+let lastAcceptedActionRoot: Element | null = null;
 let redispatchingRoot: Element | null = null;
 const TRACE_KEY = "gmfn_mobile_tap_trace";
 const TRACE_LIMIT = 20;
@@ -192,6 +193,7 @@ function commitOriginalAction(
   clearActiveTap();
   lastPointerContext = null;
   lastAcceptedActionClickAt = nowMs();
+  lastAcceptedActionRoot = root;
 
   try {
     root.click();
@@ -269,6 +271,31 @@ function sameActionRoot(startedAt: Element, endedAt: Element | null): boolean {
   const startedId = startedAt.getAttribute("data-cta-id");
   const endedId = endedAt.getAttribute("data-cta-id");
   return Boolean(startedId && endedId && startedId === endedId);
+}
+
+function isFileInputAction(root: Element | null): root is HTMLInputElement {
+  return (
+    root instanceof HTMLInputElement &&
+    String(root.getAttribute("type") || "").toLowerCase() === "file"
+  );
+}
+
+function isAssociatedFileInputClick(
+  actionRoot: Element | null,
+  endRoot: Element | null
+): boolean {
+  if (!actionRoot || !isFileInputAction(endRoot)) return false;
+
+  const inputId = endRoot.id || endRoot.getAttribute("id") || "";
+  if (!inputId) return false;
+
+  const explicitInputId = actionRoot.getAttribute("data-gmfn-file-input-id");
+  const labelTarget =
+    actionRoot instanceof HTMLLabelElement
+      ? actionRoot.getAttribute("for") || actionRoot.htmlFor
+      : "";
+
+  return explicitInputId === inputId || labelTarget === inputId;
 }
 
 function isDisabledAction(root: Element | null): boolean {
@@ -410,6 +437,15 @@ function handleClick(event: MouseEvent): void {
     endRoot && !activeTap && currentTime - lastAcceptedActionClickAt < 520;
 
   if (insideSettleWindow) {
+    if (isAssociatedFileInputClick(lastAcceptedActionRoot, endRoot)) {
+      traceTap("click-file-input-associated-accepted", {
+        action: labelForAction(lastAcceptedActionRoot),
+        input: labelForAction(endRoot),
+      });
+      lastAcceptedActionClickAt = currentTime;
+      return;
+    }
+
     traceTap("click-settle-suppressed", {
       ended: labelForAction(endRoot),
       sinceLastAccepted: Math.round(currentTime - lastAcceptedActionClickAt),
@@ -519,6 +555,7 @@ function handleClick(event: MouseEvent): void {
     }
   } else if (endRoot) {
     lastAcceptedActionClickAt = currentTime;
+    lastAcceptedActionRoot = endRoot;
     traceTap("click-accepted", {
       action: labelForAction(endRoot),
     });
