@@ -19,6 +19,7 @@ import {
   listMarketplaceRequests,
   removeMyProfileImage,
   recordFocusCommitmentTrustEvent,
+  safeCopy,
   uploadMyProfileImageFile,
 } from "../lib/api";
 import {
@@ -2997,10 +2998,14 @@ export default function DashboardPage() {
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [globalIdCopyStatus, setGlobalIdCopyStatus] = useState<
+    "idle" | "copied" | "error"
+  >("idle");
   const [passportPictureToolsOpen, setPassportPictureToolsOpen] =
     useState<boolean>(false);
   const [pictureToolsOpen, setPictureToolsOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const globalIdCopyResetRef = useRef<number | null>(null);
 
   const [appUsage] = useState<AppUseRecord[]>(() => readDashboardAppUsage());
   const [focusCommitments, setFocusCommitments] = useState<FocusCommitment[]>(
@@ -3042,6 +3047,14 @@ export default function DashboardPage() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (globalIdCopyResetRef.current !== null) {
+        window.clearTimeout(globalIdCopyResetRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -3510,6 +3523,7 @@ export default function DashboardPage() {
   const gmfnId = safeStr(me?.gmfn_id || "Pending");
   const visibleGsnId =
     gmfnId === "Pending" ? gmfnId : gmfnId.replace(/^GMF[MN]/i, "GSN");
+  const globalIdParts = /^([A-Za-z]+-[A-Za-z]+-)(.+)$/.exec(visibleGsnId);
   const trustSlipCode = safeStr(trustSlip?.code || "");
   const avatarInputId = "dashboard-avatar-upload-input";
 
@@ -5229,6 +5243,26 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
+  async function copyGlobalId(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
+
+    if (!visibleGsnId || visibleGsnId === "Pending") {
+      setGlobalIdCopyStatus("error");
+      return;
+    }
+
+    const copied = await safeCopy(visibleGsnId);
+    setGlobalIdCopyStatus(copied ? "copied" : "error");
+
+    if (globalIdCopyResetRef.current !== null) {
+      window.clearTimeout(globalIdCopyResetRef.current);
+    }
+    globalIdCopyResetRef.current = window.setTimeout(() => {
+      setGlobalIdCopyStatus("idle");
+      globalIdCopyResetRef.current = null;
+    }, 1800);
+  }
+
   function explainMissingAvatarForRemoval(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -6823,7 +6857,7 @@ export default function DashboardPage() {
                   <PictureFrameToolsControl
                     open={passportPictureToolsOpen}
                     label={"\u2713"}
-                    ariaLabel="Passport picture frame tools"
+                    ariaLabel="Open passport picture tools: Upload, Change, Remove"
                     onToggle={(event) =>
                       runDashboardUiMutation(event, () => {
                         setPictureToolsOpen(false);
@@ -6862,13 +6896,14 @@ export default function DashboardPage() {
                       transition: "none",
                     }}
                     railGap={8}
-                    railColumns="1fr"
-                    railMinWidth={isPhone ? 190 : 180}
+                    railColumns="repeat(3, minmax(0, 1fr))"
+                    railMinWidth={isPhone ? 286 : 300}
+                    zIndex={3200}
                     railStyle={{
                       gap: 8,
-                      alignContent: "start",
+                      alignItems: "stretch",
                       borderRadius: 18,
-                      padding: 10,
+                      padding: 8,
                       background:
                         "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
                       border: "1px solid rgba(11,99,209,0.12)",
@@ -7135,51 +7170,188 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <div
-            style={{
+          <StableButton
+            debugId="dashboard.passport-global-id.copy"
+            type="button"
+            aria-label={`Copy GSN Global ID ${visibleGsnId}`}
+            onClick={copyGlobalId}
+            onPointerDown={consumeDashboardPointerEvent}
+            style={dashboardStableActionFrame({
               marginTop: 12,
-              display: "flex",
-              justifyContent: "center",
+              width: "100%",
+              minHeight: isPhone ? 112 : 126,
+              display: "grid",
+              gridTemplateColumns: isPhone
+                ? "54px minmax(0, 1fr) minmax(105px, 0.88fr)"
+                : "70px minmax(0, 1fr) minmax(150px, 0.88fr)",
+              gap: 0,
               alignItems: "center",
-              padding: isPhone ? "10px 12px" : "12px 16px",
-              borderRadius: isPhone ? 14 : 18,
-              background: "rgba(255,255,255,0.74)",
+              padding: isPhone ? "10px 9px" : "14px 16px",
+              borderRadius: isPhone ? 16 : 20,
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
               border: "1px solid rgba(16,37,59,0.08)",
-            }}
+              boxShadow:
+                "0 18px 26px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
+              color: DASHBOARD_BRAND.ink,
+              textAlign: "left",
+              cursor: "pointer",
+            })}
           >
-            <div
+            <span
+              aria-hidden="true"
               style={{
-                display: "flex",
-                gap: isPhone ? 8 : 10,
+                width: isPhone ? 44 : 54,
+                height: isPhone ? 44 : 54,
+                borderRadius: 999,
+                display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
+                justifySelf: "center",
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(234,243,255,0.94) 100%)",
+                border: "1px solid rgba(16,37,59,0.08)",
+                boxShadow:
+                  "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
+                color: "#0D3A63",
+              }}
+            >
+              <DashboardSignalIcon name="trust" size={isPhone ? 25 : 30} />
+            </span>
+
+            <span
+              style={{
+                display: "grid",
+                gap: isPhone ? 5 : 7,
+                alignContent: "center",
                 minWidth: 0,
-                color: DASHBOARD_BRAND.label,
-                fontSize: isPhone ? 15 : 17,
-                fontWeight: 1000,
-                textAlign: "center",
+                height: "100%",
+                padding: isPhone ? "0 12px" : "0 18px",
+                borderLeft: "1px solid rgba(16,37,59,0.10)",
+                borderRight: "1px solid rgba(16,37,59,0.10)",
               }}
             >
               <span
-                aria-hidden="true"
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
+                  color: DASHBOARD_BRAND.ink,
+                  fontSize: isPhone ? 18 : 23,
+                  fontWeight: 1000,
+                  lineHeight: 1.05,
+                  overflowWrap: "break-word",
                 }}
               >
-                <DashboardSignalIcon name="trust" size={isPhone ? 21 : 23} />
+                GSN Global ID
               </span>
-              <span>GSN Global ID</span>
+              <span
+                style={{
+                  color: DASHBOARD_BRAND.label,
+                  fontSize: isPhone ? 12.2 : 14,
+                  fontWeight: 800,
+                  lineHeight: 1.24,
+                }}
+              >
+                Your permanent network identity
+              </span>
+            </span>
+
+            <span
+              style={{
+                display: "grid",
+                gap: isPhone ? 5 : 7,
+                alignContent: "center",
+                minWidth: 0,
+                paddingLeft: isPhone ? 12 : 18,
+              }}
+            >
+              <span
+                style={{
+                  color: DASHBOARD_BRAND.label,
+                  fontSize: isPhone ? 10.8 : 12.5,
+                  fontWeight: 1000,
+                  letterSpacing: 0.4,
+                  lineHeight: 1,
+                  textTransform: "uppercase",
+                }}
+              >
+                Global ID
+              </span>
               <span
                 style={{
                   color: DASHBOARD_BRAND.ink,
+                  display: "grid",
+                  gap: 0,
+                  fontSize: isPhone ? 21 : 26,
+                  fontWeight: 1000,
+                  lineHeight: 1.08,
                   overflowWrap: "anywhere",
+                  wordBreak: "break-word",
                 }}
               >
-                {visibleGsnId}
+                {globalIdParts ? (
+                  <>
+                    <span>{globalIdParts[1]}</span>
+                    <span>{globalIdParts[2]}</span>
+                  </>
+                ) : (
+                  <span>{visibleGsnId}</span>
+                )}
               </span>
-            </div>
-          </div>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  color:
+                    globalIdCopyStatus === "error"
+                      ? "#991B1B"
+                      : DASHBOARD_BRAND.label,
+                  fontSize: isPhone ? 11.5 : 13,
+                  fontWeight: 800,
+                  lineHeight: 1,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    position: "relative",
+                    width: 14,
+                    height: 16,
+                    display: "inline-block",
+                    flexShrink: 0,
+                  }}
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 3,
+                      width: 9,
+                      height: 11,
+                      borderRadius: 2,
+                      border: "1.8px solid currentColor",
+                      opacity: 0.68,
+                    }}
+                  />
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 4,
+                      top: 0,
+                      width: 9,
+                      height: 11,
+                      borderRadius: 2,
+                      border: "1.8px solid currentColor",
+                    }}
+                  />
+                </span>
+                {globalIdCopyStatus === "copied"
+                  ? "Copied"
+                  : globalIdCopyStatus === "error"
+                  ? "Not ready"
+                  : "Tap to copy"}
+              </span>
+            </span>
+          </StableButton>
         </section>
 
       <section

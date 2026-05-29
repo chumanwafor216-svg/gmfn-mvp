@@ -29940,3 +29940,28 @@ GSN-branded invite composer and invite-entry continuity.
     free-for-all. Dashboard changes still need route-level impact review, and
     Market Wisdom remains protected until the product owner explicitly unfreezes
     that section too.
+
+### Dashboard passport Global ID card and frame tools visibility (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport hero card only.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` now renders the Global ID area as
+    the approved split card: shield mark, `GSN Global ID`, `Your permanent
+    network identity`, `GLOBAL ID`, the visible GSN ID, and `Tap to copy`.
+  - The Global ID card copies the visible GSN ID through the shared safe copy
+    helper and changes the hint to `Copied` or `Not ready`.
+  - The passport shield/check badge remains the picture-frame trigger, but its
+    rail now opens as a wider three-column Upload / Change / Remove tool strip
+    above local card clipping.
+- Guardrails:
+  - `frontend/tools/audit-dashboard-actions.mjs` now protects the approved
+    split Global ID card and copy affordance.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now protects the passport
+    frame tools as a three-column high-z overlay.
+  - `docs/SCREEN_SPECS.md` now names the Global ID card and requires the badge
+    trigger to open visible Upload, Change, and Remove tools.
+- Remaining truth:
+  - This makes the tool affordance stronger in code, but it still needs a
+    real-device Android tap check on the deployed build to prove the browser
+    behavior matches the local implementation.

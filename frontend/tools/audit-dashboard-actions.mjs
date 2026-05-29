@@ -111,8 +111,8 @@ assertContains(
 );
 
 assertContains(
-  /GSN Global ID[\s\S]*?\{visibleGsnId\}/,
-  "Dashboard passport GSN ID row must use the approved GSN Global ID label beside the visible id."
+  /debugId="dashboard\.passport-global-id\.copy"[\s\S]*?GSN Global ID[\s\S]*?Your permanent network identity[\s\S]*?Global ID[\s\S]*?globalIdParts[\s\S]*?Tap to copy/,
+  "Dashboard passport Global ID block must keep the approved split card with copy affordance."
 );
 
 assertContains(
