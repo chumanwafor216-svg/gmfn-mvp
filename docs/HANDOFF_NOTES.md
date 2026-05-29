@@ -1,3 +1,47 @@
+### Start Community duplicate-name system correction (2026-05-28)
+
+- Follow-up from tester screenshot: Step 2 showed `Clan name already exists`
+  while also showing the local `Community details recorded` decision card.
+- Root truth:
+  - `Record community details` was a local page-level action;
+  - the backend duplicate community-name rule only ran on final
+    `/entry/create`;
+  - therefore one test could proceed to First Circle/dashboard with a fresh
+    name while another tester using an existing name was correctly blocked but
+    shown a confusing mixed state.
+- Updated backend entry-system behavior in `gmfn_backend/app/api/routes/entry.py`:
+  - added `GET /entry/community-name/check`;
+  - duplicate checks are case-insensitive for the entry path;
+  - `/entry/create` now returns structured `409` detail with code
+    `entry_community_name_taken`, a plain-language message, and
+    `rename_or_join_existing` as the next action instead of the old plain
+    `Clan name already exists` string.
+- Updated frontend system flow:
+  - `frontend/src/lib/api.ts` exposes `checkEntryCommunityName`;
+  - `frontend/src/pages/CreateEntryPage.tsx` checks the name before marking
+    Step 2 as recorded;
+  - if the backend says the name is taken, the page no longer shows the ready
+    decision card and instead explains that the user must choose a different
+    name or use Request to join;
+  - final-create duplicate errors are also handled by reopening Step 2 and
+    clearing the stale recorded state.
+- Added backend coverage in `gmfn_backend/tests/test_entry_create.py` for the
+  preflight endpoint and the final `/entry/create` duplicate-name recovery.
+- Truth/devil's advocate:
+  - this does not let someone create a second community with an existing name;
+    it deliberately blocks that and gives a clearer recovery path;
+  - the join-existing path is only signposted from the message here. It does
+    not auto-convert a Create Community attempt into a Join Request, preserving
+    the documented separation between create and join flows.
+- Verification:
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx src/lib/api.ts` passed.
+  - `.\node_modules\.bin\tsc -b` passed in `frontend`.
+  - `python -m py_compile gmfn_backend\app\api\routes\entry.py` passed.
+  - `python -m pytest gmfn_backend\tests\test_entry_create.py -q` passed:
+    27 tests.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Entry-to-dashboard line audit and fixes (2026-05-28)
 
 - Follow-up from product-owner phone testing: audit the whole entry line from

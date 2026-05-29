@@ -6,8 +6,9 @@ import json
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, EmailStr, Field
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -155,6 +156,16 @@ class CreateEntryOut(BaseModel):
     token_type: Optional[str] = None
 
 
+class EntryCommunityNameCheckOut(BaseModel):
+    ok: bool
+    clan_name: str
+    available: bool
+    code: Optional[str] = None
+    message: Optional[str] = None
+    next_action: Optional[str] = None
+    next_action_label: Optional[str] = None
+
+
 def _entry_duplicate_identity_error(
     *,
     db: Session,
@@ -207,6 +218,32 @@ def _entry_duplicate_identity_error(
 def _clean_text(value: object, *, upper: bool = False) -> str:
     text = str(value or "").strip()
     return text.upper() if upper else text
+
+
+def _find_existing_clan_by_entry_name(db: Session, clan_name: str) -> Optional[Clan]:
+    cleaned = _clean_text(clan_name)
+    if not cleaned:
+        return None
+
+    return (
+        db.query(Clan)
+        .filter(func.lower(Clan.name) == cleaned.lower())
+        .first()
+    )
+
+
+def _entry_community_name_taken_detail(clan_name: str) -> dict:
+    clean_name = _clean_text(clan_name)
+    return {
+        "code": "entry_community_name_taken",
+        "message": (
+            f"A GSN community named {clean_name} already exists. "
+            "Choose a different name to create a new community, or use Request to join if this is the community you meant."
+        ),
+        "community_name": clean_name,
+        "next_action": "rename_or_join_existing",
+        "next_action_label": "Change name or request to join",
+    }
 
 
 def _pending_user_has_live_entry_path(db: Session, user: User) -> bool:
@@ -957,6 +994,34 @@ def save_entry_bank_details(
     }
 
 
+@router.get("/community-name/check", response_model=EntryCommunityNameCheckOut)
+def check_entry_community_name(
+    clan_name: str = Query(..., min_length=2, max_length=80),
+    db: Session = Depends(get_db),
+):
+    clean_name = _clean_text(clan_name)
+    existing = _find_existing_clan_by_entry_name(db, clean_name)
+
+    if existing:
+        detail = _entry_community_name_taken_detail(clean_name)
+        return {
+            "ok": True,
+            "clan_name": clean_name,
+            "available": False,
+            "code": detail["code"],
+            "message": detail["message"],
+            "next_action": detail["next_action"],
+            "next_action_label": detail["next_action_label"],
+        }
+
+    return {
+        "ok": True,
+        "clan_name": clean_name,
+        "available": True,
+        "message": "This community name is available.",
+    }
+
+
 @router.post("/create", response_model=CreateEntryOut, status_code=status.HTTP_201_CREATED)
 def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
     verification = (
@@ -1025,8 +1090,11 @@ def create_entry(payload: CreateEntryIn, db: Session = Depends(get_db)):
         )
 
     clan_name = _clean_text(payload.clan_name)
-    if db.query(Clan).filter(Clan.name == clan_name).first():
-        raise HTTPException(status_code=400, detail="Clan name already exists")
+    if _find_existing_clan_by_entry_name(db, clan_name):
+        raise HTTPException(
+            status_code=409,
+            detail=_entry_community_name_taken_detail(clan_name),
+        )
 
     user = User(
         email=email,

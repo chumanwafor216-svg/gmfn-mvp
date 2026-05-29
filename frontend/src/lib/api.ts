@@ -646,6 +646,13 @@ export async function createEntry(payload: Record<string, any>): Promise<any> {
   return out;
 }
 
+export async function checkEntryCommunityName(clanName: string): Promise<any> {
+  return httpJson(
+    `/entry/community-name/check${buildQuery({ clan_name: clanName })}`,
+    "GET"
+  );
+}
+
 function detectBrowserLocale(): string | undefined {
   try {
     if (typeof navigator === "undefined") return undefined;

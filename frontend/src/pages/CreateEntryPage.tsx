@@ -4,6 +4,7 @@ import { EntryBackLink } from "../components/EntryControls";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
   clearPublicEntryState,
+  checkEntryCommunityName,
   confirmEntryPhoneVerification,
   createEntry,
   getCreateCode,
@@ -2254,6 +2255,24 @@ export default function CreateEntryPage() {
     );
   }
 
+  function isCommunityNameTakenError(err: any): boolean {
+    const detail = structuredErrorDetail(err);
+    const message = safeStr(detail?.message || err?.message || err).toLowerCase();
+    return (
+      detail?.code === "entry_community_name_taken" ||
+      message.includes("community name already exists") ||
+      message.includes("clan name already exists")
+    );
+  }
+
+  function communityNameTakenMessage(err?: any): string {
+    const detail = structuredErrorDetail(err);
+    return (
+      safeStr(detail?.message) ||
+      `A GSN community named ${safeStr(communityName)} already exists. Choose a different name to create a new community, or use Request to join if this is the community you meant.`
+    );
+  }
+
   function firstClanIdFrom(out: any): number | null {
     const direct = Number(
       out?.clan_id ||
@@ -2819,16 +2838,50 @@ export default function CreateEntryPage() {
     );
   }
 
-  function handleRecordCommunityDetails() {
+  async function ensureCommunityNameCanBeCreated(): Promise<boolean> {
+    try {
+      const check = await checkEntryCommunityName(safeStr(communityName));
+
+      if (check?.available === false) {
+        setCommunityDetailsRecorded(false);
+        setCreateOutcome(null);
+        showError(
+          "community",
+          safeStr(check?.message) ||
+            `A GSN community named ${safeStr(communityName)} already exists. Choose a different name to create a new community, or use Request to join if this is the community you meant.`
+        );
+        return false;
+      }
+
+      return true;
+    } catch (err: any) {
+      if (isCommunityNameTakenError(err)) {
+        setCommunityDetailsRecorded(false);
+        setCreateOutcome(null);
+        showError("community", communityNameTakenMessage(err));
+        return false;
+      }
+
+      return true;
+    }
+  }
+
+  async function handleRecordCommunityDetails() {
     if (!canRecordCommunityDetails || busy || createOutcome) return;
 
     beginAction("community");
-    setCommunityDetailsRecorded(true);
-    showSuccess(
-      "community",
-      "Community details recorded here. Add founder trust evidence now, or finish registration and continue."
-    );
-    finishAction();
+    try {
+      const canCreateName = await ensureCommunityNameCanBeCreated();
+      if (!canCreateName) return;
+
+      setCommunityDetailsRecorded(true);
+      showSuccess(
+        "community",
+        "Community details recorded here. Add founder trust evidence now, or finish registration and continue."
+      );
+    } finally {
+      finishAction();
+    }
   }
 
   async function handleFinishRegistration() {
@@ -2888,6 +2941,14 @@ export default function CreateEntryPage() {
         } catch (retryErr: any) {
           if (openActivationFromStructuredError(retryErr)) return;
 
+          if (isCommunityNameTakenError(retryErr)) {
+            setCommunityDetailsRecorded(false);
+            setCreateOutcome(null);
+            setOpenPanel("community");
+            showError("community", communityNameTakenMessage(retryErr));
+            return;
+          }
+
           if (isCompletedAccountError(retryErr)) {
             const recovered = await recoverCompletedCreateEntry();
             if (recovered) return;
@@ -2899,6 +2960,11 @@ export default function CreateEntryPage() {
               "Your phone proof has timed out. Please start afresh so GSN can link the phone to your name again."
           );
         }
+      } else if (isCommunityNameTakenError(err)) {
+        setCommunityDetailsRecorded(false);
+        setCreateOutcome(null);
+        setOpenPanel("community");
+        showError("community", communityNameTakenMessage(err));
       } else if (isCompletedAccountError(err)) {
         if (openActivationFromStructuredError(err)) return;
 

@@ -78,6 +78,80 @@ def test_entry_phone_default_registers_without_sms_for_controlled_testing(client
         assert event.subject_user_id == create_body["user_id"]
 
 
+def test_entry_community_name_check_reports_existing_name(client):
+    with SessionLocal() as db:
+        owner = User(email="name-owner@example.com", hashed_password="hashed", role="admin")
+        db.add(owner)
+        db.flush()
+        db.add(
+            Clan(
+                name="Existing Founder Circle",
+                invite_code="existing-founder-circle",
+                community_code="GMFN-C-EXISTING",
+                created_by_user_id=int(owner.id),
+                status="active",
+            )
+        )
+        db.commit()
+
+    taken_res = client.get(
+        "/entry/community-name/check",
+        params={"clan_name": "existing founder circle"},
+    )
+    assert taken_res.status_code == 200, taken_res.text
+    taken_body = taken_res.json()
+    assert taken_body["available"] is False
+    assert taken_body["code"] == "entry_community_name_taken"
+    assert "Request to join" in taken_body["message"]
+
+    available_res = client.get(
+        "/entry/community-name/check",
+        params={"clan_name": "Fresh Available Circle"},
+    )
+    assert available_res.status_code == 200, available_res.text
+    assert available_res.json()["available"] is True
+
+
+def test_entry_create_duplicate_community_name_returns_structured_recovery(client):
+    with SessionLocal() as db:
+        owner = User(email="duplicate-owner@example.com", hashed_password="hashed", role="admin")
+        db.add(owner)
+        db.flush()
+        db.add(
+            Clan(
+                name="Duplicate Founder Circle",
+                invite_code="duplicate-founder-circle",
+                community_code="GMFN-C-DUPLICATE",
+                created_by_user_id=int(owner.id),
+                status="active",
+            )
+        )
+        db.commit()
+
+    start_res = client.post(
+        "/entry/phone/start",
+        json={
+            "display_name": "Duplicate Founder",
+            "phone_e164": "+2348011111011",
+        },
+    )
+    assert start_res.status_code == 201, start_res.text
+    start_body = start_res.json()
+
+    create_res = client.post(
+        "/entry/create",
+        json={
+            "verification_id": start_body["verification_id"],
+            "clan_name": "duplicate founder circle",
+        },
+    )
+    assert create_res.status_code == 409, create_res.text
+    detail = create_res.json()["detail"]
+    assert detail["code"] == "entry_community_name_taken"
+    assert detail["next_action"] == "rename_or_join_existing"
+    assert "different name" in detail["message"]
+
+
 def test_entry_records_country_and_official_id_without_provider_verification(client, monkeypatch):
     monkeypatch.delenv("GMFN_DEV_MODE", raising=False)
     monkeypatch.delenv("GMFN_ENTRY_PHONE_DELIVERY", raising=False)
