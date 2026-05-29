@@ -249,6 +249,7 @@ For every coding task:
    - behavior changed
    - remaining risks or unknowns
 8. Update `docs/HANDOFF_NOTES.md` after substantial work so the next session can resume without depending on chat history.
+9. During active pilot testing, commit and push completed fixes unless the product owner explicitly says not to publish yet. If the worktree contains unrelated changes, stage only the files that belong to the completed fix and report the pushed branch/commit.
 
 ---
 

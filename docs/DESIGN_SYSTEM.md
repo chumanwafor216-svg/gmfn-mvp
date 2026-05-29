@@ -122,3 +122,15 @@ Body:
 One screen should never feel like seven screens stacked together.
 
 Collapse, group, or move deeper content to its own page.
+
+## Focused Action Protocol
+
+When a user starts an action, the screen must reduce to that action.
+
+- Make the current primary action obvious.
+- Open the action controls only after the user taps the action.
+- Hide or collapse unrelated sections while the action is active.
+- After the user chooses an option or receives the action result, close the
+  temporary action surface and reveal the next relevant section.
+- Do not expose every possible block at once just because it belongs to the
+  workflow.

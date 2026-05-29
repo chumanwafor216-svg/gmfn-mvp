@@ -4,6 +4,8 @@ A screen is acceptable only if:
 
 - It has one obvious primary action.
 - It does not expose too many sections at once.
+- It follows the Focused Action Protocol: when one action is active, unrelated
+  sections step back until the choice or result is complete.
 - It uses the approved color system.
 - It uses consistent rounded cards.
 - It uses enough spacing.

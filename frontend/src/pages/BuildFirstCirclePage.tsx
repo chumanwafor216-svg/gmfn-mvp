@@ -51,6 +51,7 @@ type CollapseState = {
 };
 
 type NoticeTone = "success" | "error";
+type FocusedAction = "invite" | null;
 
 const UI_STORAGE_KEY = "gmfn.buildFirstCircle.sections.v2";
 const DRAFT_FALLBACK_KEY = "gmfn.firstCircle.fallback.v1";
@@ -513,6 +514,7 @@ export default function BuildFirstCirclePage() {
   const [draft, setDraft] = useState<FirstCircleDraft>(defaultDraft());
   const [manualForm, setManualForm] = useState<ManualFormState>(defaultManualForm());
   const [pickingContacts, setPickingContacts] = useState(false);
+  const [focusedAction, setFocusedAction] = useState<FocusedAction>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -676,6 +678,7 @@ export default function BuildFirstCirclePage() {
     0,
     Math.min(100, Math.round((readyCount / Math.max(targetCount, 1)) * 100))
   );
+  const isInviteFocused = focusedAction === "invite";
   const activeStepTitle =
     activeStep === 1
       ? "Pick your aim"
@@ -693,6 +696,15 @@ export default function BuildFirstCirclePage() {
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
+  }
+
+  function openInviteFocus() {
+    setNotice(null);
+    setFocusedAction("invite");
+  }
+
+  function closeFocusedAction() {
+    setFocusedAction(null);
   }
 
   function toggleSection(key: keyof CollapseState) {
@@ -824,6 +836,8 @@ export default function BuildFirstCirclePage() {
         contacts: [...newContacts, ...draft.contacts],
       });
 
+      setFocusedAction(null);
+      setCollapsed((prev) => ({ ...prev, contacts: false }));
       showNotice("success", `${newContacts.length} phone contact(s) added.`);
     } catch (err: any) {
       showNotice(
@@ -868,6 +882,7 @@ export default function BuildFirstCirclePage() {
     }
 
     await safeCopy(joinInviteMessage);
+    setFocusedAction(null);
     showNotice("success", "Invite message copied.");
   }
 
@@ -885,6 +900,7 @@ export default function BuildFirstCirclePage() {
           text: joinInviteMessage,
           url: inviteLink,
         });
+        setFocusedAction(null);
         showNotice("success", "Invite share opened.");
         return;
       } catch (err: any) {
@@ -906,6 +922,7 @@ export default function BuildFirstCirclePage() {
       "_blank",
       "noopener,noreferrer"
     );
+    setFocusedAction(null);
   }
 
   function openEmailInvite() {
@@ -915,6 +932,7 @@ export default function BuildFirstCirclePage() {
     }
 
     const subject = `Join ${communityName} on GSN`;
+    setFocusedAction(null);
     window.location.href = `mailto:?subject=${encodeURIComponent(
       subject
     )}&body=${encodeURIComponent(joinInviteMessage)}`;
@@ -931,6 +949,7 @@ export default function BuildFirstCirclePage() {
       "_blank",
       "noopener,noreferrer"
     );
+    setFocusedAction(null);
   }
 
   function resetDraft() {
@@ -1095,18 +1114,29 @@ export default function BuildFirstCirclePage() {
                 display: "flex",
                 gap: 8,
                 flexWrap: "wrap",
+                alignItems: "center",
               }}
             >
               <span style={badge(hasRole)}>Aim</span>
               <span style={badge(readyCount > 0)}>
                 People {readyCount}/{targetCount}
               </span>
-              <span style={badge(readyCount >= targetCount)}>Invite</span>
+              <PrimaryButton
+                onClick={openInviteFocus}
+                disabled={inviteLoading}
+                busy={inviteLoading}
+                busyLabel="Preparing..."
+                stableHeight={44}
+                debugId="build-first-circle.focus-invite"
+              >
+                Invite
+              </PrimaryButton>
             </div>
           </div>
         </div>
       </section>
 
+      {isInviteFocused ? (
       <section style={pageCard()}>
         <div
           style={{
@@ -1135,13 +1165,30 @@ export default function BuildFirstCirclePage() {
             </div>
           </div>
 
-          <span style={badge(Boolean(inviteLink))}>
-            {inviteLoading
-              ? "Invite loading"
-              : inviteLink
-                ? "Invite link ready"
-                : "Invite link not ready"}
-          </span>
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              justifyContent: isCompact ? "flex-start" : "flex-end",
+            }}
+          >
+            <span style={badge(Boolean(inviteLink))}>
+              {inviteLoading
+                ? "Invite loading"
+                : inviteLink
+                  ? "Invite link ready"
+                  : "Invite link not ready"}
+            </span>
+            <SubtleButton
+              onClick={closeFocusedAction}
+              stableHeight={44}
+              debugId="build-first-circle.close-invite-focus"
+              style={collapseToggle()}
+            >
+              Close
+            </SubtleButton>
+          </div>
         </div>
 
         <div
@@ -1212,7 +1259,10 @@ export default function BuildFirstCirclePage() {
           </SecondaryButton>
         </div>
       </section>
+      ) : null}
 
+      {!isInviteFocused ? (
+      <>
       <section style={pageCard()}>
         <div
           style={{
@@ -1748,6 +1798,8 @@ export default function BuildFirstCirclePage() {
           </div>
         ) : null}
       </section>
+      </>
+      ) : null}
     </div>
   );
 }

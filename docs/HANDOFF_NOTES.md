@@ -1,3 +1,24 @@
+### First Circle focused invite action protocol (2026-05-29)
+
+- Follow-up from product-owner phone screenshot: First Circle still exposed the
+  handles invite block as a full page section, making the route feel busy.
+- Updated `frontend/src/pages/BuildFirstCirclePage.tsx`:
+  - made `Invite` the primary action inside the current task card;
+  - moved Phone book, WhatsApp, Email, Facebook, Share, and Copy into a
+    temporary focused invite panel;
+  - while that invite panel is open, other First Circle sections are hidden so
+    the user sees only the active action;
+  - after a handle action succeeds or opens, the focused panel closes and the
+    next relevant page state returns.
+- Added the system-level Focused Action Protocol to `docs/DESIGN_SYSTEM.md` and
+  `docs/UX_ACCEPTANCE_CHECKLIST.md`: when an action starts, unrelated sections
+  must step back until the choice or result is complete.
+- Truth/devil's advocate:
+  - this is route-local enforcement plus a documented UX rule, not yet a global
+    component framework that automatically enforces the rule across every page;
+  - other busy routes still need controlled follow-up passes to fully satisfy
+    the new protocol.
+
 ### Start Community duplicate-name system correction (2026-05-28)
 
 - Follow-up from tester screenshot: Step 2 showed `Clan name already exists`
