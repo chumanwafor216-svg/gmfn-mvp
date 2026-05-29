@@ -114,8 +114,8 @@ assertContains(
 
 assertContains(
   "src/pages/MemberActivationPage.tsx",
-  /dashboard:\s*routeTarget\("dashboard"[\s\S]*navigate\(routes\.dashboard, \{ replace: true \}\);/,
-  "Successful activation must enter the authenticated workspace instead of leaving testers stranded."
+  /buildFirstCircle:\s*routeTarget\([\s\S]*"buildFirstCircle"[\s\S]*Membership activated successfully\. Build your First Circle next[\s\S]*window\.setTimeout\([\s\S]*navigate\(routes\.buildFirstCircle, \{ replace: true \}\);/,
+  "Successful activation must answer visibly and then enter First Circle instead of leaving testers stranded or skipping community growth."
 );
 
 assertContains(

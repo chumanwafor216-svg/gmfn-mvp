@@ -1634,7 +1634,7 @@ export default function AppLayout() {
       });
     }
 
-    return items;
+    return items.filter((item) => !item.disabled);
   }, [canUseAdminTools, myShopGalleryDisabled, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<

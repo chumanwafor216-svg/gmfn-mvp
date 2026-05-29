@@ -76,6 +76,18 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /Starting a brand-new community belongs to the wider GSN start door[\s\S]*?<div style=\{\{ \.\.\.innerCard\("#FFFFFF"\), display: "none" \}\} aria-hidden="true">[\s\S]*?<div style=\{sectionLabel\(\)\}>Start a new community<\/div>/,
+  "Marketplace-owned links must not visibly expose the create-community start door inside the selected-community link desk."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.links\.join\.copy"[\s\S]*?Join invite link is not ready yet\.[\s\S]*?debugId="marketplace\.links\.community-desk\.copy"[\s\S]*?Community access desk link is not ready yet\.[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?publicShopActionUnavailableMessage/,
+  "Marketplace not-ready link actions must remain tappable explainers instead of dead disabled controls."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /debugId="marketplace\.support\.start-request"[\s\S]*?debugId="marketplace\.support\.refresh-fit"[\s\S]*?debugId="marketplace\.support\.cancel-draft"[\s\S]*?debugId="marketplace\.support\.loan-readiness"[\s\S]*?debugId="marketplace\.support\.loan-suggestions"[\s\S]*?debugId="marketplace\.support\.loan-workbench"[\s\S]*?debugId="marketplace\.support\.finance"[\s\S]*?debugId="marketplace\.support\.full-loans"/,
   "Marketplace support and loan actions must stay explicitly traceable so they cannot silently fall into unrelated routes."
 );

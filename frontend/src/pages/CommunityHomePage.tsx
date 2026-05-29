@@ -2524,18 +2524,87 @@ export default function CommunityHomePage() {
                     color: "#F8FBFF",
                     border: "1px solid rgba(226,192,106,0.24)",
                   }}
+              >
+                Live overview
+              </span>
+            </div>
+
+              <div style={{ marginTop: isCompact ? 10 : 14, display: "grid", gap: 9 }}>
+                <div style={communityToolRowStyle()}>
+                  <span style={communityActionIcon(true)}>ID</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span
+                      style={{
+                        ...brandClampLines(1),
+                        color: "#07172C",
+                        fontSize: isCompact ? 14.5 : 16,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      {communityCountFromSummary} visible {communityCountFromSummary === 1 ? "community" : "communities"}
+                    </span>
+                    <span
+                      style={{
+                        ...brandClampLines(2),
+                        marginTop: 4,
+                        color: "#617085",
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 720,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      Choose one community below, then do local work inside its Marketplace.
+                    </span>
+                  </span>
+                </div>
+
+                <StableButton
+                  type="button"
+                  debugId="community-home.finance-summary.open"
+                  onClick={(event) => openCommunityRoute(event, routes.finance)}
+                  style={communityToolRowStyle()}
                 >
-                  Live overview
-                </span>
+                  <span style={communityActionIcon(false)}>F</span>
+                  <span style={{ minWidth: 0 }}>
+                    <span
+                      style={{
+                        ...brandClampLines(1),
+                        color: "#07172C",
+                        fontSize: isCompact ? 14.5 : 16,
+                        fontWeight: 950,
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Finance summary: {moneyPositionLabel}
+                    </span>
+                    <span
+                      style={{
+                        ...brandClampLines(2),
+                        marginTop: 4,
+                        color: "#617085",
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 720,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {moneyPositionDetail}. Open Finance for pool, support, guarantees, earnings, and trade detail.
+                    </span>
+                  </span>
+                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
+                    {">"}
+                  </span>
+                </StableButton>
               </div>
 
               <div
                 style={{
                   marginTop: isCompact ? 10 : 14,
-                  display: "grid",
+                  display: "none",
                   gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                   gap: isCompact ? 8 : 10,
                 }}
+                aria-hidden="true"
               >
                 {[
                   {

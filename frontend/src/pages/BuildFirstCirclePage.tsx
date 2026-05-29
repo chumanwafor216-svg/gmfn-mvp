@@ -1873,7 +1873,6 @@ export default function BuildFirstCirclePage() {
           </PrimaryButton>
           <SecondaryButton
             onClick={openWhatsAppInvite}
-            disabled={!inviteLink}
             stableHeight={52}
             debugId="build-first-circle.quick.whatsapp"
           >
@@ -1881,7 +1880,6 @@ export default function BuildFirstCirclePage() {
           </SecondaryButton>
           <SecondaryButton
             onClick={openEmailInvite}
-            disabled={!inviteLink}
             stableHeight={52}
             debugId="build-first-circle.quick.email"
           >
@@ -1889,7 +1887,6 @@ export default function BuildFirstCirclePage() {
           </SecondaryButton>
           <SecondaryButton
             onClick={openFacebookInvite}
-            disabled={!inviteLink}
             stableHeight={52}
             debugId="build-first-circle.quick.facebook"
           >
@@ -1899,7 +1896,6 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void shareJoinInvite();
             }}
-            disabled={!inviteLink}
             stableHeight={52}
             debugId="build-first-circle.quick.share"
           >
@@ -1909,7 +1905,6 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void copyJoinInvite();
             }}
-            disabled={!inviteLink}
             stableHeight={52}
             debugId="build-first-circle.quick.copy"
           >

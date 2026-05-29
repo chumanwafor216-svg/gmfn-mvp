@@ -4300,7 +4300,7 @@ export default function MarketplacePage() {
           <div>
             <div style={sectionLabel()}>Marketplace and entry links</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Keep join, create, marketplace, shop, and controlled outward
+              Keep join, marketplace, shop, and controlled outward
               links separated so participants know exactly which door they are
               opening.
             </div>
@@ -4319,9 +4319,9 @@ export default function MarketplacePage() {
         {sectionsOpen.tools ? (
           <ExplainToggle
             label="What these links do"
-            what="This area separates the GSN create-entry link from the links that belong to the selected community: the community join link, the community access desk, the public shop face, and controlled private-access links."
-            why="Join and create should never feel like the same action. Marketplace-facing links should stay local to this community, while create entry should remain the one wider GSN starting door."
-            next="Use join when someone should enter this exact community, create when someone should start a new community, the community access desk when someone should see this community outwardly, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
+            what="This area holds the links that belong to the selected community: the community join link, the community access desk, the public shop face, and controlled private-access links."
+            why="Marketplace-facing links should stay local to this community. Starting a brand-new community belongs to the wider GSN start door, not this selected marketplace desk."
+            next="Use join when someone should enter this exact community, the community access desk when someone should see this community outwardly, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
             tone="light"
             style={{ marginTop: 12 }}
           />
@@ -4342,10 +4342,9 @@ export default function MarketplacePage() {
                 <div style={sectionLabel()}>Outgoing links</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   Use one clear link for each job: let someone join this
-                  community, let someone start a new community, show this
-                  marketplace face, show your public shop face, or send a
-                  controlled private-Vault route. Each link now has its own
-                  lane.
+                  community, show this marketplace face, show your public shop
+                  face, or send a controlled private-Vault route. Each link now
+                  has its own lane.
                 </div>
               </div>
 
@@ -4402,7 +4401,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                     >
                       Copy Join Link
                     </StableButton>
@@ -4419,7 +4417,6 @@ export default function MarketplacePage() {
                         creatingInviteLink || !canManageMarketplaceLinks,
                         isCompact
                       )}
-                      disabled={creatingInviteLink || !canManageMarketplaceLinks}
                     >
                       {creatingInviteLink ? "Refreshing..." : "Refresh Join Link"}
                     </StableButton>
@@ -4441,7 +4438,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                     >
                       Copy Invite Message
                     </StableButton>
@@ -4463,7 +4459,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                     >
                       Email Join Link
                     </StableButton>
@@ -4487,7 +4482,6 @@ export default function MarketplacePage() {
                         !inviteLink,
                         isCompact
                       )}
-                      disabled={!inviteLink}
                     >
                       WhatsApp
                     </StableButton>
@@ -4509,7 +4503,7 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                <div style={innerCard("#FFFFFF")}>
+                <div style={{ ...innerCard("#FFFFFF"), display: "none" }} aria-hidden="true">
                   <div style={sectionLabel()}>Start a new community</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Send this only when someone should create their own
@@ -4558,7 +4552,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Copy Create Link
                     </StableButton>
@@ -4580,7 +4573,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Copy Message
                     </StableButton>
@@ -4602,7 +4594,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Email Link
                     </StableButton>
@@ -4622,7 +4613,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Open Create Link
                     </StableButton>
@@ -4646,7 +4636,6 @@ export default function MarketplacePage() {
                         !publicCreateEntryLink,
                         isCompact
                       )}
-                      disabled={!publicCreateEntryLink}
                     >
                       Send WhatsApp
                     </StableButton>
@@ -4698,7 +4687,6 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Copy Community Desk
                     </StableButton>
@@ -4720,7 +4708,6 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Email Link
                     </StableButton>
@@ -4740,7 +4727,6 @@ export default function MarketplacePage() {
                         !publicCommunityWorkspaceLink,
                         isCompact
                       )}
-                      disabled={!publicCommunityWorkspaceLink}
                     >
                       Open Community Desk
                     </StableButton>
@@ -4825,7 +4811,6 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      disabled={publicShopActionsLocked}
                     >
                       {preparingPublicShopLink ? "Refreshing..." : "Refresh Shop Link"}
                     </StableButton>
@@ -4853,7 +4838,6 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      disabled={publicShopActionsLocked}
                     >
                       {preparingPublicShopLink ? "Refreshing..." : "Copy Shop Link"}
                     </StableButton>
@@ -4881,7 +4865,6 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      disabled={publicShopActionsLocked}
                     >
                       Email Link
                     </StableButton>
@@ -4909,7 +4892,6 @@ export default function MarketplacePage() {
                         publicShopActionsLocked,
                         isCompact
                       )}
-                      disabled={publicShopActionsLocked}
                     >
                       Open Shop Face
                     </StableButton>

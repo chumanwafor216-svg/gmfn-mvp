@@ -1,3 +1,58 @@
+### Amara line completion follow-up (2026-05-29)
+
+- Continued the product-owner request to keep auditing and correcting the Amara
+  line without changing the story.
+- Closed the next concrete auditor findings:
+  - `frontend/src/pages/MemberActivationPage.tsx`: successful activation now
+    shows a visible success message and then ushers the user into First Circle
+    after a short delay instead of silently going to Dashboard.
+  - `frontend/src/pages/CommunityHomePage.tsx`: the exposed all-communities
+    number grid has been replaced on the visible surface with compact community,
+    finance, and trust summary rows. Detailed finance/trust readings are routed
+    deeper into Finance and Trust Passport.
+  - `frontend/src/pages/MarketplacePage.tsx`: the visible selected-marketplace
+    outward-link desk no longer presents "Start a new community" as one of that
+    marketplace's links; the hidden legacy block is retained only to avoid a
+    risky larger rewrite during pilot.
+  - `frontend/src/pages/MarketplacePage.tsx`,
+    `frontend/src/pages/BuildFirstCirclePage.tsx`, and
+    `frontend/src/pages/TrustScorePage.tsx`: more not-ready proof/link actions
+    now remain tappable explainers instead of dead disabled taps.
+  - `frontend/src/layout/AppLayout.tsx`: disabled mobile bottom-nav entries are
+    filtered out instead of being shown as dead tabs.
+- Strengthened audits:
+  - `audit-entry-auth` now guards activation success into First Circle.
+  - `audit-member-entry-actions` now guards activation success response,
+    First Circle as primary next action, and no Dashboard skip.
+  - `audit-marketplace-actions` now guards that the marketplace-owned link desk
+    does not visibly expose the create-community start door.
+  - `audit-action-response-protocol` now guards First Circle invite options
+    against returning to disabled/no-response controls.
+  - `audit-mobile-tap-stability` now protects the public-shop lock/explainer
+    pattern without requiring disabled controls that swallow guidance.
+- Truth/devil's advocate:
+  - this is a stronger local code/audit pass, not live phone proof;
+  - the hidden legacy create-link block in Marketplace is deliberate for pilot
+    safety. A later cleanup can delete the unused visible model only after all
+    references and audits are adjusted deliberately.
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/pages/BuildFirstCirclePage.tsx src/pages/TrustScorePage.tsx src/layout/AppLayout.tsx tools/audit-mobile-tap-stability.mjs tools/audit-member-entry-actions.mjs tools/audit-marketplace-actions.mjs tools/audit-action-response-protocol.mjs` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Amara line audit and proof-action corrections (2026-05-29)
 
 - Follow-up from product-owner clarification: do not change the Amara story;

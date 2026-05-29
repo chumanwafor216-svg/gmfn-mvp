@@ -1937,7 +1937,6 @@ export default function TrustScorePage() {
                     text: "The public community record is not ready because this Trust Passport has no community code yet.",
                   });
                 }}
-                disabled={!communityVerifyPath}
                 stableHeight={48}
                 debugId="trust-score.open-public-community-record"
               >

@@ -280,9 +280,13 @@ export default function MemberActivationPage() {
 
       setActivated(true);
       setSuccess(
-        "Membership activated successfully. Your starter trust, onboarding proofs, and identity observation are now available for review."
+        "Membership activated successfully. Build your First Circle next so your community growth starts with real trusted people."
       );
-      navigate(routes.dashboard, { replace: true });
+      if (typeof window !== "undefined") {
+        window.setTimeout(() => {
+          navigate(routes.buildFirstCircle, { replace: true });
+        }, 1200);
+      }
     } catch (err: any) {
       setError(err?.message || "Activation failed.");
     } finally {
@@ -509,7 +513,7 @@ export default function MemberActivationPage() {
               <CardActionRow style={{ marginTop: 16 }}>
                 <StableCtaLink
                   to={routes.buildFirstCircle}
-                  kind="secondary"
+                  kind="primary"
                   debugId="member-activation.build-first-circle"
                 >
                   Build first circle

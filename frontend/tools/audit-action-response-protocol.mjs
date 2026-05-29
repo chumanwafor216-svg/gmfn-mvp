@@ -95,6 +95,12 @@ assertCriticalActionsDeclareDebugIds("src/pages/BuildFirstCirclePage.tsx", [
   "build-first-circle.quick.copy",
 ]);
 
+assertNotContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /disabled=\{!inviteLink\}/,
+  "First Circle invite options must stay tappable so they can explain when the invite link is not ready."
+);
+
 assertContains(
   "src/pages/JoinEntryPage.tsx",
   /noticeStyle\("error"\)[\s\S]*?noticeStyle\("success"\)[\s\S]*?Join request submitted successfully\./,

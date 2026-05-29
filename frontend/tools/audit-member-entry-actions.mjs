@@ -96,6 +96,24 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/MemberActivationPage.tsx",
+  /Build your First Circle next[\s\S]*?window\.setTimeout\([\s\S]*?navigate\(routes\.buildFirstCircle, \{ replace: true \}\);[\s\S]*?kind="primary"[\s\S]*?debugId="member-activation\.build-first-circle"/,
+  "Member Activation success must show First Circle as the primary next action and usher the user there instead of silently skipping community growth."
+);
+
+assertContains(
+  "src/pages/MemberActivationPage.tsx",
+  /setActivated\(true\);[\s\S]*?setSuccess\(/,
+  "Member Activation must show a visible success response after activation."
+);
+
+assertContains(
+  "src/pages/MemberActivationPage.tsx",
+  /^(?![\s\S]*navigate\(routes\.dashboard, \{ replace: true \}\);)[\s\S]*$/m,
+  "Member Activation must not auto-navigate to Dashboard after success."
+);
+
+assertContains(
   "src/pages/ProfilePage.tsx",
   /debugId="profile\.save-local"[\s\S]*?debugId="profile\.refresh"/,
   "Profile actions must remain traceable."
