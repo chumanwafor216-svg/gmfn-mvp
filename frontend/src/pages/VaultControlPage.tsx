@@ -1238,11 +1238,16 @@ export default function VaultControlPage() {
     );
   }
 
-  function copyVaultPaymentInstruction() {
+  async function copyVaultPaymentInstruction() {
     const text = vaultPaymentTransferLines.join("\n");
     if (text) {
-      safeCopy(text);
-      showNotice("success", "Vault bank transfer instruction copied.");
+      const copied = await safeCopy(text);
+      showNotice(
+        copied ? "success" : "error",
+        copied
+          ? "Vault bank transfer instruction copied."
+          : "Clipboard copy was blocked. Use the payment details shown here."
+      );
       return;
     }
     showNotice("info", "Copy is not available in this browser. Use the payment details shown here.");
@@ -1402,13 +1407,13 @@ export default function VaultControlPage() {
       setOpenVaultPanels((prev) => ({ ...prev, payment: true }));
       await loadPage();
       const reference = firstTruthy(result?.reference_display, result?.reference);
+      const copiedReference = reference ? await safeCopy(reference) : false;
       showNotice(
         "success",
         reference
-          ? `Vault payment code is ready: ${reference}. Use that exact code in the bank transfer.`
+          ? `Vault payment code is ready: ${reference}. Use that exact code in the bank transfer.${copiedReference ? " Code copied." : " Copy was blocked, so copy it from the payment details shown here."}`
           : `Vault payment request created for ${safeQuantity} slot${safeQuantity === 1 ? "" : "s"} at ${formatMoney(vaultSlotPaymentAmount(safeQuantity), "GBP")}.`
       );
-      if (reference) safeCopy(reference);
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault payment request could not be created.");
     } finally {
@@ -1556,8 +1561,13 @@ export default function VaultControlPage() {
       });
       setVaultLinks((prev) => [link, ...prev]);
       const url = vaultLinkUrl(link);
-      if (url) safeCopy(url);
-      showNotice("success", `Vault link for block #${selectedSlot} created and copied.`);
+      const copied = url ? await safeCopy(url) : false;
+      showNotice(
+        "success",
+        url
+          ? `Vault link for block #${selectedSlot} created.${copied ? " Link copied." : " Copy was blocked, so use the link panel below."}`
+          : `Vault link for block #${selectedSlot} created. The link panel will show it when it is ready.`
+      );
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault access link could not be created.");
     } finally {
@@ -1565,14 +1575,19 @@ export default function VaultControlPage() {
     }
   }
 
-  function copySelectedBlockLink() {
+  async function copySelectedBlockLink() {
     if (!selectedBlockLinkUrl) {
       showNotice("info", "Create this block link before copying it.");
       return;
     }
 
-    safeCopy(selectedBlockLinkUrl);
-    showNotice("success", `Vault block #${selectedSlot} link copied.`);
+    const copied = await safeCopy(selectedBlockLinkUrl);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? `Vault block #${selectedSlot} link copied.`
+        : "Clipboard copy was blocked. Use the private link shown in this panel."
+    );
   }
 
   function openSelectedBlockLink() {
@@ -1581,7 +1596,13 @@ export default function VaultControlPage() {
       return;
     }
 
-    window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer");
+    const opened = window.open(selectedBlockLinkUrl, "_blank", "noopener,noreferrer");
+    showNotice(
+      opened ? "success" : "error",
+      opened
+        ? "Opening private Vault view now."
+        : "The browser blocked the private view window. Copy the link and open it manually."
+    );
   }
 
   async function extendLink(link: VaultLinkItem) {
@@ -1822,9 +1843,8 @@ export default function VaultControlPage() {
             </div>
             <div style={{ marginTop: 12, ...actionGrid(isCompact, 170) }}>
               <SecondaryButton
-                onClick={copyVaultPaymentInstruction}
+                onClick={() => void copyVaultPaymentInstruction()}
                 style={brandActionButton("secondary", vaultPaymentTransferLines.length === 0)}
-                disabled={vaultPaymentTransferLines.length === 0}
                 debugId="vault-control.copy-payment-details"
               >
                 Copy payment details
@@ -2018,8 +2038,7 @@ export default function VaultControlPage() {
             {creatingLink ? "Creating link..." : selectedBlockPrimaryLink ? "Replace block link" : "Create block link"}
           </PrimaryButton>
           <SubtleButton
-            onClick={copySelectedBlockLink}
-            disabled={!selectedBlockLinkUrl}
+            onClick={() => void copySelectedBlockLink()}
             style={brandActionButton("soft", !selectedBlockLinkUrl)}
             debugId="vault-control.link.copy"
           >
@@ -2027,7 +2046,6 @@ export default function VaultControlPage() {
           </SubtleButton>
           <SecondaryButton
             onClick={openSelectedBlockLink}
-            disabled={!selectedBlockLinkUrl}
             style={brandActionButton("secondary", !selectedBlockLinkUrl)}
             debugId="vault-control.link.open-private-view"
           >

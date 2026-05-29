@@ -2423,9 +2423,8 @@ export default function BuildFirstCirclePage() {
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                     <PrimaryButton
                       onClick={() => {
-                        copyInviteBundle();
+                        void copyInviteBundle();
                       }}
-                      disabled={readyContacts.length === 0}
                       stableHeight={48}
                       debugId="build-first-circle.copy-invite-bundle"
                   >

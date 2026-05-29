@@ -101,6 +101,12 @@ assertNotContains(
   "First Circle invite options must stay tappable so they can explain when the invite link is not ready."
 );
 
+assertNotContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /disabled=\{readyContacts\.length === 0\}/,
+  "First Circle copy-message actions must stay tappable so they can explain when the contact list is not ready."
+);
+
 assertContains(
   "src/pages/JoinEntryPage.tsx",
   /noticeStyle\("error"\)[\s\S]*?noticeStyle\("success"\)[\s\S]*?Join request submitted successfully\./,
@@ -113,6 +119,12 @@ assertContains(
   "Community Home actions must keep visible success/error notice responses and route First Circle instead of opening hidden sections."
 );
 
+assertNotContains(
+  "src/pages/CommunityHomePage.tsx",
+  /debugId="community-home\.owner-actions\.(?:marketplace-links|selected-marketplace)"[\s\S]{0,500}?disabled=\{!selectedClanId \|\| changingClanId === selectedClanId\}/,
+  "Community Home owner marketplace buttons must stay tappable so they can explain when no community is selected."
+);
+
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /function openMarketplaceEmail[\s\S]*?Opening email now\.[\s\S]*?function openMarketplaceExternalLink[\s\S]*?const opened = window\.open[\s\S]*?browser blocked that window[\s\S]*?Opening link now\.[\s\S]*?noticeCard\(notice\.tone\)/,
@@ -123,6 +135,24 @@ assertContains(
   "src/pages/ShopControlPage.tsx",
   /async function copyText[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?function openExternalLink[\s\S]*?Link is not ready yet\.[\s\S]*?const opened = window\.open[\s\S]*?browser blocked that window[\s\S]*?Opening link now\.[\s\S]*?setSpotlightPublishFeedback[\s\S]*?noticeCard\(notice\.tone\)/,
   "Shop Control actions must keep visible success/error notice responses, including copy/open failures and spotlight publish feedback."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /async function copyText[\s\S]*?missingMessage = "Nothing to copy yet\."[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?function openShopLink[\s\S]*?Public shop link is not ready yet[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the public shop window[\s\S]*?This item is hidden\. Restore it before copying a public shop link\./,
+  "Shop Assets inner buttons must explain missing links, blocked windows, hidden items, and clipboard failures."
+);
+
+assertContains(
+  "src/pages/VaultControlPage.tsx",
+  /async function copyVaultPaymentInstruction[\s\S]*?const copied = await safeCopy\(text\)[\s\S]*?Clipboard copy was blocked[\s\S]*?const copiedReference = reference \? await safeCopy\(reference\)[\s\S]*?async function createViewingLink[\s\S]*?const copied = url \? await safeCopy\(url\)[\s\S]*?async function copySelectedBlockLink[\s\S]*?const copied = await safeCopy\(selectedBlockLinkUrl\)[\s\S]*?function openSelectedBlockLink[\s\S]*?const opened = window\.open[\s\S]*?browser blocked the private view window/,
+  "Vault Control inner buttons must answer missing links, blocked copy, generated-code copy, and blocked private-view windows."
+);
+
+assertNotContains(
+  "src/pages/VaultControlPage.tsx",
+  /debugId="vault-control\.(?:copy-payment-details|link\.copy|link\.open-private-view)"[\s\S]{0,260}?disabled=\{(?:vaultPaymentTransferLines\.length === 0|!selectedBlockLinkUrl)\}/,
+  "Vault Control copy/open buttons must stay tappable so missing payment details or links can be explained."
 );
 
 assertContains(

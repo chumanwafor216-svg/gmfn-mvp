@@ -3291,7 +3291,6 @@ export default function CommunityHomePage() {
                 "secondary",
                 !selectedClanId || changingClanId === selectedClanId
               )}
-              disabled={!selectedClanId || changingClanId === selectedClanId}
             >
               {changingClanId === selectedClanId
                 ? "Opening..."
@@ -3337,7 +3336,6 @@ export default function CommunityHomePage() {
               type="button"
               debugId="community-home.owner-actions.selected-marketplace"
               onClick={(event) => void openSelectedMarketplace(event)}
-              disabled={!selectedClanId || changingClanId === selectedClanId}
               style={communityActionStyle(
                 "secondary",
                 !selectedClanId || changingClanId === selectedClanId

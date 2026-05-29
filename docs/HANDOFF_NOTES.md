@@ -1,3 +1,54 @@
+### Inner-page button response hardening (2026-05-29)
+
+- Follow-up from product-owner observation that buttons are better overall, but
+  some inner-page buttons still behave randomly or silently.
+- Kept the story and route structure unchanged; this was a targeted response
+  and tap-behavior pass, not a redesign.
+- Updated `frontend/src/pages/BuildFirstCirclePage.tsx`:
+  - the secondary "Copy message" action is no longer disabled when contacts are
+    missing; it now lets the existing handler explain that no ready invite
+    message is available yet.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - hidden/legacy owner marketplace actions no longer swallow taps when no
+    community is selected; their existing handlers can now show "Select a
+    community first."
+- Updated `frontend/src/pages/ShopAssetsPage.tsx`:
+  - public shop open/copy actions now explain when the shop link is not ready;
+  - public shop opening reports blocked popup windows;
+  - product link copy explains hidden items and missing item links instead of
+    becoming a dead disabled action.
+- Updated `frontend/src/pages/VaultControlPage.tsx`:
+  - payment-detail copy, generated payment-code copy, Vault link copy, and
+    block-link copy now await clipboard success before claiming success;
+  - private-view open reports blocked popup windows;
+  - missing payment details or block links now speak through the existing
+    notice surface instead of being dead disabled buttons.
+- Strengthened `frontend/tools/audit-action-response-protocol.mjs` so these
+  exact inner-page regressions are guarded going forward.
+- Truth/devil's advocate:
+  - this is a code/audit/build verification pass, not a live Render phone tap
+    recording;
+  - the wider app may still contain older admin-only dead disabled states, but
+    the highest pilot-facing inner shop/Vault/First Circle/Community surfaces
+    touched here now follow the action-response protocol.
+- Verification:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx src/pages/CommunityHomePage.tsx src/pages/ShopAssetsPage.tsx src/pages/VaultControlPage.tsx tools/audit-action-response-protocol.mjs` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:entry-auth` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Amara line completion follow-up (2026-05-29)
 
 - Continued the product-owner request to keep auditing and correcting the Amara

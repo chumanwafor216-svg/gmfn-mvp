@@ -698,9 +698,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
   const selectedPublicProduct = publicGallerySlots[selectedPublicSlot - 1] || null;
 
-  async function copyText(text: string, successMessage: string) {
+  async function copyText(
+    text: string,
+    successMessage: string,
+    missingMessage = "Nothing to copy yet."
+  ) {
     if (!text) {
-      showNotice("error", "Nothing to copy yet.");
+      showNotice("error", missingMessage);
       return;
     }
 
@@ -710,6 +714,24 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       copied
         ? successMessage
         : "Clipboard copy was blocked. Refresh the public shop link before sharing."
+    );
+  }
+
+  function openShopLink() {
+    if (!shopLink) {
+      showNotice(
+        "error",
+        "Public shop link is not ready yet. Refresh the shop identity, then try again."
+      );
+      return;
+    }
+
+    const opened = window.open(shopLink, "_blank", "noopener,noreferrer");
+    showNotice(
+      opened ? "success" : "error",
+      opened
+        ? "Opening public shop now."
+        : "The browser blocked the public shop window. Copy the public link and open it manually."
     );
   }
 
@@ -1288,12 +1310,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </StableCtaLink>
 
               <PrimaryButton
-                onClick={() => {
-                  if (shopLink) {
-                    window.open(shopLink, "_blank", "noopener,noreferrer");
-                  }
-                }}
-                disabled={!shopLink}
+                onClick={openShopLink}
                 fullWidth
                 stableHeight={isCompact ? 56 : 48}
                 debugId="shop-assets.open-public-shop"
@@ -1302,8 +1319,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </PrimaryButton>
 
               <SecondaryButton
-                onClick={() => copyText(shopLink, "Public shop diaries link copied.")}
-                disabled={!shopLink}
+                onClick={() =>
+                  copyText(
+                    shopLink,
+                    "Public shop diaries link copied.",
+                    "Public shop link is not ready yet. Refresh the shop identity, then try again."
+                  )
+                }
                 fullWidth
                 stableHeight={isCompact ? 56 : 48}
                 debugId="shop-assets.copy-public-link"
@@ -2229,13 +2251,18 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   {embedded ? "Close form" : "Clear form"}
                 </SecondaryButton>
 
-                  <SubtleButton
-                    onClick={() => copyText(shopLink, "Public shop diaries link copied.")}
-                    disabled={!shopLink}
-                    fullWidth
-                    stableHeight={isCompact ? 56 : 48}
-                    debugId="shop-assets.product.copy-shop-link"
-                  >
+                <SubtleButton
+                  onClick={() =>
+                    copyText(
+                      shopLink,
+                      "Public shop diaries link copied.",
+                      "Public shop link is not ready yet. Refresh the shop identity, then try again."
+                    )
+                  }
+                  fullWidth
+                  stableHeight={isCompact ? 56 : 48}
+                  debugId="shop-assets.product.copy-shop-link"
+                >
                   Copy shop link
                 </SubtleButton>
               </div>
@@ -2616,14 +2643,21 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       </SecondaryButton>
                     )}
 
-                      <SubtleButton
-                        onClick={() =>
-                          copyText(
-                            productLink,
-                            "Public shop item link copied. It opens this item inside the Shop Diaries."
-                          )
+                    <SubtleButton
+                      onClick={() => {
+                        if (isHidden) {
+                          showNotice(
+                            "error",
+                            "This item is hidden. Restore it before copying a public shop link."
+                          );
+                          return;
                         }
-                      disabled={!productLink || isHidden}
+                        void copyText(
+                          productLink,
+                          "Public shop item link copied. It opens this item inside the Shop Diaries.",
+                          "This item link is not ready yet. Refresh the shop identity, then try again."
+                        );
+                      }}
                       fullWidth
                       stableHeight={isCompact ? 56 : 48}
                       debugId={`shop-assets.product.${item.id}.copy-link`}
