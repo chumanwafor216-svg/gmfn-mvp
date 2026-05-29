@@ -917,12 +917,17 @@ export default function BuildFirstCirclePage() {
       return;
     }
 
-    window.open(
+    const opened = window.open(
       `https://wa.me/?text=${encodeURIComponent(joinInviteMessage)}`,
       "_blank",
       "noopener,noreferrer"
     );
+    if (!opened) {
+      showNotice("error", "WhatsApp could not open. Copy the invite message instead.");
+      return;
+    }
     setFocusedAction(null);
+    showNotice("success", "WhatsApp invite opened.");
   }
 
   function openEmailInvite() {
@@ -932,6 +937,7 @@ export default function BuildFirstCirclePage() {
     }
 
     const subject = `Join ${communityName} on GSN`;
+    showNotice("success", "Opening email invite now.");
     setFocusedAction(null);
     window.location.href = `mailto:?subject=${encodeURIComponent(
       subject
@@ -944,12 +950,17 @@ export default function BuildFirstCirclePage() {
       return;
     }
 
-    window.open(
+    const opened = window.open(
       `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteLink)}`,
       "_blank",
       "noopener,noreferrer"
     );
+    if (!opened) {
+      showNotice("error", "Facebook could not open. Copy the invite link instead.");
+      return;
+    }
     setFocusedAction(null);
+    showNotice("success", "Facebook invite opened.");
   }
 
   function resetDraft() {

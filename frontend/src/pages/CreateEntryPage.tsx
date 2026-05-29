@@ -2970,7 +2970,6 @@ export default function CreateEntryPage() {
               message: outcome.message,
             });
       showSuccess(feedbackTargetForFinish, successMessage);
-      showSuccess("community", successMessage);
       if (outcome.kind === "workspace") {
         await wait(850);
         await openCreatedWorkspace(outcome.out);
@@ -3002,12 +3001,11 @@ export default function CreateEntryPage() {
                   message: outcome.message,
                   nextStep: "Opening First Circle now.",
                 })
-              : buildActionSuccessMessage({
+                : buildActionSuccessMessage({
                   prefix: "Congratulations.",
                   message: outcome.message,
                 });
           showSuccess(feedbackTargetForFinish, successMessage);
-          showSuccess("community", successMessage);
           if (outcome.kind === "workspace") {
             await wait(850);
             await openCreatedWorkspace(outcome.out);

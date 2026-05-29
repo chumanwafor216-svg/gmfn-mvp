@@ -1567,6 +1567,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
                 <input
                   type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="shop-assets.profile.image-file"
                   accept="image/*"
                   onChange={(e) => setShopPreviewFromFile(e.target.files?.[0] || null)}
                   style={inputStyle()}
@@ -2075,6 +2077,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
               <input
                 type="file"
+                data-gmfn-action-root="true"
+                data-cta-id="shop-assets.product.image-file"
                 accept="image/*"
                 onChange={(e) => void setProductPreviewFromFile(e.target.files?.[0] || null)}
                 style={inputStyle()}
@@ -2095,6 +2099,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
               <input
                 type="file"
+                data-gmfn-action-root="true"
+                data-cta-id="shop-assets.product.video-file"
                 accept="video/*,.mp4,.webm,.mov"
                 onChange={(e) => void setProductVideoPreviewFromFile(e.target.files?.[0] || null)}
                 style={inputStyle()}

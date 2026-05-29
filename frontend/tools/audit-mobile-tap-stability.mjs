@@ -324,6 +324,16 @@ if (
   });
 }
 
+if (!/'input\[type="file"\]'/.test(mobileTapGuardSource)) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must recognize visible file inputs as action roots",
+    text: "Expected input[type=\"file\"] in ACTION_ROOT_SELECTOR.",
+  });
+}
+
 if (
   !/import \{ installMobileTapGuard \} from "\.\/lib\/mobileTapGuard";[\s\S]*?installMobileTapGuard\(\);/.test(
     mainSource

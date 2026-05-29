@@ -2022,7 +2022,8 @@ export default function CommunityHomePage() {
         openCommunityRoute(event, "/join");
         break;
       case "circle":
-        openCommunityHomeSection(event, "community-home-grow-your-circle", "circle");
+        showNotice("success", "Opening First Circle now.");
+        openCommunityRoute(event, routes.buildFirstCircle);
         break;
       case "shop-control":
         if (nextStep === "choose-community") {

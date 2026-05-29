@@ -1182,15 +1182,25 @@ export default function ShopControlPage() {
     );
   }
 
-  function copyText(text: string, successMessage: string, sectionId?: string) {
+  async function copyText(
+    text: string,
+    successMessage: string,
+    sectionId?: string
+  ): Promise<boolean> {
     if (!text) {
       showNotice("error", "Nothing to copy yet.");
-      return;
+      return false;
     }
 
     pinShopControlLinkSection(sectionId);
-    safeCopy(text);
-    showNotice("success", successMessage);
+    const copied = await safeCopy(text);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? successMessage
+        : "Clipboard copy was blocked. Select the text and copy it manually."
+    );
+    return copied;
   }
 
   function vaultLinkUrl(link: VaultLinkRecord | null | undefined): string {
@@ -1231,7 +1241,7 @@ export default function ShopControlPage() {
         watermark_enabled: true,
       });
       setVaultLinks((prev) => [link as VaultLinkRecord, ...prev]);
-      copyText(
+      await copyText(
         vaultLinkUrl(link as VaultLinkRecord),
         "Vault viewing link for one private offer created and copied.",
         "shop-control-vault"
@@ -1302,9 +1312,17 @@ export default function ShopControlPage() {
 
   function openExternalLink(url?: string | null, sectionId?: string) {
     const resolved = safeStr(url);
-    if (!resolved) return;
+    if (!resolved) {
+      showNotice("error", "Link is not ready yet.");
+      return;
+    }
     pinShopControlLinkSection(sectionId);
-    window.open(resolved, "_blank", "noopener,noreferrer");
+    const opened = window.open(resolved, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      showNotice("error", "The browser blocked that window. Copy the link and open it yourself.");
+      return;
+    }
+    showNotice("success", "Opening link now.");
   }
 
   function paidToolActionLabel(options: {
@@ -1337,13 +1355,15 @@ export default function ShopControlPage() {
       });
 
       await loadPage();
-      copyText(
+      const copied = await copyText(
         firstTruthy(result?.reference_display, result?.reference),
         "Vault payment reference copied."
       );
       showNotice(
-        "success",
-        `Vault payment request created for ${quantityTotal} slot${quantityTotal > 1 ? "s" : ""}.`
+        copied ? "success" : "error",
+        copied
+          ? `Vault payment request created for ${quantityTotal} slot${quantityTotal > 1 ? "s" : ""}. Reference copied.`
+          : `Vault payment request created for ${quantityTotal} slot${quantityTotal > 1 ? "s" : ""}, but clipboard copy was blocked. Copy the reference shown here.`
       );
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Vault payment request could not be created.");
@@ -1371,11 +1391,16 @@ export default function ShopControlPage() {
       });
 
       await loadPage();
-      copyText(
+      const copied = await copyText(
         firstTruthy(result?.reference_display, result?.reference),
         "Shop verification payment reference copied."
       );
-      showNotice("success", "Shop verification payment request created.");
+      showNotice(
+        copied ? "success" : "error",
+        copied
+          ? "Shop verification payment request created. Reference copied."
+          : "Shop verification payment request created, but clipboard copy was blocked. Copy the reference shown here."
+      );
     } catch (err: any) {
       showNotice(
         "error",
@@ -2172,8 +2197,16 @@ export default function ShopControlPage() {
                   <input
                     key={spotlightImageInputKey}
                     type="file"
+                    data-gmfn-action-root="true"
+                    data-cta-id="shop-control.spotlight.image-file"
                     accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/jpg,image/png,image/webp"
-                    disabled={preparingSpotlightImage || creatingSpotlight}
+                    aria-disabled={preparingSpotlightImage || creatingSpotlight || undefined}
+                    onClick={(e) => {
+                      if (preparingSpotlightImage || creatingSpotlight) {
+                        e.preventDefault();
+                        showNotice("info", "GSN is still preparing the current spotlight media.");
+                      }
+                    }}
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null;
                       void handleSpotlightImagePicked(file);
@@ -2205,8 +2238,16 @@ export default function ShopControlPage() {
                   <input
                     key={spotlightVideoInputKey}
                     type="file"
+                    data-gmfn-action-root="true"
+                    data-cta-id="shop-control.spotlight.video-file"
                     accept=".mp4,.webm,.mov,video/mp4,video/webm,video/quicktime,video/mov"
-                    disabled={preparingSpotlightVideo || creatingSpotlight}
+                    aria-disabled={preparingSpotlightVideo || creatingSpotlight || undefined}
+                    onClick={(e) => {
+                      if (preparingSpotlightVideo || creatingSpotlight) {
+                        e.preventDefault();
+                        showNotice("info", "GSN is still preparing the current spotlight media.");
+                      }
+                    }}
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null;
                       void handleSpotlightVideoPicked(file);

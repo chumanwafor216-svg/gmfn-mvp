@@ -2097,9 +2097,23 @@ export default function VaultControlPage() {
           <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0,1fr) 320px", gap: 14 }}>
             <div style={{ ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F1F7FD 100%)"), border: "1px solid rgba(23,58,92,0.14)" }}>
               <div style={{ display: "grid", gap: 12 }}>
-                <input type="file" accept="image/*" onChange={(event) => void prepareImage(event.target.files?.[0] || null)} style={inputStyle()} />
+                <input
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="vault-control.editor.image-file"
+                  accept="image/*"
+                  onChange={(event) => void prepareImage(event.target.files?.[0] || null)}
+                  style={inputStyle()}
+                />
                 <input value={imageUrlInput} onChange={(event) => { setImageUrlInput(event.target.value); if (!selectedImageFile) setImagePreviewUrl(event.target.value); }} placeholder="Or paste image link" style={inputStyle()} />
-                <input type="file" accept="video/*,.mp4,.webm,.mov" onChange={(event) => void prepareVideo(event.target.files?.[0] || null)} style={inputStyle()} />
+                <input
+                  type="file"
+                  data-gmfn-action-root="true"
+                  data-cta-id="vault-control.editor.video-file"
+                  accept="video/*,.mp4,.webm,.mov"
+                  onChange={(event) => void prepareVideo(event.target.files?.[0] || null)}
+                  style={inputStyle()}
+                />
                 <input value={videoUrlInput} onChange={(event) => { setVideoUrlInput(event.target.value); if (!selectedVideoFile) setVideoPreviewUrl(event.target.value); }} placeholder="Or paste video link" style={inputStyle()} />
                 <input value={productName} onChange={(event) => setProductName(event.target.value)} placeholder="Private offer name" style={inputStyle()} />
                 <input value={productPrice} onChange={(event) => setProductPrice(event.target.value)} placeholder="Price" style={inputStyle()} />

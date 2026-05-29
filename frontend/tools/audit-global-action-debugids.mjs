@@ -12,6 +12,10 @@ const wrapperFiles = new Set([
   "src/components/uiKit.tsx",
 ]);
 
+const strictOpeningTagFiles = new Set([
+  "src/pages/RouteSmokeCheckPage.tsx",
+]);
+
 const findings = [];
 
 function walk(dir) {
@@ -45,12 +49,23 @@ function assertStableActionsHaveDebugIds(fullPath) {
   let match;
 
   while ((match = actionPattern.exec(text))) {
-    const preview = text.slice(match.index, match.index + 1100);
-    if (!/debugId=/.test(preview)) {
+    const tagEnd = text.indexOf(">", match.index);
+    const openingTag = text.slice(
+      match.index,
+      tagEnd === -1 ? match.index + 1100 : tagEnd + 1
+    );
+    const legacyWindow = text.slice(match.index, match.index + 1100);
+    const hasDebugId = strictOpeningTagFiles.has(file)
+      ? /debugId=/.test(openingTag)
+      : /debugId=/.test(legacyWindow);
+
+    if (!hasDebugId) {
       findings.push({
         file,
         line: text.slice(0, match.index).split(/\r?\n/).length,
-        text: preview.replace(/\s+/g, " ").slice(0, 220),
+        text: (strictOpeningTagFiles.has(file) ? openingTag : legacyWindow)
+          .replace(/\s+/g, " ")
+          .slice(0, 220),
       });
     }
   }

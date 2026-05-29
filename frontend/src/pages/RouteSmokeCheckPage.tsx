@@ -1,5 +1,5 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { StableCtaLink } from "../components/StableButton";
 
 function card(): React.CSSProperties {
   return {
@@ -119,6 +119,15 @@ function linkStyle(): React.CSSProperties {
   };
 }
 
+function routeDebugId(prefix: string, to: string): string {
+  const slug =
+    to
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase() || "root";
+  return `${prefix}.${slug}`;
+}
+
 function noteStyle(): React.CSSProperties {
   return {
     marginTop: 4,
@@ -155,9 +164,13 @@ export default function RouteSmokeCheckPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {memberRoutes.map((route) => (
               <div key={route.to}>
-                <Link to={route.to} style={linkStyle()}>
+                <StableCtaLink
+                  to={route.to}
+                  debugId={routeDebugId("route-smoke.member", route.to)}
+                  style={linkStyle()}
+                >
                   {route.label}
-                </Link>
+                </StableCtaLink>
                 {route.note ? <div style={noteStyle()}>{route.note}</div> : null}
               </div>
             ))}
@@ -169,9 +182,13 @@ export default function RouteSmokeCheckPage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {adminRoutes.map((route) => (
               <div key={route.to}>
-                <Link to={route.to} style={linkStyle()}>
+                <StableCtaLink
+                  to={route.to}
+                  debugId={routeDebugId("route-smoke.admin", route.to)}
+                  style={linkStyle()}
+                >
                   {route.label}
-                </Link>
+                </StableCtaLink>
                 {route.note ? <div style={noteStyle()}>{route.note}</div> : null}
               </div>
             ))}

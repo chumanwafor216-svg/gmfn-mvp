@@ -1,3 +1,77 @@
+### Lane-auditor action response and button stability corrections (2026-05-29)
+
+- Follow-up from product-owner instruction to engage lane auditors for the same
+  process and button-stability protocol.
+- Two parallel read-only auditors reviewed the prior protocol pass:
+  - process/action-response lane;
+  - button/tap-stability lane.
+- Confirmed auditor findings and fixed the concrete blockers:
+  - `frontend/src/pages/CreateEntryPage.tsx`: finish-registration success now
+    stays on the visible panel where the user tapped instead of being
+    overwritten into the hidden Community feedback target.
+  - `frontend/src/pages/CommunityHomePage.tsx`: the `circle` next action now
+    shows a visible response and routes to First Circle instead of expanding a
+    permanently hidden section.
+  - `frontend/src/pages/BuildFirstCirclePage.tsx`: WhatsApp/Facebook invite
+    handoffs now detect blocked popups and show success/error responses; email
+    handoff now shows a visible opening response.
+  - `frontend/src/pages/MarketplacePage.tsx`: marketplace email/external link
+    helpers now show visible handoff responses and detect blocked popup windows;
+    WhatsApp invite buttons route through the shared external-link helper.
+  - `frontend/src/pages/ShopControlPage.tsx`: copy helpers now await clipboard
+    results and report blocked copies instead of false success; external link
+    opening now reports missing links and blocked popups.
+  - `frontend/src/pages/RouteSmokeCheckPage.tsx`: raw React Router `Link`
+    actions were replaced with `StableCtaLink` so route recovery and tap guards
+    run.
+  - Visible file inputs in `ShopControlPage`, `ShopAssetsPage`,
+    `SubscriptionSpotlightPage`, and `VaultControlPage` now carry
+    `data-gmfn-action-root` and `data-cta-id`; Shop Control file inputs also
+    avoid native disabled dead targets.
+  - `frontend/src/lib/mobileTapGuard.ts` now recognizes visible file inputs as
+    action roots.
+- Strengthened audits:
+  - `audit-action-response-protocol.mjs` now checks the exact hidden-feedback,
+    hidden-section, popup, copy, and external-link response risks found by the
+    process auditor.
+  - `audit-global-raw-action-elements.mjs` and
+    `audit-action-surface-contracts.mjs` now catch raw React Router `Link`
+    usage and visible file inputs without stable action markers.
+  - `audit-route-fallthrough.mjs` now agrees with the safer OriginLink behavior:
+    record app-route recovery after blocked/default-prevented taps are ruled
+    out.
+  - `audit-mobile-tap-stability.mjs` now requires file inputs in the global
+    action-root selector.
+- Truth/devil's advocate:
+  - the lane auditors proved the earlier protocol pass was not complete;
+  - this pass fixes the concrete high/medium findings they reported and adds
+    automated checks for those same classes;
+  - the old global debug-ID audit still has legacy looseness outside newly
+    touched route-smoke coverage because making it strict globally exposed a
+    large unrelated backlog. That should be a controlled future hardening pass,
+    not bundled into this pilot fix.
+- Verification:
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:finance-actions` passed.
+  - `npm run audit:loans-actions` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:admin-ops-actions` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx src/pages/CommunityHomePage.tsx src/pages/BuildFirstCirclePage.tsx src/pages/MarketplacePage.tsx src/pages/ShopControlPage.tsx src/pages/RouteSmokeCheckPage.tsx src/pages/ShopAssetsPage.tsx src/pages/SubscriptionSpotlightPage.tsx src/pages/VaultControlPage.tsx src/lib/mobileTapGuard.ts tools/audit-action-response-protocol.mjs tools/audit-action-surface-contracts.mjs tools/audit-global-action-debugids.mjs tools/audit-global-raw-action-elements.mjs tools/audit-mobile-tap-stability.mjs tools/audit-route-fallthrough.mjs` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### System-level action response protocol pass (2026-05-29)
 
 - Follow-up from product-owner concern: the app must not go quiet after an

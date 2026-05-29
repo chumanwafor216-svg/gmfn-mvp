@@ -9,6 +9,7 @@ const srcRoot = join(frontendRoot, "src");
 
 const allowedRawButtonFiles = new Set(["src/components/StableButton.tsx"]);
 const allowedRawAnchorFiles = new Set(["src/components/OriginLink.tsx"]);
+const allowedRawRouterLinkFiles = new Set(["src/components/OriginLink.tsx"]);
 
 const findings = [];
 
@@ -53,6 +54,12 @@ function assertNoUnexpectedRawActionElements(fullPath) {
       message:
         "Raw anchor found outside OriginLink wrapper. Use OriginLink or StableCtaLink.",
     },
+    {
+      pattern: /<Link\b/g,
+      allowed: allowedRawRouterLinkFiles,
+      message:
+        "Raw React Router Link found outside OriginLink wrapper. Use OriginLink or StableCtaLink so app-route recovery and tap guards run.",
+    },
   ];
 
   for (const check of checks) {
@@ -71,6 +78,29 @@ function assertNoUnexpectedRawActionElements(fullPath) {
         text: preview,
       });
     }
+  }
+
+  const fileInputPattern = /<input\b[\s\S]*?type=["']file["'][\s\S]*?\/>/g;
+  let inputMatch;
+  while ((inputMatch = fileInputPattern.exec(text))) {
+    const block = inputMatch[0];
+    const hidden =
+      /display:\s*["']none["']/.test(block) ||
+      /pointerEvents:\s*["']none["']/.test(block) ||
+      /opacity:\s*0\b/.test(block) ||
+      /\bhidden\b/.test(block);
+    if (hidden) continue;
+    if (/data-gmfn-action-root=/.test(block) && /data-cta-id=/.test(block)) {
+      continue;
+    }
+
+    findings.push({
+      file,
+      line: lineNumber(text, inputMatch.index),
+      message:
+        "Visible file input found without stable action markers. Add data-gmfn-action-root and data-cta-id, or hide it behind a stable button.",
+      text: block.replace(/\s+/g, " ").slice(0, 220),
+    });
   }
 }
 

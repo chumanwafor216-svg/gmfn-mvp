@@ -3016,6 +3016,7 @@ export default function MarketplacePage() {
     }
 
     if (typeof window !== "undefined") {
+      showNotice("success", "Opening email now.");
       window.location.href = `mailto:?subject=${encodeURIComponent(
         subject
       )}&body=${encodeURIComponent(body)}`;
@@ -3029,7 +3030,12 @@ export default function MarketplacePage() {
     }
 
     if (typeof window !== "undefined") {
-      window.open(url, "_blank", "noopener,noreferrer");
+      const opened = window.open(url, "_blank", "noopener,noreferrer");
+      if (!opened) {
+        showNotice("error", "The browser blocked that window. Copy the link and open it yourself.");
+        return;
+      }
+      showNotice("success", "Opening link now.");
     }
   }
 
@@ -4470,13 +4476,10 @@ export default function MarketplacePage() {
                             showNotice("error", "Join invite link is not ready yet.");
                             return;
                           }
-                          if (typeof window !== "undefined") {
-                            window.open(
-                              `https://wa.me/?text=${encodeURIComponent(joinWhatsappMessage)}`,
-                              "_blank",
-                              "noopener,noreferrer"
-                            );
-                          }
+                          openMarketplaceExternalLink(
+                            `https://wa.me/?text=${encodeURIComponent(joinWhatsappMessage)}`,
+                            "Join invite link is not ready yet."
+                          );
                         });
                       }}
                       style={marketplaceInlineActionStyle(
@@ -4632,13 +4635,10 @@ export default function MarketplacePage() {
                             showNotice("error", "Create entry link is not ready yet.");
                             return;
                           }
-                          if (typeof window !== "undefined") {
-                            window.open(
-                              `https://wa.me/?text=${encodeURIComponent(createWhatsappMessage)}`,
-                              "_blank",
-                              "noopener,noreferrer"
-                            );
-                          }
+                          openMarketplaceExternalLink(
+                            `https://wa.me/?text=${encodeURIComponent(createWhatsappMessage)}`,
+                            "Create entry link is not ready yet."
+                          );
                         });
                       }}
                       style={marketplaceInlineActionStyle(

@@ -1016,8 +1016,22 @@ export default function SubscriptionSpotlightPage() {
         <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 340px", gap: 14 }}>
           <div style={{ ...brandInnerCard(), display: "grid", gap: 12 }}>
             <textarea value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Write the paid spotlight message people should see first." style={textAreaStyle()} />
-            <input type="file" accept="image/*" onChange={(event) => void prepareImage(event.target.files?.[0] || null)} style={inputStyle()} />
-            <input type="file" accept="video/*,.mp4,.webm,.mov" onChange={(event) => void prepareVideo(event.target.files?.[0] || null)} style={inputStyle()} />
+            <input
+              type="file"
+              data-gmfn-action-root="true"
+              data-cta-id="subscription-spotlight.image-file"
+              accept="image/*"
+              onChange={(event) => void prepareImage(event.target.files?.[0] || null)}
+              style={inputStyle()}
+            />
+            <input
+              type="file"
+              data-gmfn-action-root="true"
+              data-cta-id="subscription-spotlight.video-file"
+              accept="video/*,.mp4,.webm,.mov"
+              onChange={(event) => void prepareVideo(event.target.files?.[0] || null)}
+              style={inputStyle()}
+            />
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={brandBadge(Boolean(imageFile))}>{imageFile ? "🖼️ Picture ready" : "🖼️ Picture optional"}</span>
               <span style={brandBadge(Boolean(videoFile))}>{videoFile ? "🎬 Video ready" : "🎬 Video optional"}</span>

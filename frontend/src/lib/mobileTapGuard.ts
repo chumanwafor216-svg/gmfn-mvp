@@ -7,6 +7,7 @@ const ACTION_ROOT_SELECTOR = [
   "summary",
   'input[type="button"]',
   'input[type="submit"]',
+  'input[type="file"]',
 ].join(",");
 
 const BOTTOM_NAV_SELECTOR =

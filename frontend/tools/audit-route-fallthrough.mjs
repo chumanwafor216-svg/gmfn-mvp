@@ -135,8 +135,8 @@ wholeFileFind(
 
 wholeFileFind(
   "src/components/OriginLink.tsx",
-  /import \{ rememberAppRouteRecovery \} from "\.\.\/lib\/nav";[\s\S]*?const linkDebugId[\s\S]*?origin-link\.app\.route[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?guardLinkTap\(event, rest\.onClick\);/,
-  "Shared internal links must mark /app routes before navigation, not only the final publish button."
+  /import \{ rememberAppRouteRecovery \} from "\.\.\/lib\/nav";[\s\S]*?const linkDebugId[\s\S]*?origin-link\.app\.route[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?if \(!event\.defaultPrevented\) \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);/,
+  "Shared internal links must mark /app routes after blocked/default-prevented taps have been ruled out."
 );
 
 wholeFileFind(

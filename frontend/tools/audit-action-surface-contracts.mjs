@@ -53,7 +53,7 @@ for (const filePath of listSourceFiles(sourceRoot)) {
   lines.forEach((line, index) => {
     if (
       !rawActionAllowed.has(relativePath) &&
-      /^\s*<\s*(button|a|summary)\b/.test(line)
+      /^\s*<\s*(button|a|summary|Link)\b/.test(line)
     ) {
       addFinding(
         relativePath,
@@ -89,6 +89,31 @@ for (const filePath of listSourceFiles(sourceRoot)) {
       );
     }
   });
+
+  if (!rawActionAllowed.has(relativePath)) {
+    const text = lines.join("\n");
+    const fileInputPattern = /<input\b[\s\S]*?type=["']file["'][\s\S]*?\/>/g;
+    let match;
+    while ((match = fileInputPattern.exec(text))) {
+      const block = match[0];
+      const hidden =
+        /display:\s*["']none["']/.test(block) ||
+        /pointerEvents:\s*["']none["']/.test(block) ||
+        /opacity:\s*0\b/.test(block) ||
+        /\bhidden\b/.test(block);
+      if (hidden) continue;
+      if (/data-gmfn-action-root=/.test(block) && /data-cta-id=/.test(block)) {
+        continue;
+      }
+
+      addFinding(
+        relativePath,
+        text.slice(0, match.index).split(/\r?\n/).length,
+        "Visible file input must be marked as a stable action surface.",
+        block.replace(/\s+/g, " ").slice(0, 220)
+      );
+    }
+  }
 }
 
 if (findings.length > 0) {
