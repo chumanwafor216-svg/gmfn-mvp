@@ -4253,7 +4253,6 @@ export default function DashboardPage() {
   }, [currentClan, currentDemandItem, selectedClanId]);
   const currentDemandIsUrgent =
     safeStr(currentDemandItem?.urgency).toLowerCase() === "high";
-  const remainingDemandCount = Math.max(demandItems.length - 1, 0);
   const demandPrimaryActionTo =
     demandItems.length === 0
       ? "/app/demand-box?mode=create"
@@ -6678,9 +6677,9 @@ export default function DashboardPage() {
                   })
                 }
                 slotStyle={{
-                  height: isPhone ? 34 : 36,
-                  minHeight: isPhone ? 34 : 36,
-                  maxHeight: isPhone ? 34 : 36,
+                  height: isPhone ? 46 : 42,
+                  minHeight: isPhone ? 46 : 42,
+                  maxHeight: isPhone ? 46 : 42,
                   width: "100%",
                   minWidth: 0,
                   maxWidth: "100%",
@@ -6690,10 +6689,10 @@ export default function DashboardPage() {
                 }}
                 buttonStyle={{
                     ...dashboardFillButton(subtleBtn(false)),
-                    height: isPhone ? 34 : 36,
-                    minHeight: isPhone ? 34 : 36,
-                    maxHeight: isPhone ? 34 : 36,
-                    padding: isPhone ? "0 8px" : "0 10px",
+                    height: isPhone ? 46 : 42,
+                    minHeight: isPhone ? 46 : 42,
+                    maxHeight: isPhone ? 46 : 42,
+                    padding: isPhone ? "0 12px" : "0 12px",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
@@ -6701,7 +6700,7 @@ export default function DashboardPage() {
                     flex: "0 0 auto",
                     verticalAlign: "top",
                     borderRadius: 999,
-                    fontSize: isPhone ? 10.5 : 11.5,
+                    fontSize: isPhone ? 12 : 12,
                     lineHeight: 1,
                     whiteSpace: "nowrap",
                     overflow: "hidden",
@@ -6711,11 +6710,12 @@ export default function DashboardPage() {
                 }}
                 railGap={6}
                 railColumns="1fr"
+                railMinWidth={isPhone ? 190 : 180}
                 railStyle={{
-                    gap: 5,
+                    gap: 8,
                     alignContent: "start",
-                    borderRadius: 14,
-                    padding: 6,
+                    borderRadius: 18,
+                    padding: 10,
                     background:
                       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
                     border: "1px solid rgba(11,99,209,0.12)",
@@ -6728,11 +6728,11 @@ export default function DashboardPage() {
                     onClick: openAvatarPicker,
                     style: {
                       ...dashboardFillButton(subtleBtn(false)),
-                      minHeight: isPhone ? 34 : 36,
-                      height: isPhone ? 34 : 36,
-                      maxHeight: isPhone ? 34 : 36,
-                      padding: isPhone ? "7px 8px" : "8px 10px",
-                      fontSize: isPhone ? 10.5 : 11.5,
+                      minHeight: isPhone ? 46 : 42,
+                      height: isPhone ? 46 : 42,
+                      maxHeight: isPhone ? 46 : 42,
+                      padding: isPhone ? "9px 12px" : "8px 12px",
+                      fontSize: isPhone ? 12 : 12,
                       lineHeight: 1,
                       whiteSpace: "nowrap",
                       transition: "none",
@@ -6743,11 +6743,11 @@ export default function DashboardPage() {
                     onClick: openAvatarPicker,
                     style: {
                       ...dashboardFillButton(subtleBtn(false)),
-                      minHeight: isPhone ? 34 : 36,
-                      height: isPhone ? 34 : 36,
-                      maxHeight: isPhone ? 34 : 36,
-                      padding: isPhone ? "7px 8px" : "8px 10px",
-                      fontSize: isPhone ? 10.5 : 11.5,
+                      minHeight: isPhone ? 46 : 42,
+                      height: isPhone ? 46 : 42,
+                      maxHeight: isPhone ? 46 : 42,
+                      padding: isPhone ? "9px 12px" : "8px 12px",
+                      fontSize: isPhone ? 12 : 12,
                       lineHeight: 1,
                       whiteSpace: "nowrap",
                       transition: "none",
@@ -6759,11 +6759,11 @@ export default function DashboardPage() {
                     onClick: removeAvatar,
                     style: {
                       ...dashboardFillButton(subtleBtn(!avatarSrc)),
-                      minHeight: isPhone ? 34 : 36,
-                      height: isPhone ? 34 : 36,
-                      maxHeight: isPhone ? 34 : 36,
-                      padding: isPhone ? "7px 8px" : "8px 10px",
-                      fontSize: isPhone ? 10.5 : 11.5,
+                      minHeight: isPhone ? 46 : 42,
+                      height: isPhone ? 46 : 42,
+                      maxHeight: isPhone ? 46 : 42,
+                      padding: isPhone ? "9px 12px" : "8px 12px",
+                      fontSize: isPhone ? 12 : 12,
                       lineHeight: 1,
                       whiteSpace: "nowrap",
                       transition: "none",
@@ -7353,6 +7353,7 @@ export default function DashboardPage() {
                   }}
                   railGap={8}
                   railColumns="repeat(3, minmax(0, 1fr))"
+                  railMinWidth={isPhone ? 210 : 280}
                   railStyle={{
                       gap: 8,
                       alignItems: "stretch",

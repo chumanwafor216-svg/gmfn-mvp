@@ -3,6 +3,7 @@ import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
   SecondaryButton,
+  StableCtaLink,
   StableButton,
   SubtleButton,
 } from "../components/StableButton";
@@ -25,7 +26,7 @@ type FirstCircleContact = {
   email?: string;
   note?: string;
   selected?: boolean;
-  source?: "manual" | "device";
+  source?: "manual" | "device" | "quick";
 };
 
 type FirstCircleDraft = {
@@ -40,6 +41,10 @@ type ManualFormState = {
   email: string;
   note: string;
   selected: boolean;
+};
+
+type QuickPersonRow = {
+  value: string;
 };
 
 type CollapseState = {
@@ -513,6 +518,7 @@ export default function BuildFirstCirclePage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [draft, setDraft] = useState<FirstCircleDraft>(defaultDraft());
   const [manualForm, setManualForm] = useState<ManualFormState>(defaultManualForm());
+  const [quickRows, setQuickRows] = useState<QuickPersonRow[]>(defaultQuickRows());
   const [pickingContacts, setPickingContacts] = useState(false);
   const [focusedAction, setFocusedAction] = useState<FocusedAction>(null);
 
@@ -562,6 +568,23 @@ export default function BuildFirstCirclePage() {
         setMe(meRes || null);
         setCurrentClan(clanRes || null);
         setDraft(loadedDraft);
+        setQuickRows(() => {
+          const quickContacts = loadedDraft.contacts.filter((item) =>
+            safeStr(item.id).startsWith("quick-person-")
+          );
+          if (!quickContacts.length) return defaultQuickRows();
+
+          return defaultQuickRows().map((row, index) => {
+            const contact = quickContacts.find(
+              (item) => safeStr(item.id) === `quick-person-${index + 1}`
+            );
+            if (!contact) return row;
+            const detail = safeStr(contact.email || contact.phone);
+            return {
+              value: [safeStr(contact.name), detail].filter(Boolean).join(", "),
+            };
+          });
+        });
         setManualForm((prev) => ({
           ...prev,
           relationship:
@@ -720,15 +743,50 @@ export default function BuildFirstCirclePage() {
   }
 
   function setRole(role: string) {
+    const nextRelationship = suggestedRelationships(role)[0] || "trusted";
+    const quickContacts = quickRows
+      .map((row, index) => quickPersonContact(row.value, index, nextRelationship))
+      .filter(Boolean) as FirstCircleContact[];
+
     updateDraft({
       ...draft,
       memberRole: role,
+      contacts: [
+        ...quickContacts,
+        ...draft.contacts.filter(
+          (item) => !safeStr(item.id).startsWith("quick-person-")
+        ),
+      ],
     });
 
     setManualForm((prev) => ({
       ...prev,
-      relationship: prev.relationship || suggestedRelationships(role)[0] || "",
+      relationship: prev.relationship || nextRelationship,
     }));
+  }
+
+  function updateQuickRow(index: number, value: string) {
+    const nextRows = quickRows.map((row, rowIndex) =>
+      rowIndex === index ? { value } : row
+    );
+    const defaultRelationship =
+      roleHints[0] || safeStr(manualForm.relationship) || "trusted";
+    const quickContacts = nextRows
+      .map((row, rowIndex) =>
+        quickPersonContact(row.value, rowIndex, defaultRelationship)
+      )
+      .filter(Boolean) as FirstCircleContact[];
+
+    setQuickRows(nextRows);
+    updateDraft({
+      ...draft,
+      contacts: [
+        ...quickContacts,
+        ...draft.contacts.filter(
+          (item) => !safeStr(item.id).startsWith("quick-person-")
+        ),
+      ],
+    });
   }
 
   function addManualContact() {
@@ -865,14 +923,19 @@ export default function BuildFirstCirclePage() {
     });
   }
 
-  function copyInviteBundle() {
+  async function copyInviteBundle() {
     if (readyContacts.length === 0) {
       showNotice("error", "No ready invite message is available yet.");
       return;
     }
 
-    safeCopy(inviteBundle);
-    showNotice("success", "Invite message copied.");
+    const copied = await safeCopy(inviteBundle);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? "Invite message copied."
+        : "Copy did not complete. Select the message and copy it manually."
+    );
   }
 
   async function copyJoinInvite() {
@@ -968,6 +1031,7 @@ export default function BuildFirstCirclePage() {
     clearSavedDraft();
     setDraft(next);
     setManualForm(defaultManualForm());
+    setQuickRows(defaultQuickRows());
     showNotice("success", "First-circle draft cleared.");
   }
 
@@ -979,6 +1043,18 @@ export default function BuildFirstCirclePage() {
     dashboard: routeTarget("dashboard", "build-first-circle.route.dashboard"),
     community: routeTarget("communityHome", "build-first-circle.route.community"),
   };
+  const quickRoleOptions = [
+    "supplier",
+    "buyer",
+    "dealer",
+    "trader",
+    "service_provider",
+  ].filter((role) => (ROLE_OPTIONS as string[]).includes(role));
+  const messagePreview =
+    readyContacts.length > 0
+      ? inviteBundle
+      : "Hi! I am inviting you to join me on GSN (GMFN).\nLet us build trust and grow together.";
+  const showLegacyFirstCirclePanels = false;
 
   if (loading) {
     return (
@@ -1020,18 +1096,581 @@ export default function BuildFirstCirclePage() {
         gap: 18,
       }}
     >
-      <PageTopNav
-        sectionLabel="Focused task"
-        title="First Circle"
-        subtitle="Aim: add real people you already trust."
-        homeTo={routes.dashboard}
-        homeLabel="Dashboard"
-        backTo={routes.community}
-        backLabel="Community Home"
-      />
+      <section
+        style={{
+          ...pageCard(
+            "radial-gradient(circle at 86% 24%, rgba(44,96,151,0.28) 0%, rgba(44,96,151,0.00) 30%), linear-gradient(135deg, #06101E 0%, #09233D 58%, #0B3A69 100%)"
+          ),
+          borderRadius: 22,
+          padding: isCompact ? 24 : 34,
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 300px",
+            gap: 18,
+            alignItems: "center",
+          }}
+        >
+          <div>
+            <div style={{ ...sectionLabel(), color: "#3B82F6", fontSize: 13 }}>
+              Focused task
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#FFFFFF",
+                fontWeight: 1000,
+                fontSize: isCompact ? 42 : 56,
+                lineHeight: 0.98,
+              }}
+            >
+              First Circle
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                color: "#C8D8EA",
+                fontSize: isCompact ? 16 : 18,
+                fontWeight: 800,
+              }}
+            >
+              Add people you already trust.
+            </div>
+            <div
+              style={{
+                marginTop: 22,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 220px))",
+                gap: 12,
+              }}
+            >
+              <StableCtaLink
+                to={routes.dashboard}
+                stableHeight={58}
+                debugId="build-first-circle.hero.dashboard"
+                style={{
+                  borderRadius: 16,
+                  background: "rgba(255,255,255,0.04)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(203,220,240,0.22)",
+                  fontSize: 16,
+                  fontWeight: 950,
+                }}
+              >
+                Dashboard
+              </StableCtaLink>
+              <StableCtaLink
+                to={routes.community}
+                stableHeight={58}
+                debugId="build-first-circle.hero.community"
+                style={{
+                  borderRadius: 16,
+                  background: "rgba(255,255,255,0.04)",
+                  color: "#F8FBFF",
+                  border: "1px solid rgba(203,220,240,0.22)",
+                  fontSize: 16,
+                  fontWeight: 950,
+                }}
+              >
+                Community Home
+              </StableCtaLink>
+            </div>
+          </div>
+          <div
+            aria-hidden="true"
+            style={{
+              minHeight: isCompact ? 80 : 190,
+              borderRadius: 28,
+              border: "1px solid rgba(203,220,240,0.10)",
+              opacity: 0.55,
+              display: "grid",
+              placeItems: "center",
+              color: "rgba(203,220,240,0.32)",
+              fontSize: 0,
+              fontWeight: 1000,
+              background:
+                "radial-gradient(circle, rgba(203,220,240,0.14) 0%, rgba(203,220,240,0.04) 58%, rgba(203,220,240,0.00) 100%)",
+            }}
+          >
+            GSN
+          </div>
+        </div>
+      </section>
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      <section
+        style={{
+          ...pageCard(
+            "linear-gradient(180deg, #06101E 0%, #08223C 48%, #0A3156 100%)"
+          ),
+          borderRadius: 22,
+          padding: isCompact ? 18 : 32,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color: "#F8FBFF",
+              fontWeight: 1000,
+              fontSize: isCompact ? 34 : 42,
+              lineHeight: 1.05,
+            }}
+          >
+            Add trusted people
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+              color: "#C8D8EA",
+              fontSize: isCompact ? 15 : 17,
+              fontWeight: 750,
+              lineHeight: 1.45,
+            }}
+          >
+            Start with family, buyers, suppliers, partners.
+          </div>
+
+          <div
+            style={{
+              marginTop: 16,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(220px, 0.9fr)",
+              gap: 12,
+            }}
+          >
+            <span style={badge(true)}>Community: {communityName}</span>
+            <span style={badge(false)}>GSN ID: {gmfnId || "Awaiting issue"}</span>
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0, 1fr)",
+              gap: 14,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ color: "#E6EEF8", fontWeight: 950 }}>
+              People {readyCount}/{targetCount}
+            </div>
+            <div
+              aria-label={`First circle progress ${progressPercent}%`}
+              style={{
+                height: 12,
+                borderRadius: 999,
+                background: "rgba(203,220,240,0.12)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  width: `${Math.max(progressPercent, readyCount > 0 ? 8 : 0)}%`,
+                  height: "100%",
+                  borderRadius: 999,
+                  background: "linear-gradient(90deg, #2563EB 0%, #F0C94B 100%)",
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+          <div style={innerCard("#FFFFFF")}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "48px minmax(0, 1fr) auto",
+                gap: 14,
+                alignItems: "start",
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(37,99,235,0.24)",
+                  color: "#DBEAFE",
+                  fontWeight: 1000,
+                }}
+              >
+                1
+              </div>
+              <div>
+                <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
+                  Pick your aim
+                </div>
+                <div style={{ marginTop: 6, ...helperText() }}>
+                  What do you mostly do?
+                </div>
+                <select
+                  value={safeStr(draft.memberRole)}
+                  onChange={(event) => setRole(event.target.value)}
+                  style={{
+                    ...inputStyle(),
+                    marginTop: 12,
+                    minHeight: 54,
+                    background: "rgba(8,22,38,0.72)",
+                    color: "#E6EEF8",
+                    border: "1px solid rgba(203,220,240,0.20)",
+                  }}
+                >
+                  <option value="">Choose one</option>
+                  {ROLE_OPTIONS.map((role) => (
+                    <option key={role} value={role}>
+                      {roleText(role)}
+                    </option>
+                  ))}
+                </select>
+                <div style={{ marginTop: 14, ...helperText(), fontSize: 13 }}>
+                  Suggested roles
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: 8,
+                  }}
+                >
+                  {quickRoleOptions.map((role) => {
+                    const active = safeStr(draft.memberRole) === role;
+                    return (
+                      <StableButton
+                        key={role}
+                        kind={active ? "primary" : "secondary"}
+                        onClick={() => setRole(role)}
+                        stableHeight={42}
+                        debugId={`build-first-circle.quick-role.${role}`}
+                        style={{
+                          borderRadius: 14,
+                          padding: "0 16px",
+                          fontWeight: 950,
+                        }}
+                      >
+                        {roleText(role)}
+                      </StableButton>
+                    );
+                  })}
+                </div>
+              </div>
+              <div style={{ color: "#8EA7C4", fontSize: 24, lineHeight: 1 }}>
+                v
+              </div>
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "48px minmax(0, 1fr) auto",
+                gap: 14,
+                alignItems: "start",
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(37,99,235,0.24)",
+                  color: "#DBEAFE",
+                  fontWeight: 1000,
+                }}
+              >
+                2
+              </div>
+              <div>
+                <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
+                  Add 3 people
+                </div>
+                <div style={{ marginTop: 6, ...helperText() }}>
+                  Phone or email makes invites easy.
+                </div>
+                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                  {quickRows.map((row, index) => (
+                    <label
+                      key={index}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "minmax(0, 1fr) 34px",
+                        gap: 8,
+                        alignItems: "center",
+                      }}
+                    >
+                      <input
+                        value={row.value}
+                        onChange={(event) => updateQuickRow(index, event.target.value)}
+                        placeholder="Name, phone or email"
+                        aria-label={`Trusted person ${index + 1}`}
+                        style={{
+                          ...inputStyle(),
+                          minHeight: 50,
+                          background: "rgba(8,22,38,0.72)",
+                          color: "#E6EEF8",
+                          border: "1px solid rgba(203,220,240,0.20)",
+                        }}
+                      />
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 999,
+                          display: "grid",
+                          placeItems: "center",
+                          background: "rgba(203,220,240,0.12)",
+                          color: "#C8D8EA",
+                          fontWeight: 1000,
+                        }}
+                      >
+                        {index + 1}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div style={{ color: "#8EA7C4", fontSize: 24, lineHeight: 1 }}>
+                v
+              </div>
+            </div>
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "48px minmax(0, 1fr)",
+                gap: 14,
+                alignItems: "center",
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(34,197,94,0.18)",
+                  color: "#BBF7D0",
+                  fontWeight: 1000,
+                }}
+              >
+                3
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto auto",
+                  gap: 12,
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
+                    Check people
+                  </div>
+                  <div style={{ marginTop: 6, ...helperText() }}>
+                    Review your list before inviting.
+                  </div>
+                </div>
+                <span
+                  style={{
+                    ...badge(readyContacts.length > 0),
+                    justifyContent: "center",
+                  }}
+                >
+                  {readyContacts.length} contacts
+                </span>
+                <SecondaryButton
+                  onClick={() => toggleSection("contacts")}
+                  stableHeight={46}
+                  debugId="build-first-circle.open-list"
+                  style={{ borderRadius: 14, minWidth: isCompact ? undefined : 128 }}
+                >
+                  {collapsed.contacts ? "Open list" : "Close list"}
+                </SecondaryButton>
+              </div>
+            </div>
+
+            {!collapsed.contacts ? (
+              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+                {draft.contacts.length === 0 ? (
+                  <div style={{ ...helperText(), color: "#C8D8EA" }}>
+                    No trusted person has been added yet.
+                  </div>
+                ) : (
+                  draft.contacts.map((item) => (
+                    <div
+                      key={item.id}
+                      style={{
+                        borderRadius: 14,
+                        border: "1px solid rgba(203,220,240,0.14)",
+                        background: "rgba(8,22,38,0.56)",
+                        padding: 12,
+                        display: "grid",
+                        gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                        gap: 10,
+                        alignItems: "center",
+                      }}
+                    >
+                      <div>
+                        <div style={{ color: "#F8FBFF", fontWeight: 950 }}>
+                          {safeStr(item.name || "Contact")}
+                        </div>
+                        <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                          {[
+                            relationshipText(item.relationship),
+                            safeStr(item.phone || item.email),
+                            contactInviteReady(item)
+                              ? "Invite ready"
+                              : "Needs phone or email",
+                          ]
+                            .filter(Boolean)
+                            .join(" - ")}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <StableButton
+                          kind={item.selected ? "primary" : "secondary"}
+                          onClick={() => toggleSelected(item.id)}
+                          stableHeight={42}
+                          debugId={`build-first-circle.contact.${item.id}.toggle-selected`}
+                        >
+                          {item.selected ? "Included" : "Include"}
+                        </StableButton>
+                        <SubtleButton
+                          onClick={() => removeContact(item.id)}
+                          stableHeight={42}
+                          debugId={`build-first-circle.contact.${item.id}.remove`}
+                        >
+                          Remove
+                        </SubtleButton>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
+
+          <div style={innerCard("#FFFFFF")}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "48px minmax(0, 1fr) auto",
+                gap: 14,
+                alignItems: "start",
+              }}
+            >
+              <div
+                aria-hidden="true"
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "rgba(124,58,237,0.20)",
+                  color: "#DDD6FE",
+                  fontWeight: 1000,
+                }}
+              >
+                4
+              </div>
+              <div>
+                <div style={{ color: "#FFFFFF", fontSize: 24, fontWeight: 1000 }}>
+                  Invite message
+                </div>
+                <div style={{ marginTop: 6, ...helperText() }}>
+                  A ready message to invite your people.
+                </div>
+                <div
+                  style={{
+                    marginTop: 12,
+                    borderRadius: 14,
+                    border: "1px solid rgba(203,220,240,0.16)",
+                    background: "rgba(3,12,24,0.72)",
+                    padding: 14,
+                    color: "#DCEBFB",
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {messagePreview}
+                </div>
+                <div
+                  style={{
+                    marginTop: 14,
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
+                  <SecondaryButton
+                    onClick={() => {
+                      void copyInviteBundle();
+                    }}
+                    stableHeight={52}
+                    debugId="build-first-circle.copy-invite"
+                    style={{ borderRadius: 14 }}
+                  >
+                    Copy invite
+                  </SecondaryButton>
+                  <PrimaryButton
+                    onClick={openWhatsAppInvite}
+                    stableHeight={52}
+                    debugId="build-first-circle.share-whatsapp"
+                    style={{
+                      borderRadius: 14,
+                      background: "#15803D",
+                      border: "1px solid rgba(187,247,208,0.22)",
+                    }}
+                  >
+                    Share WhatsApp
+                  </PrimaryButton>
+                </div>
+              </div>
+              <div style={{ color: "#8EA7C4", fontSize: 24, lineHeight: 1 }}>
+                v
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            marginTop: 16,
+            borderRadius: 18,
+            border: "1px solid rgba(203,220,240,0.12)",
+            background: "rgba(20,48,78,0.68)",
+            padding: isCompact ? 14 : 18,
+            color: "#DCEBFB",
+            fontWeight: 900,
+            textAlign: "center",
+          }}
+        >
+          Trust is our network. Your circle builds the future.
+        </div>
+      </section>
+
+      {showLegacyFirstCirclePanels ? (
+      <>
       <section
         style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
       >
@@ -1222,7 +1861,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.phone-contacts"
           >
-            📱 Phone book
+            Phone book
           </PrimaryButton>
           <SecondaryButton
             onClick={openWhatsAppInvite}
@@ -1230,7 +1869,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.whatsapp"
           >
-            💬 WhatsApp
+            WhatsApp
           </SecondaryButton>
           <SecondaryButton
             onClick={openEmailInvite}
@@ -1238,7 +1877,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.email"
           >
-            ✉️ Email
+            Email
           </SecondaryButton>
           <SecondaryButton
             onClick={openFacebookInvite}
@@ -1246,7 +1885,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.facebook"
           >
-            📣 Facebook
+            Facebook
           </SecondaryButton>
           <SecondaryButton
             onClick={() => {
@@ -1256,7 +1895,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.share"
           >
-            ↗ Share
+            Share
           </SecondaryButton>
           <SecondaryButton
             onClick={() => {
@@ -1266,7 +1905,7 @@ export default function BuildFirstCirclePage() {
             stableHeight={52}
             debugId="build-first-circle.quick.copy"
           >
-            📋 Copy
+            Copy
           </SecondaryButton>
         </div>
       </section>
@@ -1811,6 +2450,40 @@ export default function BuildFirstCirclePage() {
       </section>
       </>
       ) : null}
+      </>
+      ) : null}
     </div>
   );
+}
+
+function defaultQuickRows(): QuickPersonRow[] {
+  return [{ value: "" }, { value: "" }, { value: "" }];
+}
+
+function quickPersonContact(
+  value: string,
+  index: number,
+  relationship: string
+): FirstCircleContact | null {
+  const raw = safeStr(value);
+  if (!raw) return null;
+
+  const parts = raw
+    .split(",")
+    .map((part) => safeStr(part))
+    .filter(Boolean);
+  const name = parts[0] || raw;
+  const contactDetail = parts.slice(1).join(" ");
+  const email = contactDetail.includes("@") ? contactDetail : "";
+  const phone = email ? "" : contactDetail;
+
+  return {
+    id: `quick-person-${index + 1}`,
+    name,
+    relationship: relationship || "trusted",
+    phone: phone || undefined,
+    email: email || undefined,
+    selected: true,
+    source: "quick",
+  };
 }

@@ -29346,3 +29346,45 @@ GSN-branded invite composer and invite-entry continuity.
   - Post-auth routes for adding/replacing photo proof and official ID proof are
     still not built. Trust Passport can explain current evidence, but a
     dedicated completion route remains separate work.
+
+### Dashboard frame tools and First Circle compact rebuild (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, dashboard identity picture-frame controls only.
+  - `/app/build-first-circle`, First Circle focused task page.
+- Frontend change:
+  - `frontend/src/components/PictureFrameToolsControl.tsx` now keeps pointer
+    propagation contained without preventing the native pointer/click sequence,
+    so phone taps can land on the intended frame action more reliably.
+  - The frame tool rail can enforce a minimum width and automatically collapses
+    to one column on narrow rails, while preserving the audit-required dashboard
+    contract.
+  - `frontend/src/pages/DashboardPage.tsx` gives the passport and main picture
+    frame controls larger touch targets and wider anchored rails.
+  - `frontend/src/pages/BuildFirstCirclePage.tsx` now presents First Circle as
+    one compact four-step card: pick aim, add three people, check the list, and
+    copy/share the invite message. Deeper contact review opens only through
+    `Open list`.
+- Guardrails:
+  - No backend, auth, schema, invite-link API, or community membership contract
+    changed.
+  - Dashboard Market Wisdom remains untouched. The dashboard edit is narrowly
+    scoped to the user-requested picture-frame controls.
+  - Legacy First Circle panels are kept behind a disabled local flag for pilot
+    safety while the new compact surface is live.
+- Verification:
+  - `npm exec -- eslint src/components/PictureFrameToolsControl.tsx src/pages/DashboardPage.tsx src/pages/BuildFirstCirclePage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npx tsc -b` passed.
+  - `npm run build` passed after the known sandbox Vite/esbuild `spawn EPERM`
+    and approved escalation.
+- Remaining truth:
+  - The First Circle layout is now aligned to the supplied reference structure,
+    but it is not a pixel-perfect screenshot clone; exact iconography was kept
+    ASCII-safe and tied to existing app primitives.

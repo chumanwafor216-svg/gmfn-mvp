@@ -26,25 +26,37 @@ type PictureFrameToolsControlProps = {
   railStyle: React.CSSProperties;
   railGap?: number;
   railColumns?: string;
+  railMinWidth?: number;
   zIndex?: number;
 };
 
 function stopFrameToolEvent(event?: React.SyntheticEvent<HTMLElement>) {
-  event?.preventDefault();
   event?.stopPropagation();
 }
 
 function stableRailPlacement(
   element: HTMLElement | null,
-  railGap: number
+  railGap: number,
+  railMinWidth: number
 ): RailPlacement | null {
   if (typeof window === "undefined" || !element) return null;
 
   const rect = element.getBoundingClientRect();
+  const viewportWidth = Math.max(320, window.innerWidth || 320);
+  const width = Math.min(
+    Math.max(1, rect.width, railMinWidth),
+    Math.max(1, viewportWidth - 16)
+  );
+  const preferredLeft = rect.right - width;
+  const left = Math.min(
+    Math.max(8, preferredLeft),
+    Math.max(8, viewportWidth - width - 8)
+  );
+
   return {
-    left: Math.max(8, rect.left),
+    left,
     top: Math.max(8, rect.bottom + railGap),
-    width: Math.max(1, rect.width),
+    width,
   };
 }
 
@@ -59,11 +71,14 @@ export default function PictureFrameToolsControl({
   railStyle,
   railGap = 8,
   railColumns = "1fr",
+  railMinWidth = 180,
   zIndex = 1800,
 }: PictureFrameToolsControlProps) {
   const railId = useId();
   const slotRef = useRef<HTMLDivElement | null>(null);
   const [placement, setPlacement] = useState<RailPlacement | null>(null);
+  const resolvedRailColumns =
+    placement && placement.width < 260 ? "1fr" : railColumns;
 
   useEffect(() => {
     if (!open) {
@@ -72,7 +87,7 @@ export default function PictureFrameToolsControl({
     }
 
     function updatePlacement() {
-      setPlacement(stableRailPlacement(slotRef.current, railGap));
+      setPlacement(stableRailPlacement(slotRef.current, railGap, railMinWidth));
     }
 
     updatePlacement();
@@ -83,7 +98,7 @@ export default function PictureFrameToolsControl({
       window.removeEventListener("resize", updatePlacement);
       window.removeEventListener("scroll", updatePlacement, true);
     };
-  }, [open, railGap]);
+  }, [open, railGap, railMinWidth]);
 
   const rail =
     open && placement && typeof document !== "undefined"
@@ -104,7 +119,7 @@ export default function PictureFrameToolsControl({
               width: placement.width,
               zIndex,
               display: "grid",
-              gridTemplateColumns: railColumns,
+              gridTemplateColumns: resolvedRailColumns,
               pointerEvents: "auto",
               visibility: "visible",
               opacity: 1,
@@ -114,7 +129,6 @@ export default function PictureFrameToolsControl({
               <SecondaryButton
                 key={action.label}
                 aria-disabled={Boolean(action.disabled)}
-                disabled={Boolean(action.disabled)}
                 onClick={(event) => {
                   stopFrameToolEvent(event);
                   if (action.disabled) return;
