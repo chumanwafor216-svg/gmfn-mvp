@@ -29891,3 +29891,28 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This changes presentation language only. It does not change underlying
     Trust/CCI calculations, storage, or route contracts.
+
+### Dashboard passport approved mock alignment (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport hero card only.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` now follows the supplied passport
+    mock structure: identity title, avatar with shield badge, centered GSN pill,
+    Visible/Portable/Usable strip, dark Trust/CCI/TrustSlip signal band, and
+    GSN ID row.
+  - The visible `Frame` pill was replaced by the shield badge on the avatar,
+    but the same picture-frame tools still open from that badge, so Upload,
+    Change, and Remove remain reachable.
+  - Trust and CCI stay non-score language (`Building`, `Developing`, etc.);
+    CCI shows the `Cross-Community Integrity` explainer in the tile.
+  - `frontend/tools/audit-dashboard-actions.mjs` now guards the approved
+    passport badge, feature strip, and Trust/CCI/TrustSlip structure.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now recognises the
+    shield-badge passport picture tool trigger.
+- Guardrails:
+  - No backend, auth, schema, TrustSlip route contract, or Market Wisdom section
+    changed.
+- Remaining truth:
+  - This is an implementation match to the attached mock, but it has not been
+    pixel-verified on the user's actual Android browser in this session.

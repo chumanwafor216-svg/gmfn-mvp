@@ -96,13 +96,18 @@ assertContains(
 );
 
 assertContains(
-  /function readableTrustStatus\(classText: unknown\)[\s\S]*?return "Not enough info"[\s\S]*?return "Care needed"/,
+  /function readableTrustStatus\(classText: unknown\)[\s\S]*?return "Not enough info"[\s\S]*?return "Building"[\s\S]*?return "Developing"/,
   "Dashboard passport trust language must stay plain-language and non-numeric."
 );
 
 assertContains(
-  /label: "Wider"[\s\S]*?value: readableTrustStatus\(cci\.classText\)[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Pending"/,
-  "Dashboard passport signals must keep compact non-score Trust, Wider, and TrustSlip readings."
+  /label: "CCI"[\s\S]*?value: readableTrustStatus\(cci\.classText\)[\s\S]*?detail: "Cross-Community Integrity"[\s\S]*?label: "TrustSlip"[\s\S]*?value: trustSlipCode \|\| "Pending"/,
+  "Dashboard passport signals must keep the approved Trust, CCI, and TrustSlip readings."
+);
+
+assertContains(
+  /label=\{"\\u2713"\}[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
+  "Dashboard passport must keep the approved shield badge and Visible/Portable/Usable strip."
 );
 
 assertContains(

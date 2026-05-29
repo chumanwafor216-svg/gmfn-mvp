@@ -863,6 +863,83 @@ function DashboardSignalIcon({
   );
 }
 
+function DashboardPassportFeatureIcon({
+  name,
+  size = 18,
+}: {
+  name: "eye" | "briefcase" | "check";
+  size?: number;
+}) {
+  if (name === "eye") {
+    return (
+      <svg
+        aria-hidden="true"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        style={{ display: "block", flexShrink: 0 }}
+      >
+        <path
+          d="M2.8 12s3.4-6 9.2-6 9.2 6 9.2 6-3.4 6-9.2 6-9.2-6-9.2-6Z"
+          stroke="currentColor"
+          strokeWidth="2.3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <circle cx="12" cy="12" r="2.6" stroke="currentColor" strokeWidth="2.3" />
+      </svg>
+    );
+  }
+
+  if (name === "briefcase") {
+    return (
+      <svg
+        aria-hidden="true"
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        style={{ display: "block", flexShrink: 0 }}
+      >
+        <path
+          d="M8 7V5.8C8 4.8 8.8 4 9.8 4h4.4c1 0 1.8.8 1.8 1.8V7"
+          stroke="currentColor"
+          strokeWidth="2.3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M4.5 7.5h15v10.8c0 1-.8 1.7-1.7 1.7H6.2c-.9 0-1.7-.8-1.7-1.7V7.5Z"
+          stroke="currentColor"
+          strokeWidth="2.3"
+          strokeLinejoin="round"
+        />
+        <path d="M9 12h6" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      <circle cx="12" cy="12" r="8.6" stroke="currentColor" strokeWidth="2.3" />
+      <path
+        d="m8.4 12.1 2.4 2.4 4.9-5.2"
+        stroke="currentColor"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function DashboardChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <svg
@@ -982,15 +1059,25 @@ function readableTrustStatus(classText: unknown): string {
     case "A":
       return "Strong";
     case "B":
-      return "Growing";
+      return "Established";
     case "C":
-      return "Needs care";
+      return "Growing";
     case "D":
+      return "Building";
     case "E":
-      return "Care needed";
+      return "Developing";
     default:
       return "Needs review";
   }
+}
+
+function dashboardPassportSignalStrength(classText: unknown): number {
+  const classValue = safeStr(classText).toUpperCase();
+  if (classValue === "A+" || classValue === "A") return 5;
+  if (classValue === "B") return 4;
+  if (classValue === "C") return 3;
+  if (classValue === "D" || classValue === "E") return 1;
+  return 0;
 }
 
 function routeTarget(
@@ -6613,33 +6700,49 @@ export default function DashboardPage() {
               </div>
               <div
                 style={{
-                  display: "inline-flex",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(38px, 1fr) auto minmax(38px, 1fr)",
+                  gap: isPhone ? 10 : 14,
                   marginTop: isPhone ? 12 : 16,
-                  minHeight: 28,
                   alignItems: "center",
-                  padding: "4px 13px",
-                  borderRadius: 999,
-                  background:
-                    "linear-gradient(180deg, rgba(255,249,225,0.98) 0%, rgba(239,207,113,0.94) 100%)",
-                  border: "1px solid rgba(145,103,19,0.22)",
-                  color: "#6B4300",
-                  fontSize: 12,
-                  fontWeight: 1000,
-                  letterSpacing: 0.8,
+                  maxWidth: isPhone ? 240 : 310,
                 }}
               >
-                GSN
-              </div>
-              <div
-                style={{
-                  marginTop: 10,
-                  color: DASHBOARD_BRAND.label,
-                  fontSize: isPhone ? 13 : 16,
-                  fontWeight: 850,
-                  letterSpacing: 0.2,
-                }}
-              >
-                Visible. Portable. Usable.
+                <span
+                  aria-hidden="true"
+                  style={{
+                    height: 1,
+                    background: "rgba(201,154,39,0.34)",
+                  }}
+                />
+                <span
+                  style={{
+                    display: "inline-flex",
+                    minHeight: isPhone ? 30 : 34,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: isPhone ? "4px 15px" : "5px 18px",
+                    borderRadius: 999,
+                    background:
+                      "linear-gradient(180deg, rgba(255,249,225,0.98) 0%, rgba(239,207,113,0.94) 100%)",
+                    border: "1px solid rgba(145,103,19,0.22)",
+                    color: "#6B4300",
+                    fontSize: isPhone ? 12 : 13,
+                    fontWeight: 1000,
+                    letterSpacing: 0.9,
+                    boxShadow:
+                      "0 10px 18px rgba(145,103,19,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
+                  }}
+                >
+                  GSN
+                </span>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    height: 1,
+                    background: "rgba(201,154,39,0.34)",
+                  }}
+                />
               </div>
             </div>
 
@@ -6658,159 +6761,237 @@ export default function DashboardPage() {
                   width: "100%",
                   aspectRatio: "1 / 1",
                   borderRadius: isPhone ? 18 : 24,
-                  overflow: "hidden",
-                  border: "1px solid rgba(255,255,255,0.92)",
+                  border: "5px solid rgba(255,255,255,0.82)",
                   background:
                     "linear-gradient(180deg, rgba(235,244,255,0.96) 0%, rgba(218,232,248,0.96) 100%)",
                   boxShadow:
-                    "0 14px 28px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.92)",
+                    "0 18px 34px rgba(10,24,49,0.13), inset 0 1px 0 rgba(255,255,255,0.92)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   position: "relative",
+                  overflow: "visible",
                 }}
               >
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    alt="Profile"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      objectPosition: "center 18%",
-                      display: "block",
-                    }}
-                  />
-                ) : (
-                  <span
-                    style={{
-                      color: DASHBOARD_BRAND.accentDeep,
-                      fontSize: isPhone ? 24 : 42,
-                      fontWeight: 1000,
-                    }}
-                  >
-                    {profileInitials}
-                  </span>
-                )}
-              </div>
-
-              <PictureFrameToolsControl
-                open={passportPictureToolsOpen}
-                label={isPhone ? "Frame" : "Picture frame"}
-                ariaLabel="Passport picture frame tools"
-                onToggle={(event) =>
-                  runDashboardUiMutation(event, () => {
-                    setPictureToolsOpen(false);
-                    setPassportPictureToolsOpen((open) => !open);
-                  })
-                }
-                slotStyle={{
-                  height: isPhone ? 46 : 42,
-                  minHeight: isPhone ? 46 : 42,
-                  maxHeight: isPhone ? 46 : 42,
-                  width: "100%",
-                  minWidth: 0,
-                  maxWidth: "100%",
-                  display: "block",
-                  flex: "0 0 auto",
-                  zIndex: 240,
-                }}
-                buttonStyle={{
-                    ...dashboardFillButton(subtleBtn(false)),
-                    height: isPhone ? 46 : 42,
-                    minHeight: isPhone ? 46 : 42,
-                    maxHeight: isPhone ? 46 : 42,
-                    padding: isPhone ? "0 12px" : "0 12px",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxSizing: "border-box",
-                    flex: "0 0 auto",
-                    verticalAlign: "top",
-                    borderRadius: 999,
-                    fontSize: isPhone ? 12 : 12,
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: isPhone ? 13 : 19,
                     overflow: "hidden",
-                    transition: "none",
-                    boxShadow:
-                      "0 10px 18px rgba(10,24,49,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
-                }}
-                railGap={6}
-                railColumns="1fr"
-                railMinWidth={isPhone ? 190 : 180}
-                railStyle={{
-                    gap: 8,
-                    alignContent: "start",
-                    borderRadius: 18,
-                    padding: 10,
-                    background:
-                      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
-                    border: "1px solid rgba(11,99,209,0.12)",
-                    boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
-                    transition: "none",
-                }}
-                actions={[
-                  {
-                    label: "Upload",
-                    inputId: avatarInputId,
-                    style: {
+                  }}
+                >
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt="Profile"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        objectPosition: "center 18%",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    <span
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: DASHBOARD_BRAND.accentDeep,
+                        fontSize: isPhone ? 24 : 42,
+                        fontWeight: 1000,
+                      }}
+                    >
+                      {profileInitials}
+                    </span>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: isPhone ? -20 : -22,
+                    transform: "translateX(-50%)",
+                    zIndex: 260,
+                  }}
+                >
+                  <PictureFrameToolsControl
+                    open={passportPictureToolsOpen}
+                    label={"\u2713"}
+                    ariaLabel="Passport picture frame tools"
+                    onToggle={(event) =>
+                      runDashboardUiMutation(event, () => {
+                        setPictureToolsOpen(false);
+                        setPassportPictureToolsOpen((open) => !open);
+                      })
+                    }
+                    slotStyle={{
+                      width: isPhone ? 46 : 52,
+                      height: isPhone ? 46 : 52,
+                      minWidth: isPhone ? 46 : 52,
+                      minHeight: isPhone ? 46 : 52,
+                      maxWidth: isPhone ? 46 : 52,
+                      maxHeight: isPhone ? 46 : 52,
+                      display: "block",
+                      zIndex: 260,
+                    }}
+                    buttonStyle={{
                       ...dashboardFillButton(subtleBtn(false)),
-                      minHeight: isPhone ? 46 : 42,
-                      height: isPhone ? 46 : 42,
-                      maxHeight: isPhone ? 46 : 42,
-                      padding: isPhone ? "9px 12px" : "8px 12px",
-                      fontSize: isPhone ? 12 : 12,
+                      width: isPhone ? 46 : 52,
+                      height: isPhone ? 46 : 52,
+                      minWidth: isPhone ? 46 : 52,
+                      minHeight: isPhone ? 46 : 52,
+                      maxWidth: isPhone ? 46 : 52,
+                      maxHeight: isPhone ? 46 : 52,
+                      padding: 0,
+                      borderRadius: 999,
+                      border: "4px solid rgba(255,255,255,0.92)",
+                      background:
+                        "linear-gradient(180deg, #0F4D86 0%, #0B3564 100%)",
+                      color: "#FFFFFF",
+                      fontSize: isPhone ? 21 : 24,
+                      fontWeight: 1000,
                       lineHeight: 1,
-                      whiteSpace: "nowrap",
+                      boxShadow:
+                        "0 10px 18px rgba(10,24,49,0.18), 0 0 0 1px rgba(201,154,39,0.46)",
                       transition: "none",
-                    },
-                  },
-                  {
-                    label: "Change",
-                    inputId: avatarInputId,
-                    style: {
-                      ...dashboardFillButton(subtleBtn(false)),
-                      minHeight: isPhone ? 46 : 42,
-                      height: isPhone ? 46 : 42,
-                      maxHeight: isPhone ? 46 : 42,
-                      padding: isPhone ? "9px 12px" : "8px 12px",
-                      fontSize: isPhone ? 12 : 12,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
+                    }}
+                    railGap={8}
+                    railColumns="1fr"
+                    railMinWidth={isPhone ? 190 : 180}
+                    railStyle={{
+                      gap: 8,
+                      alignContent: "start",
+                      borderRadius: 18,
+                      padding: 10,
+                      background:
+                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
+                      border: "1px solid rgba(11,99,209,0.12)",
+                      boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
                       transition: "none",
-                    },
-                  },
-                  {
-                    label: "Remove",
-                    disabled: !avatarSrc,
-                    onDisabledClick: explainMissingAvatarForRemoval,
-                    onClick: removeAvatar,
-                    style: {
-                      ...dashboardFillButton(subtleBtn(!avatarSrc)),
-                      minHeight: isPhone ? 46 : 42,
-                      height: isPhone ? 46 : 42,
-                      maxHeight: isPhone ? 46 : 42,
-                      padding: isPhone ? "9px 12px" : "8px 12px",
-                      fontSize: isPhone ? 12 : 12,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
-                      transition: "none",
-                    },
-                  },
-                ]}
-              />
+                    }}
+                    actions={[
+                      {
+                        label: "Upload",
+                        inputId: avatarInputId,
+                        style: {
+                          ...dashboardFillButton(subtleBtn(false)),
+                          minHeight: isPhone ? 46 : 42,
+                          height: isPhone ? 46 : 42,
+                          maxHeight: isPhone ? 46 : 42,
+                          padding: isPhone ? "9px 12px" : "8px 12px",
+                          fontSize: isPhone ? 12 : 12,
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
+                          transition: "none",
+                        },
+                      },
+                      {
+                        label: "Change",
+                        inputId: avatarInputId,
+                        style: {
+                          ...dashboardFillButton(subtleBtn(false)),
+                          minHeight: isPhone ? 46 : 42,
+                          height: isPhone ? 46 : 42,
+                          maxHeight: isPhone ? 46 : 42,
+                          padding: isPhone ? "9px 12px" : "8px 12px",
+                          fontSize: isPhone ? 12 : 12,
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
+                          transition: "none",
+                        },
+                      },
+                      {
+                        label: "Remove",
+                        disabled: !avatarSrc,
+                        onDisabledClick: explainMissingAvatarForRemoval,
+                        onClick: removeAvatar,
+                        style: {
+                          ...dashboardFillButton(subtleBtn(!avatarSrc)),
+                          minHeight: isPhone ? 46 : 42,
+                          height: isPhone ? 46 : 42,
+                          maxHeight: isPhone ? 46 : 42,
+                          padding: isPhone ? "9px 12px" : "8px 12px",
+                          fontSize: isPhone ? 12 : 12,
+                          lineHeight: 1,
+                          whiteSpace: "nowrap",
+                          transition: "none",
+                        },
+                      },
+                    ]}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
           <div
             style={{
-              marginTop: isPhone ? 14 : 18,
+              marginTop: isPhone ? 18 : 22,
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              minHeight: isPhone ? 44 : 50,
+              alignItems: "center",
+              borderRadius: isPhone ? 14 : 18,
+              border: "1px solid rgba(15,59,116,0.10)",
+              background: "rgba(255,255,255,0.76)",
+              boxShadow:
+                "0 10px 20px rgba(10,24,49,0.05), inset 0 1px 0 rgba(255,255,255,0.88)",
+              overflow: "hidden",
+            }}
+          >
+            {[
+              ["eye", "Visible"],
+              ["briefcase", "Portable"],
+              ["check", "Usable"],
+            ].map(([icon, label], index) => (
+              <div
+                key={label}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: isPhone ? 5 : 8,
+                  minWidth: 0,
+                  padding: isPhone ? "8px 4px" : "10px 8px",
+                  borderLeft:
+                    index === 0 ? "0" : "1px solid rgba(15,59,116,0.10)",
+                  color: "#173654",
+                  fontSize: isPhone ? 10.8 : 13,
+                  fontWeight: 900,
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    color: "#0D3A63",
+                    lineHeight: 1,
+                  }}
+                >
+                  <DashboardPassportFeatureIcon
+                    name={icon as "eye" | "briefcase" | "check"}
+                    size={isPhone ? 18 : 21}
+                  />
+                </span>
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              marginTop: isPhone ? 10 : 18,
               display: "grid",
               gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               background:
-                "linear-gradient(180deg, #113A62 0%, #0A2035 100%)",
+                "radial-gradient(circle at 12% 0%, rgba(11,99,209,0.28) 0%, rgba(11,99,209,0) 38%), repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 10px), linear-gradient(180deg, #113A62 0%, #071E33 100%)",
               borderRadius: isPhone ? 14 : 18,
               overflow: "hidden",
               boxShadow: "0 16px 28px rgba(10,24,49,0.16)",
@@ -6820,16 +7001,22 @@ export default function DashboardPage() {
               {
                 label: "Trust",
                 value: readableTrustStatus(openTrust.classText),
+                detail: "",
+                strength: dashboardPassportSignalStrength(openTrust.classText),
                 to: DASHBOARD_TARGETS.TRUST,
               },
               {
-                label: "Wider",
+                label: "CCI",
                 value: readableTrustStatus(cci.classText),
+                detail: "Cross-Community Integrity",
+                strength: dashboardPassportSignalStrength(cci.classText),
                 to: DASHBOARD_TARGETS.CCI,
               },
               {
                 label: "TrustSlip",
                 value: trustSlipCode || "Pending",
+                detail: "",
+                strength: 0,
                 to: trustSlipCode ? `/app/trust-slip?code=${encodeURIComponent(trustSlipCode)}` : DASHBOARD_TARGETS.TRUST_SLIP,
               },
             ].map((item, index) => (
@@ -6841,48 +7028,49 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardStableActionFrame({
                   minWidth: 0,
-                  minHeight: isPhone ? 56 : 74,
+                  minHeight: isPhone ? 102 : 122,
                   display: "grid",
-                  gridTemplateColumns: "minmax(0, 1fr)",
-                  gap: isPhone ? 3 : 5,
-                  alignItems: "center",
+                  gridTemplateRows: "auto auto auto 1fr",
+                  gap: isPhone ? 4 : 6,
+                  alignItems: "start",
                   justifyItems: "center",
-                  padding: isPhone ? "7px 5px" : "12px 14px",
+                  padding: isPhone ? "13px 4px 10px" : "16px 12px 13px",
                   border: 0,
                   borderLeft:
-                    index === 0 ? "0" : "1px solid rgba(255,255,255,0.15)",
+                    index === 0 ? "0" : "1px solid rgba(255,255,255,0.22)",
                   background: "transparent",
                   color: "#F8FBFF",
                   cursor: "pointer",
                   textAlign: "center",
                 })}
               >
+                <DashboardSignalIcon
+                  name={dashboardActionSignal(item.label)}
+                  size={isPhone ? 25 : 30}
+                  strokeWidth={2.4}
+                />
                 <span
                   style={{
-                    color: "rgba(248,251,255,0.84)",
-                    fontSize: isPhone ? 11.2 : 13,
-                    fontWeight: 800,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: isPhone ? 4 : 6,
-                    minWidth: 0,
-                    maxWidth: "100%",
-                    lineHeight: 1,
+                    color: "#F8FBFF",
+                    fontSize: isPhone ? 13.8 : 17,
+                    fontWeight: 1000,
+                    lineHeight: 1.05,
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <DashboardSignalIcon
-                    name={dashboardActionSignal(item.label)}
-                    size={isPhone ? 16 : 18}
-                    strokeWidth={2.4}
-                  />
-                  <span>{item.label}</span>
+                  {item.label}
                 </span>
                 <span
                   style={{
                     color: "#F3D06A",
-                    fontSize: isPhone ? 10.8 : 14.5,
+                    fontSize:
+                      item.label === "TrustSlip"
+                        ? isPhone
+                          ? 11.6
+                          : 15
+                        : isPhone
+                        ? 11.8
+                        : 14,
                     fontWeight: 1000,
                     lineHeight: 1.08,
                     overflowWrap: "anywhere",
@@ -6892,6 +7080,57 @@ export default function DashboardPage() {
                 >
                   {item.value}
                 </span>
+                {item.detail ? (
+                  <span
+                    style={{
+                      color: "rgba(248,251,255,0.72)",
+                      fontSize: isPhone ? 8.8 : 11,
+                      fontWeight: 800,
+                      lineHeight: 1.12,
+                      maxWidth: "100%",
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {item.detail}
+                  </span>
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      minHeight: isPhone ? 11 : 13,
+                      display: "block",
+                    }}
+                  />
+                )}
+                {item.strength > 0 ? (
+                  <span
+                    aria-hidden="true"
+                    style={{
+                      alignSelf: "end",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                      gap: isPhone ? 3 : 4,
+                      width: "72%",
+                      minHeight: 5,
+                    }}
+                  >
+                    {Array.from({ length: 5 }).map((_, barIndex) => (
+                      <span
+                        key={barIndex}
+                        style={{
+                          height: isPhone ? 4 : 5,
+                          borderRadius: 999,
+                          background:
+                            barIndex < item.strength
+                              ? "#F3D06A"
+                              : "rgba(226,232,240,0.25)",
+                        }}
+                      />
+                    ))}
+                  </span>
+                ) : (
+                  <span aria-hidden="true" />
+                )}
               </StableButton>
             ))}
           </div>
@@ -6911,16 +7150,26 @@ export default function DashboardPage() {
             <div
               style={{
                 display: "flex",
-                gap: 8,
-                alignItems: "baseline",
+                gap: isPhone ? 8 : 10,
+                alignItems: "center",
                 justifyContent: "center",
                 minWidth: 0,
                 color: DASHBOARD_BRAND.label,
-                fontSize: isPhone ? 12.5 : 14,
-                fontWeight: 900,
+                fontSize: isPhone ? 15 : 17,
+                fontWeight: 1000,
                 textAlign: "center",
               }}
             >
+              <span
+                aria-hidden="true"
+                style={{
+                  opacity: 0.28,
+                  display: "inline-flex",
+                  alignItems: "center",
+                }}
+              >
+                <DashboardSignalIcon name="trust" size={isPhone ? 18 : 20} />
+              </span>
               <span>GSN ID</span>
               <span
                 style={{

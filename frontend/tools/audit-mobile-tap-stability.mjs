@@ -637,7 +637,7 @@ const dashboardFrameChecks = [
     label:
       "Dashboard passport picture tools must use the shared system-level frame tools control",
     pattern:
-      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label=\{isPhone \? "Frame" : "Picture frame"\}[\s\S]*?railGap=\{6\}[\s\S]*?actions=\{\[[\s\S]*?label: "Upload"[\s\S]*?label: "Change"[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc/,
+      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label=\{"\\u2713"\}[\s\S]*?railGap=\{8\}[\s\S]*?actions=\{\[[\s\S]*?label: "Upload"[\s\S]*?label: "Change"[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc/,
   },
   {
     label:
