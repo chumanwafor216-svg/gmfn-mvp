@@ -1684,15 +1684,18 @@ export default function TrustSlipPage() {
     }));
   }
 
-  function handleCopy(text: string, successText: string, emptyText: string) {
+  async function handleCopy(text: string, successText: string, emptyText: string) {
     const value = safeStr(text);
     if (!value) {
       showNotice("error", emptyText);
       return;
     }
 
-    api.safeCopy(value);
-    showNotice("success", successText);
+    const copied = await api.safeCopy(value);
+    showNotice(
+      copied ? "success" : "error",
+      copied ? successText : "Copy did not complete. Select the text and copy it manually."
+    );
   }
 
   function handleGuideSelect(item: { to?: string }) {
@@ -1701,7 +1704,7 @@ export default function TrustSlipPage() {
   }
 
   function copyTrustSlipSnapshot() {
-    handleCopy(
+    void handleCopy(
       buildTrustSlipSnapshot({
         holderName,
         gmfnId,
@@ -2050,7 +2053,6 @@ export default function TrustSlipPage() {
                   onClick={() => {
                     void requestCommunityPulse();
                   }}
-                  disabled={!communityPulseAvailable || !trustSlipCode}
                   busy={confirmationBusy}
                   busyLabel="Requesting..."
                   fullWidth
@@ -2060,17 +2062,34 @@ export default function TrustSlipPage() {
                   <TrustPaperIcon name="community" size={21} />
                   Request instant confirmation
                 </PrimaryButton>
-                <StableCtaLink
-                  to={communityVerifyPath || "#"}
-                  kind={communityVerifyPath ? "primary" : "soft"}
-                  disabled={!communityVerifyPath}
-                  stableHeight={58}
-                  debugId="trust-slip.community-confirmation.open-community-record"
-                  style={{ width: "100%" }}
-                >
-                  <TrustPaperIcon name="search" size={18} />
-                  Open public community record
-                </StableCtaLink>
+                {communityVerifyPath ? (
+                  <StableCtaLink
+                    to={communityVerifyPath}
+                    kind="primary"
+                    stableHeight={58}
+                    debugId="trust-slip.community-confirmation.open-community-record"
+                    style={{ width: "100%" }}
+                  >
+                    <TrustPaperIcon name="search" size={18} />
+                    Open public community record
+                  </StableCtaLink>
+                ) : (
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      showNotice(
+                        "error",
+                        "Public community record is not ready yet. Refresh TrustSlip or request community confirmation first."
+                      );
+                    }}
+                    fullWidth
+                    stableHeight={58}
+                    debugId="trust-slip.community-confirmation.open-community-record"
+                  >
+                    <TrustPaperIcon name="search" size={18} />
+                    Open public community record
+                  </SecondaryButton>
+                )}
                 {confirmationOutcome ? (
                   <div style={{ ...documentMetaCard("#FFFFFF"), border: "1px solid rgba(46,155,98,0.18)" }}>
                     <div style={{ color: "#166534", fontWeight: 1000 }}>
@@ -2568,13 +2587,12 @@ export default function TrustSlipPage() {
             <CardActionRow style={{ marginTop: 16 }}>
               <PrimaryButton
                 onClick={() =>
-                  handleCopy(
+                  void handleCopy(
                     trustSlipCode,
                     "TrustSlip code copied.",
                     "TrustSlip code is not ready yet."
                   )
                 }
-                disabled={!trustSlipCode}
                 debugId="trust-slip.copy-code"
               >
                 Copy TrustSlip Code
@@ -2582,13 +2600,12 @@ export default function TrustSlipPage() {
 
               <SecondaryButton
                 onClick={() =>
-                  handleCopy(
+                  void handleCopy(
                     verifyUrl,
                     "Verify link copied.",
                     "Verify link is not ready yet."
                   )
                 }
-                disabled={!verifyUrl}
                 debugId="trust-slip.copy-verify-link"
               >
                 Copy Verify Link
@@ -2596,13 +2613,12 @@ export default function TrustSlipPage() {
 
               <SecondaryButton
                 onClick={() =>
-                  handleCopy(
+                  void handleCopy(
                     gmfnId,
                     "GSN ID copied.",
                     "GSN ID is not ready yet."
                   )
                 }
-                disabled={!gmfnId || gmfnId === "Awaiting issue"}
                 debugId="trust-slip.copy-gmfn-id"
               >
                 Copy GSN ID
@@ -2612,7 +2628,12 @@ export default function TrustSlipPage() {
                 onClick={() => {
                   if (typeof window !== "undefined" && typeof window.print === "function") {
                     window.print();
+                    return;
                   }
+                  showNotice(
+                    "error",
+                    "Print is not available in this browser. Use Copy snapshot or Copy verify link."
+                  );
                 }}
                 debugId="trust-slip.print"
               >
@@ -3090,36 +3111,48 @@ export default function TrustSlipPage() {
               </div>
 
               <CardActionRow style={{ marginTop: 14 }}>
-                <StableCtaLink
-                  to={verifyPath || "#"}
-                  kind="primary"
-                  disabled={!verifyPath}
-                  debugId="trust-slip.open-verify"
-                >
-                  {verifyPath ? "Open TrustSlip Verify" : "Verify not ready"}
-                </StableCtaLink>
+                {verifyPath ? (
+                  <StableCtaLink
+                    to={verifyPath}
+                    kind="primary"
+                    debugId="trust-slip.open-verify"
+                  >
+                    Open TrustSlip Verify
+                  </StableCtaLink>
+                ) : (
+                  <SecondaryButton
+                    type="button"
+                    onClick={() => {
+                      showNotice(
+                        "error",
+                        "TrustSlip verify is not ready yet. Refresh TrustSlip first so a public code is available."
+                      );
+                    }}
+                    debugId="trust-slip.open-verify"
+                  >
+                    Verify not ready
+                  </SecondaryButton>
+                )}
 
                 <SecondaryButton
                   onClick={() =>
-                    handleCopy(
+                    void handleCopy(
                       verifyUrl,
                       "Verify link copied.",
                       "Verify link is not ready yet."
                     )
                   }
-                  disabled={!verifyUrl}
                   debugId="trust-slip.copy-verify-link-merchant"
                 >
                   Copy Verify Link
                 </SecondaryButton>
 
-                {verifyUrl ? (
+                {verifyPath ? (
                   <StableCtaLink
                     to={verifyPath}
                     target="_blank"
                     rel="noreferrer"
                     kind="soft"
-                    disabled={!verifyPath}
                     debugId="trust-slip.open-merchant-verify"
                   >
                     Open Public Verify

@@ -1,3 +1,64 @@
+### Amara line audit and proof-action corrections (2026-05-29)
+
+- Follow-up from product-owner clarification: do not change the Amara story;
+  audit the existing onboarding/setup/community growth/Trust Passport/TrustSlip
+  line end to end for flow, button response, screenshot readiness, and proof
+  privacy.
+- Engaged three read-only lane auditors:
+  - storyline/route continuity;
+  - button/action response stability;
+  - focused-flow protocol.
+- Confirmed and fixed the highest-risk proof-line blockers:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`: public TrustSlip Verify no
+    longer renders the `Private/internal detail` disclosure or internal action
+    block on public routes; those remain app-only.
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`: public mode no longer sends
+    outsiders into protected `/app/trust`; it offers the public guide instead.
+  - `frontend/src/pages/TrustSlipPage.tsx`,
+    `frontend/src/pages/TrustSlipVerifyPage.tsx`,
+    `frontend/src/pages/CommunityHomePage.tsx`, and
+    `frontend/src/pages/BuildFirstCirclePage.tsx`: copy actions now await
+    clipboard success before claiming copied, and show a manual-copy fallback
+    on failure.
+  - Proof-line unavailable actions now speak instead of becoming dead disabled
+    taps for the patched surfaces: TrustSlip verify open/copy, public community
+    record open, instant community confirmation request, and First Circle invite
+    copy.
+  - `frontend/src/pages/CreateEntryPage.tsx`: wizard progress and Details stage
+    styling now follow the actual open panel so Community/Trust work does not
+    leave Details looking active.
+  - TrustSlip/Verify print buttons now show fallback guidance if native browser
+    print is unavailable.
+- Added `docs/AMARA_LINE_AUDIT_RUNBOOK_2026-05-29.md` with the live screenshot
+  route list, pass conditions, applied fixes, and remaining risks.
+- Updated `docs/GSN_RGU_APP_PROOF_PATH_AUDIT.md` so expired/inactive notes are
+  clearly about the old local/admin proof path, not the prepared Amara demo
+  account.
+- Truth/devil's advocate:
+  - local code/docs continuity is improved, but this does not prove the live
+    Render database currently has a fresh Amara TrustSlip and related evidence;
+  - the lane auditors found wider backlog items not fully fixed here: activation
+    fallback can still route to Dashboard, Community Home still exposes more
+    readings than the screen spec wants, Marketplace still has a create door in
+    a selected-marketplace area, and audits do not yet catch every disabled
+    stable-action silence risk globally.
+- Verification:
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx src/pages/CommunityHomePage.tsx src/pages/CreateEntryPage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx` passed.
+  - `npm exec -- eslint src/pages/BuildFirstCirclePage.tsx src/pages/CommunityHomePage.tsx src/pages/CreateEntryPage.tsx src/pages/TrustSlipPage.tsx src/pages/TrustSlipVerifyPage.tsx src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx tools/audit-trust-actions.mjs` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:trust-actions` passed after updating the audit for the
+    safer ready-link / unavailable-explainer community-record pattern.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Shared stable-action debug ID hardening (2026-05-29)
 
 - Follow-up from product-owner instruction to finish the lane-auditor work

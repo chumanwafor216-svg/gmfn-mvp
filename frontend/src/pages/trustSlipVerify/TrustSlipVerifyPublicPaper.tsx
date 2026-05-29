@@ -683,7 +683,6 @@ export default function TrustSlipVerifyPublicPaper({
                   <PrimaryButton
                     type="button"
                     onClick={onRequestCommunityPulse}
-                    disabled={!communityPulseAvailable || !canRequestCommunityPulse}
                     busy={confirmationBusy}
                     busyLabel="Requesting..."
                     fullWidth

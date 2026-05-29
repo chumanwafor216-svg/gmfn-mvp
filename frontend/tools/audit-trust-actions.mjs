@@ -174,14 +174,20 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
-  /to=\{communityVerifyPath \|\| "#"\}[\s\S]*?kind=\{communityVerifyPath \? "primary" : "soft"\}[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"/,
-  "TrustSlip Verify community record action must be visually highlighted when a community verification route is available."
+  /communityVerifyPath \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"[\s\S]*?\) : \([\s\S]*?<SecondaryButton[\s\S]*?Public community record is not ready yet[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"/,
+  "TrustSlip Verify community record action must be visually highlighted when a community verification route is available and must explain itself when unavailable."
 );
 
 assertContains(
   "src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx",
   /function lockedActionFrame\(compact: boolean\)[\s\S]*?gridTemplateRows:[\s\S]*?overflowAnchor: "none"[\s\S]*?rowValue\(communityConfirmationRows, "Eligible response pool"\)[\s\S]*?no eligible responders are set up[\s\S]*?Why this is locked/,
   "TrustSlip Verify must explain why instant community confirmation is locked in a reserved stable action frame when the eligible response pool is empty."
+);
+
+assertContains(
+  "src/pages/TrustSlipPage.tsx",
+  /debugId="trust-slip\.community-confirmation\.request"[\s\S]*?communityVerifyPath \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?<SecondaryButton[\s\S]*?Public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
+  "TrustSlip community record action must be highlighted when ready and explain itself when unavailable."
 );
 
 assertContains(
@@ -246,8 +252,8 @@ assertContains(
 
 assertContains(
   "src/pages/TrustSlipPage.tsx",
-  /to=\{communityVerifyPath \|\| "#"\}[\s\S]*?kind=\{communityVerifyPath \? "primary" : "soft"\}[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
-  "TrustSlip page community record action must be visually highlighted when a community verification route is available."
+  /communityVerifyPath \? \([\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?Public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
+  "TrustSlip page community record action must be visually highlighted when available and must explain itself when unavailable."
 );
 
 assertContains(

@@ -944,7 +944,15 @@ export default function BuildFirstCirclePage() {
       return;
     }
 
-    await safeCopy(joinInviteMessage);
+    const copied = await safeCopy(joinInviteMessage);
+    if (!copied) {
+      showNotice(
+        "error",
+        "Copy did not complete. Select the invite message and copy it manually."
+      );
+      return;
+    }
+
     setFocusedAction(null);
     showNotice("success", "Invite message copied.");
   }

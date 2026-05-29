@@ -59,8 +59,8 @@ Current verified proof state for that account:
 | 5 | `/app/marketplace` | Partial | Marketplace exists and can support the shop/trade angle, but it is not the core claim. Use it only as evidence creation context. |
 | 6 | `/app/shop-control` | Partial | Local shop data exists, but merchant trust proof must be connected clearly to TrustSlip / verification. |
 | 7 | `/app/trust` | Pass structurally | Trust Passport page is the right place for the full trust story. Needs demo data strong enough to look believable. |
-| 8 | `/app/trust-slip` | Partial | TrustSlip page has the right sections, but current local slip is expired/inactive. |
-| 9 | Public verify page | Partial | Public verification works, but it currently verifies an expired slip. |
+| 8 | `/app/trust-slip` | Pass for Amara demo / Partial for old local admin | TrustSlip page has the right sections. The Amara demo account is the active proof account; the old local admin slip remains expired/inactive and should not be used for the main story. |
+| 9 | Public verify page | Pass for Amara demo / Partial for old local admin | Public verification works for the prepared Amara code. The expired-slip reading below refers to the old local/admin proof path, not the Amara workshop account. |
 | 10 | Merchant verification | Pass for demo account | Merchant-link router is now wired through a non-colliding route. The Amara demo account has active merchant verification. |
 
 ---
@@ -98,20 +98,20 @@ The public JSON and page routes return a verification result for the TrustSlip c
 
 ## 4. Gaps Found
 
-### Gap 1: Current demo TrustSlip is expired
+### Gap 1: Old local/admin TrustSlip is expired
 
-Current local TrustSlip result:
+Old local/admin TrustSlip result:
 
 - Status: expired.
 - Message: `EXPIRED - DO NOT RELEASE`.
 - Trust limit: 0.00.
 - Merchant verify active: false.
 
-This is the biggest demonstration problem. It does not support the Amara story unless we deliberately frame it as "this is what a failed/expired trust document looks like." For the main demo, we need an active example.
+This does not support the Amara story unless we deliberately frame it as "this is what a failed/expired trust document looks like." For the main demo, use the prepared Amara proof account above.
 
-### Gap 2: Current trust record is too weak for the story
+### Gap 2: Old local/admin trust record is too weak for the story
 
-Current local trust readings:
+Old local/admin trust readings:
 
 - Trust score: 0.00.
 - Trust band: D / Starting.

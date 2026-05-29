@@ -922,11 +922,25 @@ function CreateCommunityWatermark(): React.ReactElement {
   );
 }
 
-function WizardProgress({ guideDone }: { guideDone: boolean }): React.ReactElement {
+type WizardActivePanel = "details" | "verification" | "community" | null;
+
+function WizardProgress({
+  guideDone,
+  activePanel,
+  detailsDone,
+  trustDone,
+  communityDone,
+}: {
+  guideDone: boolean;
+  activePanel: WizardActivePanel;
+  detailsDone: boolean;
+  trustDone: boolean;
+  communityDone: boolean;
+}): React.ReactElement {
   const steps = [
-    { number: "1", label: "Details", active: true, done: guideDone },
-    { number: "2", label: "Community", active: false, done: false },
-    { number: "3", label: "Trust", active: false, done: false },
+    { number: "1", label: "Details", active: !guideDone || activePanel === "details", done: detailsDone },
+    { number: "2", label: "Community", active: activePanel === "community", done: communityDone },
+    { number: "3", label: "Trust", active: activePanel === "verification", done: trustDone },
   ];
   return (
     <div
@@ -3232,7 +3246,13 @@ export default function CreateEntryPage() {
             Details. Phone. Community. Then invite.
           </div>
 
-          <WizardProgress guideDone={guideDone} />
+          <WizardProgress
+            guideDone={guideDone}
+            activePanel={openPanel}
+            detailsDone={stepProgress.detailsDone}
+            trustDone={stepProgress.verificationDone}
+            communityDone={Boolean(communityDetailsRecorded || createOutcome)}
+          />
 
           <div
             aria-label="Create community steps"
@@ -3608,7 +3628,7 @@ export default function CreateEntryPage() {
               ref={detailsRef}
               style={{
                 ...stageShell(
-                  guideDone && openPanel !== null,
+                  guideDone && openPanel === "details",
                   stepProgress.detailsDone
                 ),
                 ...(guideDone && openPanel === "details"
@@ -3630,7 +3650,7 @@ export default function CreateEntryPage() {
                 stableHeight={guideDone && openPanel === "details" ? 82 : 58}
                 debugId="create-entry.details.toggle"
                 style={{
-                  ...stageDropDownHeader(guideDone && openPanel !== null, stepProgress.detailsDone),
+                  ...stageDropDownHeader(guideDone && openPanel === "details", stepProgress.detailsDone),
                   ...(guideDone && openPanel === "details"
                     ? {
                         minHeight: 82,
@@ -3686,8 +3706,8 @@ export default function CreateEntryPage() {
                     </span>
                   </span>
                 </span>
-                <span style={stageOpenIcon(guideDone && openPanel !== null)}>
-                  {!guideDone ? "!" : openPanel !== null ? "-" : "+"}
+                <span style={stageOpenIcon(guideDone && openPanel === "details")}>
+                  {!guideDone ? "!" : openPanel === "details" ? "-" : "+"}
                 </span>
               </SecondaryButton>
 
@@ -3736,7 +3756,7 @@ export default function CreateEntryPage() {
                 </div>
               ) : null}
 
-              {guideDone && openPanel === "details" ? (
+              {guideDone && openPanel !== null ? (
                 <div
                   style={{
                     display: "grid",

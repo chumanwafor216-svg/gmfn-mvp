@@ -2228,7 +2228,7 @@ export default function CommunityHomePage() {
     }
   }
 
-  function copyFirstCircleInviteBundle(event?: React.SyntheticEvent<HTMLElement>) {
+  async function copyFirstCircleInviteBundle(event?: React.SyntheticEvent<HTMLElement>) {
     consumeCommunityButtonEvent(event);
 
     if (readyFirstCircleContacts.length === 0) {
@@ -2243,8 +2243,13 @@ export default function CommunityHomePage() {
       communityName: selectedClanName || "your community",
     });
 
-    safeCopy(bundle);
-    showNotice("success", "First-circle invite bundle copied.");
+    const copied = await safeCopy(bundle);
+    showNotice(
+      copied ? "success" : "error",
+      copied
+        ? "First-circle invite message copied."
+        : "Copy did not complete. Select the invite message and copy it manually."
+    );
   }
 
   if (loading) {
@@ -3396,7 +3401,6 @@ export default function CommunityHomePage() {
                     type="button"
                     debugId="community-home.circle.copy-invite-bundle"
                     onClick={copyFirstCircleInviteBundle}
-                    disabled={readyFirstCircleContacts.length === 0}
                     style={communityActionStyle(
                     "secondary",
                     readyFirstCircleContacts.length === 0

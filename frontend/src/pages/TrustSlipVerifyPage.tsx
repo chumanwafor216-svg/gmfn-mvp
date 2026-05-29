@@ -411,6 +411,20 @@ export default function TrustSlipVerifyPage() {
     setNotice({ tone, text });
   }
 
+  async function copyTextWithNotice(text: string, successText: string, emptyText: string) {
+    const value = safeStr(text);
+    if (!value) {
+      showNotice("error", emptyText);
+      return;
+    }
+
+    const copied = await api.safeCopy(value);
+    showNotice(
+      copied ? "success" : "error",
+      copied ? successText : "Copy did not complete. Select the text and copy it manually."
+    );
+  }
+
   async function requestCommunityPulse() {
     const code = firstTruthy(record?.code, resolvedCode);
     if (!code) {
@@ -449,38 +463,33 @@ export default function TrustSlipVerifyPage() {
     }
   }
 
-  function copyVerifyLink() {
-    if (!verifyUrl) {
-      showNotice("error", "Verify link is not available.");
-      return;
-    }
-
-    api.safeCopy(verifyUrl);
-    showNotice("success", "Verify link copied.");
+  async function copyVerifyLink() {
+    await copyTextWithNotice(
+      verifyUrl,
+      "Verify link copied.",
+      "Verify link is not available."
+    );
   }
 
-  function copyCode() {
-    if (!resolvedCode) {
-      showNotice("error", "TrustSlip code is not available.");
-      return;
-    }
-
-    api.safeCopy(resolvedCode);
-    showNotice("success", "TrustSlip code copied.");
+  async function copyCode() {
+    await copyTextWithNotice(
+      resolvedCode,
+      "TrustSlip code copied.",
+      "TrustSlip code is not available."
+    );
   }
 
-  function copyGmfnId() {
+  async function copyGmfnId() {
     if (!gmfnId || gmfnId === "Awaiting issue") {
       showNotice("error", "GSN ID is not available.");
       return;
     }
 
-    api.safeCopy(gmfnId);
-    showNotice("success", "GSN ID copied.");
+    await copyTextWithNotice(gmfnId, "GSN ID copied.", "GSN ID is not available.");
   }
 
-  function copyVerificationSnapshot() {
-    api.safeCopy(
+  async function copyVerificationSnapshot() {
+    await copyTextWithNotice(
       buildTrustSlipVerifySnapshot({
         holderName,
         gmfnId,
@@ -492,9 +501,10 @@ export default function TrustSlipVerifyPage() {
         issuedAt: issuedAtLabel,
         expiresAt: expiresAtLabel,
         verifyUrl,
-      })
+      }),
+      "Verification snapshot copied.",
+      "Verification snapshot is not ready yet."
     );
-    showNotice("success", "Verification snapshot copied.");
   }
 
   const publicTrustSlipActions = (
@@ -508,8 +518,9 @@ export default function TrustSlipVerifyPage() {
     >
       <SecondaryButton
         type="button"
-        onClick={copyVerifyLink}
-        disabled={!verifyUrl}
+        onClick={() => {
+          void copyVerifyLink();
+        }}
         stableHeight={44}
         debugId="trust-slip-verify.public.copy-link"
       >
@@ -520,30 +531,61 @@ export default function TrustSlipVerifyPage() {
         onClick={() => {
           if (typeof window !== "undefined" && typeof window.print === "function") {
             window.print();
+            return;
           }
+          showNotice(
+            "error",
+            "Print is not available in this browser. Use Copy verify link instead."
+          );
         }}
         stableHeight={44}
         debugId="trust-slip-verify.public.print"
       >
         Download summary
       </SecondaryButton>
-      <SecondaryButton
-        type="button"
-        onClick={() => navigateWithOrigin(navigate, routes.trust, location)}
-        stableHeight={44}
-        debugId="trust-slip-verify.public.open-passport"
-      >
-        Open Trust Passport
-      </SecondaryButton>
-      <StableCtaLink
-        to={communityVerifyPath || "#"}
-        kind={communityVerifyPath ? "primary" : "soft"}
-        disabled={!communityVerifyPath}
-        stableHeight={52}
-        debugId="trust-slip-verify.public.open-community-record"
-      >
-        Open community record
-      </StableCtaLink>
+      {isAppRoute ? (
+        <SecondaryButton
+          type="button"
+          onClick={() => navigateWithOrigin(navigate, routes.trust, location)}
+          stableHeight={44}
+          debugId="trust-slip-verify.public.open-passport"
+        >
+          Open Trust Passport
+        </SecondaryButton>
+      ) : (
+        <SecondaryButton
+          type="button"
+          onClick={() => navigateWithOrigin(navigate, "/guide", location)}
+          stableHeight={44}
+          debugId="trust-slip-verify.public.open-guide"
+        >
+          What this proof means
+        </SecondaryButton>
+      )}
+      {communityVerifyPath ? (
+        <StableCtaLink
+          to={communityVerifyPath}
+          kind="primary"
+          stableHeight={52}
+          debugId="trust-slip-verify.public.open-community-record"
+        >
+          Open community record
+        </StableCtaLink>
+      ) : (
+        <SecondaryButton
+          type="button"
+          onClick={() => {
+            showNotice(
+              "error",
+              "Public community record is not ready yet. Ask the holder to refresh TrustSlip or request community confirmation first."
+            );
+          }}
+          stableHeight={52}
+          debugId="trust-slip-verify.public.open-community-record"
+        >
+          Open community record
+        </SecondaryButton>
+      )}
     </div>
   );
 
@@ -738,62 +780,63 @@ export default function TrustSlipVerifyPage() {
       />
       <TrustSlipVerifyBoundary compact={isCompact} />
 
-      <details
-        className="print-trust-support"
-        style={{
-          ...pageCard("#FFF7E6"),
-          padding: isCompact ? 14 : 18,
-          border: "2px solid rgba(180,83,9,0.5)",
-          boxShadow: "0 18px 42px rgba(146,64,14,0.13)",
-          overflowAnchor: "none",
-        }}
-      >
-        <StableDisclosureSummary
-          debugId="trust-slip-verify.full-evidence-toggle"
-          stableHeight={92}
+      {isAppRoute ? (
+        <details
+          className="print-trust-support"
           style={{
-            color: "#07172C",
-            fontSize: isCompact ? 18 : 20,
-            fontWeight: 1000,
-            alignItems: "flex-start",
-            justifyContent: "center",
-            flexDirection: "column",
-            textAlign: "left",
-            gap: 0,
+            ...pageCard("#FFF7E6"),
+            padding: isCompact ? 14 : 18,
+            border: "2px solid rgba(180,83,9,0.5)",
+            boxShadow: "0 18px 42px rgba(146,64,14,0.13)",
+            overflowAnchor: "none",
           }}
         >
-          Private/internal detail
-          <span
+          <StableDisclosureSummary
+            debugId="trust-slip-verify.full-evidence-toggle"
+            stableHeight={92}
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              width: "fit-content",
-              marginTop: 8,
-              borderRadius: 999,
-              padding: "6px 10px",
-              background: "#FFF1F2",
-              border: "1px solid rgba(190,18,60,0.28)",
-              color: "#991B1B",
-              fontSize: 12,
+              color: "#07172C",
+              fontSize: isCompact ? 18 : 20,
               fontWeight: 1000,
-              textTransform: "uppercase",
+              alignItems: "flex-start",
+              justifyContent: "center",
+              flexDirection: "column",
+              textAlign: "left",
+              gap: 0,
             }}
           >
-            Not the public/shareable TrustSlip
-          </span>
-          <span
-            style={{
-              display: "block",
-              marginTop: 6,
-              color: "#64748B",
-              fontSize: 13,
-              fontWeight: 800,
-              lineHeight: 1.45,
-            }}
-          >
-            Review, repair, and deeper evidence only. Keep this separate from the public paper.
-          </span>
-        </StableDisclosureSummary>
+            Private/internal detail
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                width: "fit-content",
+                marginTop: 8,
+                borderRadius: 999,
+                padding: "6px 10px",
+                background: "#FFF1F2",
+                border: "1px solid rgba(190,18,60,0.28)",
+                color: "#991B1B",
+                fontSize: 12,
+                fontWeight: 1000,
+                textTransform: "uppercase",
+              }}
+            >
+              Not the public/shareable TrustSlip
+            </span>
+            <span
+              style={{
+                display: "block",
+                marginTop: 6,
+                color: "#64748B",
+                fontSize: 13,
+                fontWeight: 800,
+                lineHeight: 1.45,
+              }}
+            >
+              Review, repair, and deeper evidence only. Keep this separate from the public paper.
+            </span>
+          </StableDisclosureSummary>
 
       <TrustSlipVerifyPrivateEvidence
         compact={isCompact}
@@ -855,8 +898,9 @@ export default function TrustSlipVerifyPage() {
         >
           <PrimaryButton
             type="button"
-            onClick={copyCode}
-            disabled={!resolvedCode}
+            onClick={() => {
+              void copyCode();
+            }}
             stableHeight={44}
             debugId="trust-slip-verify.copy-code"
           >
@@ -865,8 +909,9 @@ export default function TrustSlipVerifyPage() {
 
           <SecondaryButton
             type="button"
-            onClick={copyVerifyLink}
-            disabled={!verifyUrl}
+            onClick={() => {
+              void copyVerifyLink();
+            }}
             stableHeight={44}
             debugId="trust-slip-verify.copy-link"
           >
@@ -875,8 +920,9 @@ export default function TrustSlipVerifyPage() {
 
           <SecondaryButton
             type="button"
-            onClick={copyGmfnId}
-            disabled={!gmfnId || gmfnId === "Awaiting issue"}
+            onClick={() => {
+              void copyGmfnId();
+            }}
             stableHeight={44}
             debugId="trust-slip-verify.copy-gmfn-id"
           >
@@ -888,7 +934,12 @@ export default function TrustSlipVerifyPage() {
             onClick={() => {
               if (typeof window !== "undefined" && typeof window.print === "function") {
                 window.print();
+                return;
               }
+              showNotice(
+                "error",
+                "Print is not available in this browser. Use Copy snapshot or Copy verify link."
+              );
             }}
             stableHeight={44}
             debugId="trust-slip-verify.print"
@@ -898,7 +949,9 @@ export default function TrustSlipVerifyPage() {
 
           <SubtleButton
             type="button"
-            onClick={copyVerificationSnapshot}
+            onClick={() => {
+              void copyVerificationSnapshot();
+            }}
             stableHeight={44}
             debugId="trust-slip-verify.copy-snapshot"
           >
@@ -927,7 +980,8 @@ export default function TrustSlipVerifyPage() {
         </div>
       </section>
 
-      </details>
+        </details>
+      ) : null}
     </div>
   );
 }
