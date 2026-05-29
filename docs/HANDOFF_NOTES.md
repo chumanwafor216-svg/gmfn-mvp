@@ -1,3 +1,37 @@
+### Shared button visual jump hardening (2026-05-29)
+
+- Follow-up from product-owner report that "the buttons are highly jumpy."
+- Kept this as a shared primitive stability fix, not a route redesign.
+- Updated `frontend/src/components/StableButton.tsx`:
+  - added a shared movement lock object for transform, translate, scale,
+    rotate, filter, transition, and scroll anchoring;
+  - re-applies that movement lock after caller-provided `style`, so page-local
+    button styles cannot accidentally reintroduce press-time movement;
+  - wraps stable button/link/summary content in a non-intercepting centered
+    span so nested labels/icons are less likely to steal taps or shift the
+    perceived button face.
+- Updated `frontend/tools/audit-button-stability.mjs` so this hardening is now
+  part of the protected button contract.
+- Truth/devil's advocate:
+  - this was based on code inspection and the product-owner symptom, not a live
+    phone video reproduction;
+  - existing audits were already passing before the fix, which means this closes
+    an uncovered weakness rather than proving every observed jump has been
+    eliminated;
+  - because `StableButton` is a shared UI primitive and therefore high-risk,
+    the change is deliberately narrow and does not alter route logic, labels, or
+    button placement.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx tools/audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Button performance tightening pass (2026-05-29)
 
 - Follow-up from product-owner request to audit buttons again and tighten them

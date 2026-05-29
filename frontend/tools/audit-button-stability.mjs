@@ -48,6 +48,12 @@ assertContains(
 );
 
 assertContains(
+  "src/components/StableButton.tsx",
+  /const stableMovementLock: React\.CSSProperties = \{[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?overflowAnchor: "none"[\s\S]*?const stableContentStyle: React\.CSSProperties = \{[\s\S]*?pointerEvents: "none"[\s\S]*?textAlign: "center"[\s\S]*?overflowWrap: "inherit"[\s\S]*?function stableStyle[\s\S]*?\.\.\.stableMovementLock,[\s\S]*?\.\.\.args\.style,[\s\S]*?\.\.\.stableMovementLock,[\s\S]*?<span style=\{stableContentStyle\}>/,
+  "Shared stable actions must reapply movement locks after caller styles and wrap visible content in a stable non-intercepting content span."
+);
+
+assertContains(
   "src/components/OriginLink.tsx",
   /onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => guardLinkTap\(event, rest\.onClick\)\}[\s\S]*?<Link[\s\S]*?onPointerDown=\{\(event\) => guardLinkTap\(event, rest\.onPointerDown\)\}[\s\S]*?onPointerUp=\{\(event\) => guardLinkTap\(event, rest\.onPointerUp\)\}[\s\S]*?onMouseDown=\{\(event\) => guardLinkTap\(event, rest\.onMouseDown\)\}[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?if \(!event\.defaultPrevented\) \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?\}[\s\S]*?\}\}/,
   "OriginLink must guard pointer-down, pointer-up, mouse-down, and click for both external anchors and React Router links."

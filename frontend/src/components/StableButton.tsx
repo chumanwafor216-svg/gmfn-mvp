@@ -38,6 +38,28 @@ type StableDisclosureSummaryProps = Omit<
 
 const CLICK_DEBOUNCE_MS = 360;
 const STABLE_ACTION_CLASS = "gmfn-stable-action";
+const stableMovementLock: React.CSSProperties = {
+  transform: "none",
+  translate: "none",
+  scale: "none",
+  rotate: "none",
+  filter: "none",
+  transition: "none",
+  overflowAnchor: "none",
+};
+
+const stableContentStyle: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minWidth: 0,
+  maxWidth: "100%",
+  pointerEvents: "none",
+  textAlign: "center",
+  lineHeight: "inherit",
+  overflowWrap: "inherit",
+  wordBreak: "inherit",
+};
 
 function stableActionClassName(className?: string): string {
   return [STABLE_ACTION_CLASS, className].filter(Boolean).join(" ");
@@ -102,8 +124,9 @@ function stableStyle(
     wordBreak: "normal",
     lineHeight: 1.15,
     padding: fixedHeight ? (fixedHeight <= 44 ? "8px 12px" : "9px 14px") : base.padding,
-    transition: "none",
+    ...stableMovementLock,
     ...args.style,
+    ...stableMovementLock,
   };
 }
 
@@ -218,7 +241,7 @@ export function StableButton({
       onClick={handleClick}
       style={resolvedStyle}
     >
-      {busy || localBusy ? busyLabel || children : children}
+      <span style={stableContentStyle}>{busy || localBusy ? busyLabel || children : children}</span>
     </button>
   );
 }
@@ -300,7 +323,7 @@ export function StableCtaLink({
       onClick={handleClick}
       style={resolvedStyle}
     >
-      {busy ? busyLabel || children : children}
+      <span style={stableContentStyle}>{busy ? busyLabel || children : children}</span>
     </OriginLink>
   );
 }
@@ -406,9 +429,10 @@ export function StableDisclosureSummary({
         listStyle: "none",
         cursor: "pointer",
         ...style,
+        ...stableMovementLock,
       }}
     >
-      {children}
+      <span style={stableContentStyle}>{children}</span>
     </summary>
   );
 }
