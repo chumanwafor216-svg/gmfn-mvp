@@ -1,3 +1,41 @@
+### Shared stable button child-layout rollback (2026-05-29)
+
+- Follow-up from product-owner screenshots showing severe mobile text collapse
+  across Loans & Support, Community Home, Marketplace, Finance, and Admin Tools.
+- Root cause:
+  - the previous shared `StableButton` hardening wrapped every button/link/
+    summary child in a `stableContentStyle` span with `display: inline-flex`;
+  - that was wrong for complex CTA cards that already lay out icon, title, and
+    description internally;
+  - it compressed content into narrow/min-content columns, producing the
+    one-letter/ellipsis layout shown in the screenshots.
+- Updated `frontend/src/components/StableButton.tsx`:
+  - removed the generic `stableContentStyle` wrapper from `StableButton`,
+    `StableCtaLink`, and `StableDisclosureSummary`;
+  - kept the useful movement lock that re-applies transform/transition/filter
+    resets after caller styles.
+- Updated `frontend/tools/audit-button-stability.mjs`:
+  - the audit now protects the movement-lock contract;
+  - it explicitly rejects reintroducing `stableContentStyle` or
+    `<span style={stableContentStyle}>` wrappers.
+- Truth/devil's advocate:
+  - this was a regression introduced by the prior shared button hardening;
+  - audits had passed because they protected the bad wrapper instead of the
+    real visual outcome;
+  - this pass is verified by code/build/audits, but not yet by a fresh live
+    phone screenshot.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx tools/audit-button-stability.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Dashboard frame upload/change tap-guard correction (2026-05-29)
 
 - Follow-up from product-owner report that Dashboard frame `Upload` and

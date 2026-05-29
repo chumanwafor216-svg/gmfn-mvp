@@ -48,19 +48,6 @@ const stableMovementLock: React.CSSProperties = {
   overflowAnchor: "none",
 };
 
-const stableContentStyle: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minWidth: 0,
-  maxWidth: "100%",
-  pointerEvents: "none",
-  textAlign: "center",
-  lineHeight: "inherit",
-  overflowWrap: "inherit",
-  wordBreak: "inherit",
-};
-
 function stableActionClassName(className?: string): string {
   return [STABLE_ACTION_CLASS, className].filter(Boolean).join(" ");
 }
@@ -244,7 +231,7 @@ export function StableButton({
       onClick={handleClick}
       style={resolvedStyle}
     >
-      <span style={stableContentStyle}>{busy || localBusy ? busyLabel || children : children}</span>
+      {busy || localBusy ? busyLabel || children : children}
     </button>
   );
 }
@@ -329,7 +316,7 @@ export function StableCtaLink({
       onClick={handleClick}
       style={resolvedStyle}
     >
-      <span style={stableContentStyle}>{busy ? busyLabel || children : children}</span>
+      {busy ? busyLabel || children : children}
     </OriginLink>
   );
 }
@@ -438,7 +425,7 @@ export function StableDisclosureSummary({
         ...stableMovementLock,
       }}
     >
-      <span style={stableContentStyle}>{children}</span>
+      {children}
     </summary>
   );
 }

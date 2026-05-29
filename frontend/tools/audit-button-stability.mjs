@@ -49,8 +49,14 @@ assertContains(
 
 assertContains(
   "src/components/StableButton.tsx",
-  /const stableMovementLock: React\.CSSProperties = \{[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?overflowAnchor: "none"[\s\S]*?const stableContentStyle: React\.CSSProperties = \{[\s\S]*?pointerEvents: "none"[\s\S]*?textAlign: "center"[\s\S]*?overflowWrap: "inherit"[\s\S]*?function stableStyle[\s\S]*?\.\.\.stableMovementLock,[\s\S]*?\.\.\.args\.style,[\s\S]*?\.\.\.stableMovementLock,[\s\S]*?<span style=\{stableContentStyle\}>/,
-  "Shared stable actions must reapply movement locks after caller styles and wrap visible content in a stable non-intercepting content span."
+  /const stableMovementLock: React\.CSSProperties = \{[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?overflowAnchor: "none"[\s\S]*?function stableStyle[\s\S]*?\.\.\.stableMovementLock,[\s\S]*?\.\.\.args\.style,[\s\S]*?\.\.\.stableMovementLock/,
+  "Shared stable actions must reapply movement locks after caller styles without wrapping complex child layouts."
+);
+
+assertNotContains(
+  "src/components/StableButton.tsx",
+  /stableContentStyle|<span style=\{stableContentStyle\}>/,
+  "Stable actions must not wrap all children in a generic inline-flex content span because complex CTA card layouts collapse on mobile."
 );
 
 assertContains(
