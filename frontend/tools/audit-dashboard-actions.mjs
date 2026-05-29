@@ -111,6 +111,11 @@ assertContains(
 );
 
 assertContains(
+  /GSN Global ID[\s\S]*?\{visibleGsnId\}/,
+  "Dashboard passport GSN ID row must use the approved GSN Global ID label beside the visible id."
+);
+
+assertContains(
   /debugId=\{`dashboard\.apps\.primary\.\$\{item\.label[\s\S]*?debugId=\{`dashboard\.apps\.secondary\.\$\{item\.label/,
   "Dashboard app launcher rows must keep dynamic debug IDs."
 );

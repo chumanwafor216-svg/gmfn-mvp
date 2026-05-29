@@ -7163,14 +7163,13 @@ export default function DashboardPage() {
               <span
                 aria-hidden="true"
                 style={{
-                  opacity: 0.28,
                   display: "inline-flex",
                   alignItems: "center",
                 }}
               >
-                <DashboardSignalIcon name="trust" size={isPhone ? 18 : 20} />
+                <DashboardSignalIcon name="trust" size={isPhone ? 21 : 23} />
               </span>
-              <span>GSN ID</span>
+              <span>GSN Global ID</span>
               <span
                 style={{
                   color: DASHBOARD_BRAND.ink,

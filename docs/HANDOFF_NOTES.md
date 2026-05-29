@@ -29916,3 +29916,27 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - This is an implementation match to the attached mock, but it has not been
     pixel-verified on the user's actual Android browser in this session.
+
+### Dashboard passport Global ID and freeze clarification (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport hero card only.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` now shows the passport ID row as a
+    visible shield signal plus `GSN Global ID` and the user's GSN ID value.
+  - `frontend/tools/audit-dashboard-actions.mjs` now guards that approved
+    `GSN Global ID` wording beside the visible id.
+- Documentation change:
+  - `docs/FREEZE_POLICY.md` and `docs/SCREEN_SPECS.md` no longer list the
+    dashboard profile-picture frame tools as explicitly frozen.
+  - The Dashboard passport frame trigger is now documented as the approved
+    shield badge on the avatar, matching the supplied mock.
+- Guardrails:
+  - Market Wisdom remains explicitly frozen.
+  - No backend, auth, schema, TrustSlip route contract, or Market Wisdom
+    implementation changed.
+- Remaining truth:
+  - Removing the old frame-tool freeze does not make the whole Dashboard a
+    free-for-all. Dashboard changes still need route-level impact review, and
+    Market Wisdom remains protected until the product owner explicitly unfreezes
+    that section too.
