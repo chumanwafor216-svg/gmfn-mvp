@@ -29847,3 +29847,28 @@ GSN-branded invite composer and invite-entry continuity.
   - the next safest product improvement is an Amara-facing trust activity lane:
     Trust Passport -> TrustSlip -> activity behind the proof -> public
     verification.
+
+### Dashboard passport CCI and TrustSlip readability fix (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport signal strip and the matching trust
+    detail mini-reading row.
+- Frontend change:
+  - `frontend/src/pages/DashboardPage.tsx` now formats Trust and CCI as
+    readable `Class X / Score Y` signals instead of placing the class directly
+    beside the label.
+  - The phone Identity Passport signal strip stacks into three compact rows, so
+    the emoji, label, and full reading have enough width.
+  - TrustSlip now reads as `TrustSlip code: Code ...` or `Pending setup`
+    instead of a cramped attached value.
+  - The trust-detail mini row uses the same readable labels and stacks on phone.
+- Guardrails:
+  - No backend, auth, schema, TrustSlip route contract, or Market Wisdom section
+    changed.
+  - This is a layout/readability fix only; it does not change the calculated
+    Trust, CCI, or TrustSlip values.
+- Remaining truth:
+  - The screenshots also showed Admin Tools text splitting. That should be
+    rechecked against the current branch after the previous stable-button
+    rollback is loaded; this note does not claim that Admin Tools has been
+    visually verified on the phone.

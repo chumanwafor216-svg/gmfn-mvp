@@ -970,6 +970,18 @@ function safeStr(x: unknown): string {
   return String(x ?? "").trim();
 }
 
+function readableClassSignal(classText: unknown, scoreText?: unknown): string {
+  const classValue = safeStr(classText);
+  if (!classValue || classValue.toLowerCase() === "pending") {
+    return "Pending";
+  }
+
+  const scoreValue = safeStr(scoreText);
+  const hasScore = Boolean(scoreValue && scoreValue !== "-" && scoreValue !== "\u2014");
+
+  return hasScore ? `Class ${classValue} / Score ${scoreValue}` : `Class ${classValue}`;
+}
+
 function routeTarget(
   intent: CtaIntent,
   communityId: number,
@@ -3443,11 +3455,11 @@ export default function DashboardPage() {
   ): React.CSSProperties => ({
     display: "grid",
     alignContent: "center",
-    gap: isPhone ? 1 : 2,
-    minHeight: isPhone ? 40 : 46,
+    gap: isPhone ? 3 : 4,
+    minHeight: isPhone ? 54 : 50,
     minWidth: 0,
     borderRadius: isPhone ? 12 : 14,
-    padding: isPhone ? "6px 7px" : "7px 10px",
+    padding: isPhone ? "7px 8px" : "8px 10px",
     background: primary
       ? "linear-gradient(180deg, rgba(246,215,122,0.22) 0%, rgba(225,185,72,0.14) 100%)"
       : accent === "blue"
@@ -3463,18 +3475,18 @@ export default function DashboardPage() {
 
   const trustMetricLabel = (): React.CSSProperties => ({
     color: "rgba(226,232,240,0.68)",
-    fontSize: isPhone ? 8.8 : 10,
+    fontSize: isPhone ? 8.6 : 10,
     fontWeight: 900,
-    letterSpacing: 0.26,
+    letterSpacing: 0,
     textTransform: "uppercase",
     whiteSpace: "nowrap",
   });
 
   const trustMetricValue = (primary = false): React.CSSProperties => ({
     color: primary ? "#F6D77A" : "#FFFFFF",
-    fontSize: isPhone ? 12 : 14,
+    fontSize: isPhone ? 10.8 : 13.5,
     fontWeight: 950,
-    lineHeight: 1.05,
+    lineHeight: 1.12,
     overflowWrap: "anywhere",
     wordBreak: "break-word",
   });
@@ -6785,20 +6797,33 @@ export default function DashboardPage() {
             style={{
               marginTop: isPhone ? 14 : 18,
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: isPhone ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: isPhone ? 8 : 0,
               background:
                 "linear-gradient(180deg, #113A62 0%, #0A2035 100%)",
               borderRadius: isPhone ? 14 : 18,
+              padding: isPhone ? 8 : 0,
               overflow: "hidden",
               boxShadow: "0 16px 28px rgba(10,24,49,0.16)",
             }}
           >
             {[
-              { label: "Trust", value: openTrust.classText, to: DASHBOARD_TARGETS.TRUST },
-              { label: "CCI", value: cci.classText, to: DASHBOARD_TARGETS.CCI },
+              {
+                label: "Trust",
+                reading: "Trust score",
+                value: readableClassSignal(openTrust.classText, openTrust.scoreText),
+                to: DASHBOARD_TARGETS.TRUST,
+              },
+              {
+                label: "CCI",
+                reading: "CCI score",
+                value: readableClassSignal(cci.classText, cci.scoreText),
+                to: DASHBOARD_TARGETS.CCI,
+              },
               {
                 label: "TrustSlip",
-                value: trustSlipCode || "Pending",
+                reading: "TrustSlip code",
+                value: trustSlipCode ? `Code ${trustSlipCode}` : "Pending setup",
                 to: trustSlipCode ? `/app/trust-slip?code=${encodeURIComponent(trustSlipCode)}` : DASHBOARD_TARGETS.TRUST_SLIP,
               },
             ].map((item, index) => (
@@ -6810,52 +6835,77 @@ export default function DashboardPage() {
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardStableActionFrame({
                   minWidth: 0,
-                  minHeight: isPhone ? 58 : 74,
+                  minHeight: isPhone ? 62 : 74,
                   display: "grid",
-                  gridTemplateColumns: isPhone ? "1fr" : "auto minmax(0, 1fr) auto",
-                  gap: isPhone ? 3 : 10,
+                  gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                  gridTemplateRows: "auto auto",
+                  columnGap: isPhone ? 10 : 12,
+                  rowGap: isPhone ? 3 : 4,
                   alignItems: "center",
-                  justifyItems: isPhone ? "center" : "start",
-                  padding: isPhone ? "8px 6px" : "12px 16px",
+                  justifyItems: "start",
+                  padding: isPhone ? "9px 11px" : "12px 16px",
                   border: 0,
                   borderLeft:
-                    index === 0 ? "0" : "1px solid rgba(255,255,255,0.15)",
-                  background: "transparent",
+                    !isPhone && index > 0 ? "1px solid rgba(255,255,255,0.15)" : "0",
+                  borderTop:
+                    isPhone && index > 0 ? "1px solid rgba(255,255,255,0.11)" : "0",
+                  borderRadius: isPhone ? 10 : 0,
+                  background: isPhone ? "rgba(255,255,255,0.055)" : "transparent",
                   color: "#F8FBFF",
                   cursor: "pointer",
-                  textAlign: isPhone ? "center" : "left",
+                  textAlign: "left",
+                  overflow: "visible",
                 })}
               >
                 <span
                   style={{
-                    color: "rgba(248,251,255,0.84)",
-                    fontSize: isPhone ? 11 : 13,
-                    fontWeight: 800,
+                    gridRow: "1 / span 2",
                     display: "inline-flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: 5,
                   }}
                 >
                   <DashboardSignalIcon
                     name={dashboardActionSignal(item.label)}
-                    size={isPhone ? 14 : 16}
+                    size={isPhone ? 22 : 18}
                     strokeWidth={2.4}
                   />
+                </span>
+                <span
+                  style={{
+                    color: "rgba(248,251,255,0.84)",
+                    fontSize: isPhone ? 12.2 : 13,
+                    fontWeight: 800,
+                    display: "block",
+                    lineHeight: 1.05,
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   <span>{item.label}</span>
                 </span>
                 <span
                   style={{
                     color: "#F3D06A",
-                    fontSize: isPhone ? 12 : 15,
+                    fontSize: isPhone ? 11.6 : 14.5,
                     fontWeight: 1000,
-                    lineHeight: 1.05,
+                    lineHeight: 1.14,
                     overflowWrap: "anywhere",
+                    wordBreak: "break-word",
                   }}
                 >
-                  {item.value}
+                  {item.reading}: {item.value}
                 </span>
-                {!isPhone ? <span style={{ opacity: 0.72 }}>{">"}</span> : null}
+                {!isPhone ? (
+                  <span
+                    style={{
+                      gridColumn: 3,
+                      gridRow: "1 / span 2",
+                      opacity: 0.72,
+                    }}
+                  >
+                    {">"}
+                  </span>
+                ) : null}
               </StableButton>
             ))}
           </div>
@@ -7625,32 +7675,32 @@ export default function DashboardPage() {
                     <div
                       style={{
                         display: "grid",
-                        gridTemplateColumns: isPhone
-                          ? "repeat(3, minmax(0, 1fr))"
-                          : "repeat(3, minmax(0, 1fr))",
+                        gridTemplateColumns: isPhone ? "1fr" : "repeat(3, minmax(0, 1fr))",
                         gap: isPhone ? 6 : 8,
                         alignItems: "center",
                       }}
                     >
                       <span style={trustMetricTile(true, "gold")}>
-                        <span style={trustMetricLabel()}>Trust</span>
+                        <span style={trustMetricLabel()}>Trust score</span>
                         <span style={trustMetricValue(true)}>
-                          {openTrust.classText}
+                          {readableClassSignal(openTrust.classText, openTrust.scoreText)}
                         </span>
                       </span>
                       <span style={trustMetricTile(false, "blue")}>
-                        <span style={trustMetricLabel()}>CCI</span>
-                        <span style={trustMetricValue()}>{cci.classText}</span>
+                        <span style={trustMetricLabel()}>CCI score</span>
+                        <span style={trustMetricValue()}>
+                          {readableClassSignal(cci.classText, cci.scoreText)}
+                        </span>
                       </span>
                       <span style={trustMetricTile(false, "steel")}>
-                        <span style={trustMetricLabel()}>TrustSlip</span>
+                        <span style={trustMetricLabel()}>TrustSlip code</span>
                         <span
                           style={{
                             ...trustMetricValue(),
-                            fontSize: isPhone ? 10.4 : 12,
+                            fontSize: isPhone ? 10.2 : 12,
                           }}
                         >
-                          {trustSlipCode || "Pending"}
+                          {trustSlipCode || "Pending setup"}
                         </span>
                       </span>
                     </div>
