@@ -178,6 +178,9 @@ export function StableButton({
     (rest as Record<string, unknown>)["data-cta-id"],
     generatedId
   );
+  const softDisabled =
+    String((rest as Record<string, unknown>)["aria-disabled"] || "").toLowerCase() ===
+    "true";
   const resolvedStyle = useMemo(
     () => stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style }),
     [kind, locked, fullWidth, minWidth, stableHeight, style]
@@ -233,7 +236,7 @@ export function StableButton({
       data-cta-id={resolvedDebugId}
       className={stableActionClassName(className)}
       aria-busy={busy || localBusy || undefined}
-      aria-disabled={locked || undefined}
+      aria-disabled={locked || softDisabled || undefined}
       tabIndex={locked ? -1 : tabIndex}
       onPointerDown={guardedPointerDown}
       onPointerUp={guardedPointerUp}
@@ -274,6 +277,9 @@ export function StableCtaLink({
     (rest as Record<string, unknown>)["data-cta-id"],
     generatedId
   );
+  const softDisabled =
+    String((rest as Record<string, unknown>)["aria-disabled"] || "").toLowerCase() ===
+    "true";
   const resolvedStyle = useMemo(
     () => stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style }),
     [kind, locked, fullWidth, minWidth, stableHeight, style]
@@ -315,7 +321,7 @@ export function StableCtaLink({
       data-cta-id={resolvedDebugId}
       className={stableActionClassName(className)}
       aria-busy={busy || undefined}
-      aria-disabled={locked || undefined}
+      aria-disabled={locked || softDisabled || undefined}
       tabIndex={locked ? -1 : tabIndex}
       onPointerDown={guardedPointerDown}
       onPointerUp={guardedPointerUp}

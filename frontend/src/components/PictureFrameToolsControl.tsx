@@ -4,8 +4,10 @@ import { SecondaryButton, SubtleButton } from "./StableButton";
 
 export type PictureFrameToolAction = {
   label: string;
-  onClick: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  inputId?: string;
   disabled?: boolean;
+  onDisabledClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   style?: React.CSSProperties;
 };
 
@@ -32,6 +34,41 @@ type PictureFrameToolsControlProps = {
 
 function stopFrameToolEvent(event?: React.SyntheticEvent<HTMLElement>) {
   event?.stopPropagation();
+}
+
+function fileLabelKeyDown(event: React.KeyboardEvent<HTMLLabelElement>, inputId: string) {
+  if (event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.stopPropagation();
+  document.getElementById(inputId)?.click();
+}
+
+function frameToolLabelStyle(style?: React.CSSProperties): React.CSSProperties {
+  const movementLock: React.CSSProperties = {
+    transform: "none",
+    transition: "none",
+    overflowAnchor: "none",
+  };
+
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 0,
+    maxWidth: "100%",
+    boxSizing: "border-box",
+    cursor: "pointer",
+    userSelect: "none",
+    WebkitUserSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    touchAction: "manipulation",
+    textAlign: "center",
+    textDecoration: "none",
+    overflow: "hidden",
+    ...movementLock,
+    ...style,
+    ...movementLock,
+  };
 }
 
 function stableRailPlacement(
@@ -125,23 +162,52 @@ export default function PictureFrameToolsControl({
               opacity: 1,
             }}
           >
-            {actions.map((action) => (
-              <SecondaryButton
-                key={action.label}
-                aria-disabled={Boolean(action.disabled)}
-                onClick={(event) => {
-                  stopFrameToolEvent(event);
-                  if (action.disabled) return;
-                  action.onClick(event);
-                }}
-                stableHeight={44}
-                fullWidth
-                debugId={`picture-frame-tools.action.${action.label}`}
-                style={action.style}
-              >
-                {action.label}
-              </SecondaryButton>
-            ))}
+            {actions.map((action) =>
+              action.inputId && !action.disabled ? (
+                <label
+                  key={action.label}
+                  htmlFor={action.inputId}
+                  role="button"
+                  tabIndex={0}
+                  data-gmfn-action-root="true"
+                  data-cta-id={`picture-frame-tools.action.${action.label.toLowerCase()}`}
+                  className="gmfn-stable-action"
+                  onPointerDown={stopFrameToolEvent}
+                  onPointerUp={stopFrameToolEvent}
+                  onMouseDown={stopFrameToolEvent}
+                  onClick={stopFrameToolEvent}
+                  onKeyDown={(event) => fileLabelKeyDown(event, action.inputId || "")}
+                  style={frameToolLabelStyle({
+                    width: "100%",
+                    minHeight: 44,
+                    height: 44,
+                    maxHeight: 44,
+                    ...action.style,
+                  })}
+                >
+                  <span style={{ pointerEvents: "none" }}>{action.label}</span>
+                </label>
+              ) : (
+                <SecondaryButton
+                  key={action.label}
+                  aria-disabled={Boolean(action.disabled)}
+                  onClick={(event) => {
+                    stopFrameToolEvent(event);
+                    if (action.disabled) {
+                      action.onDisabledClick?.(event);
+                      return;
+                    }
+                    action.onClick?.(event);
+                  }}
+                  stableHeight={44}
+                  fullWidth
+                  debugId={`picture-frame-tools.action.${action.label}`}
+                  style={action.style}
+                >
+                  {action.label}
+                </SecondaryButton>
+              )
+            )}
           </div>,
           document.body
         )

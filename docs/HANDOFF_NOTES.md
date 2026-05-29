@@ -1,3 +1,49 @@
+### Dashboard picture-frame inner action activation (2026-05-29)
+
+- Follow-up from product-owner report: Dashboard picture-frame inner buttons
+  were not active, and the wider button challenge should be treated page by
+  page from main page buttons to inner-page buttons.
+- Kept this scoped to the Dashboard picture-frame tool path and the shared
+  action primitive contract; no Dashboard Market Wisdom behavior, route logic,
+  auth, backend schema, or app navigation contracts changed.
+- Updated `frontend/src/components/PictureFrameToolsControl.tsx`:
+  - frame `Upload` / `Change` actions can now render as real `label` controls
+    bound to the existing file input by `htmlFor`, instead of relying on a
+    portal button to programmatically click a hidden input elsewhere on the
+    page;
+  - label controls are still marked as stable action roots for the mobile tap
+    guard and keep no-transform/no-transition geometry;
+  - disabled frame actions can now call an explainer handler instead of silently
+    returning.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - both Dashboard picture-frame tool rails now bind `Upload` and `Change`
+    directly to `dashboard-avatar-upload-input`;
+  - `Remove` now explains that there is no saved picture to remove when the
+    user has not uploaded one yet.
+- Updated `frontend/src/components/StableButton.tsx` and
+  `frontend/tools/audit-button-stability.mjs`:
+  - shared stable buttons/links now preserve caller-provided soft
+    `aria-disabled="true"` while still avoiding native disabled dead controls;
+  - button stability audit now protects that soft-disabled contract.
+- Truth/devil's advocate:
+  - this fixes a real fragility in the Dashboard frame tool path, but it is not
+    live phone/video proof yet;
+  - the broader "page by page" button challenge should continue with the next
+    main surfaces after Dashboard, because passing global audits does not prove
+    every nested route action feels right in the pilot UI.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx src/components/PictureFrameToolsControl.tsx src/pages/DashboardPage.tsx tools/audit-button-stability.mjs` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Shared button visual jump hardening (2026-05-29)
 
 - Follow-up from product-owner report that "the buttons are highly jumpy."

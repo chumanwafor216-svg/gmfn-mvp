@@ -5119,9 +5119,15 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
-  function openAvatarPicker(event?: React.SyntheticEvent<HTMLElement>) {
+  function explainMissingAvatarForRemoval(
+    event?: React.SyntheticEvent<HTMLElement>
+  ) {
     consumeDashboardButtonEvent(event);
-    fileInputRef.current?.click();
+    setAvatarStatus({
+      tone: "error",
+      text:
+        "There is no saved profile picture to remove yet. Use Upload or Change first, then Remove will clear it from your GSN profile.",
+    });
   }
 
   async function removeAvatar(event?: React.SyntheticEvent<HTMLElement>) {
@@ -6725,7 +6731,7 @@ export default function DashboardPage() {
                 actions={[
                   {
                     label: "Upload",
-                    onClick: openAvatarPicker,
+                    inputId: avatarInputId,
                     style: {
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 46 : 42,
@@ -6740,7 +6746,7 @@ export default function DashboardPage() {
                   },
                   {
                     label: "Change",
-                    onClick: openAvatarPicker,
+                    inputId: avatarInputId,
                     style: {
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 46 : 42,
@@ -6756,6 +6762,7 @@ export default function DashboardPage() {
                   {
                     label: "Remove",
                     disabled: !avatarSrc,
+                    onDisabledClick: explainMissingAvatarForRemoval,
                     onClick: removeAvatar,
                     style: {
                       ...dashboardFillButton(subtleBtn(!avatarSrc)),
@@ -7368,7 +7375,7 @@ export default function DashboardPage() {
                   actions={[
                     {
                       label: "Upload",
-                      onClick: openAvatarPicker,
+                      inputId: avatarInputId,
                       style: {
                         ...dashboardFillButton(subtleBtn(false)),
                         minHeight: isPhone ? 44 : 42,
@@ -7381,7 +7388,7 @@ export default function DashboardPage() {
                     },
                     {
                       label: "Change",
-                      onClick: openAvatarPicker,
+                      inputId: avatarInputId,
                       style: {
                         ...dashboardFillButton(subtleBtn(false)),
                         minHeight: isPhone ? 44 : 42,
@@ -7395,6 +7402,7 @@ export default function DashboardPage() {
                     {
                       label: "Remove",
                       disabled: !avatarSrc,
+                      onDisabledClick: explainMissingAvatarForRemoval,
                       onClick: removeAvatar,
                       style: {
                         ...dashboardFillButton(subtleBtn(!avatarSrc)),
