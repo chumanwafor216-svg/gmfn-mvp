@@ -1,3 +1,27 @@
+### Render deploy trigger protocol (2026-05-29)
+
+- Follow-up from product-owner agreement that pilot work needs a direct deploy
+  rule, not just "I pushed to GitHub and hope Render noticed."
+- Added `.github/workflows/render-deploy.yml`:
+  - runs after pushes to `main`;
+  - can also be run manually with `workflow_dispatch`;
+  - triggers `gmfn-frontend` when GitHub secret
+    `RENDER_FRONTEND_DEPLOY_HOOK_URL` is configured;
+  - triggers `gmfn-api` when backend or `render.yaml` changed, or when manual
+    dispatch asks for API deploy, if `RENDER_API_DEPLOY_HOOK_URL` is configured;
+  - warns plainly when a hook secret is missing so nobody can claim a direct
+    Render deploy happened when it did not.
+- Updated `docs/DEPLOYMENT_RENDER.md` with the pilot deploy trigger rule and
+  required GitHub secrets.
+- Truth/devil's advocate:
+  - no Render secret or deploy hook URL is present in this local session, so the
+    workflow cannot trigger Render until those GitHub secrets are added;
+  - this makes the missing credential explicit and fixable instead of hidden in
+    chat memory;
+  - the existing `.github/workflows/tests.yml` appears malformed around its
+    install step, but that was pre-existing and was not changed in this deploy
+    protocol pass.
+
 ### Inner-page button response hardening (2026-05-29)
 
 - Follow-up from product-owner observation that buttons are better overall, but

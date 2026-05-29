@@ -73,6 +73,29 @@ The frontend service is configured to:
 - publish `frontend/dist`
 - rewrite all SPA routes to `/index.html`
 
+## 4.1 Pilot deploy trigger rule
+
+During the live pilot, every verified fix must be pushed to `main`.
+
+The repo also includes `.github/workflows/render-deploy.yml` so GitHub can
+trigger Render directly after a `main` push or from a manual workflow dispatch.
+This workflow does not store Render credentials in code. It expects these
+GitHub repository secrets:
+
+- `RENDER_FRONTEND_DEPLOY_HOOK_URL`
+  - Render deploy hook URL for `gmfn-frontend`
+  - required for direct frontend deploy triggering
+- `RENDER_API_DEPLOY_HOOK_URL`
+  - Render deploy hook URL for `gmfn-api`
+  - optional for frontend-only changes, required when backend or `render.yaml`
+    changes should trigger the API directly
+
+If `RENDER_FRONTEND_DEPLOY_HOOK_URL` is not set, the workflow will warn and the
+deployment depends on Render's own auto-deploy setting for `main`, or on a
+manual deploy in the Render dashboard. Do not claim a direct Render deploy was
+triggered unless the workflow shows the deploy hook was accepted or Render
+auto-deploy is confirmed in the Render dashboard.
+
 ## 5. Promote the first real admin
 
 After a real user account is created in production, promote it with:

@@ -1,0 +1,77 @@
+name: Trigger Render Deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy_api:
+        description: "Also trigger the gmfn-api deploy hook"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-deploy-main
+  cancel-in-progress: false
+
+jobs:
+  trigger-render:
+    name: Trigger Render deploy hooks
+    runs-on: ubuntu-latest
+    env:
+      RENDER_FRONTEND_DEPLOY_HOOK_URL: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}
+      RENDER_API_DEPLOY_HOOK_URL: ${{ secrets.RENDER_API_DEPLOY_HOOK_URL }}
+      DEPLOY_API_INPUT: ${{ github.event.inputs.deploy_api || 'false' }}
+    steps:
+      - name: Checkout commit
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Trigger frontend deploy hook
+        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
+        run: |
+          echo "Triggering Render deploy for gmfn-frontend at ${GITHUB_SHA}."
+          curl -fsS -X POST "$RENDER_FRONTEND_DEPLOY_HOOK_URL"
+          echo "gmfn-frontend deploy hook accepted the request."
+
+      - name: Note missing frontend deploy hook
+        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' }}
+        run: |
+          echo "::warning::RENDER_FRONTEND_DEPLOY_HOOK_URL is not configured. This workflow cannot directly trigger gmfn-frontend. Render must auto-deploy main or the deploy must be triggered manually in Render."
+
+      - name: Detect backend deploy need
+        id: backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          should_deploy_api="false"
+          if [ "$DEPLOY_API_INPUT" = "true" ]; then
+            should_deploy_api="true"
+          elif [ "${{ github.event_name }}" = "push" ] && [ -n "${{ github.event.before }}" ]; then
+            if git diff --name-only "${{ github.event.before }}" "${{ github.sha }}" | grep -Eq '^(gmfn_backend/|render\.yaml$)'; then
+              should_deploy_api="true"
+            fi
+          fi
+          echo "should_deploy_api=${should_deploy_api}" >> "$GITHUB_OUTPUT"
+          echo "Backend deploy needed: ${should_deploy_api}"
+
+      - name: Trigger API deploy hook
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_DEPLOY_HOOK_URL != '' }}
+        run: |
+          echo "Triggering Render deploy for gmfn-api at ${GITHUB_SHA}."
+          curl -fsS -X POST "$RENDER_API_DEPLOY_HOOK_URL"
+          echo "gmfn-api deploy hook accepted the request."
+
+      - name: Note missing API deploy hook
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_DEPLOY_HOOK_URL == '' }}
+        run: |
+          echo "::warning::RENDER_API_DEPLOY_HOOK_URL is not configured. Backend-impacting changes still require Render auto-deploy or manual deploy."
