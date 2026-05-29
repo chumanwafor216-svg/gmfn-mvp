@@ -23,6 +23,7 @@ import {
   type GuidanceNotice,
   type GuidanceSnapshot,
 } from "../lib/guidance";
+import type { ActionResponse } from "../lib/actionResponseProtocol";
 
 type RawNotificationRow = {
   id: string;
@@ -425,6 +426,23 @@ function helperText(): React.CSSProperties {
     color: GSN_ACTION_BRAND.muted,
     fontSize: 14,
     lineHeight: 1.75,
+  };
+}
+
+function actionNoticeCard(tone: ActionResponse["tone"]): React.CSSProperties {
+  const isSuccess = tone === "success";
+  const isError = tone === "error";
+
+  return {
+    ...softCard(isSuccess ? "#ECFDF5" : isError ? "#FEF2F2" : "#EFF6FF"),
+    color: isSuccess ? "#065F46" : isError ? "#991B1B" : "#1E3A8A",
+    border: isSuccess
+      ? "1px solid rgba(16,185,129,0.30)"
+      : isError
+        ? "1px solid rgba(239,68,68,0.28)"
+        : "1px solid rgba(59,130,246,0.24)",
+    fontWeight: 900,
+    lineHeight: 1.55,
   };
 }
 
@@ -1134,6 +1152,7 @@ export default function NotificationsPage() {
   );
   const [rawLoading, setRawLoading] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<GuidanceNotice | null>(null);
+  const [actionNotice, setActionNotice] = useState<ActionResponse | null>(null);
 
   const [collapsed, setCollapsed] = useState<CollapseState>(() =>
     normalizeCollapseState(
@@ -1158,6 +1177,13 @@ export default function NotificationsPage() {
   useEffect(() => {
     writeLocalJSON(NOTIFICATIONS_UI_STORAGE_KEY, collapsed);
   }, [collapsed]);
+
+  useEffect(() => {
+    if (!actionNotice) return;
+
+    const timer = window.setTimeout(() => setActionNotice(null), 2800);
+    return () => window.clearTimeout(timer);
+  }, [actionNotice]);
 
   useEffect(() => {
     let alive = true;
@@ -1296,9 +1322,25 @@ export default function NotificationsPage() {
   }, [bucketRows, guidanceSnapshot, onboardingTrustNotice]);
 
   async function markAsRead(id: string) {
-    if (!/^\d+$/.test(id)) return;
+    if (!/^\d+$/.test(id)) {
+      setActionNotice({
+        tone: "info",
+        text: "This notice is already local guidance. There is no server record to mark as read.",
+      });
+      return;
+    }
 
-    await markNotificationRead(Number(id)).catch(() => null);
+    const out = await markNotificationRead(Number(id)).catch((err: any) => {
+      setActionNotice({
+        tone: "error",
+        text:
+          safeStr(err?.message) ||
+          "GSN could not mark this notice as read. Check your connection and try again.",
+      });
+      return null;
+    });
+
+    if (!out) return;
 
     setGuidanceSnapshot((prev) => markGuidanceSnapshotReadLocally(prev, id));
     setRawNotifications((prev) =>
@@ -1309,6 +1351,10 @@ export default function NotificationsPage() {
     setSelectedNotice((prev) =>
       prev && safeStr(prev.id) === id ? { ...prev, unread: false } : prev
     );
+    setActionNotice({
+      tone: "success",
+      text: "Notice marked as read.",
+    });
   }
 
   async function handlePrimaryNoticeAction(notice: GuidanceNotice) {
@@ -1319,11 +1365,19 @@ export default function NotificationsPage() {
     }
 
     if (settings.openActionsDirectly) {
+      setActionNotice({
+        tone: "info",
+        text: `Opening ${normalizedNotice.ctaLabel || "the next page"} now.`,
+      });
       navigateWithOrigin(navigate, normalizedNotice.ctaTo, location);
       return;
     }
 
     setSelectedNotice(normalizedNotice);
+    setActionNotice({
+      tone: "info",
+      text: "Notice opened here first. Review it, then choose the next action.",
+    });
   }
 
   function toggleSection(key: keyof CollapseState) {
@@ -1359,6 +1413,12 @@ export default function NotificationsPage() {
         next="Start with Act now. If nothing needs your answer, you can return to Dashboard."
         tone="blue"
       />
+
+      {actionNotice ? (
+        <section style={actionNoticeCard(actionNotice.tone)}>
+          {actionNotice.text}
+        </section>
+      ) : null}
 
       <section
         style={{

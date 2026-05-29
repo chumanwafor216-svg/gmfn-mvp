@@ -1,0 +1,119 @@
+/* global console, process */
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+function read(relativePath) {
+  return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+const findings = [];
+
+function assertContains(file, pattern, message) {
+  const text = read(file);
+
+  if (!pattern.test(text)) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: "Expected response-protocol pattern was not found.",
+    });
+  }
+}
+
+function assertCriticalActionsDeclareDebugIds(file, debugIds) {
+  const text = read(file);
+
+  for (const debugId of debugIds) {
+    if (!text.includes(`debugId="${debugId}"`)) {
+      findings.push({
+        file,
+        line: 1,
+        message: `Critical action is missing debugId ${debugId}.`,
+        text: "Expected debugId was not found.",
+      });
+    }
+  }
+}
+
+assertContains(
+  "src/lib/actionResponseProtocol.ts",
+  /buildActionBlockedMessage[\s\S]*?buildActionSuccessMessage/,
+  "Shared action-response language helper must exist."
+);
+
+assertContains(
+  "src/pages/CreateEntryPage.tsx",
+  /buildActionBlockedMessage[\s\S]*?function finishBlockedMessage\(\)[\s\S]*?handleFinishRegistration\(feedbackTargetForFinish: FeedbackTarget = "community"\)[\s\S]*?showError\(feedbackTargetForFinish[\s\S]*?buildActionSuccessMessage[\s\S]*?Opening First Circle now/,
+  "Start Community finish actions must answer in the visible action surface and show a success handoff before routing."
+);
+
+assertCriticalActionsDeclareDebugIds("src/pages/CreateEntryPage.tsx", [
+  "create-entry.photo.finish-registration",
+  "create-entry.bank.finish-registration",
+  "create-entry.official-id.finish-registration",
+  "create-entry.verification.finish-registration",
+  "create-entry.community.finish-registration",
+]);
+
+assertContains(
+  "src/pages/BuildFirstCirclePage.tsx",
+  /focusedAction[\s\S]*?openInviteFocus[\s\S]*?closeFocusedAction[\s\S]*?showNotice\("error", "Invite link is not ready yet\."[\s\S]*?showNotice\("success"/,
+  "First Circle invite actions must remain focused and must answer missing/success states."
+);
+
+assertCriticalActionsDeclareDebugIds("src/pages/BuildFirstCirclePage.tsx", [
+  "build-first-circle.focus-invite",
+  "build-first-circle.quick.phone-contacts",
+  "build-first-circle.quick.whatsapp",
+  "build-first-circle.quick.email",
+  "build-first-circle.quick.facebook",
+  "build-first-circle.quick.share",
+  "build-first-circle.quick.copy",
+]);
+
+assertContains(
+  "src/pages/JoinEntryPage.tsx",
+  /noticeStyle\("error"\)[\s\S]*?noticeStyle\("success"\)[\s\S]*?Join request submitted successfully\./,
+  "Join Entry must continue to show success and error response cards."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /showNotice\("error"[\s\S]*?showNotice\([\s\S]*?"success"[\s\S]*?noticeCard\(notice\.tone\)/,
+  "Community Home actions must keep visible success/error notice responses."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /showNotice\("error"[\s\S]*?showNotice\([\s\S]*?"success"[\s\S]*?noticeCard\(notice\.tone\)/,
+  "Marketplace actions must keep visible success/error notice responses."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /showNotice\("error"[\s\S]*?showNotice\("success"[\s\S]*?setSpotlightPublishFeedback[\s\S]*?noticeCard\(notice\.tone\)/,
+  "Shop Control actions must keep visible success/error notice responses, including spotlight publish feedback."
+);
+
+assertContains(
+  "src/pages/NotificationsPage.tsx",
+  /actionNotice[\s\S]*?setActionNotice[\s\S]*?Notice marked as read\.[\s\S]*?Opening \$\{normalizedNotice\.ctaLabel \|\| "the next page"\} now\.[\s\S]*?actionNoticeCard\(actionNotice\.tone\)/,
+  "Notifications actions must answer when marking read, reviewing, or opening the next route."
+);
+
+if (findings.length > 0) {
+  console.error("Action response protocol audit failed:");
+  for (const finding of findings) {
+    console.error(
+      `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
+    );
+  }
+  process.exit(1);
+}
+
+console.log("Action response protocol audit passed.");

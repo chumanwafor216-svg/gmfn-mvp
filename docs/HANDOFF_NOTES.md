@@ -1,3 +1,57 @@
+### System-level action response protocol pass (2026-05-29)
+
+- Follow-up from product-owner concern: the app must not go quiet after an
+  action, especially during the active pilot test. After each stage, the user
+  should either see the next choice, see a success response, be routed forward,
+  or be told exactly why the action cannot continue and what to do first.
+- Added `frontend/src/lib/actionResponseProtocol.ts` as a shared frontend helper
+  for simple blocked/success action responses:
+  - blocked actions state what is missing, why it matters, and the first next
+    step;
+  - successful actions can show a visible response before route handoff.
+- Updated `frontend/src/pages/CreateEntryPage.tsx`:
+  - finish-registration blocked and success messages now use the shared action
+    response language;
+  - remaining raw photo/selfie/remove buttons were replaced with stable action
+    buttons with debug IDs.
+- Updated `frontend/src/pages/NotificationsPage.tsx`:
+  - notification actions now set a visible response card for success, failure,
+    and informational transitions instead of silently returning.
+- Updated `frontend/src/components/OriginLink.tsx`:
+  - app-route recovery is now recorded only after the tap handler has not
+    prevented navigation, avoiding false route recovery after blocked taps.
+- Added `frontend/tools/audit-action-response-protocol.mjs` and
+  `npm run audit:action-response-protocol` to guard the critical pilot surfaces:
+  Create Entry, First Circle, Join Entry, Community Home, Marketplace, Shop
+  Control, and Notifications.
+- Documented the Action Response Protocol in `docs/DESIGN_SYSTEM.md` and
+  `docs/UX_ACCEPTANCE_CHECKLIST.md`.
+- Truth/devil's advocate:
+  - this is a real system-level guardrail now: shared helper, documented rule,
+    and an automated audit over the highest-risk pilot routes;
+  - it is not mathematical proof that every future button in every future page
+    is perfect. Any new route can still violate the rule if it bypasses the
+    shared patterns and the audit is not extended.
+- Verification:
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:finance-actions` passed.
+  - `npm run audit:loans-actions` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:admin-ops-actions` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm exec -- eslint src/pages/CreateEntryPage.tsx src/pages/NotificationsPage.tsx src/components/OriginLink.tsx src/lib/actionResponseProtocol.ts tools/audit-action-response-protocol.mjs` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Start Community finish-registration response repair (2026-05-29)
 
 - Follow-up from product-owner phone test: after recording photo/selfie evidence,

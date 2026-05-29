@@ -28,6 +28,10 @@ import {
   writeStorage,
 } from "../lib/entryFlow";
 import {
+  buildActionBlockedMessage,
+  buildActionSuccessMessage,
+} from "../lib/actionResponseProtocol";
+import {
   clearCreateEntryDraft,
   readCreateEntryDraft,
   saveCreateEntryDraft,
@@ -2009,19 +2013,19 @@ export default function CreateEntryPage() {
 
   function finishBlockedMessage(): string {
     const missing = missingFinishItems();
-    if (!missing.length) {
-      return "GSN cannot finish this registration yet. Please try again, or reopen the last completed step so the app can refresh the answer.";
-    }
 
-    const first = missing[0];
-    const rest = missing.slice(1);
-    const missingText = [first, ...rest].join(", ");
-
-    if (!communityDetailsRecorded) {
-      return `Finish is not ready yet. First record the community details, then GSN can create the community and move you to First Circle. Still needed: ${missingText}.`;
-    }
-
-    return `Finish is not ready yet. GSN still needs: ${missingText}. Reopen Details or Community setup, correct that item, then tap Finish registration now again.`;
+    return buildActionBlockedMessage({
+      actionLabel: "Finish registration",
+      missing,
+      firstStep: !communityDetailsRecorded
+        ? "record the community details, then GSN can create the community and move you to First Circle"
+        : undefined,
+      retryStep: communityDetailsRecorded
+        ? "Reopen Details or Community setup, correct that item, then tap Finish registration now again."
+        : undefined,
+      fallback:
+        "GSN cannot finish this registration yet. Please try again, or reopen the last completed step so the app can refresh the answer.",
+    });
   }
 
   function hasLiveFeedback(target: FeedbackTarget) {
@@ -2956,8 +2960,15 @@ export default function CreateEntryPage() {
       clearPublicEntryState();
       const successMessage =
         outcome.kind === "workspace"
-          ? `Congratulations. ${outcome.message} Opening First Circle now.`
-          : `Congratulations. ${outcome.message}`;
+          ? buildActionSuccessMessage({
+              prefix: "Congratulations.",
+              message: outcome.message,
+              nextStep: "Opening First Circle now.",
+            })
+          : buildActionSuccessMessage({
+              prefix: "Congratulations.",
+              message: outcome.message,
+            });
       showSuccess(feedbackTargetForFinish, successMessage);
       showSuccess("community", successMessage);
       if (outcome.kind === "workspace") {
@@ -2986,8 +2997,15 @@ export default function CreateEntryPage() {
           clearPublicEntryState();
           const successMessage =
             outcome.kind === "workspace"
-              ? `Congratulations. ${outcome.message} Opening First Circle now.`
-              : `Congratulations. ${outcome.message}`;
+              ? buildActionSuccessMessage({
+                  prefix: "Congratulations.",
+                  message: outcome.message,
+                  nextStep: "Opening First Circle now.",
+                })
+              : buildActionSuccessMessage({
+                  prefix: "Congratulations.",
+                  message: outcome.message,
+                });
           showSuccess(feedbackTargetForFinish, successMessage);
           showSuccess("community", successMessage);
           if (outcome.kind === "workspace") {
@@ -4604,7 +4622,7 @@ export default function CreateEntryPage() {
                           gap: 10,
                         }}
                       >
-                        <button
+                        <SecondaryButton
                           type="button"
                           onClick={() => {
                             setIdentityPhotoKind("selfie");
@@ -4614,18 +4632,23 @@ export default function CreateEntryPage() {
                               selfiePhotoInputRef.current.click();
                             }
                           }}
+                          debugId="create-entry.identity-photo.selfie"
+                          minWidth={0}
+                          stableHeight={54}
                           style={{
                             ...bankInputStyle(),
+                            display: "grid",
+                            placeItems: "center",
+                            width: "100%",
                             color: "#07172C",
-                            cursor: "pointer",
                             textAlign: "center",
                             whiteSpace: "nowrap",
                           }}
                           aria-label="Open phone camera for selfie"
                         >
                           Selfie
-                        </button>
-                        <button
+                        </SecondaryButton>
+                        <SecondaryButton
                           type="button"
                           onClick={() => {
                             setIdentityPhotoKind("identity_photo");
@@ -4635,16 +4658,21 @@ export default function CreateEntryPage() {
                               galleryPhotoInputRef.current.click();
                             }
                           }}
+                          debugId="create-entry.identity-photo.gallery"
+                          minWidth={0}
+                          stableHeight={54}
                           style={{
                             ...bankInputStyle(),
+                            display: "grid",
+                            placeItems: "center",
+                            width: "100%",
                             color: "#07172C",
-                            cursor: "pointer",
                             textAlign: "center",
                           }}
                           aria-label="Choose photo from gallery or files"
                         >
                           Choose up to 5
-                        </button>
+                        </SecondaryButton>
                         <input
                           ref={selfiePhotoInputRef}
                           type="file"
@@ -4712,9 +4740,12 @@ export default function CreateEntryPage() {
                                     display: "block",
                                   }}
                                 />
-                                <button
+                                <SecondaryButton
                                   type="button"
                                   onClick={() => removeIdentityPhotoSelection(item.id)}
+                                  debugId={`create-entry.identity-photo.${item.id}.remove`}
+                                  minWidth={0}
+                                  stableHeight={28}
                                   aria-label={`Remove selected photo ${index + 1}`}
                                   style={{
                                     position: "absolute",
@@ -4731,13 +4762,13 @@ export default function CreateEntryPage() {
                                     lineHeight: 1,
                                     display: "grid",
                                     placeItems: "center",
-                                    cursor: "pointer",
                                     touchAction: "manipulation",
                                     WebkitTapHighlightColor: "transparent",
+                                    padding: 0,
                                   }}
                                 >
                                   x
-                                </button>
+                                </SecondaryButton>
                                 <div
                                   style={{
                                     position: "absolute",

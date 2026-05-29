@@ -134,3 +134,15 @@ When a user starts an action, the screen must reduce to that action.
   temporary action surface and reveal the next relevant section.
 - Do not expose every possible block at once just because it belongs to the
   workflow.
+
+## Action Response Protocol
+
+Every meaningful user action must answer.
+
+- If the action succeeds, show a clear success response or move the user to the
+  promised next screen.
+- If the action cannot continue, explain what is missing, why it matters, and
+  the first thing to do next.
+- The response should appear in the same visible action area whenever possible.
+- Do not write an error or success message into a hidden panel.
+- Do not let a button quietly do nothing.

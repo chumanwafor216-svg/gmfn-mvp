@@ -20,6 +20,7 @@
     "audit:finance-actions": "node tools/audit-finance-actions.mjs",
     "audit:admin-ops-actions": "node tools/audit-admin-ops-actions.mjs",
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",
+    "audit:action-response-protocol": "node tools/audit-action-response-protocol.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",
     "audit:global-action-debugids": "node tools/audit-global-action-debugids.mjs",
     "audit:global-raw-action-elements": "node tools/audit-global-raw-action-elements.mjs",

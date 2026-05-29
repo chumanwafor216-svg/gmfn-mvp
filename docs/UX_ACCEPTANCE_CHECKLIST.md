@@ -6,6 +6,8 @@ A screen is acceptable only if:
 - It does not expose too many sections at once.
 - It follows the Focused Action Protocol: when one action is active, unrelated
   sections step back until the choice or result is complete.
+- It follows the Action Response Protocol: every meaningful action succeeds
+  visibly, routes visibly, or explains why it cannot continue.
 - It uses the approved color system.
 - It uses consistent rounded cards.
 - It uses enough spacing.
