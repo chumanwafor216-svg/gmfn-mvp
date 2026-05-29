@@ -30012,3 +30012,26 @@ GSN-branded invite composer and invite-entry continuity.
   - This is the strongest source-side fix for the inactive upload report, but
     only a real Android browser tap can prove the native file picker opens on
     the deployed build.
+
+### Dashboard passport Frame tools jump stabilization (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport Frame tools trigger and overlay rail.
+- Frontend change:
+  - `frontend/src/components/PictureFrameToolsControl.tsx` now measures the
+    overlay rail position with `useLayoutEffect` before paint, instead of
+    letting the rail visually settle after tap.
+  - The shared picture-frame rail now locks width, min-width, max-width,
+    transform, transition, and overflow anchoring while open.
+  - `frontend/src/pages/DashboardPage.tsx` passes the Dashboard passport
+    trigger height explicitly as `isPhone ? 40 : 42`, so the `Frame tools`
+    button does not borrow the default shared 44px height and shift.
+- Guardrails:
+  - `frontend/tools/audit-dashboard-actions.mjs` now requires the Dashboard
+    passport frame-tools trigger height.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now requires pre-paint
+    rail measurement plus locked trigger height.
+- Remaining truth:
+  - This removes the source-side causes of the visible jump I can verify here.
+    It still needs a real Android browser tap check after deployment to prove
+    the Chrome rendering matches the local implementation.

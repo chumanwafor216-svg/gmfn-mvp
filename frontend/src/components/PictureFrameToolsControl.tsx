@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { SecondaryButton, SubtleButton } from "./StableButton";
 
@@ -29,6 +29,7 @@ type PictureFrameToolsControlProps = {
   railGap?: number;
   railColumns?: string;
   railMinWidth?: number;
+  triggerHeight?: number;
   zIndex?: number;
 };
 
@@ -109,6 +110,7 @@ export default function PictureFrameToolsControl({
   railGap = 8,
   railColumns = "1fr",
   railMinWidth = 180,
+  triggerHeight = 44,
   zIndex = 1800,
 }: PictureFrameToolsControlProps) {
   const railId = useId();
@@ -117,7 +119,7 @@ export default function PictureFrameToolsControl({
   const resolvedRailColumns =
     placement && placement.width < 260 ? "1fr" : railColumns;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) {
       setPlacement(null);
       return;
@@ -154,12 +156,18 @@ export default function PictureFrameToolsControl({
               left: placement.left,
               top: placement.top,
               width: placement.width,
+              minWidth: placement.width,
+              maxWidth: placement.width,
               zIndex,
               display: "grid",
               gridTemplateColumns: resolvedRailColumns,
               pointerEvents: "auto",
               visibility: "visible",
               opacity: 1,
+              boxSizing: "border-box",
+              transform: "none",
+              overflowAnchor: "none",
+              transition: "none",
             }}
           >
             {actions.map((action) =>
@@ -226,6 +234,9 @@ export default function PictureFrameToolsControl({
         position: "relative",
         overflow: "visible",
         isolation: "isolate",
+        transform: "none",
+        transition: "none",
+        overflowAnchor: "none",
       }}
     >
       <SubtleButton
@@ -236,7 +247,7 @@ export default function PictureFrameToolsControl({
           stopFrameToolEvent(event);
           onToggle(event);
         }}
-        stableHeight={44}
+        stableHeight={triggerHeight}
         debugId="picture-frame-tools.toggle"
         style={buttonStyle}
       >

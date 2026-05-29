@@ -637,7 +637,7 @@ const dashboardFrameChecks = [
     label:
       "Dashboard passport picture tools must stay hidden under one active Frame tools control beside the active passport image input",
     pattern:
-      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?railGap=\{8\}[\s\S]*?railColumns="repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?zIndex=\{3200\}[\s\S]*?label: "Upload"[\s\S]*?onClick: openAvatarPicker[\s\S]*?label: "Change"[\s\S]*?onClick: openAvatarPicker[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?<input[\s\S]*?id=\{avatarInputId\}[\s\S]*?ref=\{fileInputRef\}[\s\S]*?onChange=\{onAvatarSelected\}/,
+      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?railGap=\{8\}[\s\S]*?railColumns="repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}[\s\S]*?zIndex=\{3200\}[\s\S]*?label: "Upload"[\s\S]*?onClick: openAvatarPicker[\s\S]*?label: "Change"[\s\S]*?onClick: openAvatarPicker[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?<input[\s\S]*?id=\{avatarInputId\}[\s\S]*?ref=\{fileInputRef\}[\s\S]*?onChange=\{onAvatarSelected\}/,
   },
   {
     label:
@@ -674,6 +674,12 @@ const pictureFrameSystemChecks = [
     label:
       "Picture frame tools must use fixed overlay placement instead of page-local absolute rails",
     pattern: /position: "fixed"/,
+  },
+  {
+    label:
+      "Picture frame tools must measure placement before paint and lock trigger height so opening the rail cannot visibly jump",
+    pattern:
+      /useLayoutEffect\(\(\) => \{[\s\S]*?stableRailPlacement\(slotRef\.current, railGap, railMinWidth\)[\s\S]*?stableHeight=\{triggerHeight\}/,
   },
   {
     label:

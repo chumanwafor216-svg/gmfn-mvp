@@ -119,7 +119,7 @@ assertContains(
 );
 
 assertContains(
-  /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?onClick: openAvatarPicker[\s\S]*?onClick: openAvatarPicker[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
+  /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?triggerHeight=\{isPhone \? 40 : 42\}[\s\S]*?onClick: openAvatarPicker[\s\S]*?onClick: openAvatarPicker[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
   "Dashboard passport must keep one Frame tools button hiding active Upload, Change, and Remove actions plus the Visible/Portable/Usable strip."
 );
 

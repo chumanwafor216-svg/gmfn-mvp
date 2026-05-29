@@ -6876,6 +6876,7 @@ export default function DashboardPage() {
                 railGap={8}
                 railColumns="repeat(3, minmax(0, 1fr))"
                 railMinWidth={isPhone ? 286 : 300}
+                triggerHeight={isPhone ? 40 : 42}
                 zIndex={3200}
                 railStyle={{
                   gap: 8,
@@ -7746,6 +7747,7 @@ export default function DashboardPage() {
                   railGap={8}
                   railColumns="repeat(3, minmax(0, 1fr))"
                   railMinWidth={isPhone ? 210 : 280}
+                  triggerHeight={isPhone ? 44 : 42}
                   railStyle={{
                       gap: 8,
                       alignItems: "stretch",
