@@ -29965,3 +29965,28 @@ GSN-branded invite composer and invite-entry continuity.
   - This makes the tool affordance stronger in code, but it still needs a
     real-device Android tap check on the deployed build to prove the browser
     behavior matches the local implementation.
+
+### Dashboard passport visible frame tools and simplified Global ID (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport hero card only.
+- Frontend change:
+  - Removed the shield/check badge as the passport picture-frame trigger.
+  - Passport picture tools are now always-visible `Upload`, `Change`, and
+    `Remove` controls below the avatar, with the active file input located in
+    the visible passport block rather than the hidden legacy block.
+  - Simplified the Global ID card: it keeps the shield mark, centered `GSN
+    Global ID`, centered `Your permanent network identity`, and the visible GSN
+    ID value only.
+  - Removed the duplicate right-side `GLOBAL ID` label and the `Tap to copy`
+    affordance from the Dashboard passport card.
+- Guardrails:
+  - `frontend/tools/audit-dashboard-actions.mjs` now rejects the removed copy
+    affordance and protects the simplified identity card.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now requires the passport
+    Upload / Change / Remove controls and active file input to stay visible.
+  - `docs/SCREEN_SPECS.md` now documents visible passport frame tools rather
+    than a badge-hidden trigger.
+- Remaining truth:
+  - The visible controls are source-verified and audited, but the file picker
+    still needs a real Android browser tap test after deployment.

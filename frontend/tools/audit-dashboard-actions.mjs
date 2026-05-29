@@ -26,6 +26,19 @@ function assertContains(pattern, message) {
   }
 }
 
+function assertNotContains(pattern, message) {
+  const text = read(dashboardFile);
+
+  if (pattern.test(text)) {
+    findings.push({
+      file: dashboardFile,
+      line: 1,
+      message,
+      text: "Forbidden pattern was found.",
+    });
+  }
+}
+
 function assertStableActionsHaveDebugIds() {
   const text = read(dashboardFile);
   const actionPattern =
@@ -106,13 +119,18 @@ assertContains(
 );
 
 assertContains(
-  /label=\{"\\u2713"\}[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
-  "Dashboard passport must keep the approved shield badge and Visible/Portable/Usable strip."
+  /aria-label="Passport picture frame tools"[\s\S]*?\["Upload", "Change"\]\.map[\s\S]*?debugId="dashboard\.passport-picture\.remove"[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
+  "Dashboard passport must keep visible picture tools and the Visible/Portable/Usable strip."
 );
 
 assertContains(
-  /debugId="dashboard\.passport-global-id\.copy"[\s\S]*?GSN Global ID[\s\S]*?Your permanent network identity[\s\S]*?Global ID[\s\S]*?globalIdParts[\s\S]*?Tap to copy/,
-  "Dashboard passport Global ID block must keep the approved split card with copy affordance."
+  /GSN Global ID[\s\S]*?Your permanent network identity[\s\S]*?globalIdParts[\s\S]*?\{visibleGsnId\}/,
+  "Dashboard passport Global ID block must keep the simplified centered identity card."
+);
+
+assertNotContains(
+  /dashboard\.passport-global-id\.copy|Tap to copy|copyGlobalId|globalIdCopyStatus/,
+  "Dashboard passport Global ID card must not expose the removed copy affordance."
 );
 
 assertContains(

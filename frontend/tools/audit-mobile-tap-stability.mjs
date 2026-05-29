@@ -635,9 +635,9 @@ const dashboardSource = readFileSync(dashboardPagePath, "utf8");
 const dashboardFrameChecks = [
   {
     label:
-      "Dashboard passport picture tools must use the shared system-level frame tools control",
+      "Dashboard passport picture tools must stay visibly available beside the active passport image input",
     pattern:
-      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label=\{"\\u2713"\}[\s\S]*?railGap=\{8\}[\s\S]*?railColumns="repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?zIndex=\{3200\}[\s\S]*?actions=\{\[[\s\S]*?label: "Upload"[\s\S]*?label: "Change"[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc/,
+      /aria-label="Passport picture frame tools"[\s\S]*?\["Upload", "Change"\]\.map[\s\S]*?data-cta-id=\{`dashboard\.passport-picture\.\$\{label\.toLowerCase\(\)\}`\}[\s\S]*?data-gmfn-file-input-id=\{avatarInputId\}[\s\S]*?debugId="dashboard\.passport-picture\.remove"[\s\S]*?<input[\s\S]*?id=\{avatarInputId\}[\s\S]*?ref=\{fileInputRef\}[\s\S]*?onChange=\{onAvatarSelected\}/,
   },
   {
     label:

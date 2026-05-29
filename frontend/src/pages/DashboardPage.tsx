@@ -19,7 +19,6 @@ import {
   listMarketplaceRequests,
   removeMyProfileImage,
   recordFocusCommitmentTrustEvent,
-  safeCopy,
   uploadMyProfileImageFile,
 } from "../lib/api";
 import {
@@ -2998,14 +2997,8 @@ export default function DashboardPage() {
     tone: "success" | "error";
     text: string;
   } | null>(null);
-  const [globalIdCopyStatus, setGlobalIdCopyStatus] = useState<
-    "idle" | "copied" | "error"
-  >("idle");
-  const [passportPictureToolsOpen, setPassportPictureToolsOpen] =
-    useState<boolean>(false);
   const [pictureToolsOpen, setPictureToolsOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const globalIdCopyResetRef = useRef<number | null>(null);
 
   const [appUsage] = useState<AppUseRecord[]>(() => readDashboardAppUsage());
   const [focusCommitments, setFocusCommitments] = useState<FocusCommitment[]>(
@@ -3047,14 +3040,6 @@ export default function DashboardPage() {
     window.addEventListener("resize", handleResize);
 
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (globalIdCopyResetRef.current !== null) {
-        window.clearTimeout(globalIdCopyResetRef.current);
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -5243,26 +5228,6 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
-  async function copyGlobalId(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeDashboardButtonEvent(event);
-
-    if (!visibleGsnId || visibleGsnId === "Pending") {
-      setGlobalIdCopyStatus("error");
-      return;
-    }
-
-    const copied = await safeCopy(visibleGsnId);
-    setGlobalIdCopyStatus(copied ? "copied" : "error");
-
-    if (globalIdCopyResetRef.current !== null) {
-      window.clearTimeout(globalIdCopyResetRef.current);
-    }
-    globalIdCopyResetRef.current = window.setTimeout(() => {
-      setGlobalIdCopyStatus("idle");
-      globalIdCopyResetRef.current = null;
-    }, 1800);
-  }
-
   function explainMissingAvatarForRemoval(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -6845,123 +6810,105 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    bottom: isPhone ? -20 : -22,
-                    transform: "translateX(-50%)",
-                    zIndex: 260,
-                  }}
-                >
-                  <PictureFrameToolsControl
-                    open={passportPictureToolsOpen}
-                    label={"\u2713"}
-                    ariaLabel="Open passport picture tools: Upload, Change, Remove"
-                    onToggle={(event) =>
-                      runDashboardUiMutation(event, () => {
-                        setPictureToolsOpen(false);
-                        setPassportPictureToolsOpen((open) => !open);
-                      })
-                    }
-                    slotStyle={{
-                      width: isPhone ? 46 : 52,
-                      height: isPhone ? 46 : 52,
-                      minWidth: isPhone ? 46 : 52,
-                      minHeight: isPhone ? 46 : 52,
-                      maxWidth: isPhone ? 46 : 52,
-                      maxHeight: isPhone ? 46 : 52,
-                      display: "block",
-                      zIndex: 260,
+              </div>
+
+              <div
+                aria-label="Passport picture frame tools"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: isPhone ? 5 : 7,
+                  width: "100%",
+                  minHeight: isPhone ? 38 : 40,
+                  alignItems: "stretch",
+                  overflowAnchor: "none",
+                  transition: "none",
+                }}
+              >
+                {["Upload", "Change"].map((label) => (
+                  <label
+                    key={label}
+                    htmlFor={avatarInputId}
+                    role="button"
+                    tabIndex={0}
+                    data-gmfn-action-root="true"
+                    data-cta-id={`dashboard.passport-picture.${label.toLowerCase()}`}
+                    data-gmfn-file-input-id={avatarInputId}
+                    className="gmfn-stable-action"
+                    onPointerDown={stopDashboardPointerEvent}
+                    onPointerUp={stopDashboardPointerEvent}
+                    onMouseDown={stopDashboardPointerEvent}
+                    onClick={stopDashboardPointerEvent}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      fileInputRef.current?.click();
                     }}
-                    buttonStyle={{
+                    style={{
                       ...dashboardFillButton(subtleBtn(false)),
-                      width: isPhone ? 46 : 52,
-                      height: isPhone ? 46 : 52,
-                      minWidth: isPhone ? 46 : 52,
-                      minHeight: isPhone ? 46 : 52,
-                      maxWidth: isPhone ? 46 : 52,
-                      maxHeight: isPhone ? 46 : 52,
-                      padding: 0,
+                      minHeight: isPhone ? 38 : 40,
+                      height: isPhone ? 38 : 40,
+                      maxHeight: isPhone ? 38 : 40,
+                      padding: isPhone ? "0 7px" : "0 10px",
                       borderRadius: 999,
-                      border: "4px solid rgba(255,255,255,0.92)",
-                      background:
-                        "linear-gradient(180deg, #0F4D86 0%, #0B3564 100%)",
-                      color: "#FFFFFF",
-                      fontSize: isPhone ? 21 : 24,
+                      fontSize: isPhone ? 10.5 : 11.5,
                       fontWeight: 1000,
                       lineHeight: 1,
-                      boxShadow:
-                        "0 10px 18px rgba(10,24,49,0.18), 0 0 0 1px rgba(201,154,39,0.46)",
-                      transition: "none",
+                      whiteSpace: "nowrap",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      textDecoration: "none",
                     }}
-                    railGap={8}
-                    railColumns="repeat(3, minmax(0, 1fr))"
-                    railMinWidth={isPhone ? 286 : 300}
-                    zIndex={3200}
-                    railStyle={{
-                      gap: 8,
-                      alignItems: "stretch",
-                      borderRadius: 18,
-                      padding: 8,
-                      background:
-                        "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
-                      border: "1px solid rgba(11,99,209,0.12)",
-                      boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
-                      transition: "none",
-                    }}
-                    actions={[
-                      {
-                        label: "Upload",
-                        inputId: avatarInputId,
-                        style: {
-                          ...dashboardFillButton(subtleBtn(false)),
-                          minHeight: isPhone ? 46 : 42,
-                          height: isPhone ? 46 : 42,
-                          maxHeight: isPhone ? 46 : 42,
-                          padding: isPhone ? "9px 12px" : "8px 12px",
-                          fontSize: isPhone ? 12 : 12,
-                          lineHeight: 1,
-                          whiteSpace: "nowrap",
-                          transition: "none",
-                        },
-                      },
-                      {
-                        label: "Change",
-                        inputId: avatarInputId,
-                        style: {
-                          ...dashboardFillButton(subtleBtn(false)),
-                          minHeight: isPhone ? 46 : 42,
-                          height: isPhone ? 46 : 42,
-                          maxHeight: isPhone ? 46 : 42,
-                          padding: isPhone ? "9px 12px" : "8px 12px",
-                          fontSize: isPhone ? 12 : 12,
-                          lineHeight: 1,
-                          whiteSpace: "nowrap",
-                          transition: "none",
-                        },
-                      },
-                      {
-                        label: "Remove",
-                        disabled: !avatarSrc,
-                        onDisabledClick: explainMissingAvatarForRemoval,
-                        onClick: removeAvatar,
-                        style: {
-                          ...dashboardFillButton(subtleBtn(!avatarSrc)),
-                          minHeight: isPhone ? 46 : 42,
-                          height: isPhone ? 46 : 42,
-                          maxHeight: isPhone ? 46 : 42,
-                          padding: isPhone ? "9px 12px" : "8px 12px",
-                          fontSize: isPhone ? 12 : 12,
-                          lineHeight: 1,
-                          whiteSpace: "nowrap",
-                          transition: "none",
-                        },
-                      },
-                    ]}
-                  />
-                </div>
+                  >
+                    {label}
+                  </label>
+                ))}
+                <StableButton
+                  type="button"
+                  aria-disabled={!avatarSrc}
+                  debugId="dashboard.passport-picture.remove"
+                  onClick={(event) => {
+                    if (!avatarSrc) {
+                      explainMissingAvatarForRemoval(event);
+                      return;
+                    }
+                    removeAvatar(event);
+                  }}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  stableHeight={isPhone ? 38 : 40}
+                  style={{
+                    ...dashboardFillButton(subtleBtn(!avatarSrc)),
+                    minHeight: isPhone ? 38 : 40,
+                    height: isPhone ? 38 : 40,
+                    maxHeight: isPhone ? 38 : 40,
+                    padding: isPhone ? "0 7px" : "0 10px",
+                    borderRadius: 999,
+                    fontSize: isPhone ? 10.5 : 11.5,
+                    fontWeight: 1000,
+                    lineHeight: 1,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Remove
+                </StableButton>
               </div>
+
+              <input
+                id={avatarInputId}
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={onAvatarSelected}
+                style={{
+                  position: "absolute",
+                  width: 1,
+                  height: 1,
+                  opacity: 0,
+                  overflow: "hidden",
+                  pointerEvents: "none",
+                }}
+              />
             </div>
           </div>
 
@@ -7170,23 +7117,18 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          <StableButton
-            debugId="dashboard.passport-global-id.copy"
-            type="button"
-            aria-label={`Copy GSN Global ID ${visibleGsnId}`}
-            onClick={copyGlobalId}
-            onPointerDown={consumeDashboardPointerEvent}
-            style={dashboardStableActionFrame({
+          <div
+            style={{
               marginTop: 12,
               width: "100%",
-              minHeight: isPhone ? 112 : 126,
+              minHeight: isPhone ? 96 : 112,
               display: "grid",
               gridTemplateColumns: isPhone
-                ? "54px minmax(0, 1fr) minmax(105px, 0.88fr)"
-                : "70px minmax(0, 1fr) minmax(150px, 0.88fr)",
+                ? "48px minmax(0, 1fr) minmax(94px, 0.72fr)"
+                : "66px minmax(0, 1fr) minmax(148px, 0.76fr)",
               gap: 0,
               alignItems: "center",
-              padding: isPhone ? "10px 9px" : "14px 16px",
+              padding: isPhone ? "10px 8px" : "14px 16px",
               borderRadius: isPhone ? 16 : 20,
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,250,255,0.96) 100%)",
@@ -7195,8 +7137,11 @@ export default function DashboardPage() {
                 "0 18px 26px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.94)",
               color: DASHBOARD_BRAND.ink,
               textAlign: "left",
-              cursor: "pointer",
-            })}
+              overflow: "hidden",
+              boxSizing: "border-box",
+              overflowAnchor: "none",
+              transition: "none",
+            }}
           >
             <span
               aria-hidden="true"
@@ -7226,7 +7171,10 @@ export default function DashboardPage() {
                 alignContent: "center",
                 minWidth: 0,
                 height: "100%",
-                padding: isPhone ? "0 12px" : "0 18px",
+                justifyItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                padding: isPhone ? "0 10px" : "0 18px",
                 borderLeft: "1px solid rgba(16,37,59,0.10)",
                 borderRight: "1px solid rgba(16,37,59,0.10)",
               }}
@@ -7234,7 +7182,7 @@ export default function DashboardPage() {
               <span
                 style={{
                   color: DASHBOARD_BRAND.ink,
-                  fontSize: isPhone ? 18 : 23,
+                  fontSize: isPhone ? 17 : 23,
                   fontWeight: 1000,
                   lineHeight: 1.05,
                   overflowWrap: "break-word",
@@ -7245,9 +7193,10 @@ export default function DashboardPage() {
               <span
                 style={{
                   color: DASHBOARD_BRAND.label,
-                  fontSize: isPhone ? 12.2 : 14,
+                  fontSize: isPhone ? 11.5 : 14,
                   fontWeight: 800,
                   lineHeight: 1.24,
+                  maxWidth: isPhone ? 120 : 180,
                 }}
               >
                 Your permanent network identity
@@ -7259,28 +7208,18 @@ export default function DashboardPage() {
                 display: "grid",
                 gap: isPhone ? 5 : 7,
                 alignContent: "center",
+                justifyItems: "center",
                 minWidth: 0,
-                paddingLeft: isPhone ? 12 : 18,
+                textAlign: "center",
+                paddingLeft: isPhone ? 10 : 18,
               }}
             >
-              <span
-                style={{
-                  color: DASHBOARD_BRAND.label,
-                  fontSize: isPhone ? 10.8 : 12.5,
-                  fontWeight: 1000,
-                  letterSpacing: 0.4,
-                  lineHeight: 1,
-                  textTransform: "uppercase",
-                }}
-              >
-                Global ID
-              </span>
               <span
                 style={{
                   color: DASHBOARD_BRAND.ink,
                   display: "grid",
                   gap: 0,
-                  fontSize: isPhone ? 21 : 26,
+                  fontSize: isPhone ? 21 : 27,
                   fontWeight: 1000,
                   lineHeight: 1.08,
                   overflowWrap: "anywhere",
@@ -7296,62 +7235,8 @@ export default function DashboardPage() {
                   <span>{visibleGsnId}</span>
                 )}
               </span>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 7,
-                  color:
-                    globalIdCopyStatus === "error"
-                      ? "#991B1B"
-                      : DASHBOARD_BRAND.label,
-                  fontSize: isPhone ? 11.5 : 13,
-                  fontWeight: 800,
-                  lineHeight: 1,
-                }}
-              >
-                <span
-                  aria-hidden="true"
-                  style={{
-                    position: "relative",
-                    width: 14,
-                    height: 16,
-                    display: "inline-block",
-                    flexShrink: 0,
-                  }}
-                >
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: 3,
-                      width: 9,
-                      height: 11,
-                      borderRadius: 2,
-                      border: "1.8px solid currentColor",
-                      opacity: 0.68,
-                    }}
-                  />
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 4,
-                      top: 0,
-                      width: 9,
-                      height: 11,
-                      borderRadius: 2,
-                      border: "1.8px solid currentColor",
-                    }}
-                  />
-                </span>
-                {globalIdCopyStatus === "copied"
-                  ? "Copied"
-                  : globalIdCopyStatus === "error"
-                  ? "Not ready"
-                  : "Tap to copy"}
-              </span>
             </span>
-          </StableButton>
+          </div>
         </section>
 
       <section
@@ -7776,7 +7661,6 @@ export default function DashboardPage() {
                   ariaLabel="Dashboard picture frame tools"
                   onToggle={(event) =>
                     runDashboardUiMutation(event, () => {
-                      setPassportPictureToolsOpen(false);
                       setPictureToolsOpen((open) => !open);
                     })
                   }
@@ -7873,22 +7757,6 @@ export default function DashboardPage() {
                   ]}
                 />
               </div>
-
-              <input
-                id={avatarInputId}
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={onAvatarSelected}
-                style={{
-                  position: "absolute",
-                  width: 1,
-                  height: 1,
-                  opacity: 0,
-                  overflow: "hidden",
-                  pointerEvents: "none",
-                }}
-              />
 
               {avatarStatus ? (
                 <div

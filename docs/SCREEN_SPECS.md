@@ -69,15 +69,15 @@ Must show:
 - Picture frame control
 - picture tools: Upload, Change, Remove
 - Trust / CCI / TrustSlip status row
-- GSN Global ID card with shield mark, permanent identity copy, visible ID, and tap-to-copy response
+- GSN Global ID card with shield mark, centered permanent identity copy, and visible ID
 - Market Wisdom presentation
 
 Frozen:
 - Market Wisdom presentation and interaction model
 
 Rules:
-- Picture frame controls must tap open and tap closed.
-- The approved Dashboard passport frame trigger is the shield badge on the avatar; it must open visible Upload, Change, and Remove tools.
+- Any collapsible picture frame controls must tap open and tap closed; always-visible passport frame tools must remain visible and directly tappable.
+- The approved Dashboard passport frame tools are visible Upload, Change, and Remove controls near the avatar; do not hide them behind the badge.
 - Opening/closing picture frame tools must not add/remove layout height; the tool rail opens as an anchored overlay near its trigger and must not leave a blank reserved gap when closed.
 - The dashboard passport frame and large picture frame must use separate open states; tapping one frame button must not open or resize the other frame rail.
 - Frame buttons must sit in fixed-height slots with no transition-driven movement.
