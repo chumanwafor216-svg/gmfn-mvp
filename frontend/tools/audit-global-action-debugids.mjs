@@ -69,7 +69,7 @@ function assertStablePrimitiveGuaranteesActionIds() {
   const text = readFileSync(join(frontendRoot, file), "utf8");
   const requiredPatterns = [
     {
-      pattern: /import React, \{ useId, useRef, useState \} from "react";/,
+      pattern: /import React, \{[\s\S]*?useId[\s\S]*?useRef[\s\S]*?useState[\s\S]*?\} from "react";/,
       message: "Stable action primitives must use React useId for fallback action IDs.",
     },
     {

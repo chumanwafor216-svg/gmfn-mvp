@@ -254,7 +254,7 @@ if (
 }
 
 if (
-  !/const BOTTOM_NAV_SELECTOR[\s\S]*?data-gmfn-bottom-nav[\s\S]*?function coveredDashboardActionFromBottomNav\(event: PointerEvent \| MouseEvent\): Element \| null[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?bottom-nav-covered-dashboard-suppressed/.test(
+  !/const BOTTOM_NAV_SELECTOR[\s\S]*?data-gmfn-bottom-nav[\s\S]*?function coveredDashboardActionFromBottomNav\([\s\S]*?event: PointerEvent \| MouseEvent,[\s\S]*?topRoot = actionRootFromEvent\(event\)[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?coveredDashboardActionFromBottomNav\(event, endRoot\)[\s\S]*?bottom-nav-covered-dashboard-suppressed/.test(
     mobileTapGuardSource
   )
 ) {
@@ -447,7 +447,7 @@ if (
 }
 
 if (
-  !/onPointerDown=\{composeTapGuard\(onPointerDown\)\}[\s\S]*?onPointerUp=\{composeTapGuard\(onPointerUp\)\}[\s\S]*?onMouseDown=\{composeTapGuard\(onMouseDown\)\}[\s\S]*?onClick=\{handleClick\}/.test(
+  !/const guardedPointerDown = useMemo[\s\S]*?const guardedPointerUp = useMemo[\s\S]*?const guardedMouseDown = useMemo[\s\S]*?onPointerDown=\{guardedPointerDown\}[\s\S]*?onPointerUp=\{guardedPointerUp\}[\s\S]*?onMouseDown=\{guardedMouseDown\}[\s\S]*?onClick=\{handleClick\}/.test(
     stableButtonSource
   )
 ) {

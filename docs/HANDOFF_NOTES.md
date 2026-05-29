@@ -1,3 +1,47 @@
+### Button performance tightening pass (2026-05-29)
+
+- Follow-up from product-owner request to audit buttons again and tighten them
+  for optimal performance during the active pilot.
+- Kept the story, routes, and visual structure unchanged; this is a shared
+  button/tap primitive performance pass, not a redesign.
+- Updated `frontend/src/components/StableButton.tsx`:
+  - `StableButton` and `StableCtaLink` now memoize their resolved style objects;
+  - pointer-down, pointer-up, and mouse-down tap guards are memoized instead of
+    recreated on every render;
+  - click handlers are stabilized with `useCallback` while preserving the
+    existing duplicate-click, in-flight, and aria-disabled behavior.
+- Updated `frontend/src/lib/mobileTapGuard.ts`:
+  - dashboard bottom-nav interception now reuses the already-discovered action
+    root instead of recomputing it during pointer-down/click handling;
+  - this reduces duplicate composed-path/closest work on the mobile tap path
+    while keeping the same suppression behavior.
+- Strengthened audits:
+  - `audit-button-stability` now requires the memoized stable button/link
+    contract;
+  - `audit-mobile-tap-stability` now requires the optimized bottom-nav guard
+    path and memoized button guards;
+  - `audit-global-action-debugids` now accepts the expanded React hook import
+    while still requiring `useId` fallback action IDs.
+- Truth/devil's advocate:
+  - existing audits were already passing before this pass, so this is preventive
+    performance hardening, not proof that a specific live tap bug was reproduced
+    and fixed;
+  - no live phone/browser tap recording was performed in this pass;
+  - because shared UI primitives are soft-frozen/high-risk, the change was kept
+    deliberately narrow.
+- Verification:
+  - `npm exec -- eslint src/components/StableButton.tsx src/lib/mobileTapGuard.ts tools/audit-button-stability.mjs tools/audit-mobile-tap-stability.mjs tools/audit-global-action-debugids.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Action Inbox reference remake (2026-05-29)
 
 - Follow-up from product-owner reference image: execute Action Inbox exactly in

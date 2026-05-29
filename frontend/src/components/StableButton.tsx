@@ -1,4 +1,4 @@
-import React, { useId, useRef, useState } from "react";
+import React, { useCallback, useId, useMemo, useRef, useState } from "react";
 import OriginLink from "./OriginLink";
 import {
   brandActionButton,
@@ -155,8 +155,24 @@ export function StableButton({
     (rest as Record<string, unknown>)["data-cta-id"],
     generatedId
   );
+  const resolvedStyle = useMemo(
+    () => stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style }),
+    [kind, locked, fullWidth, minWidth, stableHeight, style]
+  );
+  const guardedPointerDown = useMemo(
+    () => composeTapGuard(onPointerDown),
+    [onPointerDown]
+  );
+  const guardedPointerUp = useMemo(
+    () => composeTapGuard(onPointerUp),
+    [onPointerUp]
+  );
+  const guardedMouseDown = useMemo(
+    () => composeTapGuard(onMouseDown),
+    [onMouseDown]
+  );
 
-  function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
+  const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     const customClick = Boolean(onClick);
     stopTap(event);
     if (locked || inFlight.current) {
@@ -184,7 +200,7 @@ export function StableButton({
         setLocalBusy(false);
       });
     }
-  }
+  }, [locked, onClick, type]);
 
   return (
     <button
@@ -196,11 +212,11 @@ export function StableButton({
       aria-busy={busy || localBusy || undefined}
       aria-disabled={locked || undefined}
       tabIndex={locked ? -1 : tabIndex}
-      onPointerDown={composeTapGuard(onPointerDown)}
-      onPointerUp={composeTapGuard(onPointerUp)}
-      onMouseDown={composeTapGuard(onMouseDown)}
+      onPointerDown={guardedPointerDown}
+      onPointerUp={guardedPointerUp}
+      onMouseDown={guardedMouseDown}
       onClick={handleClick}
-      style={stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style })}
+      style={resolvedStyle}
     >
       {busy || localBusy ? busyLabel || children : children}
     </button>
@@ -235,8 +251,24 @@ export function StableCtaLink({
     (rest as Record<string, unknown>)["data-cta-id"],
     generatedId
   );
+  const resolvedStyle = useMemo(
+    () => stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style }),
+    [kind, locked, fullWidth, minWidth, stableHeight, style]
+  );
+  const guardedPointerDown = useMemo(
+    () => composeTapGuard(onPointerDown),
+    [onPointerDown]
+  );
+  const guardedPointerUp = useMemo(
+    () => composeTapGuard(onPointerUp),
+    [onPointerUp]
+  );
+  const guardedMouseDown = useMemo(
+    () => composeTapGuard(onMouseDown),
+    [onMouseDown]
+  );
 
-  function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
+  const handleClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>) => {
     stopTap(event);
     if (locked) {
       event.preventDefault();
@@ -251,7 +283,7 @@ export function StableCtaLink({
     lastClickAt.current = clickedAt;
 
     onClick?.(event);
-  }
+  }, [locked, onClick]);
 
   return (
     <OriginLink
@@ -262,11 +294,11 @@ export function StableCtaLink({
       aria-busy={busy || undefined}
       aria-disabled={locked || undefined}
       tabIndex={locked ? -1 : tabIndex}
-      onPointerDown={onPointerDown}
-      onPointerUp={onPointerUp}
-      onMouseDown={onMouseDown}
+      onPointerDown={guardedPointerDown}
+      onPointerUp={guardedPointerUp}
+      onMouseDown={guardedMouseDown}
       onClick={handleClick}
-      style={stableStyle(kind, locked, { fullWidth, minWidth, stableHeight, style })}
+      style={resolvedStyle}
     >
       {busy ? busyLabel || children : children}
     </OriginLink>

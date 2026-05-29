@@ -212,11 +212,13 @@ function isDashboardAction(root: Element | null): boolean {
   return ctaId.startsWith("dashboard.");
 }
 
-function coveredDashboardActionFromBottomNav(event: PointerEvent | MouseEvent): Element | null {
+function coveredDashboardActionFromBottomNav(
+  event: PointerEvent | MouseEvent,
+  topRoot = actionRootFromEvent(event)
+): Element | null {
   if (typeof document === "undefined" || typeof window === "undefined") return null;
   if (window.location.pathname !== "/app/dashboard") return null;
 
-  const topRoot = actionRootFromEvent(event);
   if (!isBottomNavAction(topRoot)) return null;
 
   const stack = document.elementsFromPoint(event.clientX, event.clientY);
@@ -290,8 +292,9 @@ function clearIfStale(): void {
 }
 
 function handlePointerDown(event: PointerEvent): void {
-  const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event);
-  const root = coveredDashboardRoot || actionRootFromEvent(event);
+  const initialRoot = actionRootFromEvent(event);
+  const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, initialRoot);
+  const root = coveredDashboardRoot || initialRoot;
   if (!root) {
     clearActiveTap();
     lastPointerContext = null;
@@ -376,7 +379,7 @@ function handleClick(event: MouseEvent): void {
 
   const endRoot = actionRootFromEvent(event);
   const currentTime = nowMs();
-  const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event);
+  const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, endRoot);
 
   if (
     redispatchingRoot &&
