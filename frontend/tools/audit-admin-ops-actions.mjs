@@ -126,7 +126,7 @@ assertContains(
 
 assertContains(
   "src/pages/NotificationsPage.tsx",
-  /debugId="notifications\.show-urgent"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?debugId="notifications\.selected\.open"[\s\S]*?debugId="notifications\.toggle-raw-feed"/,
+  /debugId="notifications\.show-urgent"[\s\S]*?debugId="notifications\.focus\.primary"[\s\S]*?debugId="notifications\.toggle-buckets"[\s\S]*?debugId="notifications\.selected\.open"/,
   "Notifications focus, selected notice, and feed actions must remain traceable."
 );
 

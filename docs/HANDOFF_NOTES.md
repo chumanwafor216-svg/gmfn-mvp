@@ -30035,3 +30035,27 @@ GSN-branded invite composer and invite-entry continuity.
   - This removes the source-side causes of the visible jump I can verify here.
     It still needs a real Android browser tap check after deployment to prove
     the Chrome rendering matches the local implementation.
+
+### Repo-wide button word-tightening pass (2026-05-29)
+
+- Routes/screens affected:
+  - Shared frontend action surfaces across pages that use
+    `StableButton`, `StableCtaLink`, `PrimaryButton`, `SecondaryButton`,
+    `SubtleButton`, `DangerButton`, or `brandActionButton`.
+- Frontend change:
+  - Replaced global action-text `overflow-wrap: anywhere` behavior with normal
+    word-boundary wrapping, `word-break: normal`, `hyphens: none`, and clean
+    ellipsis clipping.
+  - `frontend/src/components/StableButton.tsx`,
+    `frontend/src/styles/gmfnBrand.ts`, and `frontend/src/index.css` now keep
+    words intact so labels do not collapse into stacked fragments on tight
+    mobile buttons.
+- Guardrails:
+  - `frontend/tools/audit-button-stability.mjs` now checks shared stable action
+    text rules.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks the global
+    action surface text-wrapping rule.
+- Remaining truth:
+  - This is a global source-side tightening pass, not a manual screenshot pass
+    on every route. Real Android checks are still needed for the most cramped
+    pages after deployment.

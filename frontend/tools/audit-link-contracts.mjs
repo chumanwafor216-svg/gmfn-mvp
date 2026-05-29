@@ -285,7 +285,7 @@ assertContains(
 
 assertContains(
   "src/components/OriginLink.tsx",
-  /import \{ rememberAppRouteRecovery \} from "\.\.\/lib\/nav";[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);[\s\S]*?guardLinkTap\(event, rest\.onClick\);/,
+  /import \{ rememberAppRouteRecovery \} from "\.\.\/lib\/nav";[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?if \(!event\.defaultPrevented\) \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);/,
   "Shared CTA links must remember /app targets before moving, not only the final publish function."
 );
 
@@ -520,7 +520,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /async function copyText\(text: string, successMessage: string\)[\s\S]*?const copied = await safeCopy\(text\);[\s\S]*?Clipboard copy was blocked\. Refresh the public shop link before sharing\./,
+  /async function copyText\([\s\S]*?text: string,[\s\S]*?successMessage: string,[\s\S]*?missingMessage = "Nothing to copy yet\."[\s\S]*?const copied = await safeCopy\(text\);[\s\S]*?Clipboard copy was blocked\. Refresh the public shop link before sharing\./,
   "Shop Assets copy actions must wait for clipboard success and not report copied stale shop links."
 );
 

@@ -53,6 +53,18 @@ assertContains(
   "Shared stable actions must reapply movement locks after caller styles without wrapping complex child layouts."
 );
 
+assertContains(
+  "src/components/StableButton.tsx",
+  /function stableStyle[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?textOverflow: "ellipsis"/,
+  "Shared stable actions must not split button labels inside words; they should wrap at word boundaries and clip cleanly."
+);
+
+assertContains(
+  "src/styles/gmfnBrand.ts",
+  /const stableButtonText: React\.CSSProperties = \{[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?textOverflow: "ellipsis"/,
+  "Brand action button styles must keep button words intact across pages."
+);
+
 assertNotContains(
   "src/components/StableButton.tsx",
   /stableContentStyle|<span style=\{stableContentStyle\}>/,

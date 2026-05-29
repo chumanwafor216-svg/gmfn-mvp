@@ -311,7 +311,7 @@ if (
 }
 
 if (
-  !/:where\(a,\s*button,\s*\[role="button"\],\s*summary,\s*input\[type="button"\],\s*input\[type="submit"\],\s*\.gmfn-btn,\s*\[data-gmfn-action-root="true"\]\)\s*\{[\s\S]*?line-height:\s*1\.18;[\s\S]*?overflow-wrap:\s*anywhere;/.test(
+  !/:where\(a,\s*button,\s*\[role="button"\],\s*summary,\s*input\[type="button"\],\s*input\[type="submit"\],\s*\.gmfn-btn,\s*\[data-gmfn-action-root="true"\]\)\s*\{[\s\S]*?line-height:\s*1\.18;[\s\S]*?overflow-wrap:\s*normal;[\s\S]*?word-break:\s*normal;[\s\S]*?hyphens:\s*none;/.test(
     indexCssSource
   )
 ) {

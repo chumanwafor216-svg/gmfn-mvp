@@ -70,8 +70,10 @@ html, body {
   box-sizing: border-box;
   line-height: 1.18;
   text-align: center;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
   word-break: normal;
+  hyphens: none;
+  text-overflow: ellipsis;
 }
 
 :where(a, button, [role="button"], summary, input[type="button"], input[type="submit"], .gmfn-btn) {
@@ -133,7 +135,10 @@ html, body {
 :where(a, button, [role="button"], summary, .gmfn-btn, [data-gmfn-action-root="true"]) :where(span, div, strong, small, b, i, p) {
   min-width: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  text-overflow: ellipsis;
 }
 
 :where(button, .gmfn-btn) {

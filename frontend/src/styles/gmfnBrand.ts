@@ -208,8 +208,11 @@ export function brandActionButton(
     minWidth: 0,
     maxWidth: "100%",
     alignContent: "center",
-    overflowWrap: "anywhere",
-    lineHeight: 1.18,
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    textOverflow: "ellipsis",
+    lineHeight: 1.14,
     transition: "none",
   };
 

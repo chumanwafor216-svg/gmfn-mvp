@@ -96,6 +96,8 @@ Primary button:
 - dark navy or gold
 - large rounded shape
 - one clear label
+- labels must keep whole words intact; do not split words into stacked letter
+  fragments to force text into a small button
 
 Secondary button:
 - white or transparent
