@@ -76,8 +76,9 @@ Frozen:
 - Market Wisdom presentation and interaction model
 
 Rules:
-- Any collapsible picture frame controls must tap open and tap closed; always-visible passport frame tools must remain visible and directly tappable.
-- The approved Dashboard passport frame tools are visible Upload, Change, and Remove controls near the avatar; do not hide them behind the badge.
+- Passport picture frame tools must sit under one visible Frame tools button.
+- Frame tools must tap open and tap closed, then reveal Upload, Change, and Remove.
+- Upload and Change must open the active file picker from the visible passport block.
 - Opening/closing picture frame tools must not add/remove layout height; the tool rail opens as an anchored overlay near its trigger and must not leave a blank reserved gap when closed.
 - The dashboard passport frame and large picture frame must use separate open states; tapping one frame button must not open or resize the other frame rail.
 - Frame buttons must sit in fixed-height slots with no transition-driven movement.

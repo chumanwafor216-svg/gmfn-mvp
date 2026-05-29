@@ -2997,6 +2997,8 @@ export default function DashboardPage() {
     tone: "success" | "error";
     text: string;
   } | null>(null);
+  const [passportPictureToolsOpen, setPassportPictureToolsOpen] =
+    useState<boolean>(false);
   const [pictureToolsOpen, setPictureToolsOpen] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -5228,6 +5230,23 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
+  function openAvatarPicker(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
+    setAvatarStatus(null);
+
+    const input = fileInputRef.current;
+    if (!input) {
+      setAvatarStatus({
+        tone: "error",
+        text: "Picture picker is not ready. Close and reopen Frame tools, then try Upload again.",
+      });
+      return;
+    }
+
+    input.value = "";
+    input.click();
+  }
+
   function explainMissingAvatarForRemoval(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -6812,87 +6831,113 @@ export default function DashboardPage() {
 
               </div>
 
-              <div
-                aria-label="Passport picture frame tools"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-                  gap: isPhone ? 5 : 7,
+              <PictureFrameToolsControl
+                open={passportPictureToolsOpen}
+                label="Frame tools"
+                ariaLabel="Open passport picture frame tools"
+                onToggle={(event) =>
+                  runDashboardUiMutation(event, () => {
+                    setPictureToolsOpen(false);
+                    setPassportPictureToolsOpen((open) => !open);
+                  })
+                }
+                slotStyle={{
+                  marginTop: isPhone ? 7 : 8,
+                  height: isPhone ? 40 : 42,
+                  minHeight: isPhone ? 40 : 42,
+                  maxHeight: isPhone ? 40 : 42,
                   width: "100%",
-                  minHeight: isPhone ? 38 : 40,
+                  minWidth: 0,
+                  maxWidth: "100%",
+                  display: "block",
+                  flex: "0 0 auto",
+                  zIndex: 240,
+                }}
+                buttonStyle={{
+                  ...dashboardFillButton(subtleBtn(false)),
+                  height: isPhone ? 40 : 42,
+                  minHeight: isPhone ? 40 : 42,
+                  maxHeight: isPhone ? 40 : 42,
+                  padding: isPhone ? "0 12px" : "0 14px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxSizing: "border-box",
+                  borderRadius: 999,
+                  fontSize: isPhone ? 11.5 : 12.5,
+                  fontWeight: 1000,
+                  lineHeight: 1,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  transition: "none",
+                  boxShadow:
+                    "0 12px 22px rgba(10,24,49,0.12), inset 0 1px 0 rgba(255,255,255,0.92)",
+                }}
+                railGap={8}
+                railColumns="repeat(3, minmax(0, 1fr))"
+                railMinWidth={isPhone ? 286 : 300}
+                zIndex={3200}
+                railStyle={{
+                  gap: 8,
                   alignItems: "stretch",
-                  overflowAnchor: "none",
+                  borderRadius: 18,
+                  padding: 8,
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(239,246,255,0.96) 100%)",
+                  border: "1px solid rgba(11,99,209,0.12)",
+                  boxShadow: "0 18px 30px rgba(10,24,49,0.16)",
                   transition: "none",
                 }}
-              >
-                {["Upload", "Change"].map((label) => (
-                  <label
-                    key={label}
-                    htmlFor={avatarInputId}
-                    role="button"
-                    tabIndex={0}
-                    data-gmfn-action-root="true"
-                    data-cta-id={`dashboard.passport-picture.${label.toLowerCase()}`}
-                    data-gmfn-file-input-id={avatarInputId}
-                    className="gmfn-stable-action"
-                    onPointerDown={stopDashboardPointerEvent}
-                    onPointerUp={stopDashboardPointerEvent}
-                    onMouseDown={stopDashboardPointerEvent}
-                    onClick={stopDashboardPointerEvent}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" && event.key !== " ") return;
-                      event.preventDefault();
-                      event.stopPropagation();
-                      fileInputRef.current?.click();
-                    }}
-                    style={{
+                actions={[
+                  {
+                    label: "Upload",
+                    onClick: openAvatarPicker,
+                    style: {
                       ...dashboardFillButton(subtleBtn(false)),
-                      minHeight: isPhone ? 38 : 40,
-                      height: isPhone ? 38 : 40,
-                      maxHeight: isPhone ? 38 : 40,
-                      padding: isPhone ? "0 7px" : "0 10px",
-                      borderRadius: 999,
-                      fontSize: isPhone ? 10.5 : 11.5,
-                      fontWeight: 1000,
+                      minHeight: isPhone ? 44 : 42,
+                      height: isPhone ? 44 : 42,
+                      maxHeight: isPhone ? 44 : 42,
+                      padding: isPhone ? "9px 8px" : "8px 12px",
+                      fontSize: isPhone ? 11 : 12,
                       lineHeight: 1,
                       whiteSpace: "nowrap",
-                      cursor: "pointer",
-                      textAlign: "center",
-                      textDecoration: "none",
-                    }}
-                  >
-                    {label}
-                  </label>
-                ))}
-                <StableButton
-                  type="button"
-                  aria-disabled={!avatarSrc}
-                  debugId="dashboard.passport-picture.remove"
-                  onClick={(event) => {
-                    if (!avatarSrc) {
-                      explainMissingAvatarForRemoval(event);
-                      return;
-                    }
-                    removeAvatar(event);
-                  }}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  stableHeight={isPhone ? 38 : 40}
-                  style={{
-                    ...dashboardFillButton(subtleBtn(!avatarSrc)),
-                    minHeight: isPhone ? 38 : 40,
-                    height: isPhone ? 38 : 40,
-                    maxHeight: isPhone ? 38 : 40,
-                    padding: isPhone ? "0 7px" : "0 10px",
-                    borderRadius: 999,
-                    fontSize: isPhone ? 10.5 : 11.5,
-                    fontWeight: 1000,
-                    lineHeight: 1,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Remove
-                </StableButton>
-              </div>
+                      transition: "none",
+                    },
+                  },
+                  {
+                    label: "Change",
+                    onClick: openAvatarPicker,
+                    style: {
+                      ...dashboardFillButton(subtleBtn(false)),
+                      minHeight: isPhone ? 44 : 42,
+                      height: isPhone ? 44 : 42,
+                      maxHeight: isPhone ? 44 : 42,
+                      padding: isPhone ? "9px 8px" : "8px 12px",
+                      fontSize: isPhone ? 11 : 12,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
+                    },
+                  },
+                  {
+                    label: "Remove",
+                    disabled: !avatarSrc,
+                    onDisabledClick: explainMissingAvatarForRemoval,
+                    onClick: removeAvatar,
+                    style: {
+                      ...dashboardFillButton(subtleBtn(!avatarSrc)),
+                      minHeight: isPhone ? 44 : 42,
+                      height: isPhone ? 44 : 42,
+                      maxHeight: isPhone ? 44 : 42,
+                      padding: isPhone ? "9px 8px" : "8px 12px",
+                      fontSize: isPhone ? 11 : 12,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                      transition: "none",
+                    },
+                  },
+                ]}
+              />
 
               <input
                 id={avatarInputId}

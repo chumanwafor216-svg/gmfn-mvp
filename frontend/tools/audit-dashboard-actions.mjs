@@ -119,8 +119,8 @@ assertContains(
 );
 
 assertContains(
-  /aria-label="Passport picture frame tools"[\s\S]*?\["Upload", "Change"\]\.map[\s\S]*?debugId="dashboard\.passport-picture\.remove"[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
-  "Dashboard passport must keep visible picture tools and the Visible/Portable/Usable strip."
+  /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?label="Frame tools"[\s\S]*?onClick: openAvatarPicker[\s\S]*?onClick: openAvatarPicker[\s\S]*?label: "Remove"[\s\S]*?disabled: !avatarSrc[\s\S]*?\["eye", "Visible"\][\s\S]*?\["briefcase", "Portable"\][\s\S]*?\["check", "Usable"\]/,
+  "Dashboard passport must keep one Frame tools button hiding active Upload, Change, and Remove actions plus the Visible/Portable/Usable strip."
 );
 
 assertContains(

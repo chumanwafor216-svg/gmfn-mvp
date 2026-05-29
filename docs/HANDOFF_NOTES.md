@@ -29990,3 +29990,25 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining truth:
   - The visible controls are source-verified and audited, but the file picker
     still needs a real Android browser tap test after deployment.
+
+### Dashboard passport single Frame tools button (2026-05-29)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport hero card only.
+- Frontend change:
+  - Replaced the three always-visible passport picture buttons with one steady
+    `Frame tools` button below the avatar.
+  - Tapping `Frame tools` opens the hidden Upload / Change / Remove rail.
+  - Upload and Change now call the live `avatarInputId` file input directly
+    through `openAvatarPicker()` instead of relying on mobile label forwarding.
+  - The active file input remains in the visible passport block.
+- Guardrails:
+  - `frontend/tools/audit-dashboard-actions.mjs` now requires one Frame tools
+    button with Upload and Change wired to `openAvatarPicker()`.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now requires the same
+    hidden rail plus the active visible-block file input.
+  - `docs/SCREEN_SPECS.md` now documents the one-button frame-tools pattern.
+- Remaining truth:
+  - This is the strongest source-side fix for the inactive upload report, but
+    only a real Android browser tap can prove the native file picker opens on
+    the deployed build.
