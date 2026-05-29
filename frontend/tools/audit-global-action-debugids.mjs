@@ -12,9 +12,7 @@ const wrapperFiles = new Set([
   "src/components/uiKit.tsx",
 ]);
 
-const strictOpeningTagFiles = new Set([
-  "src/pages/RouteSmokeCheckPage.tsx",
-]);
+const explicitDebugIdFiles = new Set(["src/pages/RouteSmokeCheckPage.tsx"]);
 
 const findings = [];
 
@@ -54,23 +52,56 @@ function assertStableActionsHaveDebugIds(fullPath) {
       match.index,
       tagEnd === -1 ? match.index + 1100 : tagEnd + 1
     );
-    const legacyWindow = text.slice(match.index, match.index + 1100);
-    const hasDebugId = strictOpeningTagFiles.has(file)
-      ? /debugId=/.test(openingTag)
-      : /debugId=/.test(legacyWindow);
+    const hasDebugId = explicitDebugIdFiles.has(file) ? /debugId=/.test(openingTag) : true;
 
     if (!hasDebugId) {
       findings.push({
         file,
         line: text.slice(0, match.index).split(/\r?\n/).length,
-        text: (strictOpeningTagFiles.has(file) ? openingTag : legacyWindow)
-          .replace(/\s+/g, " ")
-          .slice(0, 220),
+        text: openingTag.replace(/\s+/g, " ").slice(0, 220),
       });
     }
   }
 }
 
+function assertStablePrimitiveGuaranteesActionIds() {
+  const file = "src/components/StableButton.tsx";
+  const text = readFileSync(join(frontendRoot, file), "utf8");
+  const requiredPatterns = [
+    {
+      pattern: /import React, \{ useId, useRef, useState \} from "react";/,
+      message: "Stable action primitives must use React useId for fallback action IDs.",
+    },
+    {
+      pattern: /function actionDebugId\([\s\S]*?explicitDebugId[\s\S]*?dataCtaId[\s\S]*?generatedId[\s\S]*?gmfn-auto-\$\{prefix\}/,
+      message:
+        "Stable action primitives must derive a fallback debug/action ID when callers omit one.",
+    },
+    {
+      pattern: /export function StableButton[\s\S]*?const generatedId = useId\(\);[\s\S]*?const resolvedDebugId = actionDebugId\([\s\S]*?data-cta-id=\{resolvedDebugId\}/,
+      message: "StableButton must always render a resolved data-cta-id.",
+    },
+    {
+      pattern: /export function StableCtaLink[\s\S]*?const generatedId = useId\(\);[\s\S]*?const resolvedDebugId = actionDebugId\([\s\S]*?data-cta-id=\{resolvedDebugId\}/,
+      message: "StableCtaLink must always render a resolved data-cta-id.",
+    },
+    {
+      pattern: /export function StableDisclosureSummary[\s\S]*?const generatedId = useId\(\);[\s\S]*?const resolvedDebugId = actionDebugId\([\s\S]*?data-cta-id=\{resolvedDebugId\}/,
+      message: "StableDisclosureSummary must always render a resolved data-cta-id.",
+    },
+  ];
+
+  for (const check of requiredPatterns) {
+    if (check.pattern.test(text)) continue;
+    findings.push({
+      file,
+      line: 1,
+      text: check.message,
+    });
+  }
+}
+
+assertStablePrimitiveGuaranteesActionIds();
 walk(srcRoot).forEach(assertStableActionsHaveDebugIds);
 
 if (findings.length > 0) {

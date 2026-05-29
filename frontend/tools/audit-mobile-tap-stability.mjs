@@ -348,7 +348,7 @@ if (
 }
 
 if (
-  !/data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{debugId\}[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{debugId\}[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{debugId\}/.test(
+  !/data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{resolvedDebugId\}[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{resolvedDebugId\}[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id=\{resolvedDebugId\}/.test(
     stableButtonSource
   )
 ) {

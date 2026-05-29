@@ -1,3 +1,55 @@
+### Shared stable-action debug ID hardening (2026-05-29)
+
+- Follow-up from product-owner instruction to finish the lane-auditor work
+  holistically and safely.
+- Root truth:
+  - the previous lane-auditor pass fixed the reported high/medium concrete
+    issues;
+  - one residual system weakness remained: older stable button callers could
+    omit `debugId`, and the global debug-ID audit still used legacy caller-side
+    heuristics for most files.
+- Updated `frontend/src/components/StableButton.tsx`:
+  - `StableButton`, `StableCtaLink`, and `StableDisclosureSummary` now derive a
+    fallback `data-cta-id` with React `useId` when a caller does not provide
+    `debugId` or `data-cta-id`;
+  - explicit semantic IDs still win, so newer/high-risk actions keep their
+    readable IDs;
+  - older legacy actions now still get a stable action/debug ID for the global
+    tap guard and action instrumentation.
+- Updated audits:
+  - `frontend/tools/audit-global-action-debugids.mjs` now verifies the shared
+    primitive-level fallback guarantee instead of pretending every legacy caller
+    already has a semantic `debugId`;
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks for the resolved
+    fallback ID wiring.
+- Truth/devil's advocate:
+  - this closes the previous residual system gap without touching hundreds of
+    unrelated old buttons by hand;
+  - fallback IDs are operationally stable action IDs, not perfect human-readable
+    product semantics. New high-risk actions should still provide explicit
+    `debugId` values.
+- Verification:
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run audit:global-raw-action-elements` passed.
+  - `npm run audit:action-surfaces` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:route-fallthrough` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:community-shop-actions` passed.
+  - `npm run audit:marketplace-actions` passed.
+  - `npm run audit:finance-actions` passed.
+  - `npm run audit:loans-actions` passed.
+  - `npm run audit:trust-actions` passed.
+  - `npm run audit:admin-ops-actions` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:entry-auth` passed.
+  - `npm exec -- eslint src/components/StableButton.tsx tools/audit-global-action-debugids.mjs tools/audit-mobile-tap-stability.mjs` passed.
+  - `.\node_modules\.bin\tsc -b` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Lane-auditor action response and button stability corrections (2026-05-29)
 
 - Follow-up from product-owner instruction to engage lane auditors for the same

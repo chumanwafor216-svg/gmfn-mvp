@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useId, useRef, useState } from "react";
 import OriginLink from "./OriginLink";
 import {
   brandActionButton,
@@ -41,6 +41,27 @@ const STABLE_ACTION_CLASS = "gmfn-stable-action";
 
 function stableActionClassName(className?: string): string {
   return [STABLE_ACTION_CLASS, className].filter(Boolean).join(" ");
+}
+
+function cleanActionId(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .replace(/[^a-zA-Z0-9._:-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .toLowerCase();
+}
+
+function actionDebugId(
+  prefix: string,
+  explicitDebugId: unknown,
+  dataCtaId: unknown,
+  generatedId: string
+): string {
+  return (
+    cleanActionId(explicitDebugId) ||
+    cleanActionId(dataCtaId) ||
+    `gmfn-auto-${prefix}-${cleanActionId(generatedId) || "action"}`
+  );
 }
 
 function stableStyle(
@@ -126,7 +147,14 @@ export function StableButton({
   const [localBusy, setLocalBusy] = useState(false);
   const inFlight = useRef(false);
   const lastClickAt = useRef(0);
+  const generatedId = useId();
   const locked = disabled || busy || localBusy;
+  const resolvedDebugId = actionDebugId(
+    "button",
+    debugId,
+    (rest as Record<string, unknown>)["data-cta-id"],
+    generatedId
+  );
 
   function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
     const customClick = Boolean(onClick);
@@ -163,7 +191,7 @@ export function StableButton({
       {...rest}
       type={type}
       data-gmfn-action-root="true"
-      data-cta-id={debugId}
+      data-cta-id={resolvedDebugId}
       className={stableActionClassName(className)}
       aria-busy={busy || localBusy || undefined}
       aria-disabled={locked || undefined}
@@ -199,7 +227,14 @@ export function StableCtaLink({
   ...rest
 }: StableLinkProps) {
   const lastClickAt = useRef(0);
+  const generatedId = useId();
   const locked = disabled || busy;
+  const resolvedDebugId = actionDebugId(
+    "link",
+    debugId,
+    (rest as Record<string, unknown>)["data-cta-id"],
+    generatedId
+  );
 
   function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
     stopTap(event);
@@ -222,7 +257,7 @@ export function StableCtaLink({
     <OriginLink
       {...rest}
       data-gmfn-action-root="true"
-      data-cta-id={debugId}
+      data-cta-id={resolvedDebugId}
       className={stableActionClassName(className)}
       aria-busy={busy || undefined}
       aria-disabled={locked || undefined}
@@ -299,11 +334,19 @@ export function StableDisclosureSummary({
   onKeyDown,
   ...rest
 }: StableDisclosureSummaryProps) {
+  const generatedId = useId();
+  const resolvedDebugId = actionDebugId(
+    "summary",
+    debugId,
+    (rest as Record<string, unknown>)["data-cta-id"],
+    generatedId
+  );
+
   return (
     <summary
       {...rest}
       data-gmfn-action-root="true"
-      data-cta-id={debugId}
+      data-cta-id={resolvedDebugId}
       className={stableActionClassName(className)}
       onPointerDown={(event) => {
         stopTap(event);
