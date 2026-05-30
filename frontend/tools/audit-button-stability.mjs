@@ -496,8 +496,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="my-gmfn\.public\.close-top"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.route\.dashboard"[\s\S]*?debugId="my-gmfn\.route\.demand-box"[\s\S]*?debugId="my-gmfn\.settings\.save"[\s\S]*?debugId="my-gmfn\.settings\.reset"/,
-  "My GSN and I must use shared stable primitives and shared CTA resolution for public guide controls, tabs, route tiles, and settings actions."
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId: "my-gmfn\.route\.dashboard"[\s\S]*?debugId: "my-gmfn\.route\.demand-box"[\s\S]*?debugId="my-gmfn\.hero\.dashboard"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.settings\.save"[\s\S]*?debugId="my-gmfn\.settings\.reset"/,
+  "My GSN and I must use shared stable primitives and shared CTA resolution for hero, guide tabs, route tiles, and settings actions."
 );
 
 assertNotContains(

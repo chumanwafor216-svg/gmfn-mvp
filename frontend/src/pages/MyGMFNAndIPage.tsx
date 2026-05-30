@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
@@ -10,13 +9,8 @@ import {
   SecondaryButton,
   StableCtaLink,
 } from "../components/StableButton";
-import TrustDocumentFamilyMap from "../components/TrustDocumentFamilyMap";
-import TrustDocumentUseCases from "../components/TrustDocumentUseCases";
 import { getCurrentClan, getMe, getMySettings, getSelectedClanId } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
-import { buildGuidanceSnapshot } from "../lib/guidance";
-import { buildTrustDocumentFamilyItems } from "../lib/trustDocumentFamilyMap";
-import { buildTrustDocumentUseCaseItems } from "../lib/trustDocumentUseCases";
 import {
   brandBadge,
   brandHelperText,
@@ -77,17 +71,17 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
 function routeTile(primary = false): React.CSSProperties {
   return {
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-    minHeight: 108,
+    alignItems: "center",
+    gap: 14,
+    minHeight: 92,
     borderRadius: 18,
     border: primary
-      ? `1px solid ${gmfnBrand.colors.accentBorder}`
-      : `1px solid ${gmfnBrand.colors.line}`,
+      ? "1px solid rgba(214,170,69,0.28)"
+      : "1px solid rgba(15,23,42,0.08)",
     background: primary
-      ? "linear-gradient(180deg, rgba(19,42,67,0.96) 0%, rgba(26,56,87,0.94) 100%)"
-      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    padding: 16,
+      ? "linear-gradient(180deg, rgba(239,246,255,0.98) 0%, rgba(255,255,255,0.995) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(250,252,255,0.99) 100%)",
+    padding: 14,
     textDecoration: "none",
     boxSizing: "border-box",
     touchAction: "manipulation",
@@ -96,24 +90,29 @@ function routeTile(primary = false): React.CSSProperties {
     transition: "none",
     flexShrink: 0,
     boxShadow: primary
-      ? "0 14px 28px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)"
-      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      ? "0 16px 32px rgba(11,99,209,0.10), inset 0 1px 0 rgba(255,255,255,0.98)"
+      : "0 14px 28px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.96)",
   };
 }
 
 function capabilityCard(primary = false): React.CSSProperties {
   return {
-    borderRadius: 18,
+    display: "grid",
+    gridTemplateColumns: "42px minmax(0, 1fr)",
+    gap: 10,
+    alignItems: "start",
+    minHeight: 102,
+    borderRadius: 14,
     border: primary
-      ? `1px solid ${gmfnBrand.colors.accentBorder}`
-      : `1px solid ${gmfnBrand.colors.line}`,
+      ? "1px solid rgba(214,170,69,0.26)"
+      : "1px solid rgba(15,23,42,0.08)",
     background: primary
-      ? "linear-gradient(180deg, rgba(19,42,67,0.96) 0%, rgba(26,56,87,0.94) 100%)"
-      : "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)",
-    padding: 16,
+      ? "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(255,250,235,0.98) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(248,251,255,0.99) 100%)",
+    padding: 12,
     boxShadow: primary
-      ? "0 14px 28px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.06)"
-      : "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
+      ? "0 12px 24px rgba(214,170,69,0.13), inset 0 1px 0 rgba(255,255,255,0.98)"
+      : "0 10px 20px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.98)",
   };
 }
 
@@ -127,6 +126,71 @@ function badge(primary = false): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return brandHelperText();
+}
+
+function appGuidePanel(): React.CSSProperties {
+  return {
+    borderRadius: 24,
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "#FFFFFF",
+    boxShadow:
+      "0 18px 38px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.98)",
+    padding: 16,
+    boxSizing: "border-box",
+  };
+}
+
+function appNavyCard(): React.CSSProperties {
+  return {
+    borderRadius: 20,
+    border: "1px solid rgba(255,255,255,0.10)",
+    background:
+      "radial-gradient(circle at 84% 22%, rgba(214,170,69,0.18) 0%, rgba(214,170,69,0) 22%), radial-gradient(circle at 92% 76%, rgba(79,128,178,0.18) 0%, rgba(79,128,178,0) 32%), linear-gradient(180deg, #071C31 0%, #082846 100%)",
+    boxShadow:
+      "0 18px 34px rgba(8,24,42,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+    padding: 18,
+    color: "#F8FBFF",
+    boxSizing: "border-box",
+  };
+}
+
+function appGuideIconBox(active = false): React.CSSProperties {
+  return {
+    width: 54,
+    height: 54,
+    borderRadius: 12,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: "0 0 auto",
+    background: active
+      ? "linear-gradient(180deg, #071C31 0%, #082846 100%)"
+      : "linear-gradient(180deg, #08233A 0%, #061827 100%)",
+    border: "1px solid rgba(214,170,69,0.24)",
+    color: "#F2C766",
+    fontWeight: 1000,
+    fontSize: 17,
+    boxShadow:
+      "0 10px 20px rgba(8,24,42,0.13), inset 0 1px 0 rgba(255,255,255,0.08)",
+  };
+}
+
+function appGuideNumber(): React.CSSProperties {
+  return {
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background:
+      "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)",
+    color: "#08233A",
+    fontSize: 11,
+    fontWeight: 1000,
+    flex: "0 0 auto",
+    boxShadow: "0 8px 16px rgba(214,170,69,0.22)",
+  };
 }
 
 function selectStyle(): React.CSSProperties {
@@ -688,7 +752,6 @@ export default function MyGMFNAndIPage() {
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
-  const [guidance, setGuidance] = useState<any>(null);
   const [settings, setSettings] = useState<SettingsState>(() =>
     readLocalJSON(SETTINGS_STORAGE_KEY, DEFAULT_SETTINGS)
   );
@@ -700,14 +763,6 @@ export default function MyGMFNAndIPage() {
       ? "settings"
       : "guide";
   }, [isAppRoute, location.search]);
-  const trustDocumentItems = useMemo(
-    () => buildTrustDocumentFamilyItems(isAppRoute),
-    [isAppRoute]
-  );
-  const trustDocumentUseCases = useMemo(
-    () => buildTrustDocumentUseCaseItems(trustDocumentItems),
-    [trustDocumentItems]
-  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -748,11 +803,10 @@ export default function MyGMFNAndIPage() {
       setLoading(true);
 
       try {
-        const [meRes, clanRes, settingsRes, guidanceRes] = await Promise.all([
+        const [meRes, clanRes, settingsRes] = await Promise.all([
           getMe().catch(() => null),
           getCurrentClan().catch(() => null),
           getMySettings().catch(() => null),
-          buildGuidanceSnapshot().catch(() => null),
         ]);
 
         if (!alive) return;
@@ -764,7 +818,6 @@ export default function MyGMFNAndIPage() {
         setSettings(
           settingsRes ? normalizeSettings(settingsRes) : normalizeSettings(localSettings)
         );
-        setGuidance(guidanceRes || null);
       } finally {
         if (alive) setLoading(false);
       }
@@ -802,7 +855,6 @@ export default function MyGMFNAndIPage() {
     );
   }, [currentClan]);
 
-  const nextBestStep = guidance?.nextBestStep || null;
   const capabilityCount = GMFN_CAPABILITY_COUNT;
   const topNavHomeTo = isAppRoute ? routes.dashboard : "/cover";
   const topNavHomeLabel = isAppRoute ? "Dashboard" : "Cover";
@@ -810,13 +862,6 @@ export default function MyGMFNAndIPage() {
   const topNavSubtitle = isAppRoute
     ? `Keep the ${capabilityCount} core capabilities visible here while workspace settings stay in a separate tab.`
     : `Understand what GSN can do before you sign in, enter a community, or move into protected routes.`;
-  const heroEyebrow = isAppRoute ? "Member guide" : "Public guide";
-  const heroTitle = isAppRoute
-    ? `Welcome, ${displayName}`
-    : "Understand what GSN can do before you enter";
-  const heroBody = isAppRoute
-    ? `GSN is your stable identity layer. The current executive summary says the network makes trust visible, portable, and usable across trade, finance, savings, identity, work, community participation, and disciplined follow-through. This keeps those ${capabilityCount} core capabilities visible in one place.`
-    : `GSN turns community trust into something visible, portable, and usable across identity, trade, savings, finance, support, and disciplined follow-through. This public guide keeps those ${capabilityCount} core capabilities visible before you choose whether to sign in, create, or join.`;
   const publicGuideEntryItems = useMemo<NextActionGuideItem[]>(
     () => [
       {
@@ -848,6 +893,61 @@ export default function MyGMFNAndIPage() {
       },
     ],
     []
+  );
+  const appGuideRoutes = useMemo(
+    () => [
+      {
+        label: "Dashboard",
+        detail: "Start here for your next step.",
+        icon: "D",
+        to: routes.dashboard,
+        debugId: "my-gmfn.route.dashboard",
+      },
+      {
+        label: "Community Home",
+        detail: "Community power and private control.",
+        icon: "H",
+        to: routes.community,
+        debugId: "my-gmfn.route.community",
+      },
+      {
+        label: "Marketplace",
+        detail: "Buying, selling, and visibility.",
+        icon: "M",
+        to: routes.marketplace,
+        debugId: "my-gmfn.route.marketplace",
+      },
+      {
+        label: "Loans & Support",
+        detail: "Support actions and community-backed loans.",
+        icon: "L",
+        to: routes.loans,
+        debugId: "my-gmfn.route.loans",
+      },
+      {
+        label: "Trust Passport",
+        detail: "Deeper trust identity and proof.",
+        icon: "T",
+        to: routes.trust,
+        debugId: "my-gmfn.route.trust",
+      },
+      {
+        label: "Demand Box",
+        detail: "Needs and opportunities.",
+        icon: "B",
+        to: routes.demandBox,
+        debugId: "my-gmfn.route.demand-box",
+      },
+      {
+        label: "My GSN and I",
+        detail: "Guidance, settings, and capability overview.",
+        icon: "I",
+        to: routes.guide,
+        debugId: "my-gmfn.route.my-gmfn",
+        active: true,
+      },
+    ],
+    [routes]
   );
 
   function showNotice(tone: NoticeTone, text: string) {
@@ -957,265 +1057,239 @@ export default function MyGMFNAndIPage() {
         gap: 18,
       }}
     >
-      <PageTopNav
-        sectionLabel={topNavTitle}
-        title={topNavTitle}
-        subtitle={topNavSubtitle}
-        homeTo={topNavHomeTo}
-        homeLabel={topNavHomeLabel}
-        backTo={topNavHomeTo}
-      />
-
-      <ExplainToggle
-        label="What this screen does"
-        what={
-          isAppRoute
-            ? "This page explains what GSN means for you as a member and keeps the core capabilities and personal settings close at hand."
-            : "This page explains what GSN can do before you sign in, enter a community, or move into protected member routes."
-        }
-        why={
-          isAppRoute
-            ? "It turns the product from a collection of routes into a clearer member guide that explains what the network can actually do for you."
-            : "It gives public visitors a clear reading of the product before they step into the signed-in system."
-        }
-        next={
-          isAppRoute
-            ? "Use the Guide tab to understand the capabilities first, then open Settings when you want to tune how the workspace behaves."
-            : "Use the guide first, then choose whether to open the cover, create or join a community, or sign in."
-        }
-        tone="blue"
-      />
+      {!isCompact ? (
+        <PageTopNav
+          sectionLabel={topNavTitle}
+          title={topNavTitle}
+          subtitle={topNavSubtitle}
+          homeTo={topNavHomeTo}
+          homeLabel={topNavHomeLabel}
+          backTo={topNavHomeTo}
+        />
+      ) : null}
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section
-        style={pageCard(gmfnBrand.gradients.hero)}
-      >
+      <section style={appGuidePanel()}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.1fr) 320px",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(280px, 0.92fr)",
             gap: 16,
             alignItems: "start",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>{heroEyebrow}</div>
-
+          <div style={appNavyCard()}>
             <div
               style={{
-                marginTop: 10,
-                color: gmfnBrand.colors.darkText,
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.1,
-              }}
-            >
-              {heroTitle}
-            </div>
-
-            <div
-              style={{
-                marginTop: 12,
-                ...helperText(),
-                color: gmfnBrand.colors.darkMuted,
-                maxWidth: 860,
-              }}
-            >
-              {heroBody}
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
                 display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 12,
               }}
             >
-              {isAppRoute ? (
-                <>
-                  <span style={badge(true)}>GSN ID: {gmfnId}</span>
-                  <span style={badge(false)}>Community: {communityLabel}</span>
-                </>
-              ) : (
-                <span style={badge(true)}>Public guide before sign-in</span>
-              )}
-              <span style={badge(false)}>{capabilityCount} core capabilities</span>
-              <span style={badge(false)}>{heroEyebrow}</span>
+              <span style={appGuideIconBox(true)}>S</span>
+              <div
+                style={{
+                  fontSize: isCompact ? 22 : 26,
+                  lineHeight: 1.08,
+                  fontWeight: 1000,
+                }}
+              >
+                My GSN and I
+              </div>
             </div>
+
+            <div
+              style={{
+                marginTop: 18,
+                color: "#DCEBFA",
+                fontSize: 15,
+                lineHeight: 1.55,
+                fontWeight: 700,
+              }}
+            >
+              See what GSN can do for you and where each tool lives.
+            </div>
+
+            <StableCtaLink
+              to={routes.dashboard}
+              kind="primary"
+              debugId="my-gmfn.hero.dashboard"
+              style={{
+                marginTop: 18,
+                width: "fit-content",
+                minHeight: 52,
+                borderRadius: 999,
+                padding: "14px 20px",
+                background:
+                  "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)",
+                color: "#07172C",
+                border: "1px solid rgba(255,255,255,0.38)",
+                boxShadow: "0 14px 24px rgba(214,170,69,0.22)",
+              }}
+            >
+              Dashboard {">"}
+            </StableCtaLink>
           </div>
 
-          <div
-            style={{
-              ...softCard(gmfnBrand.colors.overlayPanel),
-              border: "1px solid rgba(148,163,184,0.16)",
-            }}
-          >
-            <div style={sectionLabel()}>
-              {isAppRoute ? "Current guidance reading" : "Best place to start"}
+          <div style={appNavyCard()}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <span style={appGuideIconBox(false)}>
+                {displayName.slice(0, 1).toUpperCase() || "M"}
+              </span>
+              <div>
+                <div
+                  style={{
+                    fontSize: isCompact ? 22 : 26,
+                    lineHeight: 1.08,
+                    fontWeight: 1000,
+                  }}
+                >
+                  Welcome, {displayName}
+                </div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: "#DCEBFA",
+                    fontSize: 14,
+                    lineHeight: 1.5,
+                    fontWeight: 700,
+                  }}
+                >
+                  GSN keeps your identity, trust, and opportunities visible in one place.
+                </div>
+              </div>
             </div>
 
             <div
               style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: 20,
-                lineHeight: 1.25,
+                marginTop: 18,
+                display: "grid",
+                gap: 10,
               }}
             >
-              {safeStr(
-                isAppRoute
-                  ? nextBestStep?.title || "Keep your next step calm and clear"
-                  : "Read the guide, then enter through the right door"
-              )}
-            </div>
-
-            <div style={{ marginTop: 10, ...helperText(), color: "#D7E3F1" }}> 
-              {safeStr(
-                isAppRoute
-                  ? nextBestStep?.detail ||
-                      "Use the guide below when you want a clear explanation of what the network can do for you."
-                  : "Public visitors should use this guide first, then decide whether the next step is the cover, a create-or-join route, or sign in to reopen protected member work."
-              )}
+              <span style={badge(true)}>GSN ID: {gmfnId}</span>
+              <span style={badge(false)}>Community: {communityLabel}</span>
             </div>
           </div>
         </div>
-      </section>
 
-      {isAppRoute ? (
-        <section style={pageCard()}>
-          <div
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "180px 180px minmax(0, 1fr)",
+            gap: 10,
+            alignItems: "stretch",
+          }}
+        >
+          <StableCtaLink
+            to={routes.guide}
+            kind={activeTab === "guide" ? "primary" : "secondary"}
+            debugId="my-gmfn.tab.guide"
+            style={{ minHeight: 52, borderRadius: 999 }}
+          >
+            * {capabilityCount} Capabilities
+          </StableCtaLink>
+
+          <StableCtaLink
+            to={routes.settings}
+            kind={activeTab === "settings" ? "primary" : "secondary"}
+            debugId="my-gmfn.tab.settings"
+            style={{ minHeight: 52, borderRadius: 999 }}
+          >
+            Member Guide
+          </StableCtaLink>
+
+          <StableCtaLink
+            to={routes.trust}
+            kind="secondary"
+            debugId="my-gmfn.quick-guide.trust"
             style={{
-              display: "flex",
-              gap: 10,
-              flexWrap: "wrap",
+              gridColumn: isCompact ? "1 / -1" : undefined,
+              minHeight: 82,
+              borderRadius: 18,
+              justifyContent: "flex-start",
+              padding: "14px 16px",
+              textAlign: "left",
             }}
           >
-            <StableCtaLink
-              to={routes.guide}
-              kind={activeTab === "guide" ? "primary" : "secondary"}
-              debugId="my-gmfn.tab.guide"
-            >
-              Guide
-            </StableCtaLink>
-
-            <StableCtaLink
-              to={routes.settings}
-              kind={activeTab === "settings" ? "primary" : "secondary"}
-              debugId="my-gmfn.tab.settings"
-            >
-              Settings
-            </StableCtaLink>
-          </div>
-        </section>
-      ) : null}
+            <span style={appGuideNumber()}>?</span>
+            <span>
+              <strong>Quick Guide</strong>
+              <br />
+              Strengthen your identity evidence. Add a clear photo/selfie to keep your Trust Passport and TrustSlip strong.
+            </span>
+          </StableCtaLink>
+        </div>
+      </section>
 
       {activeTab === "guide" ? (
         <>
-          <section style={pageCard()}>
-            <div style={sectionLabel()}>{capabilityCount} things GSN can do for you</div>
-
-            <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              These are the {capabilityCount} core capabilities that explain what GSN can do for you.
+          <section style={appGuidePanel()}>
+            <div
+              style={{
+                color: "#07172C",
+                fontSize: isCompact ? 24 : 28,
+                fontWeight: 1000,
+                lineHeight: 1.1,
+              }}
+            >
+              {capabilityCount} Things GSN Can Do For You
             </div>
 
-            <ExplainToggle
-              label="How to use this guide"
-              what="This section lists the core capabilities so you can understand what the network can do for you across identity, trust, finance, trade, and disciplined follow-through."
-              why="It gives you a member-level explanation of the product instead of leaving those capabilities spread across many separate pages."
-              next="Read the capability that matches what you need now, then open the related route from the page navigation when you want to act on it."
-              tone="light"
-              style={{ marginTop: 12 }}
-            />
+            <div
+              style={{
+                marginTop: 8,
+                color: "#64748B",
+                fontSize: 14,
+                fontWeight: 700,
+                lineHeight: 1.45,
+              }}
+            >
+              Simple view of the {capabilityCount} core capabilities.
+            </div>
 
             <div
               style={{
                 marginTop: 16,
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(3, minmax(0, 1fr))",
-                gap: 12,
+                  ? "repeat(2, minmax(0, 1fr))"
+                  : "repeat(4, minmax(0, 1fr))",
+                gap: 10,
               }}
             >
               {GMFN_CAPABILITIES.map((item, index) => (
-                <div
-                  key={item.id}
-                  style={capabilityCard(index === 0)}
-                >
-                  <div style={sectionLabel()}>Capability {item.id}</div>
-                  <div
-                    style={{
-                      marginTop: 10,
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 18,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {item.title}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section style={pageCard()}>
-            <div style={sectionLabel()}>
-              Full explanation of the {capabilityCount} core capabilities
-            </div>
-
-            <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
-              The executive summary uses the same explanation structure for all {capabilityCount} capabilities.
-            </div>
-
-            <div style={{ marginTop: 16, display: "grid", gap: 12 }}>
-              {GMFN_CAPABILITIES.map((item) => (
-                <div key={`full-${item.id}`} style={innerCard()}>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span style={badge(true)}>#{item.id}</span>
+                <div key={item.id} style={capabilityCard(index === 0)}>
+                  <span style={appGuideNumber()}>{item.id}</span>
+                  <div style={{ minWidth: 0 }}>
                     <div
                       style={{
-                        color: "#F8FBFF",
-                        fontWeight: 900,
-                        fontSize: 18,
-                        lineHeight: 1.3,
+                        color: "#07172C",
+                        fontSize: 12.5,
+                        fontWeight: 1000,
+                        lineHeight: 1.18,
                       }}
                     >
                       {item.title}
                     </div>
-                  </div>
-
-                  <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                    <div style={helperText()}>
-                      <strong style={{ color: "#F8FBFF" }}>What it is:</strong>{" "}
-                      {item.whatItIs ||
-                        item.proverb ||
-                        "Exists in real life, made visible in GSN."}
-                    </div>
-
-                    <div style={helperText()}>
-                      <strong style={{ color: "#F8FBFF" }}>How it works:</strong>{" "}
-                      {item.howItWorks ||
-                        item.gmfn ||
-                        "Identity + trust + community."}
-                    </div>
-
-                    <div style={helperText()}>
-                      <strong style={{ color: "#F8FBFF" }}>Why it matters:</strong>{" "}
-                      {item.whyItMatters ||
-                        item.gmfn ||
-                        item.proverb ||
-                        "Improves access, reduces risk."}
+                    <div
+                      style={{
+                        marginTop: 6,
+                        color: "#425466",
+                        fontSize: 11.5,
+                        fontWeight: 700,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {publicCapabilityLine(item)}
                     </div>
                   </div>
                 </div>
@@ -1223,210 +1297,158 @@ export default function MyGMFNAndIPage() {
             </div>
           </section>
 
-          <section style={pageCard()}>
-            <div style={sectionLabel()}>
+          <section style={appGuidePanel()}>
+            <div
+              style={{
+                color: "#07172C",
+                fontSize: isCompact ? 23 : 27,
+                fontWeight: 1000,
+                lineHeight: 1.1,
+              }}
+            >
               {isAppRoute
-                ? "Where these capabilities usually appear in the app"
-                : "How to move from this public guide into the live product"}
+                ? "Where You See These In The App"
+                : "How To Move Into The Live Product"}
             </div>
 
-            <div style={{ marginTop: 10, ...helperText(), maxWidth: 920 }}>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#64748B",
+                fontSize: 14,
+                fontWeight: 700,
+                lineHeight: 1.45,
+              }}
+            >
               {isAppRoute
-                ? `The ${capabilityCount} capabilities do not all live on one page. Different pages carry different parts of the system.`
-                : "This public guide explains the product first. Use the next-action chooser below when you are ready to enter, create, join, or sign in."}
+                ? "Different pages carry different parts of the system."
+                : "Choose the route that matches where you are now."}
             </div>
 
             {isAppRoute ? (
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(3, minmax(0, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <StableCtaLink
-                  to={routes.dashboard}
-                  kind="primary"
-                  debugId="my-gmfn.route.dashboard"
-                  style={routeTile(true)}
-                >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
+              <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
+                {appGuideRoutes.map((item) => (
+                  <StableCtaLink
+                    key={item.label}
+                    to={item.to}
+                    kind={item.active ? "primary" : "secondary"}
+                    debugId={item.debugId}
+                    style={routeTile(Boolean(item.active))}
                   >
-                    Dashboard
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Start here when you need the next right step.
-                  </div>
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.community}
-                  debugId="my-gmfn.route.community"
-                  style={routeTile(false)}
-                >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Community Home
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Community power, continuity, first-circle building, and private community control start here.
-                  </div>
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.marketplace}
-                  debugId="my-gmfn.route.marketplace"
-                  style={routeTile(false)}
-                >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Marketplace
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Buying, selling, spotlight visibility, reputation-based visibility, and one global shop become visible here.
-                  </div>
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.loans}
-                  debugId="my-gmfn.route.loans"
-                  style={routeTile(false)}
-                >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Loans
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    People-backed loans, supporting others, emergency support, and trust savings all run through the support flow here.
-                  </div>
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.guide}
-                  debugId="my-gmfn.route.my-gmfn"
-                  style={routeTile(false)}
-                >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    My GSN and I
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Member guidance, settings, and the 22-capability explanation
-                    live here. Open Focus Commitments from Dashboard when you need
-                    the execution discipline layer.
-                  </div>
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.trust}
-                  debugId="my-gmfn.route.trust"
-                  style={routeTile(false)}
-                >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Trust Passport
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Portable trust identity, reputation mobility, fraud reduction before action, and deeper trust explanation live here.
-                  </div>
-                </StableCtaLink>
-
-                <StableCtaLink
-                  to={routes.demandBox}
-                  debugId="my-gmfn.route.demand-box"
-                  style={routeTile(false)}
-                >
-                  <div
-                    style={{
-                      color: "#F8FBFF",
-                      fontWeight: 900,
-                      fontSize: 17,
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    Demand Box
-                  </div>
-                  <div style={{ marginTop: 10, ...helperText(), fontSize: 13 }}>
-                    Demand Box is its own core capability and its own page.
-                  </div>
-                </StableCtaLink>
+                    <span style={appGuideIconBox(Boolean(item.active))}>
+                      {item.icon}
+                    </span>
+                    <span
+                      style={{
+                        flex: 1,
+                        minWidth: 0,
+                        textAlign: "left",
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "block",
+                          color: "#07172C",
+                          fontSize: 15,
+                          fontWeight: 1000,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                      <span
+                        style={{
+                          display: "block",
+                          marginTop: 5,
+                          color: "#64748B",
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          lineHeight: 1.38,
+                        }}
+                      >
+                        {item.detail}
+                      </span>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        color: item.active ? "#C99B3B" : "#A7B0BE",
+                        fontSize: 22,
+                        fontWeight: 900,
+                        lineHeight: 1,
+                      }}
+                    >
+                      {">"}
+                    </span>
+                  </StableCtaLink>
+                ))}
               </div>
             ) : (
-              <NextActionGuide
-                compact={isCompact}
-                defaultOpen
-                eyebrow="Public next step"
-                title="Which public door should you use next?"
-                intro="Choose the route that matches where you are: broad orientation, community entry, or reopening your protected member work."
-                items={publicGuideEntryItems}
-                onSelect={(item) => {
-                  if (!item.to) return;
-                  window.location.assign(item.to);
-                }}
-              />
+              <div style={{ marginTop: 16 }}>
+                <NextActionGuide
+                  compact={isCompact}
+                  defaultOpen
+                  eyebrow="Public next step"
+                  title="Which public door should you use next?"
+                  intro="Choose the route that matches where you are: broad orientation, community entry, or reopening your protected member work."
+                  items={publicGuideEntryItems}
+                  onSelect={(item) => {
+                    if (!item.to) return;
+                    window.location.assign(item.to);
+                  }}
+                />
+              </div>
             )}
+
+            <div
+              style={{
+                marginTop: 18,
+                borderRadius: 20,
+                border: "1px solid rgba(214,170,69,0.16)",
+                background:
+                  "linear-gradient(180deg, rgba(255,249,232,0.96) 0%, rgba(255,253,246,0.98) 100%)",
+                padding: isCompact ? 18 : 22,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  color: "#07172C",
+                  fontSize: 16,
+                  fontWeight: 1000,
+                }}
+              >
+                <span style={appGuideNumber()}>?</span>
+                How to use this page
+              </div>
+
+              <div style={{ marginTop: 18, display: "grid", gap: 15 }}>
+                {[
+                  "Learn the capability.",
+                  "See where it lives.",
+                  "Open the right page.",
+                ].map((step, index) => (
+                  <div
+                    key={step}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "32px minmax(0, 1fr)",
+                      gap: 12,
+                      alignItems: "center",
+                      color: "#243247",
+                      fontSize: 14,
+                      fontWeight: 850,
+                    }}
+                  >
+                    <span style={appGuideNumber()}>{index + 1}</span>
+                    {step}
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
-
-          <TrustDocumentFamilyMap
-            compact={isCompact}
-            items={trustDocumentItems}
-            title="How the trust record moves from personal meaning into public proof"
-            intro={
-              isAppRoute
-                ? "Use this map when you want to understand the difference between the stable identity layer, the fuller personal trust story, the portable TrustSlip, and the public verification check."
-                : "Use this map when you want to understand how GSN moves from a member's stable identity and fuller trust story into portable proof and public verification. Signed-in surfaces are marked clearly where they belong to the app flow."
-            }
-          />
-
-          <TrustDocumentUseCases
-            compact={isCompact}
-            items={trustDocumentUseCases}
-            title="Which trust surface should you open for which question?"
-            intro={
-              isAppRoute
-                ? "Use this chooser when you know the human question already, like identity, trust story, portable proof, or public validity, and want the right trust surface without guessing."
-                : "Use this chooser when you need to understand which trust question belongs to the signed-in record and which belongs to portable proof or public verification."
-            }
-          />
         </>
       ) : (
         <section style={pageCard()}>

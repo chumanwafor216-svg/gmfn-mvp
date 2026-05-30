@@ -5230,23 +5230,6 @@ export default function DashboardPage() {
     openDashboardRoute(event, `/app/trust-slip${query}`);
   }
 
-  function openAvatarPicker(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeDashboardButtonEvent(event);
-    setAvatarStatus(null);
-
-    const input = fileInputRef.current;
-    if (!input) {
-      setAvatarStatus({
-        tone: "error",
-        text: "Picture picker is not ready. Close and reopen Frame tools, then try Upload again.",
-      });
-      return;
-    }
-
-    input.value = "";
-    input.click();
-  }
-
   function explainMissingAvatarForRemoval(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
@@ -6892,7 +6875,7 @@ export default function DashboardPage() {
                 actions={[
                   {
                     label: "Upload",
-                    onClick: openAvatarPicker,
+                    inputId: avatarInputId,
                     style: {
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 44 : 42,
@@ -6907,7 +6890,7 @@ export default function DashboardPage() {
                   },
                   {
                     label: "Change",
-                    onClick: openAvatarPicker,
+                    inputId: avatarInputId,
                     style: {
                       ...dashboardFillButton(subtleBtn(false)),
                       minHeight: isPhone ? 44 : 42,

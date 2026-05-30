@@ -1,3 +1,39 @@
+### Picture-frame inner buttons and My GSN guide frame (2026-05-30)
+
+- Follow-up from product-owner screenshot/request: "execute picture exactly.
+  frame picture inner buttons not yet working."
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - passport `Frame tools` inner `Upload` and `Change` actions now bind
+    directly to the avatar file input with `inputId: avatarInputId`;
+  - removed the now-unused programmatic picker helper.
+- Updated `frontend/src/pages/MyGMFNAndIPage.tsx`:
+  - mobile view no longer shows the extra desktop `PageTopNav` above the app
+    shell bar;
+  - the page now follows the provided reference: navy My GSN identity card,
+    welcome card, capability/member-guide pills, compact 22-capability grid,
+    app-route list, and how-to-use card;
+  - removed the older explanation/map blocks from the guide view so the
+    screenshot structure is not competing with legacy content.
+- Updated audits:
+  - `frontend/tools/audit-mobile-tap-stability.mjs`
+  - `frontend/tools/audit-dashboard-actions.mjs`
+  - `frontend/tools/audit-member-entry-actions.mjs`
+  - `frontend/tools/audit-button-stability.mjs`
+- Truth/devil's advocate:
+  - the inner frame buttons now use the same safer direct file-input path as
+    the main picture frame actions;
+  - this was verified by code audits and build, but not by a real device
+    video; the owner should still retest Upload and Change on the pilot phone.
+- Verification:
+  - `npm exec -- eslint src/pages/MyGMFNAndIPage.tsx src/pages/DashboardPage.tsx tools/audit-mobile-tap-stability.mjs tools/audit-dashboard-actions.mjs tools/audit-member-entry-actions.mjs tools/audit-button-stability.mjs` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Active pilot deploy protocol codified (2026-05-30)
 
 - Follow-up from product-owner request: "can you make it a protocol moving

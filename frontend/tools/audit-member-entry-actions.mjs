@@ -121,8 +121,8 @@ assertContains(
 
 assertContains(
   "src/pages/MyGMFNAndIPage.tsx",
-  /debugId="my-gmfn\.public\.continue-top"[\s\S]*?debugId="my-gmfn\.route\.dashboard"[\s\S]*?debugId="my-gmfn\.settings\.save"/,
-  "My GSN and I public, route, and settings actions must remain traceable."
+  /debugId: "my-gmfn\.route\.dashboard"[\s\S]*?debugId="my-gmfn\.hero\.dashboard"[\s\S]*?debugId="my-gmfn\.tab\.guide"[\s\S]*?debugId="my-gmfn\.settings\.save"/,
+  "My GSN and I hero, guide, route, and settings actions must remain traceable."
 );
 
 assertContains(
