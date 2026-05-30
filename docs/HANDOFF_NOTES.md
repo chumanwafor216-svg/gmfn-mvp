@@ -30205,6 +30205,35 @@ GSN-branded invite composer and invite-entry continuity.
   - The visible controls are source-verified and audited, but the file picker
     still needs a real Android browser tap test after deployment.
 
+### Dashboard button inventory and phone audit baseline (2026-05-30)
+
+- Route/screen affected:
+  - `/app/dashboard` only.
+- Frontend change:
+  - Added `audit:dashboard-button-inventory` and
+    `audit:dashboard-phone-buttons` scripts.
+  - The inventory audit currently locks the Dashboard baseline at 52
+    `StableButton` surfaces, 1 `StableDisclosureSummary`, and 2
+    `PictureFrameToolsControl` invocations.
+  - The phone-button audit requires Dashboard `StableButton` controls to use
+    the route-local `consumeDashboardPointerEvent`, requires disclosure
+    summaries to stop pointer bubbling without blocking native toggle behavior,
+    rejects native `disabled=` on Dashboard stable actions, and checks the
+    shared picture-frame trigger-anchor pattern.
+  - Tightened the Dashboard attention popup buttons and trust-detail disclosure
+    so they participate in the route-local pointer guard pattern.
+  - Converted Focus composer `Add commitment` and `Save commitment` from native
+    `disabled` to soft `aria-disabled` plus explicit click guards.
+- Guardrails:
+  - The two new audits are intended to move with the page-by-page/domain-by-
+    domain button review. If the Dashboard action count changes intentionally,
+    update the inventory audit in the same change after checking the new
+    button's phone behavior.
+- Remaining truth:
+  - This is a source-level Dashboard pass, not a substitute for a real phone
+    tap sweep. The next practical check is Dashboard on the deployed phone build,
+    then repeat the same two-auditor pattern for the next domain page.
+
 ### Picture frame trigger anchor tightening (2026-05-30)
 
 - Route/screen affected:

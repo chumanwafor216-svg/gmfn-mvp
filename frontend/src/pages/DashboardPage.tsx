@@ -6474,6 +6474,8 @@ export default function DashboardPage() {
                     onClick={(event) =>
                       openAttentionTarget(event, attentionDisplaySignal.ctaTo)
                     }
+                    onPointerDown={consumeDashboardPointerEvent}
+                    onMouseDown={consumeDashboardPointerEvent}
                     style={{
                       ...dashboardFillButton(primaryBtn(false), {
                         minHeight: isPhone ? 30 : isCompact ? 34 : 36,
@@ -6505,6 +6507,8 @@ export default function DashboardPage() {
                           attentionDisplaySignal.secondaryCtaTo || ""
                         )
                       }
+                      onPointerDown={consumeDashboardPointerEvent}
+                      onMouseDown={consumeDashboardPointerEvent}
                       style={{
                         ...dashboardFillButton(secondaryBtn(false), {
                           minHeight: isPhone ? 30 : isCompact ? 34 : 36,
@@ -6535,6 +6539,8 @@ export default function DashboardPage() {
                     debugId="dashboard.attention-popup.trust-journey"
                     type="button"
                     onClick={openTrustJourneyFromAttention}
+                    onPointerDown={consumeDashboardPointerEvent}
+                    onMouseDown={consumeDashboardPointerEvent}
                     style={{
                       ...dashboardFillButton(secondaryBtn(false), {
                         minHeight: isPhone ? 30 : isCompact ? 34 : 36,
@@ -7975,6 +7981,8 @@ export default function DashboardPage() {
                     >
                       <StableDisclosureSummary
                         debugId="dashboard.trust-detail.toggle"
+                        onPointerDown={stopDashboardPointerEvent}
+                        onMouseDown={stopDashboardPointerEvent}
                         style={{
                           color: "#F6D77A",
                           fontWeight: 900,
@@ -11080,12 +11088,19 @@ export default function DashboardPage() {
               <StableButton
                 debugId="dashboard.focus.composer.toggle"
                 type="button"
-                onClick={(event) =>
+                onClick={(event) => {
+                  if (activeFocusCount >= 2) {
+                    consumeDashboardButtonEvent(event);
+                    setFocusComposerOpen(true);
+                    return;
+                  }
+
                   runDashboardUiMutation(event, () =>
                     setFocusComposerOpen((prev) => !prev)
-                  )
-                }
+                  );
+                }}
                 onPointerDown={consumeDashboardPointerEvent}
+                aria-disabled={activeFocusCount >= 2}
                 style={focusCommitmentButton(
                   activeFocusCount >= 2
                     ? {
@@ -11096,7 +11111,6 @@ export default function DashboardPage() {
                       }
                     : {}
                 )}
-                disabled={activeFocusCount >= 2}
               >
                 {focusComposerOpen ? "Close composer" : "Add commitment"}
               </StableButton>
@@ -11412,10 +11426,18 @@ export default function DashboardPage() {
                     <StableButton
                       debugId="dashboard.focus.composer.save"
                       type="button"
-                      onClick={(event) =>
-                        runDashboardUiMutation(event, saveFocusCommitment)
-                      }
+                      onClick={(event) => {
+                        if (!safeStr(focusDraft.title) || activeFocusCount >= 2) {
+                          consumeDashboardButtonEvent(event);
+                          return;
+                        }
+
+                        runDashboardUiMutation(event, saveFocusCommitment);
+                      }}
                       onPointerDown={consumeDashboardPointerEvent}
+                      aria-disabled={
+                        !safeStr(focusDraft.title) || activeFocusCount >= 2
+                      }
                       style={focusCommitmentButton(
                         !safeStr(focusDraft.title) || activeFocusCount >= 2
                           ? {
@@ -11427,9 +11449,8 @@ export default function DashboardPage() {
                           : {
                               background:
                                 "linear-gradient(180deg, #FFFFFF 0%, #F3F7FC 100%)",
-                            }
+                          }
                       )}
-                      disabled={!safeStr(focusDraft.title) || activeFocusCount >= 2}
                     >
                       Save commitment
                     </StableButton>

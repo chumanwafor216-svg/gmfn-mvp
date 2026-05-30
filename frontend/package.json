@@ -22,6 +22,8 @@
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",
     "audit:action-response-protocol": "node tools/audit-action-response-protocol.mjs",
     "audit:dashboard-actions": "node tools/audit-dashboard-actions.mjs",
+    "audit:dashboard-button-inventory": "node tools/audit-dashboard-button-inventory.mjs",
+    "audit:dashboard-phone-buttons": "node tools/audit-dashboard-phone-buttons.mjs",
     "audit:global-action-debugids": "node tools/audit-global-action-debugids.mjs",
     "audit:global-raw-action-elements": "node tools/audit-global-raw-action-elements.mjs",
     "audit:button-stability": "node tools/audit-button-stability.mjs",

@@ -1,0 +1,144 @@
+/* global console, process */
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const dashboardFile = "src/pages/DashboardPage.tsx";
+const frameToolsFile = "src/components/PictureFrameToolsControl.tsx";
+const dashboardSource = readFileSync(join(frontendRoot, dashboardFile), "utf8");
+const frameToolsSource = readFileSync(join(frontendRoot, frameToolsFile), "utf8");
+const findings = [];
+
+function lineAt(source, index) {
+  return source.slice(0, index).split(/\r?\n/).length;
+}
+
+function debugIdFrom(block) {
+  return (
+    block.match(/debugId="([^"]+)"/)?.[1] ||
+    block.match(/debugId=\{`([^`]+)`\}/)?.[1] ||
+    block.match(/debugId=\{([^}]+)\}/)?.[1] ||
+    ""
+  ).replace(/\s+/g, " ");
+}
+
+const actionPattern =
+  /<(StableButton|StableDisclosureSummary)\b[\s\S]*?(?:\/>|<\/\1>)/g;
+let match;
+
+while ((match = actionPattern.exec(dashboardSource))) {
+  const tag = match[1];
+  const block = match[0];
+  const line = lineAt(dashboardSource, match.index);
+  const id = debugIdFrom(block);
+
+  if (tag === "StableButton") {
+    if (!/onPointerDown=\{consumeDashboardPointerEvent\}/.test(block)) {
+      findings.push({
+        file: dashboardFile,
+        line,
+        message:
+          "Dashboard StableButton must use the route-local pointer guard before phone click handling.",
+        text: id || block.replace(/\s+/g, " ").slice(0, 220),
+      });
+    }
+  }
+
+  if (tag === "StableDisclosureSummary") {
+    if (!/onPointerDown=\{stopDashboardPointerEvent\}/.test(block)) {
+      findings.push({
+        file: dashboardFile,
+        line,
+        message:
+          "Dashboard disclosure summaries must stop pointer bubbling without preventing their native toggle.",
+        text: id || block.replace(/\s+/g, " ").slice(0, 220),
+      });
+    }
+  }
+
+  if (/(^|\s)disabled=/.test(block)) {
+    findings.push({
+      file: dashboardFile,
+      line,
+      message:
+        "Dashboard stable actions must avoid native disabled; use aria-disabled/soft-disabled patterns so taps cannot fall through.",
+      text: id || block.replace(/\s+/g, " ").slice(0, 220),
+    });
+  }
+}
+
+const requiredDashboardPatterns = [
+  {
+    pattern:
+      /function consumeDashboardPointerEvent\([\s\S]*?event\?\.preventDefault\(\);[\s\S]*?stopDashboardPointerEvent\(event\);/,
+    message:
+      "Dashboard must keep a route-local pointer guard that blocks shifted phone taps before click handling.",
+  },
+  {
+    pattern:
+      /const dashboardStableActionFrame = \([\s\S]*?height: stableHeight,[\s\S]*?minHeight: stableHeight,[\s\S]*?maxHeight: style\.maxHeight \?\? stableHeight[\s\S]*?transition: "none"/,
+    message:
+      "Dashboard must keep fixed-height no-transition action frames for phone hitbox stability.",
+  },
+  {
+    pattern:
+      /const dashboardFillButton = \([\s\S]*?width: "100%"[\s\S]*?minWidth: 0[\s\S]*?maxWidth: "100%"/,
+    message:
+      "Dashboard fill buttons must keep width/min/max constraints for steady phone geometry.",
+  },
+  {
+    pattern:
+      /onClick=\{\(event\) =>[\s\S]*?openDashboardRoute\(event,[\s\S]*?onPointerDown=\{consumeDashboardPointerEvent\}/,
+    message:
+      "Dashboard route buttons must pair route navigation with pointer guards.",
+  },
+];
+
+for (const check of requiredDashboardPatterns) {
+  if (check.pattern.test(dashboardSource)) continue;
+  findings.push({
+    file: dashboardFile,
+    line: 1,
+    message: check.message,
+    text: "Expected Dashboard phone button stability pattern was not found.",
+  });
+}
+
+const requiredFramePatterns = [
+  {
+    pattern:
+      /const triggerAnchorRef = useRef<HTMLDivElement \| null>\(null\);[\s\S]*?stableRailPlacement\([\s\S]*?triggerAnchorRef\.current \|\| slotRef\.current[\s\S]*?window\.visualViewport\?\.addEventListener\("resize", updatePlacement\)/,
+    message:
+      "Picture frame tools must anchor rails to a trigger-sized element and track phone visual viewport movement.",
+  },
+  {
+    pattern:
+      /<div[\s\S]*?ref=\{slotRef\}[\s\S]*?onPointerDown=\{stopFrameToolEvent\}[\s\S]*?<div[\s\S]*?ref=\{triggerAnchorRef\}[\s\S]*?<SubtleButton[\s\S]*?debugId="picture-frame-tools\.toggle"/,
+    message:
+      "Picture frame tool wrappers must remain inert while the real trigger carries the action root.",
+  },
+];
+
+for (const check of requiredFramePatterns) {
+  if (check.pattern.test(frameToolsSource)) continue;
+  findings.push({
+    file: frameToolsFile,
+    line: 1,
+    message: check.message,
+    text: "Expected shared picture-frame phone stability pattern was not found.",
+  });
+}
+
+if (findings.length > 0) {
+  console.error("Dashboard phone button audit failed:");
+  for (const finding of findings) {
+    console.error(
+      `- ${finding.file}:${finding.line} ${finding.message}\n  ${finding.text}`
+    );
+  }
+  process.exit(1);
+}
+
+console.log("Dashboard phone button audit passed.");
