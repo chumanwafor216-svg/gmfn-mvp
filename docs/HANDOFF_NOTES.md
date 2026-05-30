@@ -30205,6 +30205,27 @@ GSN-branded invite composer and invite-entry continuity.
   - The visible controls are source-verified and audited, but the file picker
     still needs a real Android browser tap test after deployment.
 
+### Picture frame trigger anchor tightening (2026-05-30)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport Frame tools and main picture-frame
+    tools through the shared `PictureFrameToolsControl`.
+- Frontend change:
+  - `frontend/src/components/PictureFrameToolsControl.tsx` now measures overlay
+    placement from a trigger-sized `triggerAnchorRef`, with the previous slot
+    wrapper only as fallback.
+  - The control now listens to `window.visualViewport` resize/scroll events
+    while open, so phone browser viewport shifts update the rail position.
+- Guardrails:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now requires the trigger
+    anchor and visual-viewport listener before accepting the picture-frame
+    placement logic.
+- Remaining truth:
+  - This directly addresses the source-side mismatch where the touched frame
+    button and highlighted/open rail geometry could drift on phone. It still
+    needs a real iPhone/Android tap check on Render to confirm the device
+    compositor agrees.
+
 ### Dashboard picture-frame inert surface audit (2026-05-30)
 
 - Route/screen affected:

@@ -80,7 +80,11 @@ function stableRailPlacement(
   if (typeof window === "undefined" || !element) return null;
 
   const rect = element.getBoundingClientRect();
-  const viewportWidth = Math.max(320, window.innerWidth || 320);
+  const visualViewport = window.visualViewport;
+  const viewportWidth = Math.max(
+    320,
+    visualViewport?.width || window.innerWidth || 320
+  );
   const width = Math.min(
     Math.max(1, rect.width, railMinWidth),
     Math.max(1, viewportWidth - 16)
@@ -115,6 +119,7 @@ export default function PictureFrameToolsControl({
 }: PictureFrameToolsControlProps) {
   const railId = useId();
   const slotRef = useRef<HTMLDivElement | null>(null);
+  const triggerAnchorRef = useRef<HTMLDivElement | null>(null);
   const [placement, setPlacement] = useState<RailPlacement | null>(null);
   const resolvedRailColumns =
     placement && placement.width < 260 ? "1fr" : railColumns;
@@ -126,16 +131,26 @@ export default function PictureFrameToolsControl({
     }
 
     function updatePlacement() {
-      setPlacement(stableRailPlacement(slotRef.current, railGap, railMinWidth));
+      setPlacement(
+        stableRailPlacement(
+          triggerAnchorRef.current || slotRef.current,
+          railGap,
+          railMinWidth
+        )
+      );
     }
 
     updatePlacement();
     window.addEventListener("resize", updatePlacement);
     window.addEventListener("scroll", updatePlacement, true);
+    window.visualViewport?.addEventListener("resize", updatePlacement);
+    window.visualViewport?.addEventListener("scroll", updatePlacement);
 
     return () => {
       window.removeEventListener("resize", updatePlacement);
       window.removeEventListener("scroll", updatePlacement, true);
+      window.visualViewport?.removeEventListener("resize", updatePlacement);
+      window.visualViewport?.removeEventListener("scroll", updatePlacement);
     };
   }, [open, railGap, railMinWidth]);
 
@@ -239,20 +254,35 @@ export default function PictureFrameToolsControl({
         overflowAnchor: "none",
       }}
     >
-      <SubtleButton
-        aria-label={ariaLabel || label}
-        aria-controls={railId}
-        aria-expanded={open}
-        onClick={(event) => {
-          stopFrameToolEvent(event);
-          onToggle(event);
+      <div
+        ref={triggerAnchorRef}
+        style={{
+          width: "100%",
+          height: triggerHeight,
+          minHeight: triggerHeight,
+          maxHeight: triggerHeight,
+          display: "block",
+          position: "relative",
+          pointerEvents: "auto",
+          transform: "none",
+          transition: "none",
         }}
-        stableHeight={triggerHeight}
-        debugId="picture-frame-tools.toggle"
-        style={buttonStyle}
       >
-        {label}
-      </SubtleButton>
+        <SubtleButton
+          aria-label={ariaLabel || label}
+          aria-controls={railId}
+          aria-expanded={open}
+          onClick={(event) => {
+            stopFrameToolEvent(event);
+            onToggle(event);
+          }}
+          stableHeight={triggerHeight}
+          debugId="picture-frame-tools.toggle"
+          style={buttonStyle}
+        >
+          {label}
+        </SubtleButton>
+      </div>
       {rail}
     </div>
   );

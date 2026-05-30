@@ -679,7 +679,7 @@ const pictureFrameSystemChecks = [
     label:
       "Picture frame tools must measure placement before paint and lock trigger height so opening the rail cannot visibly jump",
     pattern:
-      /useLayoutEffect\(\(\) => \{[\s\S]*?stableRailPlacement\(slotRef\.current, railGap, railMinWidth\)[\s\S]*?stableHeight=\{triggerHeight\}/,
+      /useLayoutEffect\(\(\) => \{[\s\S]*?stableRailPlacement\([\s\S]*?triggerAnchorRef\.current \|\| slotRef\.current[\s\S]*?window\.visualViewport\?\.addEventListener\("resize", updatePlacement\)[\s\S]*?stableHeight=\{triggerHeight\}/,
   },
   {
     label:
@@ -697,7 +697,7 @@ const pictureFrameSystemChecks = [
     label:
       "Picture frame tool slots must remain inert wrappers so only the trigger and rail actions are tap roots",
     pattern:
-      /<div[\s\S]*?ref=\{slotRef\}[\s\S]*?onPointerDown=\{stopFrameToolEvent\}[\s\S]*?onClick=\{stopFrameToolEvent\}(?![\s\S]*?data-gmfn-action-root)(?![\s\S]*?data-cta-id)[\s\S]*?<SubtleButton/,
+      /<div[\s\S]*?ref=\{slotRef\}[\s\S]*?onPointerDown=\{stopFrameToolEvent\}[\s\S]*?onClick=\{stopFrameToolEvent\}[\s\S]*?<div[\s\S]*?ref=\{triggerAnchorRef\}[\s\S]*?<SubtleButton/,
   },
 ];
 
