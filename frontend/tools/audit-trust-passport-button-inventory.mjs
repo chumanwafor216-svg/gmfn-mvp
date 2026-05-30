@@ -151,6 +151,36 @@ assertContains(
   "Trust Passport shareable tools must keep shorter fixed phone heights while preserving the larger desktop paper controls."
 );
 
+assertContains(
+  /gridTemplateColumns: isCompact[\s\S]*?\? "84px minmax\(0, 1fr\)"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?`"photo identity" "checks checks"`[\s\S]*?width: isCompact \? 78 : 142[\s\S]*?height: isCompact \? 78 : 142/,
+  "Trust Passport phone identity hero must keep the portrait, identity rows, and checks in a compact two-column mobile layout."
+);
+
+assertContains(
+  /stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?debugId="trust-score\.open-public-community-record"/,
+  "Trust Passport public community record action must keep compact fixed phone geometry."
+);
+
+assertContains(
+  /gridTemplateColumns: isCompact \? "82px minmax\(0, 1fr\)" : "112px minmax\(0, 1fr\)"[\s\S]*?fontSize: isCompact \? 54 : 76/,
+  "Trust Passport verdict tile must shrink on phone so the verdict text keeps enough room."
+);
+
+assertContains(
+  /gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?alignItems: isCompact \? "start" : "center"[\s\S]*?TrustPaperIcon[\s\S]*?statusPillStyle\(item\.status\)/,
+  "Trust Passport question rows must stack status pills under long labels on phone."
+);
+
+assertContains(
+  /display: isCompact \? "grid" : "flex"[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?debugId=\{item\.debugId\}/,
+  "Trust Passport trust-surface actions must expand to full-width fixed controls on phone."
+);
+
+assertContains(
+  /gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?textAlign: isCompact \? "left" : "right"[\s\S]*?overflowWrap: "break-word"/,
+  "Trust Passport institutional evidence rows must stack values on phone instead of squeezing right-aligned text."
+);
+
 assertNotContains(
   /overflowWrap: "anywhere"/g,
   "Trust Passport page must not use harsh anywhere wrapping that can split IDs or labels into awkward fragments on phone."

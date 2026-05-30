@@ -1834,15 +1834,21 @@ export default function TrustScorePage() {
               ...innerCard("#F8FBFF"),
               border: "1px solid rgba(37,78,119,0.14)",
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "150px minmax(0, 1fr) minmax(220px, 0.78fr)",
-              gap: 18,
-              alignItems: "center",
+              gridTemplateColumns: isCompact
+                ? "84px minmax(0, 1fr)"
+                : "150px minmax(0, 1fr) minmax(220px, 0.78fr)",
+              gridTemplateAreas: isCompact
+                ? `"photo identity" "checks checks"`
+                : undefined,
+              gap: isCompact ? 14 : 18,
+              alignItems: isCompact ? "start" : "center",
             }}
           >
             <div
               style={{
-                width: isCompact ? 132 : 142,
-                height: isCompact ? 132 : 142,
+                gridArea: isCompact ? "photo" : undefined,
+                width: isCompact ? 78 : 142,
+                height: isCompact ? 78 : 142,
                 borderRadius: 14,
                 display: "grid",
                 placeItems: "center",
@@ -1850,7 +1856,7 @@ export default function TrustScorePage() {
                 border: "1px solid rgba(37,78,119,0.18)",
                 color: "#0B63D1",
                 fontWeight: 1000,
-                fontSize: 28,
+                fontSize: isCompact ? 20 : 28,
                 overflow: "hidden",
                 boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.65)",
                 position: "relative",
@@ -1873,13 +1879,13 @@ export default function TrustScorePage() {
               <TrustPaperSeal compact={isCompact} />
             </div>
 
-            <div>
+            <div style={{ gridArea: isCompact ? "identity" : undefined, minWidth: 0 }}>
               <div
                 style={{
                   color: "#07172C",
                   fontWeight: 1000,
-                  fontSize: isCompact ? 20 : 22,
-                  marginBottom: 12,
+                  fontSize: isCompact ? 18 : 22,
+                  marginBottom: isCompact ? 8 : 12,
                 }}
               >
                 1. Who is this person?
@@ -1889,18 +1895,29 @@ export default function TrustScorePage() {
                   key={label}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "28px minmax(92px, 0.38fr) minmax(0, 1fr)",
-                    gap: 10,
+                    gridTemplateColumns: isCompact
+                      ? "24px minmax(0, 1fr)"
+                      : "28px minmax(92px, 0.38fr) minmax(0, 1fr)",
+                    gap: isCompact ? "2px 8px" : 10,
                     alignItems: "start",
-                    marginTop: 8,
+                    marginTop: isCompact ? 7 : 8,
                   }}
                 >
                   <TrustPaperIcon name={icon} size={21} color="#0B63D1" />
-                  <span style={{ color: "#0B63D1", fontWeight: 1000 }}>{label}</span>
+                  <span
+                    style={{
+                      color: "#0B63D1",
+                      fontWeight: 1000,
+                      gridColumn: isCompact ? "2" : undefined,
+                    }}
+                  >
+                    {label}
+                  </span>
                   <span
                     style={{
                       color: "#334155",
                       fontWeight: 850,
+                      gridColumn: isCompact ? "2" : undefined,
                       overflowWrap: "break-word",
                       wordBreak: "normal",
                     }}
@@ -1911,7 +1928,7 @@ export default function TrustScorePage() {
               ))}
             </div>
 
-            <div style={{ display: "grid", gap: 8 }}>
+            <div style={{ gridArea: isCompact ? "checks" : undefined, display: "grid", gap: 8 }}>
               {verificationBadges.map((item) => (
                 <span
                   key={item.label}
@@ -1940,7 +1957,8 @@ export default function TrustScorePage() {
                     text: "The public community record is not ready because this Trust Passport has no community code yet.",
                   });
                 }}
-                stableHeight={48}
+                stableHeight={isCompact ? 44 : 48}
+                fullWidth={isCompact}
                 debugId="trust-score.open-public-community-record"
               >
                 <TrustPaperIcon name="search" size={18} />
@@ -1971,21 +1989,21 @@ export default function TrustScorePage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "112px minmax(0, 1fr)",
-                  gap: 16,
+                  gridTemplateColumns: isCompact ? "82px minmax(0, 1fr)" : "112px minmax(0, 1fr)",
+                  gap: isCompact ? 12 : 16,
                   alignItems: "center",
                 }}
               >
                 <div
                   style={{
-                    minHeight: 112,
+                    minHeight: isCompact ? 82 : 112,
                     borderRadius: 18,
                     display: "grid",
                     placeItems: "center",
                     background: readingTone.bg,
                     border: readingTone.border,
                     color: readingTone.text,
-                    fontSize: 76,
+                    fontSize: isCompact ? 54 : 76,
                     lineHeight: 1,
                     fontWeight: 1000,
                   }}
@@ -2071,9 +2089,9 @@ export default function TrustScorePage() {
                     key={item.title}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "minmax(0, 1fr) auto",
-                      gap: 10,
-                      alignItems: "center",
+                      gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                      gap: isCompact ? 6 : 10,
+                      alignItems: isCompact ? "start" : "center",
                       padding: "8px 0",
                       borderBottom: "1px solid rgba(216,227,238,0.72)",
                     }}
@@ -2167,11 +2185,20 @@ export default function TrustScorePage() {
                     {item.title}
                   </div>
                   <p style={{ ...helperText(), margin: 0 }}>{item.detail}</p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: isCompact ? "grid" : "flex",
+                      gridTemplateColumns: isCompact ? "1fr" : undefined,
+                      alignItems: isCompact ? "stretch" : "center",
+                      gap: 10,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <span style={statusPillStyle(item.value)}>{item.value}</span>
                     <SecondaryButton
                       onClick={() => openTrustRoute(item.to)}
                       stableHeight={38}
+                      fullWidth={isCompact}
                       debugId={item.debugId}
                     >
                       {item.action}
@@ -2352,19 +2379,21 @@ export default function TrustScorePage() {
                   key={label}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
-                    gap: 10,
+                    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+                    gap: isCompact ? 4 : 10,
                     padding: "10px 12px",
                     borderBottom: "1px solid rgba(216,227,238,0.72)",
                     borderRight: isCompact ? "none" : "1px solid rgba(216,227,238,0.72)",
-                    alignItems: "center",
+                    alignItems: isCompact ? "start" : "center",
                   }}
                 >
                   <span style={{ color: "#526579", fontWeight: 850 }}>{label}</span>
                   <b
                     style={{
                       color: label === "Risk level" ? "#991B1B" : "#07172C",
-                      textAlign: "right",
+                      textAlign: isCompact ? "left" : "right",
+                      overflowWrap: "break-word",
+                      wordBreak: "normal",
                     }}
                   >
                     {value}

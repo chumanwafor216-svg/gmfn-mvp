@@ -1,3 +1,32 @@
+### Trust Passport phone geometry tightening (2026-05-30)
+
+- Route/screen affected:
+  - `/app/trust`, implemented by `frontend/src/pages/TrustScorePage.tsx`.
+- Follow-up after the first Trust Passport button audit baseline.
+- Confirmed truth:
+  - the button/action inventory was stable, but the phone layout still stacked
+    the identity hero too tall, squeezed trust-question labels beside status
+    pills, and right-aligned evidence values could crowd narrow screens;
+  - the page still uses deterministic `TrustPaperIcon` marks, not emoji icons.
+- Updated `frontend/src/pages/TrustScorePage.tsx`:
+  - made the phone identity hero a compact two-column layout with the portrait,
+    identity rows, and checks held in fixed areas;
+  - shortened the public community record action on phone and made it full
+    width only on compact screens;
+  - reduced the mobile verdict tile so the verdict explanation has more room;
+  - stacked trust-question status pills below long labels on phone;
+  - made Trust surface actions full-width on phone;
+  - stacked institutional evidence values on phone and preserved safer wrapping.
+- Updated guardrails:
+  - `audit:trust-passport-button-inventory` now locks the compact phone
+    identity hero, verdict tile, question rows, surface actions, and evidence
+    rows in addition to the original 8 source actions / 9 rendered action
+    roots.
+- Remaining truth:
+  - this improves phone geometry, but the page is still an evidence-heavy Trust
+    Passport document. A real Render phone pass should decide whether sections
+    6-8 need progressive disclosure later.
+
 ### Trust Passport button audit baseline (2026-05-30)
 
 - Route/screen affected:
