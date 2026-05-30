@@ -7653,6 +7653,7 @@ export default function DashboardPage() {
                   ariaLabel="Dashboard picture frame tools"
                   onToggle={(event) =>
                     runDashboardUiMutation(event, () => {
+                      setPassportPictureToolsOpen(false);
                       setPictureToolsOpen((open) => !open);
                     })
                   }

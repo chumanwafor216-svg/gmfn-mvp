@@ -1,3 +1,33 @@
+### Dashboard repeat button audit tightening (2026-05-30)
+
+- Route/screen affected:
+  - `/app/dashboard` only, with no Market Wisdom presentation or interaction
+    changes.
+- Follow-up from product-owner request to repeat the Dashboard button audit
+  before moving to Community Home.
+- Confirmed truth:
+  - the prior Dashboard button auditors passed, but they mostly counted
+    source-level stable actions;
+  - the main picture-frame tool button did not close the passport frame-tool
+    rail before opening, while the passport frame tool already closed the main
+    rail.
+- Updated `frontend/src/pages/DashboardPage.tsx`:
+  - opening the main picture-frame tools now closes the passport frame-tool
+    rail first, matching the inverse passport behavior and keeping only one
+    frame rail active on phone.
+- Updated Dashboard auditors:
+  - `frontend/tools/audit-dashboard-button-inventory.mjs` now reports the
+    effective Dashboard action roots, including the two frame-tool toggles and
+    their Upload / Change / Remove rail actions;
+  - the same inventory audit now checks the Dashboard front-to-inner action
+    section order before accepting a source reorder;
+  - `frontend/tools/audit-dashboard-phone-buttons.mjs` now fails unless the
+    two Dashboard frame-tool controls mutually close each other before opening.
+- Remaining truth:
+  - this tightens the source-side phone behavior and catches regression, but it
+    is not a substitute for one real deployed phone tap sweep after Render
+    finishes.
+
 ### My GSN mobile polish and app-shell icon cleanup (2026-05-30)
 
 - Follow-up from product-owner phone screenshots saying the My GSN guide was

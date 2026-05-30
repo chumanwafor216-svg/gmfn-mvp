@@ -49,11 +49,17 @@ const counts = {
   PictureFrameToolsControl:
     dashboardSource.match(/<PictureFrameToolsControl\b/g)?.length || 0,
 };
+const frameToolRailActions = 3;
+counts.EffectiveDashboardActionRoots =
+  counts.StableButton +
+  counts.StableDisclosureSummary +
+  counts.PictureFrameToolsControl * (1 + frameToolRailActions);
 
 const expected = {
   StableButton: 52,
   StableDisclosureSummary: 1,
   PictureFrameToolsControl: 2,
+  EffectiveDashboardActionRoots: 61,
 };
 
 for (const [key, value] of Object.entries(expected)) {
@@ -93,6 +99,48 @@ for (const action of actions) {
       text: action.block.replace(/\s+/g, " ").slice(0, 220),
     });
   }
+}
+
+const frontToInnerOrder = [
+  { label: "attention popup", pattern: /^dashboard\.attention-popup\./ },
+  { label: "attention reminder", pattern: /^dashboard\.attention-reminder\./ },
+  { label: "passport signal row", pattern: /^dashboard\.passport-signal\./ },
+  { label: "trust detail", pattern: /^dashboard\.trust-detail\./ },
+  { label: "trust actions", pattern: /^dashboard\.trust-action\./ },
+  { label: "apps hub", pattern: /^dashboard\.apps\./ },
+  { label: "spotlight", pattern: /^dashboard\.spotlight\./ },
+  { label: "demand box", pattern: /^dashboard\.demand\./ },
+  { label: "inbox", pattern: /^dashboard\.inbox\./ },
+  { label: "market wisdom", pattern: /^dashboard\.market-wisdom\./ },
+  { label: "most-used apps", pattern: /^dashboard\.most-used-app\./ },
+  { label: "focus", pattern: /^dashboard\.focus\./ },
+];
+let previousSection = null;
+
+for (const section of frontToInnerOrder) {
+  const firstAction = actions.find((action) => section.pattern.test(action.id));
+  if (!firstAction) {
+    findings.push({
+      file: dashboardFile,
+      line: 1,
+      message:
+        "Dashboard front-to-inner action inventory is missing an expected section.",
+      text: section.label,
+    });
+    continue;
+  }
+
+  if (previousSection && firstAction.line <= previousSection.line) {
+    findings.push({
+      file: dashboardFile,
+      line: firstAction.line,
+      message:
+        "Dashboard front-to-inner action order changed. Re-audit phone button flow before accepting this reorder.",
+      text: `${previousSection.label} at line ${previousSection.line}; ${section.label} at line ${firstAction.line}`,
+    });
+  }
+
+  previousSection = { label: section.label, line: firstAction.line };
 }
 
 const rawActionPattern =
@@ -163,5 +211,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Dashboard button inventory audit passed: ${counts.StableButton} StableButton, ${counts.StableDisclosureSummary} StableDisclosureSummary, ${counts.PictureFrameToolsControl} PictureFrameToolsControl.`
+  `Dashboard button inventory audit passed: ${counts.StableButton} StableButton, ${counts.StableDisclosureSummary} StableDisclosureSummary, ${counts.PictureFrameToolsControl} PictureFrameToolsControl, ${counts.EffectiveDashboardActionRoots} effective action roots.`
 );

@@ -94,6 +94,12 @@ const requiredDashboardPatterns = [
     message:
       "Dashboard route buttons must pair route navigation with pointer guards.",
   },
+  {
+    pattern:
+      /<PictureFrameToolsControl[\s\S]*?open=\{passportPictureToolsOpen\}[\s\S]*?setPictureToolsOpen\(false\);[\s\S]*?setPassportPictureToolsOpen\(\(open\) => !open\);[\s\S]*?<PictureFrameToolsControl[\s\S]*?open=\{pictureToolsOpen\}[\s\S]*?setPassportPictureToolsOpen\(false\);[\s\S]*?setPictureToolsOpen\(\(open\) => !open\);/,
+    message:
+      "Dashboard passport and main picture-frame tools must mutually close the other rail before opening.",
+  },
 ];
 
 for (const check of requiredDashboardPatterns) {
