@@ -1,3 +1,37 @@
+### My GSN mobile polish and app-shell icon cleanup (2026-05-30)
+
+- Follow-up from product-owner phone screenshots saying the My GSN guide was
+  still poorly arranged, unpolished, and the icons/emojis looked fake.
+- Confirmed truth:
+  - the prior pass fixed missing icons but left the mobile layout too swollen;
+  - the two-column capability cards still forced narrow stacked words;
+  - the global mobile app shell still used emoji/glyph text for `Menu` and
+    `Tools`, which undercut the premium visual language.
+- Updated `frontend/src/pages/MyGMFNAndIPage.tsx`:
+  - tightened mobile panel radius, padding, spacing, and card shadows;
+  - reduced mobile hero/welcome card scale so the first viewport is less bulky;
+  - changed mobile capability cards from a narrow icon/text split to a compact
+    top marker row plus full-width text, reducing word-stacking;
+  - reduced mobile capability font sizes and icon-bubble weight;
+  - kept route actions and tab behavior unchanged.
+- Updated `frontend/src/layout/AppLayout.tsx`:
+  - replaced the mobile shell `Menu` and `Tools` emoji/glyph labels with small
+    deterministic inline SVG icons.
+- Truth/devil's advocate:
+  - this is a real polish pass, not just an icon swap;
+  - it affects the shared authenticated mobile shell icon rendering, but only
+    the two visible top buttons and not navigation behavior;
+  - no live phone screenshot was captured in this session, so the owner should
+    still retest the same My GSN route after Render deploys.
+- Verification:
+  - `npm exec -- eslint src/pages/MyGMFNAndIPage.tsx src/layout/AppLayout.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### My GSN icon rendering repair for Render (2026-05-30)
 
 - Follow-up from product-owner Render screenshots showing the My GSN guide

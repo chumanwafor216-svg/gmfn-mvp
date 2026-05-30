@@ -971,7 +971,46 @@ function mobileIconButton(): React.CSSProperties {
     fontSize: 12,
     fontWeight: 900,
     cursor: "pointer",
+    gap: 6,
   };
+}
+
+function MobileTopIcon({ name }: { name: "menu" | "tools" }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 2.4,
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="17"
+      height="17"
+      style={{ display: "block", flex: "0 0 auto" }}
+    >
+      {name === "menu" ? (
+        <>
+          <path {...common} d="M4 7h16" />
+          <path {...common} d="M4 12h16" />
+          <path {...common} d="M4 17h16" />
+        </>
+      ) : (
+        <>
+          <path {...common} d="M14.7 5.3 18.7 9.3" />
+          <path {...common} d="M4.7 19.3 15.6 8.4" />
+          <path {...common} d="M15.6 4.4 19.6 8.4 17.7 10.3 13.7 6.3 15.6 4.4Z" />
+          <path {...common} d="m7.4 5.1 2.2 2.2" />
+          <path {...common} d="M4.3 8.2 8.6 4" />
+          <path {...common} d="m15.8 16.7 2.5 2.5" />
+          <path {...common} d="M14.2 19.8 19.8 14.2" />
+        </>
+      )}
+    </svg>
+  );
 }
 
 function mobileTopMeta(): React.CSSProperties {
@@ -1811,7 +1850,8 @@ export default function AppLayout() {
               debugId="app-layout.mobile.open-navigation"
               style={mobileIconButton()}
             >
-              ☰ Menu
+              <MobileTopIcon name="menu" />
+              Menu
             </StableButton>
 
             <div style={mobileTopMeta()}>
@@ -1826,7 +1866,8 @@ export default function AppLayout() {
               debugId="app-layout.mobile.open-tools"
               style={mobileIconButton()}
             >
-              🛠 Tools
+              <MobileTopIcon name="tools" />
+              Tools
             </StableButton>
           </header>
 

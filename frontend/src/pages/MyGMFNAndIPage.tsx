@@ -131,9 +131,9 @@ function capabilityVisualRail(): React.CSSProperties {
 
 function appGuideMiniIconBubble(): React.CSSProperties {
   return {
-    width: 32,
-    height: 32,
-    borderRadius: 11,
+    width: 28,
+    height: 28,
+    borderRadius: 10,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -142,7 +142,38 @@ function appGuideMiniIconBubble(): React.CSSProperties {
       "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(239,246,255,0.92) 100%)",
     border: "1px solid rgba(15,23,42,0.08)",
     boxShadow:
-      "0 8px 16px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.98)",
+      "0 6px 12px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.98)",
+  };
+}
+
+function capabilityCompactCard(primary = false): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr)",
+    gap: 7,
+    alignItems: "start",
+    minHeight: 132,
+    borderRadius: 16,
+    border: primary
+      ? "1px solid rgba(214,170,69,0.24)"
+      : "1px solid rgba(15,23,42,0.08)",
+    background: primary
+      ? "linear-gradient(180deg, rgba(255,253,246,0.99) 0%, rgba(255,255,255,0.99) 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.998) 0%, rgba(249,251,255,0.99) 100%)",
+    padding: 10,
+    boxShadow:
+      "0 9px 18px rgba(15,23,42,0.055), inset 0 1px 0 rgba(255,255,255,0.98)",
+    overflow: "hidden",
+  };
+}
+
+function capabilityCardTop(): React.CSSProperties {
+  return {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    minWidth: 0,
   };
 }
 
@@ -158,36 +189,40 @@ function helperText(): React.CSSProperties {
   return brandHelperText();
 }
 
-function appGuidePanel(): React.CSSProperties {
+function appGuidePanel(compact = false): React.CSSProperties {
   return {
-    borderRadius: 24,
+    borderRadius: compact ? 20 : 24,
     border: "1px solid rgba(15,23,42,0.08)",
     background: "#FFFFFF",
     boxShadow:
-      "0 18px 38px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.98)",
-    padding: 16,
+      compact
+        ? "0 12px 26px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.98)"
+        : "0 18px 38px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.98)",
+    padding: compact ? 14 : 16,
     boxSizing: "border-box",
   };
 }
 
-function appNavyCard(): React.CSSProperties {
+function appNavyCard(compact = false): React.CSSProperties {
   return {
-    borderRadius: 20,
+    borderRadius: compact ? 18 : 20,
     border: "1px solid rgba(255,255,255,0.10)",
     background:
       "radial-gradient(circle at 84% 22%, rgba(214,170,69,0.18) 0%, rgba(214,170,69,0) 22%), radial-gradient(circle at 92% 76%, rgba(79,128,178,0.18) 0%, rgba(79,128,178,0) 32%), linear-gradient(180deg, #071C31 0%, #082846 100%)",
     boxShadow:
-      "0 18px 34px rgba(8,24,42,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-    padding: 18,
+      compact
+        ? "0 14px 26px rgba(8,24,42,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"
+        : "0 18px 34px rgba(8,24,42,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+    padding: compact ? 16 : 18,
     color: "#F8FBFF",
     boxSizing: "border-box",
   };
 }
 
-function appGuideIconBox(active = false): React.CSSProperties {
+function appGuideIconBox(active = false, compact = false): React.CSSProperties {
   return {
-    width: 54,
-    height: 54,
+    width: compact ? 44 : 54,
+    height: compact ? 44 : 54,
     borderRadius: 12,
     display: "inline-flex",
     alignItems: "center",
@@ -199,7 +234,6 @@ function appGuideIconBox(active = false): React.CSSProperties {
     border: "1px solid rgba(214,170,69,0.24)",
     color: "#F2C766",
     fontWeight: 1000,
-    fontSize: 17,
     boxShadow:
       "0 10px 20px rgba(8,24,42,0.13), inset 0 1px 0 rgba(255,255,255,0.08)",
   };
@@ -1086,9 +1120,9 @@ export default function MyGMFNAndIPage() {
       style={{
         maxWidth: 1180,
         margin: "0 auto",
-        paddingBottom: 40,
+        paddingBottom: isCompact ? 28 : 40,
         display: "grid",
-        gap: 18,
+        gap: isCompact ? 14 : 18,
         WebkitTextSizeAdjust: "100%",
       }}
     >
@@ -1105,29 +1139,34 @@ export default function MyGMFNAndIPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <section style={appGuidePanel()}>
+      <section style={appGuidePanel(isCompact)}>
         <div
           style={{
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(280px, 0.92fr)",
-            gap: 16,
+            gap: isCompact ? 12 : 16,
             alignItems: "start",
           }}
         >
-          <div style={appNavyCard()}>
+          <div style={appNavyCard(isCompact)}>
             <div
               style={{
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
                 alignItems: "center",
-                gap: 12,
+                gap: isCompact ? 10 : 12,
               }}
             >
-              <span style={appGuideIconBox(true)}>
-                <TrustPaperIcon name="shield" size={28} strokeWidth={2.3} />
+              <span style={appGuideIconBox(true, isCompact)}>
+                <TrustPaperIcon
+                  name="shield"
+                  size={isCompact ? 23 : 28}
+                  strokeWidth={2.3}
+                />
               </span>
               <div
                 style={{
-                  fontSize: isCompact ? 22 : 26,
+                  fontSize: isCompact ? 20 : 26,
                   lineHeight: 1.08,
                   fontWeight: 1000,
                 }}
@@ -1138,10 +1177,10 @@ export default function MyGMFNAndIPage() {
 
             <div
               style={{
-                marginTop: 18,
+                marginTop: isCompact ? 14 : 18,
                 color: "#DCEBFA",
-                fontSize: 15,
-                lineHeight: 1.55,
+                fontSize: isCompact ? 14 : 15,
+                lineHeight: 1.45,
                 fontWeight: 700,
               }}
             >
@@ -1153,11 +1192,11 @@ export default function MyGMFNAndIPage() {
               kind="primary"
               debugId="my-gmfn.hero.dashboard"
               style={{
-                marginTop: 18,
+                marginTop: isCompact ? 14 : 18,
                 width: "fit-content",
-                minHeight: 52,
+                minHeight: isCompact ? 44 : 52,
                 borderRadius: 999,
-                padding: "14px 20px",
+                padding: isCompact ? "11px 17px" : "14px 20px",
                 background:
                   "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)",
                 color: "#07172C",
@@ -1169,33 +1208,39 @@ export default function MyGMFNAndIPage() {
             </StableCtaLink>
           </div>
 
-          <div style={appNavyCard()}>
+          <div style={appNavyCard(isCompact)}>
             <div
               style={{
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: isCompact ? "48px minmax(0, 1fr)" : "54px minmax(0, 1fr)",
                 alignItems: "center",
-                gap: 12,
+                gap: isCompact ? 10 : 12,
               }}
             >
-              <span style={appGuideIconBox(false)}>
-                <TrustPaperIcon name="user" size={28} strokeWidth={2.3} />
+              <span style={appGuideIconBox(false, isCompact)}>
+                <TrustPaperIcon
+                  name="user"
+                  size={isCompact ? 23 : 28}
+                  strokeWidth={2.3}
+                />
               </span>
               <div>
                 <div
                   style={{
-                    fontSize: isCompact ? 22 : 26,
+                    fontSize: isCompact ? 20 : 26,
                     lineHeight: 1.08,
                     fontWeight: 1000,
+                    overflowWrap: "anywhere",
                   }}
                 >
                   Welcome, {displayName}
                 </div>
                 <div
                   style={{
-                    marginTop: 8,
+                    marginTop: 7,
                     color: "#DCEBFA",
-                    fontSize: 14,
-                    lineHeight: 1.5,
+                    fontSize: isCompact ? 13 : 14,
+                    lineHeight: 1.42,
                     fontWeight: 700,
                   }}
                 >
@@ -1206,9 +1251,9 @@ export default function MyGMFNAndIPage() {
 
             <div
               style={{
-                marginTop: 18,
+                marginTop: isCompact ? 14 : 18,
                 display: "grid",
-                gap: 10,
+                gap: 8,
               }}
             >
               <span style={badge(true)}>GSN ID: {gmfnId}</span>
@@ -1219,7 +1264,7 @@ export default function MyGMFNAndIPage() {
 
         <div
           style={{
-            marginTop: 16,
+            marginTop: isCompact ? 12 : 16,
             display: "grid",
             gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "180px 180px minmax(0, 1fr)",
             gap: 10,
@@ -1230,9 +1275,15 @@ export default function MyGMFNAndIPage() {
             to={routes.guide}
             kind={activeTab === "guide" ? "primary" : "secondary"}
             debugId="my-gmfn.tab.guide"
-            style={{ minHeight: 52, borderRadius: 999 }}
+            style={{
+              minHeight: isCompact ? 46 : 52,
+              borderRadius: 999,
+              padding: isCompact ? "10px 12px" : undefined,
+              fontSize: isCompact ? 14 : undefined,
+              gap: 7,
+            }}
           >
-            <TrustPaperIcon name="spark" size={17} strokeWidth={2.5} />
+            <TrustPaperIcon name="spark" size={15} strokeWidth={2.5} />
             {capabilityCount} Capabilities
           </StableCtaLink>
 
@@ -1240,7 +1291,12 @@ export default function MyGMFNAndIPage() {
             to={routes.settings}
             kind={activeTab === "settings" ? "primary" : "secondary"}
             debugId="my-gmfn.tab.settings"
-            style={{ minHeight: 52, borderRadius: 999 }}
+            style={{
+              minHeight: isCompact ? 46 : 52,
+              borderRadius: 999,
+              padding: isCompact ? "10px 12px" : undefined,
+              fontSize: isCompact ? 14 : undefined,
+            }}
           >
             Member Guide
           </StableCtaLink>
@@ -1251,15 +1307,17 @@ export default function MyGMFNAndIPage() {
             debugId="my-gmfn.quick-guide.trust"
             style={{
               gridColumn: isCompact ? "1 / -1" : undefined,
-              minHeight: 82,
+              minHeight: isCompact ? 72 : 82,
               borderRadius: 18,
               justifyContent: "flex-start",
-              padding: "14px 16px",
+              padding: isCompact ? "12px 14px" : "14px 16px",
               textAlign: "left",
+              fontSize: isCompact ? 13.5 : undefined,
+              lineHeight: 1.35,
             }}
           >
             <span style={appGuideMiniIconBubble()}>
-              <TrustPaperIcon name="spark" size={19} strokeWidth={2.5} />
+              <TrustPaperIcon name="spark" size={16} strokeWidth={2.5} />
             </span>
             <span>
               <strong>Quick Guide</strong>
@@ -1272,13 +1330,13 @@ export default function MyGMFNAndIPage() {
 
       {activeTab === "guide" ? (
         <>
-          <section style={appGuidePanel()}>
+          <section style={appGuidePanel(isCompact)}>
             <div
               style={{
                 color: "#07172C",
-                fontSize: isCompact ? 24 : 28,
+                fontSize: isCompact ? 22 : 28,
                 fontWeight: 1000,
-                lineHeight: 1.1,
+                lineHeight: 1.08,
               }}
             >
               {capabilityCount} Things GSN Can Do For You
@@ -1288,7 +1346,7 @@ export default function MyGMFNAndIPage() {
               style={{
                 marginTop: 8,
                 color: "#64748B",
-                fontSize: 14,
+                fontSize: isCompact ? 13 : 14,
                 fontWeight: 700,
                 lineHeight: 1.45,
               }}
@@ -1303,28 +1361,49 @@ export default function MyGMFNAndIPage() {
                 gridTemplateColumns: isCompact
                   ? "repeat(2, minmax(0, 1fr))"
                   : "repeat(4, minmax(0, 1fr))",
-                gap: 10,
+                gap: isCompact ? 9 : 10,
               }}
             >
               {GMFN_CAPABILITIES.map((item, index) => (
-                <div key={item.id} style={capabilityCard(index === 0)}>
-                  <span style={capabilityVisualRail()}>
-                    <span style={appGuideNumber()}>{item.id}</span>
-                    <span style={appGuideMiniIconBubble()}>
-                      <TrustPaperIcon
-                        name={capabilityIconName(item)}
-                        size={18}
-                        strokeWidth={2.4}
-                      />
+                <div
+                  key={item.id}
+                  style={
+                    isCompact
+                      ? capabilityCompactCard(index === 0)
+                      : capabilityCard(index === 0)
+                  }
+                >
+                  {isCompact ? (
+                    <div style={capabilityCardTop()}>
+                      <span style={appGuideNumber()}>{item.id}</span>
+                      <span style={appGuideMiniIconBubble()}>
+                        <TrustPaperIcon
+                          name={capabilityIconName(item)}
+                          size={15}
+                          strokeWidth={2.4}
+                        />
+                      </span>
+                    </div>
+                  ) : (
+                    <span style={capabilityVisualRail()}>
+                      <span style={appGuideNumber()}>{item.id}</span>
+                      <span style={appGuideMiniIconBubble()}>
+                        <TrustPaperIcon
+                          name={capabilityIconName(item)}
+                          size={18}
+                          strokeWidth={2.4}
+                        />
+                      </span>
                     </span>
-                  </span>
+                  )}
                   <div style={{ minWidth: 0 }}>
                     <div
                       style={{
                         color: "#07172C",
-                        fontSize: 12.5,
+                        fontSize: isCompact ? 11.2 : 12.5,
                         fontWeight: 1000,
-                        lineHeight: 1.18,
+                        lineHeight: isCompact ? 1.14 : 1.18,
+                        overflowWrap: "normal",
                       }}
                     >
                       {item.title}
@@ -1333,9 +1412,9 @@ export default function MyGMFNAndIPage() {
                       style={{
                         marginTop: 6,
                         color: "#425466",
-                        fontSize: 11.5,
+                        fontSize: isCompact ? 10.4 : 11.5,
                         fontWeight: 700,
-                        lineHeight: 1.35,
+                        lineHeight: isCompact ? 1.28 : 1.35,
                       }}
                     >
                       {publicCapabilityLine(item)}
@@ -1346,11 +1425,11 @@ export default function MyGMFNAndIPage() {
             </div>
           </section>
 
-          <section style={appGuidePanel()}>
+          <section style={appGuidePanel(isCompact)}>
             <div
               style={{
                 color: "#07172C",
-                fontSize: isCompact ? 23 : 27,
+                fontSize: isCompact ? 21 : 27,
                 fontWeight: 1000,
                 lineHeight: 1.1,
               }}
@@ -1364,7 +1443,7 @@ export default function MyGMFNAndIPage() {
               style={{
                 marginTop: 8,
                 color: "#64748B",
-                fontSize: 14,
+                fontSize: isCompact ? 13 : 14,
                 fontWeight: 700,
                 lineHeight: 1.45,
               }}
@@ -1382,12 +1461,17 @@ export default function MyGMFNAndIPage() {
                     to={item.to}
                     kind={item.active ? "primary" : "secondary"}
                     debugId={item.debugId}
-                    style={routeTile(Boolean(item.active))}
+                    style={{
+                      ...routeTile(Boolean(item.active)),
+                      minHeight: isCompact ? 76 : 92,
+                      padding: isCompact ? 12 : 14,
+                      gap: isCompact ? 11 : 14,
+                    }}
                   >
-                    <span style={appGuideIconBox(Boolean(item.active))}>
+                    <span style={appGuideIconBox(Boolean(item.active), isCompact)}>
                       <TrustPaperIcon
                         name={item.icon}
-                        size={28}
+                        size={isCompact ? 23 : 28}
                         strokeWidth={2.35}
                       />
                     </span>
@@ -1402,7 +1486,7 @@ export default function MyGMFNAndIPage() {
                         style={{
                           display: "block",
                           color: "#07172C",
-                          fontSize: 15,
+                          fontSize: isCompact ? 13.8 : 15,
                           fontWeight: 1000,
                           lineHeight: 1.2,
                         }}
@@ -1414,7 +1498,7 @@ export default function MyGMFNAndIPage() {
                           display: "block",
                           marginTop: 5,
                           color: "#64748B",
-                          fontSize: 12.5,
+                          fontSize: isCompact ? 11.8 : 12.5,
                           fontWeight: 700,
                           lineHeight: 1.38,
                         }}
