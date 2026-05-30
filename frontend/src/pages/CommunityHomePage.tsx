@@ -16,11 +16,8 @@ import {
   getMarketplaceBroadcasts,
   getMarketplaceShopByGmfnId,
   getMe,
-  getMyGuarantorEarnings,
-  getMyTrustSlip,
   getPoolMeSummary,
   getSelectedClanId,
-  listMarketplaceRequests,
   listMyClans,
   selectClan,
 } from "../lib/api";
@@ -733,16 +730,6 @@ function getSummaryAny(payload: any, keys: string[], fallback = ""): string {
   return fallback;
 }
 
-function getTrustSummaryValue(payload: any, key: string, fallback = ""): string {
-  return firstTruthy(
-    payload?.[key],
-    payload?.summary?.[key],
-    payload?.trust?.[key],
-    payload?.merchant_summary?.[key],
-    fallback
-  );
-}
-
 function moneyNumber(value: any): number {
   const raw = safeStr(value).replace(/,/g, "");
   const parsed = Number(raw);
@@ -761,23 +748,6 @@ function formatSignedGlobalAmount(value: any): string {
   const amount = moneyNumber(value);
   const sign = amount < 0 ? "-" : "";
   return `${sign}${formatGlobalAmount(Math.abs(amount))}`;
-}
-
-function countRows(rows: any[]): number {
-  return Array.isArray(rows) ? rows.length : 0;
-}
-
-function trustScoreDisplay(value: any): string {
-  const raw = safeStr(value);
-  if (!raw) return "Preparing";
-  const parsed = Number(raw);
-  if (!Number.isFinite(parsed)) return raw;
-  return `${Math.round(parsed)}%`;
-}
-
-function countRequestRowsByStatus(rows: any[], statuses: string[]): number {
-  const wanted = new Set(statuses.map((item) => item.toLowerCase()));
-  return rows.filter((row) => wanted.has(safeStr(row?.status).toLowerCase())).length;
 }
 
 function readLocalJSON<T>(key: string, fallback: T): T {
@@ -829,9 +799,6 @@ export default function CommunityHomePage() {
   const [clans, setClans] = useState<ClanItem[]>([]);
   const [selectedClan, setSelectedClan] = useState<ClanItem | null>(null);
   const [poolSummary, setPoolSummary] = useState<any>(null);
-  const [trustSlipSummary, setTrustSlipSummary] = useState<any>(null);
-  const [marketplaceRequestRows, setMarketplaceRequestRows] = useState<any[]>([]);
-  const [guarantorEarningRows, setGuarantorEarningRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [changingClanId, setChangingClanId] = useState<number>(0);
 
@@ -1009,42 +976,20 @@ export default function CommunityHomePage() {
 
     if (!clanId) {
       setPoolSummary(null);
-      setTrustSlipSummary(null);
-      setMarketplaceRequestRows([]);
-      setGuarantorEarningRows([]);
       return;
     }
 
     (async () => {
-      const [summaryRes, trustSlipRes, requestsRes, guarantorEarningsRes] = await Promise.all([
-        getPoolMeSummary().catch((err) => ({
-          __failed: String(
-            err?.message || err || "Your full finance summary is not ready yet."
-          ),
-        })),
-        getMyTrustSlip().catch(() => null),
-        listMarketplaceRequests({
-          status: "all",
-          mine_only: false,
-          clan_id: null,
-          limit: 200,
-        }).catch(() => []),
-        getMyGuarantorEarnings(100).catch(() => ({ items: [] })),
-      ]);
+      const summaryRes = await getPoolMeSummary().catch((err) => ({
+        __failed: String(
+          err?.message || err || "Your full finance summary is not ready yet."
+        ),
+      }));
 
       if (!alive) return;
 
       setPoolSummary(
         summaryRes && !(summaryRes as any).__failed ? summaryRes : null
-      );
-      setTrustSlipSummary(trustSlipRes || null);
-      setMarketplaceRequestRows(Array.isArray(requestsRes) ? requestsRes : []);
-      setGuarantorEarningRows(
-        Array.isArray((guarantorEarningsRes as any)?.items)
-          ? (guarantorEarningsRes as any).items
-          : Array.isArray(guarantorEarningsRes)
-            ? guarantorEarningsRes
-            : []
       );
     })();
 
@@ -1148,11 +1093,6 @@ export default function CommunityHomePage() {
     "membership_pool_balance",
     getSummaryTotal(poolSummary, "available_balance", "0.00")
   );
-  const cumulativeGuaranteeLocked = getSummaryTotal(
-    poolSummary,
-    "guarantee_locked_as_guarantor",
-    "0.00"
-  );
   const explicitMoneyPosition = getSummaryAny(poolSummary, [
     "net_position",
     "net_balance",
@@ -1184,52 +1124,6 @@ export default function CommunityHomePage() {
     netMoneyPosition < 0
       ? `${formatGlobalAmount(Math.abs(netMoneyPosition))} visible obligation`
       : `${formatSignedGlobalAmount(netMoneyPosition)} net visible record`;
-  const guarantorRecordCount =
-    Number(
-      getSummaryAny(
-        poolSummary,
-        [
-          "guarantor_record_count",
-          "guarantor_records_count",
-          "guarantee_count",
-          "guarantor_count",
-          "guarantees_count",
-        ],
-        ""
-      )
-    ) || countRows(guarantorEarningRows);
-  const guarantorEarnedTotal = guarantorEarningRows.reduce((sum, row) => {
-    const amount = firstTruthy(
-      row?.payable_amount,
-      row?.earned_payable,
-      row?.total_payable,
-      row?.share_amount,
-      row?.earned_amount,
-      row?.amount,
-      row?.guarantor_share
-    );
-    return sum + moneyNumber(amount);
-  }, 0);
-  const trustScore = trustScoreDisplay(
-    getTrustSummaryValue(
-      trustSlipSummary,
-      "cci_score",
-      getTrustSummaryValue(trustSlipSummary, "trust_score", "")
-    )
-  );
-  const trustBand = firstTruthy(
-    getTrustSummaryValue(trustSlipSummary, "cci_band"),
-    getTrustSummaryValue(trustSlipSummary, "band"),
-    "Trust record"
-  );
-  const activeSupportCount = countRequestRowsByStatus(marketplaceRequestRows, [
-    "open",
-  ]);
-  const trustedTradeCount = countRequestRowsByStatus(marketplaceRequestRows, [
-    "fulfilled",
-    "completed",
-    "closed",
-  ]);
   const communityHomeOwnerName = resolveMemberName(me);
   const communityCountFromSummary = Number(poolSummary?.communities_count || clans.length || 0);
 
@@ -2483,158 +2377,6 @@ export default function CommunityHomePage() {
                     {">"}
                   </span>
                 </StableButton>
-              </div>
-
-              <div
-                style={{
-                  marginTop: isCompact ? 10 : 14,
-                  display: "none",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: isCompact ? 8 : 10,
-                }}
-                aria-hidden="true"
-              >
-                {[
-                  {
-                    symbol: "🏘️",
-                    title: "Communities",
-                    value: String(communityCountFromSummary),
-                    detail:
-                      communityCountFromSummary === 1
-                        ? "1 visible community"
-                        : "Visible communities",
-                    tone: "#1F5D9F",
-                  },
-                  {
-                    symbol: "💱",
-                    title: "Money Position",
-                    value: moneyPositionLabel,
-                    detail: moneyPositionDetail,
-                    tone: netMoneyPosition < 0 ? "#B42318" : "#2E8A58",
-                  },
-                  {
-                    symbol: "🌐",
-                    title: "Dues",
-                    value: formatGlobalAmount(cumulativePoolBalance),
-                    detail:
-                      moneyNumber(cumulativeGuaranteeLocked) > 0
-                        ? `${formatGlobalAmount(cumulativeGuaranteeLocked)} held as guarantee`
-                        : "Across visible community pools",
-                    tone: "#1F5D9F",
-                  },
-                  {
-                    symbol: "🤝",
-                    title: "Support",
-                    value: `${activeSupportCount} active`,
-                    detail: "People asking for support",
-                    tone: "#2E8A58",
-                  },
-                  {
-                    symbol: "G",
-                    title: "Guarantees",
-                    value: String(guarantorRecordCount),
-                    detail:
-                      guarantorRecordCount === 1
-                        ? "1 guarantor record"
-                        : "Guarantor records",
-                    tone: "#6F4C00",
-                  },
-                  {
-                    symbol: "$",
-                    title: "Earned",
-                    value: formatGlobalAmount(guarantorEarnedTotal),
-                    detail:
-                      guarantorEarnedTotal > 0
-                        ? "From guaranteeing others"
-                        : "No earning record yet",
-                    tone: "#2E8A58",
-                  },
-                  {
-                    symbol: "T",
-                    title: "Trade",
-                    value: `${trustedTradeCount} completed`,
-                    detail:
-                      countRows(marketplaceRequestRows) > 0
-                        ? "From visible marketplace records"
-                        : "No trade record yet",
-                    tone: "#4230A3",
-                  },
-                  {
-                    symbol: "S",
-                    title: "Trust",
-                    value: trustScore,
-                    detail: trustBand,
-                    tone: "#A27518",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.title}
-                    style={{
-                      ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
-                      minHeight: isCompact ? 118 : 142,
-                      display: "grid",
-                      justifyItems: "center",
-                      alignContent: "start",
-                      gap: 7,
-                      textAlign: "center",
-                      padding: isCompact ? 10 : 14,
-                    }}
-                  >
-                    <span
-                      aria-hidden="true"
-                      style={{
-                        width: isCompact ? 38 : 50,
-                        height: isCompact ? 38 : 50,
-                        borderRadius: 999,
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: `linear-gradient(180deg, ${item.tone} 0%, #08233A 100%)`,
-                        color: "#FFFFFF",
-                        fontSize: isCompact ? 20 : 26,
-                        fontWeight: 950,
-                        lineHeight: 1,
-                        boxShadow:
-                          "0 10px 20px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.18)",
-                      }}
-                    >
-                      {item.symbol}
-                    </span>
-                    <span
-                      style={{
-                        ...brandSingleLine(),
-                        color: "#07172C",
-                        fontSize: isCompact ? 13.5 : 14,
-                        fontWeight: 950,
-                        lineHeight: 1.2,
-                      }}
-                    >
-                      {item.title}
-                    </span>
-                    <span
-                      style={{
-                        ...brandSingleLine(),
-                        color: item.tone,
-                        fontSize: isCompact ? 16 : 22,
-                        fontWeight: 950,
-                        lineHeight: 1.12,
-                      }}
-                    >
-                      {item.value}
-                    </span>
-                    <span
-                      style={{
-                        ...brandClampLines(2),
-                        color: "#5F7287",
-                        fontSize: isCompact ? 10.5 : 12.5,
-                        fontWeight: 760,
-                        lineHeight: 1.35,
-                      }}
-                    >
-                      {item.detail}
-                    </span>
-                  </div>
-                ))}
               </div>
 
               <StableButton

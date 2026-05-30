@@ -1,3 +1,29 @@
+### Community Home hidden metric cleanup (2026-05-30)
+
+- Route/screen affected:
+  - `/app/community` and `/app/community/:clanId`.
+- Follow-up from the detailed Community Home button audit after confirming one
+  old hidden non-button metric grid still remained in the page source.
+- Confirmed truth:
+  - the hidden grid exposed forbidden Community Home readings in source:
+    communities, money position, dues, support, guarantees, earned, trade, and
+    trust metric boxes;
+  - the grid was `display: "none"`, so it did not improve the phone surface,
+    but it kept stale page-local API calls and stale emoji/icon UI alive;
+  - `docs/SCREEN_SPECS.md` says these numerical strength, finance, and trust
+    metric boxes belong on a deeper readings surface, not Community Home.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - removed the hidden metric grid;
+  - removed the page-local TrustSlip, marketplace request, and guarantor
+    earning loads/state that only fed that hidden grid;
+  - kept the visible compact Community Home rows and route buttons intact.
+- Updated guardrails:
+  - `audit-community-home-phone-buttons` now rejects any remaining
+    `display: "none"` route-local UI remnants in Community Home.
+- Remaining truth:
+  - this removes hidden clutter from source and audits. It still needs a real
+    Render phone pass to judge the visible Community Home polish and tap feel.
+
 ### Community Home detailed button audit cleanup (2026-05-30)
 
 - Route/screen affected:

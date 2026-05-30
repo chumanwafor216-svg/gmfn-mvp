@@ -98,6 +98,11 @@ assertNotContains(
 );
 
 assertNotContains(
+  /display: "none"/g,
+  "Community Home must not keep hidden route-local UI remnants in the page source."
+);
+
+assertNotContains(
   /community-home\.(?:owner-actions|circle)\./g,
   "Community Home must not keep legacy hidden owner-actions or circle debug surfaces; use compact tool rows and First Circle routes."
 );

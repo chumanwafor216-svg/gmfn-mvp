@@ -127,8 +127,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?overflow: "hidden",[\s\S]*?overflowAnchor: "none",[\s\S]*?transform: "none",[\s\S]*?transition: "none",[\s\S]*?brandSingleLine\(\)[\s\S]*?brandClampLines\(2\)/,
-  "Community Home action rows and summary tiles must keep stable geometry and clamped text so labels cannot stretch, overlap, or create unstable tap targets."
+  /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?overflow: "hidden",[\s\S]*?overflowAnchor: "none",[\s\S]*?transform: "none",[\s\S]*?transition: "none",[\s\S]*?debugId="community-home\.finance-summary\.open"[\s\S]*?brandClampLines\(1\)[\s\S]*?brandClampLines\(2\)[\s\S]*?debugId="community-home\.trust-summary\.open"[\s\S]*?brandClampLines\(2\)/,
+  "Community Home visible action rows must keep stable geometry and clamped text so labels cannot stretch, overlap, or create unstable tap targets."
 );
 
 assertNotContains(
