@@ -12,6 +12,7 @@ function read(relativePath) {
 
 const findings = [];
 const dashboardFile = "src/pages/DashboardPage.tsx";
+const dashboardText = read(dashboardFile);
 
 function assertContains(pattern, message) {
   const text = read(dashboardFile);
@@ -60,7 +61,7 @@ function assertStableActionsHaveDebugIds() {
 }
 
 function assertNoSignedInPublicEntryLinks() {
-  const text = read(dashboardFile);
+  const text = dashboardText;
   const lines = text.split(/\r?\n/);
   lines.forEach((line, index) => {
     if (/openDashboardRoute\([^)]*["`]\/(?:cover|welcome)\b/.test(line)) {
@@ -75,8 +76,53 @@ function assertNoSignedInPublicEntryLinks() {
   });
 }
 
+function assertDashboardSliceStaysInert(label, startNeedle, endNeedle) {
+  const start = dashboardText.indexOf(startNeedle);
+  const end = start === -1 ? -1 : dashboardText.indexOf(endNeedle, start);
+
+  if (start === -1 || end === -1) {
+    findings.push({
+      file: dashboardFile,
+      line: 1,
+      message: `${label} could not be located for inert-surface auditing.`,
+      text: "Expected Dashboard source anchors were not found.",
+    });
+    return;
+  }
+
+  const slice = dashboardText.slice(start, end);
+  const forbidden =
+    /(?:<StableButton\b|<SubtleButton\b|openDashboardRoute\(|onClick=|onPointerDown=|role="button"|data-cta-id|data-gmfn-action-root)/;
+
+  if (forbidden.test(slice)) {
+    findings.push({
+      file: dashboardFile,
+      line: dashboardText.slice(0, start).split(/\r?\n/).length,
+      message: `${label} must remain an inert display surface, not a route/action hitbox.`,
+      text: slice.replace(/\s+/g, " ").slice(0, 240),
+    });
+  }
+}
+
 assertStableActionsHaveDebugIds();
 assertNoSignedInPublicEntryLinks();
+
+assertNotContains(
+  /dashboard\.hidden-back\.community/,
+  "Dashboard must not keep hidden route buttons mounted inside picture/hero surfaces."
+);
+
+assertDashboardSliceStaysInert(
+  "Dashboard passport photo surface",
+  'alignSelf: "center"',
+  "<PictureFrameToolsControl"
+);
+
+assertDashboardSliceStaysInert(
+  "Dashboard main picture-frame display",
+  "height: isPhone ? 378 : isCompact ? 380 : 398",
+  "<PictureFrameToolsControl"
+);
 
 [
   "dashboard.attention-popup.dismiss",

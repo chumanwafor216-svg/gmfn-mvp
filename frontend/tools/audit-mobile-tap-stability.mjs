@@ -693,6 +693,12 @@ const pictureFrameSystemChecks = [
     pattern:
       /htmlFor=\{action\.inputId\}[\s\S]*?data-gmfn-file-input-id=\{action\.inputId\}/,
   },
+  {
+    label:
+      "Picture frame tool slots must remain inert wrappers so only the trigger and rail actions are tap roots",
+    pattern:
+      /<div[\s\S]*?ref=\{slotRef\}[\s\S]*?onPointerDown=\{stopFrameToolEvent\}[\s\S]*?onClick=\{stopFrameToolEvent\}(?![\s\S]*?data-gmfn-action-root)(?![\s\S]*?data-cta-id)[\s\S]*?<SubtleButton/,
+  },
 ];
 
 const appLayoutPath = join(sourceRoot, "layout", "AppLayout.tsx");

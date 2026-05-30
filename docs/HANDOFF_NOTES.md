@@ -30205,6 +30205,31 @@ GSN-branded invite composer and invite-entry continuity.
   - The visible controls are source-verified and audited, but the file picker
     still needs a real Android browser tap test after deployment.
 
+### Dashboard picture-frame inert surface audit (2026-05-30)
+
+- Route/screen affected:
+  - `/app/dashboard`, Identity Passport hero photo area and main picture-frame
+    display area only.
+- Frontend change:
+  - Removed the legacy hidden `dashboard.hidden-back.community` route button
+    from a display-none Dashboard hero block. It was not expected to be visible,
+    but it was still a mounted route action in the source.
+  - No Market Wisdom presentation or interaction code was changed.
+- Guardrails:
+  - `frontend/tools/audit-dashboard-actions.mjs` now rejects hidden Dashboard
+    route buttons inside picture/hero surfaces.
+  - The same audit now checks that the passport photo surface and main
+    picture-frame display remain inert display slices, not `onClick`,
+    `role="button"`, `data-cta-id`, or action-root hitboxes.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks that the shared
+    `PictureFrameToolsControl` slot wrapper stays inert, with only the trigger
+    and rail actions acting as tap roots.
+- Remaining truth:
+  - Source inspection did not find the active hero/photo surfaces wired as
+    route buttons. The hidden route action was the concrete suspicious artifact
+    removed here. A deployed Android Chrome tap test is still needed to prove
+    there is no browser-level ghost tap on the live build.
+
 ### Dashboard passport single Frame tools button (2026-05-29)
 
 - Route/screen affected:

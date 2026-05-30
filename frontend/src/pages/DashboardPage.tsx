@@ -7318,49 +7318,6 @@ export default function DashboardPage() {
                 minHeight: isPhone ? 78 : isCompact ? 56 : 60,
               }}
             >
-              <StableButton
-                debugId="dashboard.hidden-back.community"
-                type="button"
-                onClick={(event) => openDashboardRoute(event, "/app/community")}
-                onPointerDown={consumeDashboardPointerEvent}
-                aria-label="Back"
-                style={{
-                  position: isPhone ? "static" : "absolute",
-                  left: isPhone ? undefined : 0,
-                  top: isPhone ? undefined : 0,
-                  display: "none",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: isPhone ? 30 : isCompact ? 40 : 42,
-                  minWidth: isPhone ? 30 : isCompact ? 40 : 42,
-                  padding: 0,
-                  borderRadius: 999,
-                  border: "1px solid rgba(16,37,59,0.10)",
-                  background:
-                    "linear-gradient(180deg, #1B4B78 0%, #2B6599 56%, #3B78AE 100%)",
-                  boxShadow:
-                    "0 12px 24px rgba(10,24,49,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
-                  textDecoration: "none",
-                }}
-              >
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: isPhone ? 20 : 24,
-                    height: isPhone ? 20 : 24,
-                    borderRadius: 999,
-                    color: "#F8FBFF",
-                    fontSize: isPhone ? 12 : 14,
-                    fontWeight: 900,
-                    lineHeight: 1,
-                  }}
-                >
-                  {"<-"}
-                </span>
-              </StableButton>
-
               <div
                 style={{
                   textAlign: "center",
