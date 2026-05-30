@@ -25,6 +25,20 @@ function assertContains(file, pattern, message) {
   }
 }
 
+function assertNotContains(file, pattern, message) {
+  const text = read(file);
+  let match;
+
+  while ((match = pattern.exec(text))) {
+    findings.push({
+      file,
+      line: text.slice(0, match.index).split(/\r?\n/).length,
+      message,
+      text: text.slice(match.index, match.index + 180).replace(/\s+/g, " "),
+    });
+  }
+}
+
 function assertStableActionsHaveDebugIds(file) {
   const text = read(file);
   const actionPattern = /<Stable(?:Button|CtaLink)\b[\s\S]*?>/g;
@@ -70,14 +84,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.links\.create\.copy"[\s\S]*?debugId="marketplace\.links\.create\.copy-message"[\s\S]*?debugId="marketplace\.links\.create\.email"[\s\S]*?debugId="marketplace\.links\.create\.open"[\s\S]*?debugId="marketplace\.links\.create\.whatsapp"/,
-  "Marketplace create-link controls must keep named, traceable actions in their stable order."
+  /debugId="marketplace\.links\.join\.copy"[\s\S]*?debugId="marketplace\.links\.community-desk\.copy"[\s\S]*?debugId="marketplace\.public-shop\.visible-link"/,
+  "Marketplace-owned links must move from the selected-community join lane to community-desk and public-shop lanes without a hidden create-community lane between them."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/MarketplacePage.tsx",
-  /Starting a brand-new community belongs to the wider GSN start door[\s\S]*?<div style=\{\{ \.\.\.innerCard\("#FFFFFF"\), display: "none" \}\} aria-hidden="true">[\s\S]*?<div style=\{sectionLabel\(\)\}>Start a new community<\/div>/,
-  "Marketplace-owned links must not visibly expose the create-community start door inside the selected-community link desk."
+  /display: "none"|marketplace\.links\.create\.|publicCreateEntryLink|Start a new community/g,
+  "Marketplace must not keep hidden create-community link-desk UI or source-only create-community actions."
 );
 
 assertContains(

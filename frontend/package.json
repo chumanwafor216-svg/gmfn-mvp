@@ -14,6 +14,7 @@
     "audit:spotlight-quota": "node tools/audit-spotlight-quota-suspension.mjs",
     "audit:action-surfaces": "node tools/audit-action-surface-contracts.mjs",
     "audit:marketplace-actions": "node tools/audit-marketplace-actions.mjs",
+    "audit:marketplace-button-inventory": "node tools/audit-marketplace-button-inventory.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:community-shop-actions": "node tools/audit-community-shop-actions.mjs",

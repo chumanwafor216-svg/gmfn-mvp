@@ -292,7 +292,6 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     intent: "cci",
     tone: "soft",
     keywords: ["id", "identity", "continuity"],
-    visible: false,
   },
   {
     id: "trustslip",
@@ -303,7 +302,6 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     intent: "trustSlip",
     tone: "soft",
     keywords: ["trustslip", "slip", "proof", "verify"],
-    visible: false,
   },
   {
     id: "demand",
@@ -1363,7 +1361,7 @@ function maskedLinkCode(url: string): string {
 
 function buildMaskedLinkLabel(
   url: string,
-  kind: "join" | "create" | "marketplace" | "shop",
+  kind: "join" | "marketplace" | "shop",
   subject: string
 ): string {
   if (!url) return "";
@@ -1373,10 +1371,6 @@ function buildMaskedLinkLabel(
 
   if (kind === "join") {
     return `Secure GSN join link for ${cleanedSubject}${code ? ` • code ${code}` : ""}`;
-  }
-
-  if (kind === "create") {
-    return `Secure GSN founder entry${code ? ` • code ${code}` : ""}`;
   }
 
   if (String(kind) === "marketplace") {
@@ -1460,7 +1454,7 @@ function joinShareMessageCardStyle(isCompact: boolean): React.CSSProperties {
 }
 
 function buildGsnShareMessage(
-  kind: "join" | "create",
+  kind: "join",
   opts: {
     memberName: string;
     communityName: string;
@@ -1470,18 +1464,6 @@ function buildGsnShareMessage(
   const sender = safeStr(opts.memberName) || "a GSN member";
   const community = safeStr(opts.communityName) || "this community";
   const url = safeStr(opts.url);
-
-  if (kind === "create") {
-    return [
-      `GSN note from ${sender}:`,
-      "",
-      "If you want to start your own community in GSN, use the secure entry below.",
-      `This is not the join link for ${community}.`,
-      "",
-      "GSN helps existing trust become visible, portable, and usable.",
-      url,
-    ].join("\n");
-  }
 
   return [
     `GSN note from ${sender}:`,
@@ -1495,7 +1477,7 @@ function buildGsnShareMessage(
 }
 
 function buildGsnSharePreview(
-  kind: "join" | "create",
+  kind: "join",
   opts: {
     memberName: string;
     communityName: string;
@@ -1505,18 +1487,6 @@ function buildGsnSharePreview(
   const sender = safeStr(opts.memberName) || "a GSN member";
   const community = safeStr(opts.communityName) || "this community";
   const maskedLabel = safeStr(opts.maskedLabel) || "Secure GSN link";
-
-  if (kind === "create") {
-    return [
-      `GSN note from ${sender}:`,
-      "",
-      "If you want to start your own community in GSN, use the secure entry below.",
-      `This is not the join link for ${community}.`,
-      "",
-      "GSN helps existing trust become visible, portable, and usable.",
-      maskedLabel,
-    ].join("\n");
-  }
 
   return [
     `GSN note from ${sender}:`,
@@ -1530,17 +1500,13 @@ function buildGsnSharePreview(
 }
 
 function buildGsnEmailSubject(
-  kind: "join" | "create" | "marketplace" | "shop",
+  kind: "join" | "marketplace" | "shop",
   communityName: string
 ): string {
   const cleanedCommunity = safeStr(communityName) || "this GSN community";
 
   if (kind === "join") {
     return `GSN community join link for ${cleanedCommunity}`;
-  }
-
-  if (kind === "create") {
-    return "GSN start a new community link";
   }
 
   if (String(kind) === "marketplace") {
@@ -2067,10 +2033,6 @@ export default function MarketplacePage() {
     if (!activeCommunityId) return "";
     return publicFrontendUrl(`/community/${encodeURIComponent(String(activeCommunityId))}`);
   }, [activeCommunityId]);
-
-  const publicCreateEntryLink = useMemo(() => {
-    return publicFrontendUrl("/public-create");
-  }, []);
 
   const publicShopViewLink = useMemo(() => {
     if (!publicShopOwnerId || !publicShopRecord) return "";
@@ -2717,16 +2679,6 @@ export default function MarketplacePage() {
     );
   }, [inviteLink, activeCommunityName]);
 
-  const maskedCreateEntryLabel = useMemo(() => {
-    return cleanMaskedLinkLabel(
-      buildMaskedLinkLabel(
-        publicCreateEntryLink,
-        "create",
-        activeCommunityName
-      )
-    );
-  }, [publicCreateEntryLink, activeCommunityName]);
-
   const maskedMarketplaceFaceLabel = useMemo(() => {
     return cleanMaskedLinkLabel(
       buildMaskedLinkLabel(
@@ -2753,28 +2705,8 @@ export default function MarketplacePage() {
     });
   }, [memberName, activeCommunityName, maskedInviteLinkLabel]);
 
-  const createWhatsappMessage = useMemo(() => {
-    return buildGsnShareMessage("create", {
-      memberName,
-      communityName: activeCommunityName,
-      url: publicCreateEntryLink,
-    });
-  }, [memberName, activeCommunityName, publicCreateEntryLink]);
-
-  const createWhatsappPreview = useMemo(() => {
-    return buildGsnSharePreview("create", {
-      memberName,
-      communityName: activeCommunityName,
-      maskedLabel: maskedCreateEntryLabel,
-    });
-  }, [memberName, activeCommunityName, maskedCreateEntryLabel]);
-
   const joinEmailSubject = useMemo(() => {
     return buildGsnEmailSubject("join", activeCommunityName);
-  }, [activeCommunityName]);
-
-  const createEmailSubject = useMemo(() => {
-    return buildGsnEmailSubject("create", activeCommunityName);
   }, [activeCommunityName]);
 
   const marketplaceEmailSubject = useMemo(() => {
@@ -4500,145 +4432,6 @@ export default function MarketplacePage() {
                         ? joinWhatsappPreview
                         : "The join message preview will appear here after the join link is ready."}
                     </div>
-                  </div>
-                </div>
-
-                <div style={{ ...innerCard("#FFFFFF"), display: "none" }} aria-hidden="true">
-                  <div style={sectionLabel()}>Start a new community</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Send this only when someone should create their own
-                    community. It will not join them to the selected community.
-                  </div>
-                  <div style={{ marginTop: 10 }}>
-                    <span style={compactStatusPillStyle(Boolean(publicCreateEntryLink))}>
-                      {publicCreateEntryLink
-                        ? "Create entry link ready"
-                        : "Create entry link not ready yet"}
-                    </span>
-                  </div>
-                  {publicCreateEntryLink ? (
-                    <div style={shareMessageCardStyle(isCompact)}>
-                      <div style={sectionLabel()}>Message to send</div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          ...helperText(),
-                          whiteSpace: "pre-line",
-                          fontSize: 13,
-                        }}
-                      >
-                        {createWhatsappPreview}
-                      </div>
-                      <div style={{ marginTop: 8, ...helperText(), fontSize: 12 }}>
-                        {maskedCreateEntryLabel}
-                      </div>
-                    </div>
-                  ) : null}
-                  <div style={marketplaceInlineActionsStyle(isCompact)}>
-                    <StableButton
-                      debugId="marketplace.links.create.copy"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceLink(
-                            publicCreateEntryLink,
-                            "Create entry link copied.",
-                            "Create entry link is not ready yet."
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !publicCreateEntryLink,
-                        isCompact
-                      )}
-                    >
-                      Copy Create Link
-                    </StableButton>
-                    <StableButton
-                      debugId="marketplace.links.create.copy-message"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          copyMarketplaceMessage(
-                            createWhatsappMessage,
-                            publicCreateEntryLink,
-                            "Create message copied.",
-                            "Create entry link is not ready yet."
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !publicCreateEntryLink,
-                        isCompact
-                      )}
-                    >
-                      Copy Message
-                    </StableButton>
-                    <StableButton
-                      debugId="marketplace.links.create.email"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          openMarketplaceEmail(
-                            createEmailSubject,
-                            createWhatsappMessage,
-                            publicCreateEntryLink,
-                            "Create entry link is not ready yet."
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !publicCreateEntryLink,
-                        isCompact
-                      )}
-                    >
-                      Email Link
-                    </StableButton>
-                    <StableButton
-                      debugId="marketplace.links.create.open"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          openMarketplaceExternalLink(
-                            publicCreateEntryLink,
-                            "Create entry link is not ready yet."
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !publicCreateEntryLink,
-                        isCompact
-                      )}
-                    >
-                      Open Create Link
-                    </StableButton>
-                    <StableButton
-                      debugId="marketplace.links.create.whatsapp"
-                      type="button"
-                      onClick={(event) => {
-                        runMarketplaceAction(event, () => {
-                          if (!publicCreateEntryLink) {
-                            showNotice("error", "Create entry link is not ready yet.");
-                            return;
-                          }
-                          openMarketplaceExternalLink(
-                            `https://wa.me/?text=${encodeURIComponent(createWhatsappMessage)}`,
-                            "Create entry link is not ready yet."
-                          );
-                        });
-                      }}
-                      style={marketplaceInlineActionStyle(
-                        "secondary",
-                        !publicCreateEntryLink,
-                        isCompact
-                      )}
-                    >
-                      Send WhatsApp
-                    </StableButton>
                   </div>
                 </div>
 

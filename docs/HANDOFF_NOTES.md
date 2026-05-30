@@ -1,3 +1,36 @@
+### Marketplace button inventory cleanup (2026-05-30)
+
+- Route/screen affected:
+  - `/app/marketplace`.
+- Follow-up from product-owner request to move the page-by-page phone button
+  audit from Community Home into Marketplace.
+- Confirmed truth:
+  - Marketplace already had strong broad tap/link audits, but no exact
+    Marketplace-only source inventory like Dashboard and Community Home;
+  - the source still kept a hidden `Start a new community` link desk with five
+    `marketplace.links.create.*` buttons even though Marketplace is the working
+    surface for one selected community;
+  - the Marketplace blueprint says create-community is not the selected
+    marketplace's link desk job, while join/community-desk/shop links are.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - removed the hidden create-community link desk and its create-link share
+    message/email/masked-label helpers;
+  - kept selected-community join, community access desk, public shop, owner shop
+    control, members/shops, money, and support actions intact;
+  - made CCI and TrustSlip visible in the collapsed Marketplace extra-tools
+    panel because the Marketplace blueprint lists them as required shortcuts.
+- Updated guardrails:
+  - added `audit:marketplace-button-inventory`, locking the Marketplace source
+    action baseline at 49 stable actions and rejecting hidden create-community
+    actions;
+  - updated `audit-marketplace-actions` to reject the hidden create lane instead
+    of requiring it.
+- Remaining truth:
+  - this is source and audit tightening. Marketplace still has emoji-style
+    action marks on the front tiles/rows, so a later visual polish pass should
+    replace those with deterministic icons before calling the page visually
+    finished.
+
 ### Community Home hidden metric cleanup (2026-05-30)
 
 - Route/screen affected:
