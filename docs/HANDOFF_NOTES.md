@@ -1,3 +1,35 @@
+### My GSN icon rendering repair for Render (2026-05-30)
+
+- Follow-up from product-owner Render screenshots showing the My GSN guide
+  rendered with missing capability icons and route tiles showing letter
+  placeholders (`D`, `H`, `M`, etc.) instead of the approved symbols.
+- Confirmed truth:
+  - the live Render My GSN chunk still contained the letter placeholders;
+  - the Dashboard chunk already contained the latest frame-tool file-input
+    binding, so the reported Render frame-tool issue is either stale phone
+    cache/deploy timing or a remaining browser tap issue, not absence of the
+    latest binding in the deployed Dashboard chunk.
+- Updated `frontend/src/pages/MyGMFNAndIPage.tsx`:
+  - replaced route-list letter placeholders with deterministic inline SVG
+    icons from the existing `TrustPaperMarks` system;
+  - restored icon marks inside the 22-capability cards;
+  - replaced public-guide emoji capability marks with the same SVG icon map so
+    Render/Android font fallback cannot drop or corrupt them;
+  - added route-local text-size adjustment protection for this guide surface.
+- Truth/devil's advocate:
+  - this fixes the proven source-code cause of the missing icons;
+  - it does not prove the owner's already-open phone tab has refreshed the new
+    Render chunks, so the phone should be hard-refreshed/reopened after deploy;
+  - if frame tools still fail on Render after this deploy and hard refresh, the
+    next step is a live Render tap trace rather than another blind frame rewrite.
+- Verification:
+  - `npm exec -- eslint src/pages/MyGMFNAndIPage.tsx` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:member-entry-actions` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Action Inbox parity and mobile bucket cleanup (2026-05-30)
 
 - Follow-up from product-owner screenshot/request to compare the upgraded
