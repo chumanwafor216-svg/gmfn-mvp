@@ -392,6 +392,15 @@ function statTile(): React.CSSProperties {
   };
 }
 
+function compactPanelTitle(): React.CSSProperties {
+  return {
+    color: "#07172C",
+    fontSize: 18,
+    fontWeight: 950,
+    lineHeight: 1.2,
+  };
+}
+
 function helperText(): React.CSSProperties {
   return {
     color: "#465A72",
@@ -870,6 +879,14 @@ function normalizeRawNotificationRow(raw: any): RawNotificationRow {
   };
 }
 
+function safeDateTime(x: any): string {
+  const raw = safeStr(x);
+  if (!raw) return "";
+  const d = new Date(raw);
+  if (!Number.isFinite(d.getTime())) return raw;
+  return d.toLocaleString();
+}
+
 function isTrustOnboardingRow(row: RawNotificationRow | null | undefined): boolean {
   const kind = safeStr(row?.kind).toLowerCase();
   const title = safeStr(row?.title).toLowerCase();
@@ -965,6 +982,27 @@ function sortGuidanceNotices(
     }
 
     return safeStr(a.title).localeCompare(safeStr(b.title));
+  });
+
+  return next;
+}
+
+function sortRawNotifications(
+  rows: RawNotificationRow[],
+  unreadFirst: boolean
+): RawNotificationRow[] {
+  const next = [...rows];
+
+  next.sort((a, b) => {
+    if (unreadFirst) {
+      const aUnread = a.unread ? 1 : 0;
+      const bUnread = b.unread ? 1 : 0;
+      if (aUnread !== bUnread) return bUnread - aUnread;
+    }
+
+    const aTime = new Date(a.createdAt || 0).getTime();
+    const bTime = new Date(b.createdAt || 0).getTime();
+    return bTime - aTime;
   });
 
   return next;
@@ -1080,6 +1118,8 @@ export default function NotificationsPage() {
   );
   const [rawLoading, setRawLoading] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<GuidanceNotice | null>(null);
+  const [selectedBucket, setSelectedBucket] =
+    useState<GuidanceInboxBucketKey | null>(null);
   const [actionNotice, setActionNotice] = useState<ActionResponse | null>(null);
 
   const [collapsed, setCollapsed] = useState<CollapseState>(() =>
@@ -1203,6 +1243,11 @@ export default function NotificationsPage() {
 
   const unreadCount = guidanceSnapshot?.actionInboxSummary?.unreadCount || 0;
 
+  const rawFeed = useMemo(
+    () => sortRawNotifications(rawNotifications, settings.unreadFirst).slice(0, 10),
+    [rawNotifications, settings.unreadFirst]
+  );
+
   const onboardingTrustNotice = useMemo(() => {
     const preferred = rawNotifications.find(
       (row) => isTrustOnboardingRow(row) && row.unread
@@ -1323,9 +1368,12 @@ export default function NotificationsPage() {
       bucket: "watchAndWait" as GuidanceInboxBucketKey,
       unread: false,
     });
+  const selectedBucketRows = selectedBucket ? bucketRows[selectedBucket] : [];
+  const bucketRowHeight = isPhone ? 124 : 86;
 
   function showUrgentItems() {
     setCollapsed((prev) => ({ ...prev, focus: false, buckets: false }));
+    setSelectedBucket("actNow");
     if (bucketRows.actNow.length > 0) {
       setSelectedNotice(bucketRows.actNow[0]);
       setActionNotice({
@@ -1342,8 +1390,10 @@ export default function NotificationsPage() {
 
   function openBucket(bucket: GuidanceInboxBucketKey) {
     setCollapsed((prev) => ({ ...prev, buckets: false }));
+    setSelectedBucket(bucket);
     const first = bucketRows[bucket][0];
     if (!first) {
+      setSelectedNotice(null);
       setActionNotice({
         tone: "info",
         text: `${bucketTitle(bucket)} has no waiting item right now.`,
@@ -1367,13 +1417,15 @@ export default function NotificationsPage() {
         gap: isPhone ? 12 : 16,
       }}
     >
-      <PageTopNav
-        sectionLabel="Identity & Settings"
-        title="Action Inbox"
-        homeTo={routes.dashboard}
-        homeLabel="Dashboard"
-        backTo={routes.dashboard}
-      />
+      {!isPhone ? (
+        <PageTopNav
+          sectionLabel="Identity & Settings"
+          title="Action Inbox"
+          homeTo={routes.dashboard}
+          homeLabel="Dashboard"
+          backTo={routes.dashboard}
+        />
+      ) : null}
 
       {actionNotice ? (
         <section style={actionNoticeCard(actionNotice.tone)}>
@@ -1381,6 +1433,7 @@ export default function NotificationsPage() {
         </section>
       ) : null}
 
+      {!isPhone ? (
       <section
         style={{
           ...pageCard("linear-gradient(135deg, #061827 0%, #082B4A 64%, #0B3862 100%)"),
@@ -1414,7 +1467,7 @@ export default function NotificationsPage() {
               fontSize: isPhone ? 34 : 44,
             }}
           >
-            ✉
+            In
           </div>
 
           <div>
@@ -1468,6 +1521,7 @@ export default function NotificationsPage() {
           ) : null}
         </div>
       </section>
+      ) : null}
 
       <section style={pageCard("#FFFFFF")}>
         <div
@@ -1491,7 +1545,7 @@ export default function NotificationsPage() {
               fontSize: 28,
             }}
           >
-            ▮
+            I
           </div>
           <div>
             <div style={sectionLabel()}>Inbox summary</div>
@@ -1524,7 +1578,7 @@ export default function NotificationsPage() {
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 24 }}>
-                ✉
+                In
               </span>
               <div style={sectionLabel()}>Unread</div>
             </div>
@@ -1548,7 +1602,7 @@ export default function NotificationsPage() {
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span aria-hidden="true" style={{ color: "#DC2626", fontSize: 24 }}>
-                ◷
+                !
               </span>
               <div style={sectionLabel()}>Act now</div>
             </div>
@@ -1572,7 +1626,7 @@ export default function NotificationsPage() {
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span aria-hidden="true" style={{ color: "#F59E0B", fontSize: 24 }}>
-                □
+                T
               </span>
               <div style={sectionLabel()}>Due soon</div>
             </div>
@@ -1596,7 +1650,7 @@ export default function NotificationsPage() {
           <div style={statTile()}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <span aria-hidden="true" style={{ color: "#0B63D1", fontSize: 24 }}>
-                ◉
+                O
               </span>
               <div style={sectionLabel()}>Watch</div>
             </div>
@@ -1628,6 +1682,18 @@ export default function NotificationsPage() {
             Show urgent items (Act now)
           </PrimaryButton>
         </div>
+
+        {isPhone ? (
+          <div style={{ marginTop: 10 }}>
+            <StableCtaLink
+              to={routes.dashboard}
+              stableHeight={52}
+              debugId="notifications.hero.dashboard"
+            >
+              Go to Dashboard
+            </StableCtaLink>
+          </div>
+        ) : null}
       </section>
 
       <section style={pageCard("linear-gradient(180deg, #061827 0%, #082B4A 100%)")}>
@@ -1757,6 +1823,16 @@ export default function NotificationsPage() {
                 >
                   Open page
                 </StableCtaLink>
+
+                {focusNotice.unread && /^\d+$/.test(safeStr(focusNotice.id)) ? (
+                  <SecondaryButton
+                    onClick={() => void markAsRead(safeStr(focusNotice.id))}
+                    stableHeight={50}
+                    debugId="notifications.focus.mark-read"
+                  >
+                    Mark as read
+                  </SecondaryButton>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1794,7 +1870,7 @@ export default function NotificationsPage() {
                 fontSize: 28,
               }}
             >
-              ≡
+              =
             </div>
             <div>
               <div style={{ ...sectionLabel(), color: "#AFC4DA" }}>
@@ -1844,12 +1920,12 @@ export default function NotificationsPage() {
                 const isLast = index === BUCKET_ORDER.length - 1;
                 const icon =
                   bucket === "actNow"
-                    ? "ϟ"
+                    ? "!"
                     : bucket === "dueSoon"
-                    ? "◷"
+                    ? "T"
                     : bucket === "watchAndWait"
-                    ? "◉"
-                    : "◇";
+                    ? "O"
+                    : "U";
 
                 return (
                   <StableButton
@@ -1857,35 +1933,41 @@ export default function NotificationsPage() {
                     type="button"
                     onClick={() => openBucket(bucket)}
                     fullWidth
-                    stableHeight={76}
+                    stableHeight={bucketRowHeight}
                     debugId={`notifications.bucket.${bucket}`}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "56px minmax(0, 1fr) 54px 24px",
-                      gap: 12,
+                      gridTemplateColumns: isPhone
+                        ? "46px minmax(0, 1fr) 46px 18px"
+                        : "56px minmax(0, 1fr) 54px 24px",
+                      gap: isPhone ? 10 : 12,
                       alignItems: "center",
                       justifyContent: "stretch",
+                      minHeight: bucketRowHeight,
+                      height: bucketRowHeight,
+                      maxHeight: bucketRowHeight,
                       background: "#FFFFFF",
                       border: "none",
                       borderBottom: isLast ? "none" : "1px solid rgba(17,42,68,0.08)",
                       borderRadius: 0,
                       boxShadow: "none",
                       color: "#07172C",
-                      padding: "10px 14px",
+                      padding: isPhone ? "12px 10px" : "10px 14px",
                       textAlign: "left",
+                      overflow: "hidden",
                     }}
                   >
                     <span
                       aria-hidden="true"
                       style={{
-                        width: 44,
-                        height: 44,
+                        width: isPhone ? 40 : 44,
+                        height: isPhone ? 40 : 44,
                         borderRadius: 14,
                         display: "grid",
                         placeItems: "center",
                         background: tone.bg,
                         color: tone.text,
-                        fontSize: 23,
+                        fontSize: isPhone ? 19 : 23,
                         fontWeight: 950,
                       }}
                     >
@@ -1896,21 +1978,24 @@ export default function NotificationsPage() {
                         style={{
                           display: "block",
                           color: "#07172C",
-                          fontSize: isPhone ? 17 : 20,
+                          fontSize: isPhone ? 14.5 : 20,
                           fontWeight: 950,
-                          lineHeight: 1.1,
+                          lineHeight: 1.16,
                         }}
                       >
                         {bucketTitle(bucket)}
                       </span>
                       <span
                         style={{
-                          display: "block",
                           marginTop: 5,
                           color: "#465A72",
-                          fontSize: isPhone ? 13 : 15,
+                          fontSize: isPhone ? 12.5 : 15,
                           fontWeight: 700,
-                          lineHeight: 1.25,
+                          lineHeight: isPhone ? 1.22 : 1.25,
+                          overflow: "hidden",
+                          display: "-webkit-box",
+                          WebkitLineClamp: isPhone ? 4 : 2,
+                          WebkitBoxOrient: "vertical",
                         }}
                       >
                         {bucketDescription(bucket)}
@@ -1919,15 +2004,15 @@ export default function NotificationsPage() {
                     <span
                       style={{
                         justifySelf: "center",
-                        minWidth: 44,
-                        minHeight: 44,
+                        minWidth: isPhone ? 40 : 44,
+                        minHeight: isPhone ? 40 : 44,
                         borderRadius: 999,
                         display: "grid",
                         placeItems: "center",
                         background: tone.bg,
                         color: tone.text,
                         fontWeight: 950,
-                        fontSize: 19,
+                        fontSize: isPhone ? 18 : 19,
                       }}
                     >
                       {rows.length}
@@ -1936,7 +2021,7 @@ export default function NotificationsPage() {
                       aria-hidden="true"
                       style={{ color: "#07172C", fontSize: 26, fontWeight: 950 }}
                     >
-                      ›
+                      {">"}
                     </span>
                   </StableButton>
                 );
@@ -1984,11 +2069,74 @@ export default function NotificationsPage() {
         </section>
       ) : null}
 
+      {selectedBucket ? (
+        <section style={pageCard("#FFFFFF")}>
+          <div style={sectionLabel()}>Open items in {bucketTitle(selectedBucket)}</div>
+          <div style={{ marginTop: 8, ...helperText() }}>
+            Review each waiting item and choose the right next action.
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {selectedBucketRows.length === 0 ? (
+              <div style={innerCard("#F8FBFF")}>
+                <div style={helperText()}>
+                  Nothing is waiting in this group right now.
+                </div>
+              </div>
+            ) : (
+              selectedBucketRows.map((notice) => (
+                <div
+                  key={`${selectedBucket}-${notice.id}`}
+                  style={innerCard("#F8FBFF")}
+                >
+                  <div style={compactPanelTitle()}>{notice.title}</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    {settings.notificationsMode === "detailed"
+                      ? notice.detail
+                      : truncateText(notice.detail, isPhone ? 130 : 170)}
+                  </div>
+
+                  <div style={{ marginTop: 12, ...actionRow(isPhone) }}>
+                    <PrimaryButton
+                      onClick={() => void handlePrimaryNoticeAction(notice)}
+                      stableHeight={52}
+                      debugId={`notifications.notice.${notice.id}.primary`}
+                    >
+                      {settings.openActionsDirectly ? notice.ctaLabel : "Review first"}
+                    </PrimaryButton>
+
+                    <StableCtaLink
+                      to={notice.ctaTo}
+                      stableHeight={52}
+                      debugId={`notifications.notice.${notice.id}.open-page`}
+                    >
+                      Open page
+                    </StableCtaLink>
+
+                    {notice.unread && /^\d+$/.test(safeStr(notice.id)) ? (
+                      <SubtleButton
+                        onClick={() => void markAsRead(safeStr(notice.id))}
+                        stableHeight={52}
+                        debugId={`notifications.notice.${notice.id}.mark-read`}
+                      >
+                        Mark as read
+                      </SubtleButton>
+                    ) : null}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      ) : null}
+
       <section
         style={{
           ...softCard("#EAF3FF"),
           display: "grid",
-          gridTemplateColumns: "52px minmax(0, 1fr) 92px",
+          gridTemplateColumns: isPhone
+            ? "52px minmax(0, 1fr)"
+            : "52px minmax(0, 1fr) 92px",
           gap: 14,
           alignItems: "center",
         }}
@@ -2006,7 +2154,7 @@ export default function NotificationsPage() {
             fontSize: 28,
           }}
         >
-          ◆
+          D
         </div>
         <div>
           <div
@@ -2026,14 +2174,149 @@ export default function NotificationsPage() {
         <div
           aria-hidden="true"
           style={{
+            display: isPhone ? "none" : undefined,
             justifySelf: "end",
             color: "rgba(11,99,209,0.12)",
             fontSize: 72,
             lineHeight: 1,
           }}
         >
-          ◇
+          Box
         </div>
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>Recent notifications</div>
+            <div style={{ marginTop: 6, ...helperText() }}>
+              Latest messages remain available without crowding the first screen.
+            </div>
+          </div>
+
+          <SubtleButton
+            onClick={() => toggleSection("rawFeed")}
+            style={collapseToggle()}
+            stableHeight={48}
+            debugId="notifications.toggle-raw-feed"
+          >
+            {collapsed.rawFeed ? "Open" : "Collapse"}
+          </SubtleButton>
+        </div>
+
+        {!collapsed.rawFeed ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+            {rawLoading ? (
+              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+                Loading recent notifications...
+              </div>
+            ) : rawFeed.length === 0 ? (
+              <div style={innerCard("#F8FBFF")}>
+                <div style={helperText()}>
+                  No recent notification is shown right now.
+                </div>
+              </div>
+            ) : (
+              rawFeed.map((item) => (
+                <div
+                  key={`feed-${item.id}-${item.createdAt}`}
+                  style={innerCard("#F8FBFF")}
+                >
+                  <div style={compactPanelTitle()}>{item.title}</div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    {settings.notificationsMode === "detailed"
+                      ? item.detail
+                      : truncateText(item.detail, isPhone ? 120 : 150)}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      display: "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={badge(false)}>{item.kindLabel || item.kind}</span>
+                    {item.unread ? (
+                      <span style={badge(true)}>Unread</span>
+                    ) : (
+                      <span style={badge(false)}>Reviewed</span>
+                    )}
+                    <span style={badge(false)}>{safeDateTime(item.createdAt)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : null}
+      </section>
+
+      <section style={pageCard("#FFFFFF")}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={sectionLabel()}>What the labels mean</div>
+            <div style={{ marginTop: 6, ...helperText() }}>
+              Use this when you are not sure where to start.
+            </div>
+          </div>
+
+          <SubtleButton
+            onClick={() => toggleSection("reading")}
+            style={collapseToggle()}
+            stableHeight={48}
+            debugId="notifications.toggle-reading"
+          >
+            {collapsed.reading ? "Open" : "Collapse"}
+          </SubtleButton>
+        </div>
+
+        {!collapsed.reading ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isPhone ? "1fr" : "repeat(2, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {BUCKET_ORDER.map((bucket) => {
+              const tone = bucketTone(bucket);
+              return (
+                <div key={`meaning-${bucket}`} style={innerCard(tone.bg)}>
+                  <div
+                    style={{
+                      color: tone.text,
+                      fontSize: 16,
+                      fontWeight: 950,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {bucketTitle(bucket)}
+                  </div>
+                  <div style={{ marginTop: 8, ...helperText() }}>
+                    {bucketDescription(bucket)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
     </div>
   );

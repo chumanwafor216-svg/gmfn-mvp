@@ -1,3 +1,40 @@
+### Action Inbox parity and mobile bucket cleanup (2026-05-30)
+
+- Follow-up from product-owner screenshot/request to compare the upgraded
+  Action Inbox against what existed before the last-48-hour remake and restore
+  any missing actions.
+- Compared current `frontend/src/pages/NotificationsPage.tsx` against the
+  pre-remake version before commit `a78344f` (`Remake Action Inbox surface`).
+- Confirmed truth:
+  - the remake kept the cleaner hero/summary/focus/bucket/selected-item path;
+  - it removed or hid earlier surfaces for per-notice bucket actions, recent
+    notifications, label meanings, and explicit focus mark-as-read.
+- Updated `frontend/src/pages/NotificationsPage.tsx`:
+  - mobile no longer renders the extra in-page `PageTopNav` or duplicate
+    Action Inbox hero beneath the app shell header;
+  - phone bucket rows now reserve taller fixed height and smaller text so the
+    descriptions/counts/chevron do not collide;
+  - opening a bucket now also opens a compact "Open items in ..." panel with
+    every notice in that bucket and its primary/open/mark-read actions;
+  - focus item regained an explicit `Mark as read` action when possible;
+  - Recent notifications and What the labels mean returned as collapsed
+    compact sections;
+  - corrupted visible glyphs in this page were mechanically replaced with
+    simple ASCII labels so phone rendering cannot show broken symbols.
+- Truth/devil's advocate:
+  - this restores functional coverage from the older screen without returning
+    to the earlier long exposed content dump;
+  - the change is code/build/audit verified, but the exact phone screenshot
+    should still be retested because no live-device screenshot was captured.
+- Verification:
+  - `npm exec -- eslint src/pages/NotificationsPage.tsx tools/audit-button-stability.mjs tools/audit-action-response-protocol.mjs tools/audit-admin-ops-actions.mjs` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:action-response-protocol` passed.
+  - `npm run audit:admin-ops-actions` passed.
+  - `git diff --check` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Picture-frame inner buttons and My GSN guide frame (2026-05-30)
 
 - Follow-up from product-owner screenshot/request: "execute picture exactly.
