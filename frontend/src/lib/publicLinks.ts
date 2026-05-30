@@ -312,20 +312,7 @@ export function publicShopSharePath(params: {
   productId?: string | number | null;
   block?: string | number | null;
 }): string {
-  const ownerId = cleanText(params.gmfnId);
-  if (!ownerId) return "";
-
-  const query = new URLSearchParams();
-  const productId = cleanText(params.productId);
-  const blockNumber = Number(params.block || 0);
-
-  if (productId) query.set("product_id", productId);
-  if (Number.isFinite(blockNumber) && blockNumber > 0) {
-    query.set("block", String(Math.trunc(blockNumber)));
-  }
-
-  const suffix = query.toString();
-  return `/share/shop/${encodeURIComponent(ownerId)}${suffix ? `?${suffix}` : ""}`;
+  return publicShopBlockPath(params);
 }
 
 export function publicShopShareUrl(params: {
@@ -334,7 +321,7 @@ export function publicShopShareUrl(params: {
   block?: string | number | null;
 }): string {
   const path = publicShopSharePath(params);
-  return path ? publicApiUrl(path) : "";
+  return path ? shareablePublicFrontendUrl(path) : "";
 }
 
 export function buildPublicWhatsAppUrl(message: string): string {

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "start": "node server.mjs",
     "preview": "vite preview",
     "audit:link-contracts": "node tools/audit-link-contracts.mjs",
     "audit:entry-auth": "node tools/audit-entry-auth-contracts.mjs",

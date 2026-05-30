@@ -1,0 +1,287 @@
+import { createServer } from "node:http";
+import { createReadStream, existsSync, promises as fs } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const distRoot = path.join(__dirname, "dist");
+const indexPath = path.join(distRoot, "index.html");
+const publicFrontendOrigin = firstOrigin(
+  [
+    process.env.PUBLIC_FRONTEND_URL,
+    process.env.VITE_PUBLIC_FRONTEND_URL ||
+      process.env.VITE_FRONTEND_BASE_URL,
+    process.env.FRONTEND_BASE_URL,
+  ],
+  "https://gmfn-frontend.onrender.com"
+);
+const publicApiOrigin = firstOrigin(
+  [
+    process.env.VITE_API_BASE_URL,
+    process.env.PUBLIC_API_URL ||
+      process.env.GMFN_API_BASE_URL,
+    process.env.API_BASE_URL,
+  ],
+  "https://gmfn-api.onrender.com"
+);
+
+const mimeTypes = new Map([
+  [".css", "text/css; charset=utf-8"],
+  [".gif", "image/gif"],
+  [".html", "text/html; charset=utf-8"],
+  [".ico", "image/x-icon"],
+  [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
+  [".map", "application/json; charset=utf-8"],
+  [".png", "image/png"],
+  [".svg", "image/svg+xml; charset=utf-8"],
+  [".webp", "image/webp"],
+  [".woff", "font/woff"],
+  [".woff2", "font/woff2"],
+]);
+
+function cleanOrigin(value) {
+  const text = String(value || "").trim().replace(/\/+$/, "");
+  if (!text) return "";
+  try {
+    const url = new URL(text);
+    if (!/^https?:$/i.test(url.protocol)) return "";
+    return url.origin;
+  } catch {
+    return "";
+  }
+}
+
+function firstOrigin(values, fallback) {
+  for (const value of values) {
+    const origin = cleanOrigin(value);
+    if (origin) return origin;
+  }
+  return fallback;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function apiUrl(pathname) {
+  const apiPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  if (publicApiOrigin.endsWith("/api") && apiPath.startsWith("/api/")) {
+    return `${publicApiOrigin.slice(0, -4)}${apiPath}`;
+  }
+  return `${publicApiOrigin}${apiPath}`;
+}
+
+function frontendUrl(pathname, search = "", hash = "") {
+  const cleanPath = pathname.startsWith("/") ? pathname : `/${pathname}`;
+  return `${publicFrontendOrigin}${cleanPath}${search}${hash}`;
+}
+
+function firstText(...values) {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text && !["null", "undefined", "string", "n/a", "na"].includes(text.toLowerCase())) {
+      return text;
+    }
+  }
+  return "";
+}
+
+function formatPrice(value, currency) {
+  const amount = firstText(value);
+  const unit = firstText(currency, "NGN").toUpperCase();
+  if (!amount) return "Price on request";
+  if (unit === "GBP" || unit === "GDP" || unit === "POUND" || unit === "POUNDS") return `£${amount}`;
+  if (unit === "USD") return `$${amount}`;
+  if (unit === "EUR") return `€${amount}`;
+  if (unit === "NGN") return `₦${amount}`;
+  return `${amount} ${unit}`;
+}
+
+function selectedProduct(products, productId) {
+  const requested = Number(productId || 0);
+  if (!requested) return { product: products[0] || null, block: products[0] ? 1 : 0 };
+  const index = products.findIndex((item) => Number(item?.id || 0) === requested);
+  if (index >= 0) return { product: products[index], block: index + 1 };
+  return { product: products[0] || null, block: products[0] ? 1 : 0 };
+}
+
+async function fetchShopMeta(gmfnId, productId) {
+  const url = new URL(apiUrl(`/marketplace/public/shop/${encodeURIComponent(gmfnId)}`));
+  if (productId) url.searchParams.set("product_id", productId);
+  url.searchParams.set("product_limit", "100");
+
+  const response = await fetch(url, {
+    headers: { accept: "application/json" },
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!response.ok) throw new Error(`Public shop lookup failed: ${response.status}`);
+
+  const data = await response.json();
+  const products = Array.isArray(data?.products) ? data.products : [];
+  const { product, block } = selectedProduct(products, productId);
+  const shop = data?.item || {};
+  const ownerId = firstText(data?.gmfn_id, gmfnId).toUpperCase();
+  const marketplace = firstText(data?.community_name, shop?.shop_name, shop?.name, "GSN Marketplace");
+  const productName = firstText(product?.name, product?.description, "Public shop item");
+  const price = product ? formatPrice(product?.price, product?.currency) : "";
+  const title = product ? `${productName} | ${marketplace}` : `${marketplace} | GSN public shop`;
+  const description = product
+    ? "Trusted GSN shop item. Tap to open product."
+    : "Trusted GSN shop. Tap to open shop.";
+  const targetHash = product ? `#shop-block-${block || 1}` : "#shop-diaries";
+  const targetSearch = product ? `?product_id=${encodeURIComponent(String(product.id))}` : "";
+  const targetUrl = frontendUrl(`/shop/${encodeURIComponent(ownerId)}`, targetSearch, targetHash);
+  const imageUrl = frontendUrl(
+    `/shop/${encodeURIComponent(ownerId)}/share-card.png`,
+    product
+      ? `?product_id=${encodeURIComponent(String(product.id))}&block=${encodeURIComponent(String(block || 1))}`
+      : ""
+  );
+
+  return {
+    title,
+    description,
+    imageUrl,
+    targetUrl,
+  };
+}
+
+function metaTags(meta) {
+  const title = escapeHtml(meta.title);
+  const description = escapeHtml(meta.description);
+  const imageUrl = escapeHtml(meta.imageUrl);
+  const targetUrl = escapeHtml(meta.targetUrl);
+
+  return [
+    `<title>${title}</title>`,
+    `<meta name="description" content="${description}" />`,
+    `<link rel="canonical" href="${targetUrl}" />`,
+    `<meta property="og:title" content="${title}" />`,
+    `<meta property="og:description" content="${description}" />`,
+    `<meta property="og:image" content="${imageUrl}" />`,
+    `<meta property="og:image:secure_url" content="${imageUrl}" />`,
+    `<meta property="og:image:type" content="image/png" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:url" content="${targetUrl}" />`,
+    `<meta property="og:type" content="website" />`,
+    `<meta name="twitter:card" content="summary_large_image" />`,
+    `<meta name="twitter:title" content="${title}" />`,
+    `<meta name="twitter:description" content="${description}" />`,
+    `<meta name="twitter:image" content="${imageUrl}" />`,
+  ].join("\n    ");
+}
+
+async function indexHtmlWithMeta(meta) {
+  const indexHtml = await fs.readFile(indexPath, "utf8");
+  const cleaned = indexHtml
+    .replace(/<title>[\s\S]*?<\/title>/i, "")
+    .replace(/\s*<meta\s+name="description"[\s\S]*?>/gi, "")
+    .replace(/\s*<link\s+rel="canonical"[\s\S]*?>/gi, "")
+    .replace(/\s*<meta\s+(?:property|name)="(?:og|twitter):[\s\S]*?>/gi, "");
+
+  return cleaned.replace("</head>", `    ${metaTags(meta)}\n  </head>`);
+}
+
+async function serveShopHtml(res, gmfnId, searchParams) {
+  try {
+    const html = await indexHtmlWithMeta(
+      await fetchShopMeta(gmfnId, searchParams.get("product_id") || "")
+    );
+    send(res, 200, html, "text/html; charset=utf-8", {
+      "Cache-Control": "public, max-age=300",
+    });
+  } catch {
+    createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
+  }
+}
+
+async function serveShareCardProxy(res, gmfnId, searchParams) {
+  try {
+    const url = new URL(apiUrl(`/share/shop/${encodeURIComponent(gmfnId)}/card.png`));
+    for (const key of ["product_id", "block"]) {
+      const value = searchParams.get(key);
+      if (value) url.searchParams.set(key, value);
+    }
+
+    const response = await fetch(url, {
+      headers: { accept: "image/png" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!response.ok) throw new Error(`Preview card failed: ${response.status}`);
+
+    const bytes = Buffer.from(await response.arrayBuffer());
+    send(res, 200, bytes, "image/png", {
+      "Cache-Control": "public, max-age=300",
+    });
+  } catch {
+    const fallback = path.join(distRoot, "gsn-share-poster.svg");
+    if (existsSync(fallback)) {
+      createReadStream(fallback).pipe(writeHead(res, 200, "image/svg+xml; charset=utf-8"));
+      return;
+    }
+    send(res, 404, "Preview card unavailable", "text/plain; charset=utf-8");
+  }
+}
+
+function writeHead(res, status, contentType, extraHeaders = {}) {
+  res.writeHead(status, {
+    "Content-Type": contentType,
+    "X-Content-Type-Options": "nosniff",
+    ...extraHeaders,
+  });
+  return res;
+}
+
+function send(res, status, body, contentType, extraHeaders = {}) {
+  writeHead(res, status, contentType, extraHeaders);
+  res.end(body);
+}
+
+function safeStaticPath(urlPathname) {
+  try {
+    const decoded = decodeURIComponent(urlPathname);
+    const target = path.normalize(path.join(distRoot, decoded));
+    return target.startsWith(distRoot) ? target : "";
+  } catch {
+    return "";
+  }
+}
+
+async function serveStaticOrFallback(res, urlPathname) {
+  const target = safeStaticPath(urlPathname);
+  if (target && existsSync(target)) {
+    const stat = await fs.stat(target);
+    if (stat.isFile()) {
+      const contentType = mimeTypes.get(path.extname(target).toLowerCase()) || "application/octet-stream";
+      createReadStream(target).pipe(writeHead(res, 200, contentType, {
+        "Cache-Control": urlPathname.startsWith("/assets/") ? "public, max-age=31536000, immutable" : "public, max-age=300",
+      }));
+      return;
+    }
+  }
+  createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
+}
+
+createServer(async (req, res) => {
+  try {
+    const url = new URL(req.url || "/", publicFrontendOrigin);
+    const match = url.pathname.match(/^\/shop\/([^/]+)(?:\/share-card\.png)?$/);
+    if (match && url.pathname.endsWith("/share-card.png")) {
+      await serveShareCardProxy(res, decodeURIComponent(match[1]), url.searchParams);
+      return;
+    }
+    if (match) {
+      await serveShopHtml(res, decodeURIComponent(match[1]), url.searchParams);
+      return;
+    }
+    await serveStaticOrFallback(res, url.pathname);
+  } catch {
+    send(res, 500, "GSN frontend server error", "text/plain; charset=utf-8");
+  }
+}).listen(Number(process.env.PORT || 4173), "0.0.0.0");

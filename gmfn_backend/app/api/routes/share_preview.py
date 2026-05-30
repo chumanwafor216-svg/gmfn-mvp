@@ -210,7 +210,19 @@ def _money_text(product: Optional[MarketplaceProduct]) -> str:
         return ""
     amount = _safe_str(getattr(product, "price", ""))
     currency = _safe_str(getattr(product, "currency", "NGN"), "NGN")
-    return f"{amount} {currency}".strip() if amount else "Price on request"
+    if not amount:
+        return "Price on request"
+
+    unit = currency.upper()
+    if unit in {"GBP", "GDP", "POUND", "POUNDS", "£"}:
+        return f"£{amount}"
+    if unit in {"USD", "$"}:
+        return f"${amount}"
+    if unit in {"EUR", "€"}:
+        return f"€{amount}"
+    if unit in {"NGN", "₦"}:
+        return f"₦{amount}"
+    return f"{amount} {unit}".strip()
 
 
 def _preview_payload(
@@ -240,9 +252,9 @@ def _preview_payload(
         else f"{shop_name} | GSN public shop"
     )
     description = (
-        f"{_money_text(product)}. {product_description or shop_description}"
+        "Trusted GSN shop item. Tap to open product."
         if product is not None
-        else shop_description
+        else "Trusted GSN shop. Tap to open shop."
     )
 
     return {
@@ -250,6 +262,7 @@ def _preview_payload(
         "owner_name": owner_name,
         "shop_name": shop_name,
         "product_line": product_line,
+        "trust_line": "Trusted product • Tap to open shop",
         "title": title,
         "description": description,
         "price": _money_text(product),
@@ -383,81 +396,93 @@ def _draw_share_card_png(
     shadow_draw.rounded_rectangle((48, 56, 1152, 598), radius=42, fill=(0, 0, 0, 78))
     image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(18)))
 
-    card_box = (42, 42, 1158, 588)
+    card_box = (44, 42, 1156, 588)
     card = _gradient_card((card_box[2] - card_box[0], card_box[3] - card_box[1]))
     mask = Image.new("L", card.size, 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, card.size[0], card.size[1]), radius=42, fill=255)
     image.paste(card, card_box[:2], mask)
     draw = ImageDraw.Draw(image)
 
-    draw.ellipse((872, 12, 1112, 252), fill="#102D45")
-    draw.ellipse((874, 358, 1186, 670), fill="#173147")
-    draw.rounded_rectangle((94, 88, 262, 150), radius=31, fill="#F7FAFF")
+    # Subtle institutional watermark pattern: shield outlines stay quiet behind content.
+    for x, y, scale in ((824, 146, 0.86), (930, 396, 1.12), (654, 462, 0.68)):
+        w = int(118 * scale)
+        h = int(142 * scale)
+        points = [
+            (x, y),
+            (x + w, y + int(44 * scale)),
+            (x + w, y + int(90 * scale)),
+            (x + int(82 * scale), y + h),
+            (x + int(36 * scale), y + h),
+            (x, y + int(90 * scale)),
+        ]
+        draw.line([*points, points[0]], fill=(255, 255, 255, 6), width=max(2, int(3 * scale)))
+
+    draw.rounded_rectangle((94, 82, 246, 138), radius=28, fill="#F7FAFF")
 
     font_label = _font(20, bold=True)
-    font_brand = _font(27, bold=True)
-    font_title = _font(52, bold=True)
-    font_section = _font(22, bold=True)
-    font_product = _font(36, bold=True)
-    font_body = _font(24, bold=True)
-    font_url = _font(20, bold=True)
-    font_price = _font(25, bold=True)
+    font_badge = _font(25, bold=True)
+    font_trusted = _font(24, bold=True)
+    font_price = _font(34, bold=True)
+    font_title = _font(74, bold=True)
+    font_market = _font(42, bold=True)
+    font_trust = _font(30, bold=True)
+    font_chip = _font(24, bold=True)
+    font_cta = _font(28, bold=True)
 
-    draw.text((130, 106), "GSN", font=font_brand, fill="#F2CF77")
-    draw.text((284, 104), "GLOBAL SUPPORT NETWORK", font=font_label, fill="#D8E7F5")
+    draw.text((130, 100), "GSN", font=font_badge, fill="#D6AA45")
+    draw.text((272, 100), "TRUSTED SHOP", font=font_trusted, fill="#F7FAFF")
 
-    draw.rounded_rectangle((94, 178, 184, 268), radius=26, fill="#0B2D4A", outline="#D6AA45", width=3)
-    draw.line((139, 205, 166, 217, 166, 236, 164, 246, 158, 256, 149, 264, 139, 270), fill="#F2CF77", width=7, joint="curve")
-    draw.line((139, 205, 112, 217, 112, 236, 114, 246, 120, 256, 129, 264, 139, 270), fill="#F2CF77", width=7, joint="curve")
-    draw.line((126, 238, 136, 248, 154, 225), fill="#F2CF77", width=7, joint="curve")
-
-    title_lines = _png_text_lines(
-        payload["shop_name"],
-        draw=draw,
-        font=font_title,
-        max_width=760,
-        max_lines=2,
-    )
-    _draw_lines(draw, title_lines, x=214, y=198, font=font_title, fill="#FFFFFF", gap=6)
-
-    block_label = f"Block {int(block)}" if block else "Public shop"
-    draw.text((94, 326), block_label.upper(), font=font_section, fill="#F2CF77")
+    price = payload["price"]
+    if price:
+        draw.rounded_rectangle((918, 82, 1096, 144), radius=31, fill="#F2C766")
+        price_width = _text_width(draw, price, font_price)
+        draw.text((918 + (178 - price_width) / 2, 96), price, font=font_price, fill="#07172C")
 
     product_lines = _png_text_lines(
         payload["product_line"],
         draw=draw,
-        font=font_product,
-        max_width=680,
+        font=font_title,
+        max_width=720,
         max_lines=2,
     )
-    after_product = _draw_lines(draw, product_lines, x=94, y=378, font=font_product, fill="#FFFFFF", gap=5)
+    after_title = _draw_lines(draw, product_lines, x=96, y=198, font=font_title, fill="#FFFFFF", gap=8)
 
-    desc_lines = _png_text_lines(
-        payload["description"],
+    market_lines = _png_text_lines(
+        payload["shop_name"],
         draw=draw,
-        font=font_body,
-        max_width=720,
-        max_lines=3,
+        font=font_market,
+        max_width=700,
+        max_lines=2,
     )
-    _draw_lines(draw, desc_lines, x=94, y=after_product + 14, font=font_body, fill="#D8E7F5", gap=6)
+    after_market = _draw_lines(draw, market_lines, x=100, y=after_title + 8, font=font_market, fill="#D8E7F5", gap=5)
 
-    price = payload["price"]
-    if price:
-        draw.rounded_rectangle((892, 306, 1110, 382), radius=38, fill="#F2C766")
-        price_width = _text_width(draw, price, font_price)
-        draw.text((892 + (218 - price_width) / 2, 330), price, font=font_price, fill="#07172C")
-
-    draw.rounded_rectangle((94, 520, 1106, 564), radius=22, fill="#0B2D4A", outline="#254B69", width=2)
-    printed_url = target_url.replace("https://", "")
-    url_lines = _png_text_lines(
-        printed_url,
+    trust_lines = _png_text_lines(
+        payload.get("trust_line", "Trusted product • Tap to open shop"),
         draw=draw,
-        font=font_url,
-        max_width=540,
+        font=font_trust,
+        max_width=720,
         max_lines=1,
     )
-    draw.text((124, 532), url_lines[0], font=font_url, fill="#D8E7F5")
-    draw.text((690, 532), payload["gmfn_id"], font=font_url, fill="#F2CF77")
+    _draw_lines(draw, trust_lines, x=100, y=after_market + 22, font=font_trust, fill="#F2CF77", gap=0)
+
+    cta_center = (936, 326)
+    draw.ellipse((872, 262, 1000, 390), fill="#D6AA45")
+    draw.line((908, 326, 958, 326), fill="#07172C", width=11)
+    draw.line((942, 306, 964, 326, 942, 346), fill="#07172C", width=11, joint="curve")
+    draw.ellipse((908, 292, 922, 306), fill="#07172C")
+    draw.line((915, 306, 915, 350), fill="#07172C", width=8)
+    cta_text = "TAP TO OPEN"
+    cta_width = _text_width(draw, cta_text, font_cta)
+    draw.text((cta_center[0] - cta_width / 2, 410), cta_text, font=font_cta, fill="#FFFFFF")
+
+    block_label = f"Block {int(block)}" if block else "Public shop"
+    chip_y = 502
+    draw.rounded_rectangle((94, chip_y, 240, chip_y + 56), radius=28, fill="#F7FAFF")
+    draw.text((125, chip_y + 15), block_label, font=font_chip, fill="#07172C")
+    gmfn_text = payload["gmfn_id"]
+    gmfn_width = int(_text_width(draw, gmfn_text, font_chip))
+    draw.rounded_rectangle((266, chip_y, 326 + gmfn_width, chip_y + 56), radius=28, fill="#0B2D4A", outline="#D6AA45", width=2)
+    draw.text((296, chip_y + 15), gmfn_text, font=font_chip, fill="#F2CF77")
 
     out = BytesIO()
     image.convert("RGB").save(out, format="PNG", optimize=True)
@@ -550,11 +575,9 @@ def public_shop_share_card(
     db: Session = Depends(get_db),
 ) -> Response:
     payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=product_id)
-    target_url = _shop_frontend_url(payload["gmfn_id"], product_id=product_id, block=block)
     title_lines = _svg_text_lines(payload["shop_name"], max_chars=26, max_lines=2)
     product_lines = _svg_text_lines(payload["product_line"], max_chars=34, max_lines=2)
     desc_lines = _svg_text_lines(payload["description"], max_chars=58, max_lines=3)
-    url_lines = _svg_text_lines(target_url.replace("https://", ""), max_chars=54, max_lines=2)
     price = payload["price"]
     block_label = f"Block {int(block)}" if block else "Public shop"
 
@@ -598,9 +621,12 @@ def public_shop_share_card(
   <text x="94" y="326" fill="#F2CF77" font-size="22" font-weight="950" letter-spacing="3" font-family="Arial, sans-serif">{escape(block_label.upper())}</text>
   {tspans(product_lines, x=94, y=382, size=34, color="#FFFFFF", weight=950)}
   {tspans(desc_lines, x=94, y=450, size=23, color="#D8E7F5", weight=750)}
-  <rect x="94" y="520" width="1012" height="44" rx="22" fill="#FFFFFF" opacity="0.12"/>
-  <text x="124" y="549" fill="#F8FBFF" font-size="20" font-weight="850" font-family="Arial, sans-serif">{escape(url_lines[0])}</text>
-  <text x="690" y="549" fill="#F2CF77" font-size="19" font-weight="950" font-family="Arial, sans-serif">{escape(payload["gmfn_id"])}</text>
+  <rect x="94" y="512" width="146" height="56" rx="28" fill="#FFFFFF"/>
+  <text x="124" y="548" fill="#07172C" font-size="22" font-weight="950" font-family="Arial, sans-serif">{escape(block_label)}</text>
+  <rect x="266" y="512" width="266" height="56" rx="28" fill="#0B2D4A" stroke="#D6AA45" stroke-width="2"/>
+  <text x="296" y="548" fill="#F2CF77" font-size="22" font-weight="950" font-family="Arial, sans-serif">{escape(payload["gmfn_id"])}</text>
+  <circle cx="954" cy="400" r="62" fill="url(#gold)"/>
+  <text x="860" y="510" fill="#FFFFFF" font-size="30" font-weight="950" font-family="Arial, sans-serif">TAP TO OPEN</text>
   {f'<rect x="910" y="305" width="196" height="76" rx="38" fill="url(#gold)"/>' if price else ''}
   {f'<text x="934" y="356" fill="#07172C" font-size="24" font-weight="950" font-family="Arial, sans-serif">{escape(price)}</text>' if price else ''}
 </svg>"""

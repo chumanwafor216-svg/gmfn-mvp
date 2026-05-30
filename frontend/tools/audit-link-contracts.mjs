@@ -363,8 +363,8 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopSharePath\(params:[\s\S]*?query\.set\("product_id", productId\)[\s\S]*?query\.set\("block", String\(Math\.trunc\(blockNumber\)\)\)[\s\S]*?return `\/share\/shop\/\$\{encodeURIComponent\(ownerId\)\}\$\{suffix \? `\?\$\{suffix\}` : ""\}`;[\s\S]*?export function publicShopShareUrl\(params:[\s\S]*?return path \? publicApiUrl\(path\) : "";/,
-  "Outward public shop sharing must use the backend share-preview poster route while preserving product and block context."
+  /export function publicShopSharePath\(params:[\s\S]*?return publicShopBlockPath\(params\);[\s\S]*?export function publicShopShareUrl\(params:[\s\S]*?return path \? shareablePublicFrontendUrl\(path\) : "";/,
+  "Outward public shop sharing must use the frontend public shop route so WhatsApp previews resolve from gmfn-frontend.onrender.com while preserving product and block context."
 );
 
 assertContains(
@@ -533,7 +533,7 @@ assertContains(
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?Public shop poster link copied\.[\s\S]*?Public shop block poster link copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item poster link copied\. It opens this item inside the Shop Diaries\./,
-  "Shop Assets copy actions must copy poster-preview Shop Diaries and exact block/item links with honest feedback."
+  "Shop Assets copy actions must copy frontend-domain preview-ready Shop Diaries and exact block/item links with honest feedback."
 );
 
 assertContains(
@@ -569,7 +569,13 @@ assertNotContains(
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /const absoluteShopShareLink = useMemo[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\);[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
-  "Public Shop Gallery copy must block failed public-shop links and copy the poster-preview route only after clipboard success."
+  "Public Shop Gallery copy must block failed public-shop links and copy the frontend-domain preview-ready route only after clipboard success."
+);
+
+assertContains(
+  "server.mjs",
+  /const publicFrontendOrigin[\s\S]*?gmfn-frontend\.onrender\.com[\s\S]*?function metaTags\(meta\)[\s\S]*?og:image[\s\S]*?og:url[\s\S]*?twitter:card[\s\S]*?async function serveShopHtml[\s\S]*?async function serveShareCardProxy/,
+  "The frontend server must inject product Open Graph tags and proxy the preview image through the frontend domain for WhatsApp."
 );
 
 assertContains(

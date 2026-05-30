@@ -2,6 +2,7 @@
 
 - Route/screens affected:
   - public shop links under `/shop/:gmfnId`;
+  - frontend-hosted share metadata for `/shop/:gmfnId`;
   - backend share-preview routes under `/share/shop/:gmfnId`;
   - owner/public shop copy and share controls in Marketplace, Shop Assets, and
     public Shop Gallery.
@@ -14,14 +15,29 @@
   - the Render frontend is a static site that rewrites every route to
     `index.html`, so React alone cannot produce per-product WhatsApp previews;
   - WhatsApp needs scrapeable metadata before the React app loads.
+- Current hardening:
+  - outward shop/product sharing now uses the real frontend `/shop/:gmfnId`
+    route again, not the API `/share/...` route;
+  - added `frontend/server.mjs`, a small Node frontend server that serves the
+    built React app but injects crawler-readable product Open Graph metadata
+    for `/shop/:gmfnId`;
+  - `/shop/:gmfnId/share-card.png` proxies the generated PNG through the
+    frontend domain, so WhatsApp sees `gmfn-frontend.onrender.com` for both
+    `og:url` and `og:image`;
+  - `render.yaml` moves `gmfn-frontend` from static runtime to Node runtime
+    with `npm start`, because static hosting cannot satisfy per-product
+    frontend-domain preview metadata.
 - Updated backend:
   - added `app/api/routes/share_preview.py`;
   - `/share/shop/{gmfn_id}` returns Open Graph/Twitter metadata for the shop or
     product and redirects human visitors to the actual frontend shop route;
   - `/share/shop/{gmfn_id}/card.png` renders a branded GSN poster card as PNG
     for WhatsApp/social scrapers;
+  - the PNG card now uses the institutional preview structure:
+    GSN + Trusted Shop, product name, marketplace, price pill, trust line,
+    Tap to open CTA, and Block / GMFN ID chips;
   - `/share/shop/{gmfn_id}/card.svg` remains as a lightweight fallback/debug
-    poster with the same public shop/product link printed on it;
+    poster without exposing the raw long URL;
   - added route tests in `tests/test_share_preview.py`.
 - Updated frontend:
   - `index.html` now has a real `GSN Public Shop` title and default share
@@ -29,8 +45,8 @@
   - added `public/gsn-share-poster.svg` as the default frontend fallback card;
   - added `publicShopShareUrl()` in `src/lib/publicLinks.ts`;
   - Shop Gallery, Shop Assets, and Marketplace copy/share actions now use the
-    backend share-preview URL for outward sharing while visible/open links still
-    land on the real public shop route.
+    frontend public shop URL for outward sharing, with the Node frontend server
+    providing WhatsApp-ready product metadata.
 - Updated guardrails:
   - `audit-link-contracts` now requires the backend poster-preview share route
     for outward public shop sharing.
