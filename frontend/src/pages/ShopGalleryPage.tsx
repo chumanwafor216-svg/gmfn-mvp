@@ -16,9 +16,9 @@ import {
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
-  publicShopBlockUrl,
   publicShopDiariesUrl,
   publicShopPath,
+  publicShopShareUrl,
 } from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
@@ -1508,6 +1508,11 @@ export default function ShopGalleryPage() {
     return ownerId ? publicShopDiariesUrl(ownerId) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
+  const absoluteShopShareLink = useMemo(() => {
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    return ownerId ? publicShopShareUrl({ gmfnId: ownerId }) : "";
+  }, [effectiveShop?.gmfnId, gmfnId]);
+
   const shopLoadFailed = Boolean(error);
   const ownerSessionPresent = Boolean(getAccessToken());
   const shopOwnerGmfnId = firstMeaningful(
@@ -1598,16 +1603,16 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    if (!absoluteShopLink) {
+    if (!absoluteShopShareLink) {
       setNotice({ tone: "error", text: "Public shop link is not ready yet." });
       return;
     }
 
-    const copied = await safeCopy(absoluteShopLink);
+    const copied = await safeCopy(absoluteShopShareLink);
     setNotice({
       tone: copied ? "success" : "error",
       text: copied
-        ? "Public shop link copied."
+        ? "Public shop poster link copied."
         : "Clipboard copy was blocked. Use the visible public shop link instead.",
     });
   }
@@ -1638,15 +1643,16 @@ export default function ShopGalleryPage() {
     void shareOrCopy({
       title: shopTitle,
       text: shopText,
-      url: absoluteShopLink,
-      successText: "Public shop share ready.",
+      url: absoluteShopShareLink || absoluteShopLink,
+      successText: "Public shop poster share ready.",
     });
   }
 
   function shareProduct(product: ShopProduct) {
     const blockLabel = publicShopBlockLabel(product);
-    const productUrl = publicShopBlockUrl({
-      gmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    const productUrl = publicShopShareUrl({
+      gmfnId: ownerId,
       productId: product.id,
       block: product.slotNumber,
     });

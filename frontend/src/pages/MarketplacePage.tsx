@@ -14,6 +14,7 @@ import {
   publicFrontendUrl,
   publicShopDiariesUrl,
   publicShopPath,
+  publicShopShareUrl,
 } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StableButton, StableCtaLink } from "../components/StableButton";
@@ -2222,6 +2223,11 @@ export default function MarketplacePage() {
     if (!publicShopOwnerId || !publicShopRecord) return "";
     return publicShopDiariesUrl(publicShopOwnerId);
   }, [publicShopOwnerId, publicShopRecord]);
+
+  const publicShopPosterLink = useMemo(() => {
+    if (!publicShopOwnerId || !publicShopRecord) return "";
+    return publicShopShareUrl({ gmfnId: publicShopOwnerId });
+  }, [publicShopOwnerId, publicShopRecord]);
   const publicShopActionsLocked =
     !currentGmfnId || !activeCommunityId || preparingPublicShopLink;
 
@@ -2710,16 +2716,34 @@ export default function MarketplacePage() {
   }
 
   async function copyFreshPublicShopLink() {
-    const link = await getFreshPublicShopLink();
+    const freshLink = await getFreshPublicShopLink();
+    if (!freshLink && !publicShopViewLink) {
+      copyMarketplaceLink("", "", publicShopUnavailableText);
+      return;
+    }
+    const link =
+      publicShopPosterLink ||
+      (publicShopOwnerId || currentGmfnId
+        ? publicShopShareUrl({ gmfnId: publicShopOwnerId || currentGmfnId })
+        : freshLink);
     copyMarketplaceLink(
       link,
-      "Public shop link refreshed and copied.",
+      "Public shop poster link refreshed and copied.",
       publicShopUnavailableText
     );
   }
 
   async function emailFreshPublicShopLink() {
-    const link = await getFreshPublicShopLink();
+    const freshLink = await getFreshPublicShopLink();
+    if (!freshLink && !publicShopViewLink) {
+      openMarketplaceEmail("", "", "", publicShopUnavailableText);
+      return;
+    }
+    const link =
+      publicShopPosterLink ||
+      (publicShopOwnerId || currentGmfnId
+        ? publicShopShareUrl({ gmfnId: publicShopOwnerId || currentGmfnId })
+        : freshLink);
     openMarketplaceEmail(
       shopEmailSubject,
       ["Here is the public GSN shop face.", "", link].join("\n"),

@@ -362,6 +362,12 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/publicLinks.ts",
+  /export function publicShopSharePath\(params:[\s\S]*?query\.set\("product_id", productId\)[\s\S]*?query\.set\("block", String\(Math\.trunc\(blockNumber\)\)\)[\s\S]*?return `\/share\/shop\/\$\{encodeURIComponent\(ownerId\)\}\$\{suffix \? `\?\$\{suffix\}` : ""\}`;[\s\S]*?export function publicShopShareUrl\(params:[\s\S]*?return path \? publicApiUrl\(path\) : "";/,
+  "Outward public shop sharing must use the backend share-preview poster route while preserving product and block context."
+);
+
+assertContains(
   "src/lib/joinLinks.ts",
   /return canonicalPublicFrontendUrl\(`\/start\/join\/\$\{encodeURIComponent\(cleanCode\)\}`\);/,
   "Invite links must canonicalize to the public join route."
@@ -526,8 +532,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /buildProductDeepLink\([\s\S]*?publicShopBlockUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?Public shop diaries link copied\.[\s\S]*?Public shop block link copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item link copied\. It opens this item inside the Shop Diaries\./,
-  "Shop Assets copy actions must copy Shop Diaries and exact block/item links with honest feedback."
+  /buildShopLink\(gmfnId: string\)[\s\S]*?publicShopShareUrl\(\{ gmfnId \}\)[\s\S]*?buildProductDeepLink\([\s\S]*?publicShopShareUrl\(\{ gmfnId, productId, block \}\)[\s\S]*?Public shop poster link copied\.[\s\S]*?Public shop block poster link copied\. It opens this block inside the Shop Diaries\.[\s\S]*?Public shop item poster link copied\. It opens this item inside the Shop Diaries\./,
+  "Shop Assets copy actions must copy poster-preview Shop Diaries and exact block/item links with honest feedback."
 );
 
 assertContains(
@@ -562,8 +568,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopLink\);[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
-  "Public Shop Gallery copy must block failed public-shop links and wait for clipboard success before reporting a valid copy."
+  /const absoluteShopShareLink = useMemo[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\);[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
+  "Public Shop Gallery copy must block failed public-shop links and copy the poster-preview route only after clipboard success."
 );
 
 assertContains(

@@ -1,3 +1,43 @@
+### Public shop poster share-preview links (2026-05-30)
+
+- Route/screens affected:
+  - public shop links under `/shop/:gmfnId`;
+  - backend share-preview routes under `/share/shop/:gmfnId`;
+  - owner/public shop copy and share controls in Marketplace, Shop Assets, and
+    public Shop Gallery.
+- Product-owner intent:
+  - pasted WhatsApp links should not show a plain `frontend` block;
+  - public shop/product links should travel with a branded poster-like preview.
+- Confirmed truth:
+  - `frontend/index.html` still had `<title>frontend</title>` and no Open Graph
+    poster metadata;
+  - the Render frontend is a static site that rewrites every route to
+    `index.html`, so React alone cannot produce per-product WhatsApp previews;
+  - WhatsApp needs scrapeable metadata before the React app loads.
+- Updated backend:
+  - added `app/api/routes/share_preview.py`;
+  - `/share/shop/{gmfn_id}` returns Open Graph/Twitter metadata for the shop or
+    product and redirects human visitors to the actual frontend shop route;
+  - `/share/shop/{gmfn_id}/card.svg` renders a branded GSN poster card with the
+    public shop/product link printed on it;
+  - added route tests in `tests/test_share_preview.py`.
+- Updated frontend:
+  - `index.html` now has a real `GSN Public Shop` title and default share
+    poster metadata instead of `frontend`;
+  - added `public/gsn-share-poster.svg` as the default frontend fallback card;
+  - added `publicShopShareUrl()` in `src/lib/publicLinks.ts`;
+  - Shop Gallery, Shop Assets, and Marketplace copy/share actions now use the
+    backend share-preview URL for outward sharing while visible/open links still
+    land on the real public shop route.
+- Updated guardrails:
+  - `audit-link-contracts` now requires the backend poster-preview share route
+    for outward public shop sharing.
+- Remaining truth:
+  - the dynamic poster is currently SVG. Most modern scrapers handle image
+    metadata, but WhatsApp behavior can vary; if WhatsApp refuses SVG in the
+    preview image, the next step is a PNG poster endpoint or static PNG
+    generation service.
+
 ### Finance secondary support evidence tightening (2026-05-30)
 
 - Route/screen affected:

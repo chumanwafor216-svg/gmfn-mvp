@@ -307,6 +307,36 @@ export function publicApiUrl(pathOrUrl: string): string {
   return `${publicOrigin}${path}`;
 }
 
+export function publicShopSharePath(params: {
+  gmfnId: string;
+  productId?: string | number | null;
+  block?: string | number | null;
+}): string {
+  const ownerId = cleanText(params.gmfnId);
+  if (!ownerId) return "";
+
+  const query = new URLSearchParams();
+  const productId = cleanText(params.productId);
+  const blockNumber = Number(params.block || 0);
+
+  if (productId) query.set("product_id", productId);
+  if (Number.isFinite(blockNumber) && blockNumber > 0) {
+    query.set("block", String(Math.trunc(blockNumber)));
+  }
+
+  const suffix = query.toString();
+  return `/share/shop/${encodeURIComponent(ownerId)}${suffix ? `?${suffix}` : ""}`;
+}
+
+export function publicShopShareUrl(params: {
+  gmfnId: string;
+  productId?: string | number | null;
+  block?: string | number | null;
+}): string {
+  const path = publicShopSharePath(params);
+  return path ? publicApiUrl(path) : "";
+}
+
 export function buildPublicWhatsAppUrl(message: string): string {
   return `https://wa.me/?text=${encodeURIComponent(cleanText(message))}`;
 }

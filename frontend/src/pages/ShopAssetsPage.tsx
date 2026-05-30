@@ -23,8 +23,7 @@ import {
   uploadMarketplaceVideoFile as uploadMarketplaceVideoFileApi,
 } from "../lib/api";
 import {
-  publicShopBlockUrl,
-  publicShopDiariesUrl,
+  publicShopShareUrl,
 } from "../lib/publicLinks";
 import { createShopGalleryCoverFromVideo } from "../lib/shopGalleryMediaProtocol";
 import { rememberShopProductMedia } from "../lib/shopProductMediaCache";
@@ -387,7 +386,7 @@ async function uploadMarketplaceVideoFile(
 
 function buildShopLink(gmfnId: string): string {
   if (!gmfnId) return "";
-  return publicShopDiariesUrl(gmfnId);
+  return publicShopShareUrl({ gmfnId });
 }
 
 function buildProductDeepLink(
@@ -396,7 +395,7 @@ function buildProductDeepLink(
   block?: number
 ): string {
   if (!gmfnId || !productId) return "";
-  return publicShopBlockUrl({ gmfnId, productId, block });
+  return publicShopShareUrl({ gmfnId, productId, block });
 }
 
 function extractProductLabel(description: string): string {
@@ -1322,7 +1321,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 onClick={() =>
                   copyText(
                     shopLink,
-                    "Public shop diaries link copied.",
+                    "Public shop poster link copied.",
                     "Public shop link is not ready yet. Refresh the shop identity, then try again."
                   )
                 }
@@ -2003,7 +2002,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                             Number(selectedPublicProduct.id),
                             selectedPublicSlot
                           ),
-                          "Public shop block link copied. It opens this block inside the Shop Diaries."
+                          "Public shop block poster link copied. It opens this block inside the Shop Diaries."
                         )
                       }
                       fullWidth
@@ -2255,7 +2254,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   onClick={() =>
                     copyText(
                       shopLink,
-                      "Public shop diaries link copied.",
+                      "Public shop poster link copied.",
                       "Public shop link is not ready yet. Refresh the shop identity, then try again."
                     )
                   }
@@ -2654,7 +2653,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                         }
                         void copyText(
                           productLink,
-                          "Public shop item link copied. It opens this item inside the Shop Diaries.",
+                          "Public shop item poster link copied. It opens this item inside the Shop Diaries.",
                           "This item link is not ready yet. Refresh the shop identity, then try again."
                         );
                       }}
