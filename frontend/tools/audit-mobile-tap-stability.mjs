@@ -268,7 +268,7 @@ if (
 }
 
 if (
-  !/const BOTTOM_NAV_SELECTOR[\s\S]*?data-gmfn-bottom-nav[\s\S]*?function coveredDashboardActionFromBottomNav\([\s\S]*?event: PointerEvent \| MouseEvent,[\s\S]*?topRoot = actionRootFromEvent\(event\)[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?coveredDashboardActionFromBottomNav\(event, endRoot\)[\s\S]*?bottom-nav-covered-dashboard-suppressed/.test(
+  !/const BOTTOM_NAV_SELECTOR[\s\S]*?data-gmfn-bottom-nav[\s\S]*?function isDashboardAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("dashboard\."\)[\s\S]*?ctaId\.startsWith\("picture-frame-tools\."\)[\s\S]*?function coveredDashboardActionFromBottomNav\([\s\S]*?event: PointerEvent \| MouseEvent,[\s\S]*?topRoot = actionRootFromEvent\(event\)[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?coveredDashboardActionFromBottomNav\(event, endRoot\)[\s\S]*?bottom-nav-covered-dashboard-suppressed/.test(
     mobileTapGuardSource
   )
 ) {
@@ -277,7 +277,7 @@ if (
     line: 1,
     label:
       "Global mobile tap guard must stop fixed bottom rail links from stealing dashboard controls underneath them",
-    text: "Expected dashboard-under-bottom-nav suppression was not found.",
+    text: "Expected dashboard/frame-tools-under-bottom-nav suppression was not found.",
   });
 }
 

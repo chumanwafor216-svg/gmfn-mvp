@@ -1,3 +1,32 @@
+### Dashboard frame button bottom-nav steal guard (2026-05-30)
+
+- Follow-up from product-owner report: "frame button lands on public shop."
+- Root cause found by code inspection:
+  - the mobile bottom navigation can be the top action when it sits over a
+    Dashboard frame control near the bottom of the phone viewport;
+  - the existing rescue path in `frontend/src/lib/mobileTapGuard.ts` only
+    treated `dashboard.*` debug ids as Dashboard-owned actions;
+  - Dashboard picture-frame controls use `picture-frame-tools.*` debug ids, so
+    a covered frame tap could still be accepted as the bottom-nav `Public Shop`
+    link.
+- Updated `frontend/src/lib/mobileTapGuard.ts`:
+  - on `/app/dashboard`, `picture-frame-tools.*` is now treated as a
+    Dashboard-owned action for the bottom-nav coverage rescue only.
+- Updated `frontend/tools/audit-mobile-tap-stability.mjs`:
+  - the tap-stability audit now protects the frame-tools rescue contract.
+- Truth/devil's advocate:
+  - this is a code-level fix for the most plausible and directly traced cause;
+  - it is not yet a live phone video proof, so the owner should retest the
+    actual frame button on the pilot device.
+- Verification:
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts tools/audit-mobile-tap-stability.mjs` passed.
+  - `npm run audit:tap-stability` passed.
+  - `npm run audit:dashboard-actions` passed.
+  - `npm run audit:button-stability` passed.
+  - `npm run audit:global-action-debugids` passed.
+  - `npm run build` passed after the known Vite/esbuild sandbox `spawn EPERM`
+    was rerun with approved escalation.
+
 ### Shared stable button child-layout rollback (2026-05-29)
 
 - Follow-up from product-owner screenshots showing severe mobile text collapse

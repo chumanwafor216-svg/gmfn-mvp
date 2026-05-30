@@ -211,7 +211,10 @@ function isBottomNavAction(root: Element | null): boolean {
 
 function isDashboardAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
-  return ctaId.startsWith("dashboard.");
+  return (
+    ctaId.startsWith("dashboard.") ||
+    ctaId.startsWith("picture-frame-tools.")
+  );
 }
 
 function coveredDashboardActionFromBottomNav(
