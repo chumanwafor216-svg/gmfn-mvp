@@ -968,15 +968,15 @@ function safeDateTime(x: any): string {
 
 function marketplaceSurface(bg: string): string {
   if (bg === "#FFFFFF") {
-    return "radial-gradient(circle at 10% 0%, rgba(33,163,101,0.10) 0%, rgba(33,163,101,0.00) 38%), radial-gradient(circle at 90% 8%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0.00) 30%), radial-gradient(circle at 16% 100%, rgba(31,115,224,0.07) 0%, rgba(31,115,224,0.00) 24%), linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 54%, var(--gsn-surface-blue) 100%)";
+    return "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 54%, var(--gsn-surface-blue) 100%)";
   }
 
   if (bg === "#FCFEFF") {
-    return "radial-gradient(circle at 12% 0%, rgba(33,163,101,0.08) 0%, rgba(33,163,101,0.00) 34%), radial-gradient(circle at 84% 8%, rgba(214,170,69,0.08) 0%, rgba(214,170,69,0.00) 24%), linear-gradient(180deg, var(--gsn-off-white) 0%, var(--gsn-blue-50) 100%)";
+    return "linear-gradient(180deg, var(--gsn-off-white) 0%, var(--gsn-blue-50) 100%)";
   }
 
   if (bg === "#F8FBFF") {
-    return "radial-gradient(circle at 88% 6%, rgba(214,170,69,0.10) 0%, rgba(214,170,69,0.00) 28%), radial-gradient(circle at 14% 12%, rgba(33,163,101,0.08) 0%, rgba(33,163,101,0.00) 26%), linear-gradient(180deg, var(--gsn-blue-50) 0%, var(--gsn-surface-blue) 100%)";
+    return "linear-gradient(180deg, var(--gsn-blue-50) 0%, var(--gsn-surface-blue) 100%)";
   }
 
   return bg;
@@ -996,7 +996,7 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 }
 
 function marketplaceProfileBackground(): string {
-  return "radial-gradient(circle at 8% 0%, rgba(33,163,101,0.16) 0%, rgba(33,163,101,0.00) 34%), radial-gradient(circle at 90% 10%, rgba(214,170,69,0.14) 0%, rgba(214,170,69,0.00) 30%), radial-gradient(circle at 84% 18%, rgba(31,115,224,0.10) 0%, rgba(31,115,224,0.00) 28%), linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 54%, var(--gsn-surface-blue) 100%)";
+  return "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 54%, var(--gsn-surface-blue) 100%)";
 }
 
 function marketplaceProfileStatStyle(): React.CSSProperties {
@@ -1023,8 +1023,7 @@ function marketplaceShellStyle(isCompact: boolean): React.CSSProperties {
     borderRadius: isCompact ? "var(--radius-lg)" : "var(--radius-xl)",
     border: "1px solid var(--gsn-border-strong)",
     isolation: "isolate",
-    background:
-      "radial-gradient(circle at 10% 0%, rgba(33,163,101,0.18) 0%, rgba(33,163,101,0.00) 32%), radial-gradient(circle at 90% 10%, rgba(214,170,69,0.13) 0%, rgba(214,170,69,0.00) 28%), radial-gradient(circle at 12% 48%, rgba(31,115,224,0.10) 0%, rgba(31,115,224,0.00) 30%), var(--page-bg)",
+    background: "var(--page-bg)",
     boxShadow: "var(--shadow-card)",
     overflow: "hidden",
   };
@@ -1036,9 +1035,8 @@ function marketplaceAuraStyle(isCompact: boolean): React.CSSProperties {
     inset: isCompact ? "-7% -38%" : "-10% -18%",
     zIndex: 0,
     pointerEvents: "none",
-    opacity: isCompact ? 0.62 : 0.56,
-    background:
-      "radial-gradient(circle at 16% 14%, rgba(33,163,101,0.12) 0%, rgba(33,163,101,0.00) 30%), radial-gradient(circle at 76% 20%, rgba(214,170,69,0.08) 0%, rgba(214,170,69,0.00) 26%), radial-gradient(circle at 58% 8%, rgba(31,115,224,0.07) 0%, rgba(31,115,224,0.00) 22%), radial-gradient(circle at 18% 46%, rgba(33,163,101,0.08) 0%, rgba(33,163,101,0.00) 30%), radial-gradient(circle at 84% 62%, rgba(214,170,69,0.06) 0%, rgba(214,170,69,0.00) 26%)",
+    opacity: 0,
+    background: "none",
     transform: "none",
     animation: "none",
     willChange: "auto",
@@ -1565,8 +1563,7 @@ function intentGuideCardStyle(): React.CSSProperties {
     marginTop: 14,
     borderRadius: 20,
     border: "1px solid rgba(16,37,59,0.10)",
-    background:
-      "radial-gradient(circle at 12% 8%, rgba(34,82,120,0.08) 0%, rgba(34,82,120,0.00) 36%), linear-gradient(180deg, #FFFFFF 0%, #F4F8FB 100%)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FB 100%)",
     padding: 14,
     boxShadow:
       "0 12px 22px rgba(10,24,49,0.055), inset 0 1px 0 rgba(255,255,255,0.76)",
@@ -1610,22 +1607,27 @@ function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsTileStyle(isCompact: boolean): React.CSSProperties {
   return {
     width: "100%",
-    height: isCompact ? 218 : 178,
-    minHeight: isCompact ? 218 : 178,
-    maxHeight: isCompact ? 218 : 178,
+    height: isCompact ? 116 : 178,
+    minHeight: isCompact ? 116 : 178,
+    maxHeight: isCompact ? 116 : 178,
     borderRadius: isCompact ? 18 : 20,
     border: "1px solid var(--gsn-border)",
     background:
       "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
     padding: isCompact ? 12 : 14,
     display: "grid",
+    gridTemplateColumns: isCompact ? "46px minmax(0, 1fr)" : "1fr",
     gridTemplateRows: isCompact
-      ? "54px 2.45em 2.35em 2.8em"
+      ? "2.35em 1.35em 1.45em"
       : "62px 2.35em 1.45em 2.7em",
-    gap: isCompact ? 7 : 9,
-    alignContent: "start",
+    gridTemplateAreas: isCompact
+      ? '"icon title" "icon metric" "icon helper"'
+      : '"icon" "title" "metric" "helper"',
+    columnGap: isCompact ? 11 : 0,
+    rowGap: isCompact ? 3 : 9,
+    alignContent: "center",
     color: "var(--gsn-text-main)",
-    textAlign: "center",
+    textAlign: isCompact ? "left" : "center",
     boxShadow: "var(--shadow-soft)",
     cursor: "pointer",
     touchAction: "manipulation",
@@ -1644,10 +1646,11 @@ function marketplaceOsTileStyle(isCompact: boolean): React.CSSProperties {
 
 function marketplaceOsIconStyle(bg: string, isCompact = false): React.CSSProperties {
   return {
-    width: isCompact ? 54 : 62,
-    height: isCompact ? 54 : 62,
-    borderRadius: isCompact ? 17 : 19,
-    margin: "0 auto",
+    gridArea: "icon",
+    width: isCompact ? 46 : 62,
+    height: isCompact ? 46 : 62,
+    borderRadius: isCompact ? 15 : 19,
+    margin: isCompact ? 0 : "0 auto",
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -1661,6 +1664,7 @@ function marketplaceOsIconStyle(bg: string, isCompact = false): React.CSSPropert
 
 function marketplaceOsTileTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
+    gridArea: "title",
     minWidth: 0,
     display: "-webkit-box",
     WebkitLineClamp: 2,
@@ -1681,9 +1685,10 @@ function marketplaceOsTileMetricStyle(
   isCompact: boolean
 ): React.CSSProperties {
   return {
+    gridArea: "metric",
     minWidth: 0,
     display: "-webkit-box",
-    WebkitLineClamp: 2,
+    WebkitLineClamp: isCompact ? 1 : 2,
     WebkitBoxOrient: "vertical",
     color,
     fontSize: isCompact ? 15 : 20,
@@ -1699,9 +1704,10 @@ function marketplaceOsTileMetricStyle(
 function marketplaceOsTileHelperStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...helperText(),
+    gridArea: "helper",
     minWidth: 0,
     display: "-webkit-box",
-    WebkitLineClamp: 2,
+    WebkitLineClamp: isCompact ? 1 : 2,
     WebkitBoxOrient: "vertical",
     overflow: "hidden",
     fontSize: isCompact ? 11 : 12,
@@ -3556,8 +3562,8 @@ export default function MarketplacePage() {
                   fontSize: isCompact ? 30 : 46,
                   fontWeight: 950,
                   lineHeight: 1.02,
-                  overflowWrap: "anywhere",
-                  wordBreak: "break-word",
+                  overflowWrap: "break-word",
+                  wordBreak: "normal",
                 }}
               >
                 {communityName(selectedCommunity)}
@@ -3615,9 +3621,9 @@ export default function MarketplacePage() {
             style={{
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "repeat(2, minmax(0, 1fr))"
+                ? "1fr"
                 : "repeat(4, minmax(0, 1fr))",
-              gap: isCompact ? 10 : 12,
+              gap: isCompact ? 8 : 12,
             }}
           >
             <StableButton
@@ -3854,7 +3860,7 @@ export default function MarketplacePage() {
                   Banking Rails
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Review payment rails, bank transfer routes, and settlement setup.
+                  Payment rails, bank transfers, and settlement setup.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -3888,7 +3894,7 @@ export default function MarketplacePage() {
                   Loan Process
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Start support, check readiness, choose guarantors, and continue the loan workbench.
+                  Start support, check readiness, and continue the workbench.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -3950,7 +3956,7 @@ export default function MarketplacePage() {
                   Demand Box
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Open requests and community needs when demand appears.
+                  Open community requests and visible needs.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -3980,7 +3986,7 @@ export default function MarketplacePage() {
                   Records & Links
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Join links, public faces, and controlled outward links.
+                  Join links, public faces, and controlled links.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -4013,10 +4019,10 @@ export default function MarketplacePage() {
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                {intentGuideOpen ? "Hide extra marketplace tools" : "Open extra marketplace tools"}
+                {intentGuideOpen ? "Hide more tools" : "More marketplace tools"}
               </span>
               <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                Use this only when the four main blocks are not enough.
+                CCI, TrustSlip, shop, invite, identity, and messages.
               </span>
             </span>
             <span aria-hidden="true" style={marketplaceOsArrowStyle()}>

@@ -106,6 +106,12 @@ assertNotContains(
   "Marketplace front action marks must not use emoji or text chevrons; use MarketplaceGlyph instead."
 );
 
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /radial-gradient/g,
+  "Marketplace page polish must avoid decorative radial glow/orb backgrounds."
+);
+
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /debugId="marketplace\.links\.join\.copy"[\s\S]*?Join invite link is not ready yet\.[\s\S]*?debugId="marketplace\.links\.community-desk\.copy"[\s\S]*?Community access desk link is not ready yet\.[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?publicShopActionUnavailableMessage/,
@@ -156,7 +162,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceOsTileStyle[\s\S]*?height: isCompact \? 218 : 178[\s\S]*?maxHeight: isCompact \? 218 : 178[\s\S]*?54px 2\.45em 2\.35em 2\.8em[\s\S]*?function marketplaceOsTileMetricStyle[\s\S]*?WebkitLineClamp: 2[\s\S]*?whiteSpace: "normal"[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
+  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceOsTileStyle[\s\S]*?height: isCompact \? 116 : 178[\s\S]*?maxHeight: isCompact \? 116 : 178[\s\S]*?gridTemplateColumns: isCompact \? "46px minmax\(0, 1fr\)" : "1fr"[\s\S]*?2\.35em 1\.35em 1\.45em[\s\S]*?gridTemplateAreas[\s\S]*?icon title[\s\S]*?textAlign: isCompact \? "left" : "center"[\s\S]*?function marketplaceOsIconStyle[\s\S]*?gridArea: "icon"[\s\S]*?width: isCompact \? 46 : 62[\s\S]*?function marketplaceOsTileMetricStyle[\s\S]*?WebkitLineClamp: isCompact \? 1 : 2[\s\S]*?whiteSpace: "normal"[\s\S]*?function marketplaceOsTileHelperStyle[\s\S]*?WebkitLineClamp: isCompact \? 1 : 2[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
   "Marketplace front-page tiles and operating-lane rows must keep fixed phone-safe action geometry with enough reserve so text cannot escape button boxes."
 );
 

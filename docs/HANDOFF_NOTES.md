@@ -1,3 +1,29 @@
+### Marketplace mobile layout tightening (2026-05-30)
+
+- Route/screen affected:
+  - `/app/marketplace`.
+- Follow-up from product-owner request to tighten the Marketplace page after
+  the action-icon polish pass.
+- Confirmed truth:
+  - the Marketplace button inventory stayed stable at 49 source actions;
+  - the phone top launcher area still used two-column tall cards, which made
+    labels more likely to wrap awkwardly;
+  - the route still carried decorative radial glow backgrounds, which conflicts
+    with the current no-orb/no-bokeh UI rule.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - changed the four primary Marketplace launchers to compact horizontal rows
+    on phone while keeping desktop as a four-column launcher grid;
+  - shortened several operating-lane helper lines and the extra-tools label;
+  - replaced Marketplace radial glow surfaces with calm linear/background-token
+    surfaces;
+  - kept all debug IDs, routes, and the Marketplace action count unchanged.
+- Updated guardrails:
+  - `audit-marketplace-actions` now locks the tighter phone launcher geometry
+    and rejects `radial-gradient` on the Marketplace page.
+- Remaining truth:
+  - this is a source/audit polish pass. It still needs a live Render phone pass
+    to confirm visual feel and thumb behavior on the actual device.
+
 ### Marketplace action icon polish (2026-05-30)
 
 - Route/screen affected:
