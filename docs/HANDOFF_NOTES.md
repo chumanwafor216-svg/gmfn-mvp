@@ -18,8 +18,10 @@
   - added `app/api/routes/share_preview.py`;
   - `/share/shop/{gmfn_id}` returns Open Graph/Twitter metadata for the shop or
     product and redirects human visitors to the actual frontend shop route;
-  - `/share/shop/{gmfn_id}/card.svg` renders a branded GSN poster card with the
-    public shop/product link printed on it;
+  - `/share/shop/{gmfn_id}/card.png` renders a branded GSN poster card as PNG
+    for WhatsApp/social scrapers;
+  - `/share/shop/{gmfn_id}/card.svg` remains as a lightweight fallback/debug
+    poster with the same public shop/product link printed on it;
   - added route tests in `tests/test_share_preview.py`.
 - Updated frontend:
   - `index.html` now has a real `GSN Public Shop` title and default share
@@ -33,10 +35,11 @@
   - `audit-link-contracts` now requires the backend poster-preview share route
     for outward public shop sharing.
 - Remaining truth:
-  - the dynamic poster is currently SVG. Most modern scrapers handle image
-    metadata, but WhatsApp behavior can vary; if WhatsApp refuses SVG in the
-    preview image, the next step is a PNG poster endpoint or static PNG
-    generation service.
+  - the dynamic share-preview metadata now points to PNG, which is safer for
+    WhatsApp than SVG;
+  - WhatsApp may still cache old link previews, so a stale preview after deploy
+    is not proof the route failed. Test with a freshly copied share-preview URL
+    or wait for cache expiry.
 
 ### Finance secondary support evidence tightening (2026-05-30)
 

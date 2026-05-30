@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from io import BytesIO
 from html import escape
 from textwrap import wrap
 from typing import Any, Optional
@@ -8,6 +9,7 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, Response
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from sqlalchemy.orm import Session
 
 from app.db.models import MarketplaceProduct, MarketplaceShop, User
@@ -18,6 +20,8 @@ router = APIRouter(prefix="/share", tags=["share-preview"])
 PUBLIC_FRONTEND_ORIGIN = "https://gmfn-frontend.onrender.com"
 PUBLIC_API_ORIGIN = "https://gmfn-api.onrender.com"
 PUBLIC_VISIBILITY_MODES = ("community_visible", "public", "community")
+CARD_WIDTH = 1200
+CARD_HEIGHT = 630
 
 
 def _safe_str(value: Any, default: str = "") -> str:
@@ -175,7 +179,7 @@ def _share_card_url(
     block: Optional[int] = None,
 ) -> str:
     base = _public_api_origin(request)
-    path = f"/share/shop/{quote(_safe_str(gmfn_id), safe='')}/card.svg"
+    path = f"/share/shop/{quote(_safe_str(gmfn_id), safe='')}/card.png"
     query: list[str] = []
     if product_id:
         query.append(f"product_id={quote(str(product_id), safe='')}")
@@ -260,6 +264,206 @@ def _svg_text_lines(text: str, *, max_chars: int, max_lines: int) -> list[str]:
     return [*lines[: max_lines - 1], f"{lines[max_lines - 1].rstrip()}..."]
 
 
+def _font(size: int, *, bold: bool = False) -> ImageFont.ImageFont:
+    names = (
+        ("arialbd.ttf", "Arial Bold.ttf", "DejaVuSans-Bold.ttf", "LiberationSans-Bold.ttf")
+        if bold
+        else ("arial.ttf", "Arial.ttf", "DejaVuSans.ttf", "LiberationSans-Regular.ttf")
+    )
+    roots = (
+        "",
+        "C:/Windows/Fonts/",
+        "/usr/share/fonts/truetype/dejavu/",
+        "/usr/share/fonts/truetype/liberation2/",
+        "/usr/share/fonts/truetype/msttcorefonts/",
+    )
+    for root in roots:
+        for name in names:
+            try:
+                return ImageFont.truetype(f"{root}{name}", size=size)
+            except OSError:
+                continue
+    return ImageFont.load_default()
+
+
+def _text_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.ImageFont) -> float:
+    try:
+        return float(draw.textlength(text, font=font))
+    except Exception:
+        return float(draw.textbbox((0, 0), text, font=font)[2])
+
+
+def _png_text_lines(
+    text: str,
+    *,
+    draw: ImageDraw.ImageDraw,
+    font: ImageFont.ImageFont,
+    max_width: int,
+    max_lines: int,
+) -> list[str]:
+    clean = " ".join(_safe_str(text).split())
+    if not clean:
+        return [""]
+
+    lines: list[str] = []
+    current = ""
+    for word in clean.split(" "):
+        candidate = f"{current} {word}".strip()
+        if not current or _text_width(draw, candidate, font) <= max_width:
+            current = candidate
+            continue
+        lines.append(current)
+        current = word
+        if len(lines) >= max_lines:
+            break
+
+    if len(lines) < max_lines and current:
+        lines.append(current)
+
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+
+    if _text_width(draw, lines[-1], font) > max_width:
+        line = lines[-1]
+        while line and _text_width(draw, f"{line}...", font) > max_width:
+            line = line[:-1].rstrip()
+        lines[-1] = f"{line}..." if line else "..."
+    elif len(clean.split(" ")) > len(" ".join(lines).split(" ")):
+        line = lines[-1]
+        while line and _text_width(draw, f"{line}...", font) > max_width:
+            line = line[:-1].rstrip()
+        lines[-1] = f"{line}..." if line else "..."
+
+    return lines or [""]
+
+
+def _draw_lines(
+    draw: ImageDraw.ImageDraw,
+    lines: list[str],
+    *,
+    x: int,
+    y: int,
+    font: ImageFont.ImageFont,
+    fill: str,
+    gap: int,
+) -> int:
+    current_y = y
+    for line in lines:
+        draw.text((x, current_y), line, font=font, fill=fill)
+        bbox = draw.textbbox((x, current_y), line or "Ag", font=font)
+        current_y += max(1, bbox[3] - bbox[1]) + gap
+    return current_y
+
+
+def _gradient_card(size: tuple[int, int]) -> Image.Image:
+    width, height = size
+    image = Image.new("RGBA", size, "#061827")
+    pixels = image.load()
+    for y in range(height):
+        ratio = y / max(1, height - 1)
+        r = int(6 + ratio * 5)
+        g = int(24 + ratio * 21)
+        b = int(39 + ratio * 35)
+        for x in range(width):
+            pixels[x, y] = (r, g, b, 255)
+    return image
+
+
+def _draw_share_card_png(
+    payload: dict[str, str],
+    *,
+    target_url: str,
+    block: Optional[int],
+) -> bytes:
+    image = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), "#F7FAFF")
+    draw = ImageDraw.Draw(image)
+
+    shadow = Image.new("RGBA", (CARD_WIDTH, CARD_HEIGHT), (0, 0, 0, 0))
+    shadow_draw = ImageDraw.Draw(shadow)
+    shadow_draw.rounded_rectangle((48, 56, 1152, 598), radius=42, fill=(0, 0, 0, 78))
+    image.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(18)))
+
+    card_box = (42, 42, 1158, 588)
+    card = _gradient_card((card_box[2] - card_box[0], card_box[3] - card_box[1]))
+    mask = Image.new("L", card.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, card.size[0], card.size[1]), radius=42, fill=255)
+    image.paste(card, card_box[:2], mask)
+    draw = ImageDraw.Draw(image)
+
+    draw.ellipse((872, 12, 1112, 252), fill="#102D45")
+    draw.ellipse((874, 358, 1186, 670), fill="#173147")
+    draw.rounded_rectangle((94, 88, 262, 150), radius=31, fill="#F7FAFF")
+
+    font_label = _font(20, bold=True)
+    font_brand = _font(27, bold=True)
+    font_title = _font(52, bold=True)
+    font_section = _font(22, bold=True)
+    font_product = _font(36, bold=True)
+    font_body = _font(24, bold=True)
+    font_url = _font(20, bold=True)
+    font_price = _font(25, bold=True)
+
+    draw.text((130, 106), "GSN", font=font_brand, fill="#F2CF77")
+    draw.text((284, 104), "GLOBAL SUPPORT NETWORK", font=font_label, fill="#D8E7F5")
+
+    draw.rounded_rectangle((94, 178, 184, 268), radius=26, fill="#0B2D4A", outline="#D6AA45", width=3)
+    draw.line((139, 205, 166, 217, 166, 236, 164, 246, 158, 256, 149, 264, 139, 270), fill="#F2CF77", width=7, joint="curve")
+    draw.line((139, 205, 112, 217, 112, 236, 114, 246, 120, 256, 129, 264, 139, 270), fill="#F2CF77", width=7, joint="curve")
+    draw.line((126, 238, 136, 248, 154, 225), fill="#F2CF77", width=7, joint="curve")
+
+    title_lines = _png_text_lines(
+        payload["shop_name"],
+        draw=draw,
+        font=font_title,
+        max_width=760,
+        max_lines=2,
+    )
+    _draw_lines(draw, title_lines, x=214, y=198, font=font_title, fill="#FFFFFF", gap=6)
+
+    block_label = f"Block {int(block)}" if block else "Public shop"
+    draw.text((94, 326), block_label.upper(), font=font_section, fill="#F2CF77")
+
+    product_lines = _png_text_lines(
+        payload["product_line"],
+        draw=draw,
+        font=font_product,
+        max_width=680,
+        max_lines=2,
+    )
+    after_product = _draw_lines(draw, product_lines, x=94, y=378, font=font_product, fill="#FFFFFF", gap=5)
+
+    desc_lines = _png_text_lines(
+        payload["description"],
+        draw=draw,
+        font=font_body,
+        max_width=720,
+        max_lines=3,
+    )
+    _draw_lines(draw, desc_lines, x=94, y=after_product + 14, font=font_body, fill="#D8E7F5", gap=6)
+
+    price = payload["price"]
+    if price:
+        draw.rounded_rectangle((892, 306, 1110, 382), radius=38, fill="#F2C766")
+        price_width = _text_width(draw, price, font_price)
+        draw.text((892 + (218 - price_width) / 2, 330), price, font=font_price, fill="#07172C")
+
+    draw.rounded_rectangle((94, 520, 1106, 564), radius=22, fill="#0B2D4A", outline="#254B69", width=2)
+    printed_url = target_url.replace("https://", "")
+    url_lines = _png_text_lines(
+        printed_url,
+        draw=draw,
+        font=font_url,
+        max_width=540,
+        max_lines=1,
+    )
+    draw.text((124, 532), url_lines[0], font=font_url, fill="#D8E7F5")
+    draw.text((690, 532), payload["gmfn_id"], font=font_url, fill="#F2CF77")
+
+    out = BytesIO()
+    image.convert("RGB").save(out, format="PNG", optimize=True)
+    return out.getvalue()
+
+
 @router.get("/shop/{gmfn_id}", response_class=HTMLResponse)
 def public_shop_share_preview(
     gmfn_id: str,
@@ -290,9 +494,11 @@ def public_shop_share_preview(
     <meta property="og:description" content="{description}" />
     <meta property="og:url" content="{escape(share_url, quote=True)}" />
     <meta property="og:image" content="{escape(image_url, quote=True)}" />
-    <meta property="og:image:type" content="image/svg+xml" />
+    <meta property="og:image:secure_url" content="{escape(image_url, quote=True)}" />
+    <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="GSN public shop poster" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="{title}" />
     <meta name="twitter:description" content="{description}" />
@@ -313,6 +519,24 @@ def public_shop_share_preview(
 </html>"""
     return HTMLResponse(
         content=html,
+        headers={"Cache-Control": "public, max-age=300"},
+    )
+
+
+@router.get("/shop/{gmfn_id}/card.png")
+def public_shop_share_card_png(
+    gmfn_id: str,
+    request: Request,
+    product_id: Optional[int] = Query(default=None),
+    block: Optional[int] = Query(default=None),
+    db: Session = Depends(get_db),
+) -> Response:
+    payload = _preview_payload(db, gmfn_id=gmfn_id, product_id=product_id)
+    target_url = _shop_frontend_url(payload["gmfn_id"], product_id=product_id, block=block)
+    png = _draw_share_card_png(payload, target_url=target_url, block=block)
+    return Response(
+        content=png,
+        media_type="image/png",
         headers={"Cache-Control": "public, max-age=300"},
     )
 
@@ -377,8 +601,8 @@ def public_shop_share_card(
   <rect x="94" y="520" width="1012" height="44" rx="22" fill="#FFFFFF" opacity="0.12"/>
   <text x="124" y="549" fill="#F8FBFF" font-size="20" font-weight="850" font-family="Arial, sans-serif">{escape(url_lines[0])}</text>
   <text x="690" y="549" fill="#F2CF77" font-size="19" font-weight="950" font-family="Arial, sans-serif">{escape(payload["gmfn_id"])}</text>
+  {f'<rect x="910" y="305" width="196" height="76" rx="38" fill="url(#gold)"/>' if price else ''}
   {f'<text x="934" y="356" fill="#07172C" font-size="24" font-weight="950" font-family="Arial, sans-serif">{escape(price)}</text>' if price else ''}
-  <rect x="910" y="305" width="196" height="76" rx="38" fill="url(#gold)"/>
 </svg>"""
 
     return Response(

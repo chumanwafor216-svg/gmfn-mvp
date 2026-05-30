@@ -9,3 +9,4 @@ python-multipart
 psycopg[binary]
 email-validator 
 reportlab
+pillow

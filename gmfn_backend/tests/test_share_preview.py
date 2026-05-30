@@ -67,11 +67,24 @@ def test_share_shop_preview_exposes_open_graph_card(client, monkeypatch):
     assert res.status_code == 200
     assert 'property="og:title"' in res.text
     assert "Fresh rice bag | Ada Trust Shop" in res.text
-    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.svg?product_id=3&amp;block=1" in res.text
+    assert "https://api.gsn.example/share/shop/GMFN-U-SHARE/card.png?product_id=3&amp;block=1" in res.text
+    assert 'property="og:image:type" content="image/png"' in res.text
     assert "https://pilot.gsn.example/shop/GMFN-U-SHARE?product_id=3#shop-block-1" in res.text
 
 
-def test_share_shop_card_svg_prints_link_and_brand(client, monkeypatch):
+def test_share_shop_card_png_uses_scraper_friendly_image(client, monkeypatch):
+    monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
+    _seed_public_shop()
+
+    res = client.get("/share/shop/GMFN-U-SHARE/card.png?product_id=3&block=1")
+
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith("image/png")
+    assert res.content.startswith(b"\x89PNG\r\n\x1a\n")
+    assert len(res.content) > 10_000
+
+
+def test_share_shop_card_svg_remains_as_fallback(client, monkeypatch):
     monkeypatch.setenv("PUBLIC_FRONTEND_URL", "https://pilot.gsn.example")
     _seed_public_shop()
 
