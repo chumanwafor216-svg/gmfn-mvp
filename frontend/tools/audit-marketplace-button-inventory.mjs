@@ -169,6 +169,16 @@ assertNotContains(
   "Marketplace button inventory must not include hidden create-community source-only actions."
 );
 
+assertContains(
+  /type MarketplaceGlyphName[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName/,
+  "Marketplace front button inventory must keep deterministic SVG glyphs for phone-stable action marks."
+);
+
+assertNotContains(
+  /[\u{1F6CD}\u{1F465}\u{1F6E1}\u{1F4B3}\u{1F91D}\u{1F6D2}\u{1F4B7}\u{1F3E6}\u{1F49A}\u{1F4CB}\u{1F4E3}\u{1F5C2}\u{2728}\u{203A}\u{2303}]/gu,
+  "Marketplace front button inventory must not use emoji or text chevrons in action marks."
+);
+
 if (findings.length > 0) {
   console.error("Marketplace button inventory audit failed:");
   for (const finding of findings) {

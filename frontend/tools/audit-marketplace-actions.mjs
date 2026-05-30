@@ -96,6 +96,18 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /type MarketplaceGlyphName[\s\S]*?function MarketplaceGlyph[\s\S]*?name: MarketplaceGlyphName/,
+  "Marketplace front action marks must use deterministic SVG glyphs instead of device emoji fonts."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /[\u{1F6CD}\u{1F465}\u{1F6E1}\u{1F4B3}\u{1F91D}\u{1F6D2}\u{1F4B7}\u{1F3E6}\u{1F49A}\u{1F4CB}\u{1F4E3}\u{1F5C2}\u{2728}\u{203A}\u{2303}]/gu,
+  "Marketplace front action marks must not use emoji or text chevrons; use MarketplaceGlyph instead."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /debugId="marketplace\.links\.join\.copy"[\s\S]*?Join invite link is not ready yet\.[\s\S]*?debugId="marketplace\.links\.community-desk\.copy"[\s\S]*?Community access desk link is not ready yet\.[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?publicShopActionUnavailableMessage/,
   "Marketplace not-ready link actions must remain tappable explainers instead of dead disabled controls."
 );

@@ -1811,13 +1811,191 @@ function marketplaceOsRowDetailStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsArrowStyle(): React.CSSProperties {
   return {
     color: "#173750",
-    fontSize: 28,
-    fontWeight: 900,
-    lineHeight: 1,
     width: 18,
     minWidth: 18,
-    textAlign: "center",
+    height: 18,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   };
+}
+
+type MarketplaceGlyphName =
+  | "bank"
+  | "card"
+  | "cash"
+  | "chevron"
+  | "chevronUp"
+  | "demand"
+  | "heart"
+  | "ledger"
+  | "links"
+  | "members"
+  | "shop"
+  | "spark"
+  | "support"
+  | "trade"
+  | "trust";
+
+function MarketplaceGlyph({
+  name,
+  size = 24,
+}: {
+  name: MarketplaceGlyphName;
+  size?: number;
+}) {
+  let glyph: React.ReactNode;
+
+  switch (name) {
+    case "bank":
+      glyph = (
+        <>
+          <path d="M4 10h16" />
+          <path d="M5 10l7-5 7 5" />
+          <path d="M7 10v7" />
+          <path d="M12 10v7" />
+          <path d="M17 10v7" />
+          <path d="M5 19h14" />
+        </>
+      );
+      break;
+    case "card":
+      glyph = (
+        <>
+          <rect x="3.5" y="6" width="17" height="12" rx="2.5" />
+          <path d="M3.5 10h17" />
+          <path d="M7 14h4" />
+        </>
+      );
+      break;
+    case "cash":
+      glyph = (
+        <>
+          <rect x="3.5" y="7" width="17" height="10" rx="2.5" />
+          <circle cx="12" cy="12" r="2.25" />
+          <path d="M6.5 10v4" />
+          <path d="M17.5 10v4" />
+        </>
+      );
+      break;
+    case "chevron":
+      glyph = <path d="M9 5.5 15.5 12 9 18.5" />;
+      break;
+    case "chevronUp":
+      glyph = <path d="M5.5 14.5 12 8l6.5 6.5" />;
+      break;
+    case "demand":
+      glyph = (
+        <>
+          <path d="M4 13h3l8 4V7l-8 4H4z" />
+          <path d="M7 13l1 5" />
+          <path d="M18 9.5c.8.7 1.2 1.5 1.2 2.5s-.4 1.8-1.2 2.5" />
+        </>
+      );
+      break;
+    case "heart":
+      glyph = (
+        <>
+          <path d="M12 19s-7-4.3-7-9.1C5 7.4 6.8 6 8.8 6c1.2 0 2.4.6 3.2 1.6C12.8 6.6 14 6 15.2 6 17.2 6 19 7.4 19 9.9 19 14.7 12 19 12 19z" />
+          <path d="M8 13h8" />
+        </>
+      );
+      break;
+    case "ledger":
+      glyph = (
+        <>
+          <rect x="5" y="4" width="14" height="16" rx="2.5" />
+          <path d="M8.5 8h7" />
+          <path d="M8.5 12h7" />
+          <path d="M8.5 16h4.5" />
+        </>
+      );
+      break;
+    case "links":
+      glyph = (
+        <>
+          <path d="M8.5 12.5 6.8 14.2a3 3 0 0 0 4.2 4.2l2.1-2.1" />
+          <path d="M15.5 11.5l1.7-1.7A3 3 0 0 0 13 5.6l-2.1 2.1" />
+          <path d="M9.5 14.5 14.5 9.5" />
+        </>
+      );
+      break;
+    case "members":
+      glyph = (
+        <>
+          <circle cx="9" cy="9" r="2.7" />
+          <circle cx="16" cy="10" r="2.2" />
+          <path d="M4.5 18c.7-2.6 2.2-4 4.5-4s3.8 1.4 4.5 4" />
+          <path d="M13.5 17c.5-1.8 1.6-2.8 3.4-2.8 1.7 0 2.8 1 3.4 2.8" />
+        </>
+      );
+      break;
+    case "shop":
+    case "trade":
+      glyph = (
+        <>
+          <path d="M5 10h14l-1.2-4.5H6.2z" />
+          <path d="M6.5 10v8.5h11V10" />
+          <path d="M9 18.5V14h6v4.5" />
+          <path d="M5 10c.4 1.4 1.3 2.1 2.5 2.1S9.6 11.4 10 10c.4 1.4 1.3 2.1 2.5 2.1s2.1-.7 2.5-2.1c.4 1.4 1.2 2.1 2.5 2.1S19.6 11.4 20 10" />
+        </>
+      );
+      break;
+    case "spark":
+      glyph = (
+        <>
+          <path d="M12 3v4" />
+          <path d="M12 17v4" />
+          <path d="M3 12h4" />
+          <path d="M17 12h4" />
+          <path d="M7.5 7.5 9.8 9.8" />
+          <path d="M14.2 14.2l2.3 2.3" />
+          <path d="M16.5 7.5l-2.3 2.3" />
+          <path d="M9.8 14.2l-2.3 2.3" />
+        </>
+      );
+      break;
+    case "support":
+      glyph = (
+        <>
+          <circle cx="8.2" cy="8.8" r="2.4" />
+          <circle cx="15.8" cy="8.8" r="2.4" />
+          <path d="M4.5 18c.6-2.5 1.8-3.8 3.7-3.8s3.1 1.3 3.7 3.8" />
+          <path d="M12.1 18c.6-2.5 1.8-3.8 3.7-3.8s3.1 1.3 3.7 3.8" />
+        </>
+      );
+      break;
+    case "trust":
+      glyph = (
+        <>
+          <path d="M12 3.8 18.5 6v5.3c0 4-2.5 7.1-6.5 8.9-4-1.8-6.5-4.9-6.5-8.9V6z" />
+          <path d="M8.8 12.1 11 14.3l4.2-4.6" />
+        </>
+      );
+      break;
+    default:
+      glyph = null;
+  }
+
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+    >
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.1}
+      >
+        {glyph}
+      </g>
+    </svg>
+  );
 }
 
 function inputStyle(): React.CSSProperties {
@@ -3408,13 +3586,13 @@ export default function MarketplacePage() {
                 }}
               >
                 <span style={{ ...badgeStyle(true), color: "#12324F" }}>
-                  🛍️ {marketplaceTradeLabel}
+                  <MarketplaceGlyph name="shop" size={15} /> {marketplaceTradeLabel}
                 </span>
                 <span style={{ ...badgeStyle(true), color: "#12324F" }}>
-                  👥 {marketplaceMemberLabel}
+                  <MarketplaceGlyph name="members" size={15} /> {marketplaceMemberLabel}
                 </span>
                 <span style={{ ...badgeStyle(true), color: "#12324F" }}>
-                  🛡️ {marketplaceTrustDisplay}
+                  <MarketplaceGlyph name="trust" size={15} /> {marketplaceTrustDisplay}
                 </span>
               </div>
             </div>
@@ -3457,7 +3635,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                💳
+                <MarketplaceGlyph name="card" size={isCompact ? 28 : 32} />
               </span>
               <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Dues & Contributions
@@ -3489,7 +3667,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                🤝
+                <MarketplaceGlyph name="support" size={isCompact ? 28 : 32} />
               </span>
               <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Support Requests
@@ -3521,7 +3699,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                🛒
+                <MarketplaceGlyph name="trade" size={isCompact ? 28 : 32} />
               </span>
               <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Trusted Trade
@@ -3548,7 +3726,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                🛡️
+                <MarketplaceGlyph name="trust" size={isCompact ? 28 : 32} />
               </span>
               <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Trust
@@ -3639,7 +3817,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                💷
+                <MarketplaceGlyph name="cash" size={isCompact ? 22 : 24} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -3650,7 +3828,7 @@ export default function MarketplacePage() {
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                ›
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
@@ -3669,7 +3847,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                🏦
+                <MarketplaceGlyph name="bank" size={isCompact ? 22 : 24} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -3680,7 +3858,7 @@ export default function MarketplacePage() {
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                ›
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
@@ -3703,7 +3881,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                💚
+                <MarketplaceGlyph name="heart" size={isCompact ? 22 : 24} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -3714,7 +3892,7 @@ export default function MarketplacePage() {
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                ›
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
@@ -3737,7 +3915,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                📋
+                <MarketplaceGlyph name="ledger" size={isCompact ? 22 : 24} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -3748,7 +3926,7 @@ export default function MarketplacePage() {
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                ›
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
@@ -3765,7 +3943,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                📣
+                <MarketplaceGlyph name="demand" size={isCompact ? 22 : 24} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -3776,7 +3954,7 @@ export default function MarketplacePage() {
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                ›
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
@@ -3795,7 +3973,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                🗂️
+                <MarketplaceGlyph name="links" size={isCompact ? 22 : 24} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -3806,7 +3984,7 @@ export default function MarketplacePage() {
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                ›
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
           </div>
@@ -3831,7 +4009,7 @@ export default function MarketplacePage() {
                 isCompact
               )}
             >
-              ✨
+              <MarketplaceGlyph name="spark" size={isCompact ? 22 : 24} />
             </span>
             <span style={marketplaceOsRowTextStackStyle()}>
               <span style={marketplaceOsRowTitleStyle(isCompact)}>
@@ -3842,7 +4020,10 @@ export default function MarketplacePage() {
               </span>
             </span>
             <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              {intentGuideOpen ? "⌃" : "›"}
+              <MarketplaceGlyph
+                name={intentGuideOpen ? "chevronUp" : "chevron"}
+                size={18}
+              />
             </span>
           </StableButton>
 

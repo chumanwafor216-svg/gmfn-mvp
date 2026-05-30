@@ -1,3 +1,29 @@
+### Marketplace action icon polish (2026-05-30)
+
+- Route/screen affected:
+  - `/app/marketplace`.
+- Follow-up from the Marketplace phone polish pass after confirming the source
+  still used device emoji and text chevrons on front action surfaces.
+- Confirmed truth:
+  - the Marketplace button routing baseline was stable after the previous
+    audit, but the visible marks were still not production-polished;
+  - emoji glyphs render differently across Android, iPhone, desktop, and
+    browser fonts, so they can look fake even when the button contract is
+    correct;
+  - text chevrons also left the operating-lane rows dependent on font behavior.
+- Updated `frontend/src/pages/MarketplacePage.tsx`:
+  - added a route-local `MarketplaceGlyph` SVG set for the Marketplace front
+    badges, main tiles, operating rows, extra-tools toggle, and chevrons;
+  - replaced the emoji-style action marks with deterministic inline SVG marks
+    while keeping the same debug IDs, actions, and fixed phone-safe geometry.
+- Updated guardrails:
+  - `audit-marketplace-actions` and `audit-marketplace-button-inventory` now
+    require `MarketplaceGlyph` and reject emoji/text-chevron action marks.
+- Remaining truth:
+  - this removes the fake-looking glyph source and keeps the action inventory
+    locked. A real Render phone pass is still needed to judge final visual
+    feel on the target device.
+
 ### Marketplace button inventory cleanup (2026-05-30)
 
 - Route/screen affected:
