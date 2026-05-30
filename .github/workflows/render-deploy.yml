@@ -24,10 +24,12 @@ concurrency:
 
 jobs:
   trigger-render:
-    name: Trigger Render deploy hooks
+    name: Trigger Render deploy
     runs-on: ubuntu-latest
     env:
       RENDER_FRONTEND_DEPLOY_HOOK_URL: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      RENDER_FRONTEND_SERVICE_ID: srv-d7h4oe9f9bms739lhh9g
       RENDER_API_DEPLOY_HOOK_URL: ${{ secrets.RENDER_API_DEPLOY_HOOK_URL }}
       DEPLOY_API_INPUT: ${{ github.event.inputs.deploy_api || 'false' }}
     steps:
@@ -43,10 +45,21 @@ jobs:
           curl -fsS -X POST "$RENDER_FRONTEND_DEPLOY_HOOK_URL"
           echo "gmfn-frontend deploy hook accepted the request."
 
-      - name: Note missing frontend deploy hook
-        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' }}
+      - name: Trigger frontend deploy through Render API
+        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' && env.RENDER_API_KEY != '' && env.RENDER_FRONTEND_SERVICE_ID != '' }}
         run: |
-          echo "::warning::RENDER_FRONTEND_DEPLOY_HOOK_URL is not configured. This workflow cannot directly trigger gmfn-frontend. Render must auto-deploy main or the deploy must be triggered manually in Render."
+          echo "Triggering Render API deploy for gmfn-frontend service ${RENDER_FRONTEND_SERVICE_ID} at ${GITHUB_SHA}."
+          curl -fsS -X POST "https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys" \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${RENDER_API_KEY}" \
+            -H "content-type: application/json" \
+            --data "{\"commitId\":\"${GITHUB_SHA}\"}"
+          echo "gmfn-frontend Render API deploy accepted the request."
+
+      - name: Note missing frontend deploy credentials
+        if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL == '' && (env.RENDER_API_KEY == '' || env.RENDER_FRONTEND_SERVICE_ID == '') }}
+        run: |
+          echo "::warning::Neither RENDER_FRONTEND_DEPLOY_HOOK_URL nor a usable RENDER_API_KEY plus RENDER_FRONTEND_SERVICE_ID is configured. This workflow cannot directly trigger gmfn-frontend. Render must auto-deploy main or the deploy must be triggered manually in Render."
 
       - name: Detect backend deploy need
         id: backend

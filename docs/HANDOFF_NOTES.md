@@ -1,3 +1,27 @@
+### Render frontend deploy API fallback wiring (2026-05-30)
+
+- Follow-up from product-owner asking to fix Render deploy triggering and
+  providing the frontend Render service ID:
+  `srv-d7h4oe9f9bms739lhh9g`.
+- Confirmed from GitHub Actions after the previous `main` push:
+  - workflow `Trigger Render Deploy` ran and succeeded;
+  - the frontend deploy-hook step was skipped;
+  - the missing-hook warning step ran;
+  - therefore GitHub was not directly triggering Render yet.
+- Updated `.github/workflows/render-deploy.yml`:
+  - keeps `RENDER_FRONTEND_DEPLOY_HOOK_URL` as the first/direct deploy path;
+  - adds a Render API fallback for `gmfn-frontend` using service
+    `srv-d7h4oe9f9bms739lhh9g`;
+  - the fallback posts to
+    `https://api.render.com/v1/services/${RENDER_FRONTEND_SERVICE_ID}/deploys`
+    with the pushed `${GITHUB_SHA}` as `commitId`;
+  - it requires GitHub secret `RENDER_API_KEY`.
+- Updated `docs/DEPLOYMENT_RENDER.md` with the fallback rule.
+- Truth/devil's advocate:
+  - service ID is now wired in code, but it is not a credential;
+  - GitHub still needs either `RENDER_FRONTEND_DEPLOY_HOOK_URL` or
+    `RENDER_API_KEY` before we can honestly claim direct Render triggering.
+
 ### Dashboard frame button bottom-nav steal guard (2026-05-30)
 
 - Follow-up from product-owner report: "frame button lands on public shop."

@@ -85,16 +85,23 @@ GitHub repository secrets:
 - `RENDER_FRONTEND_DEPLOY_HOOK_URL`
   - Render deploy hook URL for `gmfn-frontend`
   - required for direct frontend deploy triggering
+- `RENDER_API_KEY`
+  - Render API key for the workspace
+  - used as a fallback if the frontend deploy hook secret is missing
+  - the workflow triggers `gmfn-frontend` through Render service
+    `srv-d7h4oe9f9bms739lhh9g`
 - `RENDER_API_DEPLOY_HOOK_URL`
   - Render deploy hook URL for `gmfn-api`
   - optional for frontend-only changes, required when backend or `render.yaml`
     changes should trigger the API directly
 
-If `RENDER_FRONTEND_DEPLOY_HOOK_URL` is not set, the workflow will warn and the
-deployment depends on Render's own auto-deploy setting for `main`, or on a
-manual deploy in the Render dashboard. Do not claim a direct Render deploy was
-triggered unless the workflow shows the deploy hook was accepted or Render
-auto-deploy is confirmed in the Render dashboard.
+If `RENDER_FRONTEND_DEPLOY_HOOK_URL` is not set, the workflow falls back to the
+Render API when `RENDER_API_KEY` is configured. If neither credential is set,
+the workflow will warn and the deployment depends on Render's own auto-deploy
+setting for `main`, or on a manual deploy in the Render dashboard. Do not claim
+a direct Render deploy was triggered unless the workflow shows the deploy hook
+or Render API deploy request was accepted, or Render auto-deploy is confirmed in
+the Render dashboard.
 
 ## 5. Promote the first real admin
 
