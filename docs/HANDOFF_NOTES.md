@@ -1,3 +1,37 @@
+### Trust Passport second phone compression (2026-05-30)
+
+- Route/screen affected:
+  - `/app/trust`, implemented by `frontend/src/pages/TrustScorePage.tsx`.
+- Follow-up from product-owner request to tighten Trust Passport again after
+  the first phone-geometry pass.
+- Confirmed truth:
+  - the remaining issue was not missing actions; it was vertical drag on phone:
+    the page header, verification badges, trust tools, and evidence rows were
+    still taking too much one-column height;
+  - action inventory stayed unchanged at 8 stable source actions / 9 rendered
+    action roots.
+- Updated `frontend/src/pages/TrustScorePage.tsx`:
+  - reduced compact page/card padding and tightened the title/GSN mark area;
+  - shortened the compact subtitle and hid the stacked `Global Support
+    Network` micro-label on phone;
+  - moved verification badges into a two-column phone grid while the public
+    community record action spans both columns;
+  - tightened the grade legend on phone by hiding the tiny grade subtitles;
+  - reduced the shareable trust tools to a two-column phone grid with 56px
+    fixed controls;
+  - kept review/export as two fixed columns and made evidence rows a two-column
+    compact grid.
+- Updated guardrails:
+  - Trust Passport inventory audit now locks the two-column verification,
+    share-tool, and evidence-grid phone compression;
+  - shared button-stability audit was updated for the new 56px phone trust-tool
+    height.
+- Remaining truth:
+  - this is tighter and more phone-efficient, but still not a true collapsed
+    document. If the Render phone view still feels too long, the next honest
+    move is section-level disclosure for evidence/history, not further shaving
+    pixels.
+
 ### Trust Passport phone geometry tightening (2026-05-30)
 
 - Route/screen affected:

@@ -484,7 +484,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/TrustScorePage.tsx",
-  /import \{[\s\S]*?DangerButton[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId: "trust-score\.surface\.local-community-trust"[\s\S]*?debugId: "trust-score\.surface\.cross-community-consistency"[\s\S]*?debugId=\{item\.debugId\}[\s\S]*?stableHeight=\{isCompact \? 58 : 74\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?debugId="trust-score\.verify"[\s\S]*?debugId="trust-score\.review-care"/,
+  /import \{[\s\S]*?DangerButton[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId: "trust-score\.surface\.local-community-trust"[\s\S]*?debugId: "trust-score\.surface\.cross-community-consistency"[\s\S]*?debugId=\{item\.debugId\}[\s\S]*?stableHeight=\{isCompact \? 56 : 74\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?debugId="trust-score\.verify"[\s\S]*?debugId="trust-score\.review-care"/,
   "Trust Score must use shared stable button primitives and shared CTA resolution for surface navigation, refresh, copy, verify, and review actions."
 );
 

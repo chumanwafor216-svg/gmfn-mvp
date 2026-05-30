@@ -147,13 +147,18 @@ assertContains(
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 58 : 74\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?stableHeight=\{isCompact \? 58 : 74\}[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 58 : 74\}[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?stableHeight=\{isCompact \? 58 : 74\}[\s\S]*?debugId="trust-score\.verify"/,
+  /gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(4, minmax\(0, 1fr\)\)"[\s\S]*?stableHeight=\{isCompact \? 56 : 74\}[\s\S]*?debugId="trust-score\.refresh"[\s\S]*?stableHeight=\{isCompact \? 56 : 74\}[\s\S]*?debugId="trust-score\.copy-snapshot"[\s\S]*?stableHeight=\{isCompact \? 56 : 74\}[\s\S]*?debugId="trust-score\.open-trust-slip"[\s\S]*?stableHeight=\{isCompact \? 56 : 74\}[\s\S]*?debugId="trust-score\.verify"/,
   "Trust Passport shareable tools must keep shorter fixed phone heights while preserving the larger desktop paper controls."
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact[\s\S]*?\? "84px minmax\(0, 1fr\)"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?`"photo identity" "checks checks"`[\s\S]*?width: isCompact \? 78 : 142[\s\S]*?height: isCompact \? 78 : 142/,
+  /padding: isCompact \? "12px 12px 34px" : "18px 18px 42px"[\s\S]*?fontSize: isCompact \? 30 : 48[\s\S]*?fontSize: isCompact \? 21 : 30[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "84px minmax\(0, 1fr\)"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?`"photo identity" "checks checks"`[\s\S]*?width: isCompact \? 78 : 142[\s\S]*?height: isCompact \? 78 : 142/,
   "Trust Passport phone identity hero must keep the portrait, identity rows, and checks in a compact two-column mobile layout."
+);
+
+assertContains(
+  /gridArea: isCompact \? "checks" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "1fr"[\s\S]*?style=\{\{ gridColumn: isCompact \? "1 \/ -1" : undefined \}\}/,
+  "Trust Passport phone verification badges must use a compact two-column grid with the record action spanning the row."
 );
 
 assertContains(
@@ -177,7 +182,7 @@ assertContains(
 );
 
 assertContains(
-  /gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?textAlign: isCompact \? "left" : "right"[\s\S]*?overflowWrap: "break-word"/,
+  /gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(3, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact \? "1fr" : "minmax\(0, 1fr\) auto"[\s\S]*?textAlign: isCompact \? "left" : "right"[\s\S]*?overflowWrap: "break-word"/,
   "Trust Passport institutional evidence rows must stack values on phone instead of squeezing right-aligned text."
 );
 

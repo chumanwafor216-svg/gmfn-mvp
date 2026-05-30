@@ -1727,7 +1727,7 @@ export default function TrustScorePage() {
       style={{
         minHeight: "100vh",
         margin: "-18px",
-        padding: "18px 18px 42px",
+        padding: isCompact ? "12px 12px 34px" : "18px 18px 42px",
         background: "#F4F7FB",
       }}
     >
@@ -1736,7 +1736,7 @@ export default function TrustScorePage() {
           width: "min(100%, 980px)",
           margin: "0 auto",
           display: "grid",
-          gap: 14,
+          gap: isCompact ? 10 : 14,
         }}
       >
         <PageTopNav
@@ -1754,7 +1754,7 @@ export default function TrustScorePage() {
             ...pageCard("#FFFFFF"),
             border: "1px solid rgba(37,78,119,0.14)",
             boxShadow: "0 22px 60px rgba(7,23,44,0.10)",
-            padding: isCompact ? 16 : 22,
+            padding: isCompact ? 12 : 22,
             position: "relative",
             overflow: "hidden",
           }}
@@ -1769,10 +1769,10 @@ export default function TrustScorePage() {
           <header
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-              gap: 14,
+              gridTemplateColumns: isCompact ? "minmax(0, 1fr) auto" : "minmax(0, 1fr) auto",
+              gap: isCompact ? 10 : 14,
               alignItems: "start",
-              marginBottom: 14,
+              marginBottom: isCompact ? 10 : 14,
             }}
           >
             <div>
@@ -1783,7 +1783,7 @@ export default function TrustScorePage() {
                 style={{
                   margin: "4px 0 0",
                   color: "#07172C",
-                  fontSize: isCompact ? 34 : 48,
+                  fontSize: isCompact ? 30 : 48,
                   lineHeight: 1,
                   fontWeight: 1000,
                 }}
@@ -1791,14 +1791,15 @@ export default function TrustScorePage() {
                 Trust Passport
               </h1>
               <p style={{ ...helperText(), margin: "8px 0 0", maxWidth: 620 }}>
-                A clear trust reading for identity, support, finance discipline,
-                trade, and community standing.
+                {isCompact
+                  ? "Identity, support, finance, trade, and standing in one reading."
+                  : "A clear trust reading for identity, support, finance discipline, trade, and community standing."}
               </p>
             </div>
             <div
               style={{
                 color: "#07172C",
-                fontSize: 30,
+                fontSize: isCompact ? 21 : 30,
                 lineHeight: 1,
                 fontWeight: 1000,
                 textAlign: isCompact ? "left" : "right",
@@ -1812,20 +1813,22 @@ export default function TrustScorePage() {
                   gap: 8,
                 }}
               >
-                <TrustPaperIcon name="shield" size={28} color="#0B63D1" />
+                <TrustPaperIcon name="shield" size={isCompact ? 22 : 28} color="#0B63D1" />
                 <span>GSN</span>
               </div>
-              <div
-                style={{
-                  color: "#334155",
-                  fontSize: 12,
-                  fontWeight: 900,
-                  lineHeight: 1.15,
-                  marginTop: 4,
-                }}
-              >
-                Global<br />Support<br />Network
-              </div>
+              {!isCompact ? (
+                <div
+                  style={{
+                    color: "#334155",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    lineHeight: 1.15,
+                    marginTop: 4,
+                  }}
+                >
+                  Global<br />Support<br />Network
+                </div>
+              ) : null}
             </div>
           </header>
 
@@ -1840,7 +1843,7 @@ export default function TrustScorePage() {
               gridTemplateAreas: isCompact
                 ? `"photo identity" "checks checks"`
                 : undefined,
-              gap: isCompact ? 14 : 18,
+              gap: isCompact ? 10 : 18,
               alignItems: isCompact ? "start" : "center",
             }}
           >
@@ -1928,7 +1931,14 @@ export default function TrustScorePage() {
               ))}
             </div>
 
-            <div style={{ gridArea: isCompact ? "checks" : undefined, display: "grid", gap: 8 }}>
+            <div
+              style={{
+                gridArea: isCompact ? "checks" : undefined,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
+                gap: isCompact ? 6 : 8,
+              }}
+            >
               {verificationBadges.map((item) => (
                 <span
                   key={item.label}
@@ -1936,13 +1946,14 @@ export default function TrustScorePage() {
                     ...statusPillStyle(item.ok ? "Strong" : "Limited"),
                     justifyContent: "flex-start",
                     gap: 8,
+                    minWidth: 0,
                   }}
                 >
                   <TrustPaperBadgeIcon name={item.icon} ok={item.ok} />
                   {item.label}
                 </span>
               ))}
-              <span style={{ ...statusPillStyle("Limited"), justifyContent: "flex-start", gap: 8 }}>
+              <span style={{ ...statusPillStyle("Limited"), justifyContent: "flex-start", gap: 8, minWidth: 0 }}>
                 <TrustPaperIcon name="community" size={18} color="#526579" />
                 Active in {passportVm.technicalDetail.activeClans} communities
               </span>
@@ -1959,6 +1970,7 @@ export default function TrustScorePage() {
                 }}
                 stableHeight={isCompact ? 44 : 48}
                 fullWidth={isCompact}
+                style={{ gridColumn: isCompact ? "1 / -1" : undefined }}
                 debugId="trust-score.open-public-community-record"
               >
                 <TrustPaperIcon name="search" size={18} />
@@ -2049,7 +2061,7 @@ export default function TrustScorePage() {
                     <div
                       key={grade}
                       style={{
-                        padding: "10px 6px",
+                        padding: isCompact ? "8px 4px" : "10px 6px",
                         textAlign: "center",
                         background: isActive ? "#FFF1F2" : grade === "A" || grade === "B" ? "#F0FBF4" : "#FFFDF5",
                         borderLeft: "1px solid rgba(216,227,238,0.9)",
@@ -2060,14 +2072,16 @@ export default function TrustScorePage() {
                         style={{
                           color: isActive ? "#991B1B" : "#07172C",
                           fontWeight: 1000,
-                          fontSize: 18,
+                          fontSize: isCompact ? 16 : 18,
                         }}
                       >
                         {grade}
                       </div>
-                      <div style={{ color: "#526579", fontSize: 11, fontWeight: 850 }}>
-                        {label}
-                      </div>
+                      {!isCompact ? (
+                        <div style={{ color: "#526579", fontSize: 11, fontWeight: 850 }}>
+                          {label}
+                        </div>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -2228,9 +2242,9 @@ export default function TrustScorePage() {
               <div style={{ color: "#5542A8", fontWeight: 1000, marginTop: 14 }}>
                 Recent trust events
               </div>
-              {recentEvents.length > 0 ? (
+                {recentEvents.length > 0 ? (
                 <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                  {recentEvents.slice(0, 3).map((event, index) => (
+                  {recentEvents.slice(0, isCompact ? 2 : 3).map((event, index) => (
                     <div key={event.id || index} style={innerCard("#F8FBFF")}>
                       <b>{firstTruthy(event.event_type, "Trust event")}</b>
                       <div style={helperText()}>
@@ -2253,7 +2267,7 @@ export default function TrustScorePage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
+                  gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
                   gap: 10,
                   marginTop: 12,
                 }}
@@ -2265,7 +2279,7 @@ export default function TrustScorePage() {
                   busy={refreshing}
                   busyLabel="Refreshing..."
                   fullWidth
-                  stableHeight={isCompact ? 58 : 74}
+                  stableHeight={isCompact ? 56 : 74}
                   debugId="trust-score.refresh"
                 >
                   <TrustPaperIcon name="refresh" size={21} />
@@ -2274,7 +2288,7 @@ export default function TrustScorePage() {
                 <SecondaryButton
                   onClick={copyTrustSnapshot}
                   fullWidth
-                  stableHeight={isCompact ? 58 : 74}
+                  stableHeight={isCompact ? 56 : 74}
                   debugId="trust-score.copy-snapshot"
                 >
                   <TrustPaperIcon name="copy" size={21} />
@@ -2283,7 +2297,7 @@ export default function TrustScorePage() {
                 <SecondaryButton
                   onClick={() => openTrustRoute(routes.trustSlip)}
                   fullWidth
-                  stableHeight={isCompact ? 58 : 74}
+                  stableHeight={isCompact ? 56 : 74}
                   debugId="trust-score.open-trust-slip"
                 >
                   <TrustPaperIcon name="document" size={21} />
@@ -2302,7 +2316,7 @@ export default function TrustScorePage() {
                     openTrustRoute(routes.trustSlip);
                   }}
                   fullWidth
-                  stableHeight={isCompact ? 58 : 74}
+                  stableHeight={isCompact ? 56 : 74}
                   debugId="trust-score.verify"
                 >
                   <TrustPaperIcon name="search" size={21} />
@@ -2312,7 +2326,7 @@ export default function TrustScorePage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gridTemplateColumns: "1fr 1fr",
                   gap: 10,
                   marginTop: 10,
                 }}
@@ -2366,7 +2380,7 @@ export default function TrustScorePage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
                 gap: 0,
                 marginTop: 10,
                 border: "1px solid rgba(216,227,238,0.9)",
