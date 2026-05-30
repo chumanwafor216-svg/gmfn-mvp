@@ -17,6 +17,7 @@
     "audit:marketplace-button-inventory": "node tools/audit-marketplace-button-inventory.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
+    "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",
     "audit:community-shop-actions": "node tools/audit-community-shop-actions.mjs",
     "audit:community-home-button-inventory": "node tools/audit-community-home-button-inventory.mjs",
     "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",

@@ -1,3 +1,33 @@
+### Trust Passport button audit baseline (2026-05-30)
+
+- Route/screen affected:
+  - `/app/trust`, implemented by `frontend/src/pages/TrustScorePage.tsx`.
+- Follow-up from product-owner request to move the page-by-page phone audit
+  from Marketplace into Trust Passport.
+- Confirmed truth:
+  - `TrustPassportPage` is currently represented by `TrustScorePage.tsx`;
+  - the page already used stable button primitives and deterministic
+    `TrustPaperIcon` SVG marks, but it had no Trust Passport-only button
+    inventory like Dashboard, Community Home, and Marketplace;
+  - one identity row still used harsh `overflowWrap: "anywhere"`, and the
+    pressure-note jump had no explicit mobile scroll clearance.
+- Updated `frontend/src/pages/TrustScorePage.tsx`:
+  - gave the two trust-surface actions explicit stable debug IDs instead of
+    deriving IDs from visible titles;
+  - added mobile scroll clearance for the `Review pressure notes` target;
+  - shortened the four shareable trust-tool action heights on phone while
+    keeping the larger desktop paper controls;
+  - changed the identity value wrapping to avoid awkward phone word splitting.
+- Added guardrails:
+  - `audit:trust-passport-button-inventory` locks the current Trust Passport
+    source action baseline at 8 stable source actions / 9 rendered action
+    roots, verifies front-to-inner order, rejects raw action roots, and rejects
+    harsh `overflowWrap: "anywhere"` on the page.
+- Remaining truth:
+  - this is a first Trust Passport button/audit baseline. The page remains a
+    long evidence document and still needs a real Render phone pass to decide
+    whether any sections should be collapsed in a later UX pass.
+
 ### Marketplace mobile layout tightening (2026-05-30)
 
 - Route/screen affected:

@@ -1675,6 +1675,7 @@ export default function TrustScorePage() {
       to: routes.openTrust,
       value: openTrust.classText,
       tone: "#EEF6FF",
+      debugId: "trust-score.surface.local-community-trust",
     },
     {
       icon: "globe" as TrustPaperIconName,
@@ -1685,6 +1686,7 @@ export default function TrustScorePage() {
       to: routes.cciReading,
       value: cci.classText,
       tone: "#F3EFFF",
+      debugId: "trust-score.surface.cross-community-consistency",
     },
   ];
 
@@ -1899,7 +1901,8 @@ export default function TrustScorePage() {
                     style={{
                       color: "#334155",
                       fontWeight: 850,
-                      overflowWrap: "anywhere",
+                      overflowWrap: "break-word",
+                      wordBreak: "normal",
                     }}
                   >
                     {value}
@@ -2104,6 +2107,7 @@ export default function TrustScorePage() {
               ...innerCard("#FFFFFF"),
               border: "1px solid rgba(216,227,238,0.9)",
               marginTop: 14,
+              scrollMarginTop: isCompact ? 96 : 24,
             }}
           >
             <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
@@ -2168,7 +2172,7 @@ export default function TrustScorePage() {
                     <SecondaryButton
                       onClick={() => openTrustRoute(item.to)}
                       stableHeight={38}
-                      debugId={`trust-score.surface.${item.title}`}
+                      debugId={item.debugId}
                     >
                       {item.action}
                     </SecondaryButton>
@@ -2234,7 +2238,7 @@ export default function TrustScorePage() {
                   busy={refreshing}
                   busyLabel="Refreshing..."
                   fullWidth
-                  stableHeight={74}
+                  stableHeight={isCompact ? 58 : 74}
                   debugId="trust-score.refresh"
                 >
                   <TrustPaperIcon name="refresh" size={21} />
@@ -2243,7 +2247,7 @@ export default function TrustScorePage() {
                 <SecondaryButton
                   onClick={copyTrustSnapshot}
                   fullWidth
-                  stableHeight={74}
+                  stableHeight={isCompact ? 58 : 74}
                   debugId="trust-score.copy-snapshot"
                 >
                   <TrustPaperIcon name="copy" size={21} />
@@ -2252,7 +2256,7 @@ export default function TrustScorePage() {
                 <SecondaryButton
                   onClick={() => openTrustRoute(routes.trustSlip)}
                   fullWidth
-                  stableHeight={74}
+                  stableHeight={isCompact ? 58 : 74}
                   debugId="trust-score.open-trust-slip"
                 >
                   <TrustPaperIcon name="document" size={21} />
@@ -2271,7 +2275,7 @@ export default function TrustScorePage() {
                     openTrustRoute(routes.trustSlip);
                   }}
                   fullWidth
-                  stableHeight={74}
+                  stableHeight={isCompact ? 58 : 74}
                   debugId="trust-score.verify"
                 >
                   <TrustPaperIcon name="search" size={21} />
