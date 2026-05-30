@@ -491,7 +491,9 @@ function communityActionStyle(
       alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
-      overflowWrap: "anywhere",
+      overflowWrap: "normal",
+      wordBreak: "normal",
+      hyphens: "none",
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
@@ -523,7 +525,9 @@ function communityActionStyle(
       alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
       whiteSpace: "normal",
-      overflowWrap: "anywhere",
+      overflowWrap: "normal",
+      wordBreak: "normal",
+      hyphens: "none",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
         "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
@@ -553,7 +557,9 @@ function communityActionStyle(
     alignContent: "center",
     cursor: disabled ? "not-allowed" : "pointer",
     whiteSpace: "normal",
-    overflowWrap: "anywhere",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
     opacity: disabled ? 0.86 : 1,
     boxShadow: disabled
       ? "none"
@@ -585,7 +591,9 @@ function collapseToggle(): React.CSSProperties {
     textAlign: "center",
     alignContent: "center",
     whiteSpace: "normal",
-    overflowWrap: "anywhere",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
     boxShadow:
       "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
     lineHeight: 1.18,
@@ -1981,6 +1989,7 @@ export default function CommunityHomePage() {
   function consumeCommunityButtonEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
+    event?.preventDefault();
     event?.stopPropagation();
   }
 
@@ -3950,11 +3959,15 @@ export default function CommunityHomePage() {
                       <StableButton
                         type="button"
                         debugId={`community-home.communities.${clan.id ?? clan.clan_id ?? clan.name ?? "unknown"}.open-marketplace`}
+                        aria-disabled={working || undefined}
                         onClick={(event) => {
                           consumeCommunityButtonEvent(event);
+                          if (working) {
+                            showNotice("success", "Opening this community now.");
+                            return;
+                          }
                           void handleSelectCommunity(clan, true);
                         }}
-                        disabled={working}
                         style={{
                           ...communityActionStyle("primary", working),
                           width: isCompact ? "100%" : undefined,

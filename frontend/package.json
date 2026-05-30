@@ -17,6 +17,8 @@
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:community-shop-actions": "node tools/audit-community-shop-actions.mjs",
+    "audit:community-home-button-inventory": "node tools/audit-community-home-button-inventory.mjs",
+    "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",
     "audit:finance-actions": "node tools/audit-finance-actions.mjs",
     "audit:admin-ops-actions": "node tools/audit-admin-ops-actions.mjs",
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",

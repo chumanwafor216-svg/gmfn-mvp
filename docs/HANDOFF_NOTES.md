@@ -1,3 +1,43 @@
+### Community Home button audit baseline (2026-05-30)
+
+- Route/screen affected:
+  - `/app/community` and `/app/community/:clanId` through
+    `frontend/src/pages/CommunityHomePage.tsx`.
+- Follow-up from product-owner request to move from Dashboard to Community
+  Home and repeat the button audit discipline page-by-page.
+- Confirmed truth:
+  - existing Community / Shop and button-stability audits passed before this
+    pass, but there was no Community Home-only button inventory or phone-button
+    auditor;
+  - one community-row `Open Marketplace` action used a disabled state while the
+    community was already opening;
+  - route-local action and collapse-button styles still allowed `overflowWrap:
+    "anywhere"`, which can make phone labels split poorly.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - Community Home button event handling now prevents default and stops
+    propagation before routing, section opening, or copy actions.
+  - The community-row `Open Marketplace` action is now soft-disabled with
+    `aria-disabled` while working, remains tappable, and explains that the
+    community is already opening instead of becoming a dead tap target.
+  - Community Home route-local action styles now keep normal word wrapping,
+    normal word breaks, and no hyphenation.
+- Added guardrails:
+  - `frontend/tools/audit-community-home-button-inventory.mjs` locks the
+    Community Home source action baseline at 24 `StableButton` actions and
+    checks front quick actions, guided spotlight actions, compact tool rows,
+    and front-to-inner section order.
+  - `frontend/tools/audit-community-home-phone-buttons.mjs` rejects disabled
+    Community Home stable actions, `overflowWrap: "anywhere"`, missing phone
+    event guards, missing stable row geometry, and dead in-progress community
+    marketplace buttons.
+  - New scripts:
+    `audit:community-home-button-inventory` and
+    `audit:community-home-phone-buttons`.
+- Remaining truth:
+  - this is a source/auditor pass. Community Home still needs a live phone tap
+    sweep after Render deploys, especially quick actions, community row open,
+    owner/tool rows, spotlight status, and collapsed sections.
+
 ### Dashboard repeat button audit tightening (2026-05-30)
 
 - Route/screen affected:
