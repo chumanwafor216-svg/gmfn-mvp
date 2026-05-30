@@ -320,6 +320,12 @@ assertContains(
 );
 
 assertContains(
+  "index.html",
+  /property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
+  "The static frontend shell must use a frontend-hosted PNG fallback poster, not SVG, so WhatsApp can show an image while product-specific Node metadata is unavailable."
+);
+
+assertContains(
   "src/main.tsx",
   /function migrateSuspendedPublicHost\(\): boolean[\s\S]*?isSuspendedPublicFrontendHost\(hostname\)[\s\S]*?configuredPublicFrontendOrigin\(\)[\s\S]*?window\.location\.replace\(target\);[\s\S]*?if \(!migrateSuspendedPublicHost\(\)\)/,
   "The React entrypoint must redirect frontend.onrender.com synchronously before rendering the app."

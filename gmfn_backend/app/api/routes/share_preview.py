@@ -262,7 +262,7 @@ def _preview_payload(
         "owner_name": owner_name,
         "shop_name": shop_name,
         "product_line": product_line,
-        "trust_line": "Trusted product • Tap to open shop",
+        "trust_line": "Trusted product - Tap to open shop",
         "title": title,
         "description": description,
         "price": _money_text(product),
@@ -457,7 +457,7 @@ def _draw_share_card_png(
     after_market = _draw_lines(draw, market_lines, x=100, y=after_title + 8, font=font_market, fill="#D8E7F5", gap=5)
 
     trust_lines = _png_text_lines(
-        payload.get("trust_line", "Trusted product • Tap to open shop"),
+        payload.get("trust_line", "Trusted product - Tap to open shop"),
         draw=draw,
         font=font_trust,
         max_width=720,
@@ -477,12 +477,15 @@ def _draw_share_card_png(
 
     block_label = f"Block {int(block)}" if block else "Public shop"
     chip_y = 502
-    draw.rounded_rectangle((94, chip_y, 240, chip_y + 56), radius=28, fill="#F7FAFF")
-    draw.text((125, chip_y + 15), block_label, font=font_chip, fill="#07172C")
+    block_width = int(_text_width(draw, block_label, font_chip)) + 62
+    block_right = 94 + max(146, block_width)
+    draw.rounded_rectangle((94, chip_y, block_right, chip_y + 56), radius=28, fill="#F7FAFF")
+    draw.text((124, chip_y + 15), block_label, font=font_chip, fill="#07172C")
     gmfn_text = payload["gmfn_id"]
     gmfn_width = int(_text_width(draw, gmfn_text, font_chip))
-    draw.rounded_rectangle((266, chip_y, 326 + gmfn_width, chip_y + 56), radius=28, fill="#0B2D4A", outline="#D6AA45", width=2)
-    draw.text((296, chip_y + 15), gmfn_text, font=font_chip, fill="#F2CF77")
+    gmfn_left = block_right + 26
+    draw.rounded_rectangle((gmfn_left, chip_y, gmfn_left + 60 + gmfn_width, chip_y + 56), radius=28, fill="#0B2D4A", outline="#D6AA45", width=2)
+    draw.text((gmfn_left + 30, chip_y + 15), gmfn_text, font=font_chip, fill="#F2CF77")
 
     out = BytesIO()
     image.convert("RGB").save(out, format="PNG", optimize=True)

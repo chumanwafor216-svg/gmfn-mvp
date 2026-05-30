@@ -220,9 +220,9 @@ async function serveShareCardProxy(res, gmfnId, searchParams) {
       "Cache-Control": "public, max-age=300",
     });
   } catch {
-    const fallback = path.join(distRoot, "gsn-share-poster.svg");
+    const fallback = path.join(distRoot, "gsn-share-poster.png");
     if (existsSync(fallback)) {
-      createReadStream(fallback).pipe(writeHead(res, 200, "image/svg+xml; charset=utf-8"));
+      createReadStream(fallback).pipe(writeHead(res, 200, "image/png"));
       return;
     }
     send(res, 404, "Preview card unavailable", "text/plain; charset=utf-8");
