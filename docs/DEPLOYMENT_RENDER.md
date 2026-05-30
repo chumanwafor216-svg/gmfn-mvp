@@ -103,6 +103,29 @@ a direct Render deploy was triggered unless the workflow shows the deploy hook
 or Render API deploy request was accepted, or Render auto-deploy is confirmed in
 the Render dashboard.
 
+## 4.2 Active pilot deploy protocol
+
+For the active pilot, every completed verified fix follows this protocol unless
+the product owner explicitly says not to publish:
+
+1. Commit the completed fix locally.
+2. Push the working branch.
+3. Fast-forward `main` to the same verified commit.
+4. Confirm that GitHub Actions started `Trigger Render Deploy` for the `main`
+   push.
+5. Confirm one of these deployment proofs:
+   - `Trigger frontend deploy hook` completed successfully;
+   - `Trigger frontend deploy through Render API` completed successfully;
+   - Render auto-deploy is confirmed in the Render dashboard;
+   - an owner-provided Render deploy hook was triggered out of band and returned
+     a deploy id.
+6. Report the branch, commit SHA, GitHub Actions run, and Render deploy proof.
+
+Never commit Render deploy hook URLs, API keys, or other deployment credentials
+to this repository. If a deploy hook is shared in chat for immediate pilot
+recovery, use it only as a one-time secret trigger and record only the returned
+deploy id, not the hook URL.
+
 ## 5. Promote the first real admin
 
 After a real user account is created in production, promote it with:

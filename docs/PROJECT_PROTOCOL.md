@@ -609,6 +609,27 @@ If uncertainty remains, the assistant should clearly separate:
 - inferred behavior
 - assumptions needing confirmation
 
+### 11.1 Active pilot publish and deploy protocol
+
+During active pilot testing, completed verified fixes must be published unless
+the product owner explicitly says not to publish yet.
+
+The assistant should:
+
+1. Stage only files that belong to the completed fix.
+2. Commit the fix with a concrete message.
+3. Push the working branch.
+4. Promote the same verified commit to `main`, because `main` is the Render
+   deployment branch.
+5. Verify the `Trigger Render Deploy` GitHub Actions run after the `main` push.
+6. If GitHub deploy credentials are missing, use an owner-provided Render deploy
+   hook only as a secret/out-of-band trigger and report the returned deploy id.
+7. Never store Render deploy hooks, API keys, or other deployment credentials in
+   code, docs, tests, or handoff notes.
+8. Separate confirmed deployment facts from assumptions. A Git push is not the
+   same as a Render deploy unless the workflow, Render auto-deploy, or Render
+   API/hook response proves it.
+
 ---
 
 ## 12. Definition of done

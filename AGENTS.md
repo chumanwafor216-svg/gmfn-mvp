@@ -250,6 +250,13 @@ For every coding task:
    - remaining risks or unknowns
 8. Update `docs/HANDOFF_NOTES.md` after substantial work so the next session can resume without depending on chat history.
 9. During active pilot testing, commit and push completed fixes unless the product owner explicitly says not to publish yet. If the worktree contains unrelated changes, stage only the files that belong to the completed fix and report the pushed branch/commit.
+10. Active pilot deploy protocol:
+   - after a verified fix is committed, push the working branch and promote the same commit to `main`;
+   - treat `main` as the Render deployment branch;
+   - verify the `Trigger Render Deploy` GitHub Actions run after the `main` push;
+   - if GitHub does not have `RENDER_FRONTEND_DEPLOY_HOOK_URL` or `RENDER_API_KEY`, trigger the frontend Render deploy hook out-of-band when the product owner provides it and report the Render deploy id;
+   - never commit Render deploy hook URLs, API keys, or other deployment secrets into the repository;
+   - do not claim Render deployed unless the GitHub workflow accepted a deploy hook/API request, Render auto-deploy is confirmed, or Render returned a deploy id.
 
 ---
 

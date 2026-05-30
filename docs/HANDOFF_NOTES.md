@@ -1,3 +1,25 @@
+### Active pilot deploy protocol codified (2026-05-30)
+
+- Follow-up from product-owner request: "can you make it a protocol moving
+  forward."
+- Updated root `AGENTS.md`:
+  - active pilot fixes must be committed, pushed to the working branch, and
+    promoted to `main` unless the product owner explicitly says not to publish;
+  - `main` is treated as the Render deployment branch;
+  - the assistant must verify the `Trigger Render Deploy` GitHub Actions run;
+  - if GitHub credentials are missing, an owner-provided Render deploy hook may
+    be used only out of band, and only the returned deploy id should be reported.
+- Updated `docs/PROJECT_PROTOCOL.md` with the same active pilot
+  publish/deploy protocol.
+- Updated `docs/DEPLOYMENT_RENDER.md` with deploy-proof requirements:
+  GitHub deploy hook success, GitHub Render API success, confirmed Render
+  auto-deploy, or a returned out-of-band Render deploy id.
+- Truth/devil's advocate:
+  - the protocol is now written into repo instructions;
+  - the Render hook itself is intentionally not stored in code or docs;
+  - future sessions still need an actual GitHub secret or an owner-provided
+    out-of-band hook to prove direct Render deployment.
+
 ### Render frontend deploy API fallback wiring (2026-05-30)
 
 - Follow-up from product-owner asking to fix Render deploy triggering and
