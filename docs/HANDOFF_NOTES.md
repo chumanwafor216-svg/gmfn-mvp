@@ -1,3 +1,39 @@
+### Finance button and phone icon baseline (2026-05-30)
+
+- Route/screen affected:
+  - `/app/finance`, implemented by `frontend/src/pages/FinancePage.tsx`.
+- Follow-up from product-owner request to move the page-by-page audit from
+  Trust Passport into Finance.
+- Confirmed truth:
+  - Finance is the member's cumulative money story across marketplaces, while
+    each Marketplace still owns its local finance truth;
+  - the Finance route had working stable actions, but visible phone surfaces
+    still used emoji marks and one radial glow background, which can render
+    fake or inconsistent across phones;
+  - action inventory is now locked at 9 stable source actions / 15 expected
+    rendered action roots, including mapped main and mini tool controls.
+- Updated `frontend/src/pages/FinancePage.tsx`:
+  - added deterministic route-local `FinanceGlyph` SVG marks and
+    `FinanceSectionLabel` for visible finance labels;
+  - replaced emoji marks on summary tiles, main tools, mini tools, recent-event
+    direction marks, cash-flow label, recent-events label, and Finance Signals;
+  - removed the Finance hero radial glow background;
+  - tightened main finance tools to 96px on phone / 132px desktop;
+  - tightened mini finance tools to 68px on phone / 76px desktop;
+  - replaced harsh `overflowWrap: "anywhere"` on phone-visible amount text with
+    safer word wrapping.
+- Updated guardrails:
+  - added `audit:finance-button-inventory`;
+  - updated `audit:finance-actions` to require deterministic glyphs, shorter
+    phone-safe heights, no emoji marks, no radial glow, and no harsh wrapping;
+  - updated shared `audit:button-stability` for the new Finance control
+    heights.
+- Remaining truth:
+  - this is the first Finance phone/button polish baseline. The deeper tables
+    are still dense evidence surfaces; if real phone testing says Finance is
+    still too long, the next honest move is progressive disclosure/table-card
+    conversion, not squeezing every row smaller.
+
 ### Trust Passport second phone compression (2026-05-30)
 
 - Route/screen affected:

@@ -125,6 +125,21 @@ type CrossCommunityPoolSummary = {
   items?: CrossCommunityPoolItem[];
 };
 
+type FinanceGlyphName =
+  | "bank"
+  | "card"
+  | "chart"
+  | "check"
+  | "community"
+  | "down"
+  | "history"
+  | "ledger"
+  | "out"
+  | "receipt"
+  | "shield"
+  | "signal"
+  | "wallet";
+
 const FINANCE_UI_STORAGE_KEY = "gmfn.finance.sections.v3";
 
 const FINAL_LOAN_STATUSES = new Set([
@@ -526,11 +541,162 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function FinanceGlyph({
+  name,
+  size = 22,
+  color = "currentColor",
+}: {
+  name: FinanceGlyphName;
+  size?: number;
+  color?: string;
+}) {
+  const common = {
+    fill: "none",
+    stroke: color,
+    strokeWidth: 2.2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      focusable="false"
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      {name === "bank" ? (
+        <>
+          <path {...common} d="M4 10h16" />
+          <path {...common} d="M5 10 12 5l7 5" />
+          <path {...common} d="M6 10v8" />
+          <path {...common} d="M10 10v8" />
+          <path {...common} d="M14 10v8" />
+          <path {...common} d="M18 10v8" />
+          <path {...common} d="M4 19h16" />
+        </>
+      ) : null}
+      {name === "card" ? (
+        <>
+          <rect {...common} x="3.5" y="6" width="17" height="12" rx="2.5" />
+          <path {...common} d="M4 10h16" />
+          <path {...common} d="M7 15h4" />
+        </>
+      ) : null}
+      {name === "chart" ? (
+        <>
+          <path {...common} d="M4 18V7" />
+          <path {...common} d="M4 18h16" />
+          <path {...common} d="m7 15 3-3 3 2 4-6" />
+        </>
+      ) : null}
+      {name === "check" ? (
+        <>
+          <circle {...common} cx="12" cy="12" r="8" />
+          <path {...common} d="m8.5 12.2 2.2 2.2 4.8-5" />
+        </>
+      ) : null}
+      {name === "community" ? (
+        <>
+          <path {...common} d="M4 19V9l8-5 8 5v10" />
+          <path {...common} d="M9 19v-6h6v6" />
+          <path {...common} d="M4 19h16" />
+        </>
+      ) : null}
+      {name === "down" ? (
+        <>
+          <path {...common} d="M12 4v13" />
+          <path {...common} d="m7 12 5 5 5-5" />
+          <path {...common} d="M5 20h14" />
+        </>
+      ) : null}
+      {name === "history" ? (
+        <>
+          <path {...common} d="M4 12a8 8 0 1 0 2.35-5.65" />
+          <path {...common} d="M4 5v5h5" />
+          <path {...common} d="M12 8v5l3 2" />
+        </>
+      ) : null}
+      {name === "ledger" ? (
+        <>
+          <rect {...common} x="5" y="4" width="14" height="16" rx="2" />
+          <path {...common} d="M8 8h8" />
+          <path {...common} d="M8 12h8" />
+          <path {...common} d="M8 16h5" />
+        </>
+      ) : null}
+      {name === "out" ? (
+        <>
+          <path {...common} d="M12 20V7" />
+          <path {...common} d="m7 12 5-5 5 5" />
+          <path {...common} d="M5 20h14" />
+        </>
+      ) : null}
+      {name === "receipt" ? (
+        <>
+          <path {...common} d="M6 4h12v16l-2-1.2-2 1.2-2-1.2-2 1.2-2-1.2L6 20V4Z" />
+          <path {...common} d="M9 8h6" />
+          <path {...common} d="M9 12h6" />
+          <path {...common} d="M9 16h3" />
+        </>
+      ) : null}
+      {name === "shield" ? (
+        <>
+          <path {...common} d="M12 4 19 7v5c0 4.2-2.8 6.7-7 8-4.2-1.3-7-3.8-7-8V7l7-3Z" />
+          <path {...common} d="m9 12 2 2 4-4" />
+        </>
+      ) : null}
+      {name === "signal" ? (
+        <>
+          <path {...common} d="M4 18h16" />
+          <path {...common} d="M7 15v3" />
+          <path {...common} d="M12 10v8" />
+          <path {...common} d="M17 6v12" />
+        </>
+      ) : null}
+      {name === "wallet" ? (
+        <>
+          <rect {...common} x="3.5" y="6" width="17" height="12" rx="3" />
+          <path {...common} d="M16 12h4" />
+          <path {...common} d="M7 9h6" />
+        </>
+      ) : null}
+    </svg>
+  );
+}
+
+function FinanceSectionLabel({
+  icon,
+  children,
+  color,
+}: {
+  icon: FinanceGlyphName;
+  children: React.ReactNode;
+  color?: string;
+}) {
+  return (
+    <div
+      style={{
+        ...sectionLabel(),
+        color: color || "#42617D",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 8,
+      }}
+    >
+      <FinanceGlyph name={icon} size={17} />
+      <span>{children}</span>
+    </div>
+  );
+}
+
 function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
   return {
-    height: isCompact ? 120 : 144,
-    minHeight: isCompact ? 120 : 144,
-    maxHeight: isCompact ? 120 : 144,
+    height: isCompact ? 96 : 132,
+    minHeight: isCompact ? 96 : 132,
+    maxHeight: isCompact ? 96 : 132,
     borderRadius: 22,
     border: "1px solid rgba(19, 95, 209, 0.14)",
     background:
@@ -539,7 +705,7 @@ function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
       "0 14px 30px rgba(7,23,44,0.09), inset 0 1px 0 rgba(255,255,255,0.85)",
     color: "#07172C",
     display: "grid",
-    gap: 10,
+    gap: isCompact ? 6 : 10,
     justifyItems: "center",
     alignContent: "center",
     padding: isCompact ? 12 : 16,
@@ -551,10 +717,10 @@ function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
 
 function financeMiniToolButtonStyle(isCompact: boolean): React.CSSProperties {
   return {
-    height: isCompact ? 82 : 76,
-    minHeight: isCompact ? 82 : 76,
-    maxHeight: isCompact ? 82 : 76,
-    padding: isCompact ? "12px 10px" : "12px",
+    height: isCompact ? 68 : 76,
+    minHeight: isCompact ? 68 : 76,
+    maxHeight: isCompact ? 68 : 76,
+    padding: isCompact ? "10px 9px" : "12px",
     borderRadius: 20,
     border: "1px solid rgba(216, 227, 238, 0.95)",
     background:
@@ -1471,7 +1637,7 @@ export default function FinancePage() {
           padding: isCompact ? 18 : 24,
           border: "1px solid rgba(214,170,69,0.32)",
           background:
-            "radial-gradient(circle at 88% 18%, rgba(214,170,69,0.20), transparent 24%), linear-gradient(145deg, #07172C 0%, #092642 62%, #03101F 100%)",
+            "linear-gradient(145deg, #07172C 0%, #092642 62%, #03101F 100%)",
           boxShadow: "0 24px 52px rgba(7,23,44,0.18)",
           color: "#F8FBFF",
           position: "relative",
@@ -1610,25 +1776,25 @@ export default function FinancePage() {
         >
           {[
             {
-              mark: "🏘️",
+              icon: "community" as FinanceGlyphName,
               label: "Communities",
               value: String(crossCommunitiesCount),
               note: "Active",
             },
             {
-              mark: "💼",
+              icon: "wallet" as FinanceGlyphName,
               label: "Visible balance",
               value: fmtFinanceAmount(crossMembershipPool, crossCurrency),
               note: `Set aside: ${fmtFinanceAmount(crossReservedPool, crossCurrency)}`,
             },
             {
-              mark: "💧",
+              icon: "down" as FinanceGlyphName,
               label: "Money in this month",
               value: fmtFinanceAmount(visibleMonthInflow, crossCurrency),
               note: "Paid in this month",
             },
             {
-              mark: "🛡️",
+              icon: "shield" as FinanceGlyphName,
               label: "Trust score",
               value: safeStr(trustScore || "0"),
               note: safeStr(trustBand || "Not ready"),
@@ -1659,7 +1825,7 @@ export default function FinancePage() {
                   textTransform: "uppercase",
                 }}
               >
-                <span style={{ fontSize: 17, lineHeight: 1 }}>{item.mark}</span>
+                <FinanceGlyph name={item.icon} size={17} />
                 <span>{item.label}</span>
               </div>
               <div
@@ -1668,7 +1834,8 @@ export default function FinancePage() {
                   fontSize: isCompact ? 21 : 24,
                   fontWeight: 950,
                   lineHeight: 1.1,
-                  overflowWrap: "anywhere",
+                  overflowWrap: "break-word",
+                  wordBreak: "normal",
                 }}
               >
                 {item.value}
@@ -1696,7 +1863,7 @@ export default function FinancePage() {
           {[
             {
               id: "money-in",
-              mark: "💳",
+              icon: "card" as FinanceGlyphName,
               label: "Money In",
               detail: "Create a payment instruction.",
               action: () => openFinanceRoute(routes.moneyIn),
@@ -1704,7 +1871,7 @@ export default function FinancePage() {
             },
             {
               id: "reports",
-              mark: "📊",
+              icon: "chart" as FinanceGlyphName,
               label: "View Reports",
               detail: "See balances, support, and payment checks.",
               action: () => {
@@ -1715,7 +1882,7 @@ export default function FinancePage() {
             },
             {
               id: "bank-accounts",
-              mark: "🏦",
+              icon: "bank" as FinanceGlyphName,
               label: "Payment Rails",
               detail: "See bank and transfer details.",
               action: () => openFinanceRoute(routes.paymentRails),
@@ -1723,7 +1890,7 @@ export default function FinancePage() {
             },
             {
               id: "export-data",
-              mark: "📋",
+              icon: "ledger" as FinanceGlyphName,
               label: "View Ledger",
               detail: "See your money history.",
               action: () => {
@@ -1737,32 +1904,31 @@ export default function FinancePage() {
               key={item.id}
               onClick={item.action}
               fullWidth
-              stableHeight={isCompact ? 120 : 144}
+              stableHeight={isCompact ? 96 : 132}
               debugId={`finance.tool.${item.id}`}
               style={financeToolButtonStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
                 style={{
-                  width: 54,
-                  height: 54,
+                  width: isCompact ? 42 : 54,
+                  height: isCompact ? 42 : 54,
                   borderRadius: 999,
                   background: item.color,
                   color: "#FFFFFF",
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 24,
                   fontWeight: 950,
                   boxShadow: "0 10px 22px rgba(7,23,44,0.12)",
                 }}
               >
-                {item.mark}
+                <FinanceGlyph name={item.icon} size={isCompact ? 21 : 26} color="#FFFFFF" />
               </span>
               <span
                 style={{
                   ...brandClampLines(2),
-                  fontSize: 15,
+                  fontSize: isCompact ? 14 : 15,
                   fontWeight: 950,
                   lineHeight: 1.18,
                 }}
@@ -1793,7 +1959,9 @@ export default function FinancePage() {
             boxShadow: "0 12px 28px rgba(7, 23, 44, 0.06)",
           }}
         >
-          <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>🧭 More finance tools</div>
+          <FinanceSectionLabel icon="signal" color="#0B4EA2">
+            More finance tools
+          </FinanceSectionLabel>
           <div
             style={{
               marginTop: 12,
@@ -1804,25 +1972,25 @@ export default function FinancePage() {
           >
             {[
               {
-                icon: "💸",
+                icon: "out" as FinanceGlyphName,
                 label: "Money Out",
                 detail: "Send or release money",
                 action: () => openFinanceRoute(routes.moneyOut),
               },
               {
-                icon: "🧾",
+                icon: "receipt" as FinanceGlyphName,
                 label: "Payout Details",
                 detail: "Confirm payout information",
                 action: () => openFinanceRoute(routes.payoutDetails),
               },
               {
-                icon: "✅",
+                icon: "check" as FinanceGlyphName,
                 label: "Loan Readiness",
                 detail: "Check if you can request support",
                 action: () => openFinanceRoute(routes.loanReadiness),
               },
               {
-                icon: "🛡️",
+                icon: "shield" as FinanceGlyphName,
                 label: "Trust Passport",
                 detail: "See your trust record",
                 action: () => openFinanceRoute(routes.trust),
@@ -1832,7 +2000,7 @@ export default function FinancePage() {
                 key={tool.label}
                 onClick={tool.action}
                 fullWidth
-                stableHeight={isCompact ? 82 : 76}
+                stableHeight={isCompact ? 68 : 76}
                 debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                 style={financeMiniToolButtonStyle(isCompact)}
               >
@@ -1846,7 +2014,7 @@ export default function FinancePage() {
                     lineHeight: 1.15,
                   }}
                 >
-                  <span style={{ fontSize: 20, lineHeight: 1 }}>{tool.icon}</span>
+                  <FinanceGlyph name={tool.icon} size={isCompact ? 18 : 20} color="#0B4EA2" />
                   <span style={brandSingleLine()}>{tool.label}</span>
                 </span>
                 <span
@@ -1877,7 +2045,7 @@ export default function FinancePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>💧 Visible Cash Flow</div>
+          <FinanceSectionLabel icon="down">Visible Cash Flow</FinanceSectionLabel>
           <span style={badge(false)}>This month</span>
         </div>
 
@@ -1963,7 +2131,7 @@ export default function FinancePage() {
             flexWrap: "wrap",
           }}
         >
-          <div style={sectionLabel()}>🧾 Recent Finance Events</div>
+          <FinanceSectionLabel icon="history">Recent Finance Events</FinanceSectionLabel>
           <SubtleButton
             onClick={() => {
               setCollapsed((prev) => ({ ...prev, events: false }));
@@ -2025,7 +2193,11 @@ export default function FinancePage() {
                       fontWeight: 950,
                     }}
                   >
-                    {direction === "neutral" ? "•" : isOut ? "⬆️" : "⬇️"}
+                    <FinanceGlyph
+                      name={direction === "neutral" ? "history" : isOut ? "out" : "down"}
+                      size={18}
+                      color="#FFFFFF"
+                    />
                   </span>
                   <div style={{ minWidth: 0 }}>
                     <div
@@ -2099,7 +2271,9 @@ export default function FinancePage() {
           GSN
         </div>
         <div>
-          <div style={{ ...sectionLabel(), color: "#F2CF77" }}>🛡️ Finance Signals</div>
+          <FinanceSectionLabel icon="shield" color="#F2CF77">
+            Finance Signals
+          </FinanceSectionLabel>
           <div style={{ marginTop: 6, fontSize: 20, fontWeight: 950 }}>
             {financeFileReading.title}
           </div>
