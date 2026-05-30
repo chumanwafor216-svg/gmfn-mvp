@@ -163,6 +163,31 @@ assertContains(
   "Finance recent money history must render event cards on phone while preserving the desktop table."
 );
 
+assertContains(
+  /const supportBackedRows: Array<\[string, string\]>[\s\S]*?const communityMoneyContextRows: Array<\[string, string\]>/,
+  "Finance support/context evidence must use shared row definitions so mobile cards and desktop tables stay aligned."
+);
+
+assertContains(
+  /Support you requested[\s\S]*?borrowerLoans\.length === 0[\s\S]*?: isCompact \? \([\s\S]*?borrowerLoans\.map\(\(row, index\)[\s\S]*?<FinanceMobileRecord[\s\S]*?Remaining[\s\S]*?<table style=\{financeTable\(\)\}>/,
+  "Finance borrower support records must render mobile cards on phone while preserving the desktop table."
+);
+
+assertContains(
+  /isCompact \? \([\s\S]*?<FinanceMobileRecord[\s\S]*?title="Support you backed"[\s\S]*?supportBackedRows[\s\S]*?<table style=\{\{ \.\.\.financeTable\(\), minWidth: 520 \}\}>[\s\S]*?supportBackedRows\.map/,
+  "Finance backed-support summary must render a mobile card on phone while preserving the desktop table."
+);
+
+assertContains(
+  /isCompact \? \([\s\S]*?<FinanceMobileRecord[\s\S]*?title="Community money context"[\s\S]*?communityMoneyContextRows[\s\S]*?<table style=\{\{ \.\.\.financeTable\(\), minWidth: 520 \}\}>[\s\S]*?communityMoneyContextRows\.map/,
+  "Finance community money context must render a mobile card on phone while preserving the desktop table."
+);
+
+assertContains(
+  /Earnings from backing others[\s\S]*?guarantorEarningsItems\.length === 0[\s\S]*?: isCompact \? \([\s\S]*?guarantorEarningsItems\.slice\(0, 10\)\.map[\s\S]*?<FinanceMobileRecord[\s\S]*?Potential share[\s\S]*?<table style=\{financeTable\(\)\}>/,
+  "Finance backing-earnings records must render mobile cards on phone while preserving the desktop table."
+);
+
 assertNotContains(
   /[\u{1F300}-\u{1FAFF}]/gu,
   "Finance page must not use emoji marks that render inconsistently on phone browsers."

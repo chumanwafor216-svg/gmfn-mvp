@@ -1,3 +1,30 @@
+### Finance secondary support evidence tightening (2026-05-30)
+
+- Route/screen affected:
+  - `/app/finance`, implemented by `frontend/src/pages/FinancePage.tsx`.
+- Follow-up from the Finance phone evidence-card pass.
+- Confirmed truth:
+  - after the first evidence-card pass, the remaining phone-heavy Finance
+    surfaces were inside `Loans and support effect`;
+  - the action inventory was still stable, but the revealed support section
+    could still push wide tables into phone view.
+- Updated `frontend/src/pages/FinancePage.tsx`:
+  - converted `Support you requested`, `Support you backed`, `Community money
+    context`, and `Earnings from backing others` to `FinanceMobileRecord`
+    cards on phone;
+  - preserved the existing desktop tables for wider screens;
+  - added shared support/context row arrays so mobile cards and desktop tables
+    read from the same values;
+  - kept the Finance action inventory unchanged at 9 stable source actions /
+    15 expected rendered action roots.
+- Updated `frontend/tools/audit-finance-button-inventory.mjs`:
+  - now locks the secondary support evidence card/table split and the shared
+    row definitions.
+- Remaining truth:
+  - this completes the obvious phone table cleanup on the current Finance
+    page. The next Finance audit should be real-device visual review, not more
+    speculative compression.
+
 ### Finance phone evidence-card tightening (2026-05-30)
 
 - Route/screen affected:

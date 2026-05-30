@@ -1646,6 +1646,35 @@ export default function FinancePage() {
     ["Money history rows", String(poolEvents.length), "Recent money movements we can show you."],
   ];
 
+  const supportBackedRows: Array<[string, string]> = [
+    ["Total locked", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`],
+    ["Total released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`],
+    ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0)],
+    ["Historical guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0)],
+    [
+      "Note",
+      safeStr(
+        guarantorExposure?.note ||
+          "This is for your information. It is not an automatic debit."
+      ),
+    ],
+  ];
+
+  const communityMoneyContextRows: Array<[string, string]> = [
+    ["Community", safeStr(clanLiquidity?.clanName || communityLabel)],
+    ["Active loans", safeStr(clanLiquidity?.activeLoansCount ?? 0)],
+    ["Pledged total", safeStr(clanLiquidity?.pledgedTotal || "0")],
+    ["Locked total", safeStr(clanLiquidity?.lockedTotal || "0")],
+    ["Released total", safeStr(clanLiquidity?.releasedTotal || "0")],
+    [
+      "Note",
+      safeStr(
+        clanLiquidity?.note ||
+          "This shows the money context for this community."
+      ),
+    ],
+  ];
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
@@ -2685,6 +2714,45 @@ export default function FinancePage() {
                 <div style={{ marginTop: 10 }}>
                   {emptyRecord("No active support request is affecting your finance right now.")}
                 </div>
+              ) : isCompact ? (
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {borrowerLoans.map((row, index) => {
+                    const summary = loanSummaries[positiveNumber(row.id)] || null;
+                    const rowCurrency = safeStr(summary?.currency || row.currency || poolCurrency);
+                    const remainingAmount = parseMoneyNumber(summary?.remainingAmount);
+
+                    return (
+                      <FinanceMobileRecord
+                        key={`${row.id || index}`}
+                        title={safeStr(row.title || `Loan ${row.id || index + 1}`)}
+                        tone={remainingAmount > 0 ? "watch" : "neutral"}
+                        rows={[
+                          ["Status", safeStr(summary?.status || row.status || "Open")],
+                          [
+                            "Amount",
+                            `${safeStr(summary?.amount ?? row.amount ?? "0.00")} ${rowCurrency}`,
+                          ],
+                          ["Paid", `${safeStr(summary?.paidTotal ?? "0.00")} ${rowCurrency}`],
+                          [
+                            "Remaining",
+                            `${safeStr(summary?.remainingAmount ?? "0.00")} ${rowCurrency}`,
+                          ],
+                          ["Service fee", safeStr(summary?.serviceFee ?? "-")],
+                          ["Money received", safeStr(summary?.netDisbursed ?? "-")],
+                          ["Backed amount", safeStr(summary?.guarantorPool ?? "-")],
+                          [
+                            "Due / started",
+                            summary?.dueAt
+                              ? safeDateTime(summary.dueAt)
+                              : row.createdAt
+                                ? safeDateTime(row.createdAt)
+                                : "-",
+                          ],
+                        ]}
+                      />
+                    );
+                  })}
+                </div>
               ) : (
                 <div style={{ marginTop: 10, ...tableWrap() }}>
                   <table style={financeTable()}>
@@ -2755,62 +2823,52 @@ export default function FinancePage() {
                 gap: 12,
               }}
             >
-              <div style={innerCard("#F8FBFF")}>
-                <div style={sectionLabel()}>Support you backed</div>
-                <div style={{ marginTop: 10, ...tableWrap() }}>
-                  <table style={{ ...financeTable(), minWidth: 520 }}>
-                    <tbody>
-                      {[
-                        ["Total locked", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`],
-                        ["Total released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`],
-                        ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0)],
-                        ["Historical guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0)],
-                        [
-                          "Note",
-                          safeStr(
-                            guarantorExposure?.note ||
-                              "This is for your information. It is not an automatic debit."
-                          ),
-                        ],
-                      ].map(([label, value]) => (
-                        <tr key={label}>
-                          <td style={tableCell(true)}>{label}</td>
-                          <td style={tableCell()}>{value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {isCompact ? (
+                <FinanceMobileRecord
+                  title="Support you backed"
+                  tone={parseMoneyNumber(guarantorExposure?.totalLocked) > 0 ? "watch" : "neutral"}
+                  rows={supportBackedRows}
+                />
+              ) : (
+                <div style={innerCard("#F8FBFF")}>
+                  <div style={sectionLabel()}>Support you backed</div>
+                  <div style={{ marginTop: 10, ...tableWrap() }}>
+                    <table style={{ ...financeTable(), minWidth: 520 }}>
+                      <tbody>
+                        {supportBackedRows.map(([label, value]) => (
+                          <tr key={label}>
+                            <td style={tableCell(true)}>{label}</td>
+                            <td style={tableCell()}>{value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div style={innerCard("#FCFEFF")}>
-                <div style={sectionLabel()}>Community money context</div>
-                <div style={{ marginTop: 10, ...tableWrap() }}>
-                  <table style={{ ...financeTable(), minWidth: 520 }}>
-                    <tbody>
-                      {[
-                        ["Community", safeStr(clanLiquidity?.clanName || communityLabel)],
-                        ["Active loans", safeStr(clanLiquidity?.activeLoansCount ?? 0)],
-                        ["Pledged total", safeStr(clanLiquidity?.pledgedTotal || "0")],
-                        ["Locked total", safeStr(clanLiquidity?.lockedTotal || "0")],
-                        ["Released total", safeStr(clanLiquidity?.releasedTotal || "0")],
-                        [
-                          "Note",
-                          safeStr(
-                            clanLiquidity?.note ||
-                              "This shows the money context for this community."
-                          ),
-                        ],
-                      ].map(([label, value]) => (
-                        <tr key={label}>
-                          <td style={tableCell(true)}>{label}</td>
-                          <td style={tableCell()}>{value}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+              {isCompact ? (
+                <FinanceMobileRecord
+                  title="Community money context"
+                  rows={communityMoneyContextRows}
+                />
+              ) : (
+                <div style={innerCard("#FCFEFF")}>
+                  <div style={sectionLabel()}>Community money context</div>
+                  <div style={{ marginTop: 10, ...tableWrap() }}>
+                    <table style={{ ...financeTable(), minWidth: 520 }}>
+                      <tbody>
+                        {communityMoneyContextRows.map(([label, value]) => (
+                          <tr key={label}>
+                            <td style={tableCell(true)}>{label}</td>
+                            <td style={tableCell()}>{value}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div>
@@ -2818,6 +2876,23 @@ export default function FinancePage() {
               {guarantorEarningsItems.length === 0 ? (
                 <div style={{ marginTop: 10 }}>
                   {emptyRecord("No earnings from backing others are showing yet.")}
+                </div>
+              ) : isCompact ? (
+                <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
+                  {guarantorEarningsItems.slice(0, 10).map((item, index) => (
+                    <FinanceMobileRecord
+                      key={`${item?.loan_guarantor_id || index}`}
+                      title={`Loan ${safeStr(item?.loan_id || "-")}`}
+                      tone={parseMoneyNumber(item?.share_amount) > 0 ? "good" : "neutral"}
+                      rows={[
+                        ["Support row", safeStr(item?.loan_guarantor_id || "-")],
+                        ["Support weight", safeStr(item?.weight_amount || "0.00")],
+                        ["Potential share", safeStr(item?.share_amount || "0.00")],
+                        ["Status", safeStr(item?.earning_status || item?.status || "-")],
+                        ["Currency", safeStr(item?.currency || poolCurrency)],
+                      ]}
+                    />
+                  ))}
                 </div>
               ) : (
                 <div style={{ marginTop: 10, ...tableWrap() }}>
