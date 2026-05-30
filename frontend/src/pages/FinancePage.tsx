@@ -820,6 +820,92 @@ function emptyRecord(text: string) {
   );
 }
 
+function FinanceMobileRecord({
+  title,
+  tone = "neutral",
+  rows,
+}: {
+  title: string;
+  tone?: "neutral" | "watch" | "good";
+  rows: Array<[string, React.ReactNode]>;
+}) {
+  const accent =
+    tone === "watch" ? "#B78321" : tone === "good" ? "#168254" : "#0B4EA2";
+
+  return (
+    <div
+      style={{
+        ...innerCard("#F8FBFF"),
+        borderColor: "rgba(31,115,224,0.12)",
+        display: "grid",
+        gap: 10,
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          color: "#07172C",
+          fontSize: 15,
+          fontWeight: 950,
+          lineHeight: 1.22,
+          overflowWrap: "break-word",
+        }}
+      >
+        {title}
+      </div>
+      <div
+        aria-hidden="true"
+        style={{
+          width: 44,
+          height: 3,
+          borderRadius: 999,
+          background: accent,
+        }}
+      />
+      <div style={{ display: "grid", gap: 8 }}>
+        {rows.map(([label, value]) => (
+          <div
+            key={label}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(92px, 0.42fr) minmax(0, 1fr)",
+              gap: 10,
+              alignItems: "start",
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                color: "#5D7389",
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: 0.2,
+                lineHeight: 1.25,
+                textTransform: "uppercase",
+              }}
+            >
+              {label}
+            </div>
+            <div
+              style={{
+                color: "#243B53",
+                fontSize: 13.5,
+                fontWeight: 800,
+                lineHeight: 1.35,
+                minWidth: 0,
+                overflowWrap: "break-word",
+                wordBreak: "normal",
+              }}
+            >
+              {value}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function readLocalJSON<T>(key: string, fallback: T): T {
   try {
     if (typeof window === "undefined") return fallback;
@@ -1544,6 +1630,21 @@ export default function FinancePage() {
     financePressureEventCount,
     pendingReconciliationCount,
   ]);
+
+  const financePositionRows: Array<[string, string, string]> = [
+    ["Community balance", `${poolAmount} ${poolCurrency}`, "Money currently showing for this community."],
+    ["Available now", `${effectiveAvailable} ${poolCurrency}`, "Money available after anything set aside."],
+    ["Set aside", `${reservedPool} ${poolCurrency}`, "Money held for a reason, such as support or commitment."],
+    ["Money in waiting", `${pendingDeposits} ${poolCurrency}`, "Incoming money not completed yet."],
+    ["Money out waiting", `${pendingWithdrawals} ${poolCurrency}`, "Outgoing money not completed yet."],
+    ["Borrowed support total", `${fmtMoney(borrowerRequestedTotal)} ${poolCurrency}`, "Support you requested that is still active."],
+    ["Still to repay", `${fmtMoney(borrowerRemainingTotal)} ${poolCurrency}`, "Repayment amount still showing."],
+    ["Guarantees held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed."],
+    ["Guarantees released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`, "Support already released from past backing."],
+    ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0), "People you are still backing now."],
+    ["Past guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0), "People you backed before."],
+    ["Money history rows", String(poolEvents.length), "Recent money movements we can show you."],
+  ];
 
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
@@ -2372,39 +2473,41 @@ export default function FinancePage() {
         </div>
 
         {!collapsed.overview ? (
-          <div style={{ marginTop: 14, ...tableWrap() }}>
-            <table style={financeTable()}>
-              <thead>
-                <tr>
-                  <th style={tableHeadCell()}>Item</th>
-                  <th style={tableHeadCell()}>Amount / count</th>
-                  <th style={tableHeadCell()}>What it means</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ["Community balance", `${poolAmount} ${poolCurrency}`, "Money currently showing for this community."],
-                  ["Available now", `${effectiveAvailable} ${poolCurrency}`, "Money available after anything set aside."],
-                  ["Set aside", `${reservedPool} ${poolCurrency}`, "Money held for a reason, such as support or commitment."],
-                  ["Money in waiting", `${pendingDeposits} ${poolCurrency}`, "Incoming money not completed yet."],
-                  ["Money out waiting", `${pendingWithdrawals} ${poolCurrency}`, "Outgoing money not completed yet."],
-                  ["Borrowed support total", `${fmtMoney(borrowerRequestedTotal)} ${poolCurrency}`, "Support you requested that is still active."],
-                  ["Still to repay", `${fmtMoney(borrowerRemainingTotal)} ${poolCurrency}`, "Repayment amount still showing."],
-                  ["Guarantees held", `${safeStr(guarantorExposure?.totalLocked || "0")} ${poolCurrency}`, "Support still held for people you backed."],
-                  ["Guarantees released", `${safeStr(guarantorExposure?.totalReleased || "0")} ${poolCurrency}`, "Support already released from past backing."],
-                  ["Active guarantees", safeStr(guarantorExposure?.activeGuarantees ?? 0), "People you are still backing now."],
-                  ["Past guarantees", safeStr(guarantorExposure?.historicalGuarantees ?? 0), "People you backed before."],
-                  ["Money history rows", String(poolEvents.length), "Recent money movements we can show you."],
-                ].map(([label, value, meaning]) => (
-                  <tr key={label}>
-                    <td style={tableCell(true)}>{label}</td>
-                    <td style={tableCell(true)}>{value}</td>
-                    <td style={tableCell()}>{meaning}</td>
+          isCompact ? (
+            <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
+              {financePositionRows.map(([label, value, meaning]) => (
+                <FinanceMobileRecord
+                  key={label}
+                  title={label}
+                  rows={[
+                    ["Amount / count", value],
+                    ["Meaning", meaning],
+                  ]}
+                />
+              ))}
+            </div>
+          ) : (
+            <div style={{ marginTop: 14, ...tableWrap() }}>
+              <table style={financeTable()}>
+                <thead>
+                  <tr>
+                    <th style={tableHeadCell()}>Item</th>
+                    <th style={tableHeadCell()}>Amount / count</th>
+                    <th style={tableHeadCell()}>What it means</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {financePositionRows.map(([label, value, meaning]) => (
+                    <tr key={label}>
+                      <td style={tableCell(true)}>{label}</td>
+                      <td style={tableCell(true)}>{value}</td>
+                      <td style={tableCell()}>{meaning}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
         ) : null}
       </section>
 
@@ -2459,6 +2562,41 @@ export default function FinancePage() {
 
             {activeExpectedPayments.length === 0 ? (
               emptyRecord("No payment is waiting for confirmation right now.")
+            ) : isCompact ? (
+              <div style={{ display: "grid", gap: 10 }}>
+                {activeExpectedPayments.slice(0, 10).map((item, index) => (
+                  <FinanceMobileRecord
+                    key={`${item.id || index}`}
+                    title={safeStr(item.expected_type || "Expected payment")}
+                    tone={expectedPaymentState(item) === "Confirmed" ? "good" : "watch"}
+                    rows={[
+                      ["Reference", safeStr(item.reference_display || "-")],
+                      [
+                        "Amount",
+                        `${safeStr(item.amount || "0.00")} ${safeStr(item.currency || poolCurrency)}`,
+                      ],
+                      ["Payment check", expectedPaymentState(item)],
+                      [
+                        "Status",
+                        `${safeStr(item.status || "expected")}${
+                          item.status_reason ? ` - ${safeStr(item.status_reason)}` : ""
+                        }`,
+                      ],
+                      [
+                        "Date",
+                        item.confirmed_at
+                          ? `Confirmed: ${safeDateTime(item.confirmed_at)}`
+                          : item.due_at
+                            ? `Due: ${safeDateTime(item.due_at)}`
+                            : item.matched_bank_event_id
+                              ? "Bank match started"
+                              : "-",
+                      ],
+                      ["Next action", expectedPaymentNextAction(item)],
+                    ]}
+                  />
+                ))}
+              </div>
             ) : (
               <div style={tableWrap()}>
                 <table style={financeTable()}>
@@ -2759,6 +2897,26 @@ export default function FinancePage() {
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
             {poolEvents.length === 0 ? (
               emptyRecord("No recent money movement is showing yet.")
+            ) : isCompact ? (
+              <div style={{ display: "grid", gap: 10 }}>
+                {poolEvents.slice(0, 12).map((row, index) => (
+                  <FinanceMobileRecord
+                    key={`${row.id || index}`}
+                    title={safeStr(row.eventType || "Money event")}
+                    tone={poolEventDirection(row) === "in" ? "good" : "neutral"}
+                    rows={[
+                      [
+                        "Amount",
+                        `${safeStr(row.amount || "-")} ${safeStr(row.currency || poolCurrency)}`,
+                      ],
+                      ["Reference", safeStr(row.reference || "-")],
+                      ["Note", safeStr(row.note || "-")],
+                      ["Created", row.createdAt ? safeDateTime(row.createdAt) : "-"],
+                      ["Confirmed", row.confirmedAt ? safeDateTime(row.confirmedAt) : "-"],
+                    ]}
+                  />
+                ))}
+              </div>
             ) : (
               <div style={tableWrap()}>
                 <table style={financeTable()}>

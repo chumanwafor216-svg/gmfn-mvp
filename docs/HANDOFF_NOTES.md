@@ -1,3 +1,28 @@
+### Finance phone evidence-card tightening (2026-05-30)
+
+- Route/screen affected:
+  - `/app/finance`, implemented by `frontend/src/pages/FinancePage.tsx`.
+- Follow-up after the first Finance button/icon baseline.
+- Confirmed truth:
+  - the button/action inventory was stable, but the deeper Finance evidence
+    surfaces still pushed wide tables into phone view;
+  - this could make the page feel unpolished even when the buttons themselves
+    were steady.
+- Updated `frontend/src/pages/FinancePage.tsx`:
+  - added a route-local `FinanceMobileRecord` primitive for phone evidence rows;
+  - converted `Your money position`, `Payments waiting for confirmation`, and
+    `Recent money history` to compact cards on phone;
+  - preserved the existing desktop tables for wider screens;
+  - kept the Finance action inventory unchanged at 9 stable source actions /
+    15 expected rendered action roots.
+- Updated `frontend/tools/audit-finance-button-inventory.mjs`:
+  - now locks the phone-card/desktop-table split for the three dense Finance
+    evidence sections.
+- Remaining truth:
+  - borrower/support evidence tables are still table-based. They are behind a
+    secondary reveal and should be audited next only if phone testing shows
+    that section is still too heavy.
+
 ### Finance button and phone icon baseline (2026-05-30)
 
 - Route/screen affected:

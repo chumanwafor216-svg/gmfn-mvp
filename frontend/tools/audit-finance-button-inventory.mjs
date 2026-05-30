@@ -143,6 +143,26 @@ assertContains(
   "Finance phone-visible section labels must use deterministic glyphs instead of emoji text."
 );
 
+assertContains(
+  /function FinanceMobileRecord\([\s\S]*?gridTemplateColumns: "minmax\(92px, 0\.42fr\) minmax\(0, 1fr\)"/,
+  "Finance phone evidence rows must use a compact mobile card primitive instead of forcing wide tables."
+);
+
+assertContains(
+  /id="finance-summary"[\s\S]*?!collapsed\.overview \? \([\s\S]*?isCompact \? \([\s\S]*?financePositionRows\.map\(\(\[label, value, meaning\]\)[\s\S]*?<FinanceMobileRecord[\s\S]*?financePositionRows\.map\(\(\[label, value, meaning\]\)[\s\S]*?<tr key=\{label\}>/,
+  "Finance summary must render mobile cards on phone while preserving the desktop table."
+);
+
+assertContains(
+  /id="finance-reconciliation"[\s\S]*?activeExpectedPayments\.length === 0[\s\S]*?: isCompact \? \([\s\S]*?activeExpectedPayments\.slice\(0, 10\)\.map[\s\S]*?<FinanceMobileRecord[\s\S]*?Payment check[\s\S]*?<table style=\{financeTable\(\)\}>/,
+  "Finance reconciliation must render payment cards on phone while preserving the desktop table."
+);
+
+assertContains(
+  /id="finance-events"[\s\S]*?poolEvents\.length === 0[\s\S]*?: isCompact \? \([\s\S]*?poolEvents\.slice\(0, 12\)\.map[\s\S]*?<FinanceMobileRecord[\s\S]*?Confirmed[\s\S]*?<table style=\{financeTable\(\)\}>/,
+  "Finance recent money history must render event cards on phone while preserving the desktop table."
+);
+
 assertNotContains(
   /[\u{1F300}-\u{1FAFF}]/gu,
   "Finance page must not use emoji marks that render inconsistently on phone browsers."
