@@ -22,18 +22,8 @@ import {
   getSelectedClanId,
   listMarketplaceRequests,
   listMyClans,
-  safeCopy,
   selectClan,
 } from "../lib/api";
-import {
-  buildInviteBundle,
-  getFirstCircleProgress,
-  getSuggestedRelationshipsForRole,
-  isContactInviteReady,
-  loadFirstCircleDraft,
-  relationshipLabel,
-  roleLabel,
-} from "../lib/firstCircle";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
@@ -88,8 +78,6 @@ type ClanItem = {
 
 type NoticeTone = "success" | "error";
 type CollapseKey =
-  | "tools"
-  | "circle"
   | "spotlight"
   | "communities";
 
@@ -601,16 +589,6 @@ function collapseToggle(): React.CSSProperties {
   };
 }
 
-function collapseHeaderLayout(isCompact: boolean): React.CSSProperties {
-  return {
-    position: "relative",
-    display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-    gap: isCompact ? 10 : 12,
-    alignItems: "start",
-  };
-}
-
 function collapseHeaderText(align: "left" | "center" = "left"): React.CSSProperties {
   return {
     minWidth: 0,
@@ -824,8 +802,6 @@ function writeLocalJSON(key: string, value: any) {
 
 function defaultCollapseState(): CollapseState {
   return {
-    tools: true,
-    circle: true,
     spotlight: false,
     communities: false,
   };
@@ -835,8 +811,6 @@ function normalizeCollapseState(raw: any): CollapseState {
   const base = defaultCollapseState();
 
   return {
-    tools: Boolean(raw?.tools ?? base.tools),
-    circle: Boolean(raw?.circle ?? base.circle),
     spotlight: Boolean(raw?.spotlight ?? base.spotlight),
     communities: Boolean(raw?.communities ?? base.communities),
   };
@@ -880,10 +854,6 @@ export default function CommunityHomePage() {
   const [activeCommunitySpotlightSyncIssue, setActiveCommunitySpotlightSyncIssue] =
     useState("");
   const activeCommunitySpotlightsRef = useRef<ActiveCommunitySpotlight[]>([]);
-
-  const [firstCircleDraft, setFirstCircleDraft] = useState(() =>
-    loadFirstCircleDraft()
-  );
 
   const [collapsed, setCollapsed] = useState<CollapseState>(() =>
     normalizeCollapseState(
@@ -984,26 +954,6 @@ export default function CommunityHomePage() {
       window.clearTimeout(timer);
     };
   }, [notice]);
-
-  useEffect(() => {
-    function refreshFirstCircleDraft() {
-      setFirstCircleDraft(loadFirstCircleDraft());
-    }
-
-    refreshFirstCircleDraft();
-
-    if (typeof window === "undefined") return;
-
-    window.addEventListener("focus", refreshFirstCircleDraft);
-    window.addEventListener("storage", refreshFirstCircleDraft);
-    document.addEventListener("visibilitychange", refreshFirstCircleDraft);
-
-    return () => {
-      window.removeEventListener("focus", refreshFirstCircleDraft);
-      window.removeEventListener("storage", refreshFirstCircleDraft);
-      document.removeEventListener("visibilitychange", refreshFirstCircleDraft);
-    };
-  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -1117,12 +1067,6 @@ export default function CommunityHomePage() {
         "marketplace",
         selectedClanId,
         "community-home.route.marketplace"
-      ),
-      marketplaceOwnedLinks: routeTarget(
-        "marketplace",
-        selectedClanId,
-        "community-home.route.marketplace-owned-links",
-        { hash: "marketplace-owned-links" }
       ),
       shop: routeTarget("shop", selectedClanId, "community-home.route.shop"),
       shopSpotlight: routeTarget(
@@ -1385,21 +1329,6 @@ export default function CommunityHomePage() {
     [selectedClanId, selectedClanName]
   );
 
-  const firstCircleProgress = useMemo(
-    () => getFirstCircleProgress(firstCircleDraft),
-    [firstCircleDraft]
-  );
-
-  const readyFirstCircleContacts = useMemo(() => {
-    return firstCircleDraft.contacts.filter(
-      (item) => item.selected && isContactInviteReady(item)
-    );
-  }, [firstCircleDraft]);
-
-  const firstCircleRelationshipHints = useMemo(() => {
-    return getSuggestedRelationshipsForRole(firstCircleDraft.memberRole);
-  }, [firstCircleDraft.memberRole]);
-
   const spotlightHandleItems = useMemo<NextActionGuideItem[]>(
     () => [
       {
@@ -1495,9 +1424,9 @@ export default function CommunityHomePage() {
         return {
           title: "Grow your trusted circle",
           detail:
-            "GSN will open the trusted-circle section so you can prepare the people you already know in real life.",
-          firstStep: "Open the trusted-circle section.",
-          continueLabel: "Open trusted circle",
+            "GSN will open First Circle so you can prepare the people you already know in real life.",
+          firstStep: "Open First Circle.",
+          continueLabel: "Open First Circle",
           continueTone: "primary",
         };
       case "shop-control":
@@ -2209,56 +2138,6 @@ export default function CommunityHomePage() {
     if (!resolution) return;
 
     handleCommunityNextAction(item, event, resolution);
-  }
-
-  async function openSelectedMarketplaceLinks(
-    event?: React.SyntheticEvent<HTMLElement>
-  ) {
-    consumeCommunityButtonEvent(event);
-
-    if (!selectedClanId || !selectedClan) {
-      showNotice("error", "Select a community first.");
-      return;
-    }
-
-    setChangingClanId(selectedClanId);
-
-    try {
-      await selectClan(selectedClanId);
-      navigateWithOrigin(navigate, routes.marketplaceOwnedLinks, location);
-    } catch (err: any) {
-      showNotice(
-        "error",
-        safeStr(err?.message) ||
-          "Selected community links could not be opened yet."
-      );
-    } finally {
-      setChangingClanId(0);
-    }
-  }
-
-  async function copyFirstCircleInviteBundle(event?: React.SyntheticEvent<HTMLElement>) {
-    consumeCommunityButtonEvent(event);
-
-    if (readyFirstCircleContacts.length === 0) {
-      showNotice("error", "No ready invite draft is available yet.");
-      return;
-    }
-
-    const bundle = buildInviteBundle({
-      draft: firstCircleDraft,
-      memberName: resolveMemberName(me),
-      gmfnId: safeStr(me?.gmfn_id || ""),
-      communityName: selectedClanName || "your community",
-    });
-
-    const copied = await safeCopy(bundle);
-    showNotice(
-      copied ? "success" : "error",
-      copied
-        ? "First-circle invite message copied."
-        : "Copy did not complete. Select the invite message and copy it manually."
-    );
   }
 
   if (loading) {
@@ -3238,327 +3117,6 @@ export default function CommunityHomePage() {
             </StableButton>
           ))}
         </div>
-      </section>
-
-      <section style={{ ...communityBlockCard("blue"), order: 55, display: "none" }}>
-        <div>
-          <div style={collapseHeaderText("center")}>
-            <div style={sectionLabel("center")}>Owner actions from Community Home</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: isCompact ? 12.5 : 14,
-                lineHeight: isCompact ? 1.5 : 1.75,
-                textAlign: "center",
-              }}
-            >
-              Start a community, open owner-side tools that follow your one GSN
-              ID, or hand off into the selected marketplace. Marketplace keeps
-              one community's live operating lanes together, while the
-              marketplace link desk carries that community's outward links.
-            </div>
-          </div>
-
-          <div style={collapseButtonRow()}>
-            <StableButton
-              type="button"
-              debugId="community-home.owner-actions.toggle"
-              onClick={(event) => toggleSectionFromButton(event, "tools")}
-              style={collapseHeaderButton(isCompact)}
-            >
-              {collapsed.tools ? "Open owner actions" : "Collapse owner actions"}
-            </StableButton>
-          </div>
-        </div>
-
-        {!collapsed.tools ? (
-          <div
-            style={{
-              marginTop: isCompact ? 10 : 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "repeat(2, minmax(0, 1fr))"
-                : "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: isCompact ? 8 : 10,
-            }}
-          >
-            <StableButton
-              type="button"
-              debugId="community-home.owner-actions.create-community"
-              onClick={(event) => openCommunityRoute(event, routes.clans)}
-              style={communityActionStyle("primary")}
-            >
-              Create New Community
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="community-home.owner-actions.marketplace-links"
-              onClick={(event) => void openSelectedMarketplaceLinks(event)}
-              style={communityActionStyle(
-                "secondary",
-                !selectedClanId || changingClanId === selectedClanId
-              )}
-            >
-              {changingClanId === selectedClanId
-                ? "Opening..."
-                : "Open Marketplace Link Desk"}
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="community-home.owner-actions.grow-circle"
-              onClick={(event) =>
-                openCommunityHomeSection(
-                  event,
-                  "community-home-grow-your-circle",
-                  "circle"
-                )
-              }
-              style={communityActionStyle("secondary")}
-            >
-              Grow Trusted Circle
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="community-home.owner-actions.shop-control"
-              onClick={openCommunityShopControl}
-              style={communityActionStyle("secondary")}
-            >
-              Open Shop Control
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="community-home.owner-actions.notifications"
-              onClick={(event) =>
-                openCommunityRoute(event, routes.notifications)
-              }
-              style={communityActionStyle("secondary")}
-            >
-              Notifications
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="community-home.owner-actions.selected-marketplace"
-              onClick={(event) => void openSelectedMarketplace(event)}
-              style={communityActionStyle(
-                "secondary",
-                !selectedClanId || changingClanId === selectedClanId
-              )}
-            >
-              {changingClanId === selectedClanId
-                ? "Opening..."
-                : "Open Selected Marketplace"}
-            </StableButton>
-          </div>
-        ) : null}
-      </section>
-
-      {null}
-
-      <section
-        id="community-home-grow-your-circle"
-        style={{ ...communityBlockCard("gold"), order: 70, display: "none" }}
-      >
-        <div
-          style={collapseHeaderLayout(isCompact)}
-        >
-          <div style={collapseHeaderText("center")}>
-            <div style={sectionLabel("center")}>Grow your trusted circle</div>
-            <div
-              style={{
-                marginTop: 8,
-                color: "#5F7287",
-                fontSize: isCompact ? 12.5 : 14,
-                lineHeight: isCompact ? 1.5 : 1.75,
-                textAlign: "center",
-              }}
-            >
-              Invite trusted real-life people.
-            </div>
-          </div>
-
-          <StableButton
-            type="button"
-            debugId="community-home.circle.toggle"
-            onClick={(event) => toggleSectionFromButton(event, "circle")}
-            style={collapseHeaderButton(isCompact)}
-          >
-            {collapsed.circle ? "Open" : "Collapse"}
-          </StableButton>
-        </div>
-
-        {!collapsed.circle ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "minmax(0, 1.05fr) minmax(320px, 0.95fr)",
-              gap: 16,
-              alignItems: "start",
-            }}
-          >
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>First-circle progress</div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#F8FBFF",
-                  fontSize: 20,
-                  fontWeight: 900,
-                  lineHeight: 1.35,
-                }}
-              >
-                {firstCircleProgress.nextStepText}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={badge(true)}>
-                  Role: {roleLabel(firstCircleDraft.memberRole)}
-                </span>
-                <span style={badge(false)}>
-                  Selected: {firstCircleProgress.selectedCount}
-                </span>
-                <span style={badge(false)}>
-                  Ready: {firstCircleProgress.readyCount}
-                </span>
-                <span style={badge(false)}>
-                  Target: {firstCircleProgress.targetCount}
-                </span>
-              </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  color: "#5F7287",
-                  fontSize: 14,
-                  lineHeight: 1.75,
-                }}
-              >
-                Build this circle from serious real-life relationships: suppliers,
-                buyers, family-support people, remittance contacts, group
-                officers, savings partners, and other trusted people.
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <StableButton
-                  type="button"
-                  debugId="community-home.circle.open-first-circle"
-                  onClick={(event) =>
-                    openCommunityRoute(event, routes.buildFirstCircle)
-                  }
-                  style={communityActionStyle("primary")}
-                >
-                  Open First Circle
-                </StableButton>
-
-                  <StableButton
-                    type="button"
-                    debugId="community-home.circle.copy-invite-bundle"
-                    onClick={copyFirstCircleInviteBundle}
-                    style={communityActionStyle(
-                    "secondary",
-                    readyFirstCircleContacts.length === 0
-                  )}
-                >
-                  Copy invite message
-                </StableButton>
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Role-based hints</div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                {firstCircleRelationshipHints.length > 0 ? (
-                  firstCircleRelationshipHints.map((item) => (
-                    <span key={item} style={badge(false)}>
-                      {relationshipLabel(item)}
-                    </span>
-                  ))
-                ) : (
-                  <span style={badge(false)}>Choose your member role first</span>
-                )}
-              </div>
-
-              <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-                {firstCircleDraft.contacts.length === 0 ? (
-                  <div style={{ color: "#64748B", lineHeight: 1.75 }}>
-                    No trusted person has been added yet.
-                  </div>
-                ) : (
-                  firstCircleDraft.contacts.slice(0, 3).map((item) => (
-                    <div key={item.id} style={innerCard("#FCFEFF")}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 10,
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <div style={{ color: "#F8FBFF", fontWeight: 900 }}>
-                          {safeStr(item.name || "Contact")}
-                        </div>
-
-                        <span style={badge(item.selected)}>
-                          {item.selected ? "Selected" : "Saved"}
-                        </span>
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          display: "flex",
-                          gap: 8,
-                          flexWrap: "wrap",
-                        }}
-                      >
-                        <span style={badge(false)}>
-                          {relationshipLabel(item.relationship)}
-                        </span>
-                        <span style={badge(false)}>
-                          {isContactInviteReady(item)
-                            ? "Invite ready"
-                            : "Needs phone or email"}
-                        </span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
       </section>
 
       <section

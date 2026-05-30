@@ -1,3 +1,37 @@
+### Community Home detailed button audit cleanup (2026-05-30)
+
+- Route/screen affected:
+  - `/app/community` and `/app/community/:clanId`.
+- Follow-up from product-owner request to go through Community Home again in
+  more detail after the first Community Home button-auditor pass.
+- Confirmed truth:
+  - the first Community Home pass added useful auditors, but it still counted
+    legacy `display: "none"` owner-action and trusted-circle button sections;
+  - those hidden sections were not real phone-reachable buttons, and preserving
+    them made the Community Home inventory less honest;
+  - the visible `Grow circle` path already routes directly to First Circle, so
+    the hidden trusted-circle panel was not needed for current behavior.
+- Updated `frontend/src/pages/CommunityHomePage.tsx`:
+  - removed hidden owner-action and trusted-circle button sections;
+  - removed unused First Circle draft/progress imports, state, refresh effect,
+    and copy helper that only supported the hidden section;
+  - removed the unused marketplace-owned-links helper that only fed the hidden
+    owner-action drawer;
+  - kept visible Community Home rows and route behavior intact.
+- Updated guardrails:
+  - `audit-community-home-button-inventory` now locks the current visible source
+    baseline at 14 `StableButton` actions;
+  - `audit-community-home-phone-buttons` now rejects hidden `StableButton`
+    sections and legacy `community-home.owner-actions.*` /
+    `community-home.circle.*` debug surfaces;
+  - `audit-community-shop-actions`, `audit-button-stability`, and
+    `audit-action-response-protocol` now protect the compact visible rows and
+    direct First Circle route instead of old hidden branches.
+- Remaining truth:
+  - this is a more honest source inventory. It still needs a real phone pass on
+    Render to verify the visible 14 source actions and their dynamic children
+    feel right under touch.
+
 ### Community Home button audit baseline (2026-05-30)
 
 - Route/screen affected:
@@ -22,8 +56,8 @@
   - Community Home route-local action styles now keep normal word wrapping,
     normal word breaks, and no hyphenation.
 - Added guardrails:
-  - `frontend/tools/audit-community-home-button-inventory.mjs` locks the
-    Community Home source action baseline at 24 `StableButton` actions and
+  - `frontend/tools/audit-community-home-button-inventory.mjs` now locks the
+    Community Home source action baseline at 14 `StableButton` actions and
     checks front quick actions, guided spotlight actions, compact tool rows,
     and front-to-inner section order.
   - `frontend/tools/audit-community-home-phone-buttons.mjs` rejects disabled

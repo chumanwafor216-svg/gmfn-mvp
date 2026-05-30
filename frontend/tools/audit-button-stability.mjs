@@ -121,7 +121,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /import \{ StableButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?<StableButton[\s\S]*?Open Marketplace[\s\S]*?Your Communities/,
+  /import \{ StableButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}[\s\S]*?debugId="community-home\.communities\.header-toggle"[\s\S]*?debugId=\{`community-home\.communities\.\$\{clan\.id \?\? clan\.clan_id \?\? clan\.name \?\? "unknown"\}\.open-marketplace`\}/,
   "Community Home must use the shared stable button primitive and shared CTA resolution for community selection, owner routes, and local action rows."
 );
 

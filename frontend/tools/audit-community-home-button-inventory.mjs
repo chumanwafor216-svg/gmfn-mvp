@@ -45,7 +45,7 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedStableButtonCount = 24;
+const expectedStableButtonCount = 14;
 if (actions.length !== expectedStableButtonCount) {
   findings.push({
     file: communityFile,
@@ -91,8 +91,6 @@ const frontToInnerOrder = [
   { label: "front next actions", pattern: /^community-home\.next-action\./ },
   { label: "spotlight guided lane", pattern: /^community-home\.spotlight-guided\./ },
   { label: "compact tool rows", pattern: /^community-home\.tool\./ },
-  { label: "owner action drawer", pattern: /^community-home\.owner-actions\./ },
-  { label: "trusted circle drawer", pattern: /^community-home\.circle\./ },
   { label: "spotlight status", pattern: /^community-home\.spotlight-status\./ },
   { label: "community rows", pattern: /^community-home\.communities\./ },
 ];

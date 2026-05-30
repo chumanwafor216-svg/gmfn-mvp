@@ -92,6 +92,16 @@ assertNotContains(
   "Community Home route-local action styles must not split words anywhere on phone buttons."
 );
 
+assertNotContains(
+  /display: "none"[\s\S]{0,1800}<StableButton\b/g,
+  "Community Home must not keep hidden StableButton sections in the source action inventory."
+);
+
+assertNotContains(
+  /community-home\.(?:owner-actions|circle)\./g,
+  "Community Home must not keep legacy hidden owner-actions or circle debug surfaces; use compact tool rows and First Circle routes."
+);
+
 if (findings.length > 0) {
   console.error("Community Home phone button audit failed:");
   for (const finding of findings) {

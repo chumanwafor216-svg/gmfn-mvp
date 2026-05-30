@@ -115,8 +115,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /case "circle":[\s\S]*?Opening First Circle now\.[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)[\s\S]*?showNotice\("error"[\s\S]*?showNotice\([\s\S]*?"success"[\s\S]*?noticeCard\(notice\.tone\)/,
-  "Community Home actions must keep visible success/error notice responses and route First Circle instead of opening hidden sections."
+  /case "circle":[\s\S]*?Opening First Circle now\.[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)/,
+  "Community Home circle actions must route First Circle directly instead of opening hidden sections."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /showNotice\("error"[\s\S]*?noticeCard\(notice\.tone\)[\s\S]*?showNotice\("success", "Opening this community now\."\)|showNotice\("success", "Opening this community now\."[\s\S]*?showNotice\("error"[\s\S]*?noticeCard\(notice\.tone\)/,
+  "Community Home actions must keep visible success/error notice responses, including repeated marketplace open feedback."
 );
 
 assertNotContains(

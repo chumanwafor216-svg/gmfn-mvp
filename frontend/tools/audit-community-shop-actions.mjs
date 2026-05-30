@@ -100,8 +100,8 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /debugId="community-home\.owner-actions\.create-community"[\s\S]*?debugId="community-home\.owner-actions\.marketplace-links"[\s\S]*?debugId="community-home\.owner-actions\.shop-control"[\s\S]*?debugId="community-home\.owner-actions\.selected-marketplace"/,
-  "Community Home owner action buttons must remain traceable in their main action cluster."
+  /id: "owner-actions"[\s\S]*?openCommunityRoute\(event, routes\.clans\)[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openCommunityRoute\(event, routes\.vaultControl\)[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?id: "spotlight-subscription"[\s\S]*?openCommunityRoute\(event, routes\.subscriptionSpotlight\)[\s\S]*?id: "trusted-circle"[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
 );
 
 assertContains(
