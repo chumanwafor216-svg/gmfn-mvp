@@ -681,13 +681,35 @@ function trustSlipSectionCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function trustSlipPaperTitle(): React.CSSProperties {
+function trustSlipPaperTitle(compact = false): React.CSSProperties {
   return {
     margin: 0,
     color: "#07172C",
-    fontSize: 22,
-    lineHeight: 1.08,
+    fontSize: compact ? 20 : 22,
+    lineHeight: 1.1,
     fontWeight: 1000,
+  };
+}
+
+function trustSlipPrimaryActionStyle(compact = false): React.CSSProperties {
+  return {
+    width: "100%",
+    borderRadius: 11,
+    background: "linear-gradient(135deg, #0B63D1 0%, #0648A8 100%)",
+    color: "#FFFFFF",
+    boxShadow: "0 10px 20px rgba(11,99,209,0.18)",
+    fontWeight: 1000,
+    fontSize: compact ? 14 : 15,
+    letterSpacing: 0,
+  };
+}
+
+function trustSlipActionButtonStyle(compact = false): React.CSSProperties {
+  return {
+    borderRadius: 11,
+    fontSize: compact ? 13 : 14,
+    fontWeight: 950,
+    boxShadow: "0 8px 18px rgba(7,23,44,0.05)",
   };
 }
 
@@ -1966,7 +1988,7 @@ export default function TrustSlipPage() {
               alignItems: "start",
             }}
           >
-            <div style={trustSlipPaperTitle()}>1. Who is this person?</div>
+            <div style={trustSlipPaperTitle(isCompact)}>1. Who is this person?</div>
             <div
               style={{
                 display: "grid",
@@ -2178,10 +2200,11 @@ export default function TrustSlipPage() {
                   busy={confirmationBusy}
                   busyLabel="Requesting..."
                   fullWidth
-                  stableHeight={58}
+                  stableHeight={isCompact ? 50 : 52}
                   debugId="trust-slip.community-confirmation.request"
+                  style={trustSlipPrimaryActionStyle(isCompact)}
                 >
-                  <TrustPaperIcon name="community" size={21} />
+                  <TrustPaperIcon name="community" size={isCompact ? 18 : 19} />
                   Request instant confirmation
                 </PrimaryButton>
                 {communityVerifyPath ? (
@@ -2207,6 +2230,7 @@ export default function TrustSlipPage() {
                     fullWidth
                     stableHeight={58}
                     debugId="trust-slip.community-confirmation.open-community-record"
+                    style={trustSlipActionButtonStyle(isCompact)}
                   >
                     <TrustPaperIcon name="search" size={18} />
                     Open public community record
@@ -2267,18 +2291,11 @@ export default function TrustSlipPage() {
                 <StableCtaLink
                   to={communityVerifyPath}
                   kind="primary"
-                  stableHeight={58}
+                  stableHeight={isCompact ? 52 : 54}
                   debugId="trust-slip.paper.open-community-record"
-                  style={{
-                    width: "100%",
-                    borderRadius: 12,
-                    background: "linear-gradient(135deg, #0B63D1 0%, #0648A8 100%)",
-                    color: "#FFFFFF",
-                    boxShadow: "0 14px 26px rgba(11,99,209,0.22)",
-                    fontWeight: 1000,
-                  }}
+                  style={trustSlipPrimaryActionStyle(isCompact)}
                 >
-                  <TrustPaperIcon name="search" size={21} />
+                  <TrustPaperIcon name="search" size={isCompact ? 18 : 19} />
                   Open public community record
                 </StableCtaLink>
               ) : (
@@ -2291,23 +2308,17 @@ export default function TrustSlipPage() {
                     );
                   }}
                   fullWidth
-                  stableHeight={58}
+                  stableHeight={isCompact ? 52 : 54}
                   debugId="trust-slip.paper.open-community-record"
-                  style={{
-                    borderRadius: 12,
-                    background: "linear-gradient(135deg, #0B63D1 0%, #0648A8 100%)",
-                    color: "#FFFFFF",
-                    boxShadow: "0 14px 26px rgba(11,99,209,0.22)",
-                    fontWeight: 1000,
-                  }}
+                  style={trustSlipPrimaryActionStyle(isCompact)}
                 >
-                  <TrustPaperIcon name="search" size={21} />
+                  <TrustPaperIcon name="search" size={isCompact ? 18 : 19} />
                   Open public community record
                 </SecondaryButton>
               )}
 
               <div style={trustSlipSectionCard("#FFFFFF")}>
-                <div style={trustSlipPaperTitle()}>
+                <div style={trustSlipPaperTitle(isCompact)}>
                 2. Current TrustSlip status
                 </div>
               <div
@@ -2362,9 +2373,9 @@ export default function TrustSlipPage() {
                   showNotice("error", "TrustSlip verify route is not ready yet.");
                 }}
                 fullWidth
-                stableHeight={50}
+                stableHeight={isCompact ? 44 : 46}
                 debugId="trust-slip.paper.open-verify"
-                style={{ marginTop: 14 }}
+                style={{ ...trustSlipActionButtonStyle(isCompact), marginTop: 14 }}
               >
                 Open public verify
               </SecondaryButton>
@@ -2378,7 +2389,7 @@ export default function TrustSlipPage() {
                 gridColumn: isCompact ? "1 / -1" : "1 / 2",
               }}
             >
-              <div style={trustSlipPaperTitle()}>
+              <div style={trustSlipPaperTitle(isCompact)}>
                 3. TrustSlip decision summary
               </div>
               <div
@@ -2466,7 +2477,7 @@ export default function TrustSlipPage() {
                 gridColumn: isCompact ? "1 / -1" : "2 / 3",
               }}
             >
-              <div style={trustSlipPaperTitle()}>
+              <div style={trustSlipPaperTitle(isCompact)}>
                 4. What this TrustSlip says
               </div>
               <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
@@ -2507,7 +2518,7 @@ export default function TrustSlipPage() {
                 gridColumn: isCompact ? "1 / -1" : "1 / 2",
               }}
             >
-              <div style={trustSlipPaperTitle()}>
+              <div style={trustSlipPaperTitle(isCompact)}>
                 5. What this can be used for
               </div>
               <div style={{ marginTop: 12, display: "grid", gap: 13 }}>
@@ -2548,7 +2559,7 @@ export default function TrustSlipPage() {
                 gridColumn: isCompact ? "1 / -1" : "2 / 3",
               }}
             >
-              <div style={trustSlipPaperTitle()}>
+              <div style={trustSlipPaperTitle(isCompact)}>
                 7. What this does NOT mean
               </div>
               <div style={{ ...documentMetaCard("#FFF1F2"), marginTop: 12, position: "relative", overflow: "hidden" }}>
@@ -2569,7 +2580,7 @@ export default function TrustSlipPage() {
                 gridColumn: isCompact ? "1 / -1" : "1 / 2",
               }}
             >
-              <div style={trustSlipPaperTitle()}>
+              <div style={trustSlipPaperTitle(isCompact)}>
                 8. Why a reader may trust this
               </div>
               <div style={{ ...documentMetaCard("#F0FBF4"), marginTop: 12, position: "relative", overflow: "hidden" }}>
@@ -2592,24 +2603,25 @@ export default function TrustSlipPage() {
               gridColumn: "1 / -1",
             }}
           >
-            <div style={trustSlipPaperTitle()}>
+            <div style={trustSlipPaperTitle(isCompact)}>
               9. Quick actions
             </div>
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-                gap: 12,
+                gap: isCompact ? 9 : 10,
                 marginTop: 12,
               }}
             >
               <SecondaryButton
                 onClick={copyTrustSlipSnapshot}
                 fullWidth
-                stableHeight={58}
+                stableHeight={isCompact ? 48 : 50}
                 debugId="trust-slip.paper.copy"
+                style={trustSlipActionButtonStyle(isCompact)}
               >
-                <TrustPaperIcon name="copy" size={21} />
+                <TrustPaperIcon name="copy" size={isCompact ? 18 : 19} />
                 Copy TrustSlip
               </SecondaryButton>
               <PrimaryButton
@@ -2619,10 +2631,11 @@ export default function TrustSlipPage() {
                 busy={refreshing}
                 busyLabel="Refreshing..."
                 fullWidth
-                stableHeight={58}
+                stableHeight={isCompact ? 48 : 50}
                 debugId="trust-slip.paper.refresh"
+                style={trustSlipPrimaryActionStyle(isCompact)}
               >
-                <TrustPaperIcon name="refresh" size={21} />
+                <TrustPaperIcon name="refresh" size={isCompact ? 18 : 19} />
                 Refresh TrustSlip
               </PrimaryButton>
               <SecondaryButton
@@ -2634,10 +2647,11 @@ export default function TrustSlipPage() {
                   showNotice("error", "TrustSlip verify route is not ready yet.");
                 }}
                 fullWidth
-                stableHeight={58}
+                stableHeight={isCompact ? 48 : 50}
                 debugId="trust-slip.paper.verify"
+                style={trustSlipActionButtonStyle(isCompact)}
               >
-                <TrustPaperIcon name="search" size={21} />
+                <TrustPaperIcon name="search" size={isCompact ? 18 : 19} />
                 Verify public code
               </SecondaryButton>
             </div>
