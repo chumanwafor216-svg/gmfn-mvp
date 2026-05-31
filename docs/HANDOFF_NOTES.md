@@ -1,3 +1,38 @@
+### TrustSlip Verify public paper reference pass (2026-05-31)
+
+- Route/screen affected:
+  - public TrustSlip Verify routes handled by `frontend/src/pages/TrustSlipVerifyPage.tsx`;
+  - public paper surface implemented by
+    `frontend/src/pages/trustSlipVerify/TrustSlipVerifyPublicPaper.tsx`.
+- Product-owner intent:
+  - amend the public verification page toward the supplied reference: navy GSN
+    verification header, public-status warning slab, care note, stronger
+    public action row, QR/check area, evidence note, and dark trust footer.
+- Confirmed truth:
+  - this is a visual/public-paper pass only;
+  - no backend verification logic, route contracts, TrustSlip code lookup, or
+    community-confirmation contracts were changed;
+  - the page has audits that require traceable copy/print/trust/community
+    actions and the community-confirmation public action debug IDs.
+- Updated frontend:
+  - `TrustSlipVerifyPublicPaper.tsx` now uses a full navy branded hero, larger
+    public validity banner, gold care note, and dark GSN Trust Architecture
+    footer;
+  - `TrustSlipVerifyPage.tsx` relabels the public action row to match the
+    reference mood: `Print / save PDF`, `Lite view`, and `Request current
+    TrustSlip`, while preserving stable debug IDs and fallback behavior.
+- Verification:
+  - `npm run audit:trust-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run build` passed when rerun outside the sandbox because Vite/esbuild
+    hit sandbox `spawn EPERM` inside the default sandbox.
+- Remaining truth:
+  - this is not pixel-diff verified because the frontend still has no browser
+    screenshot comparison package installed;
+  - the owner-provided Render deploy hook was pasted into chat and should be
+    rotated/regenerated, then stored as a GitHub secret rather than reused from
+    chat history.
+
 ### TrustSlip reference layout pass (2026-05-31)
 
 - Route/screen affected:

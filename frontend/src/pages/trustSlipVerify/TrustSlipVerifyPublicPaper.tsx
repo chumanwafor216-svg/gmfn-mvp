@@ -5,7 +5,6 @@ import {
   TrustPaperBadgeIcon,
   TrustPaperIcon,
   TrustPaperSeal,
-  TrustPaperSecurityFooter,
   TrustPaperWatermark,
   type TrustPaperIconName,
 } from "../../components/TrustPaperMarks";
@@ -96,15 +95,6 @@ function lockedActionFrame(compact: boolean): React.CSSProperties {
   };
 }
 
-function pageCard(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    ...institutionalPageCard(bg),
-    borderRadius: 26,
-    padding: 20,
-    backdropFilter: "blur(6px)",
-  };
-}
-
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalInnerCard(bg),
@@ -142,7 +132,7 @@ function documentMetaCard(bg = "#F7FAFC"): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    letterSpacing: 0.5,
+    letterSpacing: 0,
     fontWeight: 1000,
     textTransform: "uppercase",
     color: "#526579",
@@ -194,13 +184,50 @@ function paperStatusPill(status: string): React.CSSProperties {
   };
 }
 
+function publicVerifyPaperShell(compact: boolean): React.CSSProperties {
+  return {
+    ...institutionalPageCard("#FFFFFF"),
+    borderRadius: compact ? 20 : 28,
+    padding: 0,
+    border: "1px solid rgba(37,78,119,0.16)",
+    position: "relative",
+    overflow: "hidden",
+    boxShadow: "0 24px 60px rgba(15,23,42,0.12)",
+    background: "#FFFFFF",
+  };
+}
+
 function publicVerifyShell(bg = "#FFFFFF"): React.CSSProperties {
   return {
-    ...innerCard(bg),
-    border: "1px solid rgba(37,78,119,0.14)",
+    ...publicVerifyPanel(bg),
     position: "relative",
     overflow: "hidden",
     boxShadow: "0 16px 34px rgba(15,23,42,0.08)",
+  };
+}
+
+function publicVerifyHero(compact: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    display: "grid",
+    gridTemplateColumns: compact ? "128px minmax(0, 1fr)" : "190px minmax(0, 1fr)",
+    gap: compact ? 14 : 24,
+    alignItems: "center",
+    minHeight: compact ? 176 : 220,
+    padding: compact ? "22px 20px 30px" : "34px 44px 42px",
+    background: "linear-gradient(135deg, #061827 0%, #082A48 100%)",
+    color: "#FFFFFF",
+  };
+}
+
+function publicVerifyPanel(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    borderRadius: 14,
+    padding: 14,
+    background: bg,
+    border: "1px solid rgba(37,78,119,0.11)",
+    boxShadow: "0 10px 26px rgba(7,23,44,0.05)",
   };
 }
 
@@ -277,69 +304,120 @@ export default function TrustSlipVerifyPublicPaper({
   return (
     <section
       className="print-trust-document"
-      style={{
-        ...pageCard("#FFFFFF"),
-        padding: compact ? 14 : 20,
-        border: "1px solid rgba(37,78,119,0.16)",
-        boxShadow: "0 24px 60px rgba(15,23,42,0.12)",
-        position: "relative",
-        overflow: "hidden",
-      }}
+      style={publicVerifyPaperShell(compact)}
     >
-      <TrustPaperWatermark
-        name="shield"
-        color="#0B63D1"
-        size={260}
-        opacity={0.026}
-        style={{ top: 120, right: "44%", bottom: "auto" }}
-      />
-      <TrustPaperWatermark
-        name="lock"
-        color="#B7791F"
-        size={220}
-        opacity={0.035}
-        style={{ top: 160, right: -70, bottom: "auto" }}
-      />
-
-      <header
-        style={{
-          display: "grid",
-          gridTemplateColumns: compact ? "1fr" : "minmax(0, 1fr) auto",
-          gap: 14,
-          alignItems: "start",
-        }}
-      >
-        <div>
-          <div style={{ ...sectionLabel(), color: "#164E94" }}>
-            GSN TrustSlip Verify
+      <header style={publicVerifyHero(compact)}>
+        <TrustPaperWatermark
+          name="globe"
+          color="#EAF3FF"
+          size={compact ? 180 : 260}
+          opacity={0.09}
+          style={{ top: compact ? 12 : 8, right: compact ? -78 : -42, bottom: "auto" }}
+        />
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            display: "grid",
+            gridTemplateColumns: "54px minmax(0, 1fr)",
+            gap: 10,
+            alignItems: "center",
+            borderRight: "1px solid rgba(255,255,255,0.16)",
+            paddingRight: compact ? 10 : 20,
+          }}
+        >
+          <span
+            aria-hidden
+            style={{
+              width: 54,
+              height: 54,
+              borderRadius: 12,
+              border: "1px solid rgba(246,215,122,0.55)",
+              color: "#F6D77A",
+              display: "grid",
+              placeItems: "center",
+            }}
+          >
+            <TrustPaperIcon name="shield" size={36} />
+          </span>
+          <div
+            style={{
+              color: "#FFFFFF",
+              fontSize: compact ? 13 : 17,
+              lineHeight: 1.08,
+              fontWeight: 1000,
+              textTransform: "uppercase",
+            }}
+          >
+            Global<br />Support<br />Network
           </div>
-          <p style={{ ...helperText(), margin: "6px 0 0", maxWidth: 680 }}>
-            Public proof for quick checks, clear limits, and safer sharing.
-          </p>
         </div>
-        <div style={{ textAlign: compact ? "left" : "right", color: "#07172C" }}>
+        <div style={{ position: "relative", zIndex: 1 }}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
-              gap: 8,
-              fontSize: 34,
+              minHeight: 26,
+              padding: "5px 12px",
+              borderRadius: 8,
+              background: "rgba(246,215,122,0.14)",
+              color: "#F6D77A",
+              fontSize: compact ? 10 : 12,
               fontWeight: 1000,
-              lineHeight: 1,
+              textTransform: "uppercase",
             }}
           >
-            <TrustPaperIcon name="shield" size={30} color="#0B63D1" />
-            GSN
+            Public verification paper
           </div>
-          <div style={{ marginTop: 4, color: "#B7791F", fontSize: 10, fontWeight: 1000 }}>
-            OPEN - TRUST - IMPACT
+          <h1
+            style={{
+              margin: "12px 0 0",
+              color: "#FFFFFF",
+              fontSize: compact ? 36 : 58,
+              lineHeight: 1,
+              fontWeight: 1000,
+              fontFamily: "Georgia, 'Times New Roman', serif",
+            }}
+          >
+            TrustSlip Verify
+          </h1>
+          <p
+            style={{
+              margin: "12px 0 0",
+              maxWidth: 520,
+              color: "#DCE8F4",
+              fontSize: compact ? 15 : 20,
+              lineHeight: 1.35,
+              fontWeight: 760,
+            }}
+          >
+            A public GSN trust check for identity, support, trade, and careful decision-making.
+          </p>
+          <div
+            style={{
+              marginTop: 14,
+              display: "flex",
+              gap: 12,
+              alignItems: "center",
+              color: "#F6D77A",
+              fontWeight: 1000,
+              textTransform: "uppercase",
+              fontSize: compact ? 12 : 15,
+            }}
+          >
+            <span style={{ color: "#FFFFFF" }}>GSN</span>
+            <span>Open</span>
+            <span>Trust</span>
+            <span>Impact</span>
           </div>
         </div>
       </header>
 
       <div
         style={{
-          marginTop: 14,
+          padding: compact ? "0 14px 16px" : "0 36px 26px",
+          transform: "translateY(-24px)",
+          marginBottom: -12,
           display: "grid",
           gridTemplateColumns: "1fr",
           gap: 14,
@@ -348,21 +426,97 @@ export default function TrustSlipVerifyPublicPaper({
       >
         <div style={publicVerifyShell("#F8FBFF")}>
           <TrustPaperWatermark
-            name="shield"
-            color="#0B63D1"
-            size={190}
-            opacity={0.03}
-            style={{ top: 78, right: -54, bottom: "auto" }}
+            name={validNow ? "shield" : "lock"}
+            color="#FFFFFF"
+            size={170}
+            opacity={0.12}
+            style={{ top: 0, right: -44, bottom: "auto" }}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ ...paperStatusPill("valid"), background: "#EAF7EE", color: "#166534" }}>
-              A&nbsp;&nbsp; PUBLIC / SHAREABLE / PRINTABLE
+          <div
+            style={{
+              borderRadius: 16,
+              minHeight: compact ? 90 : 112,
+              padding: compact ? "16px 18px" : "20px 28px",
+              background: validNow
+                ? "linear-gradient(135deg, #166534 0%, #2E9B62 100%)"
+                : "linear-gradient(135deg, #7C2D12 0%, #8B2C13 100%)",
+              color: "#FFFFFF",
+              boxShadow: "0 16px 34px rgba(124,45,18,0.22)",
+              display: "grid",
+              gridTemplateColumns: compact ? "54px minmax(0, 1fr)" : "84px minmax(0, 1fr) 86px",
+              gap: compact ? 14 : 18,
+              alignItems: "center",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: compact ? 54 : 70,
+                height: compact ? 54 : 70,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(255,255,255,0.12)",
+                border: "1px solid rgba(255,255,255,0.18)",
+              }}
+            >
+              <TrustPaperIcon name={validNow ? "shield" : "alert"} size={compact ? 34 : 44} />
             </span>
-            <span style={paperStatusPill("limited")}>SEND / PRINT / SHARE</span>
+            <div
+              style={{
+                fontSize: compact ? 20 : 30,
+                lineHeight: 1.12,
+                fontWeight: 1000,
+                textTransform: "uppercase",
+              }}
+            >
+              {publicValidityLabel}
+            </div>
+            {!compact ? <TrustPaperIcon name={validNow ? "shield" : "lock"} size={64} /> : null}
           </div>
-          <p style={{ ...helperText(), margin: "10px 0 0", fontSize: 13 }}>
-            Plain-language proof for one question: can this person be considered right now?
-          </p>
+
+          <div
+            style={{
+              ...publicVerifyPanel("#FFF8E8"),
+              marginTop: 14,
+              borderLeft: "4px solid #D6AA45",
+              display: "grid",
+              gridTemplateColumns: compact ? "44px minmax(0, 1fr)" : "64px minmax(0, 1fr)",
+              gap: 14,
+              alignItems: "center",
+            }}
+          >
+            <span
+              aria-hidden
+              style={{
+                width: compact ? 44 : 58,
+                height: compact ? 44 : 58,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                color: "#B7791F",
+                border: "2px solid rgba(214,170,69,0.45)",
+              }}
+            >
+              <TrustPaperIcon name="document" size={compact ? 24 : 32} />
+            </span>
+            <div>
+              <div style={{ color: "#07172C", fontSize: compact ? 17 : 21, fontWeight: 1000 }}>
+                Use with care.
+              </div>
+              <p
+                style={{
+                  margin: "5px 0 0",
+                  color: "#334155",
+                  fontSize: compact ? 14 : 16,
+                  lineHeight: 1.35,
+                  fontWeight: 850,
+                }}
+              >
+                Ask the holder to refresh their TrustSlip in GSN and share the new public code or QR before relying on it.
+              </p>
+            </div>
+          </div>
 
           <div
             style={{
@@ -715,7 +869,43 @@ export default function TrustSlipVerifyPublicPaper({
         </div>
       </div>
 
-      <TrustPaperSecurityFooter text="GSN Trust Architecture - Open trust. Real impact. Protect member privacy and integrity of GSN data." />
+      <footer
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          display: "grid",
+          gridTemplateColumns: compact ? "58px minmax(0, 1fr)" : "86px minmax(0, 1fr) 80px",
+          gap: 18,
+          alignItems: "center",
+          padding: compact ? "18px 22px" : "24px 44px",
+          background: "linear-gradient(135deg, #061827 0%, #082A48 100%)",
+          color: "#FFFFFF",
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            width: 58,
+            height: 58,
+            borderRadius: 14,
+            border: "1px solid rgba(246,215,122,0.5)",
+            color: "#F6D77A",
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <TrustPaperIcon name="shield" size={35} />
+        </span>
+        <div>
+          <div style={{ color: "#F6D77A", fontSize: compact ? 15 : 18, fontWeight: 1000 }}>
+            GSN Trust Architecture
+          </div>
+          <div style={{ marginTop: 4, color: "#DCE8F4", fontSize: compact ? 13 : 16, lineHeight: 1.35, fontWeight: 780 }}>
+            public evidence first, private detail protected, decision left with the reader.
+          </div>
+        </div>
+        {!compact ? <TrustPaperIcon name="globe" size={60} color="#D6AA45" /> : null}
+      </footer>
     </section>
   );
 }

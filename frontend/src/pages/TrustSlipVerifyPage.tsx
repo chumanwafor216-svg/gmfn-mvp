@@ -510,22 +510,11 @@ export default function TrustSlipVerifyPage() {
   const publicTrustSlipActions = (
     <div
       style={{
-        marginTop: 12,
         display: "grid",
-        gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
-        gap: 8,
+        gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+        gap: isCompact ? 8 : 12,
       }}
     >
-      <SecondaryButton
-        type="button"
-        onClick={() => {
-          void copyVerifyLink();
-        }}
-        stableHeight={44}
-        debugId="trust-slip-verify.public.copy-link"
-      >
-        Copy verify link
-      </SecondaryButton>
       <SecondaryButton
         type="button"
         onClick={() => {
@@ -538,38 +527,52 @@ export default function TrustSlipVerifyPage() {
             "Print is not available in this browser. Use Copy verify link instead."
           );
         }}
-        stableHeight={44}
+        stableHeight={isCompact ? 52 : 58}
         debugId="trust-slip-verify.public.print"
+        style={{
+          borderRadius: 12,
+          background: "#062B58",
+          color: "#FFFFFF",
+          fontWeight: 1000,
+        }}
       >
-        Download summary
+        Print / save PDF
       </SecondaryButton>
       {isAppRoute ? (
         <SecondaryButton
           type="button"
           onClick={() => navigateWithOrigin(navigate, routes.trust, location)}
-          stableHeight={44}
+          stableHeight={isCompact ? 52 : 58}
           debugId="trust-slip-verify.public.open-passport"
+          style={{ borderRadius: 12, fontWeight: 1000 }}
         >
-          Open Trust Passport
+          Lite view
         </SecondaryButton>
       ) : (
         <SecondaryButton
           type="button"
           onClick={() => navigateWithOrigin(navigate, "/guide", location)}
-          stableHeight={44}
+          stableHeight={isCompact ? 52 : 58}
           debugId="trust-slip-verify.public.open-guide"
+          style={{ borderRadius: 12, fontWeight: 1000 }}
         >
-          What this proof means
+          Lite view
         </SecondaryButton>
       )}
       {communityVerifyPath ? (
         <StableCtaLink
           to={communityVerifyPath}
           kind="primary"
-          stableHeight={52}
+          stableHeight={isCompact ? 52 : 58}
           debugId="trust-slip-verify.public.open-community-record"
+          style={{
+            borderRadius: 12,
+            background: "linear-gradient(135deg, #D6AA45 0%, #B7791F 100%)",
+            color: "#FFFFFF",
+            fontWeight: 1000,
+          }}
         >
-          Open community record
+          Request current TrustSlip
         </StableCtaLink>
       ) : (
         <SecondaryButton
@@ -580,12 +583,30 @@ export default function TrustSlipVerifyPage() {
               "Public community record is not ready yet. Ask the holder to refresh TrustSlip or request community confirmation first."
             );
           }}
-          stableHeight={52}
+          stableHeight={isCompact ? 52 : 58}
           debugId="trust-slip-verify.public.open-community-record"
+          style={{
+            borderRadius: 12,
+            background: "linear-gradient(135deg, #D6AA45 0%, #B7791F 100%)",
+            color: "#FFFFFF",
+            fontWeight: 1000,
+          }}
         >
-          Open community record
+          Request current TrustSlip
         </SecondaryButton>
       )}
+      <div style={{ display: "none" }}>
+        <SecondaryButton
+          type="button"
+          onClick={() => {
+            void copyVerifyLink();
+          }}
+          stableHeight={44}
+          debugId="trust-slip-verify.public.copy-link"
+        >
+          Copy verify link
+        </SecondaryButton>
+      </div>
     </div>
   );
 
