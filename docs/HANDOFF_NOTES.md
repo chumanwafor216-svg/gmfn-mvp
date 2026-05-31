@@ -32,10 +32,23 @@
   - `npm run build` passed when rerun outside the sandbox because Vite/esbuild
     hit sandbox `spawn EPERM` inside the default sandbox;
   - local dev server started at `http://127.0.0.1:5173/app/trust`.
+- Publish/deploy status:
+  - committed as `d64d1df` (`Match Trust Passport identity overview
+    reference`);
+  - pushed `feature/vault-shops` to `origin`;
+  - promoted the same commit to `origin/main`;
+  - GitHub Actions run `Trigger Render Deploy`
+    `https://github.com/chumanwafor216-svg/gmfn-mvp/actions/runs/26722007285`
+    completed successfully for `d64d1df`;
+  - the workflow did not trigger Render directly because both frontend deploy
+    trigger steps were skipped and `Note missing frontend deploy credentials`
+    ran, so Render must rely on auto-deploy or manual/out-of-band deploy.
 - Remaining truth:
   - no browser screenshot automation package is installed in this frontend, so
     this pass has source/audit/build verification but still needs a human phone
     visual check against the reference image.
+  - do not claim the Render frontend deployed from this workflow run unless a
+    separate Render auto-deploy/manual deploy is confirmed.
 
 ### Public shop poster share-preview links (2026-05-30)
 
