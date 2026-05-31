@@ -639,6 +639,72 @@ function qrBoxStyle(size = 110): React.CSSProperties {
   };
 }
 
+function trustSlipPageShell(): React.CSSProperties {
+  return {
+    minHeight: "100vh",
+    margin: "-18px",
+    padding: "22px 14px 34px",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F6F8FB 42%, #F2F6FA 100%)",
+  };
+}
+
+function trustSlipWorkArea(): React.CSSProperties {
+  return {
+    width: "min(100%, 940px)",
+    margin: "0 auto",
+    display: "grid",
+    gap: 14,
+  };
+}
+
+function trustSlipHeroCard(): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    minHeight: 168,
+    borderRadius: 14,
+    padding: "28px 34px",
+    background: "linear-gradient(135deg, #08233A 0%, #061827 100%)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    boxShadow: "0 18px 42px rgba(7,23,44,0.18)",
+    color: "#FFFFFF",
+  };
+}
+
+function trustSlipSectionCard(bg = "#FFFFFF"): React.CSSProperties {
+  return {
+    ...innerCard(bg),
+    borderRadius: 12,
+    border: "1px solid rgba(37,78,119,0.10)",
+    background: bg,
+    boxShadow: "0 10px 26px rgba(7,23,44,0.06)",
+  };
+}
+
+function trustSlipPaperTitle(): React.CSSProperties {
+  return {
+    margin: 0,
+    color: "#07172C",
+    fontSize: 22,
+    lineHeight: 1.08,
+    fontWeight: 1000,
+  };
+}
+
+function trustSlipTinyIconCircle(ok = true): React.CSSProperties {
+  return {
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    color: ok ? "#166534" : "#B45309",
+    background: ok ? "#F0FBF4" : "#FFF7E6",
+    border: `1px solid ${ok ? "rgba(46,155,98,0.20)" : "rgba(214,170,69,0.28)"}`,
+    flex: "0 0 auto",
+  };
+}
+
 function TrustSlipQrCode({
   value,
   size = 98,
@@ -1756,13 +1822,7 @@ export default function TrustSlipPage() {
   if (trustSlipPaperFrameEnabled) {
     return (
       <div
-        style={{
-          maxWidth: 1180,
-          margin: "0 auto",
-          paddingBottom: 40,
-          display: "grid",
-          gap: 18,
-        }}
+        style={trustSlipPageShell()}
       >
         <style>{`
           @page { margin: 14mm; }
@@ -1780,217 +1840,258 @@ export default function TrustSlipPage() {
           }
         `}</style>
 
-        <div className="print-trust-nav">
-          <PageTopNav
-            sectionLabel="Main Movement"
-            title="TrustSlip"
-            subtitle="Portable trust summary for sharing, checking, and quick decision-making."
-            homeTo={routes.dashboard}
-            homeLabel="Dashboard"
-            backTo={routes.dashboard}
-          />
-        </div>
-
-        {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
-
         <section
           className="print-trust-document"
           style={{
-            ...pageCard("#FFFFFF"),
             ...trustSlipScrollClearance(isCompact),
-            border: "1px solid rgba(37,78,119,0.14)",
-            boxShadow: "0 22px 60px rgba(7,23,44,0.10)",
-            padding: isCompact ? 16 : 22,
+            ...trustSlipWorkArea(),
             position: "relative",
-            overflow: "hidden",
+            overflow: "visible",
+            gridTemplateColumns: isCompact
+              ? "minmax(0, 1fr)"
+              : "minmax(0, 1fr) minmax(0, 1fr)",
+            alignItems: "start",
           }}
         >
-          <TrustPaperWatermark
-            name="shield"
-            color="#0B63D1"
-            size={220}
-            opacity={0.035}
-            style={{ top: 92, right: -58, bottom: "auto" }}
-          />
+          {notice ? (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <div style={noticeCard(notice.tone)}>{notice.text}</div>
+            </div>
+          ) : null}
+
           <header
             style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-              gap: 14,
-              alignItems: "start",
-              marginBottom: 14,
+              ...trustSlipHeroCard(),
+              gridColumn: "1 / -1",
             }}
           >
-            <div>
-              <div style={{ ...sectionLabel(), color: "#164E94" }}>
-                Main Movement
-              </div>
+            <TrustPaperWatermark
+              name="shield"
+              color="#EAF3FF"
+              size={isCompact ? 190 : 254}
+              opacity={0.055}
+              style={{ top: 8, right: -36, bottom: "auto" }}
+            />
+            <TrustPaperWatermark
+              name="globe"
+              color="#EAF3FF"
+              size={isCompact ? 108 : 142}
+              opacity={0.07}
+              style={{ top: 58, right: 40, bottom: "auto" }}
+            />
+            <div style={{ position: "relative", zIndex: 1 }}>
               <h1
                 style={{
-                  margin: "4px 0 0",
-                  color: "#07172C",
-                  fontSize: isCompact ? 34 : 48,
-                  lineHeight: 1,
+                  margin: 0,
+                  color: "#FFFFFF",
+                  fontSize: isCompact ? 34 : 42,
+                  lineHeight: 1.02,
                   fontWeight: 1000,
                 }}
               >
                 TrustSlip
               </h1>
-              <p style={{ ...helperText(), margin: "8px 0 0", maxWidth: 620 }}>
-                A portable trust summary for sharing, checking, and quick
-                decision-making.
-              </p>
-            </div>
-            <div
-              style={{
-                color: "#07172C",
-                fontSize: 30,
-                lineHeight: 1,
-                fontWeight: 1000,
-                textAlign: isCompact ? "left" : "right",
-              }}
-            >
-              <div
+              <p
                 style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: isCompact ? "flex-start" : "flex-end",
-                  gap: 8,
+                  margin: "16px 0 0",
+                  maxWidth: 430,
+                  color: "#DCE8F4",
+                  fontSize: isCompact ? 17 : 18,
+                  lineHeight: 1.38,
+                  fontWeight: 760,
                 }}
               >
-                <TrustPaperIcon name="shield" size={28} color="#0B63D1" />
+                Portable trust summary for sharing, checking, and quick decision-making.
+              </p>
+              <div
+                style={{
+                  width: 146,
+                  height: 1,
+                  background: "rgba(214,170,69,0.72)",
+                  marginTop: 24,
+                  marginBottom: 22,
+                }}
+              />
+              <div
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 36,
+                  lineHeight: 1,
+                  fontWeight: 1000,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 12,
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 12,
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#F6D77A",
+                    border: "1px solid rgba(246,215,122,0.52)",
+                    background: "rgba(246,215,122,0.08)",
+                  }}
+                >
+                  <TrustPaperIcon name="globe" size={31} />
+                </span>
                 <span>GSN</span>
               </div>
               <div
                 style={{
-                  color: "#334155",
-                  fontSize: 12,
+                  color: "#DCE8F4",
+                  fontSize: 14,
                   fontWeight: 900,
-                  lineHeight: 1.15,
-                  marginTop: 4,
+                  lineHeight: 1,
+                  marginTop: 6,
+                  marginLeft: 62,
                 }}
               >
-                Global<br />Support<br />Network
+                Global Support Network
               </div>
             </div>
           </header>
 
           <section
             style={{
-              ...innerCard("#F8FBFF"),
+              ...trustSlipSectionCard("#FFFFFF"),
               ...trustSlipScrollClearance(isCompact),
-              border: "1px solid rgba(37,78,119,0.14)",
+              order: 1,
+              gridColumn: isCompact ? "1 / -1" : "1 / 2",
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "150px minmax(0, 1fr) minmax(220px, 0.78fr)",
-              gap: 18,
-              alignItems: "center",
+              gap: 12,
+              alignItems: "start",
             }}
           >
+            <div style={trustSlipPaperTitle()}>1. Who is this person?</div>
             <div
               style={{
-                width: isCompact ? 132 : 142,
-                height: isCompact ? 132 : 142,
-                borderRadius: 14,
                 display: "grid",
-                placeItems: "center",
-                background: "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)",
-                border: "1px solid rgba(37,78,119,0.18)",
-                color: "#0B63D1",
-                fontWeight: 1000,
-                fontSize: 28,
-                overflow: "hidden",
-                boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.65)",
-                position: "relative",
+                gridTemplateColumns: "132px minmax(0, 1fr)",
+                gap: 14,
+                alignItems: "start",
               }}
             >
-              {profileImageUrl ? (
-                <img
-                  src={profileImageUrl}
-                  alt={`${holderName} profile`}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              ) : (
-                holderName
-                  .split(/\s+/)
-                  .map((part) => part[0])
-                  .filter(Boolean)
-                  .slice(0, 2)
-                  .join("")
-                  .toUpperCase() || "GSN"
-              )}
-              <TrustPaperSeal compact={isCompact} />
-            </div>
-
-            <div>
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
-                1. Who is this person?
+              <div
+                style={{
+                  width: 132,
+                  height: 132,
+                  borderRadius: 14,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)",
+                  border: "1px solid rgba(37,78,119,0.18)",
+                  color: "#0B63D1",
+                  fontWeight: 1000,
+                  fontSize: 28,
+                  overflow: "hidden",
+                  boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.65)",
+                  position: "relative",
+                }}
+              >
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt={`${holderName} profile`}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
+                  />
+                ) : (
+                  holderName
+                    .split(/\s+/)
+                    .map((part) => part[0])
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .join("")
+                    .toUpperCase() || "GSN"
+                )}
+                <TrustPaperSeal compact />
               </div>
-              {[
-                ["id", "GSN ID", gmfnId],
-                ["shield", "Verified member", merchantViewPhoneVerified ? "Yes" : "Not fully shown"],
-                ["community", "Community", communityName],
-                ["hash", "Community ID", communityRef],
-              ].map(([icon, label, value]) => (
+              <div>
+                {[
+                  ["id", "GSN ID", gmfnId],
+                  ["shield", "Verified member", merchantViewPhoneVerified ? "Yes" : "Not fully shown"],
+                  ["community", "Community", communityName],
+                  ["hash", "Community ID", communityRef],
+                ].map(([icon, label, value]) => (
                 <div
                   key={label}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "28px minmax(112px, 0.42fr) minmax(0, 1fr)",
-                    gap: 10,
+                    gridTemplateColumns: "18px minmax(74px, 0.62fr) minmax(0, 1fr)",
+                    gap: 8,
                     alignItems: "start",
-                    marginTop: 8,
+                    marginTop: 7,
                   }}
                 >
-                  <TrustPaperIcon name={icon as TrustPaperIconName} size={21} color="#0B63D1" />
-                  <span style={{ color: "#0B63D1", fontWeight: 1000 }}>{label}</span>
+                  <TrustPaperIcon name={icon as TrustPaperIconName} size={16} color="#0B63D1" />
+                  <span style={{ color: "#0B63D1", fontWeight: 1000, fontSize: 12 }}>{label}</span>
                   <span
                     style={{
                       color: "#334155",
-                      fontWeight: 850,
-                      overflowWrap: "anywhere",
+                      fontWeight: 900,
+                      fontSize: 12,
+                      overflowWrap: "break-word",
+                      wordBreak: "normal",
                     }}
                   >
                     {value}
                   </span>
                 </div>
               ))}
+              </div>
             </div>
 
-            <div style={{ display: "grid", gap: 8 }}>
-              <span style={{ ...statusPillStyle(merchantViewPhoneVerified ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
-                <TrustPaperBadgeIcon name="phone" ok={merchantViewPhoneVerified} />
-                {merchantViewPhoneVerified ? "Phone verified" : "Phone not verified"}
-              </span>
-              <span style={{ ...statusPillStyle("Strong"), justifyContent: "flex-start", gap: 8 }}>
-                <TrustPaperBadgeIcon name="community" ok />
-                {communityIdentityLabel}
-              </span>
-              <span style={{ ...statusPillStyle(identityStatusLabel ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
-                <TrustPaperBadgeIcon name="shield" ok={Boolean(identityStatusLabel)} />
-                {identityStatusLabel || "Identity continuity not shown"}
-              </span>
-              <span style={{ ...statusPillStyle(bankVerified ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
-                <TrustPaperBadgeIcon name="wallet" ok={Boolean(bankVerified)} />
-                {bankVerificationLabel}
-              </span>
-              <span style={{ ...statusPillStyle(passportVerified ? "Strong" : "Limited"), justifyContent: "flex-start", gap: 8 }}>
-                <TrustPaperBadgeIcon name="document" ok={Boolean(passportVerified)} />
-                {passportVerificationLabel}
-              </span>
+            <div style={{ display: "grid", gap: 8, position: "relative" }}>
+              {[
+                [merchantViewPhoneVerified, merchantViewPhoneVerified ? "Phone verified" : "Phone not verified"],
+                [true, communityIdentityLabel],
+                [Boolean(identityStatusLabel), identityStatusLabel || "Phone and community membership are verified"],
+                [Boolean(bankVerified), bankVerificationLabel],
+                [Boolean(passportVerified), passportVerificationLabel],
+              ].map(([ok, label]) => (
+                <span
+                  key={String(label)}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "24px minmax(0, 1fr)",
+                    gap: 8,
+                    alignItems: "center",
+                    minHeight: 42,
+                    borderRadius: 9,
+                    padding: "8px 10px",
+                    background: ok ? "#F7FCF8" : "#FFFBF2",
+                    border: `1px solid ${
+                      ok ? "rgba(46,155,98,0.16)" : "rgba(214,170,69,0.20)"
+                    }`,
+                    color: ok ? "#166534" : "#7A3E08",
+                    fontWeight: 1000,
+                    fontSize: 12,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  <span style={trustSlipTinyIconCircle(Boolean(ok))}>
+                    <TrustPaperIcon name={ok ? "check" : "document"} size={15} strokeWidth={2.6} />
+                  </span>
+                  <span>{label}</span>
+                </span>
+              ))}
             </div>
           </section>
 
           <section
             style={{
-              ...innerCard("#FFFFFF"),
+              ...trustSlipSectionCard("#FFFFFF"),
               ...trustSlipScrollClearance(isCompact),
-              border: "1px solid rgba(216,227,238,0.9)",
-              marginTop: 14,
+              order: 6,
+              gridColumn: isCompact ? "1 / -1" : "2 / 3",
               position: "relative",
               overflow: "hidden",
             }}
@@ -2130,16 +2231,64 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...trustSlipScrollClearance(isCompact),
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-              gap: 14,
-              marginTop: 14,
+              display: "contents",
             }}
           >
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+            <div
+              style={{
+                order: 2,
+                gridColumn: isCompact ? "1 / -1" : "2 / 3",
+                display: "grid",
+                gap: 14,
+              }}
+            >
+              {communityVerifyPath ? (
+                <StableCtaLink
+                  to={communityVerifyPath}
+                  kind="primary"
+                  stableHeight={58}
+                  debugId="trust-slip.paper.open-community-record"
+                  style={{
+                    width: "100%",
+                    borderRadius: 12,
+                    background: "linear-gradient(135deg, #0B63D1 0%, #0648A8 100%)",
+                    color: "#FFFFFF",
+                    boxShadow: "0 14px 26px rgba(11,99,209,0.22)",
+                    fontWeight: 1000,
+                  }}
+                >
+                  <TrustPaperIcon name="search" size={21} />
+                  Open public community record
+                </StableCtaLink>
+              ) : (
+                <SecondaryButton
+                  type="button"
+                  onClick={() => {
+                    showNotice(
+                      "error",
+                      "Public community record is not ready yet. Refresh TrustSlip or request community confirmation first."
+                    );
+                  }}
+                  fullWidth
+                  stableHeight={58}
+                  debugId="trust-slip.paper.open-community-record"
+                  style={{
+                    borderRadius: 12,
+                    background: "linear-gradient(135deg, #0B63D1 0%, #0648A8 100%)",
+                    color: "#FFFFFF",
+                    boxShadow: "0 14px 26px rgba(11,99,209,0.22)",
+                    fontWeight: 1000,
+                  }}
+                >
+                  <TrustPaperIcon name="search" size={21} />
+                  Open public community record
+                </SecondaryButton>
+              )}
+
+              <div style={trustSlipSectionCard("#FFFFFF")}>
+                <div style={trustSlipPaperTitle()}>
                 2. Current TrustSlip status
-              </div>
+                </div>
               <div
                 style={{
                   marginTop: 14,
@@ -2198,10 +2347,17 @@ export default function TrustSlipPage() {
               >
                 Open public verify
               </SecondaryButton>
+              </div>
             </div>
 
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+            <div
+              style={{
+                ...trustSlipSectionCard("#FFFFFF"),
+                order: 3,
+                gridColumn: isCompact ? "1 / -1" : "1 / 2",
+              }}
+            >
+              <div style={trustSlipPaperTitle()}>
                 3. TrustSlip decision summary
               </div>
               <div
@@ -2279,14 +2435,17 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...trustSlipScrollClearance(isCompact),
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-              gap: 14,
-              marginTop: 14,
+              display: "contents",
             }}
           >
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+            <div
+              style={{
+                ...trustSlipSectionCard("#FFFFFF"),
+                order: 4,
+                gridColumn: isCompact ? "1 / -1" : "2 / 3",
+              }}
+            >
+              <div style={trustSlipPaperTitle()}>
                 4. What this TrustSlip says
               </div>
               <div style={{ marginTop: 12, display: "grid", gap: 6 }}>
@@ -2320,8 +2479,14 @@ export default function TrustSlipPage() {
               </div>
             </div>
 
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+            <div
+              style={{
+                ...trustSlipSectionCard("#FFFFFF"),
+                order: 5,
+                gridColumn: isCompact ? "1 / -1" : "1 / 2",
+              }}
+            >
+              <div style={trustSlipPaperTitle()}>
                 5. What this can be used for
               </div>
               <div style={{ marginTop: 12, display: "grid", gap: 13 }}>
@@ -2352,14 +2517,17 @@ export default function TrustSlipPage() {
           <section
             style={{
               ...trustSlipScrollClearance(isCompact),
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-              gap: 14,
-              marginTop: 14,
+              display: "contents",
             }}
           >
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+            <div
+              style={{
+                ...trustSlipSectionCard("#FFFFFF"),
+                order: 7,
+                gridColumn: isCompact ? "1 / -1" : "2 / 3",
+              }}
+            >
+              <div style={trustSlipPaperTitle()}>
                 7. What this does NOT mean
               </div>
               <div style={{ ...documentMetaCard("#FFF1F2"), marginTop: 12, position: "relative", overflow: "hidden" }}>
@@ -2373,8 +2541,14 @@ export default function TrustSlipPage() {
               </div>
             </div>
 
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
-              <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+            <div
+              style={{
+                ...trustSlipSectionCard("#FFFFFF"),
+                order: 8,
+                gridColumn: isCompact ? "1 / -1" : "1 / 2",
+              }}
+            >
+              <div style={trustSlipPaperTitle()}>
                 8. Why a reader may trust this
               </div>
               <div style={{ ...documentMetaCard("#F0FBF4"), marginTop: 12, position: "relative", overflow: "hidden" }}>
@@ -2391,13 +2565,13 @@ export default function TrustSlipPage() {
 
           <section
             style={{
-              ...innerCard("#FFFFFF"),
+              ...trustSlipSectionCard("#FFFFFF"),
               ...trustSlipScrollClearance(isCompact),
-              border: "1px solid rgba(216,227,238,0.9)",
-              marginTop: 14,
+              order: 9,
+              gridColumn: "1 / -1",
             }}
           >
-            <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
+            <div style={trustSlipPaperTitle()}>
               9. Quick actions
             </div>
             <div
@@ -2448,7 +2622,9 @@ export default function TrustSlipPage() {
             </div>
           </section>
 
-          <TrustPaperSecurityFooter text="Human-first TrustSlip: clear identity, clear status, clear limits, clear verification." />
+          <div style={{ order: 10, gridColumn: "1 / -1" }}>
+            <TrustPaperSecurityFooter text="Human-first TrustSlip: clear identity, clear status, clear limits, clear verification." />
+          </div>
         </section>
       </div>
     );

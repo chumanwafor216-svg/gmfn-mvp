@@ -1,3 +1,46 @@
+### TrustSlip reference layout pass (2026-05-31)
+
+- Route/screen affected:
+  - `/app/trust-slip`, implemented by `frontend/src/pages/TrustSlipPage.tsx`.
+- Product-owner intent:
+  - make the active TrustSlip paper surface match the supplied phone reference:
+    dark GSN TrustSlip hero, white document grid, numbered cards, identity
+    block, current status, decision summary, claim list, use cases,
+    confirmation, limits, trust reasons, and quick actions.
+- Confirmed truth:
+  - the white app header with `Menu` / `TrustSlip` / `Tools` is owned by the
+    authenticated app shell, not by `TrustSlipPage`;
+  - the active route-local branch is guarded by `trustSlipPaperFrameEnabled`;
+  - the screenshot-style data already existed in the route, but the loaded page
+    still had an extra route-local header, no dark hero card, and a flatter
+    order than the reference;
+  - no backend routes, data contracts, permission logic, or TrustSlip verify
+    route behavior were changed.
+- Updated `frontend/src/pages/TrustSlipPage.tsx`:
+  - removed the loaded TrustSlip duplicate `PageTopNav` from the active paper
+    frame while keeping loading/fallback navigation intact;
+  - added reusable local style helpers for the white shell, dark hero, paper
+    cards, headings, and compact status icons;
+  - rebuilt the active paper frame as a screenshot-style grid with the dark GSN
+    hero first and numbered document cards ordered to match the reference;
+  - rebuilt `1. Who is this person?` with a larger portrait, seal, compact
+    identity rows, and stacked green/yellow verification strips;
+  - added the blue top `Open public community record` action above the current
+    TrustSlip status card while preserving the existing community-confirmation
+    public-record action and stable debug IDs required by audits.
+- Verification:
+  - `npm run audit:trust-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run build` passed when rerun outside the sandbox because Vite/esbuild
+    hit sandbox `spawn EPERM` inside the default sandbox;
+  - local dev server responded at `http://127.0.0.1:5173/app/trust-slip`.
+- Remaining truth:
+  - this is not proven pixel-perfect by automated screenshot comparison because
+    the repo has no browser screenshot verification package installed;
+  - the screenshot shows a very dense phone capture, while the implementation
+    still uses the app's responsive one-column behavior on compact CSS widths
+    for readability.
+
 ### Trust Passport identity overview reference-match pass (2026-05-31)
 
 - Route/screen affected:
