@@ -1970,15 +1970,19 @@ export default function TrustSlipPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "132px minmax(0, 1fr)",
-                gap: 14,
+                gridTemplateColumns: isCompact
+                  ? "minmax(0, 1fr)"
+                  : "132px minmax(0, 1fr)",
+                gap: isCompact ? 12 : 14,
                 alignItems: "start",
               }}
             >
               <div
                 style={{
-                  width: 132,
-                  height: 132,
+                  width: isCompact ? "min(100%, 340px)" : 132,
+                  height: isCompact ? "auto" : 132,
+                  aspectRatio: "1 / 1",
+                  justifySelf: isCompact ? "center" : "start",
                   borderRadius: 14,
                   display: "grid",
                   placeItems: "center",
@@ -2014,7 +2018,7 @@ export default function TrustSlipPage() {
                 )}
                 <TrustPaperSeal compact />
               </div>
-              <div>
+              <div style={{ display: "grid", gap: isCompact ? 10 : 0 }}>
                 {[
                   ["id", "GSN ID", gmfnId],
                   ["shield", "Verified member", merchantViewPhoneVerified ? "Yes" : "Not fully shown"],
@@ -2025,19 +2029,36 @@ export default function TrustSlipPage() {
                   key={label}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "18px minmax(74px, 0.62fr) minmax(0, 1fr)",
-                    gap: 8,
-                    alignItems: "start",
-                    marginTop: 7,
+                    gridTemplateColumns: isCompact
+                      ? "28px minmax(112px, 0.42fr) minmax(0, 1fr)"
+                      : "18px minmax(74px, 0.62fr) minmax(0, 1fr)",
+                    gap: isCompact ? 10 : 8,
+                    alignItems: "center",
+                    marginTop: isCompact ? 0 : 7,
+                    minHeight: isCompact ? 36 : "auto",
                   }}
                 >
-                  <TrustPaperIcon name={icon as TrustPaperIconName} size={16} color="#0B63D1" />
-                  <span style={{ color: "#0B63D1", fontWeight: 1000, fontSize: 12 }}>{label}</span>
+                  <TrustPaperIcon
+                    name={icon as TrustPaperIconName}
+                    size={isCompact ? 21 : 16}
+                    color="#0B63D1"
+                  />
+                  <span
+                    style={{
+                      color: "#0B63D1",
+                      fontWeight: 1000,
+                      fontSize: isCompact ? 14 : 12,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {label}
+                  </span>
                   <span
                     style={{
                       color: "#334155",
                       fontWeight: 900,
-                      fontSize: 12,
+                      fontSize: isCompact ? 14 : 12,
+                      lineHeight: 1.18,
                       overflowWrap: "break-word",
                       wordBreak: "normal",
                     }}
