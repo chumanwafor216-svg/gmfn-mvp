@@ -2059,24 +2059,24 @@ export default function TrustScorePage() {
                 text: "The public community record is not ready because this Trust Passport has no community code yet.",
               });
             }}
-            stableHeight={isCompact ? 58 : 66}
+            stableHeight={isCompact ? 50 : 58}
             fullWidth
             style={{
-              marginTop: isCompact ? 18 : 22,
+              marginTop: isCompact ? 14 : 18,
               gridColumn: "1 / -1",
-              borderRadius: 12,
+              borderRadius: 11,
               background: "linear-gradient(180deg, #052B58 0%, #031E42 100%)",
               border: "1px solid rgba(3,30,66,0.18)",
               color: "#FFFFFF",
-              boxShadow: "0 14px 28px rgba(3,30,66,0.20)",
-              fontSize: isCompact ? 16 : 19,
+              boxShadow: "0 10px 22px rgba(3,30,66,0.17)",
+              fontSize: isCompact ? 14 : 16,
               fontWeight: 1000,
               position: "relative",
               zIndex: 1,
             }}
             debugId="trust-score.open-public-community-record"
           >
-            <OpenRecordGlyph size={isCompact ? 21 : 25} />
+            <OpenRecordGlyph size={isCompact ? 18 : 21} />
             Open public community record
           </SecondaryButton>
         </section>
@@ -2324,9 +2324,15 @@ export default function TrustScorePage() {
                     <span style={statusPillStyle(item.value)}>{item.value}</span>
                     <SecondaryButton
                       onClick={() => openTrustRoute(item.to)}
-                      stableHeight={38}
+                      stableHeight={isCompact ? 36 : 38}
                       fullWidth={isCompact}
                       debugId={item.debugId}
+                      style={{
+                        borderRadius: 10,
+                        fontSize: isCompact ? 12 : 13,
+                        fontWeight: 950,
+                        paddingInline: 12,
+                      }}
                     >
                       {item.action}
                     </SecondaryButton>
@@ -2392,28 +2398,46 @@ export default function TrustScorePage() {
                   busy={refreshing}
                   busyLabel="Refreshing..."
                   fullWidth
-                  stableHeight={isCompact ? 56 : 74}
+                  stableHeight={isCompact ? 48 : 58}
                   debugId="trust-score.refresh"
+                  style={{
+                    borderRadius: 11,
+                    fontSize: isCompact ? 12 : 14,
+                    fontWeight: 950,
+                    paddingInline: 10,
+                  }}
                 >
-                  <TrustPaperIcon name="refresh" size={21} />
+                  <TrustPaperIcon name="refresh" size={isCompact ? 17 : 19} />
                   Refresh trust reading
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={copyTrustSnapshot}
                   fullWidth
-                  stableHeight={isCompact ? 56 : 74}
+                  stableHeight={isCompact ? 48 : 58}
                   debugId="trust-score.copy-snapshot"
+                  style={{
+                    borderRadius: 11,
+                    fontSize: isCompact ? 12 : 14,
+                    fontWeight: 950,
+                    paddingInline: 10,
+                  }}
                 >
-                  <TrustPaperIcon name="copy" size={21} />
+                  <TrustPaperIcon name="copy" size={isCompact ? 17 : 19} />
                   Copy snapshot
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => openTrustRoute(routes.trustSlip)}
                   fullWidth
-                  stableHeight={isCompact ? 56 : 74}
+                  stableHeight={isCompact ? 48 : 58}
                   debugId="trust-score.open-trust-slip"
+                  style={{
+                    borderRadius: 11,
+                    fontSize: isCompact ? 12 : 14,
+                    fontWeight: 950,
+                    paddingInline: 10,
+                  }}
                 >
-                  <TrustPaperIcon name="document" size={21} />
+                  <TrustPaperIcon name="document" size={isCompact ? 17 : 19} />
                   Open TrustSlip
                 </SecondaryButton>
                 <SecondaryButton
@@ -2429,10 +2453,16 @@ export default function TrustScorePage() {
                     openTrustRoute(routes.trustSlip);
                   }}
                   fullWidth
-                  stableHeight={isCompact ? 56 : 74}
+                  stableHeight={isCompact ? 48 : 58}
                   debugId="trust-score.verify"
+                  style={{
+                    borderRadius: 11,
+                    fontSize: isCompact ? 12 : 14,
+                    fontWeight: 950,
+                    paddingInline: 10,
+                  }}
                 >
-                  <TrustPaperIcon name="search" size={21} />
+                  <TrustPaperIcon name="search" size={isCompact ? 17 : 19} />
                   {verifyPath ? "Open TrustSlip verify" : "Prepare TrustSlip verify"}
                 </SecondaryButton>
               </div>
@@ -2447,8 +2477,9 @@ export default function TrustScorePage() {
                 <DangerButton
                   onClick={scrollToPressureNotes}
                   fullWidth
-                  stableHeight={46}
+                  stableHeight={40}
                   debugId="trust-score.review-care"
+                  style={{ borderRadius: 10, fontSize: 13, fontWeight: 950 }}
                 >
                   Review pressure notes
                 </DangerButton>
@@ -2462,8 +2493,9 @@ export default function TrustScorePage() {
                     }
                   }}
                   fullWidth
-                  stableHeight={46}
+                  stableHeight={40}
                   debugId="trust-score.export"
+                  style={{ borderRadius: 10, fontSize: 13, fontWeight: 950 }}
                 >
                   Export / print
                 </SubtleButton>

@@ -1,3 +1,32 @@
+### Trust Passport button tightening pass (2026-05-31)
+
+- Route/screen affected:
+  - `/app/trust`, implemented by `frontend/src/pages/TrustScorePage.tsx`.
+- Product-owner question:
+  - count the Trust Passport page buttons, audit them, then tighten all page
+    controls.
+- Confirmed count:
+  - `npm run audit:trust-passport-button-inventory` reports 8 stable source
+    actions and 9 expected rendered action roots because the mapped
+    trust-surface action renders two cards.
+- Updated frontend:
+  - tightened the public community record CTA from `58/66` to `50/58`;
+  - tightened the two trust-surface card buttons;
+  - tightened the four shareable tool buttons from `56/74` to `48/58`;
+  - tightened the two lower review/export buttons from `46` to `40`;
+  - reduced icon sizes, border radii, font sizes, and shadow weight on those
+    controls without changing debug IDs or route behavior.
+- Updated guardrails:
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` and
+    `frontend/tools/audit-button-stability.mjs` now lock the new tighter
+    Trust Passport action geometry.
+- Verification:
+  - `npm run audit:trust-passport-button-inventory` passed;
+  - `npm run audit:trust-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run build` passed when rerun outside the sandbox because Vite/esbuild
+    hit sandbox `spawn EPERM` inside the default sandbox.
+
 ### TrustSlip Verify public paper reference pass (2026-05-31)
 
 - Route/screen affected:
