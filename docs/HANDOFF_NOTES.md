@@ -1,3 +1,42 @@
+### Trust Passport identity overview reference-match pass (2026-05-31)
+
+- Route/screen affected:
+  - `/app/trust`, implemented by `frontend/src/pages/TrustScorePage.tsx`.
+- Product-owner intent:
+  - make the top Trust Passport identity section match the provided phone
+    reference: white movement header from the app shell, pale blue page wash,
+    large white identity card, portrait, `Identity Overview`, boxed status
+    checks, and one dark `Open public community record` action.
+- Confirmed truth:
+  - the white `Menu` / `Trust Passport` / `Tools` row already comes from the
+    authenticated mobile `AppLayout`, so this pass did not edit global
+    navigation;
+  - the route-local Trust Passport page still owned the extra dark `PageTopNav`
+    card and the compressed `Who is this person?` identity layout;
+  - the public community record action already existed and kept its route/error
+    behavior.
+- Updated `frontend/src/pages/TrustScorePage.tsx`:
+  - removed the loaded-page duplicate dark Trust Passport header;
+  - rebuilt the first card as a screenshot-style `Identity Overview` passport
+    surface with larger portrait, gold step badge, identity rows, shield/globe
+    watermark, two-column verification boxes, and full-width dark CTA;
+  - split the deeper trust verdict/evidence sections into their own card below
+    the overview, so the first fold ends cleanly at the public-record action;
+  - kept existing data sources, route contracts, and stable action debug IDs.
+- Updated guardrails:
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` now locks the
+    new screenshot-style identity overview geometry and CTA height.
+- Verification:
+  - `npm run audit:trust-passport-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run build` passed when rerun outside the sandbox because Vite/esbuild
+    hit sandbox `spawn EPERM` inside the default sandbox;
+  - local dev server started at `http://127.0.0.1:5173/app/trust`.
+- Remaining truth:
+  - no browser screenshot automation package is installed in this frontend, so
+    this pass has source/audit/build verification but still needs a human phone
+    visual check against the reference image.
+
 ### Public shop poster share-preview links (2026-05-30)
 
 - Route/screens affected:

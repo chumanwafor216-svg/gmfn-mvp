@@ -8,7 +8,6 @@ import {
   SubtleButton,
 } from "../components/StableButton";
 import {
-  TrustPaperBadgeIcon,
   TrustPaperIcon,
   TrustPaperSeal,
   TrustPaperSecurityFooter,
@@ -624,6 +623,100 @@ function statusPillStyle(status: string): React.CSSProperties {
     }`,
     textAlign: "center",
   };
+}
+
+function titleCaseWords(value: string): string {
+  return safeStr(value)
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1).toLowerCase()}`)
+    .join(" ");
+}
+
+function overviewIconBox(): React.CSSProperties {
+  return {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    display: "grid",
+    placeItems: "center",
+    background: "linear-gradient(180deg, #062A55 0%, #031E42 100%)",
+    color: "#FFFFFF",
+    boxShadow: "0 10px 22px rgba(3,30,66,0.16)",
+    flex: "0 0 auto",
+  };
+}
+
+function overviewStatusBox(ok: boolean, muted = false): React.CSSProperties {
+  const warning = !ok && !muted;
+  return {
+    minHeight: 62,
+    borderRadius: 10,
+    display: "grid",
+    gridTemplateColumns: "44px minmax(0, 1fr)",
+    alignItems: "center",
+    gap: 10,
+    padding: "10px 12px",
+    color: muted ? "#0B2D4A" : ok ? "#16733C" : "#4B2C0B",
+    background: muted ? "#F8FAFC" : ok ? "#F7FCF8" : "#FFFBF2",
+    border: `1px solid ${
+      muted
+        ? "rgba(37,78,119,0.14)"
+        : ok
+          ? "rgba(46,155,98,0.20)"
+          : "rgba(214,170,69,0.24)"
+    }`,
+    boxShadow: warning ? "inset 0 0 0 1px rgba(214,170,69,0.06)" : "none",
+    fontSize: 13.5,
+    fontWeight: 1000,
+    lineHeight: 1.18,
+    textAlign: "left",
+    overflow: "hidden",
+  };
+}
+
+function overviewBadge(ok: boolean, muted = false): React.CSSProperties {
+  return {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    color: muted ? "#0B2D4A" : ok ? "#15803D" : "#B77905",
+    background: "#FFFFFF",
+    border: `2px solid ${
+      muted
+        ? "rgba(37,78,119,0.18)"
+        : ok
+          ? "rgba(46,155,98,0.20)"
+          : "rgba(214,170,69,0.34)"
+    }`,
+    boxShadow: "0 8px 16px rgba(7,23,44,0.06)",
+  };
+}
+
+function OpenRecordGlyph({ size = 22 }: { size?: number }) {
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    strokeWidth: 2.4,
+  };
+
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      style={{ display: "block", flex: "0 0 auto" }}
+    >
+      <path {...common} d="M8 6H5.8A2.8 2.8 0 0 0 3 8.8v9.4A2.8 2.8 0 0 0 5.8 21h9.4A2.8 2.8 0 0 0 18 18.2V16" />
+      <path {...common} d="M13 3h8v8" />
+      <path {...common} d="M11 13 21 3" />
+    </svg>
+  );
 }
 
 function noticeCard(tone: NoticeTone): React.CSSProperties {
@@ -1727,141 +1820,70 @@ export default function TrustScorePage() {
       style={{
         minHeight: "100vh",
         margin: "-18px",
-        padding: isCompact ? "12px 12px 34px" : "18px 18px 42px",
-        background: "#F4F7FB",
+        padding: isCompact ? "22px 14px 34px" : "24px 24px 46px",
+        background: "linear-gradient(180deg, #DDEDF8 0%, #F3F7FB 42%, #F8FAFC 100%)",
       }}
     >
       <div
         style={{
-          width: "min(100%, 980px)",
+          width: "min(100%, 940px)",
           margin: "0 auto",
           display: "grid",
-          gap: isCompact ? 10 : 14,
+          gap: isCompact ? 12 : 16,
         }}
       >
-        <PageTopNav
-          sectionLabel="Main Movement"
-          title="Trust Passport"
-          homeTo={routes.dashboard}
-          homeLabel="Dashboard"
-          backTo={routes.dashboard}
-        />
-
         {noticeNode}
 
         <section
           style={{
             ...pageCard("#FFFFFF"),
-            border: "1px solid rgba(37,78,119,0.14)",
-            boxShadow: "0 22px 60px rgba(7,23,44,0.10)",
-            padding: isCompact ? 12 : 22,
+            border: "1px solid rgba(7,23,44,0.10)",
+            borderRadius: isCompact ? 22 : 28,
+            boxShadow: "0 18px 42px rgba(7,23,44,0.14)",
+            padding: isCompact ? 16 : 30,
             position: "relative",
             overflow: "hidden",
           }}
         >
           <TrustPaperWatermark
             name="shield"
-            color="#0B63D1"
-            size={220}
-            opacity={0.035}
-            style={{ top: 92, right: -58, bottom: "auto" }}
+            color="#0B2D4A"
+            size={isCompact ? 238 : 330}
+            opacity={0.025}
+            style={{ top: isCompact ? 28 : 36, right: isCompact ? -92 : -72, bottom: "auto" }}
           />
-          <header
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "minmax(0, 1fr) auto" : "minmax(0, 1fr) auto",
-              gap: isCompact ? 10 : 14,
-              alignItems: "start",
-              marginBottom: isCompact ? 10 : 14,
-            }}
-          >
-            <div>
-              <div style={{ ...sectionLabel(), color: "#164E94" }}>
-                Main Movement
-              </div>
-              <h1
-                style={{
-                  margin: "4px 0 0",
-                  color: "#07172C",
-                  fontSize: isCompact ? 30 : 48,
-                  lineHeight: 1,
-                  fontWeight: 1000,
-                }}
-              >
-                Trust Passport
-              </h1>
-              <p style={{ ...helperText(), margin: "8px 0 0", maxWidth: 620 }}>
-                {isCompact
-                  ? "Identity, support, finance, trade, and standing in one reading."
-                  : "A clear trust reading for identity, support, finance discipline, trade, and community standing."}
-              </p>
-            </div>
-            <div
-              style={{
-                color: "#07172C",
-                fontSize: isCompact ? 21 : 30,
-                lineHeight: 1,
-                fontWeight: 1000,
-                textAlign: isCompact ? "left" : "right",
-              }}
-            >
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: isCompact ? "flex-start" : "flex-end",
-                  gap: 8,
-                }}
-              >
-                <TrustPaperIcon name="shield" size={isCompact ? 22 : 28} color="#0B63D1" />
-                <span>GSN</span>
-              </div>
-              {!isCompact ? (
-                <div
-                  style={{
-                    color: "#334155",
-                    fontSize: 12,
-                    fontWeight: 900,
-                    lineHeight: 1.15,
-                    marginTop: 4,
-                  }}
-                >
-                  Global<br />Support<br />Network
-                </div>
-              ) : null}
-            </div>
-          </header>
+          <TrustPaperWatermark
+            name="globe"
+            color="#0B2D4A"
+            size={isCompact ? 146 : 214}
+            opacity={0.032}
+            style={{ top: isCompact ? 78 : 104, right: isCompact ? -28 : 12, bottom: "auto" }}
+          />
 
           <section
             style={{
-              ...innerCard("#F8FBFF"),
-              border: "1px solid rgba(37,78,119,0.14)",
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "84px minmax(0, 1fr)"
-                : "150px minmax(0, 1fr) minmax(220px, 0.78fr)",
-              gridTemplateAreas: isCompact
-                ? `"photo identity" "checks checks"`
-                : undefined,
-              gap: isCompact ? 10 : 18,
-              alignItems: isCompact ? "start" : "center",
+              gridTemplateColumns: isCompact ? "104px minmax(0, 1fr)" : "190px minmax(0, 1fr)",
+              gap: isCompact ? 14 : 28,
+              alignItems: "center",
+              position: "relative",
+              zIndex: 1,
             }}
           >
             <div
               style={{
-                gridArea: isCompact ? "photo" : undefined,
-                width: isCompact ? 78 : 142,
-                height: isCompact ? 78 : 142,
-                borderRadius: 14,
+                width: isCompact ? 104 : 190,
+                height: isCompact ? 104 : 190,
+                borderRadius: isCompact ? 18 : 24,
                 display: "grid",
                 placeItems: "center",
                 background: "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)",
-                border: "1px solid rgba(37,78,119,0.18)",
+                border: "2px solid rgba(214,170,69,0.28)",
                 color: "#0B63D1",
                 fontWeight: 1000,
-                fontSize: isCompact ? 20 : 28,
+                fontSize: isCompact ? 24 : 34,
                 overflow: "hidden",
-                boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.65)",
+                boxShadow: "inset 0 0 0 6px rgba(255,255,255,0.72), 0 14px 28px rgba(7,23,44,0.10)",
                 position: "relative",
               }}
             >
@@ -1882,102 +1904,193 @@ export default function TrustScorePage() {
               <TrustPaperSeal compact={isCompact} />
             </div>
 
-            <div style={{ gridArea: isCompact ? "identity" : undefined, minWidth: 0 }}>
+            <div style={{ minWidth: 0 }}>
               <div
                 style={{
-                  color: "#07172C",
+                  width: isCompact ? 34 : 42,
+                  height: isCompact ? 34 : 42,
+                  borderRadius: 10,
+                  display: "grid",
+                  placeItems: "center",
+                  background: "linear-gradient(180deg, #F8E7B8 0%, #E8C875 100%)",
+                  border: "1px solid rgba(160,117,33,0.24)",
+                  color: "#4A3410",
                   fontWeight: 1000,
-                  fontSize: isCompact ? 18 : 22,
-                  marginBottom: isCompact ? 8 : 12,
+                  fontSize: isCompact ? 17 : 20,
+                  boxShadow: "0 10px 20px rgba(160,117,33,0.10)",
                 }}
               >
-                1. Who is this person?
+                1
               </div>
-              {identityRows.map(([icon, label, value]) => (
-                <div
-                  key={label}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "24px minmax(0, 1fr)"
-                      : "28px minmax(92px, 0.38fr) minmax(0, 1fr)",
-                    gap: isCompact ? "2px 8px" : 10,
-                    alignItems: "start",
-                    marginTop: isCompact ? 7 : 8,
-                  }}
-                >
-                  <TrustPaperIcon name={icon} size={21} color="#0B63D1" />
+              <h1
+                style={{
+                  margin: isCompact ? "10px 0 0" : "12px 0 0",
+                  color: "#07172C",
+                  fontSize: isCompact ? 27 : 40,
+                  lineHeight: 1.02,
+                  fontWeight: 1000,
+                }}
+              >
+                Identity Overview
+              </h1>
+              <p
+                style={{
+                  ...helperText(),
+                  margin: isCompact ? "8px 0 0" : "10px 0 0",
+                  maxWidth: 460,
+                  color: "#617085",
+                  fontSize: isCompact ? 14 : 16,
+                  lineHeight: 1.45,
+                }}
+              >
+                Community-backed identity snapshot
+              </p>
+              <div
+                style={{
+                  marginTop: isCompact ? 16 : 22,
+                  width: "min(100%, 360px)",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) 32px minmax(0, 1fr)",
+                  alignItems: "center",
+                  color: "#C5A453",
+                }}
+              >
+                <span style={{ height: 1, background: "rgba(197,164,83,0.52)" }} />
+                <span style={{ display: "grid", placeItems: "center" }}>
+                  <TrustPaperIcon name="shield" size={20} />
+                </span>
+                <span style={{ height: 1, background: "rgba(197,164,83,0.52)" }} />
+              </div>
+            </div>
+          </section>
+
+          <div
+            style={{
+              display: "grid",
+              gap: isCompact ? 10 : 12,
+              marginTop: isCompact ? 24 : 26,
+              position: "relative",
+              zIndex: 1,
+              maxWidth: isCompact ? "100%" : 610,
+            }}
+          >
+            {identityRows.map(([icon, label, value]) => (
+              <div
+                key={label}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "44px minmax(0, 1fr)",
+                  gap: 14,
+                  alignItems: "center",
+                  paddingBottom: 10,
+                  borderBottom: "1px solid rgba(216,227,238,0.72)",
+                }}
+              >
+                <span style={overviewIconBox()}>
+                  <TrustPaperIcon name={icon} size={25} color="#FFFFFF" />
+                </span>
+                <span style={{ minWidth: 0 }}>
                   <span
                     style={{
-                      color: "#0B63D1",
+                      display: "block",
+                      color: "#617085",
+                      fontSize: isCompact ? 13 : 14,
                       fontWeight: 1000,
-                      gridColumn: isCompact ? "2" : undefined,
+                      lineHeight: 1.1,
                     }}
                   >
                     {label}
                   </span>
                   <span
                     style={{
+                      display: "block",
+                      marginTop: 4,
                       color: "#334155",
-                      fontWeight: 850,
-                      gridColumn: isCompact ? "2" : undefined,
+                      fontSize: isCompact ? 16 : 18,
+                      lineHeight: 1.16,
+                      fontWeight: 1000,
                       overflowWrap: "break-word",
                       wordBreak: "normal",
                     }}
                   >
-                    {value}
+                    {label === "Role" ? titleCaseWords(value) : value}
                   </span>
-                </div>
-              ))}
-            </div>
-
-            <div
-              style={{
-                gridArea: isCompact ? "checks" : undefined,
-                display: "grid",
-                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
-                gap: isCompact ? 6 : 8,
-              }}
-            >
-              {verificationBadges.map((item) => (
-                <span
-                  key={item.label}
-                  style={{
-                    ...statusPillStyle(item.ok ? "Strong" : "Limited"),
-                    justifyContent: "flex-start",
-                    gap: 8,
-                    minWidth: 0,
-                  }}
-                >
-                  <TrustPaperBadgeIcon name={item.icon} ok={item.ok} />
-                  {item.label}
                 </span>
-              ))}
-              <span style={{ ...statusPillStyle("Limited"), justifyContent: "flex-start", gap: 8, minWidth: 0 }}>
-                <TrustPaperIcon name="community" size={18} color="#526579" />
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: isCompact ? 8 : 12,
+              marginTop: isCompact ? 16 : 22,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            {verificationBadges.map((item) => (
+              <span key={item.label} style={overviewStatusBox(item.ok)}>
+                <span style={overviewBadge(item.ok)}>
+                  <TrustPaperIcon name={item.ok ? "check" : "alert"} size={24} strokeWidth={3} />
+                </span>
+                <span style={{ minWidth: 0 }}>{item.label}</span>
+              </span>
+            ))}
+            <span style={overviewStatusBox(false, true)}>
+              <span style={overviewBadge(false, true)}>
+                <TrustPaperIcon name="community" size={23} strokeWidth={2.5} />
+              </span>
+              <span style={{ minWidth: 0 }}>
                 Active in {passportVm.technicalDetail.activeClans} communities
               </span>
-              <SecondaryButton
-                onClick={() => {
-                  if (communityVerifyPath) {
-                    openTrustRoute(communityVerifyPath);
-                    return;
-                  }
-                  setNotice({
-                    tone: "error",
-                    text: "The public community record is not ready because this Trust Passport has no community code yet.",
-                  });
-                }}
-                stableHeight={isCompact ? 44 : 48}
-                fullWidth={isCompact}
-                style={{ gridColumn: isCompact ? "1 / -1" : undefined }}
-                debugId="trust-score.open-public-community-record"
-              >
-                <TrustPaperIcon name="search" size={18} />
-                Open public community record
-              </SecondaryButton>
-            </div>
-          </section>
+            </span>
+          </div>
+
+          <SecondaryButton
+            onClick={() => {
+              if (communityVerifyPath) {
+                openTrustRoute(communityVerifyPath);
+                return;
+              }
+              setNotice({
+                tone: "error",
+                text: "The public community record is not ready because this Trust Passport has no community code yet.",
+              });
+            }}
+            stableHeight={isCompact ? 58 : 66}
+            fullWidth
+            style={{
+              marginTop: isCompact ? 18 : 22,
+              gridColumn: "1 / -1",
+              borderRadius: 12,
+              background: "linear-gradient(180deg, #052B58 0%, #031E42 100%)",
+              border: "1px solid rgba(3,30,66,0.18)",
+              color: "#FFFFFF",
+              boxShadow: "0 14px 28px rgba(3,30,66,0.20)",
+              fontSize: isCompact ? 16 : 19,
+              fontWeight: 1000,
+              position: "relative",
+              zIndex: 1,
+            }}
+            debugId="trust-score.open-public-community-record"
+          >
+            <OpenRecordGlyph size={isCompact ? 21 : 25} />
+            Open public community record
+          </SecondaryButton>
+        </section>
+
+        <section
+          style={{
+            ...pageCard("#FFFFFF"),
+            border: "1px solid rgba(37,78,119,0.14)",
+            boxShadow: "0 16px 42px rgba(7,23,44,0.08)",
+            padding: isCompact ? 12 : 22,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
 
           <section
             style={{

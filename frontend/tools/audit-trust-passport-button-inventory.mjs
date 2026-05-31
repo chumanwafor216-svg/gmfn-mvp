@@ -152,18 +152,18 @@ assertContains(
 );
 
 assertContains(
-  /padding: isCompact \? "12px 12px 34px" : "18px 18px 42px"[\s\S]*?fontSize: isCompact \? 30 : 48[\s\S]*?fontSize: isCompact \? 21 : 30[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "84px minmax\(0, 1fr\)"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?`"photo identity" "checks checks"`[\s\S]*?width: isCompact \? 78 : 142[\s\S]*?height: isCompact \? 78 : 142/,
-  "Trust Passport phone identity hero must keep the portrait, identity rows, and checks in a compact two-column mobile layout."
+  /padding: isCompact \? "22px 14px 34px" : "24px 24px 46px"[\s\S]*?background: "linear-gradient\(180deg, #DDEDF8 0%, #F3F7FB 42%, #F8FAFC 100%\)"[\s\S]*?gridTemplateColumns: isCompact \? "104px minmax\(0, 1fr\)" : "190px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 104 : 190[\s\S]*?height: isCompact \? 104 : 190[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?overviewIconBox\(\)/,
+  "Trust Passport identity overview must keep the screenshot-style portrait, title block, and identity row structure."
 );
 
 assertContains(
-  /gridArea: isCompact \? "checks" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "1fr"[\s\S]*?style=\{\{ gridColumn: isCompact \? "1 \/ -1" : undefined \}\}/,
-  "Trust Passport phone verification badges must use a compact two-column grid with the record action spanning the row."
+  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 62[\s\S]*?gridTemplateColumns: "44px minmax\(0, 1fr\)"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok\)[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\} communities/,
+  "Trust Passport verification badges must stay in the screenshot-style two-column boxed grid."
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 44 : 48\}[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?debugId="trust-score\.open-public-community-record"/,
-  "Trust Passport public community record action must keep compact fixed phone geometry."
+  /stableHeight=\{isCompact \? 58 : 66\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
+  "Trust Passport public community record action must keep the screenshot-style full-width fixed CTA."
 );
 
 assertContains(
