@@ -138,6 +138,36 @@ function reviewerBadge(canPilotApprove = false): React.CSSProperties {
   };
 }
 
+function requestFactTile(): React.CSSProperties {
+  return {
+    ...institutionalInnerCard("#FFFFFF"),
+    border: "1px solid rgba(11,31,51,0.08)",
+    borderRadius: 14,
+    padding: 12,
+    minHeight: 74,
+  };
+}
+
+function requestFactLabel(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    color: "#64748B",
+    fontWeight: 1000,
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+  };
+}
+
+function requestFactValue(): React.CSSProperties {
+  return {
+    marginTop: 6,
+    color: "#0B1F33",
+    fontWeight: 900,
+    lineHeight: 1.45,
+    wordBreak: "break-word",
+  };
+}
+
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
@@ -712,35 +742,44 @@ export default function CommunityJoinRequestsPage() {
                 <div
                   style={{
                     marginTop: 12,
-                    ...institutionalInnerCard("#FFFFFF"),
                     display: "grid",
-                    gap: 6,
-                    border: "1px solid rgba(11,31,51,0.08)",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(3, minmax(0, 1fr))",
+                    gap: 10,
                   }}
                 >
-                  <div>
-                    Community ID: {safeStr(item.community_code || "Awaiting issue")}
-                  </div>
-                  <div>
-                    Community / Market:{" "}
-                    {safeStr(
-                      item.marketplace_name ||
-                        item.clan_name ||
-                        "Not available yet"
-                    )}
-                  </div>
-                  <div>Invite code: {safeStr(item.invite_code || "Not available yet")}</div>
-                  <div>Status: {status}</div>
-                  <div>Submitted: {safeDateTime(item.created_at)}</div>
-                  <div>Decided: {safeDateTime(item.decided_at)}</div>
-                  <div>Approvals: {Number(item.approvals || 0)}</div>
-                  <div>Rejects: {Number(item.rejects || 0)}</div>
-                  <div>Total votes: {Number(item.total_votes || 0)}</div>
-                  <div>Active members: {Number(item.active_member_count || 0)}</div>
-                  <div>Required approvals: {Number(item.required_approvals || 0)}</div>
+                  {[
+                    ["Community ID", safeStr(item.community_code || "Awaiting issue")],
+                    [
+                      "Community / Market",
+                      safeStr(
+                        item.marketplace_name ||
+                          item.clan_name ||
+                          "Not available yet"
+                      ),
+                    ],
+                    ["Invite code", safeStr(item.invite_code || "Not available yet")],
+                    ["Status", status],
+                    ["Submitted", safeDateTime(item.created_at)],
+                    ["Required approvals", String(Number(item.required_approvals || 0))],
+                    ["Approvals", String(Number(item.approvals || 0))],
+                    ["Rejects", String(Number(item.rejects || 0))],
+                    ["Active members", String(Number(item.active_member_count || 0))],
+                  ].map(([label, value]) => (
+                    <div key={`${item.id}-${label}`} style={requestFactTile()}>
+                      <div style={requestFactLabel()}>{label}</div>
+                      <div style={requestFactValue()}>{value}</div>
+                    </div>
+                  ))}
 
                   {safeStr(item.applicant_gmfn_id || "") ? (
-                    <div>Applicant GSN ID: {safeStr(item.applicant_gmfn_id)}</div>
+                    <div style={requestFactTile()}>
+                      <div style={requestFactLabel()}>Applicant GSN ID</div>
+                      <div style={requestFactValue()}>
+                        {safeStr(item.applicant_gmfn_id)}
+                      </div>
+                    </div>
                   ) : null}
                 </div>
               </div>

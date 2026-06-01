@@ -148,6 +148,7 @@ export default function JoinRequestPendingPage() {
   const [searchParams] = useSearchParams();
   const [liveStatus, setLiveStatus] = useState<any>(null);
   const [handoffStarted, setHandoffStarted] = useState(false);
+  const [reviewDetailsOpen, setReviewDetailsOpen] = useState(false);
 
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -492,14 +493,9 @@ export default function JoinRequestPendingPage() {
                 1. Community review
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Members review your request according to the approval rule
-                already in place. If more than one active member currently
-                counts in that community, more than one approval may still be
-                required before activation opens.
-                If you reopen the same join path before a decision is made, the
-                app can show that your request is already waiting. That does
-                not create a second review notification because the first
-                request is still the live one on record.
+                Members review your request using the community rule already in
+                place. If the community needs more than one approval, the
+                request stays pending until that threshold is reached.
               </div>
             </div>
 
@@ -511,101 +507,110 @@ export default function JoinRequestPendingPage() {
                   fontSize: 18,
                 }}
               >
-                Live review position
+                Review reading
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                This shows the real review counts currently on record for this
-                request.
+                Current state: <strong>{statusText}</strong>. Approval count:{" "}
+                <strong>
+                  {approvals}
+                  {requiredApprovals ? ` / ${requiredApprovals}` : ""}
+                </strong>
+                .
               </div>
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr 1fr" : "repeat(4, minmax(0, 1fr))",
-                  gap: 10,
-                }}
-              >
-                <div style={infoTile()}>
-                  <div style={sectionLabel()}>Approvals</div>
-                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
-                    {approvals}
-                  </div>
-                </div>
-                <div style={infoTile()}>
-                  <div style={sectionLabel()}>Rejects</div>
-                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
-                    {rejects}
-                  </div>
-                </div>
-                <div style={infoTile()}>
-                  <div style={sectionLabel()}>Total votes</div>
-                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
-                    {totalVotes}
-                  </div>
-                </div>
-                <div style={infoTile()}>
-                  <div style={sectionLabel()}>Required approvals</div>
-                  <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
-                    {requiredApprovals}
-                  </div>
-                </div>
+              <div style={{ marginTop: 12 }}>
+                <StableCtaLink
+                  to="#review-details"
+                  kind="secondary"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setReviewDetailsOpen((current) => !current);
+                  }}
+                  debugId="join-pending.review-details.toggle"
+                >
+                  {reviewDetailsOpen ? "Hide review details" : "View review details"}
+                </StableCtaLink>
               </div>
-              <div style={{ marginTop: 10, ...helperText() }}>
-                Activated reviewers currently counted in this community:{" "}
-                <strong>{activeMembers}</strong>
-              </div>
-            </div>
 
-            <div style={softCard()}>
-              <div
-                style={{
-                  color: "#F8FBFF",
-                  fontWeight: 1000,
-                  fontSize: 18,
-                }}
-              >
-                Activated reviewers on record
-              </div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                These are the currently activated reviewers the system counts in
-                this community right now.
-              </div>
-              {eligibleReviewers.length ? (
-                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                  {eligibleReviewers.map((reviewer: ReviewerLine, index: number) => (
-                    <div key={`${reviewer.gmfnId || reviewer.display}-${index}`} style={infoTile()}>
-                      <div style={sectionLabel()}>
-                        Reviewer {index + 1}
-                        {reviewer.role ? ` - ${reviewer.role}` : ""}
+              {reviewDetailsOpen ? (
+                <>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "1fr 1fr"
+                        : "repeat(4, minmax(0, 1fr))",
+                      gap: 10,
+                    }}
+                  >
+                    <div style={infoTile()}>
+                      <div style={sectionLabel()}>Approvals</div>
+                      <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
+                        {approvals}
                       </div>
-                      <div
-                        style={{
-                          marginTop: 8,
-                          color: "#F8FBFF",
-                          fontWeight: 900,
-                          lineHeight: 1.55,
-                        }}
-                      >
-                        {reviewer.display || "Visible reviewer"}
-                      </div>
-                      {reviewer.gmfnId ? (
-                        <div style={{ marginTop: 6, ...helperText() }}>
-                          {reviewer.gmfnId}
-                        </div>
-                      ) : null}
-                      {reviewer.roleLabel ? (
-                        <div style={{ marginTop: 4, ...helperText() }}>
-                          Role: {reviewer.roleLabel}
-                        </div>
-                      ) : null}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ marginTop: 12, ...pendingNotice() }}>
-                  No activated reviewer line is visible in this community yet.
-                </div>
-              )}
+                    <div style={infoTile()}>
+                      <div style={sectionLabel()}>Rejects</div>
+                      <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
+                        {rejects}
+                      </div>
+                    </div>
+                    <div style={infoTile()}>
+                      <div style={sectionLabel()}>Total votes</div>
+                      <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
+                        {totalVotes}
+                      </div>
+                    </div>
+                    <div style={infoTile()}>
+                      <div style={sectionLabel()}>Required approvals</div>
+                      <div style={{ marginTop: 8, color: "#F8FBFF", fontWeight: 1000, fontSize: 24 }}>
+                        {requiredApprovals}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 10, ...helperText() }}>
+                    Activated reviewers currently counted in this community:{" "}
+                    <strong>{activeMembers}</strong>
+                  </div>
+
+                  {eligibleReviewers.length ? (
+                    <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                      {eligibleReviewers.map((reviewer: ReviewerLine, index: number) => (
+                        <div key={`${reviewer.gmfnId || reviewer.display}-${index}`} style={infoTile()}>
+                          <div style={sectionLabel()}>
+                            Reviewer {index + 1}
+                            {reviewer.role ? ` - ${reviewer.role}` : ""}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 8,
+                              color: "#F8FBFF",
+                              fontWeight: 900,
+                              lineHeight: 1.55,
+                            }}
+                          >
+                            {reviewer.display || "Visible reviewer"}
+                          </div>
+                          {reviewer.gmfnId ? (
+                            <div style={{ marginTop: 6, ...helperText() }}>
+                              {reviewer.gmfnId}
+                            </div>
+                          ) : null}
+                          {reviewer.roleLabel ? (
+                            <div style={{ marginTop: 4, ...helperText() }}>
+                              Role: {reviewer.roleLabel}
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 12, ...pendingNotice() }}>
+                      No activated reviewer line is visible in this community yet.
+                    </div>
+                  )}
+                </>
+              ) : null}
             </div>
 
             <div style={softCard()}>

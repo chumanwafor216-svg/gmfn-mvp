@@ -1,3 +1,34 @@
+### Join-flow weak-page polish pass (2026-06-01)
+
+- Route/screens affected:
+  - `/pending-approval`, implemented by
+    `frontend/src/pages/JoinRequestPendingPage.tsx`;
+  - `/app/community/:clanId/join-requests` style join-review route,
+    implemented by `frontend/src/pages/CommunityJoinRequestsPage.tsx`.
+- Product-owner request:
+  - "polish weak pages" after the invite/share-link work.
+- Confirmed target:
+  - the weakest active pages closest to the just-polished invite flow were the
+    applicant pending page and the community reviewer request list;
+  - both were functionally correct but exposed too much review machinery at
+    once and read more like operational data dumps than guided GSN trust flow.
+- Updated frontend:
+  - `JoinRequestPendingPage` now keeps the applicant-facing page calmer by
+    summarizing review state first and hiding approvals/rejects/reviewer lines
+    behind a `View review details` control;
+  - `CommunityJoinRequestsPage` now renders each request's facts as compact
+    labeled tiles instead of a raw stacked list, so reviewers can scan community
+    ID, invite code, status, dates, and approval threshold without visual noise.
+- Verification:
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run build` passed outside the sandbox after Vite/esbuild hit the known
+    Windows sandbox `spawn EPERM`.
+- Remaining truth:
+  - this was a route-local polish pass only. It did not change backend join
+    request rules, approval thresholds, voting behavior, or activation routing.
+
 ### Community join invite personalization and preview card (2026-06-01)
 
 - Route/screens affected:
