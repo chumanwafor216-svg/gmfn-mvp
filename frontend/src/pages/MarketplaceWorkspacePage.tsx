@@ -396,7 +396,7 @@ function getCommunityTrustState(source: any): CommunityTrustState {
     classText: "Awaiting reading",
     scoreText: "Not available yet",
     tone: "neutral",
-    statusText: "Loading",
+    statusText: "No community trust reading yet",
   };
 }
 

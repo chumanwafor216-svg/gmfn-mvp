@@ -321,8 +321,8 @@ assertContains(
 
 assertContains(
   "index.html",
-  /property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
-  "The static frontend shell must use a frontend-hosted PNG fallback poster, not SVG, so WhatsApp can show an image while product-specific Node metadata is unavailable."
+  /<title>GSN Public Link<\/title>[\s\S]*?Open a trusted GSN public link[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
+  "The static frontend shell must use a generic frontend-hosted PNG fallback poster, not a shop-specific fallback, so non-shop public routes do not preview as shops."
 );
 
 assertContains(
@@ -580,8 +580,8 @@ assertContains(
 
 assertContains(
   "server.mjs",
-  /const publicFrontendOrigin[\s\S]*?gmfn-frontend\.onrender\.com[\s\S]*?function metaTags\(meta\)[\s\S]*?og:image[\s\S]*?og:url[\s\S]*?twitter:card[\s\S]*?async function serveShopHtml[\s\S]*?async function serveShareCardProxy/,
-  "The frontend server must inject product Open Graph tags and proxy the preview image through the frontend domain for WhatsApp."
+  /const publicFrontendOrigin[\s\S]*?gmfn-frontend\.onrender\.com[\s\S]*?function metaTags\(meta\)[\s\S]*?og:image[\s\S]*?og:url[\s\S]*?twitter:card[\s\S]*?function communityAccessMeta[\s\S]*?GSN Community Access[\s\S]*?gsn-community-access-poster\.png[\s\S]*?async function serveShopHtml[\s\S]*?async function serveCommunityHtml[\s\S]*?async function serveShareCardProxy/,
+  "The frontend server must inject route-specific Open Graph tags for public shop and public community access routes, and proxy the shop preview image through the frontend domain for WhatsApp."
 );
 
 assertContains(

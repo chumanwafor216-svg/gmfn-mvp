@@ -1,3 +1,56 @@
+### Public community access preview fix (2026-06-01)
+
+- Route/screens affected:
+  - public community access desk `/community/:clanId`, implemented by
+    `frontend/src/pages/MarketplaceWorkspacePage.tsx`;
+  - frontend-hosted share metadata served by `frontend/server.mjs`;
+  - static frontend fallback metadata in `frontend/index.html`.
+- Product-owner report:
+  - a community/invite-style link showed the same WhatsApp preview label and
+    poster as a public shop link, then opened a different community desk
+    surface with join, route handoff, money/support, alerts, and members-to-shop
+    mapping.
+- Confirmed truth:
+  - the opened inside page is not TrustSlip verification, merchant
+    verification, or community-confirmation public outcome;
+  - the screenshot strings match `MarketplaceWorkspacePage`, routed at
+    `/community/:clanId`;
+  - that route is a legitimate public community access / marketplace workspace
+    desk, but its WhatsApp preview was wrong because non-shop routes were
+    falling back to `index.html`, whose static Open Graph metadata said
+    `GSN Public Shop`;
+  - `/shop/:gmfnId` still has its own dynamic shop metadata and preview-card
+    proxy in `frontend/server.mjs`.
+- Updated frontend:
+  - changed the static fallback metadata from shop-specific `GSN Public Shop`
+    to generic `GSN Public Link`;
+  - added route-specific Open Graph metadata for `/community/:clanId` with
+    title `GSN Community Access`, community-access description, canonical URL,
+    and a dedicated `gsn-community-access-poster.png`;
+  - replaced the static fallback poster with a generic GSN public-link poster
+    so unknown public routes do not pretend to be shops;
+  - added `gsn-community-access-poster.svg/png`;
+  - changed the no-score community trust state from `Loading` to
+    `No community trust reading yet`, so the public desk does not imply an
+    endless load after no reading exists.
+- Updated guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now requires generic fallback
+    metadata and route-specific community-access metadata in the frontend
+    server.
+- Verification:
+  - `npm run audit:link-contracts` passed;
+  - `npm run build` passed when rerun outside the sandbox because Vite/esbuild
+    hit sandbox `spawn EPERM` inside the default sandbox;
+  - local built server smoke check passed:
+    `/community/123` returned `GSN Community Access`, used
+    `gsn-community-access-poster.png`, and that poster returned HTTP `200`;
+    `/shop/GMFN-U-28EB8F09` still returned shop-specific metadata.
+- Remaining truth:
+  - WhatsApp can cache old previews. After deploy, a previously pasted
+    community link may keep the old shop preview until WhatsApp refreshes its
+    cache; a fresh URL/query or waiting for cache expiry may be needed for a
+    clean proof.
+
 ### Public shop WhatsApp owner chat fix (2026-06-01)
 
 - Route/screen affected:

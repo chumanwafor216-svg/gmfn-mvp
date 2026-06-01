@@ -161,6 +161,7 @@ function metaTags(meta) {
     `<title>${title}</title>`,
     `<meta name="description" content="${description}" />`,
     `<link rel="canonical" href="${targetUrl}" />`,
+    `<meta property="og:site_name" content="Global Support Network" />`,
     `<meta property="og:title" content="${title}" />`,
     `<meta property="og:description" content="${description}" />`,
     `<meta property="og:image" content="${imageUrl}" />`,
@@ -175,6 +176,17 @@ function metaTags(meta) {
     `<meta name="twitter:description" content="${description}" />`,
     `<meta name="twitter:image" content="${imageUrl}" />`,
   ].join("\n    ");
+}
+
+function communityAccessMeta(clanId) {
+  const targetUrl = frontendUrl(`/community/${encodeURIComponent(firstText(clanId, "community"))}`);
+  return {
+    title: "GSN Community Access",
+    description:
+      "Open this public GSN community access desk for joining, marketplace handoff, and member-to-shop visibility.",
+    imageUrl: frontendUrl("/gsn-community-access-poster.png"),
+    targetUrl,
+  };
 }
 
 async function indexHtmlWithMeta(meta) {
@@ -199,6 +211,13 @@ async function serveShopHtml(res, gmfnId, searchParams) {
   } catch {
     createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
   }
+}
+
+async function serveCommunityHtml(res, clanId) {
+  const html = await indexHtmlWithMeta(communityAccessMeta(clanId));
+  send(res, 200, html, "text/html; charset=utf-8", {
+    "Cache-Control": "public, max-age=300",
+  });
 }
 
 async function serveShareCardProxy(res, gmfnId, searchParams) {
@@ -272,12 +291,17 @@ createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", publicFrontendOrigin);
     const match = url.pathname.match(/^\/shop\/([^/]+)(?:\/share-card\.png)?$/);
+    const communityMatch = url.pathname.match(/^\/community\/([^/]+)$/);
     if (match && url.pathname.endsWith("/share-card.png")) {
       await serveShareCardProxy(res, decodeURIComponent(match[1]), url.searchParams);
       return;
     }
     if (match) {
       await serveShopHtml(res, decodeURIComponent(match[1]), url.searchParams);
+      return;
+    }
+    if (communityMatch) {
+      await serveCommunityHtml(res, decodeURIComponent(communityMatch[1]));
       return;
     }
     await serveStaticOrFallback(res, url.pathname);
