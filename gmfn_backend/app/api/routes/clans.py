@@ -295,7 +295,10 @@ def _member_display(user: Optional[User]) -> str:
     if not user:
         return "A GMFN member"
     return _safe_str(
-        getattr(user, "gmfn_id", None)
+        getattr(user, "display_name", None)
+        or getattr(user, "name", None)
+        or getattr(user, "full_name", None)
+        or getattr(user, "gmfn_id", None)
         or getattr(user, "email", None)
         or "A GMFN member",
         "A GMFN member",
@@ -1072,7 +1075,8 @@ def _build_invite_text(
     lines = [
         "Hello,",
         "",
-        f"{inviter_name} is inviting you to join {clan_name} on GSN.",
+        f"{inviter_name} is inviting you to begin the GSN join request for {clan_name}.",
+        "This link lets you send your request back to the community for review. It is not automatic entry.",
         f"Invited by: {inviter_name}",
         f"Community ID: {community_code}",
     ]
@@ -1088,9 +1092,7 @@ def _build_invite_text(
             "With GSN, a trusted circle can trade, support small needs, lend, borrow, repay, and build a clearer record of reliability.",
             "Over time, those records can help members carry their good name further, even beyond the people who already know them.",
             "",
-            "This invitation does not mean automatic entry. The community will still review your request so trust stays protected.",
-            "",
-            "Use this link to begin your request:",
+            "Open secure join link:",
             invite_link,
             "",
             "Sent through GSN",

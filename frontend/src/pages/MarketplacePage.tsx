@@ -2,7 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import DomainIntroToggle from "../components/DomainIntroToggle";
 import ExplainToggle from "../components/ExplainToggle";
 import GSNBrandMark from "../components/GSNBrandMark";
-import { normalizedJoinInviteUrl } from "../lib/joinLinks";
+import {
+  normalizedJoinInviteUrl,
+  personalizedJoinInviteUrl,
+} from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   navigateToCta,
@@ -586,6 +589,21 @@ function communityName(row: CommunityRow | null | undefined): string {
       row?.community?.name,
       row?.clan?.name,
       row?.title
+    ) || "Selected community"
+  );
+}
+
+function baseCommunityName(row: CommunityRow | null | undefined): string {
+  return (
+    firstTruthy(
+      row?.display_name,
+      row?.name,
+      row?.clan_name,
+      row?.community?.display_name,
+      row?.community?.name,
+      row?.clan?.name,
+      row?.title,
+      row?.marketplace_name
     ) || "Selected community"
   );
 }
@@ -1457,22 +1475,32 @@ function buildGsnShareMessage(
   opts: {
     memberName: string;
     communityName: string;
+    marketplaceName?: string;
+    recipientName?: string;
+    personalNote?: string;
     url: string;
   }
 ): string {
-  const sender = safeStr(opts.memberName) || "a GSN member";
+  const sender = safeStr(opts.memberName) || "a known GSN member";
   const community = safeStr(opts.communityName) || "this community";
+  const marketplace = safeStr(opts.marketplaceName);
+  const recipient = safeStr(opts.recipientName);
+  const personalNote = safeStr(opts.personalNote);
   const url = safeStr(opts.url);
 
   return [
-    `GSN note from ${sender}:`,
+    recipient ? `Hello ${recipient},` : "Hello,",
     "",
-    `This is a secure GSN join link for ${community}.`,
-    "Open it when you are ready to send your request back to the community.",
+    `${sender} from ${marketplace || community} is inviting you to begin the GSN join request for ${community}.`,
+    "This link lets you send your request back to the community for review. It is not automatic entry.",
+    personalNote ? `Personal note: ${personalNote}` : "",
     "",
-    "GSN helps existing trust become visible, portable, and usable.",
+    "GSN helps existing trust become visible, recordable, and useful.",
+    "Open secure join link:",
     url,
-  ].join("\n");
+    "",
+    "Sent through GSN",
+  ].filter(Boolean).join("\n");
 }
 
 function buildGsnSharePreview(
@@ -1480,21 +1508,30 @@ function buildGsnSharePreview(
   opts: {
     memberName: string;
     communityName: string;
+    marketplaceName?: string;
+    recipientName?: string;
+    personalNote?: string;
     maskedLabel: string;
   }
 ): string {
-  const sender = safeStr(opts.memberName) || "a GSN member";
+  const sender = safeStr(opts.memberName) || "a known GSN member";
   const community = safeStr(opts.communityName) || "this community";
-  const maskedLabel = safeStr(opts.maskedLabel) || "Secure GSN link";
+  const marketplace = safeStr(opts.marketplaceName);
+  const recipient = safeStr(opts.recipientName);
+  const personalNote = safeStr(opts.personalNote);
+  const maskedLabel = safeStr(opts.maskedLabel) || "Secure GSN join link";
 
   return [
-    `GSN note from ${sender}:`,
+    recipient ? `Hello ${recipient},` : "Hello,",
     "",
-    `This is a secure GSN join link for ${community}.`,
-    "Open it when you are ready to send your request back to the community.",
+    `${sender} from ${marketplace || community} is inviting you to begin the GSN join request for ${community}.`,
+    "This link lets you send your request back to the community for review. It is not automatic entry.",
+    personalNote ? `Personal note: ${personalNote}` : "",
     "",
-    "GSN helps existing trust become visible, portable, and usable.",
+    "GSN helps existing trust become visible, recordable, and useful.",
     maskedLabel,
+    "",
+    "Sent through GSN",
   ].join("\n");
 }
 
@@ -2129,6 +2166,8 @@ export default function MarketplacePage() {
   const [poolInfo, setPoolInfo] = useState<any>(null);
   const [marketplaceTrust, setMarketplaceTrust] = useState<any>(null);
   const [inviteLink, setInviteLink] = useState<string>("");
+  const [joinRecipientName, setJoinRecipientName] = useState("");
+  const [joinInviteNote, setJoinInviteNote] = useState("");
   const [creatingInviteLink, setCreatingInviteLink] = useState(false);
   const [publicShopRecord, setPublicShopRecord] =
     useState<MarketplaceShop | null>(null);
@@ -2883,11 +2922,34 @@ export default function MarketplacePage() {
     return communityName(selectedCommunity);
   }, [selectedCommunity]);
 
-  const maskedInviteLinkLabel = useMemo(() => {
-    return cleanMaskedLinkLabel(
-      buildMaskedLinkLabel(inviteLink, "join", activeCommunityName)
+  const activeJoinCommunityName = useMemo(() => {
+    return baseCommunityName(selectedCommunity);
+  }, [selectedCommunity]);
+
+  const personalizedInviteLink = useMemo(() => {
+    return (
+      personalizedJoinInviteUrl(inviteLink, {
+        inviterName: memberName,
+        recipientName: joinRecipientName,
+        communityName: activeJoinCommunityName,
+        marketplaceName: activeCommunityName,
+        message: joinInviteNote,
+      }) || inviteLink
     );
-  }, [inviteLink, activeCommunityName]);
+  }, [
+    inviteLink,
+    memberName,
+    joinRecipientName,
+    activeJoinCommunityName,
+    activeCommunityName,
+    joinInviteNote,
+  ]);
+
+  const personalizedInviteMaskedLabel = useMemo(() => {
+    return cleanMaskedLinkLabel(
+      buildMaskedLinkLabel(personalizedInviteLink, "join", activeCommunityName)
+    );
+  }, [personalizedInviteLink, activeCommunityName]);
 
   const maskedMarketplaceFaceLabel = useMemo(() => {
     return cleanMaskedLinkLabel(
@@ -2902,18 +2964,38 @@ export default function MarketplacePage() {
   const joinWhatsappMessage = useMemo(() => {
     return buildGsnShareMessage("join", {
       memberName,
-      communityName: activeCommunityName,
-      url: inviteLink,
+      communityName: activeJoinCommunityName,
+      marketplaceName: activeCommunityName,
+      recipientName: joinRecipientName,
+      personalNote: joinInviteNote,
+      url: personalizedInviteLink,
     });
-  }, [memberName, activeCommunityName, inviteLink]);
+  }, [
+    memberName,
+    activeJoinCommunityName,
+    activeCommunityName,
+    joinRecipientName,
+    joinInviteNote,
+    personalizedInviteLink,
+  ]);
 
   const joinWhatsappPreview = useMemo(() => {
     return buildGsnSharePreview("join", {
       memberName,
-      communityName: activeCommunityName,
-      maskedLabel: maskedInviteLinkLabel,
+      communityName: activeJoinCommunityName,
+      marketplaceName: activeCommunityName,
+      recipientName: joinRecipientName,
+      personalNote: joinInviteNote,
+      maskedLabel: personalizedInviteMaskedLabel,
     });
-  }, [memberName, activeCommunityName, maskedInviteLinkLabel]);
+  }, [
+    memberName,
+    activeJoinCommunityName,
+    activeCommunityName,
+    joinRecipientName,
+    joinInviteNote,
+    personalizedInviteMaskedLabel,
+  ]);
 
   const joinEmailSubject = useMemo(() => {
     return buildGsnEmailSubject("join", activeCommunityName);
@@ -4523,10 +4605,34 @@ export default function MarketplacePage() {
                     }}
                   >
                     {inviteLink
-                      ? inviteLink
+                      ? personalizedInviteLink
                       : canManageMarketplaceLinks
                         ? "Create the join link first, then copy or open it from here."
                         : "A community admin prepares this join link before it can be copied or sent."}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: "grid",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={sectionLabel()}>Personalize before sending</div>
+                    <input
+                      value={joinRecipientName}
+                      onChange={(event) => setJoinRecipientName(event.target.value)}
+                      placeholder="Receiver name, e.g. John"
+                      style={inputStyle()}
+                      aria-label="Receiver name for join invitation"
+                    />
+                    <textarea
+                      value={joinInviteNote}
+                      onChange={(event) => setJoinInviteNote(event.target.value)}
+                      placeholder="Short personal note (optional)"
+                      rows={2}
+                      style={{ ...textAreaStyle(), minHeight: 68 }}
+                      aria-label="Short personal note for join invitation"
+                    />
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
@@ -4535,7 +4641,7 @@ export default function MarketplacePage() {
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
-                            inviteLink,
+                            personalizedInviteLink,
                             "Join link copied.",
                             "Join invite link is not ready yet."
                           );
@@ -4572,7 +4678,7 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceMessage(
                             joinWhatsappMessage,
-                            inviteLink,
+                            personalizedInviteLink,
                             "Join message copied.",
                             "Join invite link is not ready yet."
                           );
@@ -4594,7 +4700,7 @@ export default function MarketplacePage() {
                           openMarketplaceEmail(
                             joinEmailSubject,
                             joinWhatsappMessage,
-                            inviteLink,
+                            personalizedInviteLink,
                             "Join invite link is not ready yet."
                           );
                         });

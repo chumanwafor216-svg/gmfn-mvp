@@ -2,7 +2,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
-import { canonicalJoinInviteUrl, normalizedJoinInviteUrl } from "../lib/joinLinks";
+import {
+  canonicalJoinInviteUrl,
+  normalizedJoinInviteUrl,
+  personalizedJoinInviteUrl,
+} from "../lib/joinLinks";
 import { navigateWithOrigin } from "../lib/nav";
 import { publicFrontendUrl } from "../lib/publicLinks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -289,23 +293,34 @@ function buildInviteState(
   selectedCommunityName: string
 ): InviteState {
   const code = safeStr(raw?.code || raw?.invite_code || "");
-  const link =
+  const baseLink =
     normalizedJoinInviteUrl(raw) ||
     canonicalJoinInviteUrl(code);
+  const link =
+    personalizedJoinInviteUrl(baseLink, {
+      inviterName: senderName,
+      recipientName: receiverField,
+      communityName: selectedCommunityName,
+      marketplaceName: selectedCommunityName,
+      message: shortMessage,
+    }) || baseLink;
   const expiresAt = safeStr(raw?.expires_at || raw?.expiry || "");
   const guideUrl = buildGuideUrl();
   const fallbackGuideUrl = buildGuideFallbackUrl();
 
-  const defaultMessage = `You are invited to join ${selectedCommunityName} on GSN.`;
-  const effectiveMessage = safeStr(shortMessage) || defaultMessage;
+  const personalNote = safeStr(shortMessage);
+  const receiver = safeStr(receiverField);
 
   const packagedShareText = [
-    `From: ${senderName || "Community member"}`,
-    `Receiver: ${safeStr(receiverField) || "[add receiver name]"}`,
-    `Community: ${selectedCommunityName}`,
+    receiver ? `Hello ${receiver},` : "Hello,",
     "",
-    `Message: ${effectiveMessage}`,
-    link ? `Join link: ${link}` : "",
+    `${senderName || "A known GSN member"} from ${selectedCommunityName} is inviting you to begin the GSN join request for ${selectedCommunityName}.`,
+    "This link lets you send your request back to the community for review. It is not automatic entry.",
+    "",
+    personalNote ? `Personal note: ${personalNote}` : "",
+    "",
+    "GSN helps existing trust become visible, recordable, and useful.",
+    link ? `Open secure join link: ${link}` : "",
     code ? `Invite code: ${code}` : "",
     expiresAt ? `Expiry: ${safeDateTime(expiresAt)}` : "",
     "",
@@ -314,6 +329,8 @@ function buildInviteState(
     "",
     "Fallback PDF guide:",
     fallbackGuideUrl,
+    "",
+    "Sent through GSN",
   ]
     .filter(Boolean)
     .join("\n");

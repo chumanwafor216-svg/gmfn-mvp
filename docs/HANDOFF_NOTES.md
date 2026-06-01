@@ -1,3 +1,58 @@
+### Community join invite personalization and preview card (2026-06-01)
+
+- Route/screens affected:
+  - join invite links under `/start/join/:code`, `/join/:code`, and related
+    public join aliases;
+  - Marketplace join-link sharing in `frontend/src/pages/MarketplacePage.tsx`;
+  - Community invite package sharing in `frontend/src/pages/ClansPage.tsx`;
+  - frontend share metadata served by `frontend/server.mjs`;
+  - backend clan invite link/text generation in
+    `gmfn_backend/app/api/routes/clans.py`.
+- Product-owner report:
+  - the actual community join invite link was acceptable after opening, but the
+    WhatsApp message surface was too bare and the preview still appeared as
+    `GSN Public Shop`;
+  - outgoing invites should feel like a polished GSN invitation letter and use
+    human names where possible;
+  - the sender should be able to add the receiver name before sharing so the
+    receiver sees a personalized message/link.
+- Confirmed truth:
+  - the backend `_member_display()` preferred `gmfn_id` before
+    `display_name`, so invite URLs could honestly expose
+    `inviter_name=GMFN-U-...` even when a display name existed;
+  - the frontend server had route-specific metadata for public shops, but not
+    for join invite routes, so crawlers could fall back to generic or stale
+    shop metadata.
+- Updated backend:
+  - `_member_display()` now prefers `display_name` before GSN/GMFN ID;
+  - backend invite text now speaks as a GSN join request, explains that entry is
+    still reviewed by the community, and labels the link as a secure join link.
+- Updated frontend:
+  - added `personalizedJoinInviteUrl()` so join URLs can carry
+    `inviter_name`, `receiver_name`, `community_name`, `marketplace_name`, and
+    optional `message`;
+  - Marketplace join-link sharing now has receiver-name and optional-note fields
+    before copy/email/WhatsApp actions;
+  - copied/sent Marketplace join links and messages now use the personalized
+    URL and official GSN letter-style copy;
+  - Clans invite packages now use the same personalized join URL and message
+    shape;
+  - `frontend/server.mjs` now serves route-specific Open Graph/WhatsApp metadata
+    for join invite routes with title `GSN Community Invitation`, personalized
+    description, and `gsn-community-invitation-poster.png`;
+  - added `frontend/public/gsn-community-invitation-poster.png`.
+- Verification:
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run build` passed outside the sandbox after Vite/esbuild hit the known
+    Windows sandbox `spawn EPERM`;
+  - local server scrape confirmed `/start/join/...` returns
+    `GSN Community Invitation`, the personalized description, and the new
+    poster image with HTTP `200`.
+- Remaining truth:
+  - WhatsApp may cache a previously pasted URL preview; a fresh personalized
+    URL with receiver/name query params is the cleanest proof after deploy.
+
 ### Retire public `/community/:clanId` access desk (2026-06-01)
 
 - Route/screen affected:

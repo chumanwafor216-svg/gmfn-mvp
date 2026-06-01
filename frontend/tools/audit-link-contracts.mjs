@@ -326,6 +326,12 @@ assertContains(
 );
 
 assertContains(
+  "server.mjs",
+  /function joinInviteMeta\(searchParams, pathname, search\)[\s\S]*?GSN Community Invitation[\s\S]*?invites you to request access[\s\S]*?gsn-community-invitation-poster\.png[\s\S]*?serveJoinInviteHtml[\s\S]*?\/\(\?:start\\\/join\|join\|get-invite\|join\\\/community\)/,
+  "The frontend server must serve route-specific WhatsApp/Open Graph metadata for community join invite links, so they do not preview as public shops."
+);
+
+assertContains(
   "src/main.tsx",
   /function migrateSuspendedPublicHost\(\): boolean[\s\S]*?isSuspendedPublicFrontendHost\(hostname\)[\s\S]*?configuredPublicFrontendOrigin\(\)[\s\S]*?window\.location\.replace\(target\);[\s\S]*?if \(!migrateSuspendedPublicHost\(\)\)/,
   "The React entrypoint must redirect frontend.onrender.com synchronously before rendering the app."

@@ -153,3 +153,36 @@ export function normalizedJoinInviteUrl(payload: any): string {
   if (isJoinInviteLink(direct)) return canonicalPublicFrontendUrl(direct);
   return "";
 }
+
+export function personalizedJoinInviteUrl(
+  rawLink: string,
+  opts: {
+    inviterName?: unknown;
+    recipientName?: unknown;
+    communityName?: unknown;
+    marketplaceName?: unknown;
+    message?: unknown;
+  } = {}
+): string {
+  const direct = safeText(rawLink);
+  if (!direct) return "";
+
+  try {
+    const url = new URL(direct, publicFrontendOrigin());
+    const inviterName = safeText(opts.inviterName);
+    const recipientName = safeText(opts.recipientName);
+    const communityName = safeText(opts.communityName);
+    const marketplaceName = safeText(opts.marketplaceName);
+    const message = safeText(opts.message);
+
+    if (inviterName) url.searchParams.set("inviter_name", inviterName);
+    if (recipientName) url.searchParams.set("receiver_name", recipientName);
+    if (communityName) url.searchParams.set("community_name", communityName);
+    if (marketplaceName) url.searchParams.set("marketplace_name", marketplaceName);
+    if (message) url.searchParams.set("message", message);
+
+    return canonicalPublicFrontendUrl(`${url.pathname}${url.search}${url.hash}`);
+  } catch {
+    return "";
+  }
+}

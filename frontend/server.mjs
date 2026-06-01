@@ -151,6 +151,57 @@ async function fetchShopMeta(gmfnId, productId) {
   };
 }
 
+function decodeShareText(value) {
+  return firstText(String(value || "").replace(/\+/g, " "));
+}
+
+function looksLikeSystemId(value) {
+  const text = String(value || "").trim().toUpperCase();
+  return /^GMFN-[UC]-/.test(text) || /^GSN-[UC]-/.test(text);
+}
+
+function humanInviteName(value, fallback = "A known GSN member") {
+  const text = decodeShareText(value);
+  if (!text || looksLikeSystemId(text)) return fallback;
+  if (text.includes("@")) return firstText(text.split("@")[0], fallback);
+  return text;
+}
+
+function joinInviteMeta(searchParams, pathname, search) {
+  const community = decodeShareText(
+    firstText(
+      searchParams.get("marketplace_name"),
+      searchParams.get("community_name"),
+      searchParams.get("clan_name"),
+      "this GSN community"
+    )
+  );
+  const inviter = humanInviteName(
+    firstText(
+      searchParams.get("inviter_name"),
+      searchParams.get("invited_by"),
+      searchParams.get("sender_name")
+    )
+  );
+  const receiver = decodeShareText(
+    firstText(
+      searchParams.get("receiver_name"),
+      searchParams.get("receiver"),
+      searchParams.get("to")
+    )
+  );
+  const addressed = receiver ? `${receiver}, ` : "";
+  const title = "GSN Community Invitation";
+  const description = `${addressed}${inviter} invites you to request access to ${community} through GSN.`;
+
+  return {
+    title,
+    description,
+    imageUrl: frontendUrl("/gsn-community-invitation-poster.png"),
+    targetUrl: frontendUrl(pathname, search),
+  };
+}
+
 function metaTags(meta) {
   const title = escapeHtml(meta.title);
   const description = escapeHtml(meta.description);
@@ -193,6 +244,19 @@ async function serveShopHtml(res, gmfnId, searchParams) {
   try {
     const html = await indexHtmlWithMeta(
       await fetchShopMeta(gmfnId, searchParams.get("product_id") || "")
+    );
+    send(res, 200, html, "text/html; charset=utf-8", {
+      "Cache-Control": "public, max-age=300",
+    });
+  } catch {
+    createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
+  }
+}
+
+async function serveJoinInviteHtml(res, url) {
+  try {
+    const html = await indexHtmlWithMeta(
+      joinInviteMeta(url.searchParams, url.pathname, url.search)
     );
     send(res, 200, html, "text/html; charset=utf-8", {
       "Cache-Control": "public, max-age=300",
@@ -279,6 +343,11 @@ createServer(async (req, res) => {
     }
     if (match) {
       await serveShopHtml(res, decodeURIComponent(match[1]), url.searchParams);
+      return;
+    }
+    const joinMatch = url.pathname.match(/^\/(?:start\/join|join|get-invite|join\/community)\/([^/]+)$/);
+    if (joinMatch) {
+      await serveJoinInviteHtml(res, url);
       return;
     }
     await serveStaticOrFallback(res, url.pathname);
