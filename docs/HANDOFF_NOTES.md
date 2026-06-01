@@ -55,6 +55,20 @@
   - this does not send real SMS or WhatsApp messages yet. It captures callback
     intent and keeps the public result link working now, so a paid delivery rail
     can be connected later without changing the merchant-facing form.
+- Live deployment:
+  - commit `69827f9` was pushed to `feature/vault-shops` and promoted to
+    `main`;
+  - the Render dashboard later showed manual deploy `69827f9` live on
+    `gmfn-frontend`;
+  - live frontend verification confirmed the served TrustSlip Verify chunk
+    contains `Verify a TrustSlip code`, `Result return channel`,
+    `requester_callback`, and `Verify code`;
+  - live Dashboard verification confirmed the served Dashboard chunk contains
+    `dashboard.trust-action.verify-code` and `Verify code`;
+  - live API verification confirmed
+    `https://gmfn-api.onrender.com/openapi.json` exposes
+    `requester_callback_channel`, `requester_callback_contact`, and
+    `requester_callback_consent`.
 
 ### Community/Marketplace button tightening pass (2026-06-01)
 
