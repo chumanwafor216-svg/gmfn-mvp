@@ -1,3 +1,38 @@
+### Public shop WhatsApp owner chat fix (2026-06-01)
+
+- Route/screen affected:
+  - public shop links under `/shop/:gmfnId`, implemented by
+    `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner report:
+  - tapping the WhatsApp owner contact on a public shop opened a WhatsApp
+    download/install path instead of opening a chat with that owner.
+- Confirmed truth:
+  - the public shop page already attempted to use `wa.me/{number}`, but it
+    passed the free-text shop WhatsApp number directly;
+  - WhatsApp requires an international-format recipient for direct chat links;
+  - the screenshot showed a local `077...` number, which can be a valid UK
+    mobile format for normal phone calls but is not a valid raw `wa.me`
+    recipient;
+  - browser URLs can reliably open a WhatsApp chat, but they cannot reliably
+    start WhatsApp voice/video calls through an official universal web URL.
+- Updated frontend:
+  - added route-local WhatsApp recipient normalization for `+...`, `00...`,
+    and UK-style `07...` / `7...` mobile numbers before building `wa.me`
+    chat URLs;
+  - made the green WhatsApp owner-contact cell on the public shop strip an
+    actual button that opens a prefilled WhatsApp chat with the shop owner;
+  - reused the same corrected chat URL builder for `Ask for Vault access`;
+  - added visible success/error notices and a copy fallback when no owner
+    WhatsApp number is ready.
+- Verification:
+  - `npm run build` passed when rerun outside the sandbox because Vite/esbuild
+    hit sandbox `spawn EPERM` inside the default sandbox.
+- Remaining truth:
+  - local numbers outside the handled UK-style pattern still need the owner to
+    enter a full international number such as `+234...`, `+233...`, or
+    `+256...`; the current shop record has no country-code field, so the app
+    must not guess every local country prefix silently.
+
 ### Trust Passport button tightening pass (2026-05-31)
 
 - Route/screen affected:

@@ -109,6 +109,39 @@ function firstMeaningful(...values: any[]): string {
   return "";
 }
 
+function normalizeWhatsAppRecipient(value: any): string {
+  const raw = cleanText(value);
+  if (!raw) return "";
+
+  const compact = raw.replace(/[^\d+]/g, "");
+  if (!compact) return "";
+
+  if (compact.startsWith("+")) {
+    return compact.slice(1).replace(/\D/g, "");
+  }
+
+  if (compact.startsWith("00")) {
+    return compact.slice(2).replace(/\D/g, "");
+  }
+
+  const digits = compact.replace(/\D/g, "");
+  if (/^07\d{9}$/.test(digits)) {
+    return `44${digits.slice(1)}`;
+  }
+
+  if (/^7\d{9}$/.test(digits)) {
+    return `44${digits}`;
+  }
+
+  return digits;
+}
+
+function buildWhatsAppChatUrl(recipient: any, message: string): string {
+  const phone = normalizeWhatsAppRecipient(recipient);
+  if (!phone) return "";
+  return `https://wa.me/${phone}?text=${encodeURIComponent(cleanText(message))}`;
+}
+
 function isDisconnectedPublicShopError(message: any): boolean {
   return /seller identity|shop not found|not connected|active shop|404/i.test(
     safeStr(message)
@@ -1677,6 +1710,48 @@ export default function ShopGalleryPage() {
     });
   }
 
+  function openOwnerWhatsAppChat(message: string, successText: string): boolean {
+    const chatUrl = buildWhatsAppChatUrl(effectiveShop?.whatsapp, message);
+    if (!chatUrl || typeof window === "undefined") {
+      return false;
+    }
+
+    const opened = window.open(chatUrl, "_blank", "noopener,noreferrer");
+    setNotice({
+      tone: opened ? "success" : "error",
+      text: opened
+        ? successText
+        : "WhatsApp could not open. Check that the owner number includes the correct country code.",
+    });
+    return true;
+  }
+
+  async function contactOwnerByWhatsApp() {
+    const shopTitle = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this GSN shop"
+    );
+    const message = `Hello, I found ${shopTitle} on GSN. I would like to chat with the owner.`;
+
+    if (
+      openOwnerWhatsAppChat(
+        message,
+        "WhatsApp chat opened for the shop owner."
+      )
+    ) {
+      return;
+    }
+
+    const copied = await safeCopy(`${message}\n${absoluteShopLink}`);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Owner WhatsApp is not ready on this shop. The message and shop link were copied instead."
+        : "Owner WhatsApp is not ready on this shop, and clipboard copy was blocked.",
+    });
+  }
+
   async function askForVaultAccess() {
     const shopTitle = firstMeaningful(
       effectiveShop?.shopName,
@@ -1686,13 +1761,12 @@ export default function ShopGalleryPage() {
 
     const requestText = `Hello, I would like to request a private Vault access link for ${shopTitle}. Please share any selected offers you do not show on the public page.`;
 
-    const whatsapp = safeStr(effectiveShop?.whatsapp).replace(/[^\d+]/g, "");
-    if (whatsapp && typeof window !== "undefined") {
-      window.open(
-        `https://wa.me/${encodeURIComponent(whatsapp)}?text=${encodeURIComponent(requestText)}`,
-        "_blank",
-        "noopener,noreferrer"
-      );
+    if (
+      openOwnerWhatsAppChat(
+        requestText,
+        "WhatsApp chat opened. Ask the owner for a private Vault access link there."
+      )
+    ) {
       return;
     }
 
@@ -1996,11 +2070,8 @@ export default function ShopGalleryPage() {
             { mark: "12", title: publicBlockText, detail: "Open shelf" },
             { mark: "V", title: "Vault", detail: "By trust link" },
             { mark: "W", title: shopContactText, detail: "Owner contact" },
-          ].map((item, itemIndex) => (
-            <div
-              key={`${item.mark}-${item.title}`}
-              className="public-shop-status-item"
-              style={{
+          ].map((item, itemIndex) => {
+            const statusItemStyle: React.CSSProperties = {
                 minHeight: isCompact ? 58 : 86,
                 padding: isCompact ? "8px 6px" : "14px 16px",
                 borderRight:
@@ -2012,79 +2083,111 @@ export default function ShopGalleryPage() {
                 gap: isCompact ? 5 : 12,
                 textAlign: "left",
                 minWidth: 0,
-              }}
-            >
-              <div
+              };
+            const statusItemContent = (
+              <>
+                <div
+                  style={{
+                    width: isCompact ? 28 : 50,
+                    height: isCompact ? 28 : 50,
+                    borderRadius: item.mark === "V" ? (isCompact ? 8 : 14) : "50%",
+                    display: "grid",
+                    placeItems: "center",
+                    background:
+                      item.mark === "W"
+                        ? "linear-gradient(180deg, #22C55E 0%, #15803D 100%)"
+                        : item.mark === "V"
+                        ? "radial-gradient(circle at 50% 44%, rgba(255,244,204,0.92) 0%, rgba(214,170,69,0.46) 26%, rgba(8,35,61,0.18) 27%, rgba(8,35,61,0.18) 33%, transparent 34%), linear-gradient(145deg, #4E6175 0%, #102A44 58%, #071827 100%)"
+                        : "linear-gradient(180deg, #1F5FB7 0%, #123D7C 100%)",
+                    color: "#FFFFFF",
+                    fontWeight: 950,
+                    boxShadow:
+                      "0 10px 22px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.28)",
+                    fontSize: isCompact ? 12 : 17,
+                    border:
+                      item.mark === "V"
+                        ? "1px solid rgba(214,170,69,0.48)"
+                        : "none",
+                  }}
+                >
+                  {item.mark === "V" ? (
+                    <span
+                      style={{
+                        width: isCompact ? 14 : 24,
+                        height: isCompact ? 14 : 24,
+                        borderRadius: "50%",
+                        border: "2px solid rgba(255,236,173,0.68)",
+                        boxShadow: "inset 0 1px 2px rgba(255,255,255,0.22)",
+                      }}
+                    />
+                  ) : (
+                    item.mark
+                  )}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      color: "#0B1F33",
+                      fontWeight: 950,
+                      fontSize: isCompact ? 9.8 : 15,
+                      lineHeight: 1.12,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: isCompact ? 3 : 3,
+                      WebkitBoxOrient: "vertical" as any,
+                    }}
+                  >
+                    {item.title}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: isCompact ? 2 : 3,
+                      color: "#526C84",
+                      fontWeight: 750,
+                      fontSize: isCompact ? 8.4 : 12,
+                      lineHeight: 1.1,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {item.detail}
+                  </div>
+                </div>
+              </>
+            );
+
+            return item.mark === "W" ? (
+              <button
+                key={`${item.mark}-${item.title}`}
+                type="button"
+                className="public-shop-status-item"
+                onClick={() => void contactOwnerByWhatsApp()}
+                aria-label="Open WhatsApp chat with the shop owner"
                 style={{
-                  width: isCompact ? 28 : 50,
-                  height: isCompact ? 28 : 50,
-                  borderRadius: item.mark === "V" ? (isCompact ? 8 : 14) : "50%",
-                  display: "grid",
-                  placeItems: "center",
-                  background:
-                    item.mark === "W"
-                      ? "linear-gradient(180deg, #22C55E 0%, #15803D 100%)"
-                      : item.mark === "V"
-                      ? "radial-gradient(circle at 50% 44%, rgba(255,244,204,0.92) 0%, rgba(214,170,69,0.46) 26%, rgba(8,35,61,0.18) 27%, rgba(8,35,61,0.18) 33%, transparent 34%), linear-gradient(145deg, #4E6175 0%, #102A44 58%, #071827 100%)"
-                      : "linear-gradient(180deg, #1F5FB7 0%, #123D7C 100%)",
-                  color: "#FFFFFF",
-                  fontWeight: 950,
-                  boxShadow:
-                    "0 10px 22px rgba(8,38,67,0.16), inset 0 1px 0 rgba(255,255,255,0.28)",
-                  fontSize: isCompact ? 12 : 17,
-                  border:
-                    item.mark === "V"
-                      ? "1px solid rgba(214,170,69,0.48)"
-                      : "none",
+                  ...statusItemStyle,
+                  width: "100%",
+                  font: "inherit",
+                  cursor: "pointer",
+                  borderTop: "none",
+                  borderBottom: "none",
+                  borderLeft: "none",
+                  background: "transparent",
                 }}
               >
-                {item.mark === "V" ? (
-                  <span
-                    style={{
-                      width: isCompact ? 14 : 24,
-                      height: isCompact ? 14 : 24,
-                      borderRadius: "50%",
-                      border: "2px solid rgba(255,236,173,0.68)",
-                      boxShadow: "inset 0 1px 2px rgba(255,255,255,0.22)",
-                    }}
-                  />
-                ) : (
-                  item.mark
-                )}
+                {statusItemContent}
+              </button>
+            ) : (
+              <div
+                key={`${item.mark}-${item.title}`}
+                className="public-shop-status-item"
+                style={statusItemStyle}
+              >
+                {statusItemContent}
               </div>
-              <div style={{ minWidth: 0 }}>
-                <div
-                  style={{
-                    color: "#0B1F33",
-                    fontWeight: 950,
-                    fontSize: isCompact ? 9.8 : 15,
-                    lineHeight: 1.12,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    display: "-webkit-box",
-                    WebkitLineClamp: isCompact ? 3 : 3,
-                    WebkitBoxOrient: "vertical" as any,
-                  }}
-                >
-                  {item.title}
-                </div>
-                <div
-                  style={{
-                    marginTop: isCompact ? 2 : 3,
-                    color: "#526C84",
-                    fontWeight: 750,
-                    fontSize: isCompact ? 8.4 : 12,
-                    lineHeight: 1.1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.detail}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div
