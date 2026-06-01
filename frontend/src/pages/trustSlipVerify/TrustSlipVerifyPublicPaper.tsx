@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { PrimaryButton, StableCtaLink } from "../../components/StableButton";
 import {
@@ -26,6 +26,21 @@ type CommunityConfirmationResult = {
 
 type CommunityConfirmationOutcome = {
   visible_summary?: string | null;
+  requester_callback?: {
+    requested?: boolean | null;
+    channel?: string | null;
+    contact_masked?: string | null;
+    delivery_status?: string | null;
+    delivery_note?: string | null;
+    result_link_is_source_of_truth?: boolean | null;
+  } | null;
+};
+
+export type CommunityConfirmationCallbackDraft = {
+  requesterExternalLabel?: string;
+  callbackChannel?: "none" | "sms" | "whatsapp";
+  callbackContact?: string;
+  callbackConsent?: boolean;
 };
 
 type TrustSlipVerifyPublicPaperProps = {
@@ -58,7 +73,7 @@ type TrustSlipVerifyPublicPaperProps = {
   confirmationPublicPath: string;
   confirmationBusy: boolean;
   canRequestCommunityPulse: boolean;
-  onRequestCommunityPulse: () => void;
+  onRequestCommunityPulse: (draft?: CommunityConfirmationCallbackDraft) => void;
   publicActions: React.ReactNode;
 };
 
@@ -86,7 +101,7 @@ function positiveNumber(value: unknown): number {
 function lockedActionFrame(compact: boolean): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateRows: compact ? "56px minmax(128px, auto)" : "56px minmax(148px, auto)",
+    gridTemplateRows: "auto auto",
     gap: 10,
     alignSelf: "stretch",
     minHeight: compact ? 194 : 214,
@@ -100,6 +115,39 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalInnerCard(bg),
     borderRadius: 18,
     padding: 15,
+  };
+}
+
+function fieldLabel(): React.CSSProperties {
+  return {
+    color: "#475569",
+    fontSize: 11,
+    fontWeight: 1000,
+    letterSpacing: 0.08,
+    textTransform: "uppercase",
+  };
+}
+
+function textInput(): React.CSSProperties {
+  return {
+    width: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+    borderRadius: 14,
+    border: "1px solid rgba(8,35,58,0.16)",
+    background: "#FFFFFF",
+    color: "#07172C",
+    padding: "12px 13px",
+    fontSize: 15,
+    fontWeight: 800,
+    outline: "none",
+  };
+}
+
+function selectInput(): React.CSSProperties {
+  return {
+    ...textInput(),
+    appearance: "auto",
   };
 }
 
@@ -291,6 +339,11 @@ export default function TrustSlipVerifyPublicPaper({
   onRequestCommunityPulse,
   publicActions,
 }: TrustSlipVerifyPublicPaperProps) {
+  const [requesterLabel, setRequesterLabel] = useState("");
+  const [callbackChannel, setCallbackChannel] =
+    useState<CommunityConfirmationCallbackDraft["callbackChannel"]>("none");
+  const [callbackContact, setCallbackContact] = useState("");
+  const [callbackConsent, setCallbackConsent] = useState(false);
   const activeMemberCount = positiveNumber(rowValue(communityConfirmationRows, "Active members"));
   const eligibleResponsePool = positiveNumber(rowValue(communityConfirmationRows, "Eligible response pool"));
   const requestLockedReason = !canRequestCommunityPulse
@@ -300,6 +353,9 @@ export default function TrustSlipVerifyPublicPaper({
       : !communityPulseAvailable
         ? "Community confirmation is not enabled for this paper yet. Open the community record and check the public community status first."
         : "";
+  const callbackNeedsConsent = callbackChannel !== "none" && safeText(callbackContact);
+  const callbackBlocked = Boolean(callbackNeedsConsent && !callbackConsent);
+  const requesterCallback = confirmationOutcome?.requester_callback || null;
 
   return (
     <section
@@ -834,17 +890,131 @@ export default function TrustSlipVerifyPublicPaper({
                 </div>
 
                 <div style={lockedActionFrame(compact)}>
+                  <div
+                    style={{
+                      ...documentMetaCard("#F8FBFF"),
+                      border: "1px solid rgba(11,99,209,0.14)",
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    <div>
+                      <div style={{ color: "#07172C", fontWeight: 1000 }}>
+                        Result return channel
+                      </div>
+                      <p style={{ margin: "6px 0 0", color: "#64748B", fontWeight: 850, lineHeight: 1.45 }}>
+                        The result link is created first. Add a business SMS or WhatsApp number only if you want GSN to hold it for configured delivery later.
+                      </p>
+                    </div>
+
+                    <label style={{ display: "grid", gap: 6 }}>
+                      <span style={fieldLabel()}>Requester label</span>
+                      <input
+                        value={requesterLabel}
+                        onChange={(event) => setRequesterLabel(event.target.value)}
+                        placeholder="Merchant counter check"
+                        maxLength={120}
+                        style={textInput()}
+                      />
+                    </label>
+
+                    <div style={{ display: "grid", gridTemplateColumns: compact ? "1fr" : "0.62fr 1fr", gap: 8 }}>
+                      <label style={{ display: "grid", gap: 6 }}>
+                        <span style={fieldLabel()}>Optional return</span>
+                        <select
+                          value={callbackChannel}
+                          onChange={(event) => {
+                            const next = event.target.value as CommunityConfirmationCallbackDraft["callbackChannel"];
+                            setCallbackChannel(next);
+                            if (next === "none") {
+                              setCallbackConsent(false);
+                              setCallbackContact("");
+                            }
+                          }}
+                          style={selectInput()}
+                        >
+                          <option value="none">Result link only</option>
+                          <option value="sms">SMS later</option>
+                          <option value="whatsapp">WhatsApp later</option>
+                        </select>
+                      </label>
+
+                      <label style={{ display: "grid", gap: 6 }}>
+                        <span style={fieldLabel()}>Business number</span>
+                        <input
+                          value={callbackContact}
+                          onChange={(event) => setCallbackContact(event.target.value)}
+                          placeholder="Preferably +E164 format"
+                          disabled={callbackChannel === "none"}
+                          maxLength={64}
+                          style={{
+                            ...textInput(),
+                            opacity: callbackChannel === "none" ? 0.62 : 1,
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {callbackChannel !== "none" ? (
+                      <label
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "flex-start",
+                          color: "#334155",
+                          fontSize: 12,
+                          fontWeight: 850,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={callbackConsent}
+                          onChange={(event) => setCallbackConsent(event.target.checked)}
+                          style={{ marginTop: 2 }}
+                        />
+                        <span>
+                          I agree that this business number can receive this confirmation result when SMS or WhatsApp delivery is configured.
+                        </span>
+                      </label>
+                    ) : null}
+
+                    {requesterCallback?.requested ? (
+                      <div style={paperStatusPill("limited")}>
+                        {firstTruthy(requesterCallback.channel, "Callback")} captured, contact {firstTruthy(requesterCallback.contact_masked, "masked")}. {firstTruthy(requesterCallback.delivery_status, "not configured")}
+                      </div>
+                    ) : null}
+                  </div>
+
                   <PrimaryButton
                     type="button"
-                    onClick={onRequestCommunityPulse}
+                    onClick={() =>
+                      onRequestCommunityPulse({
+                        requesterExternalLabel: requesterLabel,
+                        callbackChannel,
+                        callbackContact,
+                        callbackConsent,
+                      })
+                    }
                     busy={confirmationBusy}
                     busyLabel="Requesting..."
                     fullWidth
                     stableHeight={56}
                     debugId="trust-slip-verify.community-confirmation.request"
+                    disabled={Boolean(requestLockedReason) || callbackBlocked}
                   >
                     Request instant confirmation
                   </PrimaryButton>
+                  {callbackBlocked ? (
+                    <div style={{ ...documentMetaCard("#FFF7E6"), border: "1px solid rgba(245,158,11,0.24)" }}>
+                      <div style={{ color: "#92400E", fontWeight: 1000, fontSize: 13 }}>
+                        Consent needed
+                      </div>
+                      <p style={{ margin: "7px 0 0", color: "#334155", fontWeight: 850, lineHeight: 1.45 }}>
+                        Keep the result-link option, or tick consent before GSN stores a return number for SMS or WhatsApp delivery.
+                      </p>
+                    </div>
+                  ) : null}
                   {requestLockedReason ? (
                     <div
                       style={{

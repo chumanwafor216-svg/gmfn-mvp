@@ -19,6 +19,7 @@ import { buildTrustSlipVerifySnapshot } from "../lib/trustDocumentSnapshots";
 import TrustSlipVerifyBoundary from "./trustSlipVerify/TrustSlipVerifyBoundary";
 import TrustSlipVerifyPrivateEvidence from "./trustSlipVerify/TrustSlipVerifyPrivateEvidence";
 import TrustSlipVerifyPublicPaper from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
+import type { CommunityConfirmationCallbackDraft } from "./trustSlipVerify/TrustSlipVerifyPublicPaper";
 import {
   callFirstAvailable,
   deriveBanner,
@@ -159,6 +160,7 @@ export default function TrustSlipVerifyPage() {
   const [currentClan, setCurrentClan] = useState<any>(null);
   const [record, setRecord] = useState<TrustSlipVerifyRecord | null>(null);
   const [resolvedCode, setResolvedCode] = useState("");
+  const [codeEntry, setCodeEntry] = useState("");
   const [loadError, setLoadError] = useState("");
   const [confirmationBusy, setConfirmationBusy] = useState(false);
   const [confirmationOutcome, setConfirmationOutcome] =
@@ -182,6 +184,8 @@ export default function TrustSlipVerifyPage() {
   const requestedCode = useMemo(() => {
     return firstTruthy(params.code, queryCode);
   }, [params.code, queryCode]);
+
+  const noPublicCodeSupplied = !isAppRoute && !requestedCode;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -425,7 +429,21 @@ export default function TrustSlipVerifyPage() {
     );
   }
 
-  async function requestCommunityPulse() {
+  function submitCodeEntry(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const code = safeStr(codeEntry).replace(/\s+/g, "");
+    if (!code) {
+      showNotice("error", "Enter the TrustSlip code first.");
+      return;
+    }
+    navigateWithOrigin(
+      navigate,
+      `/trust-slips/verify/${encodeURIComponent(code)}/page`,
+      location
+    );
+  }
+
+  async function requestCommunityPulse(draft: CommunityConfirmationCallbackDraft = {}) {
     const code = firstTruthy(record?.code, resolvedCode);
     if (!code) {
       showNotice("error", "TrustSlip code is not available.");
@@ -442,7 +460,11 @@ export default function TrustSlipVerifyPage() {
     try {
       const result = await (api as any).requestCommunityConfirmation({
         trust_slip_code: code,
-        requester_external_label: "TrustSlip public viewer",
+        requester_external_label:
+          firstTruthy(draft.requesterExternalLabel, "TrustSlip public viewer"),
+        requester_callback_channel: draft.callbackChannel || "none",
+        requester_callback_contact: draft.callbackContact || undefined,
+        requester_callback_consent: Boolean(draft.callbackConsent),
         reason_type: "merchant_trust_check",
         risk_level: "low",
         mode: communityConfirmation?.instant_pulse_available ? "instant_pulse" : "relay",
@@ -764,6 +786,87 @@ export default function TrustSlipVerifyPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      {noPublicCodeSupplied ? (
+        <section
+          style={{
+            ...pageCard("#FFFFFF"),
+            border: "1px solid rgba(11,99,209,0.14)",
+            display: "grid",
+            gap: 14,
+          }}
+        >
+          <div style={sectionLabel()}>Code checker</div>
+          <div
+            style={{
+              color: "#07172C",
+              fontSize: isCompact ? 26 : 32,
+              fontWeight: 1000,
+              lineHeight: 1.08,
+            }}
+          >
+            Verify a TrustSlip code
+          </div>
+          <p style={{ margin: 0, ...helperText(), color: "#475569", maxWidth: 760 }}>
+            Use this when both sides already know the GSN code. For far-away checks,
+            ask for the full verify link. For face-to-face checks, scan the QR.
+          </p>
+          <form
+            onSubmit={submitCodeEntry}
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 220px",
+              gap: 10,
+              alignItems: "stretch",
+            }}
+          >
+            <input
+              value={codeEntry}
+              onChange={(event) => setCodeEntry(event.target.value)}
+              placeholder="Enter TrustSlip code"
+              aria-label="TrustSlip code"
+              autoComplete="off"
+              style={{
+                width: "100%",
+                minWidth: 0,
+                boxSizing: "border-box",
+                borderRadius: 18,
+                border: "1px solid rgba(8,35,58,0.16)",
+                background: "#F8FBFF",
+                color: "#07172C",
+                padding: "15px 16px",
+                fontSize: 16,
+                fontWeight: 900,
+                outline: "none",
+              }}
+            />
+            <PrimaryButton
+              type="submit"
+              stableHeight={56}
+              fullWidth
+              debugId="trust-slip-verify.code-checker.submit"
+            >
+              Verify code
+            </PrimaryButton>
+          </form>
+          <div
+            style={{
+              borderRadius: 16,
+              border: "1px solid rgba(214,170,69,0.28)",
+              background: "#FFF7E6",
+              color: "#5F4100",
+              padding: "12px 14px",
+              fontSize: 13,
+              fontWeight: 850,
+              lineHeight: 1.45,
+            }}
+          >
+            The code opens the same public TrustSlip Verify paper as the link or
+            QR. It does not expose the holder's private Trust Passport.
+          </div>
+        </section>
+      ) : null}
+
+      {noPublicCodeSupplied ? null : (
       <TrustSlipVerifyPublicPaper
         compact={isCompact}
         validNow={validNow}
@@ -794,12 +897,13 @@ export default function TrustSlipVerifyPage() {
         confirmationPublicPath={confirmationPublicPath}
         confirmationBusy={confirmationBusy}
         canRequestCommunityPulse={Boolean(firstTruthy(record?.code, resolvedCode))}
-        onRequestCommunityPulse={() => {
-          void requestCommunityPulse();
+        onRequestCommunityPulse={(draft) => {
+          void requestCommunityPulse(draft);
         }}
         publicActions={publicTrustSlipActions}
       />
-      <TrustSlipVerifyBoundary compact={isCompact} />
+      )}
+      {noPublicCodeSupplied ? null : <TrustSlipVerifyBoundary compact={isCompact} />}
 
       {isAppRoute ? (
         <details

@@ -8006,8 +8006,8 @@ export default function DashboardPage() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: isPhone
-                          ? "repeat(3, minmax(0, 1fr))"
-                          : "repeat(3, minmax(132px, 1fr))",
+                          ? "repeat(2, minmax(0, 1fr))"
+                          : "repeat(4, minmax(116px, 1fr))",
                         gap: isPhone ? 6 : 8,
                         alignItems: "stretch",
                       }}
@@ -8040,6 +8040,16 @@ export default function DashboardPage() {
                         style={trustActionButton()}
                       >
                         TrustSlip
+                      </StableButton>
+
+                      <StableButton
+                        debugId="dashboard.trust-action.verify-code"
+                        type="button"
+                        onClick={(event) => openDashboardRoute(event, "/verify/trust-slip")}
+                        onPointerDown={consumeDashboardPointerEvent}
+                        style={trustActionButton()}
+                      >
+                        Verify code
                       </StableButton>
                     </div>
                   </div>

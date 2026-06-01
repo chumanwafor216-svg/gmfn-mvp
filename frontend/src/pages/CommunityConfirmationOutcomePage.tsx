@@ -47,6 +47,15 @@ type PublicOutcome = {
   visible_summary?: string | null;
   privacy_note?: string | null;
   decision_note?: string | null;
+  requester_callback?: {
+    requested?: boolean | null;
+    channel?: string | null;
+    contact_masked?: string | null;
+    consent_recorded?: boolean | null;
+    delivery_status?: string | null;
+    delivery_note?: string | null;
+    result_link_is_source_of_truth?: boolean | null;
+  } | null;
   review_case?: ReviewCaseSnapshot | null;
 };
 
@@ -185,6 +194,7 @@ function normalizeOutcome(raw: any): PublicOutcome {
     visible_summary: firstTruthy(src.visible_summary),
     privacy_note: firstTruthy(src.privacy_note),
     decision_note: firstTruthy(src.decision_note),
+    requester_callback: src.requester_callback || null,
     review_case: reviewCase?.review_case_id
       ? {
           reviewCaseId: reviewCase.review_case_id,
@@ -1115,6 +1125,49 @@ export default function CommunityConfirmationOutcomePage() {
                     <p style={{ ...helperText(), color: "#07172C", marginTop: 10, fontWeight: 900 }}>
                       {outcome.decision_note ||
                         "This is evidence for judgement, not a guarantee, payment instruction, or automatic approval."}
+                    </p>
+                  </div>
+                  <div style={sectionCard("#F8FBFF")}>
+                    <h2 style={{ ...sectionTitle(), display: "flex", alignItems: "center", gap: 10 }}>
+                      <TrustPaperIcon name="copy" size={22} color="#0B63D1" />
+                      Result return
+                    </h2>
+                    <p style={{ ...helperText(), color: "#1F3145", marginTop: 10 }}>
+                      This public result link is the source of truth. Keep it open,
+                      copy it, or return to it later after the community responds.
+                    </p>
+                    <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+                      <InfoTile
+                        label="Return channel"
+                        value={
+                          outcome.requester_callback?.requested
+                            ? labelize(outcome.requester_callback.channel || "callback")
+                            : "Result link only"
+                        }
+                      />
+                      <InfoTile
+                        label="Return contact"
+                        value={
+                          outcome.requester_callback?.requested
+                            ? outcome.requester_callback.contact_masked || "Masked"
+                            : "Not requested"
+                        }
+                      />
+                      <InfoTile
+                        label="Delivery status"
+                        value={
+                          outcome.requester_callback?.requested
+                            ? labelize(
+                                outcome.requester_callback.delivery_status ||
+                                  "not_configured"
+                              )
+                            : "Not requested"
+                        }
+                      />
+                    </div>
+                    <p style={{ ...helperText(), color: "#64748B", marginTop: 10, fontSize: 13 }}>
+                      {outcome.requester_callback?.delivery_note ||
+                        "SMS or WhatsApp return delivery will work only after a real delivery rail is configured."}
                     </p>
                   </div>
                 </section>

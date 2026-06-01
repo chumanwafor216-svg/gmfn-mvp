@@ -56,10 +56,10 @@ counts.EffectiveDashboardActionRoots =
   counts.PictureFrameToolsControl * (1 + frameToolRailActions);
 
 const expected = {
-  StableButton: 52,
+  StableButton: 53,
   StableDisclosureSummary: 1,
   PictureFrameToolsControl: 2,
-  EffectiveDashboardActionRoots: 61,
+  EffectiveDashboardActionRoots: 62,
 };
 
 for (const [key, value] of Object.entries(expected)) {

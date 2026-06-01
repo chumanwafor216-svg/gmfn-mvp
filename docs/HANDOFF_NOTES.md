@@ -1,3 +1,61 @@
+### TrustSlip code checker and confirmation callback foundation (2026-06-01)
+
+- Route/screens affected:
+  - public TrustSlip verification code checker at `/verify/trust-slip` and
+    `/verify/trustslip`, rendered by
+    `frontend/src/pages/TrustSlipVerifyPage.tsx`;
+  - public TrustSlip Verify paper at `/trust-slips/verify/:code/page`,
+    especially the instant community confirmation block;
+  - Dashboard trust action row in `frontend/src/pages/DashboardPage.tsx`;
+  - public community confirmation outcome paper at
+    `/community-confirmations/public/:token`;
+  - backend community confirmation request flow in
+    `gmfn_backend/app/api/routes/community_confirmations.py` and
+    `gmfn_backend/app/services/community_confirmation_service.py`.
+- Product-owner request:
+  - keep TrustSlip links for far-away checks, QR for face-to-face checks, and
+    add a code-decoder box mainly for GSN/internal users;
+  - allow a merchant/requester to optionally place a business SMS or WhatsApp
+    number so the result can be returned through a configured rail later, while
+    the public result link remains the source of truth now.
+- Updated frontend:
+  - `/verify/trust-slip` now shows a public `Verify a TrustSlip code` box and
+    routes valid input to `/trust-slips/verify/{code}/page`;
+  - Dashboard now includes a `Verify code` shortcut in the trust action row;
+  - the TrustSlip Verify instant-confirmation card now collects an optional
+    requester label, optional SMS/WhatsApp business number, and explicit
+    consent before storing a return contact;
+  - the public confirmation outcome paper now explains the result link as the
+    source of truth and shows callback status as masked/not configured.
+- Updated backend:
+  - community confirmation requests now accept
+    `requester_callback_channel`, `requester_callback_contact`, and
+    `requester_callback_consent`;
+  - callback intent is stored inside the existing request outcome summary JSON
+    to avoid a schema migration;
+  - public outcome responses expose only masked callback status, not the raw
+    phone/WhatsApp number;
+  - delivery status is currently `not_configured` when a return contact is
+    captured, because no paid SMS/WhatsApp delivery rail is connected yet.
+- Verification:
+  - `python -m pytest gmfn_backend\tests\test_community_confirmation_relay.py -q`
+    passed;
+  - `npm run build` passed from `frontend/` outside the sandbox after the known
+    Windows Vite/esbuild `spawn EPERM`;
+  - `npm run audit:trust-actions` passed;
+  - `npm run audit:dashboard-actions` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:dashboard-button-inventory` passed after intentionally
+    raising the expected Dashboard stable-button count by one for `Verify code`;
+  - `npm run audit:dashboard-phone-buttons` passed;
+  - `npm run audit:tap-stability` passed.
+- Remaining truth:
+  - this does not send real SMS or WhatsApp messages yet. It captures callback
+    intent and keeps the public result link working now, so a paid delivery rail
+    can be connected later without changing the merchant-facing form.
+
 ### Community/Marketplace button tightening pass (2026-06-01)
 
 - Route/screens affected:

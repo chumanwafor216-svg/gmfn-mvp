@@ -1800,6 +1800,9 @@ export async function requestCommunityConfirmation(payload: {
   subject_user_id?: number | string | null;
   community_id?: number | string | null;
   requester_external_label?: string | null;
+  requester_callback_channel?: "sms" | "whatsapp" | "none" | string | null;
+  requester_callback_contact?: string | null;
+  requester_callback_consent?: boolean | null;
   reason_type?: string | null;
   risk_level?: string | null;
   mode?: "relay" | "instant_pulse" | string | null;
@@ -1809,6 +1812,9 @@ export async function requestCommunityConfirmation(payload: {
     subject_user_id: payload.subject_user_id || undefined,
     community_id: payload.community_id || undefined,
     requester_external_label: payload.requester_external_label || undefined,
+    requester_callback_channel: payload.requester_callback_channel || undefined,
+    requester_callback_contact: payload.requester_callback_contact || undefined,
+    requester_callback_consent: Boolean(payload.requester_callback_consent),
     reason_type: payload.reason_type || "merchant_trust_check",
     risk_level: payload.risk_level || "low",
     mode: payload.mode || "instant_pulse",

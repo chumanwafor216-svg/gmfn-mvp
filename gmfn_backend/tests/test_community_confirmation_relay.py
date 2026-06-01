@@ -146,6 +146,9 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
         json={
             "trust_slip_code": "CCR-TRUSTSLIP-1",
             "requester_external_label": "Merchant counter check",
+            "requester_callback_channel": "sms",
+            "requester_callback_contact": "+447712345678",
+            "requester_callback_consent": True,
             "reason_type": "merchant_trust_check",
             "risk_level": "low",
             "mode": "instant_pulse",
@@ -214,9 +217,16 @@ def test_community_confirmation_relay_keeps_public_outcome_aggregate_only(
     assert public_data["community_response"]["responses_received"] == 1
     assert public_data["community_response"]["community_confidence"] == "limited"
     assert public_data["community_response"]["private_contacts_exposed"] is False
+    assert public_data["requester_callback"]["requested"] is True
+    assert public_data["requester_callback"]["channel"] == "sms"
+    assert public_data["requester_callback"]["contact_masked"] == "ending 5678"
+    assert public_data["requester_callback"]["delivery_status"] == "not_configured"
+    assert public_data["requester_callback"]["result_link_is_source_of_truth"] is True
     public_text = json.dumps(public_data)
     assert "responder_user_id" not in public_text
     assert "user2@example.com" not in public_text
+    assert "+447712345678" not in public_text
+    assert "7712345678" not in public_text
 
     app.dependency_overrides[get_current_user] = lambda: Obj(
         id=2,

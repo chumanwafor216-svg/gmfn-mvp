@@ -147,6 +147,95 @@ def _json_loads(raw: Optional[str]) -> Dict[str, Any]:
         return {}
 
 
+def _normalize_callback_channel(value: Optional[str]) -> str:
+    raw = str(value or "").strip().lower().replace("-", "_")
+    if raw in {"sms", "text"}:
+        return "sms"
+    if raw in {"whatsapp", "whats_app", "wa"}:
+        return "whatsapp"
+    return "none"
+
+
+def _normalize_callback_contact(value: Optional[str]) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    kept = []
+    for index, char in enumerate(raw):
+        if char.isdigit():
+            kept.append(char)
+        elif char == "+" and index == 0:
+            kept.append(char)
+        elif char in {" ", "-", "(", ")"}:
+            continue
+        else:
+            return ""
+    normalized = "".join(kept)
+    digits = "".join(ch for ch in normalized if ch.isdigit())
+    if len(digits) < 7 or len(digits) > 15:
+        return ""
+    return normalized
+
+
+def _mask_callback_contact(value: Optional[str]) -> str:
+    raw = str(value or "").strip()
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if not digits:
+        return ""
+    last4 = digits[-4:]
+    return f"ending {last4}"
+
+
+def _build_requester_callback(
+    *,
+    channel: Optional[str],
+    contact: Optional[str],
+    consent: bool,
+) -> Dict[str, Any]:
+    normalized_channel = _normalize_callback_channel(channel)
+    normalized_contact = _normalize_callback_contact(contact)
+    requested = (
+        normalized_channel in {"sms", "whatsapp"}
+        and bool(normalized_contact)
+        and bool(consent)
+    )
+    return {
+        "requested": requested,
+        "channel": normalized_channel if requested else "none",
+        "contact": normalized_contact if requested else None,
+        "contact_masked": _mask_callback_contact(normalized_contact) if requested else None,
+        "consent_recorded": bool(consent and normalized_contact),
+        "delivery_status": "not_configured" if requested else "not_requested",
+        "delivery_note": (
+            "Return contact captured. The public result link remains the source of truth until SMS or WhatsApp delivery is configured."
+            if requested
+            else "No external return contact was requested."
+        ),
+    }
+
+
+def _public_requester_callback(summary: Dict[str, Any]) -> Dict[str, Any]:
+    raw = summary.get("requester_callback") or {}
+    if not isinstance(raw, dict):
+        raw = {}
+    requested = bool(raw.get("requested"))
+    return {
+        "requested": requested,
+        "channel": str(raw.get("channel") or "none") if requested else "none",
+        "contact_masked": str(raw.get("contact_masked") or "") if requested else None,
+        "consent_recorded": bool(raw.get("consent_recorded")) if requested else False,
+        "delivery_status": str(raw.get("delivery_status") or "not_configured")
+        if requested
+        else "not_requested",
+        "delivery_note": (
+            str(raw.get("delivery_note") or "")
+            if requested
+            else "No external return contact was requested."
+        ),
+        "result_link_is_source_of_truth": True,
+    }
+
+
 def _active_member_count(db: Session, community_id: int) -> int:
     return int(
         db.query(func.count(ClanMembership.id))
@@ -618,6 +707,9 @@ def create_confirmation_request(
     community_id: Optional[int] = None,
     requester_user_id: Optional[int] = None,
     requester_external_label: Optional[str] = None,
+    requester_callback_channel: Optional[str] = None,
+    requester_callback_contact: Optional[str] = None,
+    requester_callback_consent: bool = False,
     reason_type: str = "merchant_trust_check",
     risk_level: str = "low",
     mode: str = "relay",
@@ -702,6 +794,11 @@ def create_confirmation_request(
         "active_member_count": active_members,
         "confidence_level": "pending",
         "private_contacts_exposed": False,
+        "requester_callback": _build_requester_callback(
+            channel=requester_callback_channel,
+            contact=requester_callback_contact,
+            consent=bool(requester_callback_consent),
+        ),
     }
     request.outcome_summary = summary
 
@@ -730,6 +827,11 @@ def create_confirmation_request(
                 "delivery_contact_count": len(delivery_contacts),
                 "responder_notifications_created": responder_notifications_created,
                 "active_member_count": active_members,
+                "requester_callback_channel": summary["requester_callback"]["channel"],
+                "requester_callback_requested": bool(summary["requester_callback"]["requested"]),
+                "requester_callback_delivery_status": summary["requester_callback"][
+                    "delivery_status"
+                ],
                 "private_contacts_exposed": False,
             },
         ),
@@ -1892,6 +1994,7 @@ def recompute_confirmation_outcome(db: Session, *, request_id: int) -> Dict[str,
         "no_response_count": no_response,
         "confidence_level": confidence,
         "private_contacts_exposed": False,
+        "requester_callback": prior_summary.get("requester_callback") or {},
     }
     visible = _visible_summary(
         confidence,
@@ -3588,6 +3691,7 @@ def public_confirmation_outcome(db: Session, *, public_token: str) -> Dict[str, 
         ),
         "privacy_note": "GSN shows a controlled community outcome. It does not expose private member phone numbers.",
         "decision_note": "This is evidence for judgement, not a guarantee, payment instruction, or automatic approval.",
+        "requester_callback": _public_requester_callback(summary),
     }
 
 

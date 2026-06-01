@@ -85,6 +85,15 @@ export type CommunityConfirmationOutcome = {
   visible_summary?: string | null;
   privacy_note?: string | null;
   decision_note?: string | null;
+  requester_callback?: {
+    requested?: boolean | null;
+    channel?: string | null;
+    contact_masked?: string | null;
+    consent_recorded?: boolean | null;
+    delivery_status?: string | null;
+    delivery_note?: string | null;
+    result_link_is_source_of_truth?: boolean | null;
+  } | null;
   community_response?: {
     requests_sent?: number | null;
     active_member_count?: number | null;

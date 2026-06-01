@@ -82,6 +82,9 @@ class CommunityConfirmationRequestIn(BaseModel):
     subject_user_id: Optional[int] = Field(default=None, ge=1)
     community_id: Optional[int] = Field(default=None, ge=1)
     requester_external_label: Optional[str] = Field(default=None, max_length=120)
+    requester_callback_channel: Optional[str] = Field(default=None, max_length=24)
+    requester_callback_contact: Optional[str] = Field(default=None, max_length=64)
+    requester_callback_consent: bool = False
     reason_type: str = Field(default="merchant_trust_check", max_length=48)
     risk_level: str = Field(default="low", max_length=24)
     mode: str = Field(default="relay", max_length=24)
@@ -206,6 +209,9 @@ def request_community_confirmation(
                 else None
             ),
             requester_external_label=payload.requester_external_label,
+            requester_callback_channel=payload.requester_callback_channel,
+            requester_callback_contact=payload.requester_callback_contact,
+            requester_callback_consent=payload.requester_callback_consent,
             reason_type=payload.reason_type,
             risk_level=payload.risk_level,
             mode=payload.mode,
