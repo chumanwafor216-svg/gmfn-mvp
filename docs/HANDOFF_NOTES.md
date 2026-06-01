@@ -1,3 +1,31 @@
+### Public shop owner contact fallback (2026-06-01)
+
+- Route/screen affected:
+  - public shop links under `/shop/:gmfnId`, implemented by
+    `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner report:
+  - after the previous WhatsApp chat fix, WhatsApp can still show
+    `phone number ... isn't on WhatsApp` when the owner number is not registered
+    with WhatsApp; the owner contact surface should not leave the buyer stuck.
+- Confirmed truth:
+  - GSN can build and open a WhatsApp chat URL for the owner number, but the
+    web page cannot reliably know, after handoff, whether WhatsApp rejected the
+    number as unregistered;
+  - WhatsApp does not provide a reliable universal browser URL for direct
+    WhatsApp voice/video calls to a phone number, so the app should not pretend
+    it can guarantee those actions;
+  - a normal `tel:` phone-call fallback is the safe fallback because it uses the
+    same owner number without requiring WhatsApp registration.
+- Updated frontend:
+  - changed the green WhatsApp owner-contact tile from direct chat launch to a
+    contact choice panel;
+  - added `WhatsApp chat` and `Call phone` actions;
+  - kept the chat action as a prefilled WhatsApp message, with guidance to use
+    the phone call fallback if WhatsApp says the number is not registered.
+- Remaining truth:
+  - the app still cannot prove in advance that the number is on WhatsApp unless
+    a backend-side verification flow is added later.
+
 ### Public community access preview fix (2026-06-01)
 
 - Route/screens affected:
