@@ -114,7 +114,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.links\.join\.copy"[\s\S]*?Join invite link is not ready yet\.[\s\S]*?debugId="marketplace\.links\.community-desk\.copy"[\s\S]*?Community access desk link is not ready yet\.[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?publicShopActionUnavailableMessage/,
+  /debugId="marketplace\.links\.join\.copy"[\s\S]*?Join invite link is not ready yet\.[\s\S]*?debugId="marketplace\.links\.community-desk\.copy"[\s\S]*?Community verification link is not ready yet\.[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?publicShopActionUnavailableMessage/,
   "Marketplace not-ready link actions must remain tappable explainers instead of dead disabled controls."
 );
 
@@ -132,7 +132,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /publicShopBlockUrl\(\{[\s\S]*?productId: product\.id,[\s\S]*?block: product\.slotNumber,/,
+  /publicShopShareUrl\(\{[\s\S]*?productId: product\.id,[\s\S]*?block: product\.slotNumber,/,
   "Public Shop Gallery product sharing must keep product/block links inside Shop Diaries."
 );
 

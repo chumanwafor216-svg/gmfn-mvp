@@ -100,7 +100,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /id: "owner-actions"[\s\S]*?openCommunityRoute\(event, routes\.clans\)[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openCommunityRoute\(event, routes\.vaultControl\)[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?id: "spotlight-subscription"[\s\S]*?openCommunityRoute\(event, routes\.subscriptionSpotlight\)[\s\S]*?id: "trusted-circle"[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /joinRequests:\s*routeTarget\(\s*"communityJoinRequests"[\s\S]*?debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, "\/create"\)/,
+  "Community Home owner and empty-state routes must avoid the retired /app/clans alias."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /id: "owner-actions"[\s\S]*?openCommunityRoute\(event, routes\.joinRequests\)[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openCommunityRoute\(event, routes\.vaultControl\)[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?id: "spotlight-subscription"[\s\S]*?openCommunityRoute\(event, routes\.subscriptionSpotlight\)[\s\S]*?id: "trusted-circle"[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
 );
 

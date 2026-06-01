@@ -1,3 +1,52 @@
+### Community/Marketplace button tightening pass (2026-06-01)
+
+- Route/screens affected:
+  - Community Home `/app/community`, implemented by
+    `frontend/src/pages/CommunityHomePage.tsx`;
+  - Marketplace `/app/marketplace`, audited through
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - route/button guardrails in `frontend/tools/`.
+- Product-owner request:
+  - audit and tighten all Marketplace and Community Home buttons from outside
+    to inside, especially after a community invite link appeared to bounce away
+    from the intended join/invite flow.
+- Confirmed button inventory:
+  - Community Home has 14 stable source button actions;
+  - Marketplace has 49 stable source actions;
+  - both pages already use shared stable button/link primitives and phone tap
+    guardrails.
+- Confirmed issue fixed:
+  - Community Home empty-state `Create New Community` was pointing at the old
+    `/app/clans` alias, which now redirects back to Community Home. That could
+    feel like a dead/bouncing button. It now opens the real `/create` lane.
+  - Community Home `Owner Actions` also pointed at the old `/app/clans` alias.
+    It now opens the selected community join-request owner surface through
+    `communityJoinRequests`.
+- Guardrail updates:
+  - Community Home audits now fail if empty-state Create returns to the retired
+    `/app/clans` alias;
+  - Community/shop audits now require `Owner Actions` to use the real
+    join-request route;
+  - Marketplace action audit wording now matches the current `Community
+    verification` link lane and the current shop block sharing helper.
+- Verification:
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:community-home-button-inventory` passed;
+  - `npm run audit:community-shop-actions` passed;
+  - `npm run audit:community-home-phone-buttons` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:route-fallthrough` passed;
+  - `npm run build` passed outside the sandbox after the known Windows
+    Vite/esbuild `spawn EPERM`.
+- Remaining truth:
+  - this pass tightened route handoffs and guardrails only. It did not add
+    automated browser-click coverage for every dynamic member row or every
+    generated invite/share link.
+
 ### Join-flow weak-page polish pass (2026-06-01)
 
 - Route/screens affected:

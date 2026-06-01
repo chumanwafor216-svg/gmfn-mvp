@@ -1007,7 +1007,11 @@ export default function CommunityHomePage() {
         selectedClanId,
         "community-home.route.dashboard"
       ),
-      clans: routeTarget("clans", selectedClanId, "community-home.route.clans"),
+      joinRequests: routeTarget(
+        "communityJoinRequests",
+        selectedClanId,
+        "community-home.route.join-requests"
+      ),
       marketplace: routeTarget(
         "marketplace",
         selectedClanId,
@@ -2136,7 +2140,7 @@ export default function CommunityHomePage() {
               <StableButton
                 type="button"
                 debugId="community-home.empty.create-community"
-                onClick={(event) => openCommunityRoute(event, routes.clans)}
+                onClick={(event) => openCommunityRoute(event, "/create")}
                 style={communityActionStyle("primary")}
               >
                 Create New Community
@@ -2716,7 +2720,7 @@ export default function CommunityHomePage() {
               detail:
                 "Open owner-side tools and permissions",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, routes.clans),
+                openCommunityRoute(event, routes.joinRequests),
             },
             {
               icon: "🏪",

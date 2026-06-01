@@ -132,6 +132,11 @@ assertContains(
 );
 
 assertContains(
+  /debugId="community-home\.empty\.create-community"[\s\S]*?openCommunityRoute\(event, "\/create"\)/,
+  "Community Home empty-state Create New Community must open the real create-community lane, not the retired /app/clans alias."
+);
+
+assertContains(
   /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "spotlight-free"[\s\S]*?id: "spotlight-paid"[\s\S]*?id: "spotlight-vault"[\s\S]*?id: "spotlight-shop-setup"/,
   "Community Home spotlight guided lane must keep the four spotlight-family inner choices."
 );
