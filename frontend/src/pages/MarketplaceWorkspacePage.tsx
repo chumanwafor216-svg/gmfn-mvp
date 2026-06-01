@@ -18,6 +18,7 @@ import {
   getClanInviteLink,
   getAccessToken,
   getMarketplaceShops,
+  getPublicCommunityVerification,
   getSelectedClanId,
   listClanMembers,
   listJoinRequests,
@@ -440,6 +441,7 @@ export default function MarketplaceWorkspacePage() {
   const routeClanId = safeNum(params.clanId);
   const storedClanId = safeNum(getSelectedClanId() || 0);
   const activeClanId = routeClanId || storedClanId;
+  const signedIn = Boolean(getAccessToken());
 
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -455,6 +457,7 @@ export default function MarketplaceWorkspacePage() {
   const membersSectionRef = useRef<HTMLDivElement | null>(null);
 
   const [inviteInfo, setInviteInfo] = useState<any>(null);
+  const [publicCommunityRecord, setPublicCommunityRecord] = useState<any>(null);
   const [joinRequests, setJoinRequests] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
   const [shops, setShops] = useState<any[]>([]);
@@ -543,6 +546,17 @@ export default function MarketplaceWorkspacePage() {
       setPrivateBlocksLocked(false);
 
       try {
+        if (!signedIn) {
+          const record = await getPublicCommunityVerification(String(activeClanId));
+          setPublicCommunityRecord(record || null);
+          setInviteInfo(record || null);
+          setJoinRequests([]);
+          setMembers([]);
+          setShops([]);
+          setPrivateBlocksLocked(true);
+          return;
+        }
+
         const [inviteRes, joinRes, membersRes, shopsRes] = await Promise.allSettled([
           getClanInviteLink(activeClanId),
           listJoinRequests(activeClanId),
@@ -592,14 +606,22 @@ export default function MarketplaceWorkspacePage() {
           setPrivateBlocksLocked(true);
         }
       } catch (e: any) {
-        setErr(String(e?.message || e || "Unable to load community access page."));
+        setErr(
+          String(
+            e?.message ||
+              e ||
+              (signedIn
+                ? "Unable to load community access page."
+                : "GSN could not confirm this public community link.")
+          )
+        );
       } finally {
         setBusy(false);
       }
     }
 
     void loadAll();
-  }, [activeClanId]);
+  }, [activeClanId, signedIn]);
 
   const communityName = useMemo(() => {
     if (inviteInfo?.marketplace_name) return safeStr(inviteInfo.marketplace_name);
@@ -679,6 +701,13 @@ export default function MarketplaceWorkspacePage() {
   const guideUrl = useMemo(() => {
     return publicFrontendUrl("/guide");
   }, []);
+
+  const publicJoinPath = activeClanId
+    ? `/join/community/${encodeURIComponent(String(activeClanId))}`
+    : "/join";
+  const publicVerifyPath = activeClanId
+    ? `/verify/community/${encodeURIComponent(String(activeClanId))}`
+    : "/verify/community";
 
   const pendingCount = useMemo(() => {
     return joinRequests.filter(
@@ -797,7 +826,7 @@ export default function MarketplaceWorkspacePage() {
       `Hello,`,
       ``,
       `You are invited to begin the request-to-join process for ${title}.`,
-      `Admission is not automatic. Existing members still review and vote according to community rules.`,
+      `This link is a GSN system access link. It confirms the community route; joining may still require community approval.`,
       ``,
       `Use this community link to begin:`,
       inviteLink || "(invite link unavailable)",
@@ -819,7 +848,7 @@ export default function MarketplaceWorkspacePage() {
     const title = safeStr(communityName || "this community");
     const text = [
       `You are invited to begin the request-to-join process for ${title}.`,
-      `Admission is not automatic. Members still review and vote.`,
+      `GSN confirms the community access route. Joining may still require community approval.`,
       inviteLink,
       `Guide: ${guideUrl}`,
     ]
@@ -875,6 +904,234 @@ export default function MarketplaceWorkspacePage() {
       return;
     }
     window.open(link, "_blank", "noopener,noreferrer");
+  }
+
+  if (!signedIn) {
+    const publicCommunityConfirmed = Boolean(publicCommunityRecord && !err);
+    const publicStatusText = safeStr(publicCommunityRecord?.status || "");
+    const activeText =
+      publicStatusText.toLowerCase() === "active"
+        ? "Active community"
+        : publicStatusText
+        ? `${publicStatusText} community`
+        : publicCommunityConfirmed
+        ? "Community found"
+        : "System check";
+    const publicMemberCount = safeNum(publicCommunityRecord?.active_member_count);
+
+    async function copyPublicCommunityLink() {
+      const copied = await safeCopy(publicFrontendUrl(`/community/${activeClanId}`));
+      setMsg(
+        copied
+          ? "Public community access link copied."
+          : "Clipboard copy was blocked. Use the browser address bar."
+      );
+    }
+
+    return (
+      <div style={{ maxWidth: 980, margin: "0 auto", paddingBottom: 36 }}>
+        {err || msg ? (
+          <div
+            role="status"
+            aria-live="polite"
+            style={floatingNoticeCard(err ? "error" : "success")}
+          >
+            {err || msg}
+          </div>
+        ) : null}
+
+        <PageTopNav
+          sectionLabel="GSN system feedback"
+          title={publicCommunityConfirmed ? communityName : "Community link check"}
+          subtitle="This public page confirms whether the community route exists. It is not committee verification, merchant verification, or member approval."
+        />
+
+        <section
+          style={{
+            ...pageCard("#061827"),
+            marginTop: 18,
+            border: "1px solid rgba(214,170,69,0.32)",
+            color: "#FFFFFF",
+          }}
+        >
+          <div style={{ ...sectionLabel(), color: "#F2C766" }}>
+            Public community access
+          </div>
+          <h1
+            style={{
+              margin: "10px 0 0",
+              color: "#FFFFFF",
+              fontSize: 38,
+              lineHeight: 1.02,
+              fontWeight: 1000,
+              letterSpacing: 0,
+            }}
+          >
+            {busy
+              ? "Checking this community"
+              : publicCommunityConfirmed
+              ? "Community route confirmed"
+              : "Community route not confirmed"}
+          </h1>
+          <p
+            style={{
+              margin: "14px 0 0",
+              color: "rgba(255,255,255,0.78)",
+              fontSize: 16,
+              lineHeight: 1.65,
+              maxWidth: 720,
+            }}
+          >
+            {publicCommunityConfirmed
+              ? "GSN found this community in the system. This feedback only confirms the community route and protects private member details."
+              : "GSN could not confirm this community route from the public system check. The link may be wrong, expired, or not publicly available yet."}
+          </p>
+
+          <div
+            style={{
+              marginTop: 18,
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <span
+              style={{
+                ...badge(true),
+                background: "rgba(242,199,102,0.14)",
+                color: "#FDE9A8",
+                border: "1px solid rgba(242,199,102,0.26)",
+              }}
+            >
+              {activeText}
+            </span>
+            <span
+              style={{
+                ...badge(false),
+                background: "rgba(255,255,255,0.10)",
+                color: "#EAF3FF",
+                border: "1px solid rgba(255,255,255,0.16)",
+              }}
+            >
+              Community ID: {communityIdentity || activeClanId || "Not available"}
+            </span>
+            {publicMemberCount > 0 ? (
+              <span
+                style={{
+                  ...badge(false),
+                  background: "rgba(255,255,255,0.10)",
+                  color: "#EAF3FF",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                }}
+              >
+                Active members: {publicMemberCount}
+              </span>
+            ) : null}
+          </div>
+        </section>
+
+        <section style={{ ...pageCard(), marginTop: 18 }}>
+          <div style={sectionTitle()}>What this link is for</div>
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(220px, 100%), 1fr))",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#F8FBFF")}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                System feedback
+              </div>
+              <div style={{ marginTop: 8, ...muted() }}>
+                GSN checks whether the community route exists. This is not a
+                community vote.
+              </div>
+            </div>
+            <div style={innerCard("#F8FBFF")}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                Join starting point
+              </div>
+              <div style={{ marginTop: 8, ...muted() }}>
+                A visitor can start a join request. Entry may still need the
+                community's normal approval process.
+              </div>
+            </div>
+            <div style={innerCard("#F8FBFF")}>
+              <div style={{ fontWeight: 1000, color: "#0B1F33" }}>
+                Private details protected
+              </div>
+              <div style={{ marginTop: 8, ...muted() }}>
+                Member lists, alerts, money/support blocks, and shop mapping are
+                not shown on this public surface.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section style={{ ...pageCard("#F8FBFF"), marginTop: 18 }}>
+          <div style={sectionLabel()}>Next step</div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#0B1F33",
+              fontSize: 24,
+              fontWeight: 1000,
+              lineHeight: 1.12,
+            }}
+          >
+            {publicCommunityConfirmed
+              ? "Request access to this community."
+              : "Check the link or sign in if this is your community."}
+          </div>
+          <CardActionRow style={workspaceActionRowStyle(16)}>
+            <StableCtaLink
+              to={publicJoinPath}
+              kind="primary"
+              debugId="marketplace-workspace.public-request-join"
+              style={workspaceActionStyle(!publicCommunityConfirmed)}
+            >
+              Request to join
+            </StableCtaLink>
+            <StableCtaLink
+              to={publicVerifyPath}
+              kind="secondary"
+              debugId="marketplace-workspace.public-verify-community"
+              style={workspaceActionStyle(!activeClanId)}
+            >
+              Verify community
+            </StableCtaLink>
+            <SecondaryButton
+              type="button"
+              onClick={() => void copyPublicCommunityLink()}
+              debugId="marketplace-workspace.public-copy-link"
+              style={workspaceActionStyle(!activeClanId)}
+            >
+              Copy link
+            </SecondaryButton>
+          </CardActionRow>
+        </section>
+
+        <section
+          style={{
+            ...pageCard("#FFFDF5"),
+            marginTop: 18,
+            border: "1px solid rgba(214,175,71,0.25)",
+          }}
+        >
+          <div style={{ fontWeight: 1000, color: "#92400E" }}>
+            Signed-in community access is required for the workspace
+          </div>
+          <div style={{ marginTop: 8, color: "#475569", lineHeight: 1.7 }}>
+            The deeper community desk contains alerts, member mapping,
+            marketplace handoff, and money/support routes. Those blocks are for
+            members or operators after sign-in, not for an outside invite
+            viewer.
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (

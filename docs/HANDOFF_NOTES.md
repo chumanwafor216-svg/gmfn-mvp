@@ -1,3 +1,33 @@
+### Public community access route privacy split (2026-06-01)
+
+- Route/screen affected:
+  - public community access links under `/community/:clanId`, implemented by
+    `frontend/src/pages/MarketplaceWorkspacePage.tsx`.
+- Product-owner clarification:
+  - this link is not Community Verification and not merchant/committee
+    verification;
+  - if the job is only to confirm the community exists, the feedback should be
+    system-based and should not expose internal community workspace blocks to
+    outsiders.
+- Confirmed route truth:
+  - real Community Verification is `/verify/community/:communityKey`;
+  - `/community/:clanId` was acting as a mixed public access/workspace desk and
+    showed operator-facing language such as money/support handoff, alerts, and
+    members-to-shop mapping.
+- Updated frontend:
+  - unauthenticated visitors on `/community/:clanId` now receive a public GSN
+    system-feedback surface that confirms whether the community route exists;
+  - the public surface explains that it is not a community vote, not merchant
+    verification, and not member approval;
+  - public actions are limited to `Request to join`, `Verify community`, and
+    `Copy link`;
+  - private workspace blocks such as alerts, money/support handoff, route
+    handoff, and member-to-shop mapping remain available only after sign-in.
+- Remaining truth:
+  - this is a frontend privacy/clarity split using the existing public
+    community verification endpoint; deeper backend route permission rules were
+    not changed.
+
 ### Public shop owner contact fallback (2026-06-01)
 
 - Route/screen affected:

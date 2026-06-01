@@ -2205,11 +2205,13 @@ export default function ShopGalleryPage() {
             );
 
             return item.mark === "W" ? (
-              <button
+              <SecondaryButton
                 key={`${item.mark}-${item.title}`}
-                type="button"
                 className="public-shop-status-item"
                 onClick={toggleOwnerContactPanel}
+                debugId="shop-gallery.owner-contact.choose"
+                fullWidth
+                minWidth={0}
                 aria-expanded={ownerContactPanelOpen}
                 aria-controls="public-shop-owner-contact-panel"
                 aria-label="Choose how to contact the shop owner"
@@ -2225,7 +2227,7 @@ export default function ShopGalleryPage() {
                 }}
               >
                 {statusItemContent}
-              </button>
+              </SecondaryButton>
             ) : (
               <div
                 key={`${item.mark}-${item.title}`}
