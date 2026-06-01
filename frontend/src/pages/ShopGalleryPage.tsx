@@ -1522,7 +1522,7 @@ export default function ShopGalleryPage() {
       : "";
     const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
     const communityTo = spotlightClanId
-      ? `/community/${encodeURIComponent(String(spotlightClanId))}`
+      ? `/verify/community/${encodeURIComponent(String(spotlightClanId))}`
       : "";
 
     return {

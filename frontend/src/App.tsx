@@ -29,9 +29,6 @@ const WelcomePage = React.lazy(() => import("./pages/WelcomePage"));
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const JoinEntryPage = React.lazy(() => import("./pages/JoinEntryPage"));
 const DashboardPage = React.lazy(() => import("./pages/DashboardPage"));
-const MarketplaceWorkspacePage = React.lazy(
-  () => import("./pages/MarketplaceWorkspacePage")
-);
 const CommunityHomePage = React.lazy(() => import("./pages/CommunityHomePage"));
 const LoansPage = React.lazy(() => import("./pages/LoansPage"));
 const MarketplacePage = React.lazy(() => import("./pages/MarketplacePage"));
@@ -745,7 +742,6 @@ export default function App() {
       <Route path="/shop/:gmfnId" element={<ShopGalleryPage />} />
       <Route path="/shop-gallery/:gmfnId" element={<RedirectPublicShopAlias />} />
       <Route path="/open-shop/:gmfnId" element={<RedirectPublicShopAlias />} />
-      <Route path="/community/:clanId" element={<MarketplaceWorkspacePage />} />
 
       <Route path="/vault/:token" element={<ShopAccessPage />} />
       <Route path="/shop-access/:token" element={<RedirectVaultAlias />} />

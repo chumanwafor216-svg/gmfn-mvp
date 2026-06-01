@@ -1,3 +1,34 @@
+### Retire public `/community/:clanId` access desk (2026-06-01)
+
+- Route/screen affected:
+  - retired public route `/community/:clanId`;
+  - public community outward links in `frontend/src/pages/MarketplacePage.tsx`;
+  - shop spotlight community link in `frontend/src/pages/ShopGalleryPage.tsx`;
+  - frontend share metadata handling in `frontend/server.mjs`.
+- Product-owner clarification:
+  - the public `/community/:clanId` link has no clear product job that is not
+    already covered by existing flows:
+    create community, join invite/request, public shop/vault link, and
+    community/member confirmation/verification;
+  - because the route cannot be placed mentally, it should not remain as a
+    public shareable link.
+- Updated frontend:
+  - removed `/community/:clanId` from the public React router;
+  - stopped the frontend server from generating route-specific WhatsApp/Open
+    Graph metadata for `/community/:clanId`;
+  - changed Marketplace outward community links to use
+    `/verify/community/:communityKey` instead;
+  - changed Shop Gallery spotlight community links to use
+    `/verify/community/:communityKey` instead;
+  - updated Marketplace copy from `Community access desk` to community
+    verification language.
+- Updated guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now rejects public
+    `/community/:clanId` registration, generation, and server metadata.
+- Remaining truth:
+  - `frontend/src/pages/MarketplaceWorkspacePage.tsx` still exists in the repo
+    as legacy code, but no public route imports or registers it now.
+
 ### Public community access route privacy split (2026-06-01)
 
 - Route/screen affected:

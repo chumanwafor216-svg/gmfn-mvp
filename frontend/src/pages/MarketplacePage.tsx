@@ -1373,7 +1373,7 @@ function buildMaskedLinkLabel(
   }
 
   if (String(kind) === "marketplace") {
-    return `Community access desk for ${cleanedSubject}${code ? ` - ref ${code}` : ""}`;
+    return `Community verification record for ${cleanedSubject}${code ? ` - ref ${code}` : ""}`;
   }
 
   if (kind === "marketplace") {
@@ -1509,7 +1509,7 @@ function buildGsnEmailSubject(
   }
 
   if (String(kind) === "marketplace") {
-    return `GSN community access desk link for ${cleanedCommunity}`;
+    return `GSN community verification link for ${cleanedCommunity}`;
   }
 
   if (kind === "marketplace") {
@@ -2216,7 +2216,9 @@ export default function MarketplacePage() {
 
   const publicCommunityWorkspaceLink = useMemo(() => {
     if (!activeCommunityId) return "";
-    return publicFrontendUrl(`/community/${encodeURIComponent(String(activeCommunityId))}`);
+    return publicFrontendUrl(
+      `/verify/community/${encodeURIComponent(String(activeCommunityId))}`
+    );
   }, [activeCommunityId]);
 
   const publicShopViewLink = useMemo(() => {
@@ -2923,7 +2925,7 @@ export default function MarketplacePage() {
 
   const marketplaceEmailMessage = useMemo(() => {
     return [
-      `Here is the public GSN community access desk for ${activeCommunityName}.`,
+      `Here is the public GSN community verification record for ${activeCommunityName}.`,
       "",
       publicCommunityWorkspaceLink,
     ].join("\n");
@@ -4462,9 +4464,9 @@ export default function MarketplacePage() {
         {sectionsOpen.tools ? (
           <ExplainToggle
             label="What these links do"
-            what="This area holds the links that belong to the selected community: the community join link, the community access desk, the public shop face, and controlled private-access links."
+            what="This area holds the links that belong to the selected community: the community join link, the public community verification record, the public shop face, and controlled private-access links."
             why="Marketplace-facing links should stay local to this community. Starting a brand-new community belongs to the wider GSN start door, not this selected marketplace desk."
-            next="Use join when someone should enter this exact community, the community access desk when someone should see this community outwardly, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
+            next="Use join when someone should enter this exact community, verification when someone should confirm the community exists, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
             tone="light"
             style={{ marginTop: 12 }}
           />
@@ -4485,7 +4487,7 @@ export default function MarketplacePage() {
                 <div style={sectionLabel()}>Outgoing links</div>
                 <div style={{ marginTop: 8, ...helperText() }}>
                   Use one clear link for each job: let someone join this
-                  community, show this marketplace face, show your public shop
+                  community, verify this community, show your public shop
                   face, or send a controlled private-Vault route. Each link now
                   has its own lane.
                 </div>
@@ -4647,9 +4649,9 @@ export default function MarketplacePage() {
                 </div>
 
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Community access desk</div>
+                  <div style={sectionLabel()}>Verify community</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Share the outward access desk for this community. This is not the public shop.
+                    Share this when someone only needs to confirm the community exists in GSN.
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <span
@@ -4658,8 +4660,8 @@ export default function MarketplacePage() {
                       )}
                     >
                       {publicCommunityWorkspaceLink
-                        ? "Community access desk ready"
-                        : "Community access desk not ready yet"}
+                        ? "Community verification ready"
+                        : "Community verification not ready yet"}
                     </span>
                   </div>
                   <div
@@ -4671,7 +4673,7 @@ export default function MarketplacePage() {
                   >
                     {publicCommunityWorkspaceLink
                       ? maskedMarketplaceFaceLabel
-                      : "Community access desk appears after the community context is ready."}
+                      : "Community verification appears after the community context is ready."}
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
@@ -4681,8 +4683,8 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           copyMarketplaceLink(
                             publicCommunityWorkspaceLink,
-                            "Community access desk link copied.",
-                            "Community access desk link is not ready yet."
+                            "Community verification link copied.",
+                            "Community verification link is not ready yet."
                           );
                         });
                       }}
@@ -4692,7 +4694,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Copy Community Desk
+                      Copy Verify Link
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.community-desk.email"
@@ -4703,7 +4705,7 @@ export default function MarketplacePage() {
                             marketplaceEmailSubject,
                             marketplaceEmailMessage,
                             publicCommunityWorkspaceLink,
-                            "Community access desk link is not ready yet."
+                            "Community verification link is not ready yet."
                           );
                         });
                       }}
@@ -4722,7 +4724,7 @@ export default function MarketplacePage() {
                         runMarketplaceAction(event, () => {
                           openMarketplaceExternalLink(
                             publicCommunityWorkspaceLink,
-                            "Community access desk link is not ready yet."
+                            "Community verification link is not ready yet."
                           );
                         });
                       }}
@@ -4732,7 +4734,7 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Open Community Desk
+                      Open Verify Page
                     </StableButton>
                   </div>
                 </div>

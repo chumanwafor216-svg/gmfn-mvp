@@ -580,8 +580,32 @@ assertContains(
 
 assertContains(
   "server.mjs",
-  /const publicFrontendOrigin[\s\S]*?gmfn-frontend\.onrender\.com[\s\S]*?function metaTags\(meta\)[\s\S]*?og:image[\s\S]*?og:url[\s\S]*?twitter:card[\s\S]*?function communityAccessMeta[\s\S]*?GSN Community Access[\s\S]*?gsn-community-access-poster\.png[\s\S]*?async function serveShopHtml[\s\S]*?async function serveCommunityHtml[\s\S]*?async function serveShareCardProxy/,
-  "The frontend server must inject route-specific Open Graph tags for public shop and public community access routes, and proxy the shop preview image through the frontend domain for WhatsApp."
+  /const publicFrontendOrigin[\s\S]*?gmfn-frontend\.onrender\.com[\s\S]*?function metaTags\(meta\)[\s\S]*?og:image[\s\S]*?og:url[\s\S]*?twitter:card[\s\S]*?async function serveShopHtml[\s\S]*?async function serveShareCardProxy/,
+  "The frontend server must inject route-specific Open Graph tags for public shop routes and proxy the shop preview image through the frontend domain for WhatsApp."
+);
+
+assertNotContains(
+  "server.mjs",
+  /communityAccessMeta|serveCommunityHtml|\/community\/\(\[\^\/\]\+\)/,
+  "The retired public /community/:clanId route must not keep server-side preview metadata or route handling."
+);
+
+assertNotContains(
+  "src/App.tsx",
+  /path="\/community\/:clanId"/,
+  "The retired public /community/:clanId route must not remain registered in the React router."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /publicFrontendUrl\(`\/community\/\$\{/,
+  "Marketplace must not generate the retired public /community/:clanId link; public community checks should use /verify/community/:communityKey."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /`\/community\/\$\{/,
+  "Shop Gallery spotlight community links must not generate the retired public /community/:clanId route."
 );
 
 assertContains(

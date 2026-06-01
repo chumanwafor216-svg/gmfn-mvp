@@ -178,17 +178,6 @@ function metaTags(meta) {
   ].join("\n    ");
 }
 
-function communityAccessMeta(clanId) {
-  const targetUrl = frontendUrl(`/community/${encodeURIComponent(firstText(clanId, "community"))}`);
-  return {
-    title: "GSN Community Access",
-    description:
-      "Open this public GSN community access desk for joining, marketplace handoff, and member-to-shop visibility.",
-    imageUrl: frontendUrl("/gsn-community-access-poster.png"),
-    targetUrl,
-  };
-}
-
 async function indexHtmlWithMeta(meta) {
   const indexHtml = await fs.readFile(indexPath, "utf8");
   const cleaned = indexHtml
@@ -211,13 +200,6 @@ async function serveShopHtml(res, gmfnId, searchParams) {
   } catch {
     createReadStream(indexPath).pipe(writeHead(res, 200, "text/html; charset=utf-8"));
   }
-}
-
-async function serveCommunityHtml(res, clanId) {
-  const html = await indexHtmlWithMeta(communityAccessMeta(clanId));
-  send(res, 200, html, "text/html; charset=utf-8", {
-    "Cache-Control": "public, max-age=300",
-  });
 }
 
 async function serveShareCardProxy(res, gmfnId, searchParams) {
@@ -291,17 +273,12 @@ createServer(async (req, res) => {
   try {
     const url = new URL(req.url || "/", publicFrontendOrigin);
     const match = url.pathname.match(/^\/shop\/([^/]+)(?:\/share-card\.png)?$/);
-    const communityMatch = url.pathname.match(/^\/community\/([^/]+)$/);
     if (match && url.pathname.endsWith("/share-card.png")) {
       await serveShareCardProxy(res, decodeURIComponent(match[1]), url.searchParams);
       return;
     }
     if (match) {
       await serveShopHtml(res, decodeURIComponent(match[1]), url.searchParams);
-      return;
-    }
-    if (communityMatch) {
-      await serveCommunityHtml(res, decodeURIComponent(communityMatch[1]));
       return;
     }
     await serveStaticOrFallback(res, url.pathname);
