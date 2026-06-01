@@ -406,6 +406,84 @@ def test_trustslip_verify_includes_privacy_safe_community_confirmation(
     assert "private contact details stay protected" in summary["plain_language"]
 
 
+def test_community_confirmation_callback_preview_records_safe_delivery_state(
+    client: TestClient,
+    monkeypatch,
+):
+    _seed_relay_fixture()
+    monkeypatch.setenv("GMFN_SECRET_KEY", "test-secret")
+    monkeypatch.setenv("GMFN_CONFIRMATION_CALLBACK_DELIVERY_MODE", "preview")
+    monkeypatch.setenv("FRONTEND_BASE_URL", "https://pilot.gsn.example")
+    requester_token = create_access_token({"sub": "merchant@example.com"})
+
+    created = client.post(
+        "/community-confirmations/request",
+        headers={"Authorization": f"Bearer {requester_token}"},
+        json={
+            "trust_slip_code": "CCR-TRUSTSLIP-1",
+            "requester_external_label": "Merchant counter check",
+            "requester_callback_channel": "whatsapp",
+            "requester_callback_contact": "+447712345678",
+            "requester_callback_consent": True,
+            "reason_type": "merchant_trust_check",
+            "risk_level": "low",
+            "mode": "instant_pulse",
+        },
+    )
+    assert created.status_code == 200, created.text
+    token = created.json()["public_token"]
+
+    app.dependency_overrides[get_current_user] = lambda: Obj(
+        id=2,
+        email="user2@example.com",
+        role="user",
+    )
+    try:
+        inbox = client.get("/community-confirmations/inbox")
+        assert inbox.status_code == 200, inbox.text
+        request_id = inbox.json()["items"][0]["id"]
+
+        answered = client.post(
+            f"/community-confirmations/{request_id}/respond",
+            json={
+                "response_type": "active_here",
+                "response_reason": "known_in_community",
+                "response_note": "Known here for this level of check.",
+            },
+        )
+        assert answered.status_code == 200, answered.text
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
+    public = client.get(f"/community-confirmations/public/{token}")
+    assert public.status_code == 200, public.text
+    public_data = public.json()
+    callback = public_data["requester_callback"]
+    assert callback["requested"] is True
+    assert callback["channel"] == "whatsapp"
+    assert callback["contact_masked"] == "ending 5678"
+    assert callback["delivery_status"] == "preview_ready"
+    assert "No SMS or WhatsApp provider was called" in callback["delivery_note"]
+    public_text = json.dumps(public_data)
+    assert "+447712345678" not in public_text
+    assert "7712345678" not in public_text
+
+    with SessionLocal() as db:
+        request = db.query(CommunityConfirmationRequest).one()
+        summary = json.loads(request.outcome_summary_json or "{}")
+        stored_callback = summary["requester_callback"]
+        attempt = stored_callback["last_delivery_attempt"]
+        assert stored_callback["delivery_status"] == "preview_ready"
+        assert attempt["mode"] == "preview"
+        assert attempt["channel"] == "whatsapp"
+        assert attempt["contact_masked"] == "ending 5678"
+        assert attempt["result_url"] == (
+            f"https://pilot.gsn.example/community-confirmations/public/{token}"
+        )
+        assert "+447712345678" not in json.dumps(attempt)
+        assert "7712345678" not in json.dumps(attempt)
+
+
 def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: TestClient):
     _seed_relay_fixture()
 

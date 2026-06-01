@@ -27,6 +27,9 @@ from app.db.models import (
     User,
 )
 from app.db.notification_models import Notification
+from app.services.community_confirmation_callback_delivery import (
+    attempt_confirmation_callback_delivery,
+)
 from app.services.notification_service import create_notification
 from app.services.trust_events_services import build_trust_meta, log_trust_event
 
@@ -1877,6 +1880,34 @@ def _notify_confirmation_requester_expired(
     )
 
 
+def _apply_requester_callback_delivery(
+    *,
+    request: CommunityConfirmationRequest,
+    summary: Dict[str, Any],
+    event: str,
+    visible_summary: str,
+    confidence: str,
+    responses_received: int,
+) -> Dict[str, Any]:
+    callback = summary.get("requester_callback") or {}
+    if not isinstance(callback, dict):
+        callback = {}
+    updated_callback = attempt_confirmation_callback_delivery(
+        request=request,
+        requester_callback=callback,
+        event=event,
+        visible_summary=visible_summary,
+        confidence=confidence,
+        responses_received=int(responses_received or 0),
+    )
+    if updated_callback == callback:
+        return summary
+    return {
+        **summary,
+        "requester_callback": updated_callback,
+    }
+
+
 def _mark_confirmation_request_expired(
     db: Session,
     *,
@@ -1888,7 +1919,30 @@ def _mark_confirmation_request_expired(
 
     previous_status = request.status
     non_response_user_ids = _notified_non_response_user_ids(db, request=request)
+    prior_summary = _json_loads(getattr(request, "outcome_summary_json", None))
+    responses_received = (
+        int(prior_summary.get("positive_count") or 0)
+        + int(prior_summary.get("caution_count") or 0)
+        + int(prior_summary.get("objection_count") or 0)
+    )
     request.status = "expired"
+    expired_summary = {
+        **prior_summary,
+        "no_response_count": len(non_response_user_ids),
+        "private_contacts_exposed": False,
+    }
+    expired_summary = _apply_requester_callback_delivery(
+        request=request,
+        summary=expired_summary,
+        event="community_confirmation.request_expired",
+        visible_summary=(
+            "The community confirmation response window has closed. "
+            f"{len(non_response_user_ids)} notified responder(s) did not answer before expiry."
+        ),
+        confidence=str(expired_summary.get("confidence_level") or "pending"),
+        responses_received=responses_received,
+    )
+    request.outcome_summary = expired_summary
     log_trust_event(
         db,
         event_type="community_confirmation.request_expired",
@@ -2003,6 +2057,14 @@ def recompute_confirmation_outcome(db: Session, *, request_id: int) -> Dict[str,
         counts["objection_count"],
         responses_received=received,
         active_members=active_members,
+    )
+    summary = _apply_requester_callback_delivery(
+        request=request,
+        summary=summary,
+        event="community_confirmation.outcome_updated",
+        visible_summary=visible,
+        confidence=confidence,
+        responses_received=received,
     )
 
     outcome = (

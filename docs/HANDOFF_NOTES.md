@@ -1,3 +1,35 @@
+### Community confirmation callback delivery rail foundation (2026-06-01)
+
+- Route/screens affected:
+  - backend community confirmation request/result flow under
+    `/community-confirmations/request`,
+    `/community-confirmations/{request_id}/respond`, and
+    `/community-confirmations/public/{token}`;
+  - no frontend route changes in this pass.
+- Product-owner request:
+  - build in the SMS/WhatsApp return rail now so a merchant can provide a
+    business number for the result later, without claiming delivery before the
+    paid provider is connected.
+- Updated backend:
+  - added provider-neutral callback delivery adapter in
+    `gmfn_backend/app/services/community_confirmation_callback_delivery.py`;
+  - callback delivery is off by default and keeps public status
+    `not_configured`;
+  - `GMFN_CONFIRMATION_CALLBACK_DELIVERY_MODE=preview` records a
+    `preview_ready` delivery state without calling any SMS or WhatsApp
+    provider;
+  - setting `GMFN_CONFIRMATION_CALLBACK_WEBHOOK_URL` or
+    `GMFN_CONFIRMATION_CALLBACK_DELIVERY_MODE=webhook` enables a generic JSON
+    webhook handoff for the future paid SMS/WhatsApp provider;
+  - optional `GMFN_CONFIRMATION_CALLBACK_WEBHOOK_SECRET` signs webhook payloads
+    with `X-GSN-Signature-SHA256`;
+  - delivery attempts are stored inside the existing outcome summary JSON and
+    public output still exposes only masked contact details.
+- Remaining truth:
+  - this is a rail, not a live SMS/WhatsApp provider. A provider endpoint still
+    has to be chosen, paid for, configured in Render, and tested end-to-end
+    before the product can say messages are sent.
+
 ### TrustSlip code checker and confirmation callback foundation (2026-06-01)
 
 - Route/screens affected:
