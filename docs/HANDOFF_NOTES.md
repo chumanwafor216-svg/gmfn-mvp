@@ -29,6 +29,14 @@
   - this is a rail, not a live SMS/WhatsApp provider. A provider endpoint still
     has to be chosen, paid for, configured in Render, and tested end-to-end
     before the product can say messages are sent.
+- Publish status:
+  - commit `23546fb` was pushed to `feature/vault-shops` and promoted to
+    `main`;
+  - GitHub Actions run `26772131186` completed successfully, but both Render
+    deploy trigger steps were skipped because the frontend/API deploy hook/API
+    credentials were not available to the workflow;
+  - the backend-impacting callback rail therefore still needs Render auto-deploy
+    confirmation or a manual `gmfn-api` deploy before it can be called live.
 
 ### TrustSlip code checker and confirmation callback foundation (2026-06-01)
 
