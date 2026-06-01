@@ -52,6 +52,10 @@
 - Remaining truth:
   - WhatsApp may cache a previously pasted URL preview; a fresh personalized
     URL with receiver/name query params is the cleanest proof after deploy.
+  - after publishing the invite fix, two `tests.yml` runs failed before normal
+    test execution because `.github/workflows/tests.yml` had a malformed
+    `Install dependencies` step; that workflow syntax typo was fixed in the
+    follow-up CI guardrail commit.
 
 ### Retire public `/community/:clanId` access desk (2026-06-01)
 
