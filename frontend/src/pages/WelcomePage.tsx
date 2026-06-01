@@ -229,7 +229,7 @@ export default function WelcomePage() {
     entryMode === "invite"
       ? "Open your invitation path."
       : entryMode === "create"
-      ? "Open your community setup."
+      ? "Create community"
       : entryMode === "approved"
       ? "Open your activation path."
       : entryMode === "existing"
@@ -318,7 +318,7 @@ export default function WelcomePage() {
                 gap: isCompact ? 7 : routeCard().gap,
               }}
             >
-              <div style={labelText()}>Create</div>
+              <div style={labelText()}>Founder path</div>
               <div
                 style={{
                   fontSize: isCompact ? 23 : 28,
@@ -326,7 +326,7 @@ export default function WelcomePage() {
                   lineHeight: 1.08,
                 }}
               >
-                Create a new community
+                Set up the basics
               </div>
               <div
                 style={{
@@ -337,7 +337,7 @@ export default function WelcomePage() {
                 }}
               >
                 <EntryActionButton type="button" onClick={openCreate}>
-                  Start community setup
+                  Begin
                 </EntryActionButton>
               </div>
             </div>
