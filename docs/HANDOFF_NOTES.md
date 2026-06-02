@@ -1,3 +1,47 @@
+### Community / Shop button baseline and shop-info save wording (2026-06-02)
+
+- Route/screens counted:
+  - `/app/community`, implemented by `frontend/src/pages/CommunityHomePage.tsx`;
+  - `/app/shop-control`, implemented by `frontend/src/pages/ShopControlPage.tsx`;
+  - `/app/shop-assets`, implemented by `frontend/src/pages/ShopAssetsPage.tsx`;
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - authenticated shell controls in `frontend/src/layout/AppLayout.tsx`.
+- Product-owner report:
+  - Community Home still feels hard to use on phone because some buttons feel
+    unaligned or jumpy;
+  - in Shop Assets / Picture Control, `Save picture` sounded wrong because the
+    action also saves shop name, WhatsApp, Telegram, and shop note even when no
+    picture is added.
+- Count baseline from source:
+  - Community Home: 14 stable action components, 0 raw buttons/anchors;
+  - Shop Control: 30 stable action components, 0 raw buttons/anchors;
+  - Shop Assets: 22 stable action components, 0 raw buttons/anchors;
+  - Public Shop / Shop Gallery: 18 stable action components, 0 raw
+    buttons/anchors;
+  - App shell: 13 stable action components, 0 raw buttons/anchors;
+  - total counted affected cluster: 97 stable action components, 0 raw
+    buttons/anchors.
+- Updated frontend:
+  - Shop Assets Picture Control helper now explains that the member can save
+    shop name, contact handles, note, and optional picture together;
+  - `Save picture` is now `Save shop info`;
+  - the success notice is now `Shop information saved.`
+- Updated audit:
+  - `frontend/tools/audit-link-contracts.mjs` now guards the broader
+    shop-info save wording so the action does not drift back to a picture-only
+    label.
+- Remaining truth:
+  - the existing Community Home and button stability audits pass, but the live
+    phone report means the current audit coverage is not enough to prove every
+    dynamic button feels steady in the hand;
+  - next recommended button slices are:
+    1. Community Home 14 source controls plus its mapped quick/tool rows;
+    2. Shop Assets 22 controls, especially Picture Control and product-slot
+       rows;
+    3. Shop Control 30 controls, especially owner-layer rows;
+    4. Public Shop 18 controls;
+    5. app-shell 13 movement controls.
+
 ### Community Home owner-scoped Spotlight status (2026-06-02)
 
 - Route/screens affected:

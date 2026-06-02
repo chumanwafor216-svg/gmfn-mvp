@@ -260,6 +260,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /Save the shop name, contact handles, note, and optional picture[\s\S]*?You can save this information without adding a[\s\S]*?picture[\s\S]*?debugId="shop-assets\.signboard\.save"[\s\S]*?Save shop info/,
+  "Shop Assets signboard save must be framed as a general shop-info save action, not only a picture save."
+);
+
+assertContains(
   "src/App.tsx",
   /path="\/vault-control"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.VAULT_CONTROL\}/,
   "The top-level /vault-control alias must not fall through to Cover/Welcome; it must canonicalize to the authenticated Vault Control route."

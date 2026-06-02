@@ -904,7 +904,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       setShopImageUrlInput(firstTruthy(updated?.image_url));
       setShopPreviewUrl(firstTruthy(updated?.image_url));
       setShopSelectedFile(null);
-      showNotice("success", "Shop signboard saved.");
+      showNotice("success", "Shop information saved.");
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Shop signboard could not be saved.");
     } finally {
@@ -1583,7 +1583,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={sectionLabel()}>Picture control</div>
 
               <div style={{ marginTop: 10, ...helperText() }}>
-                Preview the image first, then save it.
+                Save the shop name, contact handles, note, and optional picture
+                together. You can save this information without adding a
+                picture.
               </div>
 
               <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
@@ -1666,7 +1668,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     stableHeight={isCompact ? 56 : 48}
                     debugId="shop-assets.signboard.save"
                   >
-                    Save picture
+                    Save shop info
                   </PrimaryButton>
 
                   <SecondaryButton
