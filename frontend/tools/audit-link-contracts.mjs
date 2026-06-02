@@ -494,6 +494,18 @@ assertContains(
   "Mobile bottom domain rail must keep Public Shop visible while the member GSN ID is pending."
 );
 
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /getMarketplaceBroadcasts\(\{\s*active_only:\s*true,\s*limit:\s*24,\s*\}\)[\s\S]*?authorGmfnId && authorGmfnId === cleanedGmfnId\.toUpperCase\(\)/,
+  "Public Shop must use the signed-in live broadcast feed as a fallback so Dashboard Spotlight and Public Shop Spotlight do not drift."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /window\.setInterval\(\(\) => \{\s*void refreshPublicShopState\(false\);[\s\S]*?SPOTLIGHT_PILOT_REFRESH_MS/,
+  "Public Shop must quietly refresh live spotlight data on the same pilot refresh cadence instead of locking to first page load."
+);
+
 assertNotContains(
   "src/layout/AppLayout.tsx",
   /const myShopGalleryTo = useMemo[\s\S]*?return "\/app\/shop-control";[\s\S]*?}, \[location\.hash, location\.pathname, location\.search, myGmfnId\]\);/,

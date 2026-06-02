@@ -8,6 +8,7 @@ import {
   createMarketplaceShop,
   getAccessToken,
   getCurrentClan,
+  getMarketplaceBroadcasts,
   listMyClans,
   getMe,
   getPublicMarketplaceShopByGmfnId,
@@ -24,6 +25,7 @@ import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
+  SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
 
@@ -72,6 +74,7 @@ type ShopBroadcast = {
   authorName: string;
   authorGmfnId: string;
   createdAt?: string;
+  expiresAt?: string;
 };
 
 type NoticeTone = "success" | "error";
@@ -588,18 +591,27 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
 
   return {
     id: positiveNumber(src?.id) || undefined,
-    imageUrl: resolveImageSrc(src?.image_url),
-    videoUrl: resolveImageSrc(src?.video_url),
-    message: firstMeaningful(src?.message),
-    sourceShopName: firstMeaningful(src?.source_shop_name),
-    sourceClanName: firstMeaningful(src?.source_clan_name),
-    sourceClanId: positiveNumber(src?.source_clan_id || src?.clan_id) || undefined,
-    trustBand: firstMeaningful(src?.trust_band),
-    trustScore: firstMeaningful(src?.trust_score),
-    authorName: firstMeaningful(src?.author_name),
-    authorGmfnId: firstMeaningful(src?.author_gmfn_id),
-    createdAt: firstMeaningful(src?.created_at),
+    imageUrl: resolveImageSrc(src?.image_url || src?.imageUrl),
+    videoUrl: resolveImageSrc(src?.video_url || src?.videoUrl),
+    message: firstMeaningful(src?.message, src?.content, src?.text),
+    sourceShopName: firstMeaningful(src?.source_shop_name, src?.sourceShopName),
+    sourceClanName: firstMeaningful(src?.source_clan_name, src?.sourceClanName),
+    sourceClanId:
+      positiveNumber(src?.source_clan_id || src?.sourceClanId || src?.clan_id || src?.clanId) ||
+      undefined,
+    trustBand: firstMeaningful(src?.trust_band, src?.trustBand),
+    trustScore: firstMeaningful(src?.trust_score, src?.trustScore),
+    authorName: firstMeaningful(src?.author_name, src?.authorName),
+    authorGmfnId: firstMeaningful(src?.author_gmfn_id, src?.authorGmfnId),
+    createdAt: firstMeaningful(src?.created_at, src?.createdAt),
+    expiresAt: firstMeaningful(src?.expires_at, src?.expiresAt),
   };
+}
+
+function broadcastIsActive(item: ShopBroadcast | null): boolean {
+  if (!item?.expiresAt) return true;
+  const expiresAt = new Date(item.expiresAt).getTime();
+  return !Number.isFinite(expiresAt) || expiresAt > Date.now();
 }
 
 function spotlightBroadcastKey(item: ShopBroadcast | null): string {
@@ -1027,7 +1039,11 @@ export default function ShopGalleryPage() {
         cleanedGmfnId
       );
 
-      const publicBroadcasts = rowsOf<any>(publicShopRes?.broadcasts);
+      const publicBroadcasts = [
+        publicShopRes?.primary_broadcast,
+        publicShopRes?.primaryBroadcast,
+        ...rowsOf<any>(publicShopRes?.broadcasts),
+      ].filter(Boolean);
 
       const relevantBroadcast =
         (publicShopRes?.primary_broadcast
@@ -1036,6 +1052,7 @@ export default function ShopGalleryPage() {
         publicBroadcasts
           .map((row) => normalizeBroadcast(row))
           .filter(Boolean)
+          .filter(broadcastIsActive)
           .find((row) => {
             const authorGmfnId = safeStr(row?.authorGmfnId);
             return Boolean(
@@ -1049,6 +1066,7 @@ export default function ShopGalleryPage() {
       const normalizedBroadcasts = publicBroadcasts
         .map((row) => normalizeBroadcast(row))
         .filter(Boolean)
+        .filter(broadcastIsActive)
         .sort((a, b) => {
           const timeDelta =
             spotlightBroadcastSortValue(b) - spotlightBroadcastSortValue(a);
@@ -1081,12 +1099,45 @@ export default function ShopGalleryPage() {
     }
 
     async function loadPublicShop(cleanedGmfnId: string) {
-      return cleanedGmfnId
-        ? getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
-            product_limit: 100,
-            broadcast_limit: 24,
-          })
-        : null;
+      if (!cleanedGmfnId) return null;
+
+      const publicShopRes = await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
+        product_limit: 100,
+        broadcast_limit: 24,
+      });
+
+      const publicBroadcasts = [
+        publicShopRes?.primary_broadcast,
+        publicShopRes?.primaryBroadcast,
+        ...rowsOf<any>(publicShopRes?.broadcasts),
+      ].filter(Boolean);
+
+      if (publicBroadcasts.length > 0 || !getAccessToken()) {
+        return publicShopRes;
+      }
+
+      const ownerFeedRes = await getMarketplaceBroadcasts({
+        active_only: true,
+        limit: 24,
+      }).catch(() => null);
+      const ownerFeed = rowsOf<any>(ownerFeedRes)
+        .map((row) => normalizeBroadcast(row))
+        .filter(Boolean)
+        .filter(broadcastIsActive)
+        .filter((row) => {
+          const authorGmfnId = safeStr(row?.authorGmfnId).toUpperCase();
+          return Boolean(
+            authorGmfnId && authorGmfnId === cleanedGmfnId.toUpperCase()
+          );
+        });
+
+      if (ownerFeed.length <= 0) return publicShopRes;
+
+      return {
+        ...publicShopRes,
+        broadcasts: ownerFeed,
+        primary_broadcast: ownerFeed[0],
+      };
     }
 
     async function refreshOwnerShop(cleanedGmfnId: string, clanRes: any) {
@@ -1155,8 +1206,10 @@ export default function ShopGalleryPage() {
       return ownerGmfnId;
     }
 
-    (async () => {
-      setLoading(true);
+    async function refreshPublicShopState(showPageLoading: boolean) {
+      if (showPageLoading) {
+        setLoading(true);
+      }
       setError("");
       setAutoRefreshingShop(false);
 
@@ -1212,13 +1265,47 @@ export default function ShopGalleryPage() {
       } finally {
         if (alive) {
           setAutoRefreshingShop(false);
-          setLoading(false);
+          if (showPageLoading) {
+            setLoading(false);
+          }
         }
       }
-    })();
+    }
+
+    void refreshPublicShopState(true);
+
+    let refreshTimer: number | null = null;
+
+    function handleVisibilityRefresh() {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+
+      void refreshPublicShopState(false);
+    }
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("focus", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(() => {
+        void refreshPublicShopState(false);
+      }, SPOTLIGHT_PILOT_REFRESH_MS);
+    }
+
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+    }
 
     return () => {
       alive = false;
+      if (typeof window !== "undefined") {
+        window.removeEventListener("focus", handleVisibilityRefresh);
+        if (refreshTimer !== null) {
+          window.clearInterval(refreshTimer);
+        }
+      }
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+      }
     };
   }, [gmfnId, shopReconnectRetryKey]);
 
@@ -2654,7 +2741,9 @@ export default function ShopGalleryPage() {
               }}
             >
               <div>
-                <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Spotlight</div>
+                <div style={{ ...sectionLabel(), color: "#F6D77A" }}>
+                  {miniSpotlight ? "Live Spotlight" : "Spotlight"}
+                </div>
                 <div
                   style={{
                     marginTop: 10,
@@ -2664,7 +2753,9 @@ export default function ShopGalleryPage() {
                     lineHeight: 1.1,
                   }}
                 >
-                  See the live community billboard.
+                  {miniSpotlight
+                    ? miniSpotlightView.title
+                    : "See the live community billboard."}
                 </div>
                 <div
                   style={{
@@ -2674,8 +2765,23 @@ export default function ShopGalleryPage() {
                     lineHeight: 1.35,
                   }}
                 >
-                  Shops in this marketplace can highlight new items, updates, and offers here.
+                  {miniSpotlight
+                    ? miniSpotlightView.detail
+                    : "Shops in this marketplace can highlight new items, updates, and offers here."}
                 </div>
+                {miniSpotlightView.tagLabel ? (
+                  <div
+                    style={{
+                      marginTop: isCompact ? 7 : 10,
+                      color: "#F6D77A",
+                      fontSize: isCompact ? 10.2 : 12,
+                      fontWeight: 900,
+                      lineHeight: 1.35,
+                    }}
+                  >
+                    {miniSpotlightView.tagLabel}
+                  </div>
+                ) : null}
                 <PrimaryButton
                   onClick={openSpotlightPreview}
                   minWidth="auto"
@@ -2693,7 +2799,7 @@ export default function ShopGalleryPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  View shop blocks
+                  {miniSpotlight ? "View shop blocks" : "Open shop blocks"}
                 </PrimaryButton>
               </div>
               <div

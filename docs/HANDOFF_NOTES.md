@@ -1,3 +1,44 @@
+### Public Shop Spotlight reflection (2026-06-02)
+
+- Route/screens affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - Dashboard Spotlight remains `/app/dashboard`, implemented by
+    `frontend/src/pages/DashboardPage.tsx`;
+  - link contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner report:
+  - the live Spotlight seen on Dashboard was not deflecting/reflected on the
+    member's Public Shop face;
+  - Public Shop should show the same live shop/community Spotlight signal, not
+    behave like a disconnected storefront.
+- Confirmed frontend truth:
+  - Dashboard refreshes active marketplace broadcasts on the pilot refresh
+    cadence and can fall back to the public-shop broadcast feed;
+  - Public Shop loaded its public shop response once and did not quietly refresh
+    afterward;
+  - Public Shop also treated `primary_broadcast` separately from the rotating
+    public spotlight list, so a valid primary Spotlight could fail to drive the
+    visible public spotlight card.
+- Updated frontend:
+  - Public Shop now includes `primary_broadcast` and `broadcasts` in the same
+    visible Spotlight list;
+  - Spotlight normalization now accepts both backend snake_case and frontend
+    camelCase broadcast fields;
+  - expired broadcasts are filtered out before display;
+  - signed-in owners get an authenticated live-broadcast fallback when the
+    public shop response has no broadcast rows, matching Dashboard's live feed
+    source more closely;
+  - Public Shop quietly refreshes live shop data on focus, tab visibility, and
+    the Spotlight pilot refresh interval;
+  - the public Spotlight card now shows the actual live Spotlight title/message
+    when one exists instead of only generic billboard copy;
+  - added audit checks for the Public Shop live-broadcast fallback and refresh
+    cadence.
+- Remaining truth:
+  - ordinary outside visitors still depend on the public shop endpoint. If that
+    endpoint returns no broadcast rows for a visitor, the visitor cannot use the
+    authenticated fallback. Backend public-shop broadcast rows remain the public
+    source of truth.
+
 ### Public Shop bottom-domain and activation ID carryover (2026-06-02)
 
 - Route/screens affected:
