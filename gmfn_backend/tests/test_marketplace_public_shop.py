@@ -174,6 +174,95 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     assert [item["name"] for item in alias_body["products"]] == ["Fresh Rice"]
 
 
+def test_public_shop_picture_stays_scoped_to_one_shop_in_shared_community(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    original_owner_image = "/uploads/marketplace/images/owner-one-old.jpg"
+    new_owner_image = "/uploads/marketplace/images/owner-one-new.jpg"
+    other_owner_image = "/uploads/marketplace/images/owner-two.jpg"
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'owner-one@example.com', 'hashed', 'Owner One', 'user', 'GMFN-U-SHOPPIC1'),
+                    (2, 'owner-two@example.com', 'hashed', 'Owner Two', 'user', 'GMFN-U-SHOPPIC2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Homeland ISA', 'Homeland ISA Marketplace', 'SHOPPIC1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 1, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description,
+                    image_url, is_active
+                ) VALUES
+                    (
+                        1, 1, 1, 'OWNER ONE SHOP', 'Owner one public shop',
+                        :original_owner_image, 1
+                    ),
+                    (
+                        2, 1, 2, 'OWNER TWO SHOP', 'Owner two public shop',
+                        :other_owner_image, 1
+                    )
+                """
+            ),
+            {
+                "original_owner_image": original_owner_image,
+                "other_owner_image": other_owner_image,
+            },
+        )
+
+    update = client.patch(
+        "/marketplace/shops/1",
+        json={"image_url": new_owner_image},
+    )
+    assert update.status_code == 200, update.text
+    assert update.json()["item"]["image_url"] == new_owner_image
+
+    owner_public_shop = client.get("/marketplace/public/shop/GMFN-U-SHOPPIC1")
+    assert owner_public_shop.status_code == 200, owner_public_shop.text
+    owner_item = owner_public_shop.json()["item"]
+    assert owner_item["gmfn_id"] == "GMFN-U-SHOPPIC1"
+    assert owner_item["community_name"] == "Homeland ISA Marketplace"
+    assert owner_item["image_url"] == new_owner_image
+    assert owner_item["photo_url"] == new_owner_image
+    assert owner_item["shop_logo_url"] == new_owner_image
+
+    other_public_shop = client.get("/marketplace/public/shop/GMFN-U-SHOPPIC2")
+    assert other_public_shop.status_code == 200, other_public_shop.text
+    other_item = other_public_shop.json()["item"]
+    assert other_item["gmfn_id"] == "GMFN-U-SHOPPIC2"
+    assert other_item["community_name"] == "Homeland ISA Marketplace"
+    assert other_item["image_url"] == other_owner_image
+    assert other_item["photo_url"] == other_owner_image
+    assert other_item["shop_logo_url"] == other_owner_image
+
+
 def test_public_shop_face_falls_back_to_live_community_spotlight(client, tmp_path, monkeypatch):
     monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
     _ensure_marketplace_tables()

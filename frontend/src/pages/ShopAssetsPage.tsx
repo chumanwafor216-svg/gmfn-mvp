@@ -1479,7 +1479,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           <div>
             <div style={sectionLabel()}>🖼️ Public shop picture</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This is the first picture people see before opening the shop.
+              This picture belongs to this shop only. It does not change the
+              community picture or any other member's shop.
             </div>
           </div>
 

@@ -230,6 +230,18 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /async function saveShopSignboard[\s\S]*?body\.image_url = nextImageUrl;[\s\S]*?`\/api\/marketplace\/shops\/\$\{shop\.id\}`/,
+  "Shop Assets public picture saves must patch the current shop record, not a community or profile image endpoint."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /This picture belongs to this shop only\.[\s\S]*?It does not change the[\s\S]*?community picture or any other member's shop\./,
+  "Shop Assets must explain that the public shop picture is shop-scoped, not community-scoped."
+);
+
+assertContains(
   "src/App.tsx",
   /path="\/vault-control"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.VAULT_CONTROL\}/,
   "The top-level /vault-control alias must not fall through to Cover/Welcome; it must canonicalize to the authenticated Vault Control route."

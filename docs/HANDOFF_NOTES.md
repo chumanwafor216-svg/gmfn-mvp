@@ -1,3 +1,47 @@
+### Public Shop picture ownership scope (2026-06-02)
+
+- Route/screens affected:
+  - `/app/shop-assets`, implemented by `frontend/src/pages/ShopAssetsPage.tsx`;
+  - public API `GET /marketplace/public/shop/{gmfn_id}` and authenticated shop
+    update API `PATCH /marketplace/shops/{shop_id}`, implemented by
+    `gmfn_backend/app/api/routes/marketplace.py`;
+  - link contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner clarification:
+  - the Public Shop board picture must be personal/shop-level, not
+    community-system-level;
+  - one member setting a shop picture must not change the picture seen by every
+    other member in the same community.
+- Confirmed backend/frontend truth:
+  - shop picture save already patches the current `MarketplaceShop` record via
+    `/api/marketplace/shops/{shop.id}`;
+  - public shop output reads the image from the shop row and exposes it as
+    `image_url` plus public aliases such as `photo_url` and `shop_logo_url`;
+  - community name remains shared community identity, but the picture belongs
+    to the individual shop.
+- Updated protections:
+  - added a backend regression test with two shop owners in the same community:
+    updating owner one's public picture changes owner one's public shop only and
+    leaves owner two's public shop picture untouched;
+  - updated Shop Assets helper copy to state that the picture belongs to this
+    shop only and does not change the community picture or another member's
+    shop;
+  - added a frontend audit check so Shop Assets public-picture saves cannot
+    silently drift from the shop update endpoint to a community/profile image
+    endpoint.
+- Verification:
+  - `python -m pytest -q --basetemp C:\tmp\pytest-gmfn-shop-picture gmfn_backend\tests\test_marketplace_public_shop.py`
+    passed with 13 tests after running outside the sandbox for Windows temp
+    directory access;
+  - `npx eslint src/pages/ShopAssetsPage.tsx` passed;
+  - `npm run audit:link-contracts`, `npm run audit:button-stability`, and
+    `npm run audit:tap-stability` passed;
+  - `git diff --check` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    `spawn EPERM` sandbox failure.
+- Remaining truth:
+  - this line does not add a new community profile-picture feature. It confirms
+    and protects that the Public Shop picture is owner/shop scoped.
+
 ### Public Shop Spotlight reflection (2026-06-02)
 
 - Route/screens affected:
