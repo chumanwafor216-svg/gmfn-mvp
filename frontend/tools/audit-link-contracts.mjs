@@ -122,6 +122,54 @@ assertContains(
 );
 
 assertContains(
+  "index.html",
+  /<link rel="manifest" href="\/manifest\.webmanifest" \/>[\s\S]*?<meta name="theme-color" content="#061827" \/>[\s\S]*?<meta name="apple-mobile-web-app-capable" content="yes" \/>/,
+  "GSN public links must expose installable PWA metadata so phone users can keep the app on the home screen."
+);
+
+assertContains(
+  "public/manifest.webmanifest",
+  /"name": "GSN - Global Support Network"[\s\S]*?"short_name": "GSN"[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "standalone"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
+  "The PWA manifest must keep the GSN home-screen identity, app start URL, standalone display mode, and standard phone icons."
+);
+
+assertContains(
+  "public/sw.js",
+  /const CACHE_VERSION = "gsn-pwa-shell-v1"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"/,
+  "The GSN service worker must support app-shell install without caching private API or uploaded user data."
+);
+
+assertContains(
+  "src/main.tsx",
+  /import \{[\s\S]*?registerGsnServiceWorker,[\s\S]*?registerPwaInstallSupport,[\s\S]*?\} from "\.\/lib\/pwaInstall";[\s\S]*?installMobileTapGuard\(\);[\s\S]*?registerPwaInstallSupport\(\);[\s\S]*?registerGsnServiceWorker\(\);/,
+  "App boot must register PWA install support and the service worker after the mobile tap guard."
+);
+
+assertContains(
+  "src/components/GsnInstallPrompt.tsx",
+  /promptGsnInstall[\s\S]*?Add to Home Screen[\s\S]*?Install app or Add to Home screen[\s\S]*?Keep GSN on this phone/,
+  "The GSN install prompt must offer a native install path plus truthful manual phone instructions."
+);
+
+assertContains(
+  "src/pages/WelcomePage.tsx",
+  /import GsnInstallPrompt[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="welcome"/,
+  "Welcome must expose the GSN phone-screen install prompt for users arriving from public links."
+);
+
+assertContains(
+  "src/pages/LoginPage.tsx",
+  /import GsnInstallPrompt[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="login"/,
+  "Sign in must expose the GSN phone-screen install prompt so returning members can keep the app reachable."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /import GsnInstallPrompt[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="public-shop"/,
+  "Public Shop must expose the GSN phone-screen install prompt for WhatsApp/shared-link visitors."
+);
+
+assertContains(
   "src/lib/appRoutes.ts",
   /FREE_SPOTLIGHT:\s*"\/app\/shop-control#shop-control-spotlight"/,
   "Current Free Spotlight CTAs must open the real Shop Control spotlight section directly, not the legacy redirect alias."

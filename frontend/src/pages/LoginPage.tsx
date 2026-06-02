@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
+import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
 import { getAccessToken, getMe, getMeWithToken, loginAndStore } from "../lib/api";
 import {
@@ -1134,6 +1135,12 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+
+          <GsnInstallPrompt
+            tone="dark"
+            compact={isCompact}
+            surface="login"
+          />
 
           <SecondaryButton
             onClick={openCreateRoute}

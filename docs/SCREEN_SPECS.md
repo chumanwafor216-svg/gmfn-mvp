@@ -58,6 +58,28 @@ Primary action:
 Continue
 ```
 
+## PWA Home-Screen Install
+
+Purpose:
+Let people who receive GSN links in WhatsApp or another conversation keep GSN
+reachable from the phone home screen.
+
+Must show:
+- Keep GSN on this phone
+- one clear install/setup action
+- manual phone steps when the browser cannot show a native install prompt
+
+Rules:
+- The app may request browser-supported install only after the user taps the
+  install action.
+- Do not claim GSN can silently place itself on the phone screen.
+- Do not cache private API responses or uploaded user data in the service
+  worker.
+- The prompt may appear on Welcome, Sign In, Public Shop, invite/public access,
+  and other entry surfaces where people commonly arrive from shared links.
+- The prompt must stay compact, must not replace the main page action, and must
+  disappear when GSN is already running from a home-screen install.
+
 ## DashboardPage
 
 Purpose:

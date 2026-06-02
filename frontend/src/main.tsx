@@ -6,6 +6,10 @@ import { Toaster } from "react-hot-toast";
 import App from "./App";
 import { installMobileTapGuard } from "./lib/mobileTapGuard";
 import {
+  registerGsnServiceWorker,
+  registerPwaInstallSupport,
+} from "./lib/pwaInstall";
+import {
   configuredPublicFrontendOrigin,
   isSuspendedPublicFrontendHost,
 } from "./lib/publicLinks";
@@ -79,6 +83,8 @@ if (hasBootSessionReset()) {
 }
 
 installMobileTapGuard();
+registerPwaInstallSupport();
+registerGsnServiceWorker();
 
 if (!migrateSuspendedPublicHost()) {
   ReactDOM.createRoot(document.getElementById("root")!).render(

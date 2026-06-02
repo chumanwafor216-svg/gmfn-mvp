@@ -1,3 +1,35 @@
+### GSN home-screen install / PWA entry support (2026-06-02)
+
+- Routes/screens affected:
+  - `/welcome`, implemented by `frontend/src/pages/WelcomePage.tsx`;
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - frontend boot in `frontend/src/main.tsx`.
+- Product-owner request:
+  - shared WhatsApp links can disappear upward in conversation history and
+    Chrome tabs can become buried, so GSN needs a way for users to keep the app
+    on the phone front screen like an app icon.
+- Frontend/PWA change:
+  - added a GSN web app manifest at `frontend/public/manifest.webmanifest`;
+  - added GSN app icons at `frontend/public/gsn-app-icon.svg`,
+    `frontend/public/gsn-app-icon-192.png`, and
+    `frontend/public/gsn-app-icon-512.png`;
+  - added a conservative service worker at `frontend/public/sw.js`;
+  - added shared install support in `frontend/src/lib/pwaInstall.ts`;
+  - registered install support and the service worker at app boot;
+  - added reusable `GsnInstallPrompt` on Welcome, Sign In, and Public Shop.
+- Important truth:
+  - GSN cannot silently place itself on a phone home screen. The user must tap
+    the install/setup action and approve the browser or phone prompt.
+  - The service worker intentionally skips `/api` and `/uploads` so private API
+    data and uploaded user media are not cached as part of this install support.
+- Guardrails:
+  - `docs/SCREEN_SPECS.md` now records the PWA home-screen install behavior and
+    the no-silent-install rule.
+  - `frontend/tools/audit-link-contracts.mjs` now checks the manifest, service
+    worker, boot registration, reusable install prompt, and public/entry page
+    placements.
+
 ### Public Shop owner-only navigator (2026-06-02)
 
 - Route/screen affected:

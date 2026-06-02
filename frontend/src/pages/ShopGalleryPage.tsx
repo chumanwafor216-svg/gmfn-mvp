@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useParams } from "react-router-dom";
+import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -2094,6 +2095,12 @@ export default function ShopGalleryPage() {
         label="Owner navigation"
         links={ownerSurfaceLinks}
         refreshKey={shopReconnectRetryKey}
+      />
+
+      <GsnInstallPrompt
+        tone="light"
+        compact={isCompact}
+        surface="public-shop"
       />
 
       <section

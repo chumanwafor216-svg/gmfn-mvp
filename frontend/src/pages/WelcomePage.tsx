@@ -4,6 +4,7 @@ import {
   EntryActionButton,
   EntryBackLink,
 } from "../components/EntryControls";
+import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import {
   detectEntryMode,
   initialWelcomeStep,
@@ -342,6 +343,14 @@ export default function WelcomePage() {
               </div>
             </div>
           ) : null}
+
+          <div style={{ width: "min(100%, 680px)", justifySelf: "center" }}>
+            <GsnInstallPrompt
+              tone="dark"
+              compact={isCompact}
+              surface="welcome"
+            />
+          </div>
 
           {entryMode === "invite" && isKnownSingleLane(entryMode) ? (
             <div style={routeCard()}>
