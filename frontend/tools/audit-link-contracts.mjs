@@ -838,8 +838,8 @@ assertContains(
 
 assertContains(
   "src/components/OwnerOnlySurfaceNav.tsx",
-  /getAccessToken\(\)[\s\S]*?signedInGmfnId[\s\S]*?ownerGmfnId[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
-  "Owner-only surface navigation must remain hidden from public visitors and signed-in non-owners."
+  /getStoredGmfnId[\s\S]*?meRes\?\.gmfn_id[\s\S]*?meRes\?\.member_global_id[\s\S]*?getStoredGmfnId\(\)[\s\S]*?getAccessToken\(\)[\s\S]*?signedInGmfnId[\s\S]*?ownerGmfnId[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
+  "Owner-only surface navigation must remain hidden from public visitors and signed-in non-owners while accepting the stored/current GSN ID fallback for the signed-in owner."
 );
 
 assertContains(

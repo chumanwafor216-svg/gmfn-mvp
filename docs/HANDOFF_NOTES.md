@@ -65,6 +65,16 @@
 
 ### Public Shop owner-only navigator (2026-06-02)
 
+- Follow-up owner identity fallback:
+  - the owner-only navigator existed on Public Shop, but it could stay hidden
+    when `/auth/me` did not return the signed-in GSN/GMFN ID in exactly
+    `gmfn_id` or `gmfnId`;
+  - `OwnerOnlySurfaceNav` now also checks `gmfnID`, `member_global_id`,
+    `global_id`, `gsn_id`, and the stored current GMFN ID before deciding
+    whether the signed-in user matches the shop owner;
+  - the nav still requires an access token and an owner identity match, so it
+    remains hidden from public visitors and signed-in non-owners.
+
 - Route/screen affected:
   - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
 - Product-owner request:

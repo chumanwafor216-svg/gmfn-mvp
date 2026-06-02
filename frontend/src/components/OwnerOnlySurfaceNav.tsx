@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { getAccessToken, getMe } from "../lib/api";
+import { getAccessToken, getMe, getStoredGmfnId } from "../lib/api";
 import {
   ownerSurfaceFirstMeaningful,
   ownerSurfaceIdentityMatches,
@@ -45,7 +45,9 @@ export default function OwnerOnlySurfaceNav({
   links = DEFAULT_OWNER_SURFACE_LINKS,
   refreshKey = "",
 }: OwnerOnlySurfaceNavProps) {
-  const [signedInGmfnId, setSignedInGmfnId] = useState<string>("");
+  const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
+    () => getStoredGmfnId() || ""
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -63,7 +65,15 @@ export default function OwnerOnlySurfaceNav({
       if (!alive) return;
 
       setSignedInGmfnId(
-        ownerSurfaceFirstMeaningful(meRes?.gmfn_id, meRes?.gmfnId)
+        ownerSurfaceFirstMeaningful(
+          meRes?.gmfn_id,
+          meRes?.gmfnId,
+          meRes?.gmfnID,
+          meRes?.member_global_id,
+          meRes?.global_id,
+          meRes?.gsn_id,
+          getStoredGmfnId()
+        )
       );
     }
 
