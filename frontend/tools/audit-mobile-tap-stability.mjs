@@ -527,7 +527,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace inline action grids must not create page-local stacking layers around mobile buttons",
     pattern:
-      /function marketplaceInlineActionsStyle\([\s\S]*?display: "grid",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?transition: "none",/,
+      /function marketplaceInlineActionsStyle\([\s\S]*?display: "grid",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?gridAutoRows: "52px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: 52,[\s\S]*?maxHeight: 52,[\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?transition: "none",/,
   },
   {
     label:
@@ -565,6 +565,12 @@ const marketplaceActionSystemChecks = [
     pattern:
       /<StableCtaLink[\s\S]{0,160}to=\{publicShopViewLink\}/,
   },
+  {
+    label:
+      "Marketplace public shop link actions must keep fixed-height labels while the link is preparing",
+    pattern:
+      /debugId="marketplace\.public-shop\.refresh"[\s\S]*?style=\{marketplaceInlineActionStyle\([\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?style=\{marketplaceInlineActionStyle\([\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?style=\{marketplaceInlineActionStyle\([\s\S]*?debugId="marketplace\.public-shop\.open"[\s\S]*?style=\{marketplaceInlineActionStyle\(/,
+  },
 ];
 
 for (const check of marketplaceActionSystemChecks) {
@@ -574,6 +580,35 @@ for (const check of marketplaceActionSystemChecks) {
       line: 1,
       label: check.label,
       text: "Expected Marketplace action stability pattern was not found.",
+    });
+  }
+}
+
+const communityHomePath = join(sourceRoot, "pages", "CommunityHomePage.tsx");
+const communityHomeSource = readFileSync(communityHomePath, "utf8");
+
+const communityHomeButtonChecks = [
+  {
+    label:
+      "Community Home quick action tiles must keep fixed height so labels cannot shake on mobile",
+    pattern:
+      /function communityQuickActionButton\([\s\S]*?height: isCompact \? 96 : 100,[\s\S]*?minHeight: isCompact \? 96 : 100,[\s\S]*?maxHeight: isCompact \? 96 : 100,[\s\S]*?overflow: "hidden"/,
+  },
+  {
+    label:
+      "Community Home tool rows must stay height-locked for mobile tap stability",
+    pattern:
+      /function communityToolRowStyle\([\s\S]*?height: 72,[\s\S]*?minHeight: 72,[\s\S]*?maxHeight: 72,[\s\S]*?transform: "none"[\s\S]*?transition: "none"/,
+  },
+];
+
+for (const check of communityHomeButtonChecks) {
+  if (!check.pattern.test(communityHomeSource)) {
+    findings.push({
+      file: relative(frontendRoot, communityHomePath),
+      line: 1,
+      label: check.label,
+      text: "Expected Community Home button stability pattern was not found.",
     });
   }
 }
@@ -735,6 +770,12 @@ const appShellChecks = [
       "Closed mobile drawer must disable pointer events so transformed fixed layers cannot intercept taps",
     pattern:
       /function drawerPanel\(open: boolean\): React\.CSSProperties[\s\S]*?transform: open \? "translateX\(0\)" : "translateX\(-100%\)",[\s\S]*?pointerEvents: open \? "auto" : "none",/,
+  },
+  {
+    label:
+      "Mobile top Menu and Tools buttons must stay fixed-height while pages load",
+    pattern:
+      /function mobileIconButton\(\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
   },
 ];
 

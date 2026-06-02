@@ -447,6 +447,8 @@ function communityActionStyle(
     flexShrink: 0,
     overflowAnchor: "none",
     transform: "none",
+    translate: "none",
+    scale: "none",
     transition: "none",
   };
 
@@ -475,10 +477,12 @@ function communityActionStyle(
       textDecoration: "none",
       alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
       overflowWrap: "normal",
       wordBreak: "normal",
       hyphens: "none",
+      textOverflow: "ellipsis",
       opacity: disabled ? 0.86 : 1,
       boxShadow: disabled
         ? "none"
@@ -509,10 +513,12 @@ function communityActionStyle(
       textDecoration: "none",
       alignContent: "center",
       cursor: disabled ? "not-allowed" : "pointer",
-      whiteSpace: "normal",
+      whiteSpace: "nowrap",
+      overflow: "hidden",
       overflowWrap: "normal",
       wordBreak: "normal",
       hyphens: "none",
+      textOverflow: "ellipsis",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
         "0 8px 18px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
@@ -541,10 +547,12 @@ function communityActionStyle(
     textDecoration: "none",
     alignContent: "center",
     cursor: disabled ? "not-allowed" : "pointer",
-    whiteSpace: "normal",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
     overflowWrap: "normal",
     wordBreak: "normal",
     hyphens: "none",
+    textOverflow: "ellipsis",
     opacity: disabled ? 0.86 : 1,
     boxShadow: disabled
       ? "none"
@@ -625,7 +633,9 @@ function communityQuickActionButton(
   return {
     ...communityActionStyle("secondary"),
     width: "100%",
+    height: isCompact ? 96 : 100,
     minHeight: isCompact ? 96 : 100,
+    maxHeight: isCompact ? 96 : 100,
     justifyContent: "center",
     alignItems: "center",
     gap: 7,
@@ -695,6 +705,8 @@ function communityToolRowStyle(): React.CSSProperties {
     overflow: "hidden",
     overflowAnchor: "none",
     transform: "none",
+    translate: "none",
+    scale: "none",
     transition: "none",
     boxShadow:
       "0 12px 24px rgba(10,24,49,0.06), inset 0 1px 0 rgba(255,255,255,0.84)",

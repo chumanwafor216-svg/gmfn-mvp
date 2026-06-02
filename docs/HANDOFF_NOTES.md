@@ -1,3 +1,45 @@
+### Community / Marketplace button stability tightening (2026-06-02)
+
+- Route/screens affected:
+  - `/app/community`, implemented by `frontend/src/pages/CommunityHomePage.tsx`;
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`;
+  - authenticated mobile shell controls in `frontend/src/layout/AppLayout.tsx`;
+  - mobile tap audit in `frontend/tools/audit-mobile-tap-stability.mjs`.
+- Product-owner report:
+  - while trying to load/open the Public Shop number/link, buttons still felt
+    shaky and could make the tap fail;
+  - the affected areas called out were Community Home and Marketplace.
+- Confirmed frontend truth:
+  - the shared `StableButton` primitive was already in use on most affected
+    controls;
+  - however some page-level styles still allowed fluid label wrapping or
+    min-height-only controls, so labels such as `Refresh Shop Link` /
+    `Refreshing...` could make the Marketplace Public Shop action row feel like
+    it moved during preparation.
+- Updated frontend:
+  - Community Home quick-action tiles are now fixed-height with matching
+    min/max height, and tool rows keep their fixed 72px geometry;
+  - Marketplace action buttons now keep whole labels on one line with clipped
+    overflow instead of reflowing while tapped/loading;
+  - Marketplace inline action rows, including the Public Shop link controls,
+    are tightened from 54px to 52px fixed rows;
+  - mobile top `Menu` and `Tools` buttons are now fixed-height instead of
+    min-height-only;
+  - mobile tap audit now checks Community quick tiles/tool rows, Marketplace
+    inline Public Shop action controls, and mobile top buttons.
+- Verification:
+  - `npx eslint src/pages/CommunityHomePage.tsx src/pages/MarketplacePage.tsx src/layout/AppLayout.tsx`
+    passed;
+  - `npm run audit:tap-stability`, `npm run audit:button-stability`, and
+    `npm run audit:link-contracts` passed;
+  - `git diff --check` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    `spawn EPERM` sandbox failure.
+- Remaining truth:
+  - this is button geometry and tap-stability polish only. It does not change
+    Public Shop link generation, membership rules, marketplace data, or backend
+    behavior.
+
 ### Public Shop picture ownership scope (2026-06-02)
 
 - Route/screens affected:

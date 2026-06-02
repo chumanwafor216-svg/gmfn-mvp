@@ -974,7 +974,9 @@ function mobileTopBar(): React.CSSProperties {
 function mobileIconButton(): React.CSSProperties {
   return {
     width: "100%",
+    height: 44,
     minHeight: 44,
+    maxHeight: 44,
     borderRadius: 11,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -984,6 +986,9 @@ function mobileIconButton(): React.CSSProperties {
     cursor: "pointer",
     gap: 5,
     padding: "8px 10px",
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
   };
 }
 
