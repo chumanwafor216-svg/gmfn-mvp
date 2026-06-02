@@ -14,10 +14,16 @@
   - Free Spotlight publish now shows success, then auto-closes the temporary
     spotlight portal after a short pause so the user can continue other shop
     operations.
+  - Follow-up: the embedded Shop Assets panel inside Owner Shop Control now
+    preserves the saved signboard collapse state, so completed shop
+    information stays closed while the user uploads Shop Diaries items until
+    they intentionally reopen it.
 - Guardrails:
   - `frontend/tools/audit-link-contracts.mjs` now checks these successful-save
     collapse contracts for Shop Assets, Owner Shop Control details, and Free
     Spotlight publish.
+  - The same audit now checks that embedded Shop Assets reads the persisted
+    collapse state and only writes back the signboard flag from embedded mode.
 - Remaining truth:
   - This preserves the two current frontend handle surfaces. It does not create
     separate backend shop records per marketplace/community. True

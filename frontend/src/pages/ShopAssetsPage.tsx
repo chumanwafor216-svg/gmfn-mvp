@@ -274,6 +274,22 @@ function normalizeCollapseState(raw: unknown): CollapseState {
   };
 }
 
+function initialCollapseState(embedded: boolean): CollapseState {
+  const stored = normalizeCollapseState(
+    readLocalJSON<Partial<CollapseState>>(
+      SHOP_ASSETS_UI_STORAGE_KEY,
+      defaultCollapseState()
+    )
+  );
+
+  if (!embedded) return stored;
+
+  return {
+    ...stored,
+    posted: false,
+  };
+}
+
 function getToken(): string {
   try {
     return localStorage.getItem("access_token") || "";
@@ -466,21 +482,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
-  const [collapsed, setCollapsed] = useState<CollapseState>(() => {
-    if (embedded) {
-      return {
-        ...defaultCollapseState(),
-        posted: false,
-      };
-    }
-
-    return normalizeCollapseState(
-      readLocalJSON<CollapseState>(
-        SHOP_ASSETS_UI_STORAGE_KEY,
-        defaultCollapseState()
-      )
-    );
-  });
+  const [collapsed, setCollapsed] = useState<CollapseState>(() =>
+    initialCollapseState(embedded)
+  );
 
   const [me, setMe] = useState<any>(null);
   const [shop, setShop] = useState<ShopRecord | null>(null);
@@ -555,8 +559,19 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }, [notice]);
 
   useEffect(() => {
-    if (embedded) return;
-    writeLocalJSON(SHOP_ASSETS_UI_STORAGE_KEY, collapsed);
+    if (!embedded) {
+      writeLocalJSON(SHOP_ASSETS_UI_STORAGE_KEY, collapsed);
+      return;
+    }
+
+    const stored = readLocalJSON<Partial<CollapseState>>(
+      SHOP_ASSETS_UI_STORAGE_KEY,
+      defaultCollapseState()
+    );
+    writeLocalJSON(SHOP_ASSETS_UI_STORAGE_KEY, {
+      ...stored,
+      signboard: collapsed.signboard,
+    });
   }, [collapsed, embedded]);
 
   useEffect(() => {

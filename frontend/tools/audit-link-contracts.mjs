@@ -285,6 +285,12 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /function initialCollapseState\(embedded: boolean\): CollapseState[\s\S]*?readLocalJSON<Partial<CollapseState>>[\s\S]*?if \(!embedded\) return stored;[\s\S]*?posted: false[\s\S]*?useEffect\(\(\) => \{[\s\S]*?if \(!embedded\)[\s\S]*?writeLocalJSON\(SHOP_ASSETS_UI_STORAGE_KEY, collapsed\)[\s\S]*?signboard: collapsed\.signboard/,
+  "Embedded Shop Assets must preserve the saved signboard collapse state so shop info stays closed until intentionally reopened."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /resetProductForm\(\);[\s\S]*?setProductEditorOpen\(false\);[\s\S]*?setCollapsed\(\(prev\) => \(\{[\s\S]*?products: true,[\s\S]*?posted: false/,
   "Shop Assets product editor must close after a successful upload and reveal the posted shop list."
 );
