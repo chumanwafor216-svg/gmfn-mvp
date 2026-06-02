@@ -1,3 +1,56 @@
+### Sign-in session-open hardening and CORS fallback (2026-06-02)
+
+- Route/screens affected:
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`;
+  - shared API client in `frontend/src/lib/api.ts`;
+  - backend CORS setup in `gmfn_backend/app/main.py`.
+- Product-owner report:
+  - signing in with a GMFN/GSN ID and password showed
+    `Sign-in accepted, but the live system could not open your member session`;
+  - signing in with an unrelated phone number still correctly reported no
+    active account match.
+- Confirmed technical truth:
+  - `/auth/login` can return a token while the next authenticated `/auth/me`
+    session read fails;
+  - `/auth/me` depends on the browser preserving/sending the token and the
+    backend accepting the frontend origin with an `Authorization` header;
+  - production CORS previously depended entirely on `GMFN_CORS_ORIGINS`, while
+    this repo has two known public frontend hosts:
+    `https://gmfn-frontend.onrender.com` and
+    `https://frontend.onrender.com`.
+- Updated frontend:
+  - added `getMeWithToken(token)` so session proof can use the exact token
+    returned by login/activation instead of depending first on local storage;
+  - `/login` now distinguishes browser token-storage failure, backend
+    token-recognition failure, and network/CORS/API reachability failure in
+    the message shown to the user;
+  - `/activate-membership` now performs the same direct-token session proof
+    before routing to First Circle;
+  - both routes now avoid claiming success if the browser cannot keep the token
+    needed by route guards.
+- Updated backend:
+  - production CORS now includes the known public GSN frontend origins by
+    default;
+  - if `GMFN_CORS_ORIGINS` is configured, those known public origins are kept
+    as safe fallbacks rather than depending on a perfect Render env setting.
+- Verification:
+  - `python -m pytest -q gmfn_backend\tests\test_cors_settings.py gmfn_backend\tests\test_entry_create.py::test_entry_phone_verification_then_create_and_phone_login` passed;
+  - `npm exec -- eslint src/lib/api.ts src/pages/LoginPage.tsx src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - if live still cannot open `/auth/me` after this backend/frontend deploy,
+    the next check must inspect the live `/auth/me` response/status in the
+    browser Network tab or via an authenticated API probe. The frontend will
+    now give a more specific clue, but a failing live API still needs live API
+    evidence.
+
 ### Activation mobile info-row and network error repair (2026-06-02)
 
 - Route/screen affected:

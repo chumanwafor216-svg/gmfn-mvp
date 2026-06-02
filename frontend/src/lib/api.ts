@@ -495,6 +495,24 @@ export async function getMe() {
   return httpJson("/auth/me", "GET");
 }
 
+export async function getMeWithToken(token: string) {
+  const cleaned = String(token || "").trim();
+  if (!cleaned) {
+    throw new Error("Session token is missing.");
+  }
+
+  const res = await fetch(buildUrl("/auth/me"), {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${cleaned}`,
+    },
+  });
+
+  if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
+  return readJsonOrTextSafe(res);
+}
+
 export async function uploadMyProfileImageFile(file: File): Promise<any> {
   const tok = getAccessToken();
   if (!tok) {

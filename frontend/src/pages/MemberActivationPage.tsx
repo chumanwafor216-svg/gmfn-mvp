@@ -9,7 +9,9 @@ import {
 import {
   activateApprovedMember,
   activateMembership,
+  getAccessToken,
   getMe,
+  getMeWithToken,
   getSelectedClanId,
   observeIdentityRisk,
 } from "../lib/api";
@@ -740,14 +742,15 @@ export default function MemberActivationPage() {
     try {
       setBusy(true);
 
+      let activationResult: any = null;
       if (requestReady.gmfn_id) {
-        await activateMembership({
+        activationResult = await activateMembership({
           gmfn_id: requestReady.gmfn_id,
           password: requestReady.password,
           confirm_password: requestReady.confirm_password,
         });
       } else {
-        await activateApprovedMember({
+        activationResult = await activateApprovedMember({
           gmfn_id: null,
           request_id: requestReady.request_id || null,
           password: requestReady.password,
@@ -755,7 +758,10 @@ export default function MemberActivationPage() {
         });
       }
 
-      const me = await getMe().catch(() => null);
+      const activationToken = safeStr(activationResult?.access_token);
+      const me = activationToken
+        ? await getMeWithToken(activationToken).catch(() => null)
+        : await getMe().catch(() => null);
       if (!me?.id) {
         showNotice(
           {
@@ -763,6 +769,22 @@ export default function MemberActivationPage() {
             title: "Activation saved",
             message:
               "Your password was saved, but the live system could not open your session from this screen. Sign in again with your GSN ID or phone number.",
+          },
+          {
+            routePath: "/login?force=1",
+            routeDelayMs: 1800,
+          }
+        );
+        return;
+      }
+
+      if (!safeStr(getAccessToken())) {
+        showNotice(
+          {
+            tone: "warning",
+            title: "Activation saved",
+            message:
+              "Your password was saved, but this browser did not keep the member session token. Sign in again with your GSN ID or phone number.",
           },
           {
             routePath: "/login?force=1",

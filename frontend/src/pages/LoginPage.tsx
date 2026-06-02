@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { EntryBackLink } from "../components/EntryControls";
 import GSNBrandMonument from "../components/GSNBrandMonument";
 import { PrimaryButton, SecondaryButton, SubtleButton } from "../components/StableButton";
-import { getAccessToken, getMe, loginAndStore } from "../lib/api";
+import { getAccessToken, getMe, getMeWithToken, loginAndStore } from "../lib/api";
 import {
   peekPublishRecoveryTarget,
   publishRecoveryTarget,
@@ -242,6 +242,42 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function signInSessionError(error: unknown, tokenStored: boolean): string {
+  const status = Number((error as any)?.status);
+  const message = safeStr((error as any)?.message || error);
+  const lowerMessage = message.toLowerCase();
+
+  if (!tokenStored) {
+    return (
+      "Sign-in accepted, but this browser did not keep the member session token. " +
+      "Refresh once and try again. If the same message returns, open sign-in in a fresh tab."
+    );
+  }
+
+  if (status === 401 || status === 403) {
+    return (
+      "Sign-in accepted, but the live system did not recognize the session token when opening your member record. " +
+      "Try once more. If it repeats, the backend session service needs checking."
+    );
+  }
+
+  if (
+    lowerMessage.includes("failed to fetch") ||
+    lowerMessage.includes("networkerror") ||
+    lowerMessage.includes("network error")
+  ) {
+    return (
+      "Sign-in accepted, but the browser could not reach the member-session check. " +
+      "Check the connection and try again. If it repeats on this live site, the API or CORS setting needs checking."
+    );
+  }
+
+  return (
+    "Sign-in accepted, but the live system could not open your member session. " +
+    "Please try again in a moment."
+  );
+}
+
 function joinRedirectFromLoginSearch(searchParams: URLSearchParams): string {
   const inviteCode =
     safeStr(searchParams.get("invite_code")) ||
@@ -367,12 +403,23 @@ export default function LoginPage() {
       if (!u) throw new Error("Enter your email.");
       if (!p) throw new Error("Enter your password.");
 
-      await loginAndStore(u, p);
-      const me = await getMe().catch(() => null);
+      const loginResult = await loginAndStore(u, p);
+      const token = safeStr(loginResult?.access_token);
+      const tokenStored = Boolean(safeStr(getAccessToken()));
+      let sessionError: unknown = null;
+      const me = token
+        ? await getMeWithToken(token).catch((error) => {
+            sessionError = error;
+            return null;
+          })
+        : null;
+
       if (!me?.id) {
-        throw new Error(
-          "Sign-in accepted, but the live system could not open your member session. Please try again in a moment."
-        );
+        throw new Error(signInSessionError(sessionError, tokenStored));
+      }
+
+      if (!tokenStored) {
+        throw new Error(signInSessionError(null, false));
       }
 
       setMsg("Sign-in successful. Opening your workspace...");

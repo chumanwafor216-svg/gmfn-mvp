@@ -54,8 +54,16 @@ def _reconciliation_loop_enabled() -> bool:
 
 def _cors_settings() -> tuple[list[str], Optional[str]]:
     raw = str(os.getenv("GMFN_CORS_ORIGINS", "") or "").strip()
+    public_frontend_origins = [
+        "https://gmfn-frontend.onrender.com",
+        "https://frontend.onrender.com",
+    ]
+
     if raw:
         origins = [item.strip() for item in raw.split(",") if item.strip()]
+        for origin in public_frontend_origins:
+            if origin not in origins:
+                origins.append(origin)
         return origins, None
 
     if _dev_mode():
@@ -69,7 +77,7 @@ def _cors_settings() -> tuple[list[str], Optional[str]]:
             r"^https?://(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$",
         )
 
-    return [], None
+    return public_frontend_origins, None
 
 
 def _uploads_dir() -> Path:
