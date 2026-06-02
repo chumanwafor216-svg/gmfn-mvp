@@ -495,13 +495,19 @@ export async function getMe() {
   return httpJson("/auth/me", "GET");
 }
 
-export async function getMeWithToken(token: string) {
+export async function getMeWithToken(
+  token: string,
+  options?: { fresh?: boolean }
+) {
   const cleaned = String(token || "").trim();
   if (!cleaned) {
     throw new Error("Session token is missing.");
   }
 
-  const res = await fetch(buildUrl("/auth/me"), {
+  const path = options?.fresh
+    ? `/auth/me?session_check=${encodeURIComponent(String(Date.now()))}`
+    : "/auth/me";
+  const res = await fetch(buildUrl(path), {
     method: "GET",
     headers: {
       Accept: "application/json",

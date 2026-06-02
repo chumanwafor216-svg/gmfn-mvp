@@ -242,6 +242,29 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function isNetworkSessionError(error: unknown): boolean {
+  const message = safeStr((error as any)?.message || error).toLowerCase();
+  return (
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("network error")
+  );
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function getMeWithTokenRetry(token: string): Promise<any> {
+  try {
+    return await getMeWithToken(token);
+  } catch (error) {
+    if (!isNetworkSessionError(error)) throw error;
+    await wait(650);
+    return getMeWithToken(token, { fresh: true });
+  }
+}
+
 function signInSessionError(error: unknown, tokenStored: boolean): string {
   const status = Number((error as any)?.status);
   const message = safeStr((error as any)?.message || error);
@@ -408,7 +431,7 @@ export default function LoginPage() {
       const tokenStored = Boolean(safeStr(getAccessToken()));
       let sessionError: unknown = null;
       const me = token
-        ? await getMeWithToken(token).catch((error) => {
+        ? await getMeWithTokenRetry(token).catch((error) => {
             sessionError = error;
             return null;
           })

@@ -5,6 +5,7 @@ import {
   getAccessToken,
   getCurrentClan,
   getMe,
+  getMeWithToken,
   getMyIdentityRisk,
   getSelectedClanId,
   observeIdentityRisk,
@@ -162,6 +163,29 @@ function httpStatus(error: unknown): number | null {
   return Number.isFinite(status) ? status : null;
 }
 
+function isNetworkSessionError(error: unknown): boolean {
+  const message = String((error as any)?.message || error || "").toLowerCase();
+  return (
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("network error")
+  );
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function getMeWithStoredTokenRetry(token: string): Promise<any> {
+  try {
+    return await getMe();
+  } catch (error) {
+    if (!isNetworkSessionError(error)) throw error;
+    await wait(650);
+    return getMeWithToken(token, { fresh: true });
+  }
+}
+
 function routeStateFromTarget(target: string) {
   try {
     const parsed = new URL(target, "https://gsn.local");
@@ -244,7 +268,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
         let meError: unknown = null;
 
         try {
-          me = await getMe();
+          me = await getMeWithStoredTokenRetry(tok);
         } catch (error) {
           meError = error;
         }

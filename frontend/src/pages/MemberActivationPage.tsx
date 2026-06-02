@@ -22,6 +22,29 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function isNetworkSessionError(error: unknown): boolean {
+  const message = safeStr((error as any)?.message || error).toLowerCase();
+  return (
+    message.includes("failed to fetch") ||
+    message.includes("networkerror") ||
+    message.includes("network error")
+  );
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function getMeWithActivationTokenRetry(token: string): Promise<any> {
+  try {
+    return await getMeWithToken(token);
+  } catch (error) {
+    if (!isNetworkSessionError(error)) throw error;
+    await wait(650);
+    return getMeWithToken(token, { fresh: true });
+  }
+}
+
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
@@ -760,7 +783,7 @@ export default function MemberActivationPage() {
 
       const activationToken = safeStr(activationResult?.access_token);
       const me = activationToken
-        ? await getMeWithToken(activationToken).catch(() => null)
+        ? await getMeWithActivationTokenRetry(activationToken).catch(() => null)
         : await getMe().catch(() => null);
       if (!me?.id) {
         showNotice(

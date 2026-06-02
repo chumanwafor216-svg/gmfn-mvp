@@ -1,3 +1,44 @@
+### Live sign-in session retry hardening (2026-06-02)
+
+- Route/screens affected:
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`;
+  - authenticated route guard in `frontend/src/components/RequireAuth.tsx`;
+  - shared API client in `frontend/src/lib/api.ts`.
+- Product-owner report:
+  - live sign-in with `GMFN-U-63655DE6` now shows the more specific message
+    that the browser could not reach the member-session check after sign-in
+    was accepted.
+- Live evidence checked:
+  - `GET https://gmfn-api.onrender.com/health` returned `{"ok":true}`;
+  - CORS preflight for `GET /auth/me` with `authorization` passed for both
+    `https://gmfn-frontend.onrender.com` and `https://frontend.onrender.com`;
+  - the canonical frontend bundle includes
+    `VITE_API_BASE_URL:"https://gmfn-api.onrender.com"`;
+  - `https://frontend.onrender.com` itself is suspended, so testers should use
+    `https://gmfn-frontend.onrender.com` even if the mobile browser address
+    bubble visually truncates the hostname.
+- Updated frontend:
+  - `getMeWithToken` now supports a fresh cache-busting session check;
+  - `/login` retries a network-shaped `/auth/me` failure once on a fresh URL
+    before showing the session-check warning;
+  - `/activate-membership` uses the same one-retry direct-token session proof;
+  - `RequireAuth` retries the protected route session read once with the stored
+    token on a fresh URL before sending a user back to sign-in.
+- Verification:
+  - `npm exec -- eslint src/lib/api.ts src/pages/LoginPage.tsx src/pages/MemberActivationPage.tsx src/components/RequireAuth.tsx` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this still does not make an invalid token valid. A 401/403 from `/auth/me`
+    remains a real session failure and the token is cleared. The retry only
+    handles live mobile fetch/CORS timing hiccups.
+
 ### Sign-in session-open hardening and CORS fallback (2026-06-02)
 
 - Route/screens affected:
