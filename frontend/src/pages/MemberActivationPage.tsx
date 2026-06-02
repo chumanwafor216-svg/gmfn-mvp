@@ -40,8 +40,8 @@ function pageShell(): React.CSSProperties {
 
 function screenWrap(isCompact = false): React.CSSProperties {
   return {
-    width: isCompact ? "calc(100vw - 40px)" : "min(100%, 860px)",
-    maxWidth: isCompact ? "calc(100vw - 40px)" : 860,
+    width: isCompact ? "min(100%, 376px)" : "min(100%, 860px)",
+    maxWidth: isCompact ? 376 : 860,
     minWidth: 0,
     display: "grid",
     gap: 20,
@@ -58,9 +58,9 @@ function topRailCard(isCompact = false): React.CSSProperties {
     gridTemplateColumns: isCompact ? "54px minmax(0, 1fr)" : "64px minmax(0, 1fr) auto",
     alignItems: "center",
     gap: isCompact ? "12px 14px" : 18,
-    minHeight: isCompact ? 128 : 132,
+    minHeight: isCompact ? 116 : 124,
     borderRadius: 28,
-    padding: isCompact ? "14px 16px" : "18px clamp(16px, 4vw, 30px)",
+    padding: isCompact ? "12px 14px" : "16px clamp(16px, 4vw, 28px)",
     boxSizing: "border-box",
     border: "1px solid rgba(214,170,69,0.42)",
     background:
@@ -120,13 +120,13 @@ function brandLockup(isCompact = false): React.CSSProperties {
 function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSProperties {
   const about = kind === "about";
   return {
-    minHeight: isCompact ? 44 : 48,
-    height: isCompact ? 44 : 48,
-    maxHeight: isCompact ? 44 : 48,
+    minHeight: isCompact ? 40 : 44,
+    height: isCompact ? 40 : 44,
+    maxHeight: isCompact ? 40 : 44,
     minWidth: 0,
     width: isCompact ? "100%" : undefined,
     borderRadius: 999,
-    padding: isCompact ? "0 10px" : about ? "0 24px" : "0 26px",
+    padding: isCompact ? "0 10px" : about ? "0 22px" : "0 24px",
     border: about
       ? "1px solid rgba(242,199,102,0.78)"
       : "1px solid rgba(123,161,204,0.20)",
@@ -135,7 +135,7 @@ function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSP
       : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
     color: about ? "#F4D37C" : "#DDEAFF",
     fontWeight: 1000,
-    fontSize: isCompact ? 11 : 14,
+    fontSize: isCompact ? 10.5 : 13,
     letterSpacing: 0.7,
     textTransform: "uppercase",
     whiteSpace: "nowrap",
@@ -228,8 +228,9 @@ function fieldCheckStyle(): React.CSSProperties {
     borderRadius: 999,
     border: "2px solid rgba(94,197,124,0.85)",
     color: "#7EE092",
-    fontSize: 17,
+    fontSize: 10.5,
     fontWeight: 1000,
+    letterSpacing: 0.2,
     pointerEvents: "none",
     boxShadow: "0 0 16px rgba(94,197,124,0.24)",
   };
@@ -238,20 +239,20 @@ function fieldCheckStyle(): React.CSSProperties {
 function passwordToggleStyle(): React.CSSProperties {
   return {
     position: "absolute",
-    right: 16,
+    right: 14,
     top: "50%",
     transform: "translateY(-50%)",
-    minWidth: 44,
-    width: 44,
-    minHeight: 44,
-    height: 44,
-    maxHeight: 44,
+    minWidth: 42,
+    width: 42,
+    minHeight: 42,
+    height: 42,
+    maxHeight: 42,
     borderRadius: 999,
     border: "1px solid rgba(242,199,102,0.20)",
-    background: "rgba(4,19,35,0.10)",
+    background: "rgba(4,19,35,0.28)",
     color: "#F2C766",
     fontWeight: 1000,
-    fontSize: 13,
+    fontSize: 10.5,
     letterSpacing: 0.2,
     boxShadow: "none",
   };
@@ -274,13 +275,13 @@ function chipRail(isCompact = false): React.CSSProperties {
 
 function chipStyle(tone: "green" | "blue", isCompact = false): React.CSSProperties {
   return {
-    minHeight: isCompact ? 56 : 64,
+    minHeight: isCompact ? 52 : 58,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 14,
-    padding: isCompact ? "12px 14px" : "14px 22px",
-    borderRadius: isCompact ? 18 : 22,
+    padding: isCompact ? "10px 14px" : "12px 20px",
+    borderRadius: isCompact ? 17 : 20,
     border:
       tone === "green"
         ? "1px solid rgba(35,164,122,0.38)"
@@ -290,7 +291,7 @@ function chipStyle(tone: "green" | "blue", isCompact = false): React.CSSProperti
         ? "linear-gradient(180deg, rgba(14,79,78,0.84) 0%, rgba(8,64,67,0.80) 100%)"
         : "linear-gradient(180deg, rgba(20,83,162,0.82) 0%, rgba(12,61,128,0.82) 100%)",
     color: "#F8FBFF",
-    fontSize: isCompact ? 18 : 22,
+    fontSize: isCompact ? 17 : 20,
     fontWeight: 1000,
     boxShadow:
       "0 16px 26px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
@@ -301,7 +302,7 @@ function infoPanel(): React.CSSProperties {
   return {
     display: "grid",
     gap: 0,
-    marginTop: 26,
+    marginTop: 24,
     borderRadius: 24,
     border: "1px solid rgba(123,161,204,0.24)",
     background: "rgba(7,28,50,0.78)",
@@ -315,11 +316,11 @@ function infoPanel(): React.CSSProperties {
 function infoRowStyle(last = false): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "58px minmax(0, 1fr) 72px",
+    gridTemplateColumns: "52px minmax(0, 1fr) 58px",
     alignItems: "center",
-    gap: 16,
-    minHeight: 92,
-    padding: "18px 28px",
+    gap: 14,
+    minHeight: 82,
+    padding: "16px 22px",
     borderBottom: last ? "none" : "1px solid rgba(123,161,204,0.18)",
   };
 }
@@ -336,7 +337,7 @@ function infoIconStyle(tone: "info" | "shield"): React.CSSProperties {
         ? "linear-gradient(180deg, #1E73DD 0%, #0E53B6 100%)"
         : "linear-gradient(180deg, #1A62C0 0%, #0D4696 100%)",
     color: "#FFFFFF",
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: 1000,
     boxShadow:
       "0 14px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.16)",
@@ -345,31 +346,31 @@ function infoIconStyle(tone: "info" | "shield"): React.CSSProperties {
 
 function ghostIconStyle(): React.CSSProperties {
   return {
-    width: 58,
-    height: 58,
+    width: 52,
+    height: 52,
     display: "grid",
     placeItems: "center",
     color: "rgba(180,204,235,0.36)",
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 1000,
   };
 }
 
-function primaryActionStyle(): React.CSSProperties {
+function primaryActionStyle(isCompact = false): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 74,
-    height: 74,
-    maxHeight: 74,
-    borderRadius: 22,
+    minHeight: isCompact ? 62 : 68,
+    height: isCompact ? 62 : 68,
+    maxHeight: isCompact ? 62 : 68,
+    borderRadius: 20,
     border: "1px solid rgba(172,204,255,0.58)",
     background:
       "linear-gradient(180deg, #2F86FF 0%, #1761E6 48%, #0E43BE 100%)",
     color: "#FFFFFF",
-    fontSize: 30,
+    fontSize: isCompact ? 22 : 26,
     fontWeight: 1000,
     boxShadow:
-      "0 24px 44px rgba(22,95,230,0.34), inset 0 1px 0 rgba(255,255,255,0.24)",
+      "0 18px 34px rgba(22,95,230,0.30), inset 0 1px 0 rgba(255,255,255,0.24)",
     textShadow: "0 2px 14px rgba(0,0,0,0.28)",
   };
 }
@@ -545,16 +546,16 @@ export default function MemberActivationPage() {
           <StableCtaLink
             to="/welcome"
             kind="secondary"
-            stableHeight={64}
-            minWidth={64}
+            stableHeight={isCompact ? 52 : 58}
+            minWidth={isCompact ? 52 : 58}
             debugId="member-activation.back"
             aria-label="Back to welcome"
             style={{
               position: "relative",
               zIndex: 1,
-              width: isCompact ? 54 : 64,
-              height: isCompact ? 54 : 64,
-              maxHeight: isCompact ? 54 : 64,
+              width: isCompact ? 52 : 58,
+              height: isCompact ? 52 : 58,
+              maxHeight: isCompact ? 52 : 58,
               padding: 0,
               borderRadius: 999,
               border: "1px solid rgba(242,199,102,0.32)",
@@ -618,7 +619,7 @@ export default function MemberActivationPage() {
             <SubtleButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={48}
+              stableHeight={isCompact ? 40 : 44}
               debugId="member-activation.about"
               style={railActionStyle("about", isCompact)}
             >
@@ -627,7 +628,7 @@ export default function MemberActivationPage() {
             <PrimaryButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={48}
+              stableHeight={isCompact ? 40 : 44}
               debugId="member-activation.guide"
               style={railActionStyle("guide", isCompact)}
             >
@@ -752,7 +753,7 @@ export default function MemberActivationPage() {
                     autoComplete="username"
                     style={inputStyle(false)}
                   />
-                  {hasGsnId ? <span style={fieldCheckStyle()}>{"✓"}</span> : null}
+                  {hasGsnId ? <span style={fieldCheckStyle()}>OK</span> : null}
                 </div>
               </div>
 
@@ -771,7 +772,7 @@ export default function MemberActivationPage() {
                     style={inputStyle(Boolean(initialRequestId))}
                     readOnly={Boolean(initialRequestId)}
                   />
-                  {hasRequestId ? <span style={fieldCheckStyle()}>{"✓"}</span> : null}
+                  {hasRequestId ? <span style={fieldCheckStyle()}>OK</span> : null}
                 </div>
               </div>
 
@@ -793,8 +794,8 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
-                    stableHeight={44}
-                    minWidth={44}
+                    stableHeight={42}
+                    minWidth={42}
                     debugId="member-activation.password.toggle"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     style={passwordToggleStyle()}
@@ -806,7 +807,7 @@ export default function MemberActivationPage() {
 
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-confirm-password">
-                  <span style={labelIconStyle("check")}>{"✓"}</span>
+                  <span style={labelIconStyle("check")}>OK</span>
                   Confirm password
                 </label>
                 <div style={inputShell()}>
@@ -824,8 +825,8 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowConfirmPassword((current) => !current)}
-                    stableHeight={44}
-                    minWidth={44}
+                    stableHeight={42}
+                    minWidth={42}
                     debugId="member-activation.confirm-password.toggle"
                     aria-label={
                       showConfirmPassword ? "Hide confirm password" : "Show confirm password"
@@ -861,22 +862,22 @@ export default function MemberActivationPage() {
                 disabled={busy || activated}
                 busy={busy}
                 busyLabel="Finishing activation..."
-                stableHeight={74}
+                stableHeight={isCompact ? 62 : 68}
                 fullWidth
                 debugId="member-activation.finish"
-                style={primaryActionStyle()}
+                style={primaryActionStyle(isCompact)}
               >
                 <span
                   aria-hidden="true"
                   style={{
                     display: "inline-grid",
                     placeItems: "center",
-                    width: 38,
-                    height: 38,
+                    width: isCompact ? 30 : 34,
+                    height: isCompact ? 30 : 34,
                     borderRadius: 999,
                     color: "#FFFFFF",
                     background: "rgba(255,255,255,0.14)",
-                    fontSize: 13,
+                    fontSize: isCompact ? 10 : 11,
                     fontWeight: 1000,
                     marginRight: 6,
                   }}

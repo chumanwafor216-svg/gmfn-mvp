@@ -1,3 +1,32 @@
+### Member activation button polish (2026-06-02)
+
+- Route/screens affected:
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner request:
+  - polish the member activation page and tighten its buttons.
+- Updated frontend:
+  - tightened the activation top-rail buttons, back control, password
+    visibility toggles, detected-ID chips, info rows, and primary Finish
+    activation button;
+  - replaced fragile checkmark glyph rendering with compact ASCII `OK` status
+    badges;
+  - constrained the compact mobile page width so the activation card and rail
+    keep balanced side margins on narrow phone screenshots.
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox;
+  - Chrome headless screenshots were captured at `914x2048` and `430x932`.
+- Remaining truth:
+  - this is a visual polish pass only; backend activation, identity,
+    password, membership, and redirect rules were not changed.
+
 ### Member activation mockup rebuild (2026-06-02)
 
 - Route/screens affected:
