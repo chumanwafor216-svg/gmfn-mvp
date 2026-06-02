@@ -393,6 +393,33 @@ function displayGsnLabel(value: any): string {
   return text.replace(/^GMF[MN]/i, "GSN");
 }
 
+function isPublicIdentityFallback(value: any): boolean {
+  const text = safeStr(value);
+  if (!text) return true;
+
+  const lowered = text.toLowerCase();
+  if (lowered.includes("@")) return true;
+  if (lowered.endsWith(".local")) return true;
+  if (/^(?:gmf[MN]|gsn)-/i.test(text)) return true;
+  if (/^(?:gmf[MN]|gsn)-.+\s+shop$/i.test(text)) return true;
+
+  const compact = text.replace(/\s+/g, "");
+  const digits = compact.replace(/\D/g, "");
+  if (digits.length >= 7 && digits.length >= compact.length - 2) return true;
+
+  return false;
+}
+
+function firstPublicIdentity(...values: any[]): string {
+  for (const value of values) {
+    const text = safeStr(value);
+    if (!text || isPublicIdentityFallback(text)) continue;
+    return text;
+  }
+
+  return "";
+}
+
 function firstDefined(...values: any[]): any {
   for (const value of values) {
     if (value === undefined || value === null) continue;
@@ -501,15 +528,13 @@ function buildSelectedCommunity(
 
 function getMemberName(member: ClanMember): string {
   return (
-    firstTruthy(
+    firstPublicIdentity(
       member?.display_name,
       member?.nickname,
       [safeStr(member?.first_name), safeStr(member?.surname)]
-        .filter(Boolean)
-        .join(" "),
-      member?.email,
-      member?.phone_e164
-    ) || "Member"
+        .filter((part) => !isPublicIdentityFallback(part))
+        .join(" ")
+    ) || "GSN member"
   );
 }
 
@@ -651,7 +676,7 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
       src?.owner_gmfn,
       src?.ownerGmfnId
     ),
-    name: firstTruthy(src?.name, src?.shop_name, src?.title),
+    name: firstPublicIdentity(src?.name, src?.shop_name, src?.title),
     description: firstTruthy(
       src?.description,
       src?.shop_description,
@@ -1583,7 +1608,7 @@ function marketplaceInlineActionsStyle(
     gridTemplateColumns: isCompact
       ? "1fr"
       : "repeat(auto-fit, minmax(168px, 1fr))",
-    gridAutoRows: "52px",
+    gridAutoRows: "58px",
     gap: 8,
     alignItems: "stretch",
     overflowAnchor: "none",
@@ -1600,9 +1625,9 @@ function marketplaceInlineActionStyle(
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
-    height: 52,
-    minHeight: 52,
-    maxHeight: 52,
+    height: 58,
+    minHeight: 58,
+    maxHeight: 58,
     padding: "0 11px",
     pointerEvents: "auto",
     touchAction: "manipulation",
@@ -2730,8 +2755,11 @@ export default function MarketplacePage() {
     publicShopPrepareInFlightRef.current = true;
     setPreparingPublicShopLink(true);
     try {
-      const displayName = safeStr(me?.display_name || me?.name || "");
-      const shopName = publicShopRecord?.name || displayName || `${currentGmfnId} Shop`;
+      const displayName = firstPublicIdentity(me?.display_name, me?.name, me?.nickname);
+      const shopName =
+        firstPublicIdentity(publicShopRecord?.name) ||
+        displayName ||
+        "Public GSN Shop";
       const created = await createMarketplaceShop({
         clan_id: activeCommunityId,
         name: shopName,
@@ -2927,13 +2955,12 @@ export default function MarketplacePage() {
 
   const memberName = useMemo(() => {
     return (
-      firstTruthy(
+      firstPublicIdentity(
         me?.display_name,
         me?.nickname,
         me?.name,
-        me?.first_name,
-        me?.email
-      ) || "Member"
+        me?.first_name
+      ) || "GSN member"
     );
   }, [me]);
 
@@ -3070,7 +3097,8 @@ export default function MarketplacePage() {
       const shop = getShopForMember(member, shops);
       const gmfn = getMemberGmfnId(member);
       const userId = positiveNumber(member?.user_id || member?.id);
-      const memberDisplayName = getMemberName(member);
+      const visibleShopName = firstPublicIdentity(shop?.name);
+      const memberDisplayName = visibleShopName || getMemberName(member);
       const supportKey =
         userId > 0 ? `u-${userId}` : gmfn ? `g-${gmfn.toUpperCase()}` : "";
 
@@ -3081,7 +3109,7 @@ export default function MarketplacePage() {
         userId,
         supportKey,
         shopName: shop
-          ? firstTruthy(shop?.name, "Shop available")
+          ? firstTruthy(visibleShopName, "Public shop active")
           : "Shop not visible yet",
         shopTo:
           shop && gmfn
@@ -4921,7 +4949,7 @@ export default function MarketplacePage() {
                     <StableButton
                       type="button"
                       debugId="marketplace.public-shop.refresh"
-                      stableHeight={54}
+                      stableHeight={58}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4948,7 +4976,7 @@ export default function MarketplacePage() {
                     <StableButton
                       type="button"
                       debugId="marketplace.public-shop.copy"
-                      stableHeight={54}
+                      stableHeight={58}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -4975,7 +5003,7 @@ export default function MarketplacePage() {
                     <StableButton
                       type="button"
                       debugId="marketplace.public-shop.email"
-                      stableHeight={54}
+                      stableHeight={58}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {
@@ -5002,7 +5030,7 @@ export default function MarketplacePage() {
                     <StableButton
                       type="button"
                       debugId="marketplace.public-shop.open"
-                      stableHeight={54}
+                      stableHeight={58}
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (publicShopActionsLocked) {

@@ -32686,3 +32686,36 @@ GSN-branded invite composer and invite-entry continuity.
   - This is a frontend-compatible slot fix without a database migration. It is
     safe for the pilot, but a future backend `public_slot_number` column would
     be cleaner than hidden description metadata once the model is unfrozen.
+
+## Marketplace member identity and button tightening (2026-06-02)
+
+- Route/screen affected:
+  - `/app/marketplace`, especially Marketplace member/shop rows and
+    marketplace-owned public shop link controls.
+- Frontend change:
+  - `frontend/src/pages/MarketplacePage.tsx` now rejects phone-like strings,
+    emails, internal `.local` names, and generated GSN/GMFN ID labels as public
+    member/shop names on Marketplace.
+  - Marketplace member rows use the member's real visible shop name first when
+    a shop exists. If no real shop name is available, the row falls back to a
+    neutral `GSN member` / `Public shop active` style label instead of exposing
+    phone or internal identity.
+  - Public shop link preparation no longer creates a generated `{GSN ID} Shop`
+    name when the user's shop name is missing. It uses an existing real public
+    shop name, a clean member display name, or the neutral `Public GSN Shop`.
+  - Marketplace inline/link-desk actions now share one 58px row reserve and the
+    public shop refresh/copy/email/open buttons declare the same 58px stable
+    height, removing a source-side height mismatch that could make phone
+    controls feel jumpy.
+- Guardrails:
+  - `frontend/tools/audit-marketplace-actions.mjs` and
+    `frontend/tools/audit-link-contracts.mjs` now check the Marketplace public
+    identity fallback filter and shop-name-first member row logic.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` and
+    `frontend/tools/audit-mobile-tap-stability.mjs` now require the 58px
+    Marketplace inline action geometry.
+- Remaining truth:
+  - This fixes the Marketplace frontend representation. If the backend stores
+    an old generated shop name, the frontend will mask it here, but the cleaner
+    long-term correction is for the user/shop-control flow to save a real shop
+    name and for the backend to keep rejecting weak public identity fallbacks.

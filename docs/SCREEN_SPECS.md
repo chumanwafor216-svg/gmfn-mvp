@@ -359,6 +359,10 @@ Rules:
   `.local` identity fallbacks as the shop/owner name. If the member has not
   saved a public shop name or display name yet, use a neutral public fallback
   such as `Public GSN Shop` or `GSN member`.
+- Marketplace member rows must follow the same public identity rule. If a
+  member has a real visible shop name, represent that member by the shop name
+  first. Do not use phone numbers, emails, internal `.local` names, or generated
+  GSN/GMFN ID labels as a public member/shop name.
 - Public Shop repost is an in-network placement action, not an outside share.
   The member must enter or choose the target marketplace/community ID, and a
   successful repost should create a target marketplace spotlight/feed item

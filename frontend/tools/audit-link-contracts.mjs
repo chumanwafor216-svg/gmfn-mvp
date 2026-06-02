@@ -585,6 +585,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /function isPublicIdentityFallback[\s\S]*?lowered\.includes\("@"\)[\s\S]*?lowered\.endsWith\("\.local"\)[\s\S]*?\^\(\?:gmf\[MN\]\|gsn\)-[\s\S]*?digits\.length >= 7[\s\S]*?function firstPublicIdentity[\s\S]*?const visibleShopName = firstPublicIdentity\(shop\?\.name\);[\s\S]*?const memberDisplayName = visibleShopName \|\| getMemberName\(member\);/,
+  "Marketplace member/shop labels must not expose phone, email, internal .local, or generated GSN/GMFN identity fallbacks."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /async function getFreshPublicShopLink\(\): Promise<string> \{[\s\S]*?if \(publicShopViewLink\) return publicShopViewLink;[\s\S]*?return preparePublicShopLink\(\);[\s\S]*?\}/,
   "Marketplace public shop link actions must auto-refresh the owner shop link when the confirmed link is not ready yet."
 );
