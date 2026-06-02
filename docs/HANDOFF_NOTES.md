@@ -1,3 +1,43 @@
+### Activation mobile info-row and network error repair (2026-06-02)
+
+- Route/screen affected:
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner report:
+  - the lower guidance rows on the activation page were badly positioned on
+    phone width, with sentence text collapsing into word-by-word vertical
+    columns;
+  - the activation response showed raw `Failed to fetch`, and the next page
+    looked like it wanted to open but could not complete.
+- Confirmed frontend truth:
+  - the guidance rows always used a three-column grid
+    `52px minmax(0, 1fr) 58px`;
+  - on compact mobile width, the decorative right-hand `ID` / `OK` label stole
+    enough width that the middle text column became too narrow;
+  - `Failed to fetch` is a browser/network-level failure, not a useful
+    user-facing activation explanation.
+- Updated frontend:
+  - made the activation guidance rows responsive on compact screens with a
+    two-column grid, smaller icons, smaller sentence text, tighter padding,
+    and no decorative right label;
+  - kept the wider desktop layout intact;
+  - translated network-level activation failures into a plain message:
+    the activation request could not reach the GSN server, check connection,
+    try again, or sign in if the password was already created;
+  - added an `Open sign in` action to that network failure notice.
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this repairs the frontend layout and error wording. If live still says it
+    cannot reach the server after this deploy, the cause is likely live API
+    reachability/deploy configuration rather than the row layout.
+
 ### Login and activation button tightening follow-up (2026-06-02)
 
 - Route/screens affected:

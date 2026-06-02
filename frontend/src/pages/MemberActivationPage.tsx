@@ -49,11 +49,12 @@ function friendlyActivationError(err: any): {
   const code = safeStr(detail?.code).toLowerCase();
   const nextAction = safeStr(detail?.next_action).toLowerCase();
   const rawMessage = safeStr(detail?.message || err?.message || err);
+  const lowerMessage = rawMessage.toLowerCase();
 
   if (
     code === "account_already_activated" ||
     nextAction === "login" ||
-    rawMessage.toLowerCase().includes("already activated")
+    lowerMessage.includes("already activated")
   ) {
     const routePath = loginPathFromDetail(detail);
     return {
@@ -77,6 +78,23 @@ function friendlyActivationError(err: any): {
         title: "Activation is still pending",
         message:
           "This membership is not ready for password setup yet. Return to approval status and use the latest GSN ID or request ID shown there.",
+      },
+    };
+  }
+
+  if (
+    lowerMessage.includes("failed to fetch") ||
+    lowerMessage.includes("networkerror") ||
+    lowerMessage.includes("network error")
+  ) {
+    return {
+      notice: {
+        tone: "error",
+        title: "Live system did not respond",
+        message:
+          "The activation request could not reach the GSN server. Check the connection, then try again. If you already created this password, use sign in and the system will continue from the correct account state.",
+        actionLabel: "Open sign in",
+        actionPath: "/login?force=1",
       },
     };
   }
@@ -384,22 +402,24 @@ function infoPanel(): React.CSSProperties {
   };
 }
 
-function infoRowStyle(last = false): React.CSSProperties {
+function infoRowStyle(last = false, isCompact = false): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "52px minmax(0, 1fr) 58px",
-    alignItems: "center",
-    gap: 14,
-    minHeight: 82,
-    padding: "16px 22px",
+    gridTemplateColumns: isCompact ? "44px minmax(0, 1fr)" : "52px minmax(0, 1fr) 58px",
+    alignItems: isCompact ? "start" : "center",
+    gap: isCompact ? 12 : 14,
+    minHeight: isCompact ? 0 : 82,
+    padding: isCompact ? "14px 15px" : "16px 22px",
     borderBottom: last ? "none" : "1px solid rgba(123,161,204,0.18)",
+    boxSizing: "border-box",
+    minWidth: 0,
   };
 }
 
-function infoIconStyle(tone: "info" | "shield"): React.CSSProperties {
+function infoIconStyle(tone: "info" | "shield", isCompact = false): React.CSSProperties {
   return {
-    width: 52,
-    height: 52,
+    width: isCompact ? 44 : 52,
+    height: isCompact ? 44 : 52,
     display: "grid",
     placeItems: "center",
     borderRadius: 999,
@@ -408,22 +428,33 @@ function infoIconStyle(tone: "info" | "shield"): React.CSSProperties {
         ? "linear-gradient(180deg, #1E73DD 0%, #0E53B6 100%)"
         : "linear-gradient(180deg, #1A62C0 0%, #0D4696 100%)",
     color: "#FFFFFF",
-    fontSize: 24,
+    fontSize: isCompact ? 20 : 24,
     fontWeight: 1000,
     boxShadow:
       "0 14px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.16)",
   };
 }
 
-function ghostIconStyle(): React.CSSProperties {
+function ghostIconStyle(isCompact = false): React.CSSProperties {
   return {
+    display: isCompact ? "none" : "grid",
     width: 52,
     height: 52,
-    display: "grid",
     placeItems: "center",
     color: "rgba(180,204,235,0.36)",
     fontSize: 24,
     fontWeight: 1000,
+  };
+}
+
+function infoTextStyle(tone: "primary" | "muted", isCompact = false): React.CSSProperties {
+  return {
+    color: tone === "primary" ? "#DCE7F4" : "#B8C8DC",
+    fontSize: isCompact ? 15 : 21,
+    lineHeight: isCompact ? 1.5 : 1.35,
+    minWidth: 0,
+    overflowWrap: "normal",
+    wordBreak: "normal",
   };
 }
 
@@ -1120,19 +1151,19 @@ export default function MemberActivationPage() {
             </div>
 
             <div style={infoPanel()}>
-              <div style={infoRowStyle()}>
-                <span style={infoIconStyle("info")}>i</span>
-                <span style={{ color: "#DCE7F4", fontSize: 21, lineHeight: 1.35 }}>
+              <div style={infoRowStyle(false, isCompact)}>
+                <span style={infoIconStyle("info", isCompact)}>i</span>
+                <span style={infoTextStyle("primary", isCompact)}>
                   Use the GSN ID when it is present. Use the request ID only when the GSN ID is not yet available.
                 </span>
-                <span style={ghostIconStyle()}>ID</span>
+                <span style={ghostIconStyle(isCompact)}>ID</span>
               </div>
-              <div style={infoRowStyle(true)}>
-                <span style={infoIconStyle("shield")}>S</span>
-                <span style={{ color: "#B8C8DC", fontSize: 21, lineHeight: 1.35 }}>
+              <div style={infoRowStyle(true, isCompact)}>
+                <span style={infoIconStyle("shield", isCompact)}>S</span>
+                <span style={infoTextStyle("muted", isCompact)}>
                   Your password protects your account.
                 </span>
-                <span style={ghostIconStyle()}>OK</span>
+                <span style={ghostIconStyle(isCompact)}>OK</span>
               </div>
             </div>
 
