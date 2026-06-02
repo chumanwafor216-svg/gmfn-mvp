@@ -1,3 +1,38 @@
+### Join/sign-in button tightening polish (2026-06-02)
+
+- Route/screens affected:
+  - `/pending-approval`, implemented by
+    `frontend/src/pages/JoinRequestPendingPage.tsx`;
+  - public invite join route `/start/join/:code` and aliases, implemented by
+    `frontend/src/pages/JoinEntryPage.tsx`;
+  - existing-member sign-in route `/login`, implemented by
+    `frontend/src/pages/LoginPage.tsx`.
+- Product-owner request:
+  - tighten the buttons and polish the areas affected by the previous join
+    pending review / existing-ID handoff work.
+- Updated frontend:
+  - `/pending-approval` now uses tighter main actions, compact helpful-link
+    pills, a bounded action row, and more stable compact request-detail rows;
+  - `/start/join/:code` now uses bounded, stable join/sign-in/new-member action
+    buttons instead of wide CTA blocks in the affected choice, success, and
+    submit areas;
+  - `/login` now uses compact support CTAs for activation/start-community
+    actions and removes corrupted visible icon/text glyphs from the affected
+    sign-in/security area.
+- Verification:
+  - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx src/pages/JoinEntryPage.tsx src/pages/LoginPage.tsx` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this is a visual polish pass only; it does not alter backend approval,
+    identity reuse, membership, or route contracts.
+
 ### Join pending review screen and existing-ID handoff repair (2026-06-02)
 
 - Route/screens affected:

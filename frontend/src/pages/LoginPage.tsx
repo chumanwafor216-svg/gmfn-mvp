@@ -123,6 +123,29 @@ function secondaryBtn(): React.CSSProperties {
   };
 }
 
+function supportBtn(): React.CSSProperties {
+  return {
+    ...secondaryBtn(),
+    width: "min(100%, 380px)",
+    minHeight: 48,
+    borderRadius: 16,
+    padding: "10px 16px",
+    fontSize: 14,
+    boxShadow:
+      "0 10px 22px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.12)",
+  };
+}
+
+function inputIconBadge(): React.CSSProperties {
+  return {
+    color: "#F3D06A",
+    fontSize: 11,
+    textAlign: "center",
+    fontWeight: 1000,
+    letterSpacing: 0.6,
+  };
+}
+
 function noticeStyle(
   kind: "error" | "info" | "success" | "warning"
 ): React.CSSProperties {
@@ -780,7 +803,7 @@ export default function LoginPage() {
                   minWidth={220}
                   stableHeight={50}
                   debugId="login.error.activate-membership"
-                  style={secondaryBtn()}
+                  style={supportBtn()}
                 >
                   Activate membership
                 </SecondaryButton>
@@ -838,14 +861,10 @@ export default function LoginPage() {
                   }}
                 >
                   <span
-                    style={{
-                      color: "#F3D06A",
-                      fontSize: 20,
-                      textAlign: "center",
-                    }}
+                    style={inputIconBadge()}
                     aria-hidden="true"
                   >
-                    👤
+                    ID
                   </span>
                   <input
                     value={email}
@@ -890,14 +909,10 @@ export default function LoginPage() {
                   }}
                 >
                   <span
-                    style={{
-                      color: "#F3D06A",
-                      fontSize: 19,
-                      textAlign: "center",
-                    }}
+                    style={inputIconBadge()}
                     aria-hidden="true"
                   >
-                    🔒
+                    PW
                   </span>
                   <input
                     type="password"
@@ -942,10 +957,9 @@ export default function LoginPage() {
               <SecondaryButton
                 onClick={openActivationRoute}
                 disabled={busy}
-                fullWidth
                 stableHeight={50}
                 debugId="login.activate-approved"
-                style={secondaryBtn()}
+                style={supportBtn()}
               >
                 Already approved? Activate membership
               </SecondaryButton>
@@ -979,11 +993,13 @@ export default function LoginPage() {
                 background: "rgba(8,25,43,0.58)",
                 border: "1px solid rgba(243,208,106,0.28)",
                 color: "#F3D06A",
-                fontSize: isCompact ? 22 : 25,
+                fontSize: isCompact ? 12 : 13,
+                fontWeight: 1000,
+                letterSpacing: 0.6,
               }}
               aria-hidden="true"
             >
-              🔒
+              SEC
             </div>
             <div style={{ display: "grid", gap: 6 }}>
               <div
@@ -1004,7 +1020,7 @@ export default function LoginPage() {
                   lineHeight: 1.45,
                 }}
               >
-                Secure sign-in · Trusted access
+                Secure sign-in / Trusted access
               </div>
             </div>
           </div>
@@ -1012,15 +1028,15 @@ export default function LoginPage() {
           <SecondaryButton
             onClick={openCreateRoute}
             disabled={busy}
-            fullWidth
             stableHeight={50}
             debugId="login.start-community"
             style={{
-              ...secondaryBtn(),
+              ...supportBtn(),
               color: "#F8FBFF",
               border: "1px solid rgba(220,231,243,0.28)",
               background:
                 "linear-gradient(180deg, rgba(255,255,255,0.075) 0%, rgba(255,255,255,0.035) 100%)",
+              justifySelf: "center",
             }}
           >
             Start a new community

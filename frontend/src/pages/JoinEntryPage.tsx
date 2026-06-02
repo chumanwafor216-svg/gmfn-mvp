@@ -149,6 +149,29 @@ function badge(primary = false): React.CSSProperties {
   };
 }
 
+function entryChoiceActionStyle(kind: "primary" | "secondary"): React.CSSProperties {
+  const primary = kind === "primary";
+  return {
+    width: "100%",
+    minHeight: 52,
+    borderRadius: 16,
+    minWidth: 0,
+    padding: "10px 14px",
+    fontSize: 14,
+    fontWeight: 1000,
+    border: primary
+      ? "1px solid rgba(28,76,126,0.28)"
+      : "1px solid rgba(28,76,126,0.18)",
+    background: primary
+      ? "linear-gradient(180deg, #0B2D4A 0%, #08233A 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,255,0.98) 100%)",
+    color: primary ? "#FFFFFF" : "#123055",
+    boxShadow: primary
+      ? "0 14px 26px rgba(8,35,58,0.18), inset 0 1px 0 rgba(255,255,255,0.14)"
+      : "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+  };
+}
+
 function noticeStyle(kind: "success" | "error" | "info"): React.CSSProperties {
   if (kind === "success") {
     return {
@@ -1758,7 +1781,11 @@ export default function JoinEntryPage() {
                     debugId="join-entry.existing-identity"
                     busy={busy}
                     busyLabel="Sending request..."
-                    style={{ width: "min(100%, 68%)" }}
+                    stableHeight={54}
+                    style={{
+                      ...entryChoiceActionStyle("primary"),
+                      width: "min(100%, 360px)",
+                    }}
                   >
                     Join with existing GSN ID
                   </PrimaryButton>
@@ -1786,7 +1813,7 @@ export default function JoinEntryPage() {
                   flexWrap: "wrap",
                 }}
               >
-                <div>
+                <div style={{ flex: "1 1 280px", minWidth: 0 }}>
                   <div style={{ ...labelText(), marginBottom: 4 }}>
                     Choose how you are joining
                   </div>
@@ -1799,16 +1826,21 @@ export default function JoinEntryPage() {
 
                 <div
                   style={{
-                    display: "flex",
+                    display: "grid",
+                    gridTemplateColumns: isCompact
+                      ? "1fr"
+                      : "repeat(2, minmax(170px, 1fr))",
                     gap: 10,
-                    flexWrap: "wrap",
-                    justifyContent: isCompact ? "stretch" : "flex-end",
+                    flex: "1 1 360px",
+                    maxWidth: isCompact ? "100%" : 430,
+                    width: isCompact ? "100%" : undefined,
                   }}
                 >
                   <StableCtaLink
                     to={ctaPath(signInConflictCta)}
                     kind="secondary"
                     debugId="join-entry.already-have-gmfn"
+                    style={entryChoiceActionStyle("secondary")}
                   >
                     I already have a GSN ID
                   </StableCtaLink>
@@ -1822,6 +1854,7 @@ export default function JoinEntryPage() {
                     }}
                     debugId="join-entry.toggle-new-member-request-form"
                     style={{
+                      ...entryChoiceActionStyle("secondary"),
                       opacity: canOpenForm ? 1 : 0.62,
                       cursor: canOpenForm ? "pointer" : "not-allowed",
                     }}
@@ -1887,6 +1920,10 @@ export default function JoinEntryPage() {
                       to={ctaPath(signInConflictCta)}
                       kind="secondary"
                       debugId={signInConflictCta.debugId}
+                      style={{
+                        ...entryChoiceActionStyle("secondary"),
+                        width: "min(100%, 320px)",
+                      }}
                     >
                       Sign in to continue
                     </StableCtaLink>
@@ -1932,6 +1969,10 @@ export default function JoinEntryPage() {
                       to={ctaPath(alreadyMemberCta)}
                       kind="secondary"
                       debugId={alreadyMemberCta.debugId}
+                      style={{
+                        ...entryChoiceActionStyle("secondary"),
+                        width: "min(100%, 320px)",
+                      }}
                     >
                       Open this community
                     </StableCtaLink>
@@ -1940,6 +1981,10 @@ export default function JoinEntryPage() {
                       to={ctaPath(approvalStatusCta)}
                       kind="secondary"
                       debugId={approvalStatusCta.debugId}
+                      style={{
+                        ...entryChoiceActionStyle("secondary"),
+                        width: "min(100%, 320px)",
+                      }}
                     >
                       Check approval status
                     </StableCtaLink>
@@ -1948,6 +1993,10 @@ export default function JoinEntryPage() {
                       to={ctaPath(pendingCta)}
                       kind="secondary"
                       debugId={pendingCta.debugId}
+                      style={{
+                        ...entryChoiceActionStyle("secondary"),
+                        width: "min(100%, 320px)",
+                      }}
                     >
                       Open pending page
                     </StableCtaLink>
@@ -2096,7 +2145,11 @@ export default function JoinEntryPage() {
                   debugId="join-entry.submit-new-request"
                   busy={busy}
                   busyLabel="Submitting Request..."
-                  style={{ width: isCompact ? "100%" : "min(100%, 68%)" }}
+                  stableHeight={56}
+                  style={{
+                    ...entryChoiceActionStyle("primary"),
+                    width: isCompact ? "100%" : "min(100%, 420px)",
+                  }}
                 >
                   Submit Join Request
                 </PrimaryButton>
@@ -2118,6 +2171,10 @@ export default function JoinEntryPage() {
             to={ctaPath(welcomeCta)}
             kind="secondary"
             debugId={welcomeCta.debugId}
+            style={{
+              ...entryChoiceActionStyle("secondary"),
+              width: "min(100%, 260px)",
+            }}
           >
             Back to Welcome
           </StableCtaLink>

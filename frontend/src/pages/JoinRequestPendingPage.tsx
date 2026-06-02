@@ -130,22 +130,39 @@ function iconBubble(size = 46): React.CSSProperties {
 function actionStyle(kind: "primary" | "secondary"): React.CSSProperties {
   const primary = kind === "primary";
   return {
-    minHeight: 58,
+    minHeight: 54,
     minWidth: 0,
     width: "100%",
-    borderRadius: 18,
+    borderRadius: 16,
     border: primary
       ? "1px solid rgba(172,204,255,0.58)"
-      : "1px solid rgba(255,255,255,0.78)",
+      : "1px solid rgba(214,228,242,0.42)",
     background: primary
       ? "linear-gradient(180deg, #2E74FF 0%, #1A49DC 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
-    color: primary ? "#FFFFFF" : "#10253B",
+      : "linear-gradient(180deg, rgba(247,250,255,0.98) 0%, rgba(229,237,249,0.96) 100%)",
+    color: primary ? "#FFFFFF" : "#11263F",
     boxShadow: primary
-      ? "0 18px 34px rgba(30,86,220,0.32), inset 0 1px 0 rgba(255,255,255,0.22)"
-      : "0 18px 34px rgba(0,8,18,0.20), inset 0 1px 0 rgba(255,255,255,0.86)",
+      ? "0 14px 26px rgba(30,86,220,0.28), inset 0 1px 0 rgba(255,255,255,0.22)"
+      : "0 12px 22px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.86)",
     fontWeight: 1000,
     fontSize: 15,
+  };
+}
+
+function helpfulLinkStyle(): React.CSSProperties {
+  return {
+    minHeight: 48,
+    minWidth: 0,
+    width: "100%",
+    borderRadius: 999,
+    border: "1px solid rgba(142,184,238,0.24)",
+    background:
+      "linear-gradient(180deg, rgba(13,43,74,0.84) 0%, rgba(9,31,56,0.84) 100%)",
+    color: "#DCEBFF",
+    boxShadow:
+      "0 10px 20px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
+    fontWeight: 900,
+    fontSize: 14,
   };
 }
 
@@ -574,18 +591,21 @@ export default function JoinRequestPendingPage() {
                 key={row.label}
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "54px minmax(0, 1fr) minmax(0, 1.15fr)",
-                  gap: 12,
+                  gridTemplateColumns: isCompact
+                    ? "44px minmax(0, 1fr)"
+                    : "54px minmax(0, 1fr) minmax(0, 1.15fr)",
+                  gap: isCompact ? "8px 12px" : 12,
                   alignItems: "center",
-                  minHeight: 74,
+                  minHeight: isCompact ? 68 : 74,
+                  padding: isCompact ? "8px 0" : 0,
                   borderBottom:
                     index === factRows.length - 1
                       ? "none"
                       : "1px solid rgba(123,161,204,0.14)",
                 }}
               >
-                <span style={iconBubble(46)}>{row.icon}</span>
-                <span style={{ ...mutedText(18), color: "#DCE7F4", fontWeight: 780 }}>
+                <span style={iconBubble(isCompact ? 40 : 46)}>{row.icon}</span>
+                <span style={{ ...mutedText(isCompact ? 16 : 18), color: "#DCE7F4", fontWeight: 780 }}>
                   {row.label}
                 </span>
                 <span
@@ -593,7 +613,8 @@ export default function JoinRequestPendingPage() {
                     color: "#FFFFFF",
                     fontSize: isCompact ? 16 : 18,
                     fontWeight: 1000,
-                    textAlign: "right",
+                    textAlign: isCompact ? "left" : "right",
+                    gridColumn: isCompact ? "2 / -1" : undefined,
                     overflowWrap: "anywhere",
                   }}
                 >
@@ -829,9 +850,11 @@ export default function JoinRequestPendingPage() {
             align="stretch"
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 14,
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.04fr) minmax(0, 0.96fr)",
+              gap: isCompact ? 10 : 12,
               minHeight: 0,
+              maxWidth: 680,
+              margin: "0 auto",
             }}
           >
             <StableCtaLink
@@ -867,7 +890,7 @@ export default function JoinRequestPendingPage() {
               gridTemplateColumns: isCompact
                 ? "1fr"
                 : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
+              gap: isCompact ? 9 : 10,
               minHeight: 0,
             }}
           >
@@ -875,7 +898,7 @@ export default function JoinRequestPendingPage() {
               to={ctaPath(guideCta)}
               kind="secondary"
               debugId={guideCta.debugId}
-              style={{ ...actionStyle("secondary"), minHeight: 52, fontSize: 14 }}
+              style={helpfulLinkStyle()}
             >
               Full GSN guide
             </StableCtaLink>
@@ -883,7 +906,7 @@ export default function JoinRequestPendingPage() {
               to={ctaPath(guideCta)}
               kind="secondary"
               debugId="join-pending.focus-guide"
-              style={{ ...actionStyle("secondary"), minHeight: 52, fontSize: 14 }}
+              style={helpfulLinkStyle()}
             >
               Focus Commitments
             </StableCtaLink>
@@ -891,7 +914,7 @@ export default function JoinRequestPendingPage() {
               to={ctaPath(welcomeCta)}
               kind="secondary"
               debugId={welcomeCta.debugId}
-              style={{ ...actionStyle("secondary"), minHeight: 52, fontSize: 14 }}
+              style={helpfulLinkStyle()}
             >
               Welcome
             </StableCtaLink>
