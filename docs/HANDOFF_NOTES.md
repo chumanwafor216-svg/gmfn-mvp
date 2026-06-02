@@ -1,3 +1,40 @@
+### Member activation deterministic notices (2026-06-02)
+
+- Route/screens affected:
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner request:
+  - resolve user confusion around GSN ID vs request ID;
+  - stop raw JSON activation errors and persistent warning/error blocks from
+    becoming part of the page;
+  - make the already-activated path deterministic by moving the user to sign
+    in instead of leaving them stuck on activation.
+- Updated frontend:
+  - parses structured activation errors such as `account_already_activated`
+    before rendering them, so users no longer see backend JSON blobs;
+  - shows temporary top-of-screen notices for validation, activation failure,
+    success, and already-active states instead of permanent inline pop-up
+    blocks;
+  - routes `account_already_activated` and `next_action: login` responses to
+    the backend-provided `login_path`, falling back to `/login?force=1`;
+  - added plain explanations that GSN ID is the permanent member identity and
+    request ID is only the approval record number;
+  - removed emoji-style explanation language from the affected guidance.
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this is a frontend response/route handling fix only; backend membership
+    uniqueness and activation rules were not changed;
+  - live verification still depends on deployment serving the new
+    `MemberActivationPage` asset.
+
 ### Member activation button polish (2026-06-02)
 
 - Route/screens affected:

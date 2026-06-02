@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   CardActionRow,
@@ -20,6 +20,87 @@ function safeStr(x: any): string {
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
+type ActivationNoticeTone = "success" | "error" | "warning" | "info";
+
+type ActivationNotice = {
+  tone: ActivationNoticeTone;
+  title: string;
+  message: string;
+  actionLabel?: string;
+  actionPath?: string;
+};
+
+function structuredErrorDetail(err: any): Record<string, any> | null {
+  const raw = safeStr(err?.message || err);
+  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function loginPathFromDetail(detail: Record<string, any> | null): string {
+  const rawPath = safeStr(detail?.login_path);
+  if (rawPath.startsWith("/")) return rawPath;
+  return "/login?force=1";
+}
+
+function friendlyActivationError(err: any): {
+  notice: ActivationNotice;
+  routePath?: string;
+  routeDelayMs?: number;
+} {
+  const detail = structuredErrorDetail(err);
+  const code = safeStr(detail?.code).toLowerCase();
+  const nextAction = safeStr(detail?.next_action).toLowerCase();
+  const rawMessage = safeStr(detail?.message || err?.message || err);
+
+  if (
+    code === "account_already_activated" ||
+    nextAction === "login" ||
+    rawMessage.toLowerCase().includes("already activated")
+  ) {
+    const routePath = loginPathFromDetail(detail);
+    return {
+      notice: {
+        tone: "info",
+        title: "This GSN ID is already active",
+        message:
+          "Your membership is already activated. Sign in with the password for this account. If you do not remember it, use account recovery from the sign-in page.",
+        actionLabel: "Open sign in",
+        actionPath: routePath,
+      },
+      routePath,
+      routeDelayMs: 1500,
+    };
+  }
+
+  if (code === "account_activation_pending" || nextAction === "activate_membership") {
+    return {
+      notice: {
+        tone: "warning",
+        title: "Activation is still pending",
+        message:
+          "This membership is not ready for password setup yet. Return to approval status and use the latest GSN ID or request ID shown there.",
+      },
+    };
+  }
+
+  return {
+    notice: {
+      tone: "error",
+      title: "Activation could not finish",
+      message:
+        rawMessage && !rawMessage.startsWith("{")
+          ? rawMessage
+          : "Check that the GSN ID or request ID belongs to the approved membership, then try again.",
+    },
+  };
 }
 
 function pageShell(): React.CSSProperties {
@@ -375,26 +456,67 @@ function primaryActionStyle(isCompact = false): React.CSSProperties {
   };
 }
 
-function noticeStyle(kind: "success" | "error" | "warning"): React.CSSProperties {
+function noticeToastStyle(
+  kind: ActivationNoticeTone,
+  isCompact = false
+): React.CSSProperties {
   const success = kind === "success";
   const error = kind === "error";
+  const warning = kind === "warning";
   return {
+    position: "fixed",
+    zIndex: 40,
+    top: "max(14px, env(safe-area-inset-top))",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: isCompact ? "min(calc(100% - 24px), 376px)" : "min(calc(100% - 32px), 460px)",
     borderRadius: 18,
     background: success
       ? "rgba(18,102,77,0.84)"
       : error
         ? "rgba(117,30,48,0.86)"
-        : "rgba(106,78,18,0.86)",
+        : warning
+          ? "rgba(106,78,18,0.90)"
+          : "rgba(8,38,69,0.94)",
     border: success
       ? "1px solid rgba(167,243,208,0.42)"
       : error
         ? "1px solid rgba(254,202,202,0.38)"
-        : "1px solid rgba(253,230,138,0.42)",
+        : warning
+          ? "1px solid rgba(253,230,138,0.42)"
+          : "1px solid rgba(147,197,253,0.42)",
     color: "#F8FBFF",
-    padding: 16,
-    lineHeight: 1.65,
+    padding: isCompact ? "14px 16px" : "16px 18px",
+    lineHeight: 1.5,
     fontSize: 14,
-    marginBottom: 18,
+    boxSizing: "border-box",
+    boxShadow:
+      "0 20px 46px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.12)",
+    backdropFilter: "blur(10px)",
+  };
+}
+
+function identityGuideStyle(): React.CSSProperties {
+  return {
+    display: "grid",
+    gap: 10,
+    margin: "4px 0 26px",
+    padding: "16px 18px",
+    borderRadius: 20,
+    border: "1px solid rgba(242,199,102,0.18)",
+    background: "rgba(7,28,50,0.62)",
+    color: "#C8D8EA",
+    lineHeight: 1.55,
+    fontSize: 15,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+  };
+}
+
+function fieldHintStyle(): React.CSSProperties {
+  return {
+    color: "#AFC3DA",
+    fontSize: 14,
+    lineHeight: 1.45,
   };
 }
 
@@ -454,12 +576,14 @@ export default function MemberActivationPage() {
   });
 
   const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const [notice, setNotice] = useState<ActivationNotice | null>(null);
+  const [, setSuccess] = useState("");
   const [activated, setActivated] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const noticeTimerRef = useRef<number | null>(null);
+  const routeTimerRef = useRef<number | null>(null);
 
   const requestReady = useMemo(() => {
     return {
@@ -473,24 +597,92 @@ export default function MemberActivationPage() {
   const hasGsnId = Boolean(requestReady.gmfn_id);
   const hasRequestId = Boolean(requestReady.request_id);
 
+  useEffect(() => {
+    return () => {
+      if (noticeTimerRef.current != null) window.clearTimeout(noticeTimerRef.current);
+      if (routeTimerRef.current != null) window.clearTimeout(routeTimerRef.current);
+    };
+  }, []);
+
+  function clearScheduledActions() {
+    if (typeof window === "undefined") return;
+    if (noticeTimerRef.current != null) window.clearTimeout(noticeTimerRef.current);
+    if (routeTimerRef.current != null) window.clearTimeout(routeTimerRef.current);
+    noticeTimerRef.current = null;
+    routeTimerRef.current = null;
+  }
+
+  function showNotice(
+    nextNotice: ActivationNotice,
+    options?: { dismissMs?: number; routePath?: string; routeDelayMs?: number }
+  ) {
+    clearScheduledActions();
+    setNotice(nextNotice);
+
+    if (typeof window === "undefined") return;
+
+    if (options?.dismissMs) {
+      noticeTimerRef.current = window.setTimeout(() => {
+        setNotice(null);
+        noticeTimerRef.current = null;
+      }, options.dismissMs);
+    }
+
+    if (options?.routePath) {
+      routeTimerRef.current = window.setTimeout(() => {
+        navigate(options.routePath as string, {
+          replace: true,
+          state: {
+            gmfn_id: requestReady.gmfn_id,
+            request_id: requestReady.request_id,
+            from: "member-activation",
+          },
+        });
+      }, options.routeDelayMs ?? 1200);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    setError("");
+    clearScheduledActions();
+    setNotice(null);
     setSuccess("");
 
     if (!requestReady.gmfn_id && !requestReady.request_id) {
-      setError("GSN ID or request ID is required.");
+      showNotice(
+        {
+          tone: "warning",
+          title: "Add one approved number",
+          message:
+            "Enter either the GSN ID shown after approval or the request ID from approval status. You do not need both if one of them is already filled in.",
+        },
+        { dismissMs: 4200 }
+      );
       return;
     }
 
     if (!requestReady.password || requestReady.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      showNotice(
+        {
+          tone: "warning",
+          title: "Create a stronger password",
+          message: "Use at least 6 characters, then confirm the same password below.",
+        },
+        { dismissMs: 4200 }
+      );
       return;
     }
 
     if (requestReady.password !== requestReady.confirm_password) {
-      setError("Passwords do not match.");
+      showNotice(
+        {
+          tone: "warning",
+          title: "Passwords do not match",
+          message: "Re-enter the same password in both password fields.",
+        },
+        { dismissMs: 4200 }
+      );
       return;
     }
 
@@ -518,13 +710,26 @@ export default function MemberActivationPage() {
       setSuccess(
         "Membership activated successfully. Build your First Circle next so your community growth starts with real trusted people."
       );
+      showNotice(
+        {
+          tone: "success",
+          title: "Activation complete",
+          message:
+            "Membership activated successfully. Build your First Circle next so your community growth starts with real trusted people.",
+        }
+      );
       if (typeof window !== "undefined") {
-        window.setTimeout(() => {
+        routeTimerRef.current = window.setTimeout(() => {
           navigate(routes.buildFirstCircle, { replace: true });
         }, 1200);
       }
     } catch (err: any) {
-      setError(err?.message || "Activation failed.");
+      const outcome = friendlyActivationError(err);
+      showNotice(outcome.notice, {
+        dismissMs: outcome.routePath ? undefined : 5200,
+        routePath: outcome.routePath,
+        routeDelayMs: outcome.routeDelayMs,
+      });
     } finally {
       setBusy(false);
     }
@@ -532,6 +737,37 @@ export default function MemberActivationPage() {
 
   return (
     <div style={pageShell()}>
+      {notice ? (
+        <div
+          style={noticeToastStyle(notice.tone, isCompact)}
+          role={notice.tone === "error" || notice.tone === "warning" ? "alert" : "status"}
+          aria-live={notice.tone === "error" || notice.tone === "warning" ? "assertive" : "polite"}
+        >
+          <div style={{ fontWeight: 1000, fontSize: 15, marginBottom: 4 }}>
+            {notice.title}
+          </div>
+          <div>{notice.message}</div>
+          {notice.actionPath ? (
+            <StableCtaLink
+              to={notice.actionPath}
+              kind="secondary"
+              stableHeight={40}
+              debugId="member-activation.notice-action"
+              style={{
+                marginTop: 12,
+                minHeight: 40,
+                height: 40,
+                borderRadius: 999,
+                background: "rgba(255,255,255,0.94)",
+                color: "#08233A",
+                fontWeight: 1000,
+              }}
+            >
+              {notice.actionLabel || "Open next step"}
+            </StableCtaLink>
+          ) : null}
+        </div>
+      ) : null}
       <div style={screenWrap(isCompact)}>
         <div style={topRailCard(isCompact)}>
           <div
@@ -683,14 +919,6 @@ export default function MemberActivationPage() {
               </div>
             ) : null}
 
-            {error ? <div style={noticeStyle("error")}>{error}</div> : null}
-            {success ? <div style={noticeStyle("success")}>{success}</div> : null}
-            {!initialGmfnId && !initialRequestId && !success ? (
-              <div style={noticeStyle("warning")}>
-                If you have been approved but do not yet have your GSN ID or request ID in hand, return to the approval path and check the latest status first.
-              </div>
-            ) : null}
-
             <div style={{ ...eyebrow(), marginBottom: 18 }}>Member Activation</div>
             <h1
               style={{
@@ -738,6 +966,15 @@ export default function MemberActivationPage() {
               </div>
             )}
 
+            <div style={identityGuideStyle()}>
+              <div>
+                <strong style={{ color: "#F4D37C" }}>GSN ID</strong> is your permanent member identity. Use it when approval has already issued one.
+              </div>
+              <div>
+                <strong style={{ color: "#F4D37C" }}>Request ID</strong> is only the approval record number. Use it if this page does not already have your GSN ID.
+              </div>
+            </div>
+
             <div style={{ display: "grid", gap: 24 }}>
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-gsn-id">
@@ -754,6 +991,9 @@ export default function MemberActivationPage() {
                     style={inputStyle(false)}
                   />
                   {hasGsnId ? <span style={fieldCheckStyle()}>OK</span> : null}
+                </div>
+                <div style={fieldHintStyle()}>
+                  Keep this as the approved GSN ID. If your account is already active, this page will move you to sign in.
                 </div>
               </div>
 
@@ -773,6 +1013,9 @@ export default function MemberActivationPage() {
                     readOnly={Boolean(initialRequestId)}
                   />
                   {hasRequestId ? <span style={fieldCheckStyle()}>OK</span> : null}
+                </div>
+                <div style={fieldHintStyle()}>
+                  This can stay blank when the GSN ID is already filled. It is mainly for finding the approval before a GSN ID is issued.
                 </div>
               </div>
 
@@ -843,7 +1086,7 @@ export default function MemberActivationPage() {
               <div style={infoRowStyle()}>
                 <span style={infoIconStyle("info")}>i</span>
                 <span style={{ color: "#DCE7F4", fontSize: 21, lineHeight: 1.35 }}>
-                  Use the approved GSN ID and request ID linked to your membership.
+                  Use the GSN ID when it is present. Use the request ID only when the GSN ID is not yet available.
                 </span>
                 <span style={ghostIconStyle()}>ID</span>
               </div>
