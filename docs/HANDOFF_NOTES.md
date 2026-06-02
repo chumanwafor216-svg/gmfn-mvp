@@ -1,5 +1,14 @@
 ### GSN home-screen install / PWA entry support (2026-06-02)
 
+- Follow-up iPhone parity:
+  - Public My GSN and I now detects iPhone/iPad and forces the public
+    capability guide into one readable column so cards do not crush into two
+    narrow columns inside iPhone/WhatsApp;
+  - the public guide shows the GSN phone-screen helper only for iOS, leaving the
+    existing Android guide layout untouched;
+  - `GsnInstallPrompt` now gives iPhone-specific manual steps: open in Safari
+    first when coming from WhatsApp, tap Share, then Add to Home Screen.
+
 - Follow-up app icon authority polish:
   - removed the weak internal lettering/detail impression from the phone icon
     by keeping the shield face clean;

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NextActionGuide, {
   type NextActionGuideItem,
 } from "../components/NextActionGuide";
+import GsnInstallPrompt from "../components/GsnInstallPrompt";
 import PageTopNav from "../components/PageTopNav";
 import {
   PrimaryButton,
@@ -28,6 +29,7 @@ import {
   GMFN_CAPABILITY_COUNT,
   GMFN_CAPABILITIES,
 } from "../lib/gmfnCapabilities";
+import { isIosManualInstallTarget } from "../lib/pwaInstall";
 import * as api from "../lib/api";
 
 type SettingsState = {
@@ -366,6 +368,15 @@ function publicCapabilityCard(category: string): React.CSSProperties {
   };
 }
 
+function publicCapabilityCardIos(category: string): React.CSSProperties {
+  return {
+    ...publicCapabilityCard(category),
+    minHeight: "auto",
+    padding: "14px 14px 13px",
+    borderRadius: 16,
+  };
+}
+
 function publicCapabilityNumber(): React.CSSProperties {
   return {
     position: "absolute",
@@ -388,6 +399,18 @@ function publicCapabilityNumber(): React.CSSProperties {
   };
 }
 
+function publicCapabilityNumberIos(): React.CSSProperties {
+  return {
+    ...publicCapabilityNumber(),
+    top: 12,
+    right: 12,
+    width: 32,
+    height: 28,
+    borderRadius: 10,
+    fontSize: 12,
+  };
+}
+
 function publicCapabilityIcon(): React.CSSProperties {
   return {
     display: "inline-flex",
@@ -404,6 +427,15 @@ function publicCapabilityIcon(): React.CSSProperties {
     color: "#12314D",
     fontSize: 27,
     lineHeight: 1,
+  };
+}
+
+function publicCapabilityIconIos(): React.CSSProperties {
+  return {
+    ...publicCapabilityIcon(),
+    width: 48,
+    height: 48,
+    borderRadius: 15,
   };
 }
 
@@ -536,11 +568,15 @@ function publicCloseButton(primary = false): React.CSSProperties {
 
 function PublicCapabilitiesGuidePage({
   compact,
+  ios,
   onClose,
 }: {
   compact: boolean;
+  ios: boolean;
   onClose: () => void;
 }) {
+  const useIosSingleColumn = compact && ios;
+
   return (
     <main style={publicGuideShell()}>
       <div style={publicGuideFrame()}>
@@ -588,7 +624,7 @@ function PublicCapabilitiesGuidePage({
             style={{
               margin: "10px 0 0",
               color: "#F8FBFF",
-              fontSize: compact ? 30 : 42,
+              fontSize: useIosSingleColumn ? 28 : compact ? 30 : 42,
               lineHeight: 1.05,
               fontWeight: 1000,
               letterSpacing: 0,
@@ -601,8 +637,8 @@ function PublicCapabilitiesGuidePage({
             style={{
               marginTop: 10,
               color: "#D6E3F0",
-              fontSize: 14,
-              lineHeight: 1.55,
+              fontSize: useIosSingleColumn ? 13.5 : 14,
+              lineHeight: useIosSingleColumn ? 1.48 : 1.55,
               maxWidth: 760,
             }}
           >
@@ -611,52 +647,86 @@ function PublicCapabilitiesGuidePage({
           </div>
         </section>
 
+        {ios ? (
+          <GsnInstallPrompt
+            tone="dark"
+            compact={compact}
+            surface="my-gsn-and-i-ios"
+          />
+        ) : null}
+
         <section
           style={{
             display: "grid",
-            gridTemplateColumns: compact
+            gridTemplateColumns: useIosSingleColumn
+              ? "1fr"
+              : compact
               ? "repeat(auto-fit, minmax(158px, 1fr))"
               : "repeat(4, minmax(0, 1fr))",
-            gap: 10,
+            gap: useIosSingleColumn ? 9 : 10,
           }}
         >
           {GMFN_CAPABILITIES.map((item) => {
             const line = publicCapabilityLine(item);
 
             return (
-              <article key={item.id} style={publicCapabilityCard(item.category)}>
-                <span style={publicCapabilityNumber()}>{item.id}</span>
+              <article
+                key={item.id}
+                style={
+                  useIosSingleColumn
+                    ? publicCapabilityCardIos(item.category)
+                    : publicCapabilityCard(item.category)
+                }
+              >
+                <span
+                  style={
+                    useIosSingleColumn
+                      ? publicCapabilityNumberIos()
+                      : publicCapabilityNumber()
+                  }
+                >
+                  {item.id}
+                </span>
 
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "58px 1fr",
-                    gap: 13,
+                    gridTemplateColumns: useIosSingleColumn
+                      ? "48px minmax(0, 1fr)"
+                      : "58px 1fr",
+                    gap: useIosSingleColumn ? 10 : 13,
                     alignItems: "start",
-                    paddingRight: 34,
+                    paddingRight: useIosSingleColumn ? 28 : 34,
+                    minWidth: 0,
                   }}
                 >
                   <span
-                    style={publicCapabilityIcon()}
+                    style={
+                      useIosSingleColumn
+                        ? publicCapabilityIconIos()
+                        : publicCapabilityIcon()
+                    }
                     aria-hidden="true"
                   >
                     <TrustPaperIcon
                       name={capabilityIconName(item)}
-                      size={27}
+                      size={useIosSingleColumn ? 23 : 27}
                       strokeWidth={2.35}
                     />
                   </span>
 
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <h2
                       style={{
                         margin: 0,
                         color: "#071D33",
-                        fontSize: 17,
-                        lineHeight: 1.18,
+                        fontSize: useIosSingleColumn ? 16 : 17,
+                        lineHeight: useIosSingleColumn ? 1.14 : 1.18,
                         fontWeight: 1000,
                         letterSpacing: 0,
                         paddingTop: 2,
+                        overflowWrap: "normal",
+                        wordBreak: "normal",
                       }}
                     >
                       {item.title}
@@ -666,9 +736,11 @@ function PublicCapabilitiesGuidePage({
                       style={{
                         marginTop: 8,
                         color: "#32465C",
-                        fontSize: 13,
-                        lineHeight: 1.42,
+                        fontSize: useIosSingleColumn ? 12.5 : 13,
+                        lineHeight: useIosSingleColumn ? 1.36 : 1.42,
                         fontWeight: 700,
+                        overflowWrap: "normal",
+                        wordBreak: "normal",
                       }}
                     >
                       {line}
@@ -680,6 +752,7 @@ function PublicCapabilitiesGuidePage({
                         display: "flex",
                         gap: 6,
                         flexWrap: "wrap",
+                        maxWidth: "100%",
                       }}
                     >
                       <span style={publicKeyChip("category")}>
@@ -810,6 +883,9 @@ export default function MyGMFNAndIPage() {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
   });
+  const [isIosTarget, setIsIosTarget] = useState<boolean>(() =>
+    isIosManualInstallTarget()
+  );
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -837,6 +913,7 @@ export default function MyGMFNAndIPage() {
 
     function handleResize() {
       setIsCompact(window.innerWidth <= 980);
+      setIsIosTarget(isIosManualInstallTarget());
     }
 
     handleResize();
@@ -1081,6 +1158,7 @@ export default function MyGMFNAndIPage() {
     return (
       <PublicCapabilitiesGuidePage
         compact={isCompact}
+        ios={isIosTarget}
         onClose={closePublicGuide}
       />
     );

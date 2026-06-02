@@ -153,8 +153,8 @@ assertContains(
 
 assertContains(
   "src/components/GsnInstallPrompt.tsx",
-  /promptGsnInstall[\s\S]*?Add to Home Screen[\s\S]*?Add to Home screen or Install app[\s\S]*?Add GSN to phone screen[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon\.svg/,
-  "The GSN install prompt must offer one simple setup action plus truthful manual phone instructions."
+  /promptGsnInstall[\s\S]*?open this page in Safari first[\s\S]*?Add to Home Screen[\s\S]*?Add to Home screen or Install app[\s\S]*?Show iPhone screen steps[\s\S]*?Add GSN to phone screen[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon\.svg/,
+  "The GSN install prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions."
 );
 
 assertWholeFileNotContains(
@@ -167,6 +167,24 @@ assertContains(
   "src/pages/WelcomePage.tsx",
   /import GsnInstallPrompt[\s\S]*?import \{ getAccessToken \}[\s\S]*?import \{ APP_ROUTES \}[\s\S]*?isSignedIn[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="welcome"[\s\S]*?Continue to my GSN/,
   "Welcome must expose the GSN phone-screen install prompt and a signed-in continue action for users arriving from public links."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /import GsnInstallPrompt[\s\S]*?import \{ isIosManualInstallTarget \}[\s\S]*?useIosSingleColumn[\s\S]*?gridTemplateColumns: useIosSingleColumn[\s\S]*?<PublicCapabilitiesGuidePage[\s\S]*?ios=\{isIosTarget\}/,
+  "Public My GSN and I must use a one-column iPhone guide layout without changing Android."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /const \[isIosTarget[\s\S]*?isIosManualInstallTarget\(\)[\s\S]*?setIsIosTarget\(isIosManualInstallTarget\(\)\)/,
+  "Public My GSN and I must refresh iPhone detection from the live browser target."
+);
+
+assertContains(
+  "src/pages/MyGMFNAndIPage.tsx",
+  /\{ios \? \([\s\S]*?<GsnInstallPrompt[\s\S]*?surface="my-gsn-and-i-ios"/,
+  "Public My GSN and I must expose iPhone-specific home-screen setup without changing Android."
 );
 
 assertContains(

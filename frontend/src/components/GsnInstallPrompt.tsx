@@ -100,9 +100,9 @@ function helperTextStyle(tone: InstallPromptTone, compact: boolean): React.CSSPr
 function manualSteps(isIos: boolean): string[] {
   if (isIos) {
     return [
+      "If you are inside WhatsApp, open this page in Safari first.",
       "Tap Share.",
       "Tap Add to Home Screen.",
-      "Tap Add.",
     ];
   }
 
@@ -154,7 +154,11 @@ export default function GsnInstallPrompt({
     const choice = await promptGsnInstall();
     if (!choice) {
       setManualOpen(true);
-      setMessage("Chrome may hide this in the menu. Follow these steps.");
+      setMessage(
+        isIos
+          ? "iPhone uses Safari's Share button for this. Follow these steps."
+          : "Chrome may hide this in the menu. Follow these steps."
+      );
       return;
     }
 
@@ -167,7 +171,11 @@ export default function GsnInstallPrompt({
     setMessage("Not added yet. Use these simple steps.");
   }
 
-  const label = state.promptReady ? "📱 Add GSN to phone screen" : "📱 Show 3 phone steps";
+  const label = isIos
+    ? "Show iPhone screen steps"
+    : state.promptReady
+    ? "📱 Add GSN to phone screen"
+    : "📱 Show 3 phone steps";
   const describedBy = `gsn-install-${surface.replace(/[^a-z0-9-]+/gi, "-")}`;
   const steps = manualSteps(isIos);
 
@@ -210,7 +218,9 @@ export default function GsnInstallPrompt({
             📱 Keep GSN nearby
           </div>
           <p id={describedBy} style={helperTextStyle(tone, compact)}>
-            Put a GSN icon on the phone screen so it does not get lost.
+            {isIos
+              ? "On iPhone, add GSN through Safari's Share button."
+              : "Put a GSN icon on the phone screen so it does not get lost."}
           </p>
         </div>
       </div>

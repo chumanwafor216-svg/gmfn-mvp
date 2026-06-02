@@ -88,6 +88,12 @@ Rules:
   and other entry surfaces where people commonly arrive from shared links.
 - The prompt must stay compact, must not replace the main page action, and must
   disappear when GSN is already running from a home-screen install.
+- On iPhone/iPad, do not promise the Android native install prompt. If the user
+  may be inside WhatsApp, explain the Safari path: open in Safari, tap Share,
+  then Add to Home Screen.
+- Public My GSN and I should use a one-column iPhone layout so capability cards
+  read one-by-one instead of compressing text into two narrow columns. This
+  iPhone correction must not change the existing Android compact grid.
 
 ## DashboardPage
 
