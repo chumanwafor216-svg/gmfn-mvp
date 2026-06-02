@@ -140,6 +140,12 @@ assertContains(
 );
 
 assertContains(
+  "server.mjs",
+  /\["\.webmanifest", "application\/manifest\+json; charset=utf-8"\]/,
+  "The frontend server must serve the PWA manifest with a browser-recognized manifest MIME type."
+);
+
+assertContains(
   "src/main.tsx",
   /import \{[\s\S]*?registerGsnServiceWorker,[\s\S]*?registerPwaInstallSupport,[\s\S]*?\} from "\.\/lib\/pwaInstall";[\s\S]*?installMobileTapGuard\(\);[\s\S]*?registerPwaInstallSupport\(\);[\s\S]*?registerGsnServiceWorker\(\);/,
   "App boot must register PWA install support and the service worker after the mobile tap guard."

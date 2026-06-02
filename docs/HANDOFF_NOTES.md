@@ -16,6 +16,8 @@
     `frontend/public/gsn-app-icon-512.png`;
   - added a conservative service worker at `frontend/public/sw.js`;
   - added shared install support in `frontend/src/lib/pwaInstall.ts`;
+  - updated `frontend/server.mjs` to serve `.webmanifest` as
+    `application/manifest+json`;
   - registered install support and the service worker at app boot;
   - added reusable `GsnInstallPrompt` on Welcome, Sign In, and Public Shop.
 - Important truth:
