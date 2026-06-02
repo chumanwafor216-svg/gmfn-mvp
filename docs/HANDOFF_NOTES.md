@@ -1,3 +1,28 @@
+### Shop info and spotlight control auto-collapse (2026-06-02)
+
+- Routes/screens affected:
+  - `/app/shop-assets`, public shop info control and product editor.
+  - `/app/shop-control`, Owner Shop Control details and Free Spotlight portal.
+- Frontend change:
+  - Public shop info remains available from the shop assets flow, but after a
+    successful save it collapses the signboard form and opens the next shop
+    work area.
+  - Product upload now closes the editor after a successful save and reveals
+    the posted shop list.
+  - Owner Shop Control details save now returns to overview after success
+    instead of keeping the details form open.
+  - Free Spotlight publish now shows success, then auto-closes the temporary
+    spotlight portal after a short pause so the user can continue other shop
+    operations.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now checks these successful-save
+    collapse contracts for Shop Assets, Owner Shop Control details, and Free
+    Spotlight publish.
+- Remaining truth:
+  - This preserves the two current frontend handle surfaces. It does not create
+    separate backend shop records per marketplace/community. True
+    per-community handles would require backend/data-model work.
+
 ### Shop info and product upload self-heal when shop record is missing (2026-06-02)
 
 - Route/screens affected:

@@ -603,6 +603,7 @@ export default function ShopControlPage() {
   const controlRevealFrameRef = useRef<number | null>(null);
   const controlRevealTargetRef = useRef("");
   const spotlightIdleTimerRef = useRef<number | null>(null);
+  const spotlightSuccessTimerRef = useRef<number | null>(null);
 
   const selectedClanId = Number(getSelectedClanId() || 0);
   const shopActionsLocked = Boolean(continuityReview.blocked);
@@ -945,6 +946,10 @@ export default function ShopControlPage() {
   useEffect(() => {
     return () => {
       cancelPendingControlReveal();
+      if (spotlightSuccessTimerRef.current !== null) {
+        window.clearTimeout(spotlightSuccessTimerRef.current);
+        spotlightSuccessTimerRef.current = null;
+      }
     };
   }, [cancelPendingControlReveal]);
 
@@ -1306,8 +1311,42 @@ export default function ShopControlPage() {
   function collapseSpotlightTools(event?: React.SyntheticEvent<HTMLElement>) {
     event?.stopPropagation();
 
+    if (spotlightIdleTimerRef.current !== null) {
+      window.clearTimeout(spotlightIdleTimerRef.current);
+      spotlightIdleTimerRef.current = null;
+    }
+    if (spotlightSuccessTimerRef.current !== null) {
+      window.clearTimeout(spotlightSuccessTimerRef.current);
+      spotlightSuccessTimerRef.current = null;
+    }
     setSpotlightOpen(false);
     setSpotlightFlowStep("upload");
+  }
+
+  function scheduleSpotlightSuccessCollapse() {
+    if (typeof window === "undefined") {
+      setSpotlightOpen(false);
+      setSpotlightFlowStep("upload");
+      return;
+    }
+
+    if (spotlightIdleTimerRef.current !== null) {
+      window.clearTimeout(spotlightIdleTimerRef.current);
+      spotlightIdleTimerRef.current = null;
+    }
+    if (spotlightSuccessTimerRef.current !== null) {
+      window.clearTimeout(spotlightSuccessTimerRef.current);
+    }
+
+    spotlightSuccessTimerRef.current = window.setTimeout(() => {
+      spotlightSuccessTimerRef.current = null;
+      setSpotlightOpen(false);
+      setSpotlightFlowStep("upload");
+      setSpotlightPublishFeedback({
+        tone: "success",
+        text: "Spotlight published. The spotlight portal closed so you can continue with other shop work.",
+      });
+    }, 1200);
   }
 
   function openExternalLink(url?: string | null, sectionId?: string) {
@@ -1452,7 +1491,8 @@ export default function ShopControlPage() {
       setWhatsApp(firstTruthy(updated?.whatsapp_number));
       setTelegramHandle(firstTruthy(updated?.telegram_handle));
       setImageUrlInput(firstTruthy(updated?.image_url));
-      showNotice("success", "Shop details saved.");
+      setActiveOwnerLayer("overview");
+      showNotice("success", "Shop details saved. Shop details control closed.");
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Shop details could not be saved.");
     } finally {
@@ -1826,6 +1866,7 @@ export default function ShopControlPage() {
         text: successMessage,
       });
       showNotice("success", successMessage);
+      scheduleSpotlightSuccessCollapse();
 
       try {
         await loadPage({

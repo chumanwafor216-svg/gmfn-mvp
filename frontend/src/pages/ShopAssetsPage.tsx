@@ -909,7 +909,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       setShopImageUrlInput(firstTruthy(updated?.image_url));
       setShopPreviewUrl(firstTruthy(updated?.image_url));
       setShopSelectedFile(null);
-      showNotice("success", "Shop information saved.");
+      setCollapsed((prev) => ({
+        ...prev,
+        signboard: true,
+        products: false,
+      }));
+      showNotice("success", "Shop information saved. Shop info control closed.");
     } catch (err: any) {
       showNotice("error", safeStr(err?.message) || "Shop signboard could not be saved.");
     } finally {
@@ -1186,6 +1191,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       }
       resetProductForm();
       setProductEditorOpen(false);
+      setCollapsed((prev) => ({
+        ...prev,
+        products: true,
+        posted: false,
+      }));
     } catch (err: any) {
       const message =
         safeStr(err?.message) ||

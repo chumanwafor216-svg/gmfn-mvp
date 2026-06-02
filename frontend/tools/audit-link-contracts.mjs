@@ -278,6 +278,30 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /async function saveShopSignboard[\s\S]*?setCollapsed\(\(prev\) => \(\{[\s\S]*?signboard: true,[\s\S]*?products: false,[\s\S]*?Shop information saved\. Shop info control closed\./,
+  "Shop Assets public shop info control must collapse after a successful save so the temporary form gives way."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /resetProductForm\(\);[\s\S]*?setProductEditorOpen\(false\);[\s\S]*?setCollapsed\(\(prev\) => \(\{[\s\S]*?products: true,[\s\S]*?posted: false/,
+  "Shop Assets product editor must close after a successful upload and reveal the posted shop list."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /async function saveShopDetails[\s\S]*?setActiveOwnerLayer\("overview"\);[\s\S]*?Shop details saved\. Shop details control closed\./,
+  "Owner Shop Control details must close after a successful save instead of remaining as a permanent form."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /function scheduleSpotlightSuccessCollapse\(\)[\s\S]*?setSpotlightOpen\(false\);[\s\S]*?Spotlight published\. The spotlight portal closed so you can continue with other shop work\.[\s\S]*?async function handleCreateSpotlight[\s\S]*?scheduleSpotlightSuccessCollapse\(\);/,
+  "Free Spotlight publish must auto-collapse the temporary spotlight portal after success."
+);
+
+assertContains(
   "src/App.tsx",
   /path="\/vault-control"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.VAULT_CONTROL\}/,
   "The top-level /vault-control alias must not fall through to Cover/Welcome; it must canonicalize to the authenticated Vault Control route."
