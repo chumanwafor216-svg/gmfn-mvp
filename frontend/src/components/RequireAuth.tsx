@@ -281,6 +281,11 @@ export default function RequireAuth({ children, requireRole }: Props) {
             setAccessToken(null);
             setSelectedClanId(null);
           }
+          if (!requireRole && isNetworkSessionError(meError)) {
+            setContinuityBlock(null);
+            finish(true);
+            return;
+          }
           finish(false);
           return;
         }

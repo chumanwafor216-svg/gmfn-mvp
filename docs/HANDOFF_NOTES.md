@@ -1,3 +1,26 @@
+### Accepted-login deterministic member handoff (2026-06-02)
+
+- Route/screens affected:
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - ordinary authenticated member routes through
+    `frontend/src/components/RequireAuth.tsx`.
+- Product-owner report:
+  - after sign-in was accepted, the page still stayed on `/login` with the
+    member-session fetch warning instead of moving the user into the network.
+- Updated frontend:
+  - if `/auth/login` returns a token and the browser stores it, but the
+    immediate `/auth/me` proof fails only with a network-shaped fetch error,
+    `/login` now opens the workspace instead of trapping the user on sign-in;
+  - ordinary member routes now tolerate the same network-shaped `/auth/me`
+    failure and allow the shell to open with the stored token;
+  - admin and command-centre routes still require confirmed `/auth/me` proof;
+  - real `401` / `403` session failures still clear the token and return to
+    sign-in.
+- Remaining truth:
+  - this is a practical pilot handoff fix, not a backend authentication bypass.
+    Backend API calls remain protected by the token. If later workspace data
+    calls fail, the remaining issue is live API reachability from that browser.
+
 ### Live sign-in session retry hardening (2026-06-02)
 
 - Route/screens affected:

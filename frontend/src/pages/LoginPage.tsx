@@ -437,12 +437,20 @@ export default function LoginPage() {
           })
         : null;
 
-      if (!me?.id) {
-        throw new Error(signInSessionError(sessionError, tokenStored));
-      }
-
       if (!tokenStored) {
         throw new Error(signInSessionError(null, false));
+      }
+
+      if (!me?.id) {
+        if (isNetworkSessionError(sessionError)) {
+          setMsg("Sign-in accepted. Opening your workspace...");
+          setTimeout(() => {
+            nav(publishRecoveryTarget() || redirectTarget, { replace: true });
+          }, 500);
+          return;
+        }
+
+        throw new Error(signInSessionError(sessionError, tokenStored));
       }
 
       setMsg("Sign-in successful. Opening your workspace...");
