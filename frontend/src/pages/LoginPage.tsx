@@ -254,6 +254,8 @@ export default function LoginPage() {
   const forceLogin = searchParams.get("force") === "1";
 
   const redirectTarget = useMemo(() => {
+    const inviteTarget = joinRedirectFromLoginSearch(searchParams);
+    if (inviteTarget) return inviteTarget;
     const publishTarget = peekPublishRecoveryTarget();
     if (publishTarget) return publishTarget;
     const nextTarget = safeAppReturnTarget(searchParams.get("next"));
@@ -263,8 +265,6 @@ export default function LoginPage() {
         routeState.from.hash || ""
       }`;
     }
-    const inviteTarget = joinRedirectFromLoginSearch(searchParams);
-    if (inviteTarget) return inviteTarget;
     return "/app/dashboard";
   }, [routeState, searchParams]);
 

@@ -1,3 +1,57 @@
+### Join pending review screen and existing-ID handoff repair (2026-06-02)
+
+- Route/screens affected:
+  - `/pending-approval`, implemented by
+    `frontend/src/pages/JoinRequestPendingPage.tsx`;
+  - public invite join route `/start/join/:code` and aliases, implemented by
+    `frontend/src/pages/JoinEntryPage.tsx`;
+  - existing-member sign-in route `/login`, implemented by
+    `frontend/src/pages/LoginPage.tsx`.
+- Product-owner request:
+  - rearrange the pending join request page to match the attached dark GSN
+    `Pending Review` reference;
+  - investigate the existing GSN ID / phone-number path that seemed to jump
+    away before letting a returning member continue with their current identity;
+  - explain what should happen if an already-approved request belongs to a
+    person who already has one GSN/global ID.
+- Updated frontend:
+  - rebuilt `/pending-approval` into the requested order: centered GSN mark,
+    pending-review hero, compact community/market/community-ID/request-ID card,
+    three-step next-state row, review-reading progress bar, approval/status
+    actions, helpful links, and a quiet reviewed-not-automatic note;
+  - the pending page now treats approved existing-identity requests separately:
+    if backend says `activation_required=false`, `identity_reused=true`, or
+    result channel `approved-existing-member`, the page opens the community
+    route instead of falling back to `/activate-membership`;
+  - the `I already have a GSN ID` sign-in handoff on invite entry now preserves
+    the route invite code by adding `invite_code` to `/login` even when the code
+    was only present in `/start/join/:code`;
+  - `/login` now prefers invite-aware continuation before stale app-route
+    recovery targets, so a returning member who came from an invite returns to
+    the join flow after sign-in.
+- Confirmed backend logic from code:
+  - logged-in existing members submit a join request against their current user
+    record;
+  - the backend marks that request with
+    `activation_delivery_status="not_required"`;
+  - approval reuses the existing GSN ID and creates/reuses the community
+    membership instead of issuing a second global ID.
+- Verification:
+  - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx src/pages/JoinEntryPage.tsx src/pages/LoginPage.tsx` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this did not change backend identity rules or approval thresholds;
+  - the visual shield/mark on the pending page is a CSS-built GSN-style signal,
+    not a new static asset or final brand illustration;
+  - no live browser screenshot was captured in this pass.
+
 ### Community confirmation callback delivery rail foundation (2026-06-01)
 
 - Route/screens affected:

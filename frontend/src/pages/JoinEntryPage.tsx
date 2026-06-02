@@ -100,6 +100,20 @@ function mergeSearchIntoPath(to: string, currentSearch: string): string {
   return finalQuery ? `${basePath}?${finalQuery}` : basePath;
 }
 
+function loginPathForExistingIdentity(
+  currentSearch: string,
+  inviteCode: string
+): string {
+  const merged = new URLSearchParams(currentSearch);
+  const safeInviteCode = cleanText(inviteCode);
+  if (safeInviteCode && !merged.has("invite_code")) {
+    merged.set("invite_code", safeInviteCode);
+  }
+
+  const query = merged.toString();
+  return query ? `/login?${query}` : "/login";
+}
+
 function labelText(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -916,10 +930,10 @@ export default function JoinEntryPage() {
   const signInConflictCta = useMemo(
     () =>
       resolveCtaTarget("login", {
-        explicitTo: mergeSearchIntoPath("/login", location.search),
+        explicitTo: loginPathForExistingIdentity(location.search, inviteCode),
         debugId: "join-entry.sign-in-conflict",
       }),
-    [location.search]
+    [inviteCode, location.search]
   );
   const welcomeCta = useMemo(
     () =>
