@@ -81,7 +81,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     zIndex: 2,
     isolation: "isolate",
     width: "100%",
-    padding: "17px 18px",
+    minHeight: 56,
+    height: 56,
+    maxHeight: 56,
+    padding: "0 18px",
     borderRadius: 999,
     border: disabled
       ? "1px solid rgba(161,179,199,0.48)"
@@ -108,7 +111,10 @@ function secondaryBtn(): React.CSSProperties {
     zIndex: 2,
     isolation: "isolate",
     width: "100%",
-    padding: "14px 18px",
+    minHeight: 48,
+    height: 48,
+    maxHeight: 48,
+    padding: "0 18px",
     borderRadius: 999,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)",
@@ -126,13 +132,26 @@ function secondaryBtn(): React.CSSProperties {
 function supportBtn(): React.CSSProperties {
   return {
     ...secondaryBtn(),
-    width: "min(100%, 380px)",
+    width: "100%",
     minHeight: 48,
+    height: 48,
+    maxHeight: 48,
     borderRadius: 16,
-    padding: "10px 16px",
+    padding: "0 16px",
     fontSize: 14,
+    justifySelf: "stretch",
     boxShadow:
       "0 10px 22px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.12)",
+  };
+}
+
+function compactActionRail(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: 10,
+    justifyItems: "stretch",
+    alignItems: "stretch",
   };
 }
 
@@ -467,13 +486,15 @@ export default function LoginPage() {
                 type="button"
                 onClick={() => setGuideOpen((current) => !current)}
                 minWidth={isCompact ? "auto" : 132}
-                stableHeight={40}
+                stableHeight={38}
                 debugId="login.open-help"
                 style={{
                   ...secondaryBtn(),
                   width: "auto",
-                  minHeight: 40,
-                  padding: isCompact ? "9px 14px" : "10px 18px",
+                  minHeight: 38,
+                  height: 38,
+                  maxHeight: 38,
+                  padding: isCompact ? "0 12px" : "0 16px",
                   borderRadius: 999,
                   color: "#F8FBFF",
                   fontSize: isCompact ? 11 : 12,
@@ -593,11 +614,14 @@ export default function LoginPage() {
                 <SecondaryButton
                   onClick={() => setGuideOpen(false)}
                   minWidth="auto"
-                  stableHeight={44}
+                  stableHeight={42}
                   debugId="login.guide.collapse"
                   style={{
                     ...secondaryBtn(),
                     width: "auto",
+                    minHeight: 42,
+                    height: 42,
+                    maxHeight: 42,
                     borderRadius: 14,
                     border: "1px solid rgba(16,37,59,0.12)",
                     background:
@@ -795,13 +819,13 @@ export default function LoginPage() {
             }}
           >
           {err ? (
-            <div style={{ marginBottom: 16, display: "grid", gap: 10 }}>
+            <div style={{ marginBottom: 16, ...compactActionRail() }}>
               <div style={noticeStyle("error")}>{err}</div>
               {activationPath ? (
                 <SecondaryButton
                   onClick={openActivationRoute}
                   minWidth={220}
-                  stableHeight={50}
+                  stableHeight={48}
                   debugId="login.error.activate-membership"
                   style={supportBtn()}
                 >
@@ -945,7 +969,7 @@ export default function LoginPage() {
                 busy={busy}
                 busyLabel="Signing in..."
                 fullWidth
-                stableHeight={58}
+                stableHeight={56}
                 debugId="login.submit"
                 style={primaryBtn(busy)}
               >
@@ -953,11 +977,11 @@ export default function LoginPage() {
               </PrimaryButton>
             </div>
 
-            <div style={{ marginTop: 14 }}>
+            <div style={{ marginTop: 12 }}>
               <SecondaryButton
                 onClick={openActivationRoute}
                 disabled={busy}
-                stableHeight={50}
+                stableHeight={48}
                 debugId="login.activate-approved"
                 style={supportBtn()}
               >
@@ -1028,7 +1052,7 @@ export default function LoginPage() {
           <SecondaryButton
             onClick={openCreateRoute}
             disabled={busy}
-            stableHeight={50}
+            stableHeight={48}
             debugId="login.start-community"
             style={{
               ...supportBtn(),

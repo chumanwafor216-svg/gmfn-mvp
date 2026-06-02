@@ -166,7 +166,10 @@ function badge(primary = false): React.CSSProperties {
 
 function collapseToggle(): React.CSSProperties {
   return {
-    padding: "10px 14px",
+    minHeight: 42,
+    height: 42,
+    maxHeight: 42,
+    padding: "0 14px",
     borderRadius: 12,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
@@ -178,6 +181,62 @@ function collapseToggle(): React.CSSProperties {
     whiteSpace: "normal",
     overflowWrap: "anywhere",
     lineHeight: 1.2,
+  };
+}
+
+function actionRow(compact = false): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: compact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+    gap: 10,
+    alignItems: "stretch",
+    width: "100%",
+  };
+}
+
+function compactButtonStyle(primary = false): React.CSSProperties {
+  return {
+    minHeight: 48,
+    height: 48,
+    maxHeight: 48,
+    borderRadius: 14,
+    padding: "0 14px",
+    fontSize: 13,
+    fontWeight: 950,
+    lineHeight: 1.15,
+    whiteSpace: "normal",
+    overflowWrap: "anywhere",
+    border: primary
+      ? "1px solid rgba(172,204,255,0.42)"
+      : "1px solid rgba(203,220,240,0.20)",
+    boxShadow: primary
+      ? "0 14px 26px rgba(11,99,209,0.24), inset 0 1px 0 rgba(255,255,255,0.16)"
+      : "0 10px 20px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
+  };
+}
+
+function heroLinkStyle(): React.CSSProperties {
+  return {
+    minHeight: 52,
+    height: 52,
+    maxHeight: 52,
+    borderRadius: 15,
+    background: "rgba(255,255,255,0.04)",
+    color: "#F8FBFF",
+    border: "1px solid rgba(203,220,240,0.22)",
+    fontSize: 14,
+    fontWeight: 950,
+    padding: "0 14px",
+    whiteSpace: "nowrap",
+  };
+}
+
+function shareGrid(compact = false): React.CSSProperties {
+  return {
+    marginTop: 14,
+    display: "grid",
+    gridTemplateColumns: compact ? "repeat(2, minmax(0, 1fr))" : "repeat(3, minmax(0, 1fr))",
+    gap: 10,
   };
 }
 
@@ -1156,31 +1215,17 @@ export default function BuildFirstCirclePage() {
             >
               <StableCtaLink
                 to={routes.dashboard}
-                stableHeight={58}
+                stableHeight={52}
                 debugId="build-first-circle.hero.dashboard"
-                style={{
-                  borderRadius: 16,
-                  background: "rgba(255,255,255,0.04)",
-                  color: "#F8FBFF",
-                  border: "1px solid rgba(203,220,240,0.22)",
-                  fontSize: 16,
-                  fontWeight: 950,
-                }}
+                style={heroLinkStyle()}
               >
                 Dashboard
               </StableCtaLink>
               <StableCtaLink
                 to={routes.community}
-                stableHeight={58}
+                stableHeight={52}
                 debugId="build-first-circle.hero.community"
-                style={{
-                  borderRadius: 16,
-                  background: "rgba(255,255,255,0.04)",
-                  color: "#F8FBFF",
-                  border: "1px solid rgba(203,220,240,0.22)",
-                  fontSize: 16,
-                  fontWeight: 950,
-                }}
+                style={heroLinkStyle()}
               >
                 Community Home
               </StableCtaLink>
@@ -1355,12 +1400,16 @@ export default function BuildFirstCirclePage() {
                         key={role}
                         kind={active ? "primary" : "secondary"}
                         onClick={() => setRole(role)}
-                        stableHeight={42}
+                        stableHeight={44}
                         debugId={`build-first-circle.quick-role.${role}`}
                         style={{
                           borderRadius: 14,
-                          padding: "0 16px",
+                          minHeight: 44,
+                          height: 44,
+                          maxHeight: 44,
+                          padding: "0 14px",
                           fontWeight: 950,
+                          fontSize: 13,
                         }}
                       >
                         {roleText(role)}
@@ -1784,8 +1833,9 @@ export default function BuildFirstCirclePage() {
                 disabled={inviteLoading}
                 busy={inviteLoading}
                 busyLabel="Preparing..."
-                stableHeight={44}
+                stableHeight={48}
                 debugId="build-first-circle.focus-invite"
+                style={compactButtonStyle(true)}
               >
                 Invite
               </PrimaryButton>
@@ -1849,16 +1899,7 @@ export default function BuildFirstCirclePage() {
           </div>
         </div>
 
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr 1fr"
-              : "repeat(6, minmax(120px, 1fr))",
-            gap: 10,
-          }}
-        >
+        <div style={shareGrid(isCompact)}>
           <PrimaryButton
             onClick={() => {
               void addFromPhoneContacts();
@@ -1866,29 +1907,33 @@ export default function BuildFirstCirclePage() {
             disabled={pickingContacts}
             busy={pickingContacts}
             busyLabel="Opening..."
-            stableHeight={52}
+            stableHeight={48}
             debugId="build-first-circle.quick.phone-contacts"
+            style={compactButtonStyle(true)}
           >
             Phone book
           </PrimaryButton>
           <SecondaryButton
             onClick={openWhatsAppInvite}
-            stableHeight={52}
+            stableHeight={48}
             debugId="build-first-circle.quick.whatsapp"
+            style={compactButtonStyle(false)}
           >
             WhatsApp
           </SecondaryButton>
           <SecondaryButton
             onClick={openEmailInvite}
-            stableHeight={52}
+            stableHeight={48}
             debugId="build-first-circle.quick.email"
+            style={compactButtonStyle(false)}
           >
             Email
           </SecondaryButton>
           <SecondaryButton
             onClick={openFacebookInvite}
-            stableHeight={52}
+            stableHeight={48}
             debugId="build-first-circle.quick.facebook"
+            style={compactButtonStyle(false)}
           >
             Facebook
           </SecondaryButton>
@@ -1896,8 +1941,9 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void shareJoinInvite();
             }}
-            stableHeight={52}
+            stableHeight={48}
             debugId="build-first-circle.quick.share"
+            style={compactButtonStyle(false)}
           >
             Share
           </SecondaryButton>
@@ -1905,8 +1951,9 @@ export default function BuildFirstCirclePage() {
             onClick={() => {
               void copyJoinInvite();
             }}
-            stableHeight={52}
+            stableHeight={48}
             debugId="build-first-circle.quick.copy"
+            style={compactButtonStyle(false)}
           >
             Copy
           </SecondaryButton>
@@ -1971,6 +2018,7 @@ export default function BuildFirstCirclePage() {
                     }}
                     stableHeight={48}
                     debugId={`build-first-circle.role.${role}`}
+                    style={compactButtonStyle(active)}
                   >
                     {roleText(role)}
                   </StableButton>
@@ -2138,19 +2186,14 @@ export default function BuildFirstCirclePage() {
                   <span>Select this person for the first circle</span>
                 </label>
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 10,
-                    flexWrap: "wrap",
-                  }}
-                >
+                <div style={actionRow(isCompact)}>
                   <PrimaryButton
                     onClick={() => {
                       addManualContact();
                     }}
                     stableHeight={48}
                     debugId="build-first-circle.add-person"
+                    style={compactButtonStyle(true)}
                   >
                     Add Person
                   </PrimaryButton>
@@ -2161,6 +2204,7 @@ export default function BuildFirstCirclePage() {
                     }}
                     stableHeight={48}
                     debugId="build-first-circle.clear-form"
+                    style={compactButtonStyle(false)}
                   >
                     Clear Form
                   </SecondaryButton>
@@ -2185,6 +2229,7 @@ export default function BuildFirstCirclePage() {
                   busyLabel="Opening..."
                   stableHeight={48}
                   debugId="build-first-circle.choose-phone-contacts"
+                  style={compactButtonStyle(false)}
                 >
                   Choose from Phone Contacts
                 </SecondaryButton>
@@ -2304,14 +2349,7 @@ export default function BuildFirstCirclePage() {
                         .join(" - ") || "No extra note yet"}
                     </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: isCompact ? "flex-start" : "flex-end",
-                        gap: 10,
-                        flexWrap: "wrap",
-                      }}
-                    >
+                    <div style={actionRow(true)}>
                       <StableButton
                         kind={item.selected ? "primary" : "secondary"}
                         onClick={() => {
@@ -2319,6 +2357,7 @@ export default function BuildFirstCirclePage() {
                         }}
                         stableHeight={48}
                         debugId={`build-first-circle.contact.${item.id}.toggle-selected`}
+                        style={compactButtonStyle(item.selected)}
                       >
                         {item.selected ? "Included" : "Include"}
                       </StableButton>
@@ -2327,8 +2366,9 @@ export default function BuildFirstCirclePage() {
                         onClick={() => {
                           removeContact(item.id);
                         }}
-                        stableHeight={46}
+                        stableHeight={48}
                         debugId={`build-first-circle.contact.${item.id}.remove`}
+                        style={compactButtonStyle(false)}
                       >
                         Remove
                       </SubtleButton>
@@ -2420,13 +2460,14 @@ export default function BuildFirstCirclePage() {
                   </div>
                 </div>
 
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <div style={actionRow(true)}>
                     <PrimaryButton
                       onClick={() => {
                         void copyInviteBundle();
                       }}
                       stableHeight={48}
                       debugId="build-first-circle.copy-invite-bundle"
+                      style={compactButtonStyle(true)}
                   >
                     Copy message
                   </PrimaryButton>
@@ -2437,6 +2478,7 @@ export default function BuildFirstCirclePage() {
                     }}
                     stableHeight={48}
                     debugId="build-first-circle.reset"
+                    style={compactButtonStyle(false)}
                   >
                     Reset First Circle
                   </SecondaryButton>

@@ -201,9 +201,9 @@ function brandLockup(isCompact = false): React.CSSProperties {
 function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSProperties {
   const about = kind === "about";
   return {
-    minHeight: isCompact ? 40 : 44,
-    height: isCompact ? 40 : 44,
-    maxHeight: isCompact ? 40 : 44,
+    minHeight: isCompact ? 38 : 42,
+    height: isCompact ? 38 : 42,
+    maxHeight: isCompact ? 38 : 42,
     minWidth: 0,
     width: isCompact ? "100%" : undefined,
     borderRadius: 999,
@@ -323,11 +323,11 @@ function passwordToggleStyle(): React.CSSProperties {
     right: 14,
     top: "50%",
     transform: "translateY(-50%)",
-    minWidth: 42,
-    width: 42,
-    minHeight: 42,
-    height: 42,
-    maxHeight: 42,
+    minWidth: 38,
+    width: 38,
+    minHeight: 38,
+    height: 38,
+    maxHeight: 38,
     borderRadius: 999,
     border: "1px solid rgba(242,199,102,0.20)",
     background: "rgba(4,19,35,0.28)",
@@ -440,9 +440,9 @@ function ghostIconStyle(): React.CSSProperties {
 function primaryActionStyle(isCompact = false): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: isCompact ? 62 : 68,
-    height: isCompact ? 62 : 68,
-    maxHeight: isCompact ? 62 : 68,
+    minHeight: isCompact ? 60 : 64,
+    height: isCompact ? 60 : 64,
+    maxHeight: isCompact ? 60 : 64,
     borderRadius: 20,
     border: "1px solid rgba(172,204,255,0.58)",
     background:
@@ -453,6 +453,36 @@ function primaryActionStyle(isCompact = false): React.CSSProperties {
     boxShadow:
       "0 18px 34px rgba(22,95,230,0.30), inset 0 1px 0 rgba(255,255,255,0.24)",
     textShadow: "0 2px 14px rgba(0,0,0,0.28)",
+  };
+}
+
+function postActivationRow(isCompact = false): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+    gap: 10,
+    alignItems: "stretch",
+    marginTop: 2,
+  };
+}
+
+function postActivationLink(primary = false): React.CSSProperties {
+  return {
+    minHeight: 50,
+    height: 50,
+    maxHeight: 50,
+    borderRadius: 16,
+    padding: "0 14px",
+    fontSize: 13,
+    fontWeight: 1000,
+    whiteSpace: "nowrap",
+    background: primary
+      ? "linear-gradient(180deg, #2F86FF 0%, #1761E6 100%)"
+      : "linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)",
+    border: primary
+      ? "1px solid rgba(172,204,255,0.50)"
+      : "1px solid rgba(123,161,204,0.22)",
+    color: "#F8FBFF",
   };
 }
 
@@ -855,7 +885,7 @@ export default function MemberActivationPage() {
             <SubtleButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 40 : 44}
+              stableHeight={isCompact ? 38 : 42}
               debugId="member-activation.about"
               style={railActionStyle("about", isCompact)}
             >
@@ -864,7 +894,7 @@ export default function MemberActivationPage() {
             <PrimaryButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 40 : 44}
+              stableHeight={isCompact ? 38 : 42}
               debugId="member-activation.guide"
               style={railActionStyle("guide", isCompact)}
             >
@@ -1037,8 +1067,8 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
-                    stableHeight={42}
-                    minWidth={42}
+                    stableHeight={38}
+                    minWidth={38}
                     debugId="member-activation.password.toggle"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     style={passwordToggleStyle()}
@@ -1068,8 +1098,8 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowConfirmPassword((current) => !current)}
-                    stableHeight={42}
-                    minWidth={42}
+                    stableHeight={38}
+                    minWidth={38}
                     debugId="member-activation.confirm-password.toggle"
                     aria-label={
                       showConfirmPassword ? "Hide confirm password" : "Show confirm password"
@@ -1105,7 +1135,7 @@ export default function MemberActivationPage() {
                 disabled={busy || activated}
                 busy={busy}
                 busyLabel="Finishing activation..."
-                stableHeight={isCompact ? 62 : 68}
+                stableHeight={isCompact ? 60 : 64}
                 fullWidth
                 debugId="member-activation.finish"
                 style={primaryActionStyle(isCompact)}
@@ -1134,11 +1164,12 @@ export default function MemberActivationPage() {
         </form>
 
         {activated ? (
-          <CardActionRow style={{ marginTop: 2 }} align="center">
+          <CardActionRow style={postActivationRow(isCompact)} align="center">
             <StableCtaLink
               to={routes.buildFirstCircle}
               kind="primary"
               debugId="member-activation.build-first-circle"
+              style={postActivationLink(true)}
             >
               Build first circle
             </StableCtaLink>
@@ -1146,6 +1177,7 @@ export default function MemberActivationPage() {
               to={routes.trust}
               kind="secondary"
               debugId="member-activation.trust"
+              style={postActivationLink(false)}
             >
               Open Trust Passport
             </StableCtaLink>
@@ -1153,6 +1185,7 @@ export default function MemberActivationPage() {
               to={routes.notifications}
               kind="secondary"
               debugId="member-activation.notifications"
+              style={postActivationLink(false)}
             >
               Open Action Inbox
             </StableCtaLink>

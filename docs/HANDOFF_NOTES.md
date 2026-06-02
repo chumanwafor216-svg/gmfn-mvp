@@ -1,3 +1,45 @@
+### Entry/activation deep button polish (2026-06-02)
+
+- Route/screens affected:
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`;
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - First Circle next-step route, implemented by
+    `frontend/src/pages/BuildFirstCirclePage.tsx`.
+- Product-owner request:
+  - tighten buttons and polish the deeper pages affected by the activation
+    handoff flow.
+- Updated frontend:
+  - tightened member activation rail controls, password visibility toggles,
+    finish CTA, and post-activation next-action row;
+  - normalized sign-in support buttons, guide controls, and activation helper
+    actions to fixed 48/56px heights with tighter spacing;
+  - normalized First Circle hero links, role chips, invite/share actions,
+    manual add actions, contact review actions, and invite-message actions
+    with compact fixed-height button styles and grid action rows;
+  - preserved existing route contracts and backend activation/sign-in/First
+    Circle business logic.
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx src/pages/LoginPage.tsx src/pages/BuildFirstCirclePage.tsx` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:action-surfaces` passed;
+  - `npm run audit:global-action-debugids` passed;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`;
+  - `git diff --check` passed with only Windows CRLF normalization warnings.
+- Remaining truth:
+  - no local headless browser binary was available in PATH, so this pass did
+    not capture new screenshots;
+  - this is a route-local visual/button polish pass only. It does not change
+    backend auth, membership uniqueness, activation, invitation, or First
+    Circle data rules.
+
 ### Member activation deterministic notices (2026-06-02)
 
 - Route/screens affected:
