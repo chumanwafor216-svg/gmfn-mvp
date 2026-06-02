@@ -1420,7 +1420,7 @@ export default function AppLayout() {
         key: "commerce",
         label: "Shop tools",
         hint:
-          "Shop Control sits in the main movement row. Public Shop opens only when you choose the public face.",
+          "Shop Control is the owner workspace. Public Shop is the outward shop face shown in the main movement row.",
         items: commerceItems,
       },
       {
@@ -1705,7 +1705,7 @@ export default function AppLayout() {
       });
     }
 
-    return items.filter((item) => !item.disabled);
+    return items.filter((item) => !item.disabled || item.label === "Public Shop");
   }, [canUseAdminTools, myShopGalleryDisabled, myShopGalleryTo]);
 
   const mobileDrawerGroups = useMemo<

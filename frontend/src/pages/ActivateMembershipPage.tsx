@@ -6,6 +6,7 @@ import {
   activateMembership,
   setAccessToken,
   setSelectedClanId,
+  setStoredGmfnId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 
@@ -207,7 +208,13 @@ export default function ActivateMembershipPage() {
 
   useEffect(() => {
     setGmfnId(initialGmfnId);
+    if (initialGmfnId) setStoredGmfnId(initialGmfnId);
   }, [initialGmfnId]);
+
+  useEffect(() => {
+    const safeGmfnId = cleanGmfnId(gmfnId);
+    if (safeGmfnId) setStoredGmfnId(safeGmfnId);
+  }, [gmfnId]);
 
   const canSubmit = Boolean(
     cleanGmfnId(gmfnId) &&

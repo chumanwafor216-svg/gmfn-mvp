@@ -488,6 +488,12 @@ assertContains(
   "Global Public Shop navigation must not fall back to Shop Control while the public shop URL is loading."
 );
 
+assertContains(
+  "src/layout/AppLayout.tsx",
+  /return items\.filter\(\(item\) => !item\.disabled \|\| item\.label === "Public Shop"\);/,
+  "Mobile bottom domain rail must keep Public Shop visible while the member GSN ID is pending."
+);
+
 assertNotContains(
   "src/layout/AppLayout.tsx",
   /const myShopGalleryTo = useMemo[\s\S]*?return "\/app\/shop-control";[\s\S]*?}, \[location\.hash, location\.pathname, location\.search, myGmfnId\]\);/,

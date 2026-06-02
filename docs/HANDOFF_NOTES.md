@@ -1,3 +1,34 @@
+### Public Shop bottom-domain and activation ID carryover (2026-06-02)
+
+- Route/screens affected:
+  - authenticated app shell navigation in `frontend/src/layout/AppLayout.tsx`;
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/ActivateMembershipPage.tsx`;
+  - link contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner report:
+  - live Dashboard still did not show Public Shop in the main mobile domain rail;
+  - `Shop Control` was visible instead, which is not the outward public shop;
+  - the approved GSN/GMFN Global ID had been shown before Dashboard but was not
+    automatically appearing in the Dashboard identity/passport area.
+- Confirmed frontend truth:
+  - Public Shop existed in some app-shell paths, but the mobile bottom rail
+    filtered disabled items, so Public Shop could disappear while the member
+    Global ID was still loading;
+  - Shop Control is the owner workspace and must not be treated as a substitute
+    for the public shop face.
+- Updated frontend:
+  - keeps `Public Shop` visible in the mobile bottom domain rail even when the
+    member Global ID is still pending;
+  - leaves the item disabled until a real Global ID is known, instead of routing
+    it to Shop Control or hiding it;
+  - activation now stores the detected GSN/GMFN ID from the page state/query/form
+    immediately, so Dashboard/AppLayout can reuse it before `/auth/me` refreshes;
+  - added an audit check so the bottom rail cannot filter out Public Shop again.
+- Remaining truth:
+  - if live still does not show this after the commit reaches `main`, the live
+    frontend bundle has not deployed yet or the browser is holding an old cached
+    bundle. The code now distinguishes Public Shop from Shop Control.
+
 ### Community, Marketplace, and shell button tightening (2026-06-02)
 
 - Route/screens affected:
@@ -67,8 +98,9 @@
     Community Home, Marketplace, Finance, Loans, and Trust, but Public Shop /
     Shop Gallery was not treated as a main domain.
 - Confirmed frontend truth:
-  - the mobile bottom rail already had a dynamic `Public Shop` item;
-  - the main movement drawer/group still omitted `Public Shop` and only showed
+  - the app shell had separate drawer, desktop, page-action, and mobile bottom
+    domain lists that could drift from one another;
+  - the main movement drawer/group omitted `Public Shop` and only showed
     `Shop Control`, making the public shop face feel secondary or hidden.
 - Updated frontend:
   - added `Public Shop` to the main movement group using the same dynamic
