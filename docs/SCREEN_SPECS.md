@@ -314,3 +314,6 @@ Rules:
   shop name, marketplace/community context, community ID when available, and a
   QR that reopens the public shop link. Do not present that QR as TrustSlip
   proof unless the backend provides a live TrustSlip code for that shop.
+- Public Shop may show a compact owner navigation strip for the signed-in shop
+  owner only. It may link to Dashboard, Community Home, and Marketplace, but it
+  must not render for ordinary public visitors or signed-in non-owners.

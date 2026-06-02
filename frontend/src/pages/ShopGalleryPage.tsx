@@ -24,6 +24,7 @@ import {
 } from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
+import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
   SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS,
   SPOTLIGHT_PILOT_REFRESH_MS,
@@ -1654,6 +1655,29 @@ export default function ShopGalleryPage() {
     broadcast?.authorGmfnId,
     gmfnId
   );
+  const ownerSurfaceCommunityId = positiveNumber(
+    effectiveShop?.clanId || getSelectedClanId()
+  );
+  const ownerSurfaceLinks = useMemo(
+    () => [
+      {
+        label: "Dashboard",
+        to: APP_ROUTES.DASHBOARD,
+        debugId: "shop-gallery.owner-nav.dashboard",
+      },
+      {
+        label: "Community Home",
+        to: routeWithCommunity(APP_ROUTES.COMMUNITY, ownerSurfaceCommunityId),
+        debugId: "shop-gallery.owner-nav.community",
+      },
+      {
+        label: "Marketplace",
+        to: routeWithCommunity(APP_ROUTES.MARKETPLACE, ownerSurfaceCommunityId),
+        debugId: "shop-gallery.owner-nav.marketplace",
+      },
+    ],
+    [ownerSurfaceCommunityId]
+  );
   const loginReconnectPath = `/login?next=${encodeURIComponent(
     publicShopReturnPath
   )}`;
@@ -2067,6 +2091,8 @@ export default function ShopGalleryPage() {
       <OwnerOnlySurfaceNav
         ownerGmfnId={shopOwnerGmfnId}
         compact={isCompact}
+        label="Owner navigation"
+        links={ownerSurfaceLinks}
         refreshKey={shopReconnectRetryKey}
       />
 

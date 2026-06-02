@@ -1,3 +1,28 @@
+### Public Shop owner-only navigator (2026-06-02)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner request:
+  - public shop should have a navigator back to Dashboard, Community Home, or
+    Marketplace for the shop owner, but that navigator must not be visible to
+    ordinary public visitors.
+- Frontend change:
+  - Public Shop now passes explicit `Dashboard`, `Community Home`, and
+    `Marketplace` links into `OwnerOnlySurfaceNav`.
+  - Community Home and Marketplace links carry the active shop/community id
+    when available.
+  - The existing owner-only gate remains the visibility control: the nav only
+    renders when a signed-in user's GMFN/GSN ID matches the public shop owner
+    ID.
+- Guardrails:
+  - `docs/SCREEN_SPECS.md` now records that this Public Shop navigator is
+    owner-only.
+  - `frontend/tools/audit-link-contracts.mjs` now checks both the public shop
+    destination links and the owner-only visibility gate.
+- Remaining truth:
+  - This is a frontend owner shortcut. It does not change backend permissions;
+    protected app routes still rely on existing auth/route guards.
+
 ### Shop info and spotlight control auto-collapse (2026-06-02)
 
 - Routes/screens affected:

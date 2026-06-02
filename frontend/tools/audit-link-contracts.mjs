@@ -772,6 +772,18 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
+  /import OwnerOnlySurfaceNav from "\.\.\/components\/OwnerOnlySurfaceNav";[\s\S]*?import \{ APP_ROUTES, routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?const ownerSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?label: "Community Home"[\s\S]*?routeWithCommunity\(APP_ROUTES\.COMMUNITY, ownerSurfaceCommunityId\)[\s\S]*?label: "Marketplace"[\s\S]*?routeWithCommunity\(APP_ROUTES\.MARKETPLACE, ownerSurfaceCommunityId\)[\s\S]*?<OwnerOnlySurfaceNav[\s\S]*?ownerGmfnId=\{shopOwnerGmfnId\}[\s\S]*?label="Owner navigation"[\s\S]*?links=\{ownerSurfaceLinks\}/,
+  "Public Shop owner navigation must route the signed-in shop owner to Dashboard, Community Home, and Marketplace through the owner-only surface gate."
+);
+
+assertContains(
+  "src/components/OwnerOnlySurfaceNav.tsx",
+  /getAccessToken\(\)[\s\S]*?signedInGmfnId[\s\S]*?ownerGmfnId[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
+  "Owner-only surface navigation must remain hidden from public visitors and signed-in non-owners."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
   /const GALLERY_SLOTS_TOTAL = 12;[\s\S]*?const visibleProducts = useMemo\([\s\S]*?products\.slice\(0, GALLERY_SLOTS_TOTAL\)[\s\S]*?const overflowProductCount = Math\.max\(0, products\.length - GALLERY_SLOTS_TOTAL\);/,
   "Public Shop Gallery must render the full approved 12 public-block shelf before any overflow control."
 );
