@@ -1,3 +1,41 @@
+### Member activation mockup rebuild (2026-06-02)
+
+- Route/screens affected:
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner request:
+  - remake the member activation page to match the supplied dark GSN
+    activation reference image.
+- Updated frontend:
+  - rebuilt the route-local activation screen into the requested structure:
+    dark navy page wash, gold-bordered top rail, back control, CSS-built GSN
+    crest/wordmark, About and Activation Guide pills, large activation card,
+    detected GSN/request chips, GSN ID and Request ID confirmation fields,
+    password and confirm-password fields with compact visibility toggles,
+    two trust/protection info rows, and one dominant blue Finish activation
+    action;
+  - preserved the existing activation API calls, validation, success response,
+    and post-success First Circle redirect;
+  - added compact layout handling so the top rail/buttons and detected chips do
+    not clip on narrow phone-width viewports.
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`;
+  - local Chrome headless screenshots were captured at `914x2048` and
+    `430x932` against
+    `/activate-membership?gmfn_id=GMFN-U-63655DE6&request_id=5`.
+- Remaining truth:
+  - the crest/mark is CSS-built, not a final imported brand asset;
+  - this is a UI/layout change only and does not change backend approval,
+    identity, password, or membership rules.
+
 ### Join/sign-in button tightening polish (2026-06-02)
 
 - Route/screens affected:
