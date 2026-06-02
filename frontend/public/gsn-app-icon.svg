@@ -1,86 +1,22 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="112" fill="#061827"/>
+  <rect x="28" y="28" width="456" height="456" rx="92" fill="url(#bg)" stroke="#D6AA45" stroke-width="10"/>
+  <path d="M256 92L364 145V257C364 330 324 389 256 426C188 389 148 330 148 257V145L256 92Z" fill="url(#shield)" stroke="#F2C766" stroke-width="10"/>
+  <path d="M256 128L332 166V253C332 306 304 348 256 379C208 348 180 306 180 253V166L256 128Z" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="5"/>
+  <path d="M256 168L276 224H336L287 258L306 315L256 280L206 315L225 258L176 224H236L256 168Z" fill="url(#star)" stroke="#FFF6CE" stroke-width="4"/>
   <defs>
-    <linearGradient id="appBg" x1="256" y1="18" x2="256" y2="494" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#113D62"/>
-      <stop offset="0.46" stop-color="#08233A"/>
+    <linearGradient id="bg" x1="256" y1="0" x2="256" y2="512">
+      <stop stop-color="#0B2D4A"/>
       <stop offset="1" stop-color="#061827"/>
     </linearGradient>
-    <radialGradient id="topGlow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 104) rotate(90) scale(176)">
-      <stop stop-color="#5EA8FF" stop-opacity="0.36"/>
-      <stop offset="0.52" stop-color="#5EA8FF" stop-opacity="0.12"/>
-      <stop offset="1" stop-color="#5EA8FF" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="gold" x1="256" y1="32" x2="256" y2="480" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFF2B6"/>
-      <stop offset="0.43" stop-color="#F2C766"/>
-      <stop offset="1" stop-color="#B98426"/>
-    </linearGradient>
-    <linearGradient id="shieldFill" x1="256" y1="76" x2="256" y2="358" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2D7FD0"/>
-      <stop offset="0.48" stop-color="#15568D"/>
+    <linearGradient id="shield" x1="256" y1="92" x2="256" y2="426">
+      <stop stop-color="#1E68B0"/>
       <stop offset="1" stop-color="#08233A"/>
     </linearGradient>
-    <linearGradient id="starFill" x1="256" y1="142" x2="256" y2="258" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFF7CF"/>
+    <linearGradient id="star" x1="256" y1="168" x2="256" y2="315">
+      <stop stop-color="#FFF3B8"/>
       <stop offset="0.52" stop-color="#F2C766"/>
-      <stop offset="1" stop-color="#B98426"/>
+      <stop offset="1" stop-color="#B78525"/>
     </linearGradient>
-    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="170%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#000817" flood-opacity="0.46"/>
-    </filter>
-    <filter id="textShadow" x="-30%" y="-60%" width="160%" height="220%" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000817" flood-opacity="0.48"/>
-    </filter>
   </defs>
-
-  <rect width="512" height="512" rx="116" fill="#061827"/>
-  <rect x="24" y="24" width="464" height="464" rx="100" fill="url(#appBg)" stroke="url(#gold)" stroke-width="8"/>
-  <rect x="44" y="44" width="424" height="424" rx="82" fill="url(#topGlow)" stroke="rgba(255,255,255,0.10)" stroke-width="2"/>
-
-  <g filter="url(#softShadow)">
-    <path
-      d="M256 74L364 128V247C364 318 324 368 256 403C188 368 148 318 148 247V128L256 74Z"
-      fill="url(#shieldFill)"
-      stroke="url(#gold)"
-      stroke-width="10"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M256 106L330 143V241C330 292 304 333 256 361C208 333 182 292 182 241V143L256 106Z"
-      fill="none"
-      stroke="rgba(255,255,255,0.24)"
-      stroke-width="3"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M256 142L275 198H335L286 232L304 290L256 254L208 290L226 232L177 198H237L256 142Z"
-      fill="url(#starFill)"
-      stroke="#FFF7CF"
-      stroke-width="4"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M192 151C220 128 291 121 334 158"
-      stroke="rgba(255,255,255,0.15)"
-      stroke-width="7"
-      stroke-linecap="round"
-    />
-  </g>
-
-  <g filter="url(#textShadow)">
-    <text
-      x="256"
-      y="446"
-      text-anchor="middle"
-      fill="url(#gold)"
-      stroke="#061827"
-      stroke-width="8"
-      paint-order="stroke fill"
-      font-family="Arial, Helvetica, sans-serif"
-      font-size="92"
-      font-weight="900"
-      letter-spacing="8"
-      opacity="0.94"
-    >GSN</text>
-  </g>
 </svg>

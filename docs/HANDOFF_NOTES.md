@@ -1,3 +1,27 @@
+### GSN phone icon restored to balanced emblem (2026-06-02)
+
+- Routes/surfaces affected:
+  - PWA/home-screen install icon used by `/manifest.json`,
+    `/manifest.webmanifest`, browser favicon, and install prompts.
+- Product-owner correction:
+  - the newer app icon had become too large and out of proportion;
+  - the older shield/star emblem was better balanced, but its tiny top `GSN`
+    text should be removed.
+- Frontend/PWA change:
+  - restored the older balanced shield/star geometry in
+    `frontend/public/gsn-app-icon.svg`;
+  - removed the tiny top `GSN` text and did not reintroduce the oversized
+    bottom wordmark inside the icon;
+  - regenerated `frontend/public/gsn-app-icon-192.png` and
+    `frontend/public/gsn-app-icon-512.png` from that corrected SVG;
+  - bumped the service-worker shell cache to `gsn-pwa-shell-v3` so phones can
+    move off the oversized cached icon.
+- Remaining truth:
+  - the icon artwork itself cannot cause an `HTTP 500`. If an installed icon
+    still opens to a login/server 500 after this deploy, that is a separate
+    live backend/session/API problem or a stale installed shortcut route, not
+    the emblem geometry.
+
 ### Marketplace public shop blank-open prevention (2026-06-02)
 
 - Route/screen affected:

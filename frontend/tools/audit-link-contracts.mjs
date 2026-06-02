@@ -135,7 +135,7 @@ assertContains(
 
 assertContains(
   "public/sw.js",
-  /const CACHE_VERSION = "gsn-pwa-shell-v2"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"/,
+  /const CACHE_VERSION = "gsn-pwa-shell-v3"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"/,
   "The GSN service worker must support app-shell install without caching private API or uploaded user data."
 );
 

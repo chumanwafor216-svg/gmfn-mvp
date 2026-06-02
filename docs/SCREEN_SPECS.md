@@ -94,6 +94,9 @@ Rules:
 - Public My GSN and I should use a one-column iPhone layout so capability cards
   read one-by-one instead of compressing text into two narrow columns. This
   iPhone correction must not change the existing Android compact grid.
+- The phone-screen icon should use the balanced shield/star emblem without tiny
+  internal top lettering and without an oversized bottom wordmark inside the
+  icon. The visible phone label below the icon may remain `GSN`.
 
 ## DashboardPage
 
