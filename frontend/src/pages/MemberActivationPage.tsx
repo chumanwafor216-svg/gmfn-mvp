@@ -191,13 +191,13 @@ function brandLockup(isCompact = false): React.CSSProperties {
 function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSProperties {
   const about = kind === "about";
   return {
-    minHeight: isCompact ? 38 : 42,
-    height: isCompact ? 38 : 42,
-    maxHeight: isCompact ? 38 : 42,
+    minHeight: isCompact ? 36 : 40,
+    height: isCompact ? 36 : 40,
+    maxHeight: isCompact ? 36 : 40,
     minWidth: 0,
     width: isCompact ? "100%" : undefined,
     borderRadius: 999,
-    padding: isCompact ? "0 10px" : about ? "0 22px" : "0 24px",
+    padding: isCompact ? "0 9px" : about ? "0 20px" : "0 22px",
     border: about
       ? "1px solid rgba(242,199,102,0.78)"
       : "1px solid rgba(123,161,204,0.20)",
@@ -206,12 +206,12 @@ function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSP
       : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
     color: about ? "#F4D37C" : "#DDEAFF",
     fontWeight: 1000,
-    fontSize: isCompact ? 10.5 : 13,
+    fontSize: isCompact ? 10.5 : 12.5,
     letterSpacing: 0.7,
     textTransform: "uppercase",
     whiteSpace: "nowrap",
     boxShadow: about
-      ? "0 12px 22px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.08)"
+      ? "0 10px 18px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)"
       : "inset 0 1px 0 rgba(255,255,255,0.08)",
   };
 }
@@ -313,17 +313,17 @@ function passwordToggleStyle(): React.CSSProperties {
     right: 14,
     top: "50%",
     transform: "translateY(-50%)",
-    minWidth: 38,
-    width: 38,
-    minHeight: 38,
-    height: 38,
-    maxHeight: 38,
+    minWidth: 36,
+    width: 36,
+    minHeight: 36,
+    height: 36,
+    maxHeight: 36,
     borderRadius: 999,
     border: "1px solid rgba(242,199,102,0.20)",
     background: "rgba(4,19,35,0.28)",
     color: "#F2C766",
     fontWeight: 1000,
-    fontSize: 10.5,
+    fontSize: 10,
     letterSpacing: 0.2,
     boxShadow: "none",
   };
@@ -430,18 +430,18 @@ function ghostIconStyle(): React.CSSProperties {
 function primaryActionStyle(isCompact = false): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: isCompact ? 60 : 64,
-    height: isCompact ? 60 : 64,
-    maxHeight: isCompact ? 60 : 64,
-    borderRadius: 20,
+    minHeight: isCompact ? 56 : 60,
+    height: isCompact ? 56 : 60,
+    maxHeight: isCompact ? 56 : 60,
+    borderRadius: 18,
     border: "1px solid rgba(172,204,255,0.58)",
     background:
       "linear-gradient(180deg, #2F86FF 0%, #1761E6 48%, #0E43BE 100%)",
     color: "#FFFFFF",
-    fontSize: isCompact ? 22 : 26,
+    fontSize: isCompact ? 20 : 24,
     fontWeight: 1000,
     boxShadow:
-      "0 18px 34px rgba(22,95,230,0.30), inset 0 1px 0 rgba(255,255,255,0.24)",
+      "0 15px 30px rgba(22,95,230,0.28), inset 0 1px 0 rgba(255,255,255,0.24)",
     textShadow: "0 2px 14px rgba(0,0,0,0.28)",
   };
 }
@@ -458,12 +458,12 @@ function postActivationRow(isCompact = false): React.CSSProperties {
 
 function postActivationLink(primary = false): React.CSSProperties {
   return {
-    minHeight: 50,
-    height: 50,
-    maxHeight: 50,
-    borderRadius: 16,
-    padding: "0 14px",
-    fontSize: 13,
+    minHeight: 46,
+    height: 46,
+    maxHeight: 46,
+    borderRadius: 15,
+    padding: "0 12px",
+    fontSize: 12.5,
     fontWeight: 1000,
     whiteSpace: "nowrap",
     background: primary
@@ -892,7 +892,7 @@ export default function MemberActivationPage() {
             <SubtleButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 38 : 42}
+              stableHeight={isCompact ? 36 : 40}
               debugId="member-activation.about"
               style={railActionStyle("about", isCompact)}
             >
@@ -901,7 +901,7 @@ export default function MemberActivationPage() {
             <PrimaryButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 38 : 42}
+              stableHeight={isCompact ? 36 : 40}
               debugId="member-activation.guide"
               style={railActionStyle("guide", isCompact)}
             >
@@ -1074,8 +1074,8 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowPassword((current) => !current)}
-                    stableHeight={38}
-                    minWidth={38}
+                    stableHeight={36}
+                    minWidth={36}
                     debugId="member-activation.password.toggle"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     style={passwordToggleStyle()}
@@ -1105,8 +1105,8 @@ export default function MemberActivationPage() {
                   <SubtleButton
                     type="button"
                     onClick={() => setShowConfirmPassword((current) => !current)}
-                    stableHeight={38}
-                    minWidth={38}
+                    stableHeight={36}
+                    minWidth={36}
                     debugId="member-activation.confirm-password.toggle"
                     aria-label={
                       showConfirmPassword ? "Hide confirm password" : "Show confirm password"
@@ -1142,7 +1142,7 @@ export default function MemberActivationPage() {
                 disabled={busy || activated}
                 busy={busy}
                 busyLabel="Finishing activation..."
-                stableHeight={isCompact ? 60 : 64}
+                stableHeight={isCompact ? 56 : 60}
                 fullWidth
                 debugId="member-activation.finish"
                 style={primaryActionStyle(isCompact)}
@@ -1152,8 +1152,8 @@ export default function MemberActivationPage() {
                   style={{
                     display: "inline-grid",
                     placeItems: "center",
-                    width: isCompact ? 30 : 34,
-                    height: isCompact ? 30 : 34,
+                    width: isCompact ? 28 : 32,
+                    height: isCompact ? 28 : 32,
                     borderRadius: 999,
                     color: "#FFFFFF",
                     background: "rgba(255,255,255,0.14)",

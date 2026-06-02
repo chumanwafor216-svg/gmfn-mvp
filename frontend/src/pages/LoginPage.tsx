@@ -86,10 +86,10 @@ function primaryBtn(disabled = false): React.CSSProperties {
     zIndex: 2,
     isolation: "isolate",
     width: "100%",
-    minHeight: 56,
-    height: 56,
-    maxHeight: 56,
-    padding: "0 18px",
+    minHeight: 54,
+    height: 54,
+    maxHeight: 54,
+    padding: "0 16px",
     borderRadius: 999,
     border: disabled
       ? "1px solid rgba(161,179,199,0.48)"
@@ -100,12 +100,12 @@ function primaryBtn(disabled = false): React.CSSProperties {
     color: disabled ? "#6B7B8D" : "#10253B",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 16,
+    fontSize: 15,
     opacity: disabled ? 0.82 : 1,
     textAlign: "center",
     boxShadow: disabled
       ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 20px 36px rgba(1,13,32,0.30), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -8px 12px rgba(120,142,170,0.10)",
+      : "0 16px 30px rgba(1,13,32,0.28), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -7px 11px rgba(120,142,170,0.10)",
     textShadow: "none",
   };
 }
@@ -138,15 +138,15 @@ function supportBtn(): React.CSSProperties {
   return {
     ...secondaryBtn(),
     width: "100%",
-    minHeight: 48,
-    height: 48,
-    maxHeight: 48,
+    minHeight: 46,
+    height: 46,
+    maxHeight: 46,
     borderRadius: 16,
-    padding: "0 16px",
-    fontSize: 14,
+    padding: "0 14px",
+    fontSize: 13.5,
     justifySelf: "stretch",
     boxShadow:
-      "0 10px 22px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.12)",
+      "0 8px 18px rgba(0,8,18,0.15), inset 0 1px 0 rgba(255,255,255,0.12)",
   };
 }
 
@@ -826,7 +826,7 @@ export default function LoginPage() {
                 <SecondaryButton
                   onClick={openActivationRoute}
                   minWidth={220}
-                  stableHeight={48}
+                  stableHeight={46}
                   debugId="login.error.activate-membership"
                   style={supportBtn()}
                 >
@@ -970,7 +970,7 @@ export default function LoginPage() {
                 busy={busy}
                 busyLabel="Signing in..."
                 fullWidth
-                stableHeight={56}
+                stableHeight={54}
                 debugId="login.submit"
                 style={primaryBtn(busy)}
               >
@@ -982,7 +982,7 @@ export default function LoginPage() {
               <SecondaryButton
                 onClick={openActivationRoute}
                 disabled={busy}
-                stableHeight={48}
+                stableHeight={46}
                 debugId="login.activate-approved"
                 style={supportBtn()}
               >
@@ -1059,7 +1059,7 @@ export default function LoginPage() {
           <SecondaryButton
             onClick={openCreateRoute}
             disabled={busy}
-            stableHeight={48}
+            stableHeight={46}
             debugId="login.start-community"
             style={{
               ...supportBtn(),

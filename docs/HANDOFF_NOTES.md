@@ -1,3 +1,35 @@
+### Login and activation button tightening follow-up (2026-06-02)
+
+- Route/screens affected:
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner request:
+  - tighten and polish the buttons on the pages affected by the latest
+    sign-in/activation handoff repair.
+- Updated frontend:
+  - tightened the login primary submit button from 56px to 54px with softer
+    shadow and smaller padding;
+  - tightened login secondary/support actions from 48px to 46px so the
+    activation helper and start-community actions do not feel bulky;
+  - tightened activation top-rail About / Activation Guide controls from
+    38/42px to 36/40px, with reduced padding and shadow;
+  - tightened password visibility toggles from 38px to 36px;
+  - tightened the Finish activation CTA from 60/64px to 56/60px and reduced
+    its icon size to keep the button balanced on phone widths;
+  - tightened post-activation next-step links from 50px to 46px.
+- Verification:
+  - `npm exec -- eslint src/pages/LoginPage.tsx src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this pass is visual/button polish only. It does not change backend login,
+    activation, GSM normalization, membership rules, or route contracts.
+
 ### Live sign-in / activation handoff repair (2026-06-02)
 
 - Route/screens affected:
