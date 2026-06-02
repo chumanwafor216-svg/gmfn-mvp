@@ -2,6 +2,7 @@ const CACHE_VERSION = "gsn-pwa-shell-v1";
 const SHELL_ASSETS = [
   "/",
   "/cover",
+  "/manifest.json",
   "/manifest.webmanifest",
   "/gsn-app-icon.svg",
   "/gsn-app-icon-192.png",

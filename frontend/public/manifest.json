@@ -1,0 +1,62 @@
+{
+  "name": "GSN - Global Support Network",
+  "short_name": "GSN",
+  "description": "Keep trusted GSN community, shop, and member routes on this phone.",
+  "id": "/",
+  "start_url": "/cover?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#061827",
+  "theme_color": "#061827",
+  "orientation": "portrait",
+  "categories": ["business", "finance", "productivity"],
+  "icons": [
+    {
+      "src": "/gsn-app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/gsn-app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/gsn-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Open Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open your GSN member dashboard.",
+      "url": "/app/dashboard",
+      "icons": [
+        {
+          "src": "/gsn-app-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Open Marketplace",
+      "short_name": "Marketplace",
+      "description": "Open your active GSN marketplace.",
+      "url": "/app/marketplace",
+      "icons": [
+        {
+          "src": "/gsn-app-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

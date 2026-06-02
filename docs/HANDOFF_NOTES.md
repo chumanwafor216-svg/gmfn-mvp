@@ -11,6 +11,9 @@
     on the phone front screen like an app icon.
 - Frontend/PWA change:
   - added a GSN web app manifest at `frontend/public/manifest.webmanifest`;
+  - added the same public manifest at `frontend/public/manifest.json` and
+    linked the HTML to `/manifest.json` because the live Render static layer
+    served `.webmanifest` as `binary/octet-stream`;
   - added GSN app icons at `frontend/public/gsn-app-icon.svg`,
     `frontend/public/gsn-app-icon-192.png`, and
     `frontend/public/gsn-app-icon-512.png`;

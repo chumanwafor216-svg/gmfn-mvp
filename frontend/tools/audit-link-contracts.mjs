@@ -123,12 +123,12 @@ assertContains(
 
 assertContains(
   "index.html",
-  /<link rel="manifest" href="\/manifest\.webmanifest" \/>[\s\S]*?<meta name="theme-color" content="#061827" \/>[\s\S]*?<meta name="apple-mobile-web-app-capable" content="yes" \/>/,
+  /<link rel="manifest" href="\/manifest\.json" \/>[\s\S]*?<meta name="theme-color" content="#061827" \/>[\s\S]*?<meta name="apple-mobile-web-app-capable" content="yes" \/>/,
   "GSN public links must expose installable PWA metadata so phone users can keep the app on the home screen."
 );
 
 assertContains(
-  "public/manifest.webmanifest",
+  "public/manifest.json",
   /"name": "GSN - Global Support Network"[\s\S]*?"short_name": "GSN"[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "standalone"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
   "The PWA manifest must keep the GSN home-screen identity, app start URL, standalone display mode, and standard phone icons."
 );
