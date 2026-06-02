@@ -240,7 +240,7 @@ function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSP
     minWidth: 0,
     width: isCompact ? "100%" : undefined,
     borderRadius: 999,
-    padding: isCompact ? "0 9px" : about ? "0 20px" : "0 22px",
+    padding: isCompact ? "0 8px" : about ? "0 18px" : "0 20px",
     border: about
       ? "1px solid rgba(242,199,102,0.78)"
       : "1px solid rgba(123,161,204,0.20)",
@@ -249,12 +249,12 @@ function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSP
       : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
     color: about ? "#F4D37C" : "#DDEAFF",
     fontWeight: 1000,
-    fontSize: isCompact ? 10.5 : 12.5,
-    letterSpacing: 0.7,
+    fontSize: isCompact ? 10.25 : 12,
+    letterSpacing: 0.55,
     textTransform: "uppercase",
     whiteSpace: "nowrap",
     boxShadow: about
-      ? "0 10px 18px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)"
+      ? "0 8px 14px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)"
       : "inset 0 1px 0 rgba(255,255,255,0.08)",
   };
 }
@@ -486,19 +486,19 @@ function infoTextStyle(tone: "primary" | "muted", isCompact = false): React.CSSP
 function primaryActionStyle(isCompact = false): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: isCompact ? 56 : 60,
-    height: isCompact ? 56 : 60,
-    maxHeight: isCompact ? 56 : 60,
-    borderRadius: 18,
+    minHeight: isCompact ? 54 : 58,
+    height: isCompact ? 54 : 58,
+    maxHeight: isCompact ? 54 : 58,
+    borderRadius: 16,
     border: "1px solid rgba(172,204,255,0.58)",
     background:
       "linear-gradient(180deg, #2F86FF 0%, #1761E6 48%, #0E43BE 100%)",
     color: "#FFFFFF",
-    fontSize: isCompact ? 20 : 24,
+    fontSize: isCompact ? 19 : 23,
     fontWeight: 1000,
     boxShadow:
-      "0 15px 30px rgba(22,95,230,0.28), inset 0 1px 0 rgba(255,255,255,0.24)",
-    textShadow: "0 2px 14px rgba(0,0,0,0.28)",
+      "0 12px 24px rgba(22,95,230,0.23), inset 0 1px 0 rgba(255,255,255,0.22)",
+    textShadow: "0 1px 10px rgba(0,0,0,0.24)",
   };
 }
 
@@ -514,11 +514,11 @@ function postActivationRow(isCompact = false): React.CSSProperties {
 
 function postActivationLink(primary = false): React.CSSProperties {
   return {
-    minHeight: 46,
-    height: 46,
-    maxHeight: 46,
-    borderRadius: 15,
-    padding: "0 12px",
+    minHeight: 44,
+    height: 44,
+    maxHeight: 44,
+    borderRadius: 14,
+    padding: "0 11px",
     fontSize: 12.5,
     fontWeight: 1000,
     whiteSpace: "nowrap",
@@ -895,16 +895,16 @@ export default function MemberActivationPage() {
           <StableCtaLink
             to="/welcome"
             kind="secondary"
-            stableHeight={isCompact ? 52 : 58}
-            minWidth={isCompact ? 52 : 58}
+            stableHeight={isCompact ? 48 : 54}
+            minWidth={isCompact ? 48 : 54}
             debugId="member-activation.back"
             aria-label="Back to welcome"
             style={{
               position: "relative",
               zIndex: 1,
-              width: isCompact ? 52 : 58,
-              height: isCompact ? 52 : 58,
-              maxHeight: isCompact ? 52 : 58,
+              width: isCompact ? 48 : 54,
+              height: isCompact ? 48 : 54,
+              maxHeight: isCompact ? 48 : 54,
               padding: 0,
               borderRadius: 999,
               border: "1px solid rgba(242,199,102,0.32)",
@@ -1218,7 +1218,7 @@ export default function MemberActivationPage() {
                 disabled={busy || activated}
                 busy={busy}
                 busyLabel="Finishing activation..."
-                stableHeight={isCompact ? 56 : 60}
+                stableHeight={isCompact ? 54 : 58}
                 fullWidth
                 debugId="member-activation.finish"
                 style={primaryActionStyle(isCompact)}

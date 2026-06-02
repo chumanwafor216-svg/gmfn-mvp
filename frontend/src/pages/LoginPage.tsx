@@ -89,8 +89,8 @@ function primaryBtn(disabled = false): React.CSSProperties {
     minHeight: 54,
     height: 54,
     maxHeight: 54,
-    padding: "0 16px",
-    borderRadius: 999,
+    padding: "0 14px",
+    borderRadius: 24,
     border: disabled
       ? "1px solid rgba(161,179,199,0.48)"
       : "1px solid rgba(255,255,255,0.78)",
@@ -100,12 +100,12 @@ function primaryBtn(disabled = false): React.CSSProperties {
     color: disabled ? "#6B7B8D" : "#10253B",
     fontWeight: 1000,
     cursor: disabled ? "not-allowed" : "pointer",
-    fontSize: 15,
+    fontSize: 14.5,
     opacity: disabled ? 0.82 : 1,
     textAlign: "center",
     boxShadow: disabled
-      ? "0 10px 20px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.52)"
-      : "0 16px 30px rgba(1,13,32,0.28), inset 0 1px 0 rgba(255,255,255,0.92), inset 0 -7px 11px rgba(120,142,170,0.10)",
+      ? "0 8px 16px rgba(15,23,42,0.07), inset 0 1px 0 rgba(255,255,255,0.52)"
+      : "0 12px 22px rgba(1,13,32,0.22), inset 0 1px 0 rgba(255,255,255,0.90), inset 0 -5px 9px rgba(120,142,170,0.09)",
     textShadow: "none",
   };
 }
@@ -116,21 +116,22 @@ function secondaryBtn(): React.CSSProperties {
     zIndex: 2,
     isolation: "isolate",
     width: "100%",
-    minHeight: 48,
-    height: 48,
-    maxHeight: 48,
-    padding: "0 18px",
-    borderRadius: 999,
+    minHeight: 46,
+    height: 46,
+    maxHeight: 46,
+    padding: "0 15px",
+    borderRadius: 18,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)",
     color: "#F3D06A",
     fontWeight: 1000,
     border: "1px solid rgba(243,208,106,0.26)",
     cursor: "pointer",
-    fontSize: 15,
+    fontSize: 14.5,
+    lineHeight: 1.15,
     textAlign: "center",
     boxShadow:
-      "0 14px 28px rgba(0,8,18,0.18), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -6px 10px rgba(6,18,35,0.12)",
+      "0 10px 20px rgba(0,8,18,0.14), inset 0 1px 0 rgba(255,255,255,0.12), inset 0 -4px 8px rgba(6,18,35,0.10)",
   };
 }
 
@@ -138,11 +139,11 @@ function supportBtn(): React.CSSProperties {
   return {
     ...secondaryBtn(),
     width: "100%",
-    minHeight: 46,
-    height: 46,
-    maxHeight: 46,
-    borderRadius: 16,
-    padding: "0 14px",
+    minHeight: 44,
+    height: 44,
+    maxHeight: 44,
+    borderRadius: 15,
+    padding: "0 12px",
     fontSize: 13.5,
     justifySelf: "stretch",
     boxShadow:
@@ -904,7 +905,7 @@ export default function LoginPage() {
                 <SecondaryButton
                   onClick={openActivationRoute}
                   minWidth={220}
-                  stableHeight={46}
+                  stableHeight={44}
                   debugId="login.error.activate-membership"
                   style={supportBtn()}
                 >
@@ -1060,7 +1061,7 @@ export default function LoginPage() {
               <SecondaryButton
                 onClick={openActivationRoute}
                 disabled={busy}
-                stableHeight={46}
+                stableHeight={44}
                 debugId="login.activate-approved"
                 style={supportBtn()}
               >
@@ -1137,7 +1138,7 @@ export default function LoginPage() {
           <SecondaryButton
             onClick={openCreateRoute}
             disabled={busy}
-            stableHeight={46}
+            stableHeight={44}
             debugId="login.start-community"
             style={{
               ...supportBtn(),

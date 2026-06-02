@@ -1,3 +1,21 @@
+### Entry button tightening polish (2026-06-02)
+
+- Route/screens affected:
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner request:
+  - tighten the buttons after the accepted-login handoff fix.
+- Updated frontend:
+  - reduced login primary CTA visual bulk with a smaller radius, softer shadow,
+    tighter horizontal padding, and slightly smaller label size;
+  - reduced login secondary/support action height from 46px to 44px and aligned
+    the stable action wrappers to the same height;
+  - tightened activation top-rail action padding, letter spacing, and shadow;
+  - reduced the activation back button, Finish activation CTA, and
+    post-activation links while keeping safe tap targets;
+  - did not change route logic, backend auth, or copy.
+
 ### Accepted-login deterministic member handoff (2026-06-02)
 
 - Route/screens affected:
