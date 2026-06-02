@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-import { PrimaryButton, SecondaryButton } from "./StableButton";
+import { PrimaryButton } from "./StableButton";
 import {
   hasNativeInstallPrompt,
   isGsnStandaloneDisplay,
@@ -34,7 +34,7 @@ function outerCardStyle(tone: InstallPromptTone, compact: boolean): React.CSSPro
   const dark = tone === "dark";
 
   return {
-    borderRadius: compact ? 20 : 24,
+    borderRadius: compact ? 18 : 22,
     border: dark
       ? "1px solid rgba(243,208,106,0.24)"
       : "1px solid rgba(13,95,168,0.14)",
@@ -45,9 +45,9 @@ function outerCardStyle(tone: InstallPromptTone, compact: boolean): React.CSSPro
       ? "0 20px 38px rgba(0,8,18,0.22), inset 0 1px 0 rgba(255,255,255,0.10)"
       : "0 16px 34px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
     color: dark ? "#F8FBFF" : "#0B1F33",
-    padding: compact ? 14 : 16,
+    padding: compact ? 12 : 14,
     display: "grid",
-    gap: compact ? 10 : 12,
+    gap: compact ? 9 : 10,
     width: "100%",
     maxWidth: "100%",
     boxSizing: "border-box",
@@ -60,9 +60,9 @@ function markStyle(tone: InstallPromptTone, compact: boolean): React.CSSProperti
   const dark = tone === "dark";
 
   return {
-    width: compact ? 38 : 44,
-    height: compact ? 38 : 44,
-    borderRadius: 14,
+    width: compact ? 34 : 40,
+    height: compact ? 34 : 40,
+    borderRadius: 13,
     display: "grid",
     placeItems: "center",
     flexShrink: 0,
@@ -81,36 +81,12 @@ function markStyle(tone: InstallPromptTone, compact: boolean): React.CSSProperti
 function primaryStyle(compact: boolean): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: compact ? 44 : 48,
-    height: compact ? 44 : 48,
-    maxHeight: compact ? 44 : 48,
-    borderRadius: 999,
-    padding: compact ? "0 14px" : "0 16px",
-    fontSize: compact ? 13 : 14,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  };
-}
-
-function secondaryStyle(tone: InstallPromptTone, compact: boolean): React.CSSProperties {
-  const dark = tone === "dark";
-
-  return {
-    width: "100%",
-    minHeight: compact ? 40 : 42,
-    height: compact ? 40 : 42,
-    maxHeight: compact ? 40 : 42,
+    minHeight: compact ? 42 : 46,
+    height: compact ? 42 : 46,
+    maxHeight: compact ? 42 : 46,
     borderRadius: 999,
     padding: compact ? "0 12px" : "0 14px",
-    fontSize: compact ? 12.5 : 13,
-    color: dark ? "#F8FBFF" : "#0B1F33",
-    background: dark
-      ? "linear-gradient(180deg, rgba(255,255,255,0.09) 0%, rgba(255,255,255,0.04) 100%)"
-      : "linear-gradient(180deg, #FFFFFF 0%, #EDF5FF 100%)",
-    border: dark
-      ? "1px solid rgba(220,231,243,0.22)"
-      : "1px solid rgba(13,95,168,0.14)",
+    fontSize: compact ? 13 : 13.5,
     whiteSpace: "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
@@ -121,18 +97,26 @@ function helperTextStyle(tone: InstallPromptTone, compact: boolean): React.CSSPr
   return {
     margin: 0,
     color: tone === "dark" ? "rgba(226,232,240,0.78)" : "#526C84",
-    fontSize: compact ? 12.5 : 13.5,
-    lineHeight: 1.48,
+    fontSize: compact ? 12 : 12.8,
+    lineHeight: 1.4,
     fontWeight: 700,
   };
 }
 
-function manualSteps(isIos: boolean): string {
+function manualSteps(isIos: boolean): string[] {
   if (isIos) {
-    return "Open the browser share menu, choose Add to Home Screen, then save GSN.";
+    return [
+      "Tap Share.",
+      "Tap Add to Home Screen.",
+      "Tap Add.",
+    ];
   }
 
-  return "Open the browser menu and choose Install app or Add to Home screen.";
+  return [
+    "Tap the Chrome menu ⋮.",
+    "Tap Add to Home screen or Install app.",
+    "Tap Add.",
+  ];
 }
 
 export default function GsnInstallPrompt({
@@ -176,21 +160,22 @@ export default function GsnInstallPrompt({
     const choice = await promptGsnInstall();
     if (!choice) {
       setManualOpen(true);
-      setMessage("Use the phone browser menu to keep GSN on this phone.");
+      setMessage("Chrome may hide this in the menu. Follow these steps.");
       return;
     }
 
     if (choice.outcome === "accepted") {
-      setMessage("GSN is being added to this phone.");
+      setMessage("Done. Check your phone screen for GSN.");
       return;
     }
 
     setManualOpen(true);
-    setMessage("Install was not completed. You can add GSN later from the browser menu.");
+    setMessage("Not added yet. Use these simple steps.");
   }
 
-  const label = state.promptReady ? "Keep GSN on this phone" : "Show phone setup";
+  const label = state.promptReady ? "📱 Add GSN to phone screen" : "📱 Show 3 phone steps";
   const describedBy = `gsn-install-${surface.replace(/[^a-z0-9-]+/gi, "-")}`;
+  const steps = manualSteps(isIos);
 
   return (
     <section
@@ -202,7 +187,7 @@ export default function GsnInstallPrompt({
         style={{
           display: "grid",
           gridTemplateColumns: "auto minmax(0, 1fr)",
-          gap: 12,
+          gap: 10,
           alignItems: "center",
           minWidth: 0,
         }}
@@ -214,71 +199,37 @@ export default function GsnInstallPrompt({
           <div
             style={{
               color: tone === "dark" ? "#F8FBFF" : "#0B1F33",
-              fontSize: compact ? 15 : 17,
+              fontSize: compact ? 14.5 : 16,
               fontWeight: 1000,
               lineHeight: 1.18,
             }}
           >
-            Keep GSN on this phone
+            📱 Keep GSN nearby
           </div>
           <p id={describedBy} style={helperTextStyle(tone, compact)}>
-            Add a GSN icon to the phone screen so this route does not get lost
-            in WhatsApp or browser tabs.
+            Put a GSN icon on the phone screen so it does not get lost.
           </p>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: compact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
-          gap: 9,
-          alignItems: "stretch",
-        }}
+      <PrimaryButton
+        type="button"
+        onClick={state.promptReady ? handleInstall : () => setManualOpen((current) => !current)}
+        stableHeight={compact ? 42 : 46}
+        debugId={`gsn-install.${surface}.setup`}
+        aria-expanded={manualOpen}
+        aria-describedby={describedBy}
+        style={primaryStyle(compact)}
       >
-        {state.promptReady ? (
-          <PrimaryButton
-            type="button"
-            onClick={handleInstall}
-            stableHeight={compact ? 44 : 48}
-            debugId={`gsn-install.${surface}.native`}
-            aria-describedby={describedBy}
-            style={primaryStyle(compact)}
-          >
-            {label}
-          </PrimaryButton>
-        ) : (
-          <SecondaryButton
-            type="button"
-            onClick={() => setManualOpen((current) => !current)}
-            stableHeight={compact ? 40 : 42}
-            debugId={`gsn-install.${surface}.manual-toggle`}
-            aria-expanded={manualOpen}
-            aria-describedby={describedBy}
-            style={secondaryStyle(tone, compact)}
-          >
-            {label}
-          </SecondaryButton>
-        )}
-
-        <SecondaryButton
-          type="button"
-          onClick={() => setManualOpen((current) => !current)}
-          stableHeight={compact ? 40 : 42}
-          debugId={`gsn-install.${surface}.instructions`}
-          aria-expanded={manualOpen}
-          style={secondaryStyle(tone, compact)}
-        >
-          {manualOpen ? "Hide steps" : "Phone steps"}
-        </SecondaryButton>
-      </div>
+        {manualOpen && !state.promptReady ? "Hide steps" : label}
+      </PrimaryButton>
 
       {message ? <p style={helperTextStyle(tone, compact)}>{message}</p> : null}
 
       {manualOpen ? (
         <div
           style={{
-            borderRadius: 16,
+            borderRadius: 14,
             border:
               tone === "dark"
                 ? "1px solid rgba(220,231,243,0.16)"
@@ -287,10 +238,23 @@ export default function GsnInstallPrompt({
               tone === "dark"
                 ? "rgba(6,24,39,0.42)"
                 : "rgba(255,255,255,0.72)",
-            padding: compact ? "10px 12px" : "12px 14px",
+            padding: compact ? "9px 10px" : "10px 12px",
           }}
         >
-          <p style={helperTextStyle(tone, compact)}>{manualSteps(isIos)}</p>
+          <ol
+            style={{
+              margin: 0,
+              paddingLeft: 18,
+              color: tone === "dark" ? "rgba(248,251,255,0.88)" : "#0B1F33",
+              fontSize: compact ? 12 : 12.8,
+              lineHeight: 1.45,
+              fontWeight: 800,
+            }}
+          >
+            {steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
         </div>
       ) : null}
     </section>

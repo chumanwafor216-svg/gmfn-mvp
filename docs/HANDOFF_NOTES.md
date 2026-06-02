@@ -34,6 +34,13 @@
   - `frontend/tools/audit-link-contracts.mjs` now checks the manifest, service
     worker, boot registration, reusable install prompt, and public/entry page
     placements.
+- Follow-up UX tightening:
+  - the install prompt was reduced from two competing setup/instruction buttons
+    to one clear button with emoji-assisted copy for low-tech pilot users;
+  - when Chrome or Safari cannot show the native install prompt, the same
+    button opens three short manual steps instead of exposing another action;
+  - the audit now blocks the prompt from drifting back into a busy two-button
+    instruction block.
 
 ### Public Shop owner-only navigator (2026-06-02)
 

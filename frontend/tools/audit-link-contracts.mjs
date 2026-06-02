@@ -153,8 +153,14 @@ assertContains(
 
 assertContains(
   "src/components/GsnInstallPrompt.tsx",
-  /promptGsnInstall[\s\S]*?Add to Home Screen[\s\S]*?Install app or Add to Home screen[\s\S]*?Keep GSN on this phone/,
-  "The GSN install prompt must offer a native install path plus truthful manual phone instructions."
+  /promptGsnInstall[\s\S]*?Add to Home Screen[\s\S]*?Add to Home screen or Install app[\s\S]*?📱 Add GSN to phone screen[\s\S]*?📱 Show 3 phone steps/,
+  "The GSN install prompt must offer one simple setup action plus truthful manual phone instructions."
+);
+
+assertWholeFileNotContains(
+  "src/components/GsnInstallPrompt.tsx",
+  /debugId=\{`gsn-install\.\$\{surface\}\.instructions`\}/,
+  "The GSN install prompt must not drift back into a busy two-button instruction block."
 );
 
 assertContains(

@@ -67,12 +67,16 @@ reachable from the phone home screen.
 Must show:
 - Keep GSN on this phone
 - one clear install/setup action
-- manual phone steps when the browser cannot show a native install prompt
+- simple emoji-assisted phone steps when the browser cannot show a native
+  install prompt
 
 Rules:
 - The app may request browser-supported install only after the user taps the
   install action.
 - Do not claim GSN can silently place itself on the phone screen.
+- The prompt must not show competing install buttons. Use one clear button:
+  try the native install prompt when available, otherwise open three short
+  manual steps.
 - Do not cache private API responses or uploaded user data in the service
   worker.
 - The prompt may appear on Welcome, Sign In, Public Shop, invite/public access,
