@@ -459,9 +459,9 @@ function communityActionStyle(
       minWidth: 0,
       maxWidth: "100%",
       boxSizing: "border-box",
-      minHeight: 48,
-      padding: "12px 15px",
-      borderRadius: 14,
+      minHeight: 46,
+      padding: "11px 14px",
+      borderRadius: 13,
       border: disabled
         ? "1px solid rgba(148,163,184,0.26)"
         : "1px solid rgba(255,255,255,0.16)",
@@ -470,7 +470,7 @@ function communityActionStyle(
         : "linear-gradient(180deg, #0B2D4A 0%, #08233A 100%)",
       color: "#F8FBFF",
       fontWeight: 900,
-      fontSize: 14,
+      fontSize: 13.5,
       textAlign: "center",
       textDecoration: "none",
       alignContent: "center",
@@ -496,8 +496,8 @@ function communityActionStyle(
       minWidth: 0,
       maxWidth: "100%",
       boxSizing: "border-box",
-      minHeight: 46,
-      padding: "11px 14px",
+      minHeight: 44,
+      padding: "10px 13px",
       borderRadius: 12,
       border: "1px solid rgba(123,161,204,0.16)",
       background:
@@ -528,9 +528,9 @@ function communityActionStyle(
     minWidth: 0,
     maxWidth: "100%",
     boxSizing: "border-box",
-    minHeight: 46,
-    padding: "11px 14px",
-    borderRadius: 14,
+    minHeight: 44,
+    padding: "10px 13px",
+    borderRadius: 13,
     border: "1px solid rgba(123,161,204,0.16)",
     background:
       "linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%)",
@@ -625,11 +625,11 @@ function communityQuickActionButton(
   return {
     ...communityActionStyle("secondary"),
     width: "100%",
-    minHeight: isCompact ? 104 : 108,
+    minHeight: isCompact ? 96 : 100,
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
-    padding: isCompact ? "12px 12px" : "12px 8px",
+    gap: 7,
+    padding: isCompact ? "10px 11px" : "11px 8px",
     textAlign: "center",
     flexDirection: "column",
     background: primary
@@ -646,9 +646,9 @@ function communityQuickActionButton(
 function communityActionIcon(primary = false): React.CSSProperties {
   return {
     flex: "0 0 auto",
-    width: 44,
-    height: 44,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 16,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -659,7 +659,7 @@ function communityActionIcon(primary = false): React.CSSProperties {
       ? "1px solid rgba(13,95,168,0.14)"
       : "1px solid rgba(13,95,168,0.10)",
     color: "#135A94",
-    fontSize: 22,
+    fontSize: 20,
     lineHeight: 1,
     boxShadow: primary
       ? "inset 0 1px 0 rgba(255,255,255,0.08)"
@@ -674,15 +674,17 @@ function communityToolRowStyle(): React.CSSProperties {
     width: "100%",
     display: "grid",
     gridTemplateColumns: "auto minmax(0, 1fr) auto",
-    gap: 12,
+    gap: 10,
     alignItems: "center",
+    height: 72,
     minHeight: 72,
+    maxHeight: 72,
     boxSizing: "border-box",
-    borderRadius: 18,
+    borderRadius: 16,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)",
-    padding: "12px 14px",
+    padding: "10px 12px",
     color: "#07172C",
     cursor: "pointer",
     textAlign: "left",

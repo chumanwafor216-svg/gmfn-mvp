@@ -1565,8 +1565,8 @@ function marketplaceInlineActionsStyle(
     gridTemplateColumns: isCompact
       ? "1fr"
       : "repeat(auto-fit, minmax(168px, 1fr))",
-    gridAutoRows: "58px",
-    gap: 10,
+    gridAutoRows: "54px",
+    gap: 8,
     alignItems: "stretch",
     overflowAnchor: "none",
   };
@@ -1582,10 +1582,10 @@ function marketplaceInlineActionStyle(
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
-    height: 58,
-    minHeight: 58,
-    maxHeight: 58,
-    padding: "0 12px",
+    height: 54,
+    minHeight: 54,
+    maxHeight: 54,
+    padding: "0 11px",
     pointerEvents: "auto",
     touchAction: "manipulation",
     overflowAnchor: "none",
@@ -1613,11 +1613,12 @@ function intentChoiceStyle(
 ): React.CSSProperties {
   return {
     ...marketplaceActionStyle(tone),
-    minHeight: 78,
+    minHeight: 74,
+    maxHeight: 82,
     alignItems: "flex-start",
     flexDirection: "column",
-    gap: 5,
-    padding: "11px 12px",
+    gap: 4,
+    padding: "10px 12px",
     textAlign: "left",
   };
 }

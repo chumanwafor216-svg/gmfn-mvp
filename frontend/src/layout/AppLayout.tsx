@@ -865,8 +865,8 @@ function noteText(): React.CSSProperties {
 
 function groupCard(): React.CSSProperties {
   return {
-    borderRadius: 18,
-    padding: 10,
+    borderRadius: 16,
+    padding: 9,
     background: "rgba(255,255,255,0.05)",
     border: "1px solid rgba(255,255,255,0.08)",
   };
@@ -875,6 +875,7 @@ function groupCard(): React.CSSProperties {
 function groupHeader(active = false): React.CSSProperties {
   return {
     width: "100%",
+    minHeight: 42,
     border: active
       ? "1px solid rgba(255,255,255,0.14)"
       : "1px solid rgba(255,255,255,0.08)",
@@ -882,8 +883,8 @@ function groupHeader(active = false): React.CSSProperties {
       ? "rgba(29,78,216,0.28)"
       : "rgba(255,255,255,0.03)",
     color: gmfnBrand.colors.darkText,
-    borderRadius: 14,
-    padding: "10px 12px",
+    borderRadius: 13,
+    padding: "9px 11px",
     fontWeight: 800,
     fontSize: 14,
     display: "flex",
@@ -910,8 +911,10 @@ function navItem(active = false, disabled = false): React.CSSProperties {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
-    padding: "11px 13px",
+    height: 42,
+    minHeight: 42,
+    maxHeight: 42,
+    padding: "9px 12px",
     borderRadius: 12,
     textDecoration: "none",
     fontWeight: 800,
@@ -926,6 +929,9 @@ function navItem(active = false, disabled = false): React.CSSProperties {
     pointerEvents: "auto",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
   };
 }
 
@@ -969,14 +975,15 @@ function mobileIconButton(): React.CSSProperties {
   return {
     width: "100%",
     minHeight: 44,
-    borderRadius: 12,
+    borderRadius: 11,
     border: "1px solid rgba(11,31,51,0.10)",
     background: "#FFFFFF",
     color: "#0B1F33",
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: 900,
     cursor: "pointer",
-    gap: 6,
+    gap: 5,
+    padding: "8px 10px",
   };
 }
 
@@ -1120,9 +1127,11 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
-    padding: "10px 11px",
-    borderRadius: 12,
+    height: 42,
+    minHeight: 42,
+    maxHeight: 42,
+    padding: "9px 10px",
+    borderRadius: 11,
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 12.6,
@@ -1136,7 +1145,11 @@ function drawerLink(active = false, disabled = false): React.CSSProperties {
     pointerEvents: "auto",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
-    overflowWrap: "anywhere",
+    overflow: "hidden",
+    overflowWrap: "normal",
+    wordBreak: "normal",
+    hyphens: "none",
+    textOverflow: "ellipsis",
   };
 }
 
@@ -1185,9 +1198,11 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 46,
-    padding: "12px 13px",
-    borderRadius: 14,
+    height: 44,
+    minHeight: 44,
+    maxHeight: 44,
+    padding: "10px 12px",
+    borderRadius: 13,
     textDecoration: "none",
     fontWeight: 800,
     fontSize: 14,
@@ -1201,6 +1216,9 @@ function actionsLink(active = false, disabled = false): React.CSSProperties {
     pointerEvents: "auto",
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.7 : 1,
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
   };
 }
 
@@ -1210,10 +1228,10 @@ function bottomNav(): React.CSSProperties {
     zIndex: 1,
     flexShrink: 0,
     display: "flex",
-    gap: 8,
+    gap: 7,
     justifyContent: "flex-start",
     overflowX: "auto",
-    padding: "8px 10px calc(10px + env(safe-area-inset-bottom, 0px))",
+    padding: "7px 9px calc(9px + env(safe-area-inset-bottom, 0px))",
     background:
       "linear-gradient(180deg, rgba(245,249,255,0.98) 0%, rgba(232,240,255,0.99) 100%)",
     backdropFilter: "blur(10px)",
@@ -1231,16 +1249,18 @@ function bottomNav(): React.CSSProperties {
 function bottomNavItem(active = false, disabled = false): React.CSSProperties {
   return {
     flex: "0 0 auto",
-    minWidth: 62,
+    minWidth: 60,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 44,
-    padding: "8px 10px",
-    borderRadius: 13,
+    height: 42,
+    minHeight: 42,
+    maxHeight: 42,
+    padding: "8px 9px",
+    borderRadius: 12,
     textDecoration: "none",
     textAlign: "center",
-    fontSize: 11.1,
+    fontSize: 11,
     fontWeight: active ? 900 : 800,
     color: disabled ? "#94A3B8" : active ? "#0A4FB5" : "#27435F",
     background: active
@@ -1250,6 +1270,8 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
       ? "1px solid rgba(29,95,212,0.24)"
       : "1px solid rgba(76,111,146,0.18)",
     whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
     scrollSnapAlign: "center",
     pointerEvents: "auto",
     cursor: disabled ? "not-allowed" : "pointer",

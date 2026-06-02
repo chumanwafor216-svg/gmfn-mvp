@@ -1,3 +1,26 @@
+### Community, Marketplace, and shell button tightening (2026-06-02)
+
+- Route/screens affected:
+  - `/app/community`, implemented by `frontend/src/pages/CommunityHomePage.tsx`;
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`;
+  - authenticated app shell navigation in `frontend/src/layout/AppLayout.tsx`.
+- Product-owner request:
+  - before pilot retesting, tighten and polish the buttons in the areas touched
+    by the Public Shop / Global ID handoff work, especially Marketplace and
+    Community Home.
+- Updated frontend:
+  - tightened Community Home quick-action tiles and compact tool rows while
+    preserving the fixed 72px row geometry required by the phone-button audit;
+  - reduced Marketplace inline action rows from loose 58px controls to tighter
+    54px controls, with smaller gaps and padding;
+  - tightened app-shell desktop nav rows, mobile drawer links, page action
+    rows, mobile top buttons, and bottom rail items;
+  - changed drawer/app action labels toward clipped whole-word behavior instead
+    of fragmenting labels on narrow phone widths.
+- Remaining truth:
+  - this is visual/button geometry polish only. It does not change marketplace,
+    shop, community, finance, login, or Global ID business logic.
+
 ### Dashboard Global ID and Public Shop handoff (2026-06-02)
 
 - Route/screens affected:
