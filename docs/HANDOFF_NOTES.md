@@ -1,3 +1,36 @@
+### Public Shop signboard name remains shop-owned (2026-06-02)
+
+- Route/screens affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - Public Shop / Owner Shop Control screen rules in `docs/SCREEN_SPECS.md`;
+  - link/ownership contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner clarification:
+  - marketplace/community name can be shared/system-level context;
+  - public shop name must be personal to the member's own shop and must not be
+    replaced by a community name, marketplace name, admin name, or another
+    member's Spotlight/source-shop name.
+- Confirmed frontend truth:
+  - the public shop backend response already exposes the individual shop record
+    as `item`;
+  - however the public shop page still allowed the signboard name and
+    description to fall back to active Spotlight author content when the owner
+    shop record was missing or not ready.
+- Updated frontend:
+  - Public Shop signboard name now comes from `shop.shopName`, then a neutral
+    owner-GMFN fallback such as `{GMFN_ID} Shop`, then `Shop`;
+  - Public Shop signboard description now comes only from the shop record;
+  - community/public Spotlight content can still appear inside the Spotlight
+    area, but it can no longer rewrite the Public Shop signboard identity.
+- Updated docs/audit:
+  - `docs/SCREEN_SPECS.md` now states that shop name, description, picture,
+    WhatsApp, and Telegram are shop/member scoped, while community/marketplace
+    name is shared context only;
+  - `frontend/tools/audit-link-contracts.mjs` now guards against Public Shop
+    signboard fallback to Spotlight author content.
+- Remaining truth:
+  - this does not change who can administer a community or marketplace. It only
+    protects the displayed Public Shop identity from being generalized.
+
 ### Community / Shop button baseline and shop-info save wording (2026-06-02)
 
 - Route/screens counted:

@@ -1477,16 +1477,11 @@ export default function ShopGalleryPage() {
 
     const effectiveShopName = firstMeaningful(
       shop?.shopName,
-      broadcast?.sourceShopName,
-      effectiveOwnerName,
       effectiveGmfnId ? `${effectiveGmfnId} Shop` : "",
       "Shop"
     );
 
-    const effectiveDescription = firstMeaningful(
-      shop?.description,
-      broadcast?.message
-    );
+    const effectiveDescription = firstMeaningful(shop?.description);
 
     const effectiveCommunityName = firstMeaningful(
       shop?.communityName,

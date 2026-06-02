@@ -538,6 +538,12 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
+  /const effectiveShopName = firstMeaningful\(\s*shop\?\.shopName,\s*effectiveGmfnId \? `\$\{effectiveGmfnId\} Shop` : "",\s*"Shop"\s*\);[\s\S]*?const effectiveDescription = firstMeaningful\(shop\?\.description\);/,
+  "Public Shop signboard name and description must stay shop/member scoped and must not fall back to community Spotlight author content."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
   /window\.setInterval\(\(\) => \{\s*void refreshPublicShopState\(false\);[\s\S]*?SPOTLIGHT_PILOT_REFRESH_MS/,
   "Public Shop must quietly refresh live spotlight data on the same pilot refresh cadence instead of locking to first page load."
 );
