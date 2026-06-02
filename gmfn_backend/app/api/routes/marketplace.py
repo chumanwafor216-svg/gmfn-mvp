@@ -934,17 +934,20 @@ def get_public_marketplace_shop_by_gmfn_id(
     if not shop or not bool(getattr(shop, "is_active", True)):
         raise HTTPException(status_code=404, detail="Shop not found")
 
-    active_owner_shop_ids = [
-        int(row.id)
-        for row in (
-            db.query(MarketplaceShop)
-            .filter(
-                MarketplaceShop.owner_user_id == int(owner.id),
-                MarketplaceShop.is_active.is_(True),
-            )
-            .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
-            .all()
+    active_owner_shops = (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.owner_user_id == int(owner.id),
+            MarketplaceShop.is_active.is_(True),
         )
+        .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
+        .all()
+    )
+    active_owner_shop_ids = [int(row.id) for row in active_owner_shops]
+    active_owner_clan_ids = [
+        int(getattr(row, "clan_id", 0) or 0)
+        for row in active_owner_shops
+        if int(getattr(row, "clan_id", 0) or 0) > 0
     ]
     if not active_owner_shop_ids:
         raise HTTPException(status_code=404, detail="Shop not found")
@@ -1027,6 +1030,29 @@ def get_public_marketplace_shop_by_gmfn_id(
         .limit(int(broadcast_limit))
         .all()
     )
+
+    if not broadcast_rows:
+        fallback_clan_ids = (
+            [int(requested_clan_id)]
+            if requested_clan_id > 0
+            else list(dict.fromkeys(active_owner_clan_ids))
+        )
+
+        if fallback_clan_ids:
+            broadcast_rows = (
+                db.query(MarketplaceBroadcast)
+                .filter(MarketplaceBroadcast.clan_id.in_(fallback_clan_ids))
+                .filter(
+                    (MarketplaceBroadcast.expires_at.is_(None))
+                    | (MarketplaceBroadcast.expires_at > current_time)
+                )
+                .order_by(
+                    MarketplaceBroadcast.created_at.desc(),
+                    MarketplaceBroadcast.id.desc(),
+                )
+                .limit(int(broadcast_limit))
+                .all()
+            )
 
     effective_clan = requested_clan
     if effective_clan is None:

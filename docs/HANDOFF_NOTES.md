@@ -39,6 +39,43 @@
     authenticated fallback. Backend public-shop broadcast rows remain the public
     source of truth.
 
+### Public Shop public-endpoint Spotlight fallback (2026-06-02)
+
+- Route/screens affected:
+  - public API `GET /marketplace/public/shop/{gmfn_id}` in
+    `gmfn_backend/app/api/routes/marketplace.py`;
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner report:
+  - Public Shop still did not show the live Spotlight in the public Spotlight
+    area after the frontend reflection pass.
+- Live evidence checked:
+  - `GET https://gmfn-api.onrender.com/marketplace/public/shop/GMFN-U-63655DE6`
+    returned the shop record for `Royal Jordan ventures`, but returned
+    `broadcasts: []` and `primary_broadcast: null`;
+  - therefore the live public page had no public Spotlight data to render.
+- Confirmed backend truth:
+  - Dashboard reads authenticated active broadcasts across the member's
+    communities;
+  - the public shop endpoint only returned active broadcasts authored by the
+    shop owner;
+  - that means a live marketplace/community Spotlight can be visible on
+    Dashboard while the Public Shop endpoint remains blank if the shop owner has
+    no owner-authored broadcast row.
+- Updated backend:
+  - the public shop endpoint still prefers owner-authored shop broadcasts;
+  - when the shop has no owner-authored broadcast rows, it now falls back to
+    active broadcasts from the shop's visible community/marketplace;
+  - requested `clan_id` still scopes the fallback to that selected community;
+  - added a backend regression test proving a public shop with no owner
+    broadcast can still expose the current live community Spotlight.
+- Verification:
+  - `python -m pytest -q --basetemp C:\tmp\pytest-gmfn gmfn_backend\tests\test_marketplace_public_shop.py`
+    passed with 12 tests.
+- Remaining truth:
+  - if the live public API still returns `broadcasts: []` after this backend
+    commit deploys, then there is no active broadcast in the shop's visible
+    community at that moment, or the backend deploy did not reach Render yet.
+
 ### Public Shop bottom-domain and activation ID carryover (2026-06-02)
 
 - Route/screens affected:

@@ -174,6 +174,89 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     assert [item["name"] for item in alias_body["products"]] == ["Fresh Rice"]
 
 
+def test_public_shop_face_falls_back_to_live_community_spotlight(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
+    _ensure_marketplace_tables()
+
+    community_spotlight_url = _write_upload(
+        tmp_path,
+        "marketplace/images/community-public-spotlight.jpg",
+    )
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id, trust_score, trust_band
+                ) VALUES
+                    (1, 'owner@example.com', 'hashed', 'Shop Owner', 'user', 'GMFN-U-PUBLICOWNER', 70, 'B'),
+                    (2, 'seller@example.com', 'hashed', 'Spotlight Seller', 'user', 'GMFN-U-LIVESPOT', 82, 'A')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Homeland ISA', 'Homeland ISA Marketplace', 'PUBLICSPOT1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 1, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES
+                    (1, 1, 1, 'OWNER PUBLIC SHOP', 'Owner goods', 1),
+                    (2, 1, 2, 'LIVE SPOTLIGHT SHOP', 'Spotlight goods', 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message,
+                    image_url, video_url, priority_mode, visibility_scope,
+                    expires_at, created_at
+                ) VALUES (
+                    1, 1, 2, 2, 'Community live spotlight',
+                    :image_url, NULL, 'free', 'direct_communities',
+                    :expires_at, :created_at
+                )
+                """
+            ),
+            {
+                "image_url": community_spotlight_url,
+                "expires_at": datetime.now(timezone.utc) + timedelta(hours=3),
+                "created_at": datetime.now(timezone.utc),
+            },
+        )
+
+    res = client.get("/marketplace/public/shop/GMFN-U-PUBLICOWNER")
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["item"]["gmfn_id"] == "GMFN-U-PUBLICOWNER"
+    assert body["primary_broadcast"]["message"] == "Community live spotlight"
+    assert body["primary_broadcast"]["author_gmfn_id"] == "GMFN-U-LIVESPOT"
+    assert body["primary_broadcast"]["source_shop_name"] == "LIVE SPOTLIGHT SHOP"
+    assert body["primary_broadcast"]["image_url"] == community_spotlight_url
+    assert len(body["broadcasts"]) == 1
+
+
 def test_refresh_public_shop_link_reactivates_stale_owner_shop(
     client,
     override_current_user_user,
