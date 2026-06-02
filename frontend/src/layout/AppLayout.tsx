@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
-import { getCurrentClan, getMe, logout } from "../lib/api";
+import { getCurrentClan, getMe, getStoredGmfnId, logout } from "../lib/api";
 import {
   getDashboardAppUsageEntryFromLocation,
   recordDashboardAppUsage,
@@ -206,11 +206,16 @@ function makeAdminItem(): NavLinkItem {
   };
 }
 
-function buildPrimaryItems(canUseAdminTools: boolean): NavLinkItem[] {
+function buildPrimaryItems(
+  canUseAdminTools: boolean,
+  myShopGalleryTo: string,
+  myShopGalleryDisabled = false
+): NavLinkItem[] {
   const items: NavLinkItem[] = [
     makeDashboardItem(),
     makeCommunityItem(),
     makeMarketplaceItem(),
+    makeShopGalleryItem(myShopGalleryTo, myShopGalleryDisabled),
     makeShopControlItem(),
     makeFinanceItem(),
     makeLoansItem(),
@@ -1269,7 +1274,7 @@ export default function AppLayout() {
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [myGmfnId, setMyGmfnId] = useState<string>("");
+  const [myGmfnId, setMyGmfnId] = useState<string>(() => getStoredGmfnId() || "");
   const [myRole, setMyRole] = useState<string>(() => readRole());
   const [myClanRole, setMyClanRole] = useState<string>("");
 
@@ -1298,7 +1303,7 @@ export default function AppLayout() {
       ]);
       if (!alive) return;
 
-      const gmfnId = String(me?.gmfn_id || "").trim();
+      const gmfnId = String(me?.gmfn_id || getStoredGmfnId() || "").trim();
       const role = String(
         me?.role ||
           me?.account_role ||
@@ -1363,8 +1368,13 @@ export default function AppLayout() {
   );
 
   const primaryItems = useMemo(
-    () => buildPrimaryItems(canUseAdminTools),
-    [canUseAdminTools]
+    () =>
+      buildPrimaryItems(
+        canUseAdminTools,
+        myShopGalleryTo,
+        myShopGalleryDisabled
+      ),
+    [canUseAdminTools, myShopGalleryDisabled, myShopGalleryTo]
   );
 
   const trustPassportItems = useMemo(() => buildTrustPassportItems(), []);
@@ -1380,8 +1390,8 @@ export default function AppLayout() {
         label: "Main movement",
         hint:
           canUseAdminTools
-            ? "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop Control, Finance, Loans, Trust, and Admin."
-            : "The main routes stay simple: Dashboard, Community Home, Marketplace, Shop Control, Finance, Loans, and Trust.",
+            ? "The main routes stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, Trust, and Admin."
+            : "The main routes stay simple: Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance, Loans, and Trust.",
         items: primaryItems,
       },
       {

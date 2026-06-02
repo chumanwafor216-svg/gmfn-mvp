@@ -742,6 +742,7 @@ def test_activate_membership_cannot_reset_already_activated_account(client):
         },
     )
     assert old_login_res.status_code == 200, old_login_res.text
+    assert old_login_res.json()["gmfn_id"] == "GMFN-U-ACTIVE1"
 
     new_login_res = client.post(
         "/auth/login",

@@ -62,6 +62,7 @@ class UserOut(BaseModel):
 class TokenOut(BaseModel):
     access_token: str
     token_type: str = "bearer"
+    gmfn_id: Optional[str] = None
 
 
 class DevUserCreate(BaseModel):
@@ -678,7 +679,11 @@ def login(
     user = _ensure_user_gmfn_id(db, user)
 
     access_token = create_access_token(data={"sub": user.email})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "gmfn_id": getattr(user, "gmfn_id", None),
+    }
 
 
 @router.post("/signup-with-invite", response_model=FounderSignupWithInviteOut, status_code=201)

@@ -16,6 +16,7 @@ import {
   getMyTrustSlip,
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
+  getStoredGmfnId,
   listMarketplaceRequests,
   removeMyProfileImage,
   recordFocusCommitmentTrustEvent,
@@ -3507,7 +3508,7 @@ export default function DashboardPage() {
     [me]
   );
 
-  const gmfnId = safeStr(me?.gmfn_id || "Pending");
+  const gmfnId = safeStr(me?.gmfn_id || getStoredGmfnId() || "Pending");
   const visibleGsnId =
     gmfnId === "Pending" ? gmfnId : gmfnId.replace(/^GMF[MN]/i, "GSN");
   const globalIdParts = /^([A-Za-z]+-[A-Za-z]+-)(.+)$/.exec(visibleGsnId);

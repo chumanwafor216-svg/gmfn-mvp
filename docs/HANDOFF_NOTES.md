@@ -1,3 +1,63 @@
+### Dashboard Global ID and Public Shop handoff (2026-06-02)
+
+- Route/screens affected:
+  - `/app/dashboard`, implemented by `frontend/src/pages/DashboardPage.tsx`;
+  - authenticated app shell navigation in `frontend/src/layout/AppLayout.tsx`;
+  - authenticated route guard in `frontend/src/components/RequireAuth.tsx`;
+  - shared API client in `frontend/src/lib/api.ts`;
+  - backend `/auth/login`, implemented by `gmfn_backend/app/api/routes/auth.py`.
+- Product-owner observation:
+  - the Dashboard Identity Passport showed `GSN Global ID` as `Pending`;
+  - Public Shop / Shop Gallery depends on a real member Global ID, so a pending
+    Global ID can also block or hide the user's own public shop route.
+- Confirmed truth:
+  - the screenshot is not showing the GSM phone number as pending; it is showing
+    the GSN/GMFN Global ID as pending;
+  - however the owner's conclusion is still structurally correct because the
+    public shop URL is built from the Global ID (`/shop/:gmfnId`);
+  - recent accepted-login handoff logic can open the member shell during a live
+    `/auth/me` fetch hiccup, but Dashboard and navigation still need a known
+    member ID while `/auth/me` catches up.
+- Updated backend/frontend:
+  - backend `/auth/login` now returns `gmfn_id` with the token response;
+  - frontend remembers a valid GMFN/GSN ID from login response, GMFN/GSN login
+    input, activation response, and `/auth/me`;
+  - Dashboard uses the remembered real ID instead of showing `Pending` when
+    `/auth/me` is temporarily unavailable;
+  - AppLayout uses the remembered real ID to build the Public Shop link;
+  - invalid `401` / `403` route-guard sessions clear the remembered ID so stale
+    shop identity is not carried into another session.
+- Remaining truth:
+  - this does not invent a shop, bypass membership rules, or mark TrustSlip /
+    shop readiness as approved. It only preserves a real known Global ID so the
+    dashboard and public-shop navigation stop collapsing to `Pending` during a
+    live session-read hiccup.
+
+### Public Shop main-domain correction (2026-06-02)
+
+- Route/surface affected:
+  - authenticated app shell navigation in `frontend/src/layout/AppLayout.tsx`;
+  - public shop/gallery route remains `/shop/:gmfnId`, implemented by
+    `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner submission:
+  - after joining Homeland ISA Marketplace, the main domains showed Dashboard,
+    Community Home, Marketplace, Finance, Loans, and Trust, but Public Shop /
+    Shop Gallery was not treated as a main domain.
+- Confirmed frontend truth:
+  - the mobile bottom rail already had a dynamic `Public Shop` item;
+  - the main movement drawer/group still omitted `Public Shop` and only showed
+    `Shop Control`, making the public shop face feel secondary or hidden.
+- Updated frontend:
+  - added `Public Shop` to the main movement group using the same dynamic
+    owner `publicShopPath(myGmfnId)` logic as the bottom rail;
+  - kept `Shop Control` separate as the owner-management surface;
+  - updated the main movement hint so the domain map explicitly reads:
+    Dashboard, Community Home, Marketplace, Public Shop, Shop Control, Finance,
+    Loans, Trust, and Admin when applicable.
+- Remaining truth:
+  - this makes Public Shop first-class in navigation. It does not redesign
+    Shop Gallery itself or change shop exposure/visibility rules.
+
 ### Entry button tightening polish (2026-06-02)
 
 - Route/screens affected:

@@ -11,6 +11,7 @@ import {
   observeIdentityRisk,
   setAccessToken,
   setSelectedClanId,
+  setStoredGmfnId,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { peekPublishRecoveryTarget } from "../lib/publishRecovery";
@@ -279,6 +280,7 @@ export default function RequireAuth({ children, requireRole }: Props) {
           const status = httpStatus(meError);
           if (status === 401 || status === 403) {
             setAccessToken(null);
+            setStoredGmfnId(null);
             setSelectedClanId(null);
           }
           if (!requireRole && isNetworkSessionError(meError)) {

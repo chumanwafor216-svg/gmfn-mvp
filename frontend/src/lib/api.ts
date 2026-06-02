@@ -127,6 +127,7 @@ function buildUrl(path: string): string {
 }
 
 const ACCESS_TOKEN_KEY = "access_token";
+const GMFN_CURRENT_ID_KEY = "gmfn_current_id";
 const GMFN_SELECTED_CLAN_ID_KEY = "gmfn_selected_clan_id";
 const GMFN_ENTRY_MODE_KEY = "gmfn_entry_mode";
 const GMFN_ENTRY_INVITE_CODE_KEY = "gmfn_entry_invite_code";
@@ -139,6 +140,37 @@ export function getAccessToken(): string | null {
 
 export function setAccessToken(tok: string | null) {
   writeStorage(ACCESS_TOKEN_KEY, tok);
+}
+
+function normalizeGmfnId(value: unknown): string {
+  const raw = String(value ?? "").trim().toUpperCase();
+  if (!raw) return "";
+  const gmfn = raw.replace(/^GSN-/, "GMFN-");
+  return /^GMFN-[A-Z]-[A-Z0-9-]+$/.test(gmfn) ? gmfn : "";
+}
+
+export function getStoredGmfnId(): string | null {
+  const gmfnId = normalizeGmfnId(readStorage(GMFN_CURRENT_ID_KEY));
+  return gmfnId || null;
+}
+
+export function setStoredGmfnId(value: unknown): void {
+  const gmfnId = normalizeGmfnId(value);
+  writeStorage(GMFN_CURRENT_ID_KEY, gmfnId || null);
+}
+
+function rememberGmfnIdFrom(value: unknown): void {
+  if (typeof value === "string") {
+    const gmfnId = normalizeGmfnId(value);
+    if (gmfnId) setStoredGmfnId(gmfnId);
+    return;
+  }
+
+  const source = value as any;
+  const gmfnId = normalizeGmfnId(
+    source?.gmfn_id || source?.gmfnId || source?.gmfnID
+  );
+  if (gmfnId) setStoredGmfnId(gmfnId);
 }
 
 export function isAuthenticated(): boolean {
@@ -254,6 +286,7 @@ export function hasIssuedGmfnId(
 
 export function logout(): void {
   setAccessToken(null);
+  setStoredGmfnId(null);
   setSelectedClanId(null);
   try {
     if (typeof window !== "undefined") {
@@ -472,7 +505,7 @@ async function httpMultipart(path: string, form: FormData): Promise<any> {
 export async function login(
   username: string,
   password: string
-): Promise<{ access_token: string; token_type: string }> {
+): Promise<{ access_token: string; token_type: string; gmfn_id?: string | null }> {
   return httpForm("/auth/login", {
     grant_type: "",
     username,
@@ -487,12 +520,17 @@ export async function loginAndStore(username: string, password: string) {
   const out = await login(username, password);
   if (out?.access_token) {
     setAccessToken(out.access_token);
+    setStoredGmfnId(null);
   }
+  rememberGmfnIdFrom(out);
+  rememberGmfnIdFrom(username);
   return out;
 }
 
 export async function getMe() {
-  return httpJson("/auth/me", "GET");
+  const out = await httpJson("/auth/me", "GET");
+  rememberGmfnIdFrom(out);
+  return out;
 }
 
 export async function getMeWithToken(
@@ -516,7 +554,9 @@ export async function getMeWithToken(
   });
 
   if (!res.ok) throw new HttpStatusError(res.status, await parseError(res));
-  return readJsonOrTextSafe(res);
+  const out = await readJsonOrTextSafe(res);
+  rememberGmfnIdFrom(out);
+  return out;
 }
 
 export async function uploadMyProfileImageFile(file: File): Promise<any> {
@@ -570,6 +610,7 @@ export async function activateApprovedMember(payload: {
 
   const out = await httpJson("/auth/activate-approved-member", "POST", cleaned);
   if (out?.access_token) setAccessToken(out.access_token);
+  rememberGmfnIdFrom(out);
   return out;
 }
 
@@ -591,6 +632,8 @@ export async function activateMembership(payload: {
   );
 
   if (out?.access_token) setAccessToken(out.access_token);
+  rememberGmfnIdFrom(out);
+  rememberGmfnIdFrom(cleaned.gmfn_id);
   return out;
 }
 
