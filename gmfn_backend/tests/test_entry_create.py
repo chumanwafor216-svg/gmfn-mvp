@@ -599,6 +599,15 @@ def test_entry_phone_verification_then_create_and_phone_login(client):
     assert login_res.status_code == 200, login_res.text
     token = login_res.json()["access_token"]
 
+    local_phone_login_res = client.post(
+        "/auth/login",
+        data={
+            "username": "08012345678",
+            "password": "secret123",
+        },
+    )
+    assert local_phone_login_res.status_code == 200, local_phone_login_res.text
+
     me_res = client.get(
         "/auth/me",
         headers={"Authorization": f"Bearer {token}"},

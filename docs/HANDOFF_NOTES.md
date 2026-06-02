@@ -1,3 +1,59 @@
+### Live sign-in / activation handoff repair (2026-06-02)
+
+- Route/screens affected:
+  - backend `/auth/login`, `/auth/activate-membership`, and
+    `/auth/activate-approved-member` in `gmfn_backend/app/api/routes/auth.py`;
+  - frontend `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - frontend `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner report:
+  - after invite/activation, phone-number sign-in said the details did not
+    match an active account;
+  - GSN/GMFN ID sign-in looked like it opened the workspace and then bounced
+    back;
+  - activation/sign-in needed to be deterministic rather than opening and
+    closing.
+- Confirmed backend truth:
+  - login previously matched `User.phone_e164` by exact string only;
+  - the entry flow stores phone numbers in E.164 form such as
+    `+2348012345678`;
+  - therefore a user entering a common local GSM format such as `08012345678`
+    could fail even after the membership was activated.
+- Updated backend:
+  - added a small identity-candidate normalizer for `/auth/login`;
+  - login now checks exact/lower/upper identity candidates, normalized GSN ID
+    casing, compacted phone variants, `00...` international form, bare
+    international digits, and Nigeria pilot local GSM form `080...` ->
+    `+23480...`;
+  - no password rule, membership uniqueness rule, activation rule, token shape,
+    or schema was changed.
+- Updated frontend:
+  - `/login` now confirms `getMe()` immediately after storing a login token
+    before saying the workspace is opening;
+  - `/activate-membership` now confirms `getMe()` immediately after activation
+    before navigating to First Circle;
+  - if activation saves the password but the browser cannot open the session,
+    the page sends the member to `/login?force=1` with a clear warning instead
+    of silently bouncing through guarded routes.
+- Verification:
+  - `python -m pytest -q gmfn_backend\tests\test_entry_create.py::test_entry_phone_verification_then_create_and_phone_login` passed and now covers local GSM login after activation;
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py::test_public_join_request_existing_phone_requires_login_instead_of_duplicate` passed;
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py::test_activate_approved_member_accepts_request_id_path` passed;
+  - `npm exec -- eslint src/pages/LoginPage.tsx src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this fix makes common Nigerian local GSM sign-in work for accounts stored
+    as E.164, but it does not implement a full international phone-number
+    library;
+  - if live Render still bounces after this commit is deployed, the next check
+    should inspect live `/auth/me` and route-guard responses with the actual
+    token/session, because the local code path now verifies token readability
+    before navigating.
+
 ### Seven-item entry flow cleanup pass (2026-06-02)
 
 - Route/screens affected:

@@ -9,6 +9,7 @@ import {
 import {
   activateApprovedMember,
   activateMembership,
+  getMe,
   getSelectedClanId,
   observeIdentityRisk,
 } from "../lib/api";
@@ -721,6 +722,23 @@ export default function MemberActivationPage() {
           password: requestReady.password,
           confirm_password: requestReady.confirm_password,
         });
+      }
+
+      const me = await getMe().catch(() => null);
+      if (!me?.id) {
+        showNotice(
+          {
+            tone: "warning",
+            title: "Activation saved",
+            message:
+              "Your password was saved, but the live system could not open your session from this screen. Sign in again with your GSN ID or phone number.",
+          },
+          {
+            routePath: "/login?force=1",
+            routeDelayMs: 1800,
+          }
+        );
+        return;
       }
 
       await observeIdentityRisk().catch(() => null);

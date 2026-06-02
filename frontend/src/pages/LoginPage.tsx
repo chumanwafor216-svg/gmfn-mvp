@@ -368,6 +368,12 @@ export default function LoginPage() {
       if (!p) throw new Error("Enter your password.");
 
       await loginAndStore(u, p);
+      const me = await getMe().catch(() => null);
+      if (!me?.id) {
+        throw new Error(
+          "Sign-in accepted, but the live system could not open your member session. Please try again in a moment."
+        );
+      }
 
       setMsg("Sign-in successful. Opening your workspace...");
       setTimeout(() => {

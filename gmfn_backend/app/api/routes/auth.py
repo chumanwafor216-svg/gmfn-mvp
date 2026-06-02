@@ -139,16 +139,50 @@ def authenticate_user(db: Session, email: str, password: str) -> User | None:
     return user
 
 
-def _find_user_by_identity(db: Session, identity: str) -> User | None:
+def _identity_candidates(identity: str) -> list[str]:
     raw = str(identity or "").strip()
     if not raw:
+        return []
+
+    candidates: list[str] = []
+
+    def add(value: str) -> None:
+        cleaned = str(value or "").strip()
+        if cleaned and cleaned not in candidates:
+            candidates.append(cleaned)
+
+    add(raw)
+    add(raw.lower())
+    add(raw.upper())
+
+    compact_phone = (
+        raw.replace(" ", "")
+        .replace("-", "")
+        .replace("(", "")
+        .replace(")", "")
+    )
+    if compact_phone.startswith("00"):
+        add(f"+{compact_phone[2:]}")
+    elif compact_phone.startswith("+"):
+        add(compact_phone)
+    elif compact_phone.isdigit():
+        add(f"+{compact_phone}")
+        if compact_phone.startswith("0") and len(compact_phone) == 11:
+            add(f"+234{compact_phone[1:]}")
+
+    return candidates
+
+
+def _find_user_by_identity(db: Session, identity: str) -> User | None:
+    candidates = _identity_candidates(identity)
+    if not candidates:
         return None
 
-    user = db.query(User).filter(User.email == raw).first()
+    user = db.query(User).filter(User.email.in_(candidates)).first()
     if not user:
-        user = db.query(User).filter(User.gmfn_id == raw).first()
+        user = db.query(User).filter(User.gmfn_id.in_(candidates)).first()
     if not user:
-        user = db.query(User).filter(User.phone_e164 == raw).first()
+        user = db.query(User).filter(User.phone_e164.in_(candidates)).first()
     return user
 
 
