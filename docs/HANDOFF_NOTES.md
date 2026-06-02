@@ -1,3 +1,45 @@
+### Shop info and product upload self-heal when shop record is missing (2026-06-02)
+
+- Route/screens affected:
+  - `/app/shop-assets`, implemented by `frontend/src/pages/ShopAssetsPage.tsx`;
+  - `/app/shop-control`, implemented by `frontend/src/pages/ShopControlPage.tsx`;
+  - link/ownership contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner report:
+  - shop name and public shop control handles could no longer be saved;
+  - product/goods upload into the public shop also failed even though this had
+    worked before.
+- Confirmed root cause:
+  - backend `POST /api/marketplace/shops` already supports create-or-update for
+    the signed-in owner shop;
+  - frontend `ShopAssetsPage` and `ShopControlPage` still blocked save actions
+    when the shop record did not hydrate first, showing a dead-end state such
+    as "Shop record is not ready";
+  - this meant stale selected community context, live-session hydration delay,
+    or a dormant/missing shop record prevented the owner from repairing the shop
+    from the exact control page intended for that job.
+- Updated frontend:
+  - `Save shop info` now patches the current shop when present and calls the
+    backend shop upsert when missing;
+  - Shop Control details save now has the same patch-or-upsert behavior;
+  - public product posting now prepares the owner shop record first, then uses
+    the returned shop id for the product upload.
+- Updated audit:
+  - `frontend/tools/audit-link-contracts.mjs` now guards the shop-info
+    patch-or-upsert behavior and the product-posting shop preparation step.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopAssetsPage.tsx src/pages/ShopControlPage.tsx tools/audit-link-contracts.mjs`
+    passed;
+  - `npm run audit:link-contracts`, `npm run audit:tap-stability`, and
+    `npm run audit:button-stability` passed.
+  - `git diff --check` passed with normal Windows line-ending warnings only;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    `spawn EPERM` sandbox failure.
+- Remaining truth:
+  - this repairs frontend dead-end behavior. If the live backend still rejects
+    the upsert, the next thing to inspect is the user's active membership /
+    selected community context returned by `_resolve_clan_id` and
+    `_require_active_membership`.
+
 ### Public Shop on-demand verification panel (2026-06-02)
 
 - Route/screens affected:

@@ -1411,23 +1411,28 @@ export default function ShopControlPage() {
     }
   }
 
-  async function saveShopDetails(extra?: Partial<ShopRecord> & { clear_image?: boolean }) {
-    if (!shop?.id) {
-      showNotice("error", "Shop record is not available yet.");
-      return;
-    }
+  function fallbackShopName(): string {
+    return (
+      safeStr(shopName) ||
+      firstTruthy(me?.display_name, me?.email).replace(/@.*$/, "").trim() ||
+      firstTruthy(me?.gmfn_id) ||
+      "My GSN Shop"
+    );
+  }
 
+  async function saveShopDetails(extra?: Partial<ShopRecord> & { clear_image?: boolean }) {
     setSavingShop(true);
 
     try {
       const body: any = {
-        name: safeStr(extra?.name ?? shopName),
+        clan_id: Number(shop?.clan_id || selectedClanId || 0) || null,
+        name: safeStr(extra?.name ?? shopName) || fallbackShopName(),
         description: safeStr(extra?.description ?? shopDescription) || null,
         whatsapp_number: safeStr(extra?.whatsapp_number ?? whatsApp) || null,
         telegram_handle: safeStr(extra?.telegram_handle ?? telegramHandle) || null,
       };
 
-      if (extra?.clear_image) {
+      if (shop?.id && extra?.clear_image) {
         body.clear_image = true;
       } else if (extra && "image_url" in extra) {
         body.image_url = safeStr(extra.image_url) || null;
@@ -1435,8 +1440,8 @@ export default function ShopControlPage() {
         body.image_url = safeStr(imageUrlInput) || null;
       }
 
-      const res = await apiJson<any>(`/api/marketplace/shops/${shop.id}`, {
-        method: "PATCH",
+      const res = await apiJson<any>(shop?.id ? `/api/marketplace/shops/${shop.id}` : "/api/marketplace/shops", {
+        method: shop?.id ? "PATCH" : "POST",
         body: JSON.stringify(body),
       });
 

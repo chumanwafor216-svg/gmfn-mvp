@@ -588,6 +588,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     showNotice(tone, text);
   }
 
+  function fallbackShopName(): string {
+    return (
+      safeStr(shopName) ||
+      firstTruthy(me?.display_name, me?.email).replace(/@.*$/, "").trim() ||
+      firstTruthy(me?.gmfn_id) ||
+      "My GSN Shop"
+    );
+  }
+
   function toggleSection(key: keyof CollapseState) {
     setCollapsed((prev) => ({
       ...prev,
@@ -862,11 +871,6 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   }
 
   async function saveShopSignboard(extra?: { clear_image?: boolean; image_url?: string | null }) {
-    if (!shop?.id) {
-      showNotice("error", "Shop record is not ready.");
-      return;
-    }
-
     setSavingShop(true);
 
     try {
@@ -878,20 +882,21 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       }
 
       const body: any = {
-        name: safeStr(shopName),
+        clan_id: Number(shop?.clan_id || selectedClanId || 0) || null,
+        name: fallbackShopName(),
         description: safeStr(shopDescription) || null,
         whatsapp_number: safeStr(shopWhatsApp) || null,
         telegram_handle: safeStr(shopTelegram) || null,
       };
 
-      if (extra?.clear_image) {
+      if (shop?.id && extra?.clear_image) {
         body.clear_image = true;
       } else {
         body.image_url = nextImageUrl;
       }
 
-      const res = await apiJson<any>(`/api/marketplace/shops/${shop.id}`, {
-        method: "PATCH",
+      const res = await apiJson<any>(shop?.id ? `/api/marketplace/shops/${shop.id}` : "/api/marketplace/shops", {
+        method: shop?.id ? "PATCH" : "POST",
         body: JSON.stringify(body),
       });
 
@@ -911,6 +916,36 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       setSavingShop(false);
       setUploadingShopImage(false);
     }
+  }
+
+  async function ensureShopRecordForProduct(): Promise<ShopRecord | null> {
+    if (shop?.id) return shop;
+
+    const body = {
+      clan_id: Number(selectedClanId || 0) || null,
+      name: fallbackShopName(),
+      description: safeStr(shopDescription) || null,
+      whatsapp_number: safeStr(shopWhatsApp) || null,
+      telegram_handle: safeStr(shopTelegram) || null,
+      image_url: safeStr(shopImageUrlInput) || null,
+    };
+
+    const res = await apiJson<any>("/api/marketplace/shops", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+
+    const nextShop = (res?.item || null) as ShopRecord | null;
+    if (!nextShop?.id) return null;
+
+    setShop(nextShop);
+    setShopName(firstTruthy(nextShop?.name, body.name));
+    setShopDescription(firstTruthy(nextShop?.description, shopDescription));
+    setShopWhatsApp(firstTruthy(nextShop?.whatsapp_number, shopWhatsApp));
+    setShopTelegram(firstTruthy(nextShop?.telegram_handle, shopTelegram));
+    setShopImageUrlInput(firstTruthy(nextShop?.image_url, shopImageUrlInput));
+    setShopPreviewUrl(firstTruthy(nextShop?.image_url, shopPreviewUrl));
+    return nextShop;
   }
 
   function resetProductForm() {
@@ -997,11 +1032,6 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       return;
     }
 
-    if (!shop?.id) {
-      showProductFormNotice("error", "Shop record is not ready.");
-      return;
-    }
-
     if (!safeStr(productName)) {
       showProductFormNotice("error", "Add the product title first.");
       return;
@@ -1036,6 +1066,16 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setSavingProduct(true);
 
     try {
+      const activeShop = await ensureShopRecordForProduct();
+      if (!activeShop?.id) {
+        showProductFormNotice(
+          "error",
+          "GSN could not prepare your public shop yet. Save shop info once, then post the item again."
+        );
+        setSavingProduct(false);
+        return;
+      }
+
       const wasEditingProduct = Boolean(editingProductId);
       let nextImageUrl = safeStr(productImageUrlInput) || null;
       let nextVideoUrl = safeStr(productVideoUrlInput) || null;
@@ -1069,8 +1109,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       }
 
       const body = {
-        clan_id: Number(shop?.clan_id || selectedClanId || 0),
-        shop_id: Number(shop.id),
+        clan_id: Number(activeShop?.clan_id || selectedClanId || 0),
+        shop_id: Number(activeShop.id),
         name: safeStr(productName),
         description: composeProductDescription(productLabel, productDescription),
         price: safeStr(productPrice),

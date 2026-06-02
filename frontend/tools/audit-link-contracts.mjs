@@ -249,8 +249,20 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /async function saveShopSignboard[\s\S]*?body\.image_url = nextImageUrl;[\s\S]*?`\/api\/marketplace\/shops\/\$\{shop\.id\}`/,
-  "Shop Assets public picture saves must patch the current shop record, not a community or profile image endpoint."
+  /function fallbackShopName\(\): string[\s\S]*?async function saveShopSignboard[\s\S]*?body\.image_url = nextImageUrl;[\s\S]*?shop\?\.id \? `\/api\/marketplace\/shops\/\$\{shop\.id\}` : "\/api\/marketplace\/shops"[\s\S]*?method: shop\?\.id \? "PATCH" : "POST"/,
+  "Shop Assets public shop info saves must patch the current shop record when present and create/repair the owner shop when the record did not hydrate."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /async function ensureShopRecordForProduct\(\): Promise<ShopRecord \| null>[\s\S]*?"\/api\/marketplace\/shops"[\s\S]*?const activeShop = await ensureShopRecordForProduct\(\);[\s\S]*?shop_id: Number\(activeShop\.id\)/,
+  "Shop Assets product posting must prepare the owner shop record before uploading public shop items."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /function fallbackShopName\(\): string[\s\S]*?async function saveShopDetails[\s\S]*?shop\?\.id \? `\/api\/marketplace\/shops\/\$\{shop\.id\}` : "\/api\/marketplace\/shops"[\s\S]*?method: shop\?\.id \? "PATCH" : "POST"/,
+  "Shop Control details save must create or repair the owner shop record instead of blocking when the shop record did not hydrate."
 );
 
 assertContains(
