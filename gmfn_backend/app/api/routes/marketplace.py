@@ -87,6 +87,26 @@ def _safe_str(value: Any, default: str = "") -> str:
     return s if s else default
 
 
+def _public_identity_name(*values: Any, fallback: str) -> str:
+    for value in values:
+        text = _safe_str(value)
+        if not text:
+            continue
+
+        lowered = text.lower()
+        if "@" in lowered:
+            continue
+        if lowered.endswith(".local"):
+            continue
+        digits = "".join(ch for ch in text if ch.isdigit())
+        if len(digits) >= 7 and len(digits) >= max(1, len(text.replace(" ", "")) - 2):
+            continue
+
+        return text
+
+    return fallback
+
+
 def _uploads_root() -> Path:
     raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
     return Path(raw or "uploads").expanduser()
@@ -599,11 +619,14 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
     clan = db.query(Clan).filter(Clan.id == int(shop.clan_id)).first()
 
     owner_gmfn_id = _safe_str(getattr(owner, "gmfn_id", None)) or None
-    owner_display_name = (
-        _safe_str(getattr(owner, "display_name", None))
-        or owner_gmfn_id
-        or _safe_str(getattr(owner, "email", None))
-        or f"Member {int(shop.owner_user_id)}"
+    owner_display_name = _public_identity_name(
+        getattr(owner, "display_name", None),
+        getattr(owner, "nickname", None),
+        fallback="GSN member",
+    )
+    shop_display_name = _public_identity_name(
+        getattr(shop, "name", None),
+        fallback="Public GSN Shop",
     )
 
     trust_band = (
@@ -632,7 +655,7 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         "owner_nickname": _safe_str(getattr(owner, "nickname", None)) or None,
         "trust_band": trust_band,
         "trust_score": trust_score,
-        "name": getattr(shop, "name", None),
+        "name": shop_display_name,
         "description": shop.description,
         "whatsapp_number": shop.whatsapp_number,
         "telegram_handle": shop.telegram_handle,
@@ -698,7 +721,11 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "created_at": product.created_at.isoformat() if product.created_at else None,
         "origin_clan_id": int(product.clan_id),
         "origin_shop_id": int(product.shop_id),
-        "origin_shop_name": getattr(shop, "name", None) if shop else None,
+        "origin_shop_name": (
+            _public_identity_name(getattr(shop, "name", None), fallback="")
+            if shop
+            else None
+        ),
         "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
         "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
         "reposts_used": repost_count,
@@ -727,11 +754,10 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
 
     author_name = None
     if author:
-        author_name = (
-            _safe_str(getattr(author, "display_name", None))
-            or _safe_str(getattr(author, "gmfn_id", None))
-            or _safe_str(getattr(author, "email", None))
-            or f"Member {int(author.id)}"
+        author_name = _public_identity_name(
+            getattr(author, "display_name", None),
+            getattr(author, "nickname", None),
+            fallback="GSN member",
         )
 
     clan_display_name = None
@@ -744,10 +770,10 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
 
     shop_display_name = None
     if canonical_shop:
-        shop_display_name = (
-            _safe_str(getattr(canonical_shop, "name", None))
-            or author_name
-            or "Community seller"
+        shop_display_name = _public_identity_name(
+            getattr(canonical_shop, "name", None),
+            author_name,
+            fallback="Community seller",
         )
 
     trust_band = None
@@ -2052,15 +2078,58 @@ def repost_marketplace_product(
             detail="No distribution slots remaining for this product",
         )
 
+    current_time = _now_utc()
+    if not _spotlight_capacity_pilot_override_active(current_time):
+        active_count = _count_active_spotlights_for_clan(
+            db=db,
+            clan_id=target_clan_id,
+            now=current_time,
+        )
+        max_allowed = _max_spotlights_for_clan(
+            db=db,
+            clan_id=target_clan_id,
+        )
+        if active_count >= max_allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Spotlight capacity reached for clan {target_clan_id}. Wait for an active spotlight to expire.",
+            )
+
+    spotlight_title = _safe_str(getattr(product, "name", None)) or "Marketplace repost"
+    spotlight_detail = _safe_str(getattr(product, "description", None))
+    spotlight_message = (
+        f"{spotlight_title} - {spotlight_detail}"
+        if spotlight_detail and spotlight_detail != spotlight_title
+        else spotlight_title
+    )[:2000]
+    spotlight_expires_at = current_time.replace(
+        microsecond=0,
+        hour=23,
+        minute=59,
+        second=59,
+    )
+
     repost = MarketplaceProductRepost(
         original_product_id=int(product.id),
         reposted_by_user_id=int(current_user.id),
         target_clan_id=target_clan_id,
-        created_at=_now_utc(),
+        created_at=current_time,
+    )
+    broadcast = MarketplaceBroadcast(
+        clan_id=target_clan_id,
+        author_user_id=int(current_user.id),
+        shop_id=int(product.shop_id),
+        message=spotlight_message,
+        image_url=_safe_str(getattr(product, "image_url", None)) or None,
+        video_url=_safe_str(getattr(product, "video_url", None)) or None,
+        priority_mode=SPOTLIGHT_FREE,
+        visibility_scope="marketplace_repost",
+        expires_at=spotlight_expires_at,
+        created_at=current_time,
     )
     db.add(repost)
-    db.commit()
-    db.refresh(repost)
+    db.add(broadcast)
+    db.flush()
 
     remaining_after = _remaining_distribution_slots(db, product_id=int(product.id))
 
@@ -2077,20 +2146,24 @@ def repost_marketplace_product(
             "origin_clan_id": origin_clan_id,
             "target_clan_id": target_clan_id,
             "repost_id": int(repost.id),
+            "broadcast_id": int(broadcast.id),
             "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
             "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
             "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
             "distribution_slots_remaining": remaining_after,
-            "reason": "marketplace_product_reposted",
+            "reason": "marketplace_product_reposted_to_spotlight",
         },
         commit=False,
         refresh=False,
     )
     db.commit()
+    db.refresh(repost)
+    db.refresh(broadcast)
 
     return {
         "ok": True,
         "item": _repost_out(db, repost),
+        "broadcast": _broadcast_out(db, broadcast),
         "product": _product_out(db, product),
     }
 

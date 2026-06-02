@@ -32605,3 +32605,53 @@ GSN-branded invite composer and invite-entry continuity.
   - This is a global source-side tightening pass, not a manual screenshot pass
     on every route. Real Android checks are still needed for the most cramped
     pages after deployment.
+
+## Public shop navigation, identity, and repost placement (2026-06-02)
+
+- Routes/screens affected:
+  - `/shop/:gmfnId`, public member shop face and signed-in public-shop tooling.
+  - Marketplace product repost endpoint: `POST /marketplace/products/{product_id}/repost`.
+- Frontend change:
+  - `frontend/src/pages/ShopGalleryPage.tsx` now shows a compact `GSN navigation`
+    strip to any authenticated member on a public shop, including when viewing
+    another member's shop. Visitors who are not signed in still do not see the
+    private navigation.
+  - The signed-in navigation links to Dashboard, Community Home, Marketplace,
+    and My Shop so a member can move back and forth while inspecting public
+    shops and galleries.
+  - Public shop display names now reject phone-number, email, and internal
+    `.local` fallbacks. If the member has not saved a public shop/member name,
+    the page uses neutral labels such as `Public GSN Shop` and `GSN member`.
+  - The repost panel now asks for a target marketplace/community ID and labels
+    the action as an in-network spotlight placement rather than an outside
+    share action.
+- Backend change:
+  - `gmfn_backend/app/api/routes/marketplace.py` now masks public shop owner and
+    shop names in shop, product, and broadcast payloads so phone/internal
+    identity fallbacks are not exposed as public shop names.
+  - Reposting a product now creates both the repost record and a
+    `MarketplaceBroadcast` in the target marketplace spotlight/feed lane,
+    subject to membership checks, duplicate repost checks, product distribution
+    slots, and spotlight-capacity limits.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now checks the signed-in public
+    shop navigation, public identity masking contract, and repost-to-spotlight
+    UI contract.
+  - `gmfn_backend/tests/test_marketplace_public_shop.py` covers internal-phone
+    fallback masking and repost creation of a target marketplace spotlight
+    broadcast.
+- Verification:
+  - Passed focused backend tests for identity masking and repost-to-spotlight.
+  - Passed frontend ESLint for touched files and link/button/tap stability
+    audits.
+  - Full `tests/test_marketplace_public_shop.py` was attempted, but Windows
+    denied pytest access to its temporary directory while setting up `tmp_path`
+    fixtures; the run still showed 11 passing tests before the temp-directory
+    errors.
+- Remaining truth:
+  - Repost is now a real spotlight placement, so it can be blocked by
+    marketplace spotlight capacity. That matches the current product logic, but
+    it is intentionally stricter than the older link-like repost behavior.
+  - A real phone check on Render is still needed to prove the signed-in
+    navigation is visible to members and hidden to visitors on the deployed
+    build.

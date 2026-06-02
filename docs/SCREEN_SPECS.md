@@ -351,6 +351,16 @@ Rules:
   shop name, marketplace/community context, community ID when available, and a
   QR that reopens the public shop link. Do not present that QR as TrustSlip
   proof unless the backend provides a live TrustSlip code for that shop.
-- Public Shop may show a compact owner navigation strip for the signed-in shop
-  owner only. It may link to Dashboard, Community Home, and Marketplace, but it
-  must not render for ordinary public visitors or signed-in non-owners.
+- Public Shop may show a compact signed-in member navigation strip while a
+  member is authenticated, even when the member is viewing another member's
+  shop. It may link to Dashboard, Community Home, Marketplace, and My Shop.
+  It must not render for ordinary public visitors.
+- Public Shop signboard identity must not expose phone-number or internal
+  `.local` identity fallbacks as the shop/owner name. If the member has not
+  saved a public shop name or display name yet, use a neutral public fallback
+  such as `Public GSN Shop` or `GSN member`.
+- Public Shop repost is an in-network placement action, not an outside share.
+  The member must enter or choose the target marketplace/community ID, and a
+  successful repost should create a target marketplace spotlight/feed item
+  subject to the same membership and spotlight-capacity rules as other live
+  spotlight placements.

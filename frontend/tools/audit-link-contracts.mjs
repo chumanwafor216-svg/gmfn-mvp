@@ -658,8 +658,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const effectiveShopName = firstMeaningful\(\s*shop\?\.shopName,\s*effectiveGmfnId \? `\$\{effectiveGmfnId\} Shop` : "",\s*"Shop"\s*\);[\s\S]*?const effectiveDescription = firstMeaningful\(shop\?\.description\);/,
-  "Public Shop signboard name and description must stay shop/member scoped and must not fall back to community Spotlight author content."
+  /const effectiveShopName = publicShopName\(\s*shop\?\.shopName,\s*broadcast\?\.sourceShopName\s*\);[\s\S]*?const effectiveDescription = firstMeaningful\(shop\?\.description\);/,
+  "Public Shop signboard name and description must stay shop/member scoped and must not expose raw GSN IDs, phone identities, or community Spotlight author content."
 );
 
 assertContains(
@@ -802,14 +802,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /createMarketplaceRepost,[\s\S]*?listMyClans,[\s\S]*?async function submitLiveRepost\(\)[\s\S]*?createMarketplaceRepost\(\{[\s\S]*?product_id: Number\(product\.id\),[\s\S]*?target_clan_id: Number\(targetCommunity\.id\),[\s\S]*?marketplace\.product\.reposted|createMarketplaceRepost\(\{[\s\S]*?product_id: Number\(product\.id\),[\s\S]*?target_clan_id: Number\(targetCommunity\.id\),/,
-  "Public Shop Gallery GSN repost must call the real backend product repost route with a product and target community, not only copy a text draft."
+  /createMarketplaceRepost,[\s\S]*?listMyClans,[\s\S]*?repostMarketplaceIdInput[\s\S]*?resolvedRepostMarketplaceId[\s\S]*?async function submitLiveRepost\(\)[\s\S]*?targetMarketplaceId = resolvedRepostMarketplaceId[\s\S]*?createMarketplaceRepost\(\{[\s\S]*?product_id: Number\(product\.id\),[\s\S]*?target_clan_id: Number\(targetMarketplaceId\),/,
+  "Public Shop Gallery GSN repost must call the real backend product repost route with a product and target marketplace ID, not only copy a text draft."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /repostPanelOpen[\s\S]*?Live GSN repost[\s\S]*?Public block[\s\S]*?Target community[\s\S]*?Repost inside GSN/,
-  "Public Shop Gallery must show a live repost panel so users choose a public block and target community before reposting."
+  /repostPanelOpen[\s\S]*?Live GSN repost[\s\S]*?Target marketplace ID[\s\S]*?Public block[\s\S]*?Known marketplace[\s\S]*?Place in spotlight/,
+  "Public Shop Gallery must show a live repost panel so users choose a public block and target marketplace before placing it into spotlight."
 );
 
 assertContains(
@@ -850,14 +850,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import OwnerOnlySurfaceNav from "\.\.\/components\/OwnerOnlySurfaceNav";[\s\S]*?import \{ APP_ROUTES, routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?const ownerSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?label: "Community Home"[\s\S]*?routeWithCommunity\(APP_ROUTES\.COMMUNITY, ownerSurfaceCommunityId\)[\s\S]*?label: "Marketplace"[\s\S]*?routeWithCommunity\(APP_ROUTES\.MARKETPLACE, ownerSurfaceCommunityId\)[\s\S]*?<OwnerOnlySurfaceNav[\s\S]*?ownerGmfnId=\{shopOwnerGmfnId\}[\s\S]*?label="Owner navigation"[\s\S]*?links=\{ownerSurfaceLinks\}/,
-  "Public Shop owner navigation must route the signed-in shop owner to Dashboard, Community Home, and Marketplace through the owner-only surface gate."
+  /import OwnerOnlySurfaceNav from "\.\.\/components\/OwnerOnlySurfaceNav";[\s\S]*?import \{ APP_ROUTES, routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?label: "Community Home"[\s\S]*?routeWithCommunity\(APP_ROUTES\.COMMUNITY, ownerSurfaceCommunityId\)[\s\S]*?label: "Marketplace"[\s\S]*?routeWithCommunity\(APP_ROUTES\.MARKETPLACE, ownerSurfaceCommunityId\)[\s\S]*?label: "My Shop"[\s\S]*?routeWithCommunity\(APP_ROUTES\.SHOP_ME, ownerSurfaceCommunityId\)[\s\S]*?<OwnerOnlySurfaceNav[\s\S]*?label="GSN navigation"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{false\}/,
+  "Public Shop signed-in navigation must route members to Dashboard, Community Home, Marketplace, and My Shop while staying hidden from public visitors."
 );
 
 assertContains(
   "src/components/OwnerOnlySurfaceNav.tsx",
-  /getStoredGmfnId[\s\S]*?meRes\?\.gmfn_id[\s\S]*?meRes\?\.member_global_id[\s\S]*?getStoredGmfnId\(\)[\s\S]*?getAccessToken\(\)[\s\S]*?signedInGmfnId[\s\S]*?ownerGmfnId[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
-  "Owner-only surface navigation must remain hidden from public visitors and signed-in non-owners while accepting the stored/current GSN ID fallback for the signed-in owner."
+  /requireOwnerMatch = true[\s\S]*?getStoredGmfnId[\s\S]*?meRes\?\.gmfn_id[\s\S]*?meRes\?\.member_global_id[\s\S]*?getStoredGmfnId\(\)[\s\S]*?getAccessToken\(\)[\s\S]*?requireOwnerMatch[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
+  "Owner surface navigation must remain hidden from public visitors, while allowing public-shop member navigation to opt out of owner matching for signed-in users."
 );
 
 assertContains(

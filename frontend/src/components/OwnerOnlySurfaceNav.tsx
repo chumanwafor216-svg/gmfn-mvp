@@ -18,6 +18,7 @@ type OwnerOnlySurfaceNavProps = {
   label?: string;
   links?: OwnerSurfaceNavLink[];
   refreshKey?: string | number;
+  requireOwnerMatch?: boolean;
 };
 
 const DEFAULT_OWNER_SURFACE_LINKS: OwnerSurfaceNavLink[] = [
@@ -44,6 +45,7 @@ export default function OwnerOnlySurfaceNav({
   label = "Owner view",
   links = DEFAULT_OWNER_SURFACE_LINKS,
   refreshKey = "",
+  requireOwnerMatch = true,
 }: OwnerOnlySurfaceNavProps) {
   const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
     () => getStoredGmfnId() || ""
@@ -101,11 +103,13 @@ export default function OwnerOnlySurfaceNav({
     () =>
       Boolean(
         getAccessToken() &&
-          signedInGmfnId &&
-          ownerGmfnId &&
-          ownerSurfaceIdentityMatches(signedInGmfnId, ownerGmfnId)
+          (requireOwnerMatch
+            ? signedInGmfnId &&
+              ownerGmfnId &&
+              ownerSurfaceIdentityMatches(signedInGmfnId, ownerGmfnId)
+            : true)
       ),
-    [ownerGmfnId, signedInGmfnId]
+    [ownerGmfnId, requireOwnerMatch, signedInGmfnId]
   );
 
   if (!shouldShowOwnerNav) return null;

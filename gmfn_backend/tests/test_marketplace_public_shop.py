@@ -6,6 +6,7 @@ from pathlib import Path
 from sqlalchemy import text
 
 from app.api.routes import marketplace as marketplace_routes
+from app.core.security import create_access_token
 from app.db.database import engine
 from app.db.models import (
     FeatureEntitlement,
@@ -172,6 +173,150 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     alias_body = gsn_alias.json()
     assert alias_body["item"]["gmfn_id"] == "GMFN-U-TESTSHOP"
     assert [item["name"] for item in alias_body["products"]] == ["Fresh Rice"]
+
+
+def test_public_shop_face_masks_internal_phone_identity_fallback(client):
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, '+447903165266@pending.gmfn.local', 'hashed', NULL, 'user', 'GMFN-U-INTERNAL1'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Homeland ISA', 'Homeland ISA Marketplace', 'INTERNAL1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description,
+                    whatsapp_number, telegram_handle, is_active
+                ) VALUES (
+                    1, 1, 1, '+447903165266', 'Internal fallback shop',
+                    '07903165266', NULL, 1
+                )
+                """
+            )
+        )
+
+    res = client.get("/marketplace/public/shop/GMFN-U-INTERNAL1")
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["item"]["owner_name"] == "GSN member"
+    assert body["item"]["name"] == "Public GSN Shop"
+    assert "07903165266" not in body["item"]["name"]
+    assert "pending.gmfn.local" not in body["item"]["owner_name"]
+
+
+def test_product_repost_creates_target_marketplace_spotlight(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-marketplace-repost-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'seller@example.com', 'hashed', 'Seller One', 'user', 'GMFN-U-SELLER1'),
+                    (2, 'reposter@example.com', 'hashed', 'Reposter Two', 'user', 'GMFN-U-REPOST2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Source Community', 'Source Marketplace', 'SOURCE1'),
+                    (2, 'Target Community', 'Target Marketplace', 'TARGET2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description,
+                    whatsapp_number, telegram_handle, is_active
+                ) VALUES (
+                    1, 1, 1, 'Seller Public Shop', 'Trusted products',
+                    '07903165266', NULL, 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, video_url, visibility_mode, is_active
+                ) VALUES (
+                    1, 1, 1, 1, 'Fresh Rice', 'Bag of rice',
+                    '25000', 'NGN', '/uploads/marketplace/images/rice.jpg',
+                    NULL, 'community_visible', 1
+                )
+                """
+            )
+        )
+
+    token = create_access_token({"sub": "reposter@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_clan_id": 2},
+        headers=headers,
+    )
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["ok"] is True
+    assert body["item"]["target_clan_id"] == 2
+    assert body["broadcast"]["clan_id"] == 2
+    assert body["broadcast"]["source_shop_name"] == "Seller Public Shop"
+    assert body["broadcast"]["message"] == "Fresh Rice - Bag of rice"
+    assert body["broadcast"]["visibility_scope"] == "marketplace_repost"
+
+    feed = client.get("/marketplace/broadcasts?clan_id=2", headers=headers)
+    assert feed.status_code == 200, feed.text
+    feed_body = feed.json()
+    assert feed_body["total"] == 1
+    assert feed_body["items"][0]["id"] == body["broadcast"]["id"]
 
 
 def test_public_shop_picture_stays_scoped_to_one_shop_in_shared_community(

@@ -115,6 +115,34 @@ function firstMeaningful(...values: any[]): string {
   return "";
 }
 
+function isPublicIdentityFallback(value: any): boolean {
+  const text = cleanText(value);
+  if (!text) return true;
+
+  const lowered = text.toLowerCase();
+  if (lowered.includes("@")) return true;
+  if (/@(?:pending\.)?(?:gmfn|gmfm)\.local$/i.test(lowered)) return true;
+  if (/^\+?\d[\d\s().-]{6,}$/.test(text)) return true;
+  return false;
+}
+
+function publicName(...values: any[]): string {
+  for (const value of values) {
+    const text = cleanText(value);
+    if (!text || isPublicIdentityFallback(text)) continue;
+    return text;
+  }
+  return "";
+}
+
+function publicOwnerName(...values: any[]): string {
+  return publicName(...values) || "GSN member";
+}
+
+function publicShopName(...values: any[]): string {
+  return publicName(...values) || "Public GSN Shop";
+}
+
 function normalizeWhatsAppRecipient(value: any): string {
   const raw = cleanText(value);
   if (!raw) return "";
@@ -517,18 +545,16 @@ function normalizeShop(
     fallbackGmfnId
   );
 
-  const ownerName = firstMeaningful(
+  const ownerName = publicOwnerName(
     src?.owner_display_name,
     src?.owner_name,
     src?.display_name,
     src?.member_name,
     src?.name,
-    src?.user_name,
-    ownerGmfnId,
-    "Shop owner"
+    src?.user_name
   );
 
-  const shopName = firstMeaningful(
+  const shopName = publicShopName(
     src?.name,
     src?.shop_name,
     src?.display_name,
@@ -567,8 +593,8 @@ function normalizeShop(
     id: positiveNumber(src?.id) || undefined,
     clanId: positiveNumber(src?.clan_id) || undefined,
     gmfnId: ownerGmfnId,
-    ownerName: ownerName || "Shop owner",
-    shopName: shopName || (ownerGmfnId ? `${ownerGmfnId} Shop` : "Shop"),
+    ownerName,
+    shopName,
     description,
     communityName,
     trustBand: firstMeaningful(src?.trust_band, src?.owner_trust_band),
@@ -888,6 +914,7 @@ export default function ShopGalleryPage() {
   const [repostCommunitiesLoading, setRepostCommunitiesLoading] = useState(false);
   const [selectedRepostProductId, setSelectedRepostProductId] = useState<number>(0);
   const [selectedRepostClanId, setSelectedRepostClanId] = useState<number>(0);
+  const [repostMarketplaceIdInput, setRepostMarketplaceIdInput] = useState("");
   const [repostingProduct, setRepostingProduct] = useState(false);
   const autoRefreshAttemptedRef = useRef("");
 
@@ -1472,17 +1499,14 @@ export default function ShopGalleryPage() {
       gmfnId
     );
 
-    const effectiveOwnerName = firstMeaningful(
+    const effectiveOwnerName = publicOwnerName(
       shop?.ownerName,
-      broadcast?.authorName,
-      effectiveGmfnId,
-      "Shop owner"
+      broadcast?.authorName
     );
 
-    const effectiveShopName = firstMeaningful(
+    const effectiveShopName = publicShopName(
       shop?.shopName,
-      effectiveGmfnId ? `${effectiveGmfnId} Shop` : "",
-      "Shop"
+      broadcast?.sourceShopName
     );
 
     const effectiveDescription = firstMeaningful(shop?.description);
@@ -1587,6 +1611,18 @@ export default function ShopGalleryPage() {
       null
     );
   }, [targetRepostCommunities, selectedRepostClanId]);
+  const typedRepostMarketplaceId = positiveNumber(repostMarketplaceIdInput);
+  const resolvedRepostMarketplaceId =
+    typedRepostMarketplaceId || positiveNumber(selectedRepostCommunity?.id);
+  const resolvedRepostMarketplaceName =
+    typedRepostMarketplaceId > 0
+      ? firstMeaningful(
+          targetRepostCommunities.find(
+            (community) => community.id === typedRepostMarketplaceId
+          )?.name,
+          `marketplace ID ${typedRepostMarketplaceId}`
+        )
+      : firstMeaningful(selectedRepostCommunity?.name);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -1659,22 +1695,27 @@ export default function ShopGalleryPage() {
   const ownerSurfaceCommunityId = positiveNumber(
     effectiveShop?.clanId || getSelectedClanId()
   );
-  const ownerSurfaceLinks = useMemo(
+  const memberSurfaceLinks = useMemo(
     () => [
       {
         label: "Dashboard",
         to: APP_ROUTES.DASHBOARD,
-        debugId: "shop-gallery.owner-nav.dashboard",
+        debugId: "shop-gallery.member-nav.dashboard",
       },
       {
         label: "Community Home",
         to: routeWithCommunity(APP_ROUTES.COMMUNITY, ownerSurfaceCommunityId),
-        debugId: "shop-gallery.owner-nav.community",
+        debugId: "shop-gallery.member-nav.community",
       },
       {
         label: "Marketplace",
         to: routeWithCommunity(APP_ROUTES.MARKETPLACE, ownerSurfaceCommunityId),
-        debugId: "shop-gallery.owner-nav.marketplace",
+        debugId: "shop-gallery.member-nav.marketplace",
+      },
+      {
+        label: "My Shop",
+        to: routeWithCommunity(APP_ROUTES.SHOP_ME, ownerSurfaceCommunityId),
+        debugId: "shop-gallery.member-nav.my-shop",
       },
     ],
     [ownerSurfaceCommunityId]
@@ -2006,7 +2047,9 @@ export default function ShopGalleryPage() {
 
   async function submitLiveRepost() {
     const product = selectedRepostProduct;
-    const targetCommunity = selectedRepostCommunity;
+    const targetMarketplaceId = resolvedRepostMarketplaceId;
+    const targetMarketplaceName =
+      resolvedRepostMarketplaceName || `marketplace ID ${targetMarketplaceId}`;
 
     if (!product?.id) {
       setNotice({
@@ -2016,10 +2059,10 @@ export default function ShopGalleryPage() {
       return;
     }
 
-    if (!targetCommunity?.id) {
+    if (!targetMarketplaceId) {
       setNotice({
         tone: "error",
-        text: "Choose one of your communities as the repost destination.",
+        text: "Enter the target marketplace ID or choose one of your marketplaces.",
       });
       return;
     }
@@ -2028,7 +2071,7 @@ export default function ShopGalleryPage() {
     try {
       const res = await createMarketplaceRepost({
         product_id: Number(product.id),
-        target_clan_id: Number(targetCommunity.id),
+        target_clan_id: Number(targetMarketplaceId),
       });
       const remaining = positiveNumber(
         res?.product?.distribution_slots_remaining ||
@@ -2048,9 +2091,10 @@ export default function ShopGalleryPage() {
       );
       setNotice({
         tone: "success",
-        text: `${publicShopBlockLabel(product)} reposted into ${targetCommunity.name}.`,
+        text: `${publicShopBlockLabel(product)} landed inside ${targetMarketplaceName} spotlight.`,
       });
       setRepostPanelOpen(false);
+      setRepostMarketplaceIdInput("");
     } catch (err: any) {
       setNotice({
         tone: "error",
@@ -2092,9 +2136,10 @@ export default function ShopGalleryPage() {
       <OwnerOnlySurfaceNav
         ownerGmfnId={shopOwnerGmfnId}
         compact={isCompact}
-        label="Owner navigation"
-        links={ownerSurfaceLinks}
+        label="GSN navigation"
+        links={memberSurfaceLinks}
         refreshKey={shopReconnectRetryKey}
+        requireOwnerMatch={false}
       />
 
       <GsnInstallPrompt
@@ -2712,7 +2757,7 @@ export default function ShopGalleryPage() {
                   lineHeight: 1.15,
                 }}
               >
-                Send one public block into another community.
+                Place one public block into a target marketplace spotlight.
               </div>
               <div
                 style={{
@@ -2723,7 +2768,7 @@ export default function ShopGalleryPage() {
                   fontWeight: 700,
                 }}
               >
-                This is inside GSN. Outside sharing still uses the Share button.
+                This stays inside GSN. Enter the marketplace ID where this block should land.
               </div>
             </div>
 
@@ -2736,6 +2781,31 @@ export default function ShopGalleryPage() {
                 gap: isCompact ? 8 : 10,
               }}
             >
+              <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
+                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Target marketplace ID</span>
+                <input
+                  inputMode="numeric"
+                  value={repostMarketplaceIdInput}
+                  onChange={(event) =>
+                    setRepostMarketplaceIdInput(
+                      event.target.value.replace(/[^\d]/g, "")
+                    )
+                  }
+                  placeholder="Enter marketplace ID"
+                  style={{
+                    minHeight: isCompact ? 42 : 46,
+                    borderRadius: 14,
+                    border: "1px solid rgba(13,95,168,0.20)",
+                    background: "#FFFFFF",
+                    color: "#0B1F33",
+                    fontWeight: 850,
+                    padding: "8px 10px",
+                    width: "100%",
+                    boxSizing: "border-box",
+                  }}
+                />
+              </label>
+
               <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
                 <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Public block</span>
                 <select
@@ -2761,10 +2831,14 @@ export default function ShopGalleryPage() {
               </label>
 
               <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
-                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Target community</span>
+                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Known marketplace</span>
                 <select
                   value={String(selectedRepostCommunity?.id || "")}
-                  onChange={(event) => setSelectedRepostClanId(Number(event.target.value || 0))}
+                  onChange={(event) => {
+                    const nextId = Number(event.target.value || 0);
+                    setSelectedRepostClanId(nextId);
+                    setRepostMarketplaceIdInput(nextId > 0 ? String(nextId) : "");
+                  }}
                   disabled={repostCommunitiesLoading || targetRepostCommunities.length === 0}
                   style={{
                     minHeight: isCompact ? 42 : 46,
@@ -2781,12 +2855,12 @@ export default function ShopGalleryPage() {
                     <option value="">
                       {repostCommunitiesLoading
                         ? "Loading your communities..."
-                        : "No eligible target community"}
+                        : "No eligible target marketplace"}
                     </option>
                   ) : (
                     targetRepostCommunities.map((community) => (
                       <option key={`repost-community-${community.id}`} value={community.id}>
-                        {community.name}
+                        ID {community.id} - {community.name}
                       </option>
                     ))
                   )}
@@ -2811,8 +2885,8 @@ export default function ShopGalleryPage() {
                 <span style={badge(true)}>
                   {selectedRepostProduct.repostsUsed} reposts used
                 </span>
-                <span style={badge(Boolean(selectedRepostCommunity))}>
-                  {selectedRepostCommunity ? "Target ready" : "Target needed"}
+                <span style={badge(Boolean(resolvedRepostMarketplaceId))}>
+                  {resolvedRepostMarketplaceId ? "Target ready" : "Target needed"}
                 </span>
               </div>
             ) : null}
@@ -2834,7 +2908,7 @@ export default function ShopGalleryPage() {
                 disabled={
                   repostingProduct ||
                   !selectedRepostProduct ||
-                  !selectedRepostCommunity ||
+                  !resolvedRepostMarketplaceId ||
                   repostCommunitiesLoading
                 }
                 debugId="shop-gallery.repost-submit"
@@ -2842,7 +2916,7 @@ export default function ShopGalleryPage() {
                   ...primaryBtn(
                     repostingProduct ||
                       !selectedRepostProduct ||
-                      !selectedRepostCommunity ||
+                      !resolvedRepostMarketplaceId ||
                       repostCommunitiesLoading
                   ),
                   minHeight: isCompact ? 42 : 48,
@@ -2850,7 +2924,7 @@ export default function ShopGalleryPage() {
                   fontSize: isCompact ? 11.2 : 13,
                 }}
               >
-                {repostingProduct ? "Reposting..." : "Repost inside GSN"}
+                {repostingProduct ? "Placing..." : "Place in spotlight"}
               </PrimaryButton>
 
               <SecondaryButton
