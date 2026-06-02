@@ -423,12 +423,66 @@ function stripProductLabel(description: string): string {
   return safeStr(description).replace(/^\[LABEL:(.+?)\]\s*/i, "");
 }
 
-function composeProductDescription(label: string, description: string): string {
+function extractPublicBlockNumber(description: string): number {
+  const match = safeStr(description).match(/^\[BLOCK:(\d{1,2})\]\s*/i);
+  const blockNumber = Number(match?.[1] || 0);
+  return blockNumber >= 1 && blockNumber <= 12 ? blockNumber : 0;
+}
+
+function stripPublicBlockNumber(description: string): string {
+  return safeStr(description).replace(/^\[BLOCK:\d{1,2}\]\s*/i, "");
+}
+
+function stripProductMetadata(description: string): string {
+  return stripProductLabel(stripPublicBlockNumber(description));
+}
+
+function composeProductDescription(
+  label: string,
+  description: string,
+  publicBlockNumber = 0
+): string {
+  const cleanBlock =
+    publicBlockNumber >= 1 && publicBlockNumber <= 12
+      ? `[BLOCK:${publicBlockNumber}]`
+      : "";
   const cleanLabel = safeStr(label);
   const cleanDescription = safeStr(description);
+  const parts: string[] = [];
 
-  if (!cleanLabel) return cleanDescription;
-  return `[LABEL:${cleanLabel}] ${cleanDescription}`;
+  if (cleanBlock) parts.push(cleanBlock);
+  if (cleanLabel) parts.push(`[LABEL:${cleanLabel}]`);
+  if (cleanDescription) parts.push(cleanDescription);
+
+  return parts.join(" ").trim();
+}
+
+function publicBlockNumberForProduct(item: ProductRecord | null | undefined): number {
+  return extractPublicBlockNumber(firstTruthy(item?.description));
+}
+
+function arrangePublicProductsIntoSlots(items: ProductRecord[]): (ProductRecord | null)[] {
+  const slots: (ProductRecord | null)[] = Array.from({ length: 12 }, () => null);
+  const overflow: ProductRecord[] = [];
+
+  items.forEach((item) => {
+    const blockNumber = publicBlockNumberForProduct(item);
+    if (blockNumber >= 1 && blockNumber <= 12 && !slots[blockNumber - 1]) {
+      slots[blockNumber - 1] = item;
+      return;
+    }
+
+    overflow.push(item);
+  });
+
+  overflow.forEach((item) => {
+    const emptyIndex = slots.findIndex((slot) => slot === null);
+    if (emptyIndex >= 0) {
+      slots[emptyIndex] = item;
+    }
+  });
+
+  return slots;
 }
 
 function apiAssetOrigin(): string {
@@ -619,6 +673,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     }));
   }
 
+  function setSectionCollapsed(key: keyof CollapseState, value: boolean) {
+    setCollapsed((prev) => ({
+      ...prev,
+      [key]: value,
+    }));
+  }
+
   const loadPage = useCallback(async (): Promise<ProductRecord[]> => {
     setLoading(true);
 
@@ -715,7 +776,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   );
 
   const publicGallerySlots = useMemo(
-    () => Array.from({ length: 12 }, (_, index) => publicProducts[index] || null),
+    () => arrangePublicProductsIntoSlots(publicProducts),
     [publicProducts]
   );
 
@@ -998,7 +1059,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     setEditingProductId(Number(item.id));
     setProductName(firstTruthy(item?.name));
     setProductLabel(extractProductLabel(firstTruthy(item?.description)));
-    setProductDescription(stripProductLabel(firstTruthy(item?.description)));
+    setProductDescription(stripProductMetadata(firstTruthy(item?.description)));
     setProductPrice(firstTruthy(item?.price));
     setProductCurrency(firstTruthy(item?.currency, "NGN"));
     setProductVisibility(firstTruthy(item?.visibility_mode, "community_visible"));
@@ -1132,7 +1193,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         clan_id: Number(activeShop?.clan_id || selectedClanId || 0),
         shop_id: Number(activeShop.id),
         name: safeStr(productName),
-        description: composeProductDescription(productLabel, productDescription),
+        description: composeProductDescription(
+          productLabel,
+          productDescription,
+          targetVisibility === "community_visible" ? selectedPublicSlot : 0
+        ),
         price: safeStr(productPrice),
         currency: safeStr(productCurrency || "NGN"),
         image_url: nextImageUrl,
@@ -1178,17 +1243,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         setProducts(hydratedProducts);
       }
       if (targetVisibility === "community_visible") {
-        const savedIndex =
-          savedId > 0
-            ? hydratedProducts.findIndex(
-                (item) =>
-                  Number(item?.id) === savedId &&
-                  item?.is_active !== false &&
-                  firstTruthy(item?.visibility_mode, "community_visible") ===
-                    "community_visible"
-              )
-            : -1;
-        const savedSlotNumber = savedIndex >= 0 ? savedIndex + 1 : 1;
+        const savedSlotNumber = selectedPublicSlot;
         setSelectedPublicSlot(savedSlotNumber);
         showGalleryActionNotice(
           "success",
@@ -1550,7 +1605,9 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           </div>
 
           <SubtleButton
-            onClick={() => toggleSection("signboard")}
+            onClick={() => setSectionCollapsed("signboard", !collapsed.signboard)}
+            stableHeight={48}
+            fullWidth={isCompact}
             debugId="shop-assets.toggle-signboard"
           >
             {collapsed.signboard ? "Open" : "Collapse"}
@@ -2012,7 +2069,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               <div style={{ marginTop: 12, ...helperText(), maxWidth: 620 }}>
                 {selectedPublicProduct
                   ? firstTruthy(
-                      stripProductLabel(firstTruthy(selectedPublicProduct.description)),
+                      stripProductMetadata(firstTruthy(selectedPublicProduct.description)),
                       firstTruthy(selectedPublicProduct.name, "This block has no description yet.")
                     )
                   : "Add a public item here. You can use a picture or a short video; if you choose video only, GSN creates the cover automatically."}
@@ -2523,9 +2580,12 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           ) : (
             products.map((item) => {
               const label = extractProductLabel(firstTruthy(item?.description));
-              const cleanDescription = stripProductLabel(firstTruthy(item?.description));
+              const cleanDescription = stripProductMetadata(firstTruthy(item?.description));
+              const explicitPublicSlotNumber = publicBlockNumberForProduct(item);
+              const fallbackPublicSlotNumber =
+                publicGallerySlots.findIndex((product) => product?.id === item?.id) + 1;
               const publicSlotNumber =
-                publicProducts.findIndex((product) => product?.id === item?.id) + 1;
+                explicitPublicSlotNumber || fallbackPublicSlotNumber;
               const productLink = buildProductDeepLink(
                 gmfnId,
                 Number(item.id),
@@ -2608,6 +2668,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
                   <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(true)}>Item #{item.id}</span>
+                    {publicSlotNumber > 0 &&
+                    firstTruthy(item?.visibility_mode, "community_visible") !== "vault_private" ? (
+                      <span style={badge(false)}>Block #{publicSlotNumber}</span>
+                    ) : null}
                     <span
                       style={{
                         ...badge(false),
@@ -2675,7 +2739,15 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     }}
                   >
                     <StableButton
-                      onClick={() => startEditProduct(item)}
+                      onClick={() => {
+                        if (
+                          firstTruthy(item?.visibility_mode, "community_visible") !==
+                          "vault_private"
+                        ) {
+                          setSelectedPublicSlot(publicSlotNumber > 0 ? publicSlotNumber : 1);
+                        }
+                        startEditProduct(item);
+                      }}
                       kind={isHidden ? "secondary" : "primary"}
                       fullWidth
                       stableHeight={isCompact ? 56 : 48}

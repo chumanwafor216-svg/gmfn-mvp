@@ -363,8 +363,26 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /function setSectionCollapsed\(key: keyof CollapseState, value: boolean\)[\s\S]*?<SubtleButton[\s\S]*?onClick=\{\(\) => setSectionCollapsed\("signboard", !collapsed\.signboard\)\}[\s\S]*?debugId="shop-assets\.toggle-signboard"/,
+  "Embedded Shop Assets public shop picture control must use an explicit signboard collapse action so the collapse button stays deterministic on phone."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /function initialCollapseState\(embedded: boolean\): CollapseState[\s\S]*?readLocalJSON<Partial<CollapseState>>[\s\S]*?if \(!embedded\) return stored;[\s\S]*?posted: false[\s\S]*?useEffect\(\(\) => \{[\s\S]*?if \(!embedded\)[\s\S]*?writeLocalJSON\(SHOP_ASSETS_UI_STORAGE_KEY, collapsed\)[\s\S]*?signboard: collapsed\.signboard/,
   "Embedded Shop Assets must preserve the saved signboard collapse state so shop info stays closed until intentionally reopened."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /function extractPublicBlockNumber\(description: string\): number[\s\S]*?safeStr\(description\)\.match\([\s\S]*?BLOCK:[\s\S]*?function arrangePublicProductsIntoSlots\(items: ProductRecord\[\]\)[\s\S]*?publicBlockNumberForProduct\(item\)[\s\S]*?const publicGallerySlots = useMemo\([\s\S]*?arrangePublicProductsIntoSlots\(publicProducts\)[\s\S]*?description: composeProductDescription\([\s\S]*?targetVisibility === "community_visible" \? selectedPublicSlot : 0/,
+  "Shop Assets public gallery block control must preserve selected block occupancy and render occupied blocks from stored block metadata, not array order."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /function extractPublicBlockNumber\(description: any\): number[\s\S]*?function stripProductLabel\(description: any\): string[\s\S]*?function arrangeProductsByPublicBlock\(items: ShopProduct\[\]\)[\s\S]*?const arrangedProducts = arrangeProductsByPublicBlock\(normalizedProducts\)[\s\S]*?setProducts\(arrangedProducts\)/,
+  "Public Shop Gallery must honor hidden public block metadata while stripping it from visitor-facing descriptions."
 );
 
 assertContains(

@@ -691,6 +691,20 @@ function splitSpotlightMessage(raw: any): {
   };
 }
 
+function extractPublicBlockNumber(description: any): number {
+  const match = safeStr(description).match(/^\[BLOCK:(\d{1,2})\]\s*/i);
+  const blockNumber = Number(match?.[1] || 0);
+  return blockNumber >= 1 && blockNumber <= GALLERY_SLOTS_TOTAL ? blockNumber : 0;
+}
+
+function stripPublicBlockNumber(description: any): string {
+  return safeStr(description).replace(/^\[BLOCK:\d{1,2}\]\s*/i, "");
+}
+
+function stripProductLabel(description: any): string {
+  return stripPublicBlockNumber(description).replace(/^\[LABEL:(.+?)\]\s*/i, "");
+}
+
 function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
   if (!raw) return null;
 
@@ -703,11 +717,14 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     `Product ${slotNumber.toString().padStart(2, "0")}`
   );
 
-  const description = firstMeaningful(
+  const rawDescription = firstMeaningful(
     src?.description,
     src?.detail,
     src?.summary
   );
+  const explicitSlotNumber = extractPublicBlockNumber(rawDescription);
+  const resolvedSlotNumber = explicitSlotNumber || slotNumber;
+  const description = stripProductLabel(rawDescription);
 
   const productId = positiveNumber(src?.id) || undefined;
   const cachedMedia = productId ? getCachedShopProductMedia(productId) : null;
@@ -722,7 +739,7 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
 
   return {
     id: productId,
-    slotNumber,
+    slotNumber: resolvedSlotNumber,
     name,
     description,
     priceText: moneyText(
@@ -745,6 +762,43 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
       src?.distribution_slots_remaining || src?.remaining_distribution_slots
     ),
   };
+}
+
+function arrangeProductsByPublicBlock(items: ShopProduct[]): ShopProduct[] {
+  const slots: (ShopProduct | null)[] = Array.from(
+    { length: GALLERY_SLOTS_TOTAL },
+    () => null
+  );
+  const overflow: ShopProduct[] = [];
+
+  items.forEach((item) => {
+    const slotNumber = positiveNumber(item?.slotNumber);
+    if (
+      slotNumber >= 1 &&
+      slotNumber <= GALLERY_SLOTS_TOTAL &&
+      !slots[slotNumber - 1]
+    ) {
+      slots[slotNumber - 1] = item;
+      return;
+    }
+
+    overflow.push(item);
+  });
+
+  overflow.forEach((item) => {
+    const emptyIndex = slots.findIndex((slot) => slot === null);
+    if (emptyIndex >= 0) {
+      slots[emptyIndex] = {
+        ...item,
+        slotNumber: emptyIndex + 1,
+      };
+      return;
+    }
+
+    slots.push(item);
+  });
+
+  return slots.filter(Boolean) as ShopProduct[];
 }
 
 const SHOP_GALLERY_INNER_SURFACE =
@@ -1064,6 +1118,7 @@ export default function ShopGalleryPage() {
         })
         .map((row, index) => normalizeProduct(row, index + 1))
         .filter(Boolean) as ShopProduct[];
+      const arrangedProducts = arrangeProductsByPublicBlock(normalizedProducts);
 
       const relevantGmfnId = firstMeaningful(
         normalizedShop?.gmfnId,
@@ -1117,7 +1172,7 @@ export default function ShopGalleryPage() {
 
       setCurrentClan(clanRes || null);
       setShop(normalizedShop);
-      setProducts(normalizedProducts);
+      setProducts(arrangedProducts);
       setBroadcast(relevantBroadcast);
       setCommunitySpotlights(normalizedBroadcasts);
       setMiniSpotlightIndex(

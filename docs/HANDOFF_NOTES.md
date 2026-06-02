@@ -32655,3 +32655,34 @@ GSN-branded invite composer and invite-entry continuity.
   - A real phone check on Render is still needed to prove the signed-in
     navigation is visible to members and hidden to visitors on the deployed
     build.
+
+## Public shop picture collapse and block occupancy (2026-06-02)
+
+- Routes/screens affected:
+  - `/app/shop-control#shop-control-gallery-tools`, embedded Pictures &
+    Products control reached from Community Home.
+  - `/shop/:gmfnId`, public Shop Diaries block ordering.
+- Frontend change:
+  - `frontend/src/pages/ShopAssetsPage.tsx` now uses an explicit collapse
+    setter for the public shop picture/signboard control, so the embedded
+    collapse button closes the handle deterministically.
+  - Public gallery uploads now store the selected public block number as hidden
+    product metadata, then strip that metadata from displayed descriptions.
+  - The 12-block control maps live products back into their saved block slots,
+    so occupied blocks show the current picture/video and item name instead of
+    continuing to appear empty after upload or refresh.
+  - `frontend/src/pages/ShopGalleryPage.tsx` honors the same hidden block
+    metadata when ordering public Shop Diaries items, while stripping it from
+    visitor-facing product descriptions.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now checks the deterministic
+    signboard collapse action and slot-aware public gallery mapping.
+  - Backend repost spotlight messages now strip the hidden `[BLOCK:n]` and
+    `[LABEL:...]` product markers before composing member-facing broadcast
+    copy.
+  - `gmfn_backend/tests/test_marketplace_public_shop.py::test_product_repost_creates_target_marketplace_spotlight`
+    covers that raw metadata does not leak into repost broadcast text.
+- Remaining truth:
+  - This is a frontend-compatible slot fix without a database migration. It is
+    safe for the pilot, but a future backend `public_slot_number` column would
+    be cleaner than hidden description metadata once the model is unfrozen.

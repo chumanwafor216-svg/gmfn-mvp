@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from math import floor
 import os
 from pathlib import Path
+import re
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
@@ -105,6 +106,16 @@ def _public_identity_name(*values: Any, fallback: str) -> str:
         return text
 
     return fallback
+
+
+def _public_product_display_text(value: Any) -> str:
+    text = _safe_str(value)
+    if not text:
+        return ""
+
+    text = re.sub(r"^\[BLOCK:\d{1,2}\]\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^\[LABEL:.+?\]\s*", "", text, flags=re.IGNORECASE)
+    return text.strip()
 
 
 def _uploads_root() -> Path:
@@ -2096,7 +2107,7 @@ def repost_marketplace_product(
             )
 
     spotlight_title = _safe_str(getattr(product, "name", None)) or "Marketplace repost"
-    spotlight_detail = _safe_str(getattr(product, "description", None))
+    spotlight_detail = _public_product_display_text(getattr(product, "description", None))
     spotlight_message = (
         f"{spotlight_title} - {spotlight_detail}"
         if spotlight_detail and spotlight_detail != spotlight_title

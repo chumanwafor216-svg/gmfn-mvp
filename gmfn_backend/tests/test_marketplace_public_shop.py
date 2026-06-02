@@ -286,7 +286,7 @@ def test_product_repost_creates_target_marketplace_spotlight(client, monkeypatch
                     id, clan_id, shop_id, seller_user_id, title, description,
                     price, currency, image_url, video_url, visibility_mode, is_active
                 ) VALUES (
-                    1, 1, 1, 1, 'Fresh Rice', 'Bag of rice',
+                    1, 1, 1, 1, 'Fresh Rice', '[BLOCK:5] [LABEL:Rice] Bag of rice',
                     '25000', 'NGN', '/uploads/marketplace/images/rice.jpg',
                     NULL, 'community_visible', 1
                 )

@@ -364,3 +364,8 @@ Rules:
   successful repost should create a target marketplace spotlight/feed item
   subject to the same membership and spotlight-capacity rules as other live
   spotlight placements.
+- Public gallery block control must be slot-aware. When a member posts into a
+  numbered public block, that block should remain visibly occupied after save,
+  refresh, and return navigation. Occupied blocks should show the current
+  picture/video preview and item name; empty blocks should be visibly empty so
+  the member can tell what is free.
