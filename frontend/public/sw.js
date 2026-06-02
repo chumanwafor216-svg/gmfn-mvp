@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gsn-pwa-shell-v1";
+const CACHE_VERSION = "gsn-pwa-shell-v2";
 const SHELL_ASSETS = [
   "/",
   "/cover",

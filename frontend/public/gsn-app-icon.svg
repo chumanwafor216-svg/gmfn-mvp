@@ -15,9 +15,9 @@
       <stop offset="0.43" stop-color="#F2C766"/>
       <stop offset="1" stop-color="#B98426"/>
     </linearGradient>
-    <linearGradient id="shieldFill" x1="256" y1="84" x2="256" y2="346" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2475BF"/>
-      <stop offset="0.52" stop-color="#145080"/>
+    <linearGradient id="shieldFill" x1="256" y1="76" x2="256" y2="358" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2D7FD0"/>
+      <stop offset="0.48" stop-color="#15568D"/>
       <stop offset="1" stop-color="#08233A"/>
     </linearGradient>
     <linearGradient id="starFill" x1="256" y1="142" x2="256" y2="258" gradientUnits="userSpaceOnUse">
@@ -39,30 +39,30 @@
 
   <g filter="url(#softShadow)">
     <path
-      d="M256 82L356 132V242C356 310 319 360 256 393C193 360 156 310 156 242V132L256 82Z"
+      d="M256 74L364 128V247C364 318 324 368 256 403C188 368 148 318 148 247V128L256 74Z"
       fill="url(#shieldFill)"
       stroke="url(#gold)"
-      stroke-width="9"
+      stroke-width="10"
       stroke-linejoin="round"
     />
     <path
-      d="M256 112L327 148V238C327 287 303 326 256 353C209 326 185 287 185 238V148L256 112Z"
+      d="M256 106L330 143V241C330 292 304 333 256 361C208 333 182 292 182 241V143L256 106Z"
       fill="none"
       stroke="rgba(255,255,255,0.24)"
-      stroke-width="4"
-      stroke-linejoin="round"
-    />
-    <path
-      d="M256 149L273 199H326L283 229L299 280L256 249L213 280L229 229L186 199H239L256 149Z"
-      fill="url(#starFill)"
-      stroke="#FFF7CF"
       stroke-width="3"
       stroke-linejoin="round"
     />
     <path
-      d="M199 152C225 132 285 121 327 156"
-      stroke="rgba(255,255,255,0.16)"
-      stroke-width="8"
+      d="M256 142L275 198H335L286 232L304 290L256 254L208 290L226 232L177 198H237L256 142Z"
+      fill="url(#starFill)"
+      stroke="#FFF7CF"
+      stroke-width="4"
+      stroke-linejoin="round"
+    />
+    <path
+      d="M192 151C220 128 291 121 334 158"
+      stroke="rgba(255,255,255,0.15)"
+      stroke-width="7"
       stroke-linecap="round"
     />
   </g>
@@ -70,25 +70,16 @@
   <g filter="url(#textShadow)">
     <text
       x="256"
-      y="438"
-      text-anchor="middle"
-      fill="#F8FBFF"
-      stroke="rgba(6,24,39,0.34)"
-      stroke-width="1"
-      font-family="Arial, Helvetica, sans-serif"
-      font-size="78"
-      font-weight="900"
-      letter-spacing="12"
-    >GSN</text>
-    <text
-      x="256"
-      y="438"
+      y="446"
       text-anchor="middle"
       fill="url(#gold)"
+      stroke="#061827"
+      stroke-width="8"
+      paint-order="stroke fill"
       font-family="Arial, Helvetica, sans-serif"
-      font-size="78"
+      font-size="92"
       font-weight="900"
-      letter-spacing="12"
+      letter-spacing="8"
       opacity="0.94"
     >GSN</text>
   </g>

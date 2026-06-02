@@ -1,5 +1,15 @@
 ### GSN home-screen install / PWA entry support (2026-06-02)
 
+- Follow-up app icon authority polish:
+  - removed the weak internal lettering/detail impression from the phone icon
+    by keeping the shield face clean;
+  - strengthened the bottom `GSN` wordmark in the SVG and regenerated the
+    192px/512px PNG phone icons so the installed app tile reads with more
+    authority at small sizes;
+  - bumped the service-worker shell cache to `gsn-pwa-shell-v2` so browsers
+    refresh the updated icon assets instead of holding the earlier cached
+    phone tile.
+
 - Routes/screens affected:
   - `/welcome`, implemented by `frontend/src/pages/WelcomePage.tsx`;
   - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
