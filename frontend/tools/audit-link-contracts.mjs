@@ -206,6 +206,24 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /function spotlightBelongsToCurrentUser[\s\S]*?author_user_id[\s\S]*?author_gmfn_id[\s\S]*?currentGmfnKey/,
+  "Community Home Owner Spotlight Status must compare broadcast authorship with the signed-in member before rendering spotlight media."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /const ownerRows = rows\.filter[\s\S]*?spotlightBelongsToCurrentUser\(row, owner\.userId, owner\.gmfnKey\)[\s\S]*?setActiveCommunitySpotlightTotal\(normalizedRows\.length\)/,
+  "Community Home Owner Spotlight Status must count only current-member-authored live spotlights, not the selected community's public total."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /Your spotlight in this community[\s\S]*?Other members' live spotlights still belong on public[\s\S]*?Dashboard and Public Shop/,
+  "Community Home Owner Spotlight Status copy must make the owner scope clear and avoid presenting another member's spotlight as personal page content."
+);
+
+assertContains(
   "src/App.tsx",
   /path="subscription-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT\}[\s\S]*?path="shop-control\/paid-spotlight"[\s\S]*?<PreserveRedirect to=\{APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT\}/,
   "Nested /app paid spotlight aliases must redirect to the real paid publisher instead of escaping to the public fallback."

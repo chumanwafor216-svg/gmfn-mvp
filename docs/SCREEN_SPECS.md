@@ -239,7 +239,9 @@ Rules:
 - Create community must appear here as one compact action only.
 - The full create-community process belongs in the StartCommunityPage 3-step wizard.
 - Owner Shop Control must stay a separate page, not an expanded panel inside Community Home.
-- Spotlight should show a compact live preview only when live. If no active spotlight exists, show a compact status/shortcut.
+- Owner Spotlight Status on Community Home must be current-member scoped. It may show the signed-in member's own live spotlight status/preview for the selected community, but it must not render another member's spotlight media on the member's personal Community Home.
+- Community/public spotlight reflection belongs on public/reflection surfaces such as Dashboard, Public Shop, and Marketplace-facing spotlight areas, not inside another member's Owner Spotlight Status panel.
+- If the signed-in member has no active spotlight, show a compact owner status/shortcut.
 - Secondary sections must be collapsed, grouped, or represented as compact rows.
 - Do not show numerical strength, interaction density, community finance standing, or trust-in-community metric boxes on Community Home. Move those readings to a deeper community readings surface.
 - Do not expose long owner, spotlight, trusted-circle, or shop-control manuals inside Community Home.

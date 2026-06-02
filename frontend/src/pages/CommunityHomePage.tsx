@@ -82,6 +82,8 @@ type CollapseState = Record<CollapseKey, boolean>;
 
 type ActiveCommunitySpotlight = {
   id?: number;
+  authorUserId?: number;
+  authorGmfnId: string;
   message: string;
   imageUrl: string;
   videoUrl: string;
@@ -149,6 +151,56 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
+function normalizeGmfnKey(value: any): string {
+  const raw = safeStr(value).toUpperCase();
+  if (!raw) return "";
+  return raw.replace(/^GSN-/, "GMFN-");
+}
+
+function getCurrentUserId(user: any): number {
+  return Number(user?.id || user?.user_id || user?.userId || 0) || 0;
+}
+
+function getCurrentGmfnKey(user: any): string {
+  return normalizeGmfnKey(
+    firstTruthy(
+      user?.gmfn_id,
+      user?.gmfnId,
+      user?.global_member_id,
+      user?.member_global_id,
+      user?.member_id
+    )
+  );
+}
+
+function spotlightBelongsToCurrentUser(
+  row: any,
+  currentUserId: number,
+  currentGmfnKey: string
+): boolean {
+  if (!row) return false;
+
+  const authorUserId =
+    Number(row?.author_user_id || row?.authorUserId || row?.user_id || 0) || 0;
+  const authorGmfnKey = normalizeGmfnKey(
+    firstTruthy(
+      row?.author_gmfn_id,
+      row?.authorGmfnId,
+      row?.gmfn_id,
+      row?.owner_gmfn_id,
+      row?.ownerGmfnId
+    )
+  );
+
+  if (currentUserId && authorUserId && authorUserId === currentUserId) {
+    return true;
+  }
+
+  return Boolean(
+    currentGmfnKey && authorGmfnKey && authorGmfnKey === currentGmfnKey
+  );
+}
+
 function normalizeActiveCommunitySpotlight(
   row: any
 ): ActiveCommunitySpotlight | null {
@@ -156,11 +208,15 @@ function normalizeActiveCommunitySpotlight(
 
   return {
     id: Number(row?.id || 0) || undefined,
+    authorUserId:
+      Number(row?.author_user_id || row?.authorUserId || row?.user_id || 0) ||
+      undefined,
+    authorGmfnId: firstTruthy(row?.author_gmfn_id, row?.authorGmfnId),
     message: safeStr(row?.message || ""),
-    imageUrl: toBackendAssetUrl(safeStr(row?.image_url || "")),
-    videoUrl: toBackendAssetUrl(safeStr(row?.video_url || "")),
-    expiresAt: safeStr(row?.expires_at || ""),
-    createdAt: safeStr(row?.created_at || ""),
+    imageUrl: toBackendAssetUrl(safeStr(row?.image_url || row?.imageUrl || "")),
+    videoUrl: toBackendAssetUrl(safeStr(row?.video_url || row?.videoUrl || "")),
+    expiresAt: safeStr(row?.expires_at || row?.expiresAt || ""),
+    createdAt: safeStr(row?.created_at || row?.createdAt || ""),
   };
 }
 
@@ -1087,6 +1143,8 @@ export default function CommunityHomePage() {
     me?.id,
     "Awaiting issue"
   );
+  const currentUserId = useMemo(() => getCurrentUserId(me), [me]);
+  const currentGmfnKey = useMemo(() => getCurrentGmfnKey(me), [me]);
   const communityNextActionIntro =
     "Tick what you want to do here, or write it in simple words. GSN will check the first required step and lead you from there.";
   const spotlightGuidanceSuspendedView = guidedActionFamilyFocus === "spotlight";
@@ -1600,8 +1658,11 @@ export default function CommunityHomePage() {
     activeCommunitySpotlightsRef.current = activeCommunitySpotlights;
   }, [activeCommunitySpotlights]);
 
-  async function refreshActiveCommunitySpotlight(clanId: number) {
-    if (!clanId) {
+  async function refreshActiveCommunitySpotlight(
+    clanId: number,
+    owner: { userId: number; gmfnKey: string }
+  ) {
+    if (!clanId || (!owner.userId && !owner.gmfnKey)) {
       setActiveCommunitySpotlight(null);
       setActiveCommunitySpotlights([]);
       setActiveCommunitySpotlightIndex(0);
@@ -1631,22 +1692,15 @@ export default function CommunityHomePage() {
         ? res
         : [];
 
-      const normalizedRows = rows
+      const ownerRows = rows.filter((row: any) =>
+        spotlightBelongsToCurrentUser(row, owner.userId, owner.gmfnKey)
+      );
+      const normalizedRows = ownerRows
         .map((row: any) => normalizeActiveCommunitySpotlight(row))
         .filter(Boolean) as ActiveCommunitySpotlight[];
-      const reportedTotal = Number(
-        (res as any)?.active_total ??
-          (res as any)?.matching_total ??
-          (res as any)?.total ??
-          normalizedRows.length
-      );
 
       setActiveCommunitySpotlights(normalizedRows);
-      setActiveCommunitySpotlightTotal(
-        Number.isFinite(reportedTotal)
-          ? Math.max(normalizedRows.length, reportedTotal)
-          : normalizedRows.length
-      );
+      setActiveCommunitySpotlightTotal(normalizedRows.length);
       setActiveCommunitySpotlightIndex((prev) =>
         normalizedRows.length > 0 ? prev % normalizedRows.length : 0
       );
@@ -1683,8 +1737,9 @@ export default function CommunityHomePage() {
 
   useEffect(() => {
     const clanId = getClanId(selectedClan);
+    const owner = { userId: currentUserId, gmfnKey: currentGmfnKey };
 
-    if (!clanId) {
+    if (!clanId || (!owner.userId && !owner.gmfnKey)) {
       setActiveCommunitySpotlight(null);
       setActiveCommunitySpotlights([]);
       setActiveCommunitySpotlightIndex(0);
@@ -1697,7 +1752,7 @@ export default function CommunityHomePage() {
 
     async function loadIfAlive() {
       if (!alive) return;
-      await refreshActiveCommunitySpotlight(clanId);
+      await refreshActiveCommunitySpotlight(clanId, owner);
     }
 
     void loadIfAlive();
@@ -1725,7 +1780,7 @@ export default function CommunityHomePage() {
       window.removeEventListener("focus", handleFocusRefresh);
       document.removeEventListener("visibilitychange", handleVisibilityRefresh);
     };
-  }, [selectedClan]);
+  }, [currentGmfnKey, currentUserId, selectedClan]);
 
   function showNotice(tone: NoticeTone, text: string) {
     setNotice({ tone, text });
@@ -2785,7 +2840,10 @@ export default function CommunityHomePage() {
               icon: "📡",
               id: "spotlight-status",
               title: "Owner Spotlight Status",
-              detail: `${activeCommunitySpotlightTotal || activeCommunitySpotlights.length} live / 0 queued`,
+              detail:
+                activeCommunitySpotlightTotal > 0
+                  ? "Your spotlight is live"
+                  : "No owner spotlight live",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityHomeSection(
                   event,
@@ -2895,8 +2953,9 @@ export default function CommunityHomePage() {
                 textAlign: "center",
               }}
             >
-              See the selected community's spotlight status here. Prepare or
-              replace the owner content inside Shop Control.
+              This shows only the spotlight you published for this selected
+              community. Other members' spotlights stay off your personal
+              Community Home.
             </div>
           </div>
 
@@ -2932,7 +2991,7 @@ export default function CommunityHomePage() {
                 border: "1px solid rgba(11,31,51,0.08)",
               }}
             >
-              <div style={sectionLabel()}>Selected community spotlight</div>
+              <div style={sectionLabel()}>Your spotlight in this community</div>
               <div
                 style={{
                   marginTop: 10,
@@ -2944,7 +3003,7 @@ export default function CommunityHomePage() {
                 <span style={badge(true)}>
                   {activeCommunitySpotlightTotal ||
                     activeCommunitySpotlights.length}{" "}
-                  live / queued
+                  owner live / queued
                 </span>
                 {activeCommunitySpotlights.length > 1 ? (
                   <span style={badge(false)}>
@@ -2978,7 +3037,7 @@ export default function CommunityHomePage() {
                       imageUrl={activeCommunitySpotlight.imageUrl}
                       videoUrl={activeCommunitySpotlight.videoUrl}
                       videoPoster={activeCommunitySpotlight.imageUrl}
-                      alt="Live community spotlight"
+                      alt="Your live community spotlight"
                       frameStyle={{
                         minHeight: 180,
                         maxHeight: 260,
@@ -3025,7 +3084,7 @@ export default function CommunityHomePage() {
                       lineHeight: 1.4,
                     }}
                   >
-                    {activeCommunitySpotlight.message || "Live spotlight is active."}
+                    {activeCommunitySpotlight.message || "Your spotlight is live."}
                   </div>
                   <div
                     style={{
@@ -3076,8 +3135,9 @@ export default function CommunityHomePage() {
                     lineHeight: 1.75,
                   }}
                 >
-                  No spotlight is live in the selected community right now.
-                  Open Shop Control when you want to publish one.
+                  You have no spotlight live in this selected community right
+                  now. Other members' live spotlights still belong on public
+                  reflection surfaces such as Dashboard and Public Shop.
                 </div>
               )}
             </div>

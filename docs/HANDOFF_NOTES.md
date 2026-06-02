@@ -1,3 +1,45 @@
+### Community Home owner-scoped Spotlight status (2026-06-02)
+
+- Route/screens affected:
+  - `/app/community`, implemented by `frontend/src/pages/CommunityHomePage.tsx`;
+  - Community Home screen rules in `docs/SCREEN_SPECS.md`;
+  - link/ownership contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner clarification:
+  - Community Home is the member's own operating surface, so it must not render
+    another member's live Spotlight media inside Owner Spotlight Status;
+  - Dashboard, Public Shop, and Marketplace-facing Spotlight areas may still
+    reflect community/public live Spotlight signals.
+- Confirmed frontend truth:
+  - Community Home previously fetched active marketplace broadcasts by selected
+    `clan_id` and rendered all active rows returned by the community feed;
+  - that made an inviter/community owner's Spotlight appear inside the joined
+    member's personal Community Home panel.
+- Updated frontend:
+  - Community Home now compares each active broadcast against the signed-in
+    member by `author_user_id` or `author_gmfn_id` before rendering the Owner
+    Spotlight Status preview;
+  - the Owner Spotlight Status count now uses only the current member's own
+    live Spotlight rows, not the selected community's public total;
+  - empty-state and helper copy now says other members' live Spotlights belong
+    on public reflection surfaces such as Dashboard and Public Shop.
+- Updated docs/audit:
+  - `docs/SCREEN_SPECS.md` now locks Community Home Owner Spotlight Status as
+    current-member scoped;
+  - `frontend/tools/audit-link-contracts.mjs` now guards the author filter,
+    owner-only count, and owner-scope copy.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx tools/audit-link-contracts.mjs`
+    passed;
+  - `npm run audit:link-contracts`, `npm run audit:tap-stability`, and
+    `npm run audit:button-stability` passed;
+  - `git diff --check` passed with normal Windows line-ending warnings only;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    `spawn EPERM` sandbox failure.
+- Remaining truth:
+  - this does not change Dashboard/Public Shop public Spotlight reflection.
+    Those surfaces may still show a community Spotlight authored by another
+    member when that is the public/community signal.
+
 ### Community / Marketplace button stability tightening (2026-06-02)
 
 - Route/screens affected:
