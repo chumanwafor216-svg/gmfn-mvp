@@ -506,6 +506,12 @@ assertContains(
   "Public Shop must quietly refresh live spotlight data on the same pilot refresh cadence instead of locking to first page load."
 );
 
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /if \(location\.hash\) return;\s*if \(communitySpotlights\.length > 0\) return;[\s\S]*?revealGalleryTarget\(PUBLIC_SHOP_DIARIES_ANCHOR\);/,
+  "Public Shop must not auto-scroll past the live Spotlight into Shop Diaries when community spotlight rows are present."
+);
+
 assertNotContains(
   "src/layout/AppLayout.tsx",
   /const myShopGalleryTo = useMemo[\s\S]*?return "\/app\/shop-control";[\s\S]*?}, \[location\.hash, location\.pathname, location\.search, myGmfnId\]\);/,

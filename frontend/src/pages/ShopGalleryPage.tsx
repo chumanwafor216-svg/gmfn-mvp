@@ -1515,6 +1515,7 @@ export default function ShopGalleryPage() {
     if (typeof document === "undefined") return;
     if (loading || error) return;
     if (location.hash) return;
+    if (communitySpotlights.length > 0) return;
 
     const revealKey = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
     if (!revealKey || autoRevealDiariesKeyRef.current === revealKey) return;
@@ -1530,6 +1531,7 @@ export default function ShopGalleryPage() {
     effectiveShop?.gmfnId,
     error,
     gmfnId,
+    communitySpotlights.length,
     loading,
     location.hash,
     revealGalleryTarget,

@@ -76,6 +76,38 @@
     commit deploys, then there is no active broadcast in the shop's visible
     community at that moment, or the backend deploy did not reach Render yet.
 
+### Public Shop Spotlight first-view guard (2026-06-02)
+
+- Route/screens affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - link contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner clarification:
+  - the relevant Spotlight is the inviter/community Spotlight already visible
+    on Dashboard, not necessarily the new member's own shop Spotlight for that
+    day;
+  - that same live community Spotlight should be visible in the Public Shop
+    Spotlight place.
+- Live evidence checked:
+  - `GET https://gmfn-api.onrender.com/marketplace/public/shop/GMFN-U-63655DE6`
+    now returns a live broadcast row for clan `8`, author
+    `GMFN-U-28EB8F09`, image
+    `/uploads/marketplace/images/20260602093654_26df868859635b50.jpeg`, and
+    `primary_broadcast` is no longer `null`.
+- Confirmed frontend truth:
+  - after loading a public shop without a hash, the page auto-revealed
+    `Shop Diaries`;
+  - that automatic scroll could skip past the Public Shop Spotlight block even
+    when live community Spotlight rows are present.
+- Updated frontend:
+  - Public Shop no longer auto-scrolls into Shop Diaries when live community
+    Spotlight rows exist;
+  - added an audit check so the public shop cannot silently skip the live
+    Spotlight area again.
+- Remaining truth:
+  - this protects the first-view behavior after the frontend commit deploys.
+    If a browser still lands below the Spotlight, clear the old live bundle or
+    remove any `#shop-diaries` hash from the URL before retesting.
+
 ### Public Shop bottom-domain and activation ID carryover (2026-06-02)
 
 - Route/screens affected:
