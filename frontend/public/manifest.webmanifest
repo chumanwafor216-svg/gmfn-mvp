@@ -1,7 +1,7 @@
 {
-  "name": "GSN - Global Support Network",
+  "name": "GSN",
   "short_name": "GSN",
-  "description": "Keep trusted GSN community, shop, and member routes on this phone.",
+  "description": "Open Global Support Network from this phone.",
   "id": "/",
   "start_url": "/cover?source=pwa",
   "scope": "/",

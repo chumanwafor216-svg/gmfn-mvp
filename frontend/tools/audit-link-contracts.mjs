@@ -123,13 +123,13 @@ assertContains(
 
 assertContains(
   "index.html",
-  /<link rel="manifest" href="\/manifest\.json" \/>[\s\S]*?<meta name="theme-color" content="#061827" \/>[\s\S]*?<meta name="apple-mobile-web-app-capable" content="yes" \/>/,
+  /<link rel="manifest" href="\/manifest\.json" \/>[\s\S]*?<meta name="theme-color" content="#061827" \/>[\s\S]*?<meta name="apple-mobile-web-app-capable" content="yes" \/>[\s\S]*?<title>GSN<\/title>/,
   "GSN public links must expose installable PWA metadata so phone users can keep the app on the home screen."
 );
 
 assertContains(
   "public/manifest.json",
-  /"name": "GSN - Global Support Network"[\s\S]*?"short_name": "GSN"[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "standalone"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
+  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "standalone"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
   "The PWA manifest must keep the GSN home-screen identity, app start URL, standalone display mode, and standard phone icons."
 );
 
@@ -153,7 +153,7 @@ assertContains(
 
 assertContains(
   "src/components/GsnInstallPrompt.tsx",
-  /promptGsnInstall[\s\S]*?Add to Home Screen[\s\S]*?Add to Home screen or Install app[\s\S]*?📱 Add GSN to phone screen[\s\S]*?📱 Show 3 phone steps/,
+  /promptGsnInstall[\s\S]*?Add to Home Screen[\s\S]*?Add to Home screen or Install app[\s\S]*?Add GSN to phone screen[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon\.svg/,
   "The GSN install prompt must offer one simple setup action plus truthful manual phone instructions."
 );
 
@@ -165,8 +165,8 @@ assertWholeFileNotContains(
 
 assertContains(
   "src/pages/WelcomePage.tsx",
-  /import GsnInstallPrompt[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="welcome"/,
-  "Welcome must expose the GSN phone-screen install prompt for users arriving from public links."
+  /import GsnInstallPrompt[\s\S]*?import \{ getAccessToken \}[\s\S]*?import \{ APP_ROUTES \}[\s\S]*?isSignedIn[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="welcome"[\s\S]*?Continue to my GSN/,
+  "Welcome must expose the GSN phone-screen install prompt and a signed-in continue action for users arriving from public links."
 );
 
 assertContains(
@@ -399,8 +399,8 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
-  "Authenticated sessions or active publish attempts that reach Cover/Welcome must recover to the publisher/app route, and unauthenticated publish attempts must keep that target through login."
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const isPwaFrontDoor[\s\S]*?location\.pathname === "\/cover"[\s\S]*?location\.pathname === "\/welcome"[\s\S]*?get\("source"\)[\s\S]*?"pwa"[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token && !isPwaFrontDoor\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
+  "Authenticated sessions that reach normal Cover/Welcome must recover to the app route, while PWA launches to Cover/Welcome must remain on the public front door until the user chooses to continue."
 );
 
 assertContains(
@@ -459,7 +459,7 @@ assertContains(
 
 assertContains(
   "index.html",
-  /<title>GSN Public Link<\/title>[\s\S]*?Open a trusted GSN public link[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
+  /<title>GSN<\/title>[\s\S]*?Open a trusted GSN public link[\s\S]*?property="og:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png[\s\S]*?property="og:image:type" content="image\/png"[\s\S]*?name="twitter:image"[\s\S]*?https:\/\/gmfn-frontend\.onrender\.com\/gsn-share-poster\.png/,
   "The static frontend shell must use a generic frontend-hosted PNG fallback poster, not a shop-specific fallback, so non-shop public routes do not preview as shops."
 );
 

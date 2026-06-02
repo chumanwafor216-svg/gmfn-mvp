@@ -5,6 +5,8 @@ import {
   EntryBackLink,
 } from "../components/EntryControls";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
+import { getAccessToken } from "../lib/api";
+import { APP_ROUTES } from "../lib/appRoutes";
 import {
   detectEntryMode,
   initialWelcomeStep,
@@ -164,6 +166,7 @@ export default function WelcomePage() {
     () => detectEntryMode(location.pathname, location.search, location.state),
     [location.pathname, location.search, location.state]
   );
+  const [isSignedIn] = useState(() => Boolean(getAccessToken()));
 
   const [step, setStep] = useState<WelcomeStep>(initialWelcomeStep(entryMode));
 
@@ -224,6 +227,10 @@ export default function WelcomePage() {
   function openActivation() {
     writeStorage(ENTRY_MODE_KEY, "approved");
     navigate(activationTo);
+  }
+
+  function openDashboard() {
+    navigate(APP_ROUTES.DASHBOARD);
   }
 
   const headline =
@@ -351,6 +358,59 @@ export default function WelcomePage() {
               surface="welcome"
             />
           </div>
+
+          {entryMode === "general" && isSignedIn ? (
+            <div
+              style={{
+                width: "min(100%, 680px)",
+                justifySelf: "center",
+                borderRadius: 22,
+                background:
+                  "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.045) 100%)",
+                border: "1px solid rgba(243,208,106,0.22)",
+                boxShadow:
+                  "0 20px 38px rgba(0,8,18,0.22), inset 0 1px 0 rgba(255,255,255,0.10)",
+                padding: isCompact ? 12 : 14,
+                display: "grid",
+                gap: 10,
+              }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto minmax(0, 1fr)",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                <div style={iconBadge()} aria-hidden="true">
+                  <span>✅</span>
+                </div>
+                <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
+                  <div
+                    style={{
+                      color: "#F8FBFF",
+                      fontSize: isCompact ? 15 : 17,
+                      fontWeight: 1000,
+                      lineHeight: 1.18,
+                    }}
+                  >
+                    You are already signed in
+                  </div>
+                  <div style={{ ...supportText(), fontSize: isCompact ? 12.5 : 13.5 }}>
+                    Open your dashboard when you are ready.
+                  </div>
+                </div>
+              </div>
+              <EntryActionButton
+                type="button"
+                onClick={openDashboard}
+                style={{ width: "100%" }}
+              >
+                Continue to my GSN
+              </EntryActionButton>
+            </div>
+          ) : null}
 
           {entryMode === "invite" && isKnownSingleLane(entryMode) ? (
             <div style={routeCard()}>

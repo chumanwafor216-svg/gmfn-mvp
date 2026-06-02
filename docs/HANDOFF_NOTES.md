@@ -41,6 +41,17 @@
     button opens three short manual steps instead of exposing another action;
   - the audit now blocks the prompt from drifting back into a busy two-button
     instruction block.
+- Follow-up PWA launch / polish change:
+  - the installed phone icon still starts at `/cover?source=pwa`, but
+    `PublicEntryGuard` now allows that PWA front door to stay public even when
+    an access token exists;
+  - signed-in users on Welcome now see `Continue to my GSN`, so returning
+    members can reopen Dashboard intentionally instead of being auto-jumped
+    there;
+  - the manifest and app-shell title were simplified to `GSN` so phone surfaces
+    do not show a long public-link label;
+  - the app icon SVG and PNGs were refreshed with a centered shield/star/GSN
+    mark for a more balanced phone-screen identity.
 
 ### Public Shop owner-only navigator (2026-06-02)
 

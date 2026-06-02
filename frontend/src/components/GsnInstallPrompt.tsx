@@ -57,24 +57,18 @@ function outerCardStyle(tone: InstallPromptTone, compact: boolean): React.CSSPro
 }
 
 function markStyle(tone: InstallPromptTone, compact: boolean): React.CSSProperties {
-  const dark = tone === "dark";
-
   return {
     width: compact ? 34 : 40,
     height: compact ? 34 : 40,
-    borderRadius: 13,
+    borderRadius: 12,
     display: "grid",
     placeItems: "center",
     flexShrink: 0,
-    color: dark ? "#061827" : "#08233A",
-    background:
-      "linear-gradient(180deg, #FFF3B8 0%, #F2C766 54%, #D6AA45 100%)",
-    border: "1px solid rgba(255,255,255,0.48)",
+    background: tone === "dark" ? "rgba(255,255,255,0.08)" : "rgba(8,35,58,0.05)",
+    border: "1px solid rgba(243,208,106,0.24)",
     boxShadow:
-      "0 10px 22px rgba(6,24,39,0.16), inset 0 1px 0 rgba(255,255,255,0.66)",
-    fontSize: compact ? 13 : 14,
-    fontWeight: 1000,
-    letterSpacing: 0.4,
+      "0 10px 22px rgba(6,24,39,0.16), inset 0 1px 0 rgba(255,255,255,0.18)",
+    overflow: "hidden",
   };
 }
 
@@ -193,7 +187,16 @@ export default function GsnInstallPrompt({
         }}
       >
         <div style={markStyle(tone, compact)} aria-hidden="true">
-          GSN
+          <img
+            src="/gsn-app-icon.svg"
+            alt=""
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+              objectFit: "cover",
+            }}
+          />
         </div>
         <div style={{ display: "grid", gap: 4, minWidth: 0 }}>
           <div
