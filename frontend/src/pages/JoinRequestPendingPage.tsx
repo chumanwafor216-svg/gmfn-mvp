@@ -83,6 +83,9 @@ function panelStyle(padding = 18): React.CSSProperties {
     boxShadow:
       "0 24px 54px rgba(0,4,12,0.34), inset 0 1px 0 rgba(255,255,255,0.06)",
     padding,
+    boxSizing: "border-box",
+    width: "100%",
+    maxWidth: "100%",
     overflow: "hidden",
   };
 }
@@ -131,9 +134,12 @@ function actionStyle(kind: "primary" | "secondary"): React.CSSProperties {
   const primary = kind === "primary";
   return {
     minHeight: 54,
+    height: 54,
+    maxHeight: 54,
     minWidth: 0,
     width: "100%",
     borderRadius: 16,
+    padding: "0 14px",
     border: primary
       ? "1px solid rgba(172,204,255,0.58)"
       : "1px solid rgba(214,228,242,0.42)",
@@ -146,15 +152,21 @@ function actionStyle(kind: "primary" | "secondary"): React.CSSProperties {
       : "0 12px 22px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.86)",
     fontWeight: 1000,
     fontSize: 15,
+    lineHeight: 1.15,
+    whiteSpace: "normal",
+    overflowWrap: "normal",
   };
 }
 
 function helpfulLinkStyle(): React.CSSProperties {
   return {
     minHeight: 48,
+    height: 48,
+    maxHeight: 48,
     minWidth: 0,
     width: "100%",
     borderRadius: 999,
+    padding: "0 12px",
     border: "1px solid rgba(142,184,238,0.24)",
     background:
       "linear-gradient(180deg, rgba(13,43,74,0.84) 0%, rgba(9,31,56,0.84) 100%)",
@@ -163,6 +175,9 @@ function helpfulLinkStyle(): React.CSSProperties {
       "0 10px 20px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
     fontWeight: 900,
     fontSize: 14,
+    lineHeight: 1.15,
+    whiteSpace: "normal",
+    overflowWrap: "normal",
   };
 }
 
@@ -410,13 +425,23 @@ export default function JoinRequestPendingPage() {
     return mergeSearchIntoPath(`/activate-membership?${params.toString()}`, location.search);
   }, [liveStatus, location.search, requestId]);
 
+  const approvedHandoffTo = useMemo(() => {
+    const nextStep = safeStr(liveStatus?.next_step || "").toLowerCase();
+    if (nextStep === "open-community") return communityTo;
+    if (nextStep === "activate-membership") return activationTo || approvalTo;
+
+    const activationRequired = liveStatus?.activation_required !== false;
+    return activationRequired ? activationTo || approvalTo : communityTo;
+  }, [activationTo, approvalTo, communityTo, liveStatus]);
+
   useEffect(() => {
     if (!requestId || handoffStarted || !liveStatus) return;
 
     const lowerStatus = safeStr(liveStatus?.status).toLowerCase();
     if (lowerStatus === "approved") {
+      if (!approvedHandoffTo) return;
       setHandoffStarted(true);
-      navigate(activationTo || communityTo, {
+      navigate(approvedHandoffTo, {
         replace: true,
         state: {
           gmfn_id: safeStr(liveStatus?.gmfn_id || ""),
@@ -437,10 +462,9 @@ export default function JoinRequestPendingPage() {
       );
     }
   }, [
-    activationTo,
     approvalTo,
+    approvedHandoffTo,
     communityName,
-    communityTo,
     handoffStarted,
     liveStatus,
     location.search,
@@ -862,6 +886,7 @@ export default function JoinRequestPendingPage() {
               kind="primary"
               disabled={!approvalCta.enabled}
               debugId={approvalCta.debugId}
+              stableHeight={54}
               style={actionStyle("primary")}
             >
               Open approval status
@@ -874,6 +899,7 @@ export default function JoinRequestPendingPage() {
                 setReviewDetailsOpen((current) => !current);
               }}
               debugId="join-pending.review-details.toggle"
+              stableHeight={54}
               style={actionStyle("secondary")}
             >
               {reviewDetailsOpen ? "Hide review details" : "View review details"}
@@ -898,6 +924,7 @@ export default function JoinRequestPendingPage() {
               to={ctaPath(guideCta)}
               kind="secondary"
               debugId={guideCta.debugId}
+              stableHeight={48}
               style={helpfulLinkStyle()}
             >
               Full GSN guide
@@ -906,6 +933,7 @@ export default function JoinRequestPendingPage() {
               to={ctaPath(guideCta)}
               kind="secondary"
               debugId="join-pending.focus-guide"
+              stableHeight={48}
               style={helpfulLinkStyle()}
             >
               Focus Commitments
@@ -914,6 +942,7 @@ export default function JoinRequestPendingPage() {
               to={ctaPath(welcomeCta)}
               kind="secondary"
               debugId={welcomeCta.debugId}
+              stableHeight={48}
               style={helpfulLinkStyle()}
             >
               Welcome

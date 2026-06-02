@@ -13,6 +13,7 @@ import {
   observeIdentityRisk,
 } from "../lib/api";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
+import { structuredErrorDetail } from "../lib/structuredErrors";
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
@@ -31,18 +32,6 @@ type ActivationNotice = {
   actionLabel?: string;
   actionPath?: string;
 };
-
-function structuredErrorDetail(err: any): Record<string, any> | null {
-  const raw = safeStr(err?.message || err);
-  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    return null;
-  }
-}
 
 function loginPathFromDetail(detail: Record<string, any> | null): string {
   const rawPath = safeStr(detail?.login_path);

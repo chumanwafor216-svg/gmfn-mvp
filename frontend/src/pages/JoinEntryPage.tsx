@@ -31,10 +31,14 @@ import {
   readJoinEntryDraft,
   saveJoinEntryDraft,
 } from "../lib/entryDraft";
+import { structuredErrorDetail } from "../lib/structuredErrors";
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalPageCard(bg),
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
     border: "1px solid rgba(37,78,119,0.20)",
     padding: 24,
   };
@@ -43,6 +47,9 @@ function pageCard(bg = "#FFFFFF"): React.CSSProperties {
 function softCard(bg = "#F8FBFF"): React.CSSProperties {
   return {
     ...institutionalSoftCard(bg),
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
     border: "1px solid rgba(37,78,119,0.18)",
     padding: 18,
   };
@@ -51,6 +58,9 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
     ...institutionalInnerCard(bg),
+    width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box",
     border: "1px solid rgba(37,78,119,0.16)",
     padding: 14,
   };
@@ -154,11 +164,16 @@ function entryChoiceActionStyle(kind: "primary" | "secondary"): React.CSSPropert
   return {
     width: "100%",
     minHeight: 52,
+    height: 52,
+    maxHeight: 52,
     borderRadius: 16,
     minWidth: 0,
-    padding: "10px 14px",
+    padding: "0 14px",
     fontSize: 14,
     fontWeight: 1000,
+    lineHeight: 1.15,
+    whiteSpace: "normal",
+    overflowWrap: "normal",
     border: primary
       ? "1px solid rgba(28,76,126,0.28)"
       : "1px solid rgba(28,76,126,0.18)",
@@ -169,6 +184,19 @@ function entryChoiceActionStyle(kind: "primary" | "secondary"): React.CSSPropert
     boxShadow: primary
       ? "0 14px 26px rgba(8,35,58,0.18), inset 0 1px 0 rgba(255,255,255,0.14)"
       : "0 10px 20px rgba(10,24,49,0.08), inset 0 1px 0 rgba(255,255,255,0.82)",
+  };
+}
+
+function entryActionGrid(compact = false, columns = 2): React.CSSProperties {
+  return {
+    marginTop: 14,
+    display: "grid",
+    gridTemplateColumns: compact
+      ? "1fr"
+      : `repeat(${columns}, minmax(0, 1fr))`,
+    gap: 10,
+    alignItems: "stretch",
+    width: "100%",
   };
 }
 
@@ -387,16 +415,17 @@ function buildWorkSummary(category: string, detail: string): string {
 
 function friendlyJoinError(value: any): string {
   const raw = cleanText(value);
-  try {
-    const parsed = JSON.parse(raw);
-    if (cleanText(parsed?.code).toLowerCase() === "existing_account_login_required") {
-      return (
-        cleanText(parsed?.message) ||
-        "This phone is already tied to an existing GSN identity. Sign in first, then continue this join link with the same GSN ID."
-      );
-    }
-  } catch {
-    // Keep the plain text handling below.
+  const parsed = structuredErrorDetail(raw);
+  const parsedCode = cleanText(parsed?.code).toLowerCase();
+  if (parsedCode === "existing_account_login_required") {
+    return (
+      cleanText(parsed?.message) ||
+      "This phone is already tied to an existing GSN identity. Sign in first, then continue this join link with the same GSN ID."
+    );
+  }
+
+  if (parsed?.message) {
+    return cleanText(parsed.message);
   }
 
   const lower = raw.toLowerCase();
@@ -1507,11 +1536,12 @@ export default function JoinEntryPage() {
         minHeight: "100vh",
         background:
           "radial-gradient(circle at top, rgba(94,146,214,0.14) 0%, rgba(11,31,51,0) 24%), radial-gradient(circle at top right, rgba(214,173,82,0.08) 0%, rgba(11,31,51,0) 22%), radial-gradient(circle at bottom left, rgba(54,98,156,0.18) 0%, rgba(54,98,156,0) 26%), linear-gradient(180deg, #07101C 0%, #0B1F33 38%, #173654 74%, #24496E 100%)",
-        padding: "22px",
+        padding: isCompact ? "16px 14px 24px" : "22px",
         boxSizing: "border-box",
+        overflowX: "hidden",
       }}
     >
-      <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+      <div style={{ width: "100%", maxWidth: 1120, margin: "0 auto", boxSizing: "border-box" }}>
         <div
           style={{
             borderRadius: 26,
@@ -1520,8 +1550,11 @@ export default function JoinEntryPage() {
               "linear-gradient(180deg, rgba(246,250,255,0.98) 0%, rgba(232,240,250,0.96) 58%, rgba(217,228,242,0.93) 100%)",
             boxShadow:
               "0 24px 58px rgba(5,16,38,0.28), inset 0 1px 0 rgba(255,255,255,0.80)",
-            padding: 20,
+            padding: isCompact ? 14 : 20,
             overflow: "hidden",
+            boxSizing: "border-box",
+            width: "100%",
+            maxWidth: "100%",
           }}
         >
           <div
@@ -1531,11 +1564,14 @@ export default function JoinEntryPage() {
                 "linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)",
               border: "1px solid rgba(16,37,59,0.16)",
               boxShadow:
-                "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
-              padding: 18,
+              "0 18px 34px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.08)",
+              padding: isCompact ? 14 : 18,
               position: "relative",
               overflow: "hidden",
               marginBottom: 16,
+              boxSizing: "border-box",
+              width: "100%",
+              maxWidth: "100%",
             }}
           >
             <div
@@ -1629,13 +1665,14 @@ export default function JoinEntryPage() {
                       ? ` \u2022 Community: ${cleanText(storedRequest?.community_name || "")}`
                       : ""}
                   </div>
-                  <CardActionRow style={{ marginTop: 14 }}>
+                  <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
                     <PrimaryButton
                       type="button"
                       disabled={resumeBusy}
                       onClick={resumeStoredRequest}
                       debugId="join-entry.resume-saved-request"
-                      style={{ width: "min(100%, 68%)" }}
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("primary")}
                     >
                       {resumeBusy ? "Opening saved request..." : "Reopen saved request"}
                     </PrimaryButton>
@@ -1643,6 +1680,8 @@ export default function JoinEntryPage() {
                       type="button"
                       onClick={clearStoredRequest}
                       debugId="join-entry.clear-saved-request"
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("secondary")}
                     >
                       Clear saved request
                     </SecondaryButton>
@@ -1721,12 +1760,13 @@ export default function JoinEntryPage() {
                 <div style={{ marginTop: 8, ...helperText() }}>
                   {joinResumeNotice}
                 </div>
-                <CardActionRow style={{ marginTop: 14 }}>
+                <CardActionRow align="stretch" style={entryActionGrid(isCompact)}>
                   <PrimaryButton
                     type="button"
                     onClick={() => setJoinResumeNotice(null)}
                     debugId="join-entry.resume-draft-continue"
-                    style={{ width: "min(100%, 64%)" }}
+                    stableHeight={52}
+                    style={entryChoiceActionStyle("primary")}
                   >
                     Continue entry
                   </PrimaryButton>
@@ -1734,6 +1774,8 @@ export default function JoinEntryPage() {
                     type="button"
                     onClick={startFreshJoinDraft}
                     debugId="join-entry.resume-draft-start-fresh"
+                    stableHeight={52}
+                    style={entryChoiceActionStyle("secondary")}
                   >
                     Start again
                   </SecondaryButton>
@@ -1781,11 +1823,8 @@ export default function JoinEntryPage() {
                     debugId="join-entry.existing-identity"
                     busy={busy}
                     busyLabel="Sending request..."
-                    stableHeight={54}
-                    style={{
-                      ...entryChoiceActionStyle("primary"),
-                      width: "min(100%, 360px)",
-                    }}
+                    stableHeight={52}
+                    style={entryChoiceActionStyle("primary")}
                   >
                     Join with existing GSN ID
                   </PrimaryButton>
@@ -1826,11 +1865,8 @@ export default function JoinEntryPage() {
 
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: isCompact
-                      ? "1fr"
-                      : "repeat(2, minmax(170px, 1fr))",
-                    gap: 10,
+                    ...entryActionGrid(isCompact),
+                    marginTop: 0,
                     flex: "1 1 360px",
                     maxWidth: isCompact ? "100%" : 430,
                     width: isCompact ? "100%" : undefined,
@@ -1840,6 +1876,7 @@ export default function JoinEntryPage() {
                     to={ctaPath(signInConflictCta)}
                     kind="secondary"
                     debugId="join-entry.already-have-gmfn"
+                    stableHeight={52}
                     style={entryChoiceActionStyle("secondary")}
                   >
                     I already have a GSN ID
@@ -1853,6 +1890,7 @@ export default function JoinEntryPage() {
                       setFormOpen((prev) => !prev);
                     }}
                     debugId="join-entry.toggle-new-member-request-form"
+                    stableHeight={52}
                     style={{
                       ...entryChoiceActionStyle("secondary"),
                       opacity: canOpenForm ? 1 : 0.62,
@@ -1895,7 +1933,8 @@ export default function JoinEntryPage() {
                       onClick={openManualInviteCode}
                       disabled={!cleanText(manualInviteCode)}
                       debugId="join-entry.manual-code.open"
-                      style={{ width: "min(100%, 320px)" }}
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("primary")}
                     >
                       Check code
                     </PrimaryButton>
@@ -1920,10 +1959,8 @@ export default function JoinEntryPage() {
                       to={ctaPath(signInConflictCta)}
                       kind="secondary"
                       debugId={signInConflictCta.debugId}
-                      style={{
-                        ...entryChoiceActionStyle("secondary"),
-                        width: "min(100%, 320px)",
-                      }}
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("secondary")}
                     >
                       Sign in to continue
                     </StableCtaLink>
@@ -1962,17 +1999,15 @@ export default function JoinEntryPage() {
                   )}
                 </div>
 
-                <div style={{ marginTop: 14, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={entryActionGrid(isCompact, 1)}>
                   {cleanText(success?.result_status || success?.code || "").toLowerCase() ===
                   "already_member" ? (
                     <StableCtaLink
                       to={ctaPath(alreadyMemberCta)}
                       kind="secondary"
                       debugId={alreadyMemberCta.debugId}
-                      style={{
-                        ...entryChoiceActionStyle("secondary"),
-                        width: "min(100%, 320px)",
-                      }}
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("secondary")}
                     >
                       Open this community
                     </StableCtaLink>
@@ -1981,10 +2016,8 @@ export default function JoinEntryPage() {
                       to={ctaPath(approvalStatusCta)}
                       kind="secondary"
                       debugId={approvalStatusCta.debugId}
-                      style={{
-                        ...entryChoiceActionStyle("secondary"),
-                        width: "min(100%, 320px)",
-                      }}
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("secondary")}
                     >
                       Check approval status
                     </StableCtaLink>
@@ -1993,10 +2026,8 @@ export default function JoinEntryPage() {
                       to={ctaPath(pendingCta)}
                       kind="secondary"
                       debugId={pendingCta.debugId}
-                      style={{
-                        ...entryChoiceActionStyle("secondary"),
-                        width: "min(100%, 320px)",
-                      }}
+                      stableHeight={52}
+                      style={entryChoiceActionStyle("secondary")}
                     >
                       Open pending page
                     </StableCtaLink>
@@ -2171,6 +2202,7 @@ export default function JoinEntryPage() {
             to={ctaPath(welcomeCta)}
             kind="secondary"
             debugId={welcomeCta.debugId}
+            stableHeight={52}
             style={{
               ...entryChoiceActionStyle("secondary"),
               width: "min(100%, 260px)",

@@ -1554,9 +1554,12 @@ export default function BuildFirstCirclePage() {
                 </span>
                 <SecondaryButton
                   onClick={() => toggleSection("contacts")}
-                  stableHeight={46}
+                  stableHeight={48}
                   debugId="build-first-circle.open-list"
-                  style={{ borderRadius: 14, minWidth: isCompact ? undefined : 128 }}
+                  style={{
+                    ...compactButtonStyle(false),
+                    minWidth: isCompact ? undefined : 132,
+                  }}
                 >
                   {collapsed.contacts ? "Open list" : "Close list"}
                 </SecondaryButton>
@@ -1600,19 +1603,26 @@ export default function BuildFirstCirclePage() {
                             .join(" - ")}
                         </div>
                       </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <div
+                        style={{
+                          ...actionRow(isCompact),
+                          minWidth: isCompact ? undefined : 220,
+                        }}
+                      >
                         <StableButton
                           kind={item.selected ? "primary" : "secondary"}
                           onClick={() => toggleSelected(item.id)}
-                          stableHeight={42}
+                          stableHeight={48}
                           debugId={`build-first-circle.contact.${item.id}.toggle-selected`}
+                          style={compactButtonStyle(item.selected)}
                         >
                           {item.selected ? "Included" : "Include"}
                         </StableButton>
                         <SubtleButton
                           onClick={() => removeContact(item.id)}
-                          stableHeight={42}
+                          stableHeight={48}
                           debugId={`build-first-circle.contact.${item.id}.remove`}
+                          style={compactButtonStyle(false)}
                         >
                           Remove
                         </SubtleButton>
@@ -1671,30 +1681,23 @@ export default function BuildFirstCirclePage() {
                 >
                   {messagePreview}
                 </div>
-                <div
-                  style={{
-                    marginTop: 14,
-                    display: "grid",
-                    gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                    gap: 12,
-                  }}
-                >
+                <div style={{ ...actionRow(isCompact), marginTop: 14 }}>
                   <SecondaryButton
                     onClick={() => {
                       void copyInviteBundle();
                     }}
-                    stableHeight={52}
+                    stableHeight={48}
                     debugId="build-first-circle.copy-invite"
-                    style={{ borderRadius: 14 }}
+                    style={compactButtonStyle(false)}
                   >
                     Copy invite
                   </SecondaryButton>
                   <PrimaryButton
                     onClick={openWhatsAppInvite}
-                    stableHeight={52}
+                    stableHeight={48}
                     debugId="build-first-circle.share-whatsapp"
                     style={{
-                      borderRadius: 14,
+                      ...compactButtonStyle(true),
                       background: "#15803D",
                       border: "1px solid rgba(187,247,208,0.22)",
                     }}

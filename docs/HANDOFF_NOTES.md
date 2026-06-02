@@ -1,3 +1,67 @@
+### Seven-item entry flow cleanup pass (2026-06-02)
+
+- Route/screens affected:
+  - `/join`, implemented by `frontend/src/pages/JoinEntryPage.tsx`;
+  - `/pending-approval`, implemented by
+    `frontend/src/pages/JoinRequestPendingPage.tsx`;
+  - `/login`, implemented by `frontend/src/pages/LoginPage.tsx`;
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`;
+  - `/create`, implemented by `frontend/src/pages/CreateEntryPage.tsx`;
+  - `/app/build-first-circle`, implemented by
+    `frontend/src/pages/BuildFirstCirclePage.tsx`.
+- Product-owner request:
+  - continue the long-haul cleanup and finish the seven remaining issues:
+    tighter Join Entry buttons, deeper First Circle polish, login logic truth,
+    shared structured-error handling, deterministic Pending Approval handoff,
+    deploy verification truth, and screenshot verification.
+- Updated frontend:
+  - tightened remaining Join Entry action rows to stable 52px buttons with
+    responsive grid rows instead of percentage-width/flex actions;
+  - tightened older First Circle contact-list and invite-message action
+    sections to the same compact 48px action language as the newer quick
+    actions;
+  - added `frontend/src/lib/structuredErrors.ts` and reused it from Login,
+    Member Activation, Create Entry, and Join Entry so structured backend
+    details are parsed consistently instead of leaking raw JSON;
+  - hardened Pending Approval approved-state handoff to honor backend
+    `next_step` (`activate-membership` vs `open-community`) before falling
+    back to inferred routes;
+  - added explicit border-box/width constraints to the affected Join Entry,
+    Pending Approval, and Sign In surfaces so mobile screenshots do not depend
+    on global CSS reset timing;
+  - removed the compact sign-in header help pill that was clipping on the
+    auth-gated First Circle route while preserving the desktop help action.
+- Confirmed product truth:
+  - `docs/SCREEN_SPECS.md` still mentions a verification-code sign-in idea,
+    but the live backend `/auth/login` route is password-based
+    (`OAuth2PasswordRequestForm`) and the live Login page correctly uses
+    phone/email plus password;
+  - no fake verification-code login was added. Implementing that would require
+    a real backend/API product change, not UI polish.
+- Verification:
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npx eslint src/pages/JoinEntryPage.tsx src/pages/BuildFirstCirclePage.tsx src/pages/LoginPage.tsx src/pages/MemberActivationPage.tsx src/pages/CreateEntryPage.tsx src/pages/JoinRequestPendingPage.tsx src/lib/structuredErrors.ts` passed;
+  - `npm run build` passed outside the sandbox after the known Windows Vite /
+    esbuild sandbox `spawn EPERM`;
+  - Chrome headless screenshots were captured locally at 390x844 for `/join`,
+    `/pending-approval?request_id=5`, and `/app/build-first-circle` after
+    launching Vite preview with elevated process-spawn permission.
+- Remaining truth:
+  - `/app/build-first-circle` is authenticated; without a local session, the
+    screenshot verifies the sign-in gate rather than the authenticated First
+    Circle content;
+  - full `npm run lint` still fails on pre-existing unrelated issues in
+    `frontend/server.mjs`, `frontend/src/pages/TrustScorePage.tsx`, and
+    `frontend/src/pages/TrustSlipPage.tsx`;
+  - GitHub/Render direct deploy still depends on repository secrets. Do not
+    claim Render direct deploy unless the workflow uses
+    `RENDER_FRONTEND_DEPLOY_HOOK_URL`, Render API credentials, confirmed
+    Render auto-deploy, or an owner-provided deploy id.
+
 ### Entry/activation deep button polish (2026-06-02)
 
 - Route/screens affected:

@@ -8,6 +8,7 @@ import {
   peekPublishRecoveryTarget,
   publishRecoveryTarget,
 } from "../lib/publishRecovery";
+import { structuredErrorDetail } from "../lib/structuredErrors";
 
 function pageShell(compact = false): React.CSSProperties {
   return {
@@ -22,13 +23,13 @@ function pageShell(compact = false): React.CSSProperties {
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
     padding: compact ? "16px 18px" : "22px",
     boxSizing: "border-box",
+    overflowX: "hidden",
   };
 }
 
 function heroCard(): React.CSSProperties {
   return {
     width: "100%",
-    maxWidth: 760,
     borderRadius: 36,
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)",
@@ -36,6 +37,8 @@ function heroCard(): React.CSSProperties {
     boxShadow:
       "0 36px 84px rgba(0,8,18,0.36), inset 0 1px 0 rgba(255,255,255,0.08)",
     padding: 22,
+    boxSizing: "border-box",
+    maxWidth: "min(760px, 100%)",
     backdropFilter: "blur(10px)",
     position: "relative",
     overflow: "hidden",
@@ -51,6 +54,8 @@ function softCard(bg = "#F8FBFF"): React.CSSProperties {
         : bg,
     border: "1px solid rgba(17,37,58,0.11)",
     padding: 18,
+    boxSizing: "border-box",
+    maxWidth: "100%",
     boxShadow:
       "0 16px 32px rgba(8,18,34,0.08), inset 0 1px 0 rgba(255,255,255,0.76)",
   };
@@ -235,18 +240,6 @@ function helperText(): React.CSSProperties {
 
 function safeStr(x: any): string {
   return String(x ?? "").trim();
-}
-
-function structuredErrorDetail(err: any): Record<string, any> | null {
-  const raw = safeStr(err?.message || err);
-  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    return null;
-  }
 }
 
 function joinRedirectFromLoginSearch(searchParams: URLSearchParams): string {
@@ -455,7 +448,7 @@ export default function LoginPage() {
               margin: "0 auto",
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "44px minmax(0, 1fr) auto"
+                ? "44px minmax(0, 1fr) minmax(58px, auto)"
                 : "56px 1fr auto",
               alignItems: "center",
               gap: isCompact ? 8 : 12,
@@ -481,31 +474,33 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <SubtleButton
-                type="button"
-                onClick={() => setGuideOpen((current) => !current)}
-                minWidth={isCompact ? "auto" : 132}
-                stableHeight={38}
-                debugId="login.open-help"
-                style={{
-                  ...secondaryBtn(),
-                  width: "auto",
-                  minHeight: 38,
-                  height: 38,
-                  maxHeight: 38,
-                  padding: isCompact ? "0 12px" : "0 16px",
-                  borderRadius: 999,
-                  color: "#F8FBFF",
-                  fontSize: isCompact ? 11 : 12,
-                  letterSpacing: isCompact ? 0.45 : 0.2,
-                  textTransform: isCompact ? "uppercase" : "none",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {isCompact ? "Sign In Guide" : "About Sign In"}
-              </SubtleButton>
-            </div>
+            {isCompact ? <div aria-hidden="true" /> : (
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <SubtleButton
+                  type="button"
+                  onClick={() => setGuideOpen((current) => !current)}
+                  minWidth={132}
+                  stableHeight={38}
+                  debugId="login.open-help"
+                  style={{
+                    ...secondaryBtn(),
+                    width: "auto",
+                    minHeight: 38,
+                    height: 38,
+                    maxHeight: 38,
+                    padding: "0 16px",
+                    borderRadius: 999,
+                    color: "#F8FBFF",
+                    fontSize: 12,
+                    letterSpacing: 0.2,
+                    textTransform: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  About Sign In
+                </SubtleButton>
+              </div>
+            )}
           </div>
 
           <div
@@ -1004,6 +999,10 @@ export default function LoginPage() {
               boxShadow:
                 "0 20px 36px rgba(0,8,18,0.18), inset 0 1px 0 rgba(255,255,255,0.09)",
               padding: isCompact ? "15px 16px" : "18px 20px",
+              boxSizing: "border-box",
+              width: "100%",
+              maxWidth: "100%",
+              overflow: "hidden",
             }}
           >
             <div
@@ -1025,13 +1024,15 @@ export default function LoginPage() {
             >
               SEC
             </div>
-            <div style={{ display: "grid", gap: 6 }}>
+            <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: isCompact ? 17 : 19,
+                  fontSize: isCompact ? 16 : 19,
                   fontWeight: 1000,
                   lineHeight: 1.22,
                   color: "#F8FBFF",
+                  overflowWrap: "normal",
+                  wordBreak: "normal",
                 }}
               >
                 Your identity and community data stay protected.

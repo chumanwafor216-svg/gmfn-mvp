@@ -42,6 +42,7 @@ import {
   countryOptions,
   evidenceRequirementForCountry,
 } from "../lib/identityEvidenceRequirements";
+import { structuredErrorDetail } from "../lib/structuredErrors";
 
 type FeedbackTarget =
   | "global"
@@ -1233,18 +1234,6 @@ function safeStr(x: any): string {
 
 function otpDigits(value: any): string {
   return safeStr(value).replace(/\D/g, "").slice(0, 8);
-}
-
-function structuredErrorDetail(err: any): Record<string, any> | null {
-  const raw = safeStr(err?.message || err);
-  if (!raw.startsWith("{") || !raw.endsWith("}")) return null;
-
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : null;
-  } catch {
-    return null;
-  }
 }
 
 function resolveIssuedGmfnId(out: any, me: any): string {
