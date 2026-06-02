@@ -718,6 +718,18 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
+  /import \{ QRCodeSVG \} from "qrcode\.react";[\s\S]*?const shopVerificationQrTarget = firstMeaningful\([\s\S]*?absoluteShopShareLink,[\s\S]*?absoluteShopLink[\s\S]*?\);[\s\S]*?TrustSlip proof is on request[\s\S]*?<QRCodeSVG[\s\S]*?value=\{shopVerificationQrTarget\}/,
+  "Public Shop Verify panel must use the public shop link as its QR target and must not claim TrustSlip proof without a live TrustSlip code."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?Community ID[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Shop name|Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community ID[\s\S]*?Shop name[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"/,
+  "Public Shop Verify panel must expose shop-owned identity and community context on demand, not as a crowded always-on signboard dump."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
   /const GALLERY_SLOTS_TOTAL = 12;[\s\S]*?const visibleProducts = useMemo\([\s\S]*?products\.slice\(0, GALLERY_SLOTS_TOTAL\)[\s\S]*?const overflowProductCount = Math\.max\(0, products\.length - GALLERY_SLOTS_TOTAL\);/,
   "Public Shop Gallery must render the full approved 12 public-block shelf before any overflow control."
 );

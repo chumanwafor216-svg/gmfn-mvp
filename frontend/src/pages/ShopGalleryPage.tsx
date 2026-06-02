@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useParams } from "react-router-dom";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
@@ -879,6 +880,7 @@ export default function ShopGalleryPage() {
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
   const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
+  const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
   const [repostPanelOpen, setRepostPanelOpen] = useState(false);
   const [repostCommunities, setRepostCommunities] = useState<RepostCommunityOption[]>([]);
   const [repostCommunitiesLoading, setRepostCommunitiesLoading] = useState(false);
@@ -1685,6 +1687,17 @@ export default function ShopGalleryPage() {
     shopCommunityText,
     "GSN public marketplace"
   );
+  const shopCommunityIdText = safeStr(effectiveShop?.clanId);
+  const shopVerificationQrTarget = firstMeaningful(
+    absoluteShopShareLink,
+    absoluteShopLink
+  );
+  const shopVerificationRows = [
+    { label: "Shop owner ID", value: shopGmfnText || "Not ready" },
+    { label: "Marketplace", value: shopLocationText },
+    { label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
+    { label: "Shop name", value: shopNameText },
+  ];
   const shopContactText = autoRefreshingShop
     ? "Owner refresh running"
     : shopLoadFailed
@@ -1835,6 +1848,10 @@ export default function ShopGalleryPage() {
     }
 
     setOwnerContactPanelOpen((open) => !open);
+  }
+
+  function toggleShopVerificationPanel() {
+    setShopVerificationOpen((open) => !open);
   }
 
   function callOwnerPhone() {
@@ -2323,6 +2340,176 @@ export default function ShopGalleryPage() {
             );
           })}
         </div>
+
+        <section
+          className="public-shop-section public-shop-verify"
+          style={{
+            ...innerCard("#F8FBFF"),
+            display: "grid",
+            gap: isCompact ? 10 : 12,
+            padding: isCompact ? 12 : 16,
+          }}
+          aria-label="Shop verification summary"
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 170px",
+              gap: isCompact ? 9 : 12,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
+                Shop verification
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#0B1F33",
+                  fontSize: isCompact ? 13.5 : 16,
+                  fontWeight: 950,
+                  lineHeight: 1.16,
+                }}
+              >
+                Check the shop identity before you trade.
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#526C84",
+                  fontSize: isCompact ? 10.2 : 12.2,
+                  lineHeight: 1.35,
+                  fontWeight: 720,
+                }}
+              >
+                The QR reopens this public shop. TrustSlip proof is on request
+                until a live TrustSlip code is attached.
+              </div>
+            </div>
+
+            <SecondaryButton
+              onClick={toggleShopVerificationPanel}
+              minWidth={0}
+              stableHeight={isCompact ? 40 : 46}
+              debugId="shop-gallery.verify-shop.toggle"
+              aria-expanded={shopVerificationOpen}
+              aria-controls="public-shop-verify-panel"
+              style={{
+                ...secondaryBtn(false),
+                minHeight: isCompact ? 40 : 46,
+                borderRadius: isCompact ? 13 : 14,
+                fontSize: isCompact ? 11.2 : 13.5,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {shopVerificationOpen ? "Hide proof" : "Verify shop"}
+            </SecondaryButton>
+          </div>
+
+          {shopVerificationOpen ? (
+            <div
+              id="public-shop-verify-panel"
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "160px minmax(0, 1fr)",
+                gap: isCompact ? 10 : 14,
+                alignItems: "stretch",
+                borderRadius: isCompact ? 16 : 18,
+                border: "1px solid rgba(13,95,168,0.14)",
+                background: "#FFFFFF",
+                padding: isCompact ? 10 : 12,
+              }}
+            >
+              <div
+                style={{
+                  minHeight: isCompact ? 132 : 148,
+                  borderRadius: isCompact ? 14 : 16,
+                  border: "1px solid rgba(13,95,168,0.13)",
+                  background:
+                    "linear-gradient(180deg, #FFFFFF 0%, #F2F7FC 100%)",
+                  display: "grid",
+                  placeItems: "center",
+                  padding: isCompact ? 10 : 12,
+                }}
+              >
+                {shopVerificationQrTarget ? (
+                  <QRCodeSVG
+                    value={shopVerificationQrTarget}
+                    size={isCompact ? 116 : 132}
+                    marginSize={1}
+                    fgColor="#07172C"
+                    bgColor="#FFFFFF"
+                  />
+                ) : (
+                  <span
+                    style={{
+                      color: "#526C84",
+                      fontSize: isCompact ? 11 : 12,
+                      fontWeight: 850,
+                      textAlign: "center",
+                      lineHeight: 1.25,
+                    }}
+                  >
+                    Shop link not ready
+                  </span>
+                )}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: isCompact ? 7 : 8,
+                  alignContent: "start",
+                }}
+              >
+                {shopVerificationRows.map((row) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "128px minmax(0, 1fr)",
+                      gap: isCompact ? 2 : 8,
+                      alignItems: "center",
+                      borderRadius: 12,
+                      background: "rgba(234,243,255,0.72)",
+                      padding: isCompact ? "8px 9px" : "9px 10px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "#617085",
+                        fontSize: isCompact ? 9.5 : 11,
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                        letterSpacing: 0,
+                      }}
+                    >
+                      {row.label}
+                    </span>
+                    <span
+                      style={{
+                        color: "#07172C",
+                        fontSize: isCompact ? 11.5 : 13,
+                        fontWeight: 900,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={row.value}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
 
         {ownerContactPanelOpen ? (
           <section

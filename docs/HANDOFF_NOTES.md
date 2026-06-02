@@ -1,3 +1,44 @@
+### Public Shop on-demand verification panel (2026-06-02)
+
+- Route/screens affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - Public Shop / Owner Shop Control screen rules in `docs/SCREEN_SPECS.md`;
+  - link/ownership contract audit in `frontend/tools/audit-link-contracts.mjs`.
+- Product-owner question:
+  - the Public Shop display board already shows personal shop identity and
+    marketplace context, but may also need community ID and a QR/trust check
+    without overcrowding the public board.
+- Updated frontend:
+  - Public Shop now has a compact `Verify shop` panel directly under the
+    shop status strip;
+  - the panel is closed by default and opens on demand, so community ID and QR
+    details do not crowd the signboard;
+  - the panel shows shop owner ID, marketplace, community ID when available,
+    and shop name;
+  - the QR points to the public shop/share link so a buyer can reopen the same
+    shop page.
+- Important truth:
+  - this QR is not presented as TrustSlip proof. The panel says TrustSlip proof
+    remains on request until a live TrustSlip code is attached by the backend.
+    This avoids a false verification claim.
+- Updated docs/audit:
+  - `docs/SCREEN_SPECS.md` now locks the on-demand Verify Shop pattern and
+    forbids presenting the shop QR as TrustSlip proof without backend proof;
+  - `frontend/tools/audit-link-contracts.mjs` now guards the QR target and
+    copy.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx tools/audit-link-contracts.mjs`
+    passed;
+  - `npm run audit:link-contracts`, `npm run audit:button-stability`, and
+    `npm run audit:tap-stability` passed;
+  - `git diff --check` passed with normal Windows line-ending warnings only;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    `spawn EPERM` sandbox failure.
+- Remaining truth:
+  - full TrustSlip QR verification still needs a real shop-linked TrustSlip
+    code from backend data. Until then, the QR is a shop reopen/share proof
+    surface, not a legal/trust-document proof.
+
 ### Public Shop signboard name remains shop-owned (2026-06-02)
 
 - Route/screens affected:

@@ -310,3 +310,7 @@ Rules:
   description, picture, WhatsApp, and Telegram come from the individual shop
   record. Marketplace/community name may appear only as the shared community
   context, not as a replacement for the shop name.
+- Public Shop may expose an on-demand Verify Shop panel with the shop owner ID,
+  shop name, marketplace/community context, community ID when available, and a
+  QR that reopens the public shop link. Do not present that QR as TrustSlip
+  proof unless the backend provides a live TrustSlip code for that shop.
