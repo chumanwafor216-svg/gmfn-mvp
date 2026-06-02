@@ -1,3 +1,29 @@
+### Free Spotlight uses saved shop identity, not repeated shop setup (2026-06-02)
+
+- Route/screen affected:
+  - `/app/shop-control#shop-control-spotlight`, implemented by
+    `frontend/src/pages/ShopControlPage.tsx`.
+- Product-owner correction:
+  - after a member fills their shop details once, Free Spotlight should not ask
+    for the shop record again every time;
+  - one global GSN member ID owns one shop, so Spotlight should attach product
+    updates to that saved shop and only ask for the current item/update details.
+- Frontend change:
+  - Free Spotlight now opens directly to the product/media composer instead of
+    routing missing hydrated shop state into a visible shop-record setup step;
+  - publish now calls the existing shop-row preparation helper when the local
+    shop record is missing, then attaches the spotlight to that prepared shop;
+  - the composer now has product/update fields for item/offer and price/key
+    detail, and combines those with the optional note for the broadcast message.
+- Guardrails:
+  - `frontend/tools/audit-spotlight-controls.mjs` now checks that Free
+    Spotlight opens to product/media, keeps product details separate from shop
+    identity, and no longer tells users to tap a setup step before publishing.
+- Remaining truth:
+  - this is a frontend flow repair using the existing one-shop backend contract.
+    It does not create a separate shop per community and does not alter the
+    backend spotlight quota rules.
+
 ### GSN phone icon restored to balanced emblem (2026-06-02)
 
 - Routes/surfaces affected:

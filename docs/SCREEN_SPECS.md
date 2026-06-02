@@ -380,3 +380,8 @@ Rules:
   refresh, and return navigation. Occupied blocks should show the current
   picture/video preview and item name; empty blocks should be visibly empty so
   the member can tell what is free.
+- Free Spotlight must not make the member fill shop identity/details every time
+  they publish. The member has one shop attached to the global GSN ID; Spotlight
+  should use that saved shop identity, quietly prepare the backend shop row if
+  it is missing, and ask only for the product/update details, price note, media,
+  and short instruction that belong to the current spotlight.

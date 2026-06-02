@@ -576,6 +576,8 @@ export default function ShopControlPage() {
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [savingShop, setSavingShop] = useState(false);
 
+  const [spotlightProductName, setSpotlightProductName] = useState("");
+  const [spotlightPriceNote, setSpotlightPriceNote] = useState("");
   const [spotlightMessage, setSpotlightMessage] = useState("");
   const [spotlightImageUrl, setSpotlightImageUrl] = useState("");
   const [spotlightVideoUrl, setSpotlightVideoUrl] = useState("");
@@ -754,6 +756,8 @@ export default function ShopControlPage() {
     spotlightFlowStep,
     spotlightPriorityMode,
     spotlightMediaChoice,
+    spotlightProductName,
+    spotlightPriceNote,
     spotlightMessage,
     spotlightImageFile,
     spotlightVideoFile,
@@ -762,6 +766,8 @@ export default function ShopControlPage() {
   function clearSpotlightDraft() {
     spotlightImagePrepJobRef.current += 1;
     spotlightVideoPrepJobRef.current += 1;
+    setSpotlightProductName("");
+    setSpotlightPriceNote("");
     setSpotlightMessage("");
     setSpotlightImageUrl("");
     setSpotlightVideoUrl("");
@@ -993,7 +999,7 @@ export default function ShopControlPage() {
 
     if (targetId === "shop-control-spotlight") {
       setSpotlightPriorityMode("free");
-      setSpotlightFlowStep(shop?.id ? "upload" : "setup");
+      setSpotlightFlowStep("upload");
       setSpotlightOpen(true);
     }
 
@@ -1163,12 +1169,18 @@ export default function ShopControlPage() {
   const spotlightHasVideo = Boolean(spotlightVideoFile);
   const spotlightHasChosenMedia =
     spotlightHasImage || spotlightHasVideo;
+  const spotlightHasProductText = Boolean(
+    safeStr(spotlightProductName) ||
+      safeStr(spotlightPriceNote) ||
+      safeStr(spotlightMessage)
+  );
   const spotlightCanContinueToPreview =
-    spotlightMediaChoice === "both"
+    spotlightHasProductText ||
+    (spotlightMediaChoice === "both"
       ? spotlightHasChosenMedia
       : spotlightMediaChoice === "image"
       ? spotlightHasImage
-      : spotlightHasVideo;
+      : spotlightHasVideo);
 
   function pinShopControlLinkSection(sectionId?: string | null) {
     const targetId = safeStr(sectionId);
@@ -1500,10 +1512,10 @@ export default function ShopControlPage() {
     }
   }
 
-  async function ensureSpotlightShopRecord() {
+  async function ensureSpotlightShopRecord(): Promise<ShopRecord | null> {
     if (shop?.id) {
       setSpotlightFlowStep("upload");
-      return;
+      return shop;
     }
 
     const clanId = Number(selectedClanId || 0);
@@ -1512,7 +1524,7 @@ export default function ShopControlPage() {
         "Select the community first, then GSN can create the shop record that spotlight belongs to.";
       setSpotlightPublishFeedback({ tone: "error", text: message });
       showNotice("error", message);
-      return;
+      return null;
     }
 
     const preparedShopName =
@@ -1545,15 +1557,17 @@ export default function ShopControlPage() {
       setImageUrlInput(firstTruthy(created?.image_url));
       setSpotlightFlowStep("upload");
       const successMessage =
-        "Shop record is now ready. Continue with the spotlight upload step.";
+        "Shop record is ready. Continue with the product spotlight.";
       setSpotlightPublishFeedback({ tone: "success", text: successMessage });
       showNotice("success", successMessage);
       await loadPage({ background: true, preferredClanId: Number(created?.clan_id || clanId) });
+      return created;
     } catch (err: any) {
       const errorMessage =
         safeStr(err?.message) || "GSN could not create the shop record yet.";
       setSpotlightPublishFeedback({ tone: "error", text: errorMessage });
       showNotice("error", errorMessage);
+      return null;
     } finally {
       setCreatingSpotlightShop(false);
     }
@@ -1700,6 +1714,16 @@ export default function ShopControlPage() {
     }
   }
 
+  function composeSpotlightMessage(): string {
+    const parts = [
+      safeStr(spotlightProductName),
+      safeStr(spotlightPriceNote),
+      safeStr(spotlightMessage),
+    ].filter(Boolean);
+
+    return parts.join(" - ");
+  }
+
   async function handleCreateSpotlight() {
     if (creatingSpotlight) {
       setSpotlightPublishFeedback({
@@ -1722,13 +1746,16 @@ export default function ShopControlPage() {
       return;
     }
 
-    if (!shop?.id) {
+    const activeShop = shop?.id ? shop : await ensureSpotlightShopRecord();
+    if (!activeShop?.id) {
       const missingShopMessage =
-        "Shop record is not available. Tap Continue in the spotlight setup so GSN can prepare the shop record first.";
+        "GSN could not connect this spotlight to your shop yet. Check the selected community, then try publish again.";
       setSpotlightPublishFeedback({ tone: "error", text: missingShopMessage });
       showNotice("error", missingShopMessage);
       return;
     }
+
+    const targetClanId = Number(activeShop?.clan_id || selectedClanId || effectiveShopClanId || 0);
 
     if (preparingSpotlightImage || preparingSpotlightVideo) {
       const preparingMessage =
@@ -1738,13 +1765,13 @@ export default function ShopControlPage() {
       return;
     }
 
-    const message = safeStr(spotlightMessage);
+    const message = composeSpotlightMessage();
     const manualImageUrl = safeStr(spotlightImageUrl);
     const manualVideoUrl = safeStr(spotlightVideoUrl);
 
     if (!message && !manualImageUrl && !manualVideoUrl && !spotlightImageFile && !spotlightVideoFile) {
       const emptyMessage =
-        "Add a spotlight message, picture, or short video first, then tap Publish.";
+        "Add product details, price, picture, or short video first, then tap Publish.";
       setSpotlightPublishFeedback({ tone: "error", text: emptyMessage });
       showNotice("error", emptyMessage);
       return;
@@ -1774,7 +1801,7 @@ export default function ShopControlPage() {
       if (spotlightImageFile) {
         const uploadRes = await uploadMarketplaceImageFile(
           spotlightImageFile,
-          effectiveShopClanId || null
+          targetClanId || null
         );
         imageUrl = firstTruthy(
           uploadRes?.image_url,
@@ -1799,7 +1826,7 @@ export default function ShopControlPage() {
             spotlightVideoDurationSeconds <= SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS
             ? spotlightVideoDurationSeconds
             : null,
-          effectiveShopClanId || null
+          targetClanId || null
         );
         videoUrl = firstTruthy(
           uploadRes?.video_url,
@@ -1820,8 +1847,8 @@ export default function ShopControlPage() {
       const createRes = await apiJson<any>("/api/marketplace/broadcasts", {
         method: "POST",
         body: JSON.stringify({
-          clan_id: effectiveShopClanId,
-          shop_id: Number(shop.id),
+          clan_id: targetClanId,
+          shop_id: Number(activeShop.id),
           message: message || "Spotlight update",
           image_url: imageUrl || null,
           video_url: videoUrl || null,
@@ -1838,8 +1865,8 @@ export default function ShopControlPage() {
       const optimisticSpotlight = {
         ...(createdSpotlight || {}),
         id: Number(createdSpotlight?.id || Date.now()),
-        clan_id: Number(createdSpotlight?.clan_id || effectiveShopClanId || 0),
-        shop_id: Number(createdSpotlight?.shop_id || shop.id || 0),
+        clan_id: Number(createdSpotlight?.clan_id || targetClanId || 0),
+        shop_id: Number(createdSpotlight?.shop_id || activeShop.id || 0),
         message: firstTruthy(createdSpotlight?.message, message, "Spotlight update"),
         image_url: firstTruthy(createdSpotlight?.image_url, imageUrl),
         video_url: firstTruthy(createdSpotlight?.video_url, videoUrl),
@@ -1849,7 +1876,7 @@ export default function ShopControlPage() {
           "direct_communities"
         ),
         created_at: firstTruthy(createdSpotlight?.created_at, new Date().toISOString()),
-        source_shop_name: firstTruthy(createdSpotlight?.source_shop_name, shop.name),
+        source_shop_name: firstTruthy(createdSpotlight?.source_shop_name, activeShop.name),
       };
 
       const successMessage =
@@ -1871,7 +1898,7 @@ export default function ShopControlPage() {
       try {
         await loadPage({
           background: true,
-          preferredClanId: effectiveShopClanId,
+          preferredClanId: targetClanId,
         });
       } catch (refreshErr: any) {
         const refreshMessage =
@@ -1905,12 +1932,12 @@ export default function ShopControlPage() {
     : "Show one clear shop update to people inside your community.";
   const spotlightLaneEmoji = spotlightModeIsPaid ? "💳" : "📣";
   const spotlightStepBadges = [
-    { key: "setup", label: "1. Shop record" },
-    { key: "upload", label: "2. Media" },
-    { key: "preview", label: "3. Publish" },
+    { key: "upload", label: "1. Product update" },
+    { key: "preview", label: "2. Publish" },
   ];
   const spotlightPreviewHasPicture = Boolean(spotlightImageFile || safeStr(spotlightImageUrl));
   const spotlightPreviewHasVideo = Boolean(spotlightVideoFile || safeStr(spotlightVideoUrl));
+  const spotlightPreviewMessage = composeSpotlightMessage();
 
   const spotlightWorkflowSection = spotlightOpen ? (
     <section
@@ -2220,6 +2247,40 @@ export default function ShopControlPage() {
               </div>
             </div>
 
+            <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
+              <div style={sectionLabel()}>Product details</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Your shop is already linked to your GSN ID. Add only the item or update people should see now.
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 12,
+                }}
+              >
+                <div>
+                  <div style={sectionLabel()}>Item or offer</div>
+                  <input
+                    value={spotlightProductName}
+                    onChange={(e) => setSpotlightProductName(e.target.value)}
+                    placeholder="Fish for sale"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+                <div>
+                  <div style={sectionLabel()}>Price or key detail</div>
+                  <input
+                    value={spotlightPriceNote}
+                    onChange={(e) => setSpotlightPriceNote(e.target.value)}
+                    placeholder="Quarter box N90k"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+              </div>
+            </div>
+
             <div
               style={{
                 display: "grid",
@@ -2316,12 +2377,12 @@ export default function ShopControlPage() {
             <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #EAF4FF 100%)")}>
               <div style={sectionLabel()}>✍️ Message</div>
               <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Keep it short. Say what people should do next.
+                Add availability, delivery, WhatsApp instruction, or any short note for this update.
               </div>
               <textarea
                 value={spotlightMessage}
                 onChange={(e) => setSpotlightMessage(e.target.value)}
-                placeholder="Add a short spotlight message"
+                placeholder="Available today. Message me on WhatsApp to order."
                 style={{ ...textAreaStyle(), marginTop: 10 }}
               />
             </div>
@@ -2404,7 +2465,7 @@ export default function ShopControlPage() {
                 )}
               </div>
               <div style={{ marginTop: 12, color: "#0B1F33", fontWeight: 900, fontSize: 16 }}>
-                {spotlightMessage || "Media-only spotlight"}
+                {spotlightPreviewMessage || "Media-only spotlight"}
               </div>
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <span style={badge(true)}>

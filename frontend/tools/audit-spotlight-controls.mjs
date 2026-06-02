@@ -54,6 +54,36 @@ assertContains(
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
+  /setSpotlightFlowStep\("upload"\);[\s\S]*?setSpotlightOpen\(true\);/,
+  "Free Spotlight must open directly to the product/media composer instead of forcing the user through shop-record setup."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /const \[spotlightProductName, setSpotlightProductName\][\s\S]*?const \[spotlightPriceNote, setSpotlightPriceNote\][\s\S]*?function composeSpotlightMessage\(\)[\s\S]*?safeStr\(spotlightProductName\)[\s\S]*?safeStr\(spotlightPriceNote\)[\s\S]*?safeStr\(spotlightMessage\)/,
+  "Free Spotlight must collect product/update details separately from the saved shop identity."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /const activeShop = shop\?\.id \? shop : await ensureSpotlightShopRecord\(\);[\s\S]*?shop_id: Number\(activeShop\.id\)/,
+  "Free Spotlight publish must quietly prepare a missing shop record and still attach the spotlight to the user's one shop."
+);
+
+assertLineNotContains(
+  "src/pages/ShopControlPage.tsx",
+  /setSpotlightFlowStep\(shop\?\.id \? "upload" : "setup"\)/,
+  "Free Spotlight must not route users into shop-record setup just because the shop row has not hydrated yet."
+);
+
+assertLineNotContains(
+  "src/pages/ShopControlPage.tsx",
+  /Tap Continue in the spotlight setup/,
+  "Free Spotlight must not tell users to fill shop setup again before publishing a product spotlight."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
   /import \{ rememberPublishRecovery \} from "\.\.\/lib\/publishRecovery";[\s\S]*?rememberPublishRecovery\([\s\S]*?routes\.freeSpotlight,[\s\S]*?"shop-control\.spotlight\.preview\.publish"[\s\S]*?\);/,
   "The Free Spotlight publish handler must set a recovery marker before upload/API work so Welcome/Cover can recover from an intermittent route leak."
 );
