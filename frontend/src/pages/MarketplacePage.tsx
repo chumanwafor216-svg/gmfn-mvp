@@ -2840,9 +2840,19 @@ export default function MarketplacePage() {
     );
   }
 
-  async function openFreshPublicShopLink() {
-    const link = await getFreshPublicShopLink();
-    openMarketplaceExternalLink(link, publicShopUnavailableText);
+  function openReadyPublicShopLink() {
+    const link = publicShopPosterLink || publicShopViewLink;
+    if (!link) {
+      showNotice(
+        "error",
+        "Refresh the public shop link first. Then tap Open Shop Face again."
+      );
+      return;
+    }
+
+    if (typeof window !== "undefined") {
+      window.location.assign(link);
+    }
   }
 
   useEffect(() => {
@@ -5043,7 +5053,7 @@ export default function MarketplacePage() {
                             );
                             return;
                           }
-                          void openFreshPublicShopLink();
+                          openReadyPublicShopLink();
                         });
                       }}
                       style={marketplaceInlineActionStyle(

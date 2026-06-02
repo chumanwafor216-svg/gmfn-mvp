@@ -343,6 +343,10 @@ Rules:
 - Explicit legacy/deep-link handling may still reveal a shelf or product after the full public shop loads, but it must be separate from default ordinary public sharing. Vault/private access links remain exact private targets such as `/vault/{token}`.
 - Join invite link surfaces must show and copy only canonical `/start/join/{code}` invite URLs. They must not fall back to unrelated app routes such as Finance, Dashboard, Trust, or Marketplace.
 - Marketplace link action buttons must keep fixed-height rows and avoid transition-driven layout movement.
+- Marketplace `Open Shop Face` must not await a fresh public-shop-link request
+  and then call a new-tab/window open action. Mobile and in-app browsers can
+  blank or block that flow. It should use an already-ready public shop link and
+  navigate in the same tab, or ask the user to refresh the link first.
 - Public Shop signboard identity must be shop/member scoped: shop name,
   description, picture, WhatsApp, and Telegram come from the individual shop
   record. Marketplace/community name may appear only as the shared community

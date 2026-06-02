@@ -597,8 +597,26 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /copyFreshPublicShopLink\(\)[\s\S]*?Copy Shop Link[\s\S]*?emailFreshPublicShopLink\(\)[\s\S]*?Email Link[\s\S]*?openFreshPublicShopLink\(\)[\s\S]*?Open Shop Face/,
-  "Marketplace Copy, Email, and Open public shop buttons must use the auto-refreshing link actions."
+  /function openReadyPublicShopLink\(\)[\s\S]*?const link = publicShopPosterLink \|\| publicShopViewLink;[\s\S]*?Refresh the public shop link first[\s\S]*?window\.location\.assign\(link\);/,
+  "Marketplace Copy and Email may auto-refresh, but Open Shop Face must use same-tab navigation to an already-ready link inside the original tap."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /void copyFreshPublicShopLink\(\);[\s\S]*?Copy Shop Link[\s\S]*?void emailFreshPublicShopLink\(\);[\s\S]*?Email Link/,
+  "Marketplace Copy and Email public shop buttons must keep the auto-refreshing link actions."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /openReadyPublicShopLink\(\);[\s\S]*?Open Shop Face/,
+  "Marketplace Open Shop Face must call the same-tab ready-link opener."
+);
+
+assertWholeFileNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /async function openFreshPublicShopLink|void openFreshPublicShopLink\(\)/,
+  "Marketplace Open Shop Face must not await link refresh before window.open because mobile browsers can flash a blank blocked tab."
 );
 
 assertContains(

@@ -1,3 +1,32 @@
+### Marketplace public shop blank-open prevention (2026-06-02)
+
+- Route/screen affected:
+  - `/app/marketplace`, marketplace-owned Public Shop link controls.
+- Product-owner report:
+  - tapping the public shop/open action could show a blank page that tried to
+    open and then closed or stayed blank.
+- Confirmed likely cause:
+  - Marketplace was refreshing/preparing the public shop link asynchronously
+    and only then calling a new-tab/window open action;
+  - mobile browsers and in-app browsers can treat that as a popup outside the
+    original tap, causing a blank or blocked tab even when the route itself is
+    valid.
+- Frontend change:
+  - `Open Shop Face` now uses the already-ready public shop link and navigates
+    in the same tab with `window.location.assign(...)`;
+  - if the public shop link is not ready, the user is told to refresh the public
+    shop link first, then tap `Open Shop Face` again;
+  - Copy and Email may still refresh the link asynchronously because they do
+    not need to open a browser tab inside the same tap gesture.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now rejects the old async
+    `openFreshPublicShopLink` path and requires same-tab ready-link navigation
+    for Marketplace `Open Shop Face`.
+- Remaining truth:
+  - this fixes a frontend/mobile browser opening pattern. If the target shop
+    route itself returns a server error after opening, that would be a separate
+    public shop endpoint or deploy issue.
+
 ### GSN home-screen install / PWA entry support (2026-06-02)
 
 - Follow-up iPhone parity:
