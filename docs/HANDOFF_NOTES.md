@@ -1,3 +1,41 @@
+### Marketplace disabled inner buttons strengthened after phone screenshot (2026-06-03)
+
+- Route/screen affected:
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`.
+- Product-owner follow-up:
+  - phone screenshot showed the Join this community lane with large inner
+    buttons that still looked faint/washed out, especially while the join link
+    was not ready;
+  - owner also reported Chrome credential/session differences versus another
+    installed/opened app copy, so live testing may have been mixing stale or
+    differently cached frontend bundles.
+- Frontend change:
+  - disabled Marketplace primary, soft, and secondary action buttons now keep
+    full opacity instead of fading;
+  - disabled inner buttons now use darker blue-gray gradients, stronger borders,
+    darker text, and firmer inset/drop shadows so unavailable actions look
+    intentionally locked rather than broken or whitewashed.
+- Guardrails:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks active and
+    disabled Marketplace button contrast, not only geometry;
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` still confirms the
+    Marketplace action inventory at 49 stable source actions, split into 15
+    front actions and 34 inner/body actions.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-mobile-tap-stability.mjs` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - GitHub Actions did not show a newer frontend deploy run yet after the owner
+    added `RENDER_FRONTEND_DEPLOY_HOOK_URL`; this commit should test that hook
+    on the next `main` push. Chrome rejecting credentials is likely a separate
+    browser/session/PWA-storage issue unless the same account fails after a hard
+    refresh on the freshly deployed `gmfn-frontend` bundle.
+
 ### Marketplace inner buttons no longer look washed out or leave loose shells (2026-06-03)
 
 - Route/screen affected:

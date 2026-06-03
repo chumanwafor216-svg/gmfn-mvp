@@ -585,9 +585,9 @@ const marketplaceActionSystemChecks = [
   },
   {
     label:
-      "Marketplace inner secondary buttons must use a strong navy treatment instead of a washed-out white button",
+      "Marketplace inner buttons must keep strong active and disabled contrast instead of a washed-out white treatment",
     pattern:
-      /function marketplaceActionStyle\([\s\S]*?kind === "soft"[\s\S]*?#D8E8F5[\s\S]*?#08233A[\s\S]*?linear-gradient\(180deg, #0B2D4A 0%, #08233A 62%, #061827 100%\)[\s\S]*?color: disabled \? "#6E7F90" : "#FFFFFF"/,
+      /function marketplaceActionStyle\([\s\S]*?#DDE8F1[\s\S]*?color: disabled \? "#34495F"[\s\S]*?opacity: 1[\s\S]*?kind === "soft"[\s\S]*?#E0EAF2[\s\S]*?#B5C9DA[\s\S]*?color: disabled \? "#34495F" : "#08233A"[\s\S]*?opacity: 1[\s\S]*?linear-gradient\(180deg, #0B2D4A 0%, #08233A 62%, #061827 100%\)[\s\S]*?color: disabled \? "#34495F" : "#FFFFFF"[\s\S]*?opacity: 1/,
   },
 ];
 

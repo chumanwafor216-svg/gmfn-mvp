@@ -1322,11 +1322,13 @@ function marketplaceActionStyle(
       maxHeight: 56,
       padding: "0 15px",
       borderRadius: 14,
-      border: "1px solid rgba(255,255,255,0.18)",
+      border: disabled
+        ? "1px solid rgba(66,87,106,0.42)"
+        : "1px solid rgba(255,255,255,0.18)",
       background: disabled
-        ? "linear-gradient(180deg, var(--gsn-border) 0%, var(--gsn-border-strong) 100%)"
+        ? "linear-gradient(180deg, #DDE8F1 0%, #C5D6E4 58%, #AFC3D3 100%)"
         : "linear-gradient(180deg, var(--primary-accent) 0%, #0b5f43 100%)",
-      color: disabled ? "var(--gsn-text-muted)" : "var(--gsn-text-inverse)",
+      color: disabled ? "#34495F" : "var(--gsn-text-inverse)",
       fontWeight: 900,
       fontSize: 13,
       lineHeight: 1.15,
@@ -1338,9 +1340,11 @@ function marketplaceActionStyle(
       wordBreak: "normal",
       hyphens: "none",
       textOverflow: "ellipsis",
-      opacity: disabled ? 0.86 : 1,
+      opacity: 1,
       boxShadow:
-        "0 14px 24px rgba(22,130,84,0.22), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -2px 0 rgba(3,16,31,0.16)",
+        disabled
+          ? "0 10px 18px rgba(8,35,58,0.12), inset 0 1px 0 rgba(255,255,255,0.70), inset 0 -2px 0 rgba(8,35,58,0.14)"
+          : "0 14px 24px rgba(22,130,84,0.22), inset 0 1px 0 rgba(255,255,255,0.20), inset 0 -2px 0 rgba(3,16,31,0.16)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
@@ -1370,13 +1374,13 @@ function marketplaceActionStyle(
       padding: "0 14px",
       borderRadius: 13,
       border: disabled
-        ? "1px solid rgba(80,106,130,0.24)"
+        ? "1px solid rgba(66,87,106,0.40)"
         : "1px solid rgba(8,35,58,0.34)",
       background:
         disabled
-          ? "linear-gradient(180deg, rgba(232,238,245,0.98) 0%, rgba(216,226,236,0.96) 100%)"
+          ? "linear-gradient(180deg, #E0EAF2 0%, #CBDCE8 52%, #B5C9DA 100%)"
           : "linear-gradient(180deg, #EFF6FB 0%, #D8E8F5 46%, #BFD7EA 100%)",
-      color: disabled ? "#6E7F90" : "#08233A",
+      color: disabled ? "#34495F" : "#08233A",
       fontWeight: 900,
       fontSize: 12,
       lineHeight: 1.15,
@@ -1388,10 +1392,10 @@ function marketplaceActionStyle(
       wordBreak: "normal",
       hyphens: "none",
       textOverflow: "ellipsis",
-      opacity: disabled ? 0.86 : 1,
+      opacity: 1,
       boxShadow:
         disabled
-          ? "inset 0 1px 0 rgba(255,255,255,0.72)"
+          ? "0 9px 16px rgba(8,35,58,0.10), inset 0 1px 0 rgba(255,255,255,0.76), inset 0 -2px 0 rgba(8,35,58,0.12)"
           : "0 10px 18px rgba(8,35,58,0.10), inset 0 1px 0 rgba(255,255,255,0.84), inset 0 -2px 0 rgba(8,35,58,0.12)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
@@ -1421,13 +1425,13 @@ function marketplaceActionStyle(
     padding: "0 15px",
     borderRadius: 14,
     border: disabled
-      ? "1px solid rgba(80,106,130,0.24)"
+      ? "1px solid rgba(66,87,106,0.42)"
       : "1px solid rgba(6,24,39,0.42)",
     background:
       disabled
-        ? "linear-gradient(180deg, rgba(232,238,245,0.98) 0%, rgba(216,226,236,0.96) 100%)"
+        ? "linear-gradient(180deg, #DDE8F1 0%, #C5D6E4 58%, #AFC3D3 100%)"
         : "linear-gradient(180deg, #0B2D4A 0%, #08233A 62%, #061827 100%)",
-    color: disabled ? "#6E7F90" : "#FFFFFF",
+    color: disabled ? "#34495F" : "#FFFFFF",
     fontWeight: 900,
     fontSize: 13,
     lineHeight: 1.15,
@@ -1439,10 +1443,10 @@ function marketplaceActionStyle(
     wordBreak: "normal",
     hyphens: "none",
     textOverflow: "ellipsis",
-    opacity: disabled ? 0.86 : 1,
+    opacity: 1,
     boxShadow:
       disabled
-        ? "inset 0 1px 0 rgba(255,255,255,0.72)"
+        ? "0 10px 18px rgba(8,35,58,0.12), inset 0 1px 0 rgba(255,255,255,0.70), inset 0 -2px 0 rgba(8,35,58,0.14)"
         : "0 13px 22px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -2px 0 rgba(0,0,0,0.18)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
