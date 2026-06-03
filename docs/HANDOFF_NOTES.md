@@ -1,3 +1,26 @@
+### Render frontend hook secret now trimmed before deploy call (2026-06-03)
+
+- Workflow affected:
+  - `.github/workflows/render-deploy.yml`.
+- Confirmed failure:
+  - after `RENDER_FRONTEND_DEPLOY_HOOK_URL` was added, the next `main` push for
+    commit `6ca60faa13fb1fe198b30d2b7484c4d7677bbc10` started
+    `Trigger Render Deploy`, but the `Trigger frontend deploy hook` step failed;
+  - GitHub job logs showed `curl: (3) URL rejected: Malformed input to a URL
+    function`;
+  - the secret was present, so this was not the old missing-secret problem.
+    The most likely cause is accidental whitespace/newline characters in the
+    stored hook value.
+- Deployment workflow change:
+  - frontend and API deploy-hook secrets are now passed through a local
+    whitespace trim before `curl`;
+  - the workflow still does not print, store, or commit deploy-hook URLs.
+- Remaining truth:
+  - this only makes the workflow tolerant of accidental spaces/newlines around
+    the secret. If the secret value contains extra words, missing `https://`, or
+    the wrong Render service hook, GitHub Actions will still fail or deploy the
+    wrong service.
+
 ### Marketplace disabled inner buttons strengthened after phone screenshot (2026-06-03)
 
 - Route/screen affected:

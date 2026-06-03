@@ -42,7 +42,12 @@ jobs:
         if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
         run: |
           echo "Triggering Render deploy for gmfn-frontend at ${GITHUB_SHA}."
-          curl -fsS -X POST "$RENDER_FRONTEND_DEPLOY_HOOK_URL"
+          frontend_deploy_hook_url="$(printf '%s' "$RENDER_FRONTEND_DEPLOY_HOOK_URL" | tr -d '[:space:]')"
+          if [ -z "$frontend_deploy_hook_url" ]; then
+            echo "::error::RENDER_FRONTEND_DEPLOY_HOOK_URL is configured but empty after trimming whitespace."
+            exit 1
+          fi
+          curl -fsS -X POST "$frontend_deploy_hook_url"
           echo "gmfn-frontend deploy hook accepted the request."
 
       - name: Trigger frontend deploy through Render API
@@ -81,7 +86,12 @@ jobs:
         if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_DEPLOY_HOOK_URL != '' }}
         run: |
           echo "Triggering Render deploy for gmfn-api at ${GITHUB_SHA}."
-          curl -fsS -X POST "$RENDER_API_DEPLOY_HOOK_URL"
+          api_deploy_hook_url="$(printf '%s' "$RENDER_API_DEPLOY_HOOK_URL" | tr -d '[:space:]')"
+          if [ -z "$api_deploy_hook_url" ]; then
+            echo "::error::RENDER_API_DEPLOY_HOOK_URL is configured but empty after trimming whitespace."
+            exit 1
+          fi
+          curl -fsS -X POST "$api_deploy_hook_url"
           echo "gmfn-api deploy hook accepted the request."
 
       - name: Note missing API deploy hook
