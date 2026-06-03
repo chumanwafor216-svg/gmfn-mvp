@@ -577,6 +577,18 @@ const marketplaceActionSystemChecks = [
     pattern:
       /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState[\s\S]*?key === "support"[\s\S]*?members: true,[\s\S]*?support: true[\s\S]*?function normalizeMarketplaceSectionState[\s\S]*?state\.support[\s\S]*?focusedMarketplaceSectionState\("support"\)[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\(key\)\)[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId\)/,
   },
+  {
+    label:
+      "Marketplace inactive touched section shells must not render after another body is chosen",
+    pattern:
+      /\{sectionsOpen\.money \? \([\s\S]*?\{sectionsOpen\.tools \? \([\s\S]*?\{sectionsOpen\.members \? \([\s\S]*?\{sectionsOpen\.support \? \(/,
+  },
+  {
+    label:
+      "Marketplace inner secondary buttons must use a strong navy treatment instead of a washed-out white button",
+    pattern:
+      /function marketplaceActionStyle\([\s\S]*?kind === "soft"[\s\S]*?#D8E8F5[\s\S]*?#08233A[\s\S]*?linear-gradient\(180deg, #0B2D4A 0%, #08233A 62%, #061827 100%\)[\s\S]*?color: disabled \? "#6E7F90" : "#FFFFFF"/,
+  },
 ];
 
 for (const check of marketplaceActionSystemChecks) {

@@ -1,3 +1,37 @@
+### Marketplace inner buttons no longer look washed out or leave loose shells (2026-06-03)
+
+- Route/screen affected:
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`.
+- Product-owner follow-up:
+  - the inner Marketplace buttons still looked faded/whitewashed and felt like
+    they were falling into the wrong places after previous tightening passes.
+- Frontend change:
+  - inner soft Marketplace buttons now use a stronger blue-gray gradient,
+    darker border, darker text, and firmer inset/drop shadows;
+  - inner secondary Marketplace buttons now use a strong navy gradient with
+    white text instead of the old pale white/blue treatment;
+  - inactive touched Marketplace section shells no longer render after another
+    Marketplace body is chosen, so older bodies do not keep loose blank space
+    in the page stack.
+- Guardrails:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks that inactive
+    touched Marketplace shells are not rendered;
+  - the same audit now checks that the inner secondary/soft Marketplace action
+    system keeps the stronger non-whitewashed treatment.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-mobile-tap-stability.mjs` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is still a frontend `/app/marketplace` presentation fix only. It does
+    not change backend deposit, support, invite, loan, or shop contracts. A
+    real phone review is still needed to prove the final felt position and
+    contrast.
+
 ### Marketplace buttons now focus one falling body at a time (2026-06-03)
 
 - Route/screen affected:

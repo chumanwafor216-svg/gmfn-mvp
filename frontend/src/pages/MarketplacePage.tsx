@@ -1369,10 +1369,14 @@ function marketplaceActionStyle(
       maxHeight: 56,
       padding: "0 14px",
       borderRadius: 13,
-      border: "1px solid var(--gsn-border)",
+      border: disabled
+        ? "1px solid rgba(80,106,130,0.24)"
+        : "1px solid rgba(8,35,58,0.34)",
       background:
-        "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 58%, var(--gsn-surface-blue) 100%)",
-      color: disabled ? "var(--gsn-text-muted)" : "var(--gsn-text-soft)",
+        disabled
+          ? "linear-gradient(180deg, rgba(232,238,245,0.98) 0%, rgba(216,226,236,0.96) 100%)"
+          : "linear-gradient(180deg, #EFF6FB 0%, #D8E8F5 46%, #BFD7EA 100%)",
+      color: disabled ? "#6E7F90" : "#08233A",
       fontWeight: 900,
       fontSize: 12,
       lineHeight: 1.15,
@@ -1386,7 +1390,9 @@ function marketplaceActionStyle(
       textOverflow: "ellipsis",
       opacity: disabled ? 0.86 : 1,
       boxShadow:
-        "var(--shadow-soft)",
+        disabled
+          ? "inset 0 1px 0 rgba(255,255,255,0.72)"
+          : "0 10px 18px rgba(8,35,58,0.10), inset 0 1px 0 rgba(255,255,255,0.84), inset 0 -2px 0 rgba(8,35,58,0.12)",
       touchAction: "manipulation",
       WebkitTapHighlightColor: "transparent",
       userSelect: "none",
@@ -1414,10 +1420,14 @@ function marketplaceActionStyle(
     maxHeight: 56,
     padding: "0 15px",
     borderRadius: 14,
-    border: "1px solid var(--gsn-border)",
+    border: disabled
+      ? "1px solid rgba(80,106,130,0.24)"
+      : "1px solid rgba(6,24,39,0.42)",
     background:
-      "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 56%, var(--gsn-surface-blue) 100%)",
-    color: disabled ? "var(--gsn-text-muted)" : "var(--gsn-text-main)",
+      disabled
+        ? "linear-gradient(180deg, rgba(232,238,245,0.98) 0%, rgba(216,226,236,0.96) 100%)"
+        : "linear-gradient(180deg, #0B2D4A 0%, #08233A 62%, #061827 100%)",
+    color: disabled ? "#6E7F90" : "#FFFFFF",
     fontWeight: 900,
     fontSize: 13,
     lineHeight: 1.15,
@@ -1431,7 +1441,9 @@ function marketplaceActionStyle(
     textOverflow: "ellipsis",
     opacity: disabled ? 0.86 : 1,
     boxShadow:
-      "var(--shadow-soft)",
+      disabled
+        ? "inset 0 1px 0 rgba(255,255,255,0.72)"
+        : "0 13px 22px rgba(6,24,39,0.22), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -2px 0 rgba(0,0,0,0.18)",
     touchAction: "manipulation",
     WebkitTapHighlightColor: "transparent",
     userSelect: "none",
@@ -2297,7 +2309,7 @@ export default function MarketplacePage() {
 
   const [sectionsOpen, setSectionsOpen] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
-  const [sectionsTouched, setSectionsTouched] =
+  const [, setSectionsTouched] =
     useState<SectionState>(DEFAULT_SECTION_STATE);
   const [profileDetailsOpen, setProfileDetailsOpen] = useState(false);
   const [intentQuery, setIntentQuery] = useState("");
@@ -4327,7 +4339,7 @@ export default function MarketplacePage() {
         </div>
       </section>
 
-      {sectionsOpen.money || sectionsTouched.money ? (
+      {sectionsOpen.money ? (
       <section
         id="marketplace-money-routes"
         style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 8 }}
@@ -4612,7 +4624,7 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
-      {sectionsOpen.tools || sectionsTouched.tools ? (
+      {sectionsOpen.tools ? (
       <section
         id="marketplace-owned-links"
         style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 4 }}
@@ -5146,7 +5158,7 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
-      {sectionsOpen.members || sectionsTouched.members ? (
+      {sectionsOpen.members ? (
       <section
         id="marketplace-members-shops"
         style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 3 }}
@@ -5345,7 +5357,7 @@ export default function MarketplacePage() {
       </section>
       ) : null}
 
-      {sectionsOpen.support || sectionsTouched.support ? (
+      {sectionsOpen.support ? (
       <section
         id="marketplace-loans-support"
         ref={supportSectionRef}
