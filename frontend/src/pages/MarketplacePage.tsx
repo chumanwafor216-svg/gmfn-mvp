@@ -3223,6 +3223,17 @@ export default function MarketplacePage() {
 
   const canManageMarketplaceLinks =
     currentMemberRole === "admin" || safeStr(me?.role).toLowerCase() === "admin";
+  const marketplaceJoinLinkMissingMessage = canManageMarketplaceLinks
+    ? "Create the official join link first. Then copy or send it from here."
+    : "A community admin must prepare this official join link before members can copy it.";
+  const marketplaceJoinLinkGuidance = canManageMarketplaceLinks
+    ? "Create the official join link first, then copy or open it from here."
+    : "A community admin prepares the official join link. Once it is ready, members can copy and share it. Every join request still goes through community review.";
+  const marketplaceJoinPreviewPendingMessage = canManageMarketplaceLinks
+    ? "The join message preview will appear here after the official join link is ready."
+    : "The invite message will appear after a community admin prepares the official join link.";
+  const marketplaceJoinRefreshBlockedMessage =
+    "Only a community admin can refresh the official join link. Members can share it after an admin prepares it.";
 
   const marketplacePoolLabel =
     visiblePoolAmount === "—"
@@ -3273,7 +3284,7 @@ export default function MarketplacePage() {
     }
 
     if (!canManageMarketplaceLinks) {
-      showNotice("error", "Only a community admin can refresh this join link.");
+      showNotice("error", marketplaceJoinRefreshBlockedMessage);
       return;
     }
 
@@ -4712,7 +4723,9 @@ export default function MarketplacePage() {
                     <span style={compactStatusPillStyle(Boolean(inviteLink))}>
                       {inviteLink
                         ? "Community join link ready"
-                        : "Join link not ready yet"}
+                        : canManageMarketplaceLinks
+                          ? "Join link not ready yet"
+                          : "Admin prepares join link"}
                     </span>
                   </div>
                   <div
@@ -4724,9 +4737,7 @@ export default function MarketplacePage() {
                   >
                     {inviteLink
                       ? personalizedInviteLink
-                      : canManageMarketplaceLinks
-                        ? "Create the join link first, then copy or open it from here."
-                        : "A community admin prepares this join link before it can be copied or sent."}
+                      : marketplaceJoinLinkGuidance}
                   </div>
                   <div
                     style={{
@@ -4761,7 +4772,7 @@ export default function MarketplacePage() {
                           copyMarketplaceLink(
                             personalizedInviteLink,
                             "Join link copied.",
-                            "Join invite link is not ready yet."
+                            marketplaceJoinLinkMissingMessage
                           );
                         });
                       }}
@@ -4787,7 +4798,11 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {creatingInviteLink ? "Refreshing..." : "Refresh Join Link"}
+                      {creatingInviteLink
+                        ? "Refreshing..."
+                        : canManageMarketplaceLinks
+                          ? "Refresh Join Link"
+                          : "Admin Refresh Only"}
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.copy-message"
@@ -4798,7 +4813,7 @@ export default function MarketplacePage() {
                             joinWhatsappMessage,
                             personalizedInviteLink,
                             "Join message copied.",
-                            "Join invite link is not ready yet."
+                            marketplaceJoinLinkMissingMessage
                           );
                         });
                       }}
@@ -4819,7 +4834,7 @@ export default function MarketplacePage() {
                             joinEmailSubject,
                             joinWhatsappMessage,
                             personalizedInviteLink,
-                            "Join invite link is not ready yet."
+                            marketplaceJoinLinkMissingMessage
                           );
                         });
                       }}
@@ -4837,12 +4852,12 @@ export default function MarketplacePage() {
                       onClick={(event) => {
                         runMarketplaceAction(event, () => {
                           if (!inviteLink) {
-                            showNotice("error", "Join invite link is not ready yet.");
+                            showNotice("error", marketplaceJoinLinkMissingMessage);
                             return;
                           }
                           openMarketplaceExternalLink(
                             `https://wa.me/?text=${encodeURIComponent(joinWhatsappMessage)}`,
-                            "Join invite link is not ready yet."
+                            marketplaceJoinLinkMissingMessage
                           );
                         });
                       }}
@@ -4867,7 +4882,7 @@ export default function MarketplacePage() {
                     >
                       {inviteLink
                         ? joinWhatsappPreview
-                        : "The join message preview will appear here after the join link is ready."}
+                        : marketplaceJoinPreviewPendingMessage}
                     </div>
                   </div>
                 </div>

@@ -589,6 +589,12 @@ const marketplaceActionSystemChecks = [
     pattern:
       /function marketplaceActionStyle\([\s\S]*?#DDE8F1[\s\S]*?color: disabled \? "#34495F"[\s\S]*?opacity: 1[\s\S]*?kind === "soft"[\s\S]*?#E0EAF2[\s\S]*?#B5C9DA[\s\S]*?color: disabled \? "#34495F" : "#08233A"[\s\S]*?opacity: 1[\s\S]*?linear-gradient\(180deg, #0B2D4A 0%, #08233A 62%, #061827 100%\)[\s\S]*?color: disabled \? "#34495F" : "#FFFFFF"[\s\S]*?opacity: 1/,
   },
+  {
+    label:
+      "Marketplace join-link response must explain admin refresh, member sharing, and community review",
+    pattern:
+      /marketplaceJoinLinkGuidance[\s\S]*?A community admin prepares the official join link[\s\S]*?members can copy and share it[\s\S]*?Every join request still goes through community review[\s\S]*?marketplaceJoinRefreshBlockedMessage[\s\S]*?Only a community admin can refresh the official join link[\s\S]*?Admin Refresh Only/,
+  },
 ];
 
 for (const check of marketplaceActionSystemChecks) {

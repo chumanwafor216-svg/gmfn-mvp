@@ -1,3 +1,51 @@
+### Marketplace join-link governance clarified for admins and members (2026-06-03)
+
+- Routes/screens affected:
+  - backend `GET /clans/{clan_id}/invite-link` and
+    `POST /clans/{clan_id}/invite`, implemented in
+    `gmfn_backend/app/api/routes/clans.py`;
+  - `/app/marketplace` Join this community lane, implemented by
+    `frontend/src/pages/MarketplacePage.tsx`.
+- Backend truth now enforced:
+  - `POST /clans/{clan_id}/invite` remains admin-only because it refreshes the
+    official join link by retiring older live links;
+  - ordinary community members may read/share an existing live official invite
+    through `GET /clans/{clan_id}/invite-link`;
+  - ordinary members cannot change link policy (`days`, `max_uses`) and cannot
+    create/refresh a missing link;
+  - if no live link exists for a member, the GET route returns a clear
+    `invite_status: "admin_required"` payload instead of silently creating a
+    link or returning a vague failure;
+  - a ready link response now includes `can_refresh_invite`,
+    `requires_admin_refresh`, and a message saying members may share the link
+    while every join request still goes through community review.
+- Frontend change:
+  - Marketplace no-link copy now explains that a community admin prepares the
+    official join link before members can copy/share it;
+  - non-admin refresh control now reads `Admin Refresh Only` and its tap notice
+    explains that members can share after an admin prepares the link;
+  - the message preview now says it appears after the admin prepares the
+    official join link.
+- Guardrails:
+  - `gmfn_backend/tests/test_join_requests.py` covers member read/share of an
+    existing admin-prepared invite, member no-live-link `admin_required` state,
+    and member rejection for refresh/policy changes;
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks that the
+    Marketplace join-link response keeps the admin-refresh/member-share/review
+    explanation.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\clans.py` passed;
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py -q` passed;
+  - `npm run audit:marketplace-button-inventory` passed and still reported 96
+    whole-route mobile Marketplace controls;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx tools\audit-mobile-tap-stability.mjs`
+    passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+
 ### Marketplace whole-route button inventory and landing offset tightened (2026-06-03)
 
 - Route/screen affected:

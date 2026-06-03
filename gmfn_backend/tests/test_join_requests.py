@@ -2239,3 +2239,124 @@ def test_create_invite_route_refreshes_by_retiring_older_live_invites(
             assert invites[1].revoked_at is None
     finally:
         app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+
+def test_member_can_read_existing_marketplace_join_link_without_refresh_power(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        db.add(User(id=2, email="member@example.com", hashed_password="hashed"))
+        db.add(
+            ClanMembership(
+                id=2,
+                clan_id=1,
+                user_id=2,
+                role="member",
+                personal_pool_balance=0,
+            )
+        )
+        db.add(
+            ClanInvite(
+                id=1,
+                clan_id=1,
+                created_by_user_id=1,
+                code="admin-prepared-code",
+                is_active=True,
+                max_uses=20,
+                uses=0,
+                created_at=datetime.now(timezone.utc),
+                expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+            )
+        )
+        db.commit()
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="member", clan_id=1, user_id=2)
+        current_user = SimpleNamespace(id=2, email="member@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        res = client.get("/clans/1/invite-link")
+        assert res.status_code == 200, res.text
+        data = res.json()
+
+        assert data["invite_status"] == "ready"
+        assert data["invite_code"] == "admin-prepared-code"
+        assert "admin-prepared-code" in data["invite_link"]
+        assert data["can_refresh_invite"] is False
+        assert data["requires_admin_refresh"] is False
+        assert data["invited_by_user_id"] == 1
+        assert "community review" in data["message"]
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+
+def test_member_get_invite_link_without_live_invite_returns_admin_required_state(
+    client,
+):
+    _seed_join_context()
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="member", clan_id=1, user_id=2)
+        current_user = SimpleNamespace(id=2, email="member@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        res = client.get("/clans/1/invite-link")
+        assert res.status_code == 200, res.text
+        data = res.json()
+
+        assert data["invite_status"] == "admin_required"
+        assert data["can_refresh_invite"] is False
+        assert data["requires_admin_refresh"] is True
+        assert "prepare this official join link" in data["message"]
+        assert "invite_link" not in data
+
+        with SessionLocal() as db:
+            assert db.query(ClanInvite).filter(ClanInvite.clan_id == 1).count() == 0
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)
+
+
+def test_member_cannot_refresh_or_change_marketplace_join_link_policy(
+    client,
+):
+    _seed_join_context()
+
+    def fake_clan_ctx():
+        clan = SimpleNamespace(
+            id=1,
+            name="Aberdeen City ICA",
+            marketplace_name="Aberdeen city marketplace",
+        )
+        membership = SimpleNamespace(role="member", clan_id=1, user_id=2)
+        current_user = SimpleNamespace(id=2, email="member@example.com")
+        return clan, membership, current_user
+
+    app.dependency_overrides[clan_auth.get_current_clan_membership] = fake_clan_ctx
+
+    try:
+        refresh_res = client.post("/clans/1/invite")
+        assert refresh_res.status_code == 403, refresh_res.text
+
+        policy_res = client.get("/clans/1/invite-link?max_uses=10")
+        assert policy_res.status_code == 403, policy_res.text
+        assert "community admin" in policy_res.json()["detail"]
+    finally:
+        app.dependency_overrides.pop(clan_auth.get_current_clan_membership, None)

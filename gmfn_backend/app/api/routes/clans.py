@@ -1714,9 +1714,16 @@ def get_invite_link(
     db: Session = Depends(get_db),
     clan_ctx: tuple = Depends(get_current_clan_membership),
 ):
-    clan, _membership, current_user = _require_clan_admin(clan_ctx)
+    clan, membership, current_user = clan_ctx
     if int(clan.id) != int(clan_id):
         raise HTTPException(status_code=403, detail="Not allowed")
+
+    can_refresh_invite = (membership.role or "").lower() == "admin"
+    if not can_refresh_invite and (days is not None or max_uses is not None):
+        raise HTTPException(
+            status_code=403,
+            detail="Only a community admin can change the official join link policy",
+        )
 
     max_uses_norm = _shareable_join_invite_max_uses(clan, max_uses)
     strict_max_uses = max_uses is not None
@@ -1730,7 +1737,7 @@ def get_invite_link(
 
     latest_invite = _latest_usable_clan_invite(db, clan_id=int(clan.id))
 
-    if latest_invite is not None and not _invite_matches_share_policy(
+    if can_refresh_invite and latest_invite is not None and not _invite_matches_share_policy(
         latest_invite,
         desired_max_uses=max_uses_norm,
         strict=strict_max_uses,
@@ -1738,6 +1745,22 @@ def get_invite_link(
         latest_invite = None
 
     if latest_invite is None:
+        if not can_refresh_invite:
+            return {
+                "clan_id": int(clan.id),
+                "community_code": _community_code(clan.id),
+                "community_name": clan.name,
+                "marketplace_name": getattr(clan, "marketplace_name", None),
+                "invite_status": "admin_required",
+                "invite_source": "clan_invite",
+                "can_refresh_invite": False,
+                "requires_admin_refresh": True,
+                "message": (
+                    "A community admin must prepare this official join link "
+                    "before members can share it."
+                ),
+            }
+
         days_n = _normalize_invite_days(days)
         expires_at = datetime.now(timezone.utc) + timedelta(days=days_n)
         latest_invite = create_clan_invite(
@@ -1749,11 +1772,17 @@ def get_invite_link(
         )
 
     if latest_invite is not None:
+        invite_creator = (
+            db.get(User, int(latest_invite.created_by_user_id))
+            if getattr(latest_invite, "created_by_user_id", None) is not None
+            else None
+        )
+        invite_creator = invite_creator or current_user
         share_link = _frontend_community_join_link(
             request,
             clan=clan,
             invite_code=latest_invite.code,
-            inviter=current_user,
+            inviter=invite_creator,
         )
 
         return {
@@ -1761,9 +1790,9 @@ def get_invite_link(
             "community_code": _community_code(clan.id),
             "community_name": clan.name,
             "marketplace_name": getattr(clan, "marketplace_name", None),
-            "invited_by_user_id": int(current_user.id),
-            "invited_by_email": getattr(current_user, "email", None),
-            "invited_by_display": _member_display(current_user),
+            "invited_by_user_id": int(invite_creator.id),
+            "invited_by_email": getattr(invite_creator, "email", None),
+            "invited_by_display": _member_display(invite_creator),
             "invite_code": latest_invite.code,
             "invite_created_at": latest_invite.created_at,
             "invite_expires_at": latest_invite.expires_at,
@@ -1771,6 +1800,12 @@ def get_invite_link(
             "invite_uses": int(getattr(latest_invite, "uses", 0) or 0),
             "invite_status": "ready",
             "invite_source": "clan_invite",
+            "can_refresh_invite": bool(can_refresh_invite),
+            "requires_admin_refresh": False,
+            "message": (
+                "Official join link ready. Members may share it, and every "
+                "join request still goes through community review."
+            ),
             "invite_link": share_link,
             "invite_url": share_link,
             "url": share_link,
@@ -1780,7 +1815,7 @@ def get_invite_link(
             "invite_text": _build_invite_text(
                 clan=clan,
                 invite_link=share_link,
-                inviter=current_user,
+                inviter=invite_creator,
             ),
         }
 
