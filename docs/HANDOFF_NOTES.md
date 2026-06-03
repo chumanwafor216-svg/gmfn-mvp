@@ -58,6 +58,13 @@
     route change is not confirmed deployed through GitHub Actions until the
     repository secret `RENDER_API_DEPLOY_HOOK_URL` is replaced with the real
     `gmfn-api` deploy hook or Render auto-deploy is verified independently.
+  - follow-up manual workflow dispatch after the corrected backend hook secret:
+    `Trigger Render Deploy` run `26878396252` on `main` with `deploy_api=true`
+    succeeded;
+  - frontend deploy hook returned `dep-d8fvue77f7vs73eqvosg`;
+  - backend `gmfn-api` deploy hook returned `dep-d8fvuef40ujc73bh82ug`;
+  - `GET https://gmfn-api.onrender.com/health` returned
+    `{"ok":true,"dev_mode":false}` immediately after the hook was accepted.
 
 ### Marketplace whole-route button inventory and landing offset tightened (2026-06-03)
 
