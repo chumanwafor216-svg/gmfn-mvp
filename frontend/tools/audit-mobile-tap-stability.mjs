@@ -571,6 +571,12 @@ const marketplaceActionSystemChecks = [
     pattern:
       /debugId="marketplace\.public-shop\.refresh"[\s\S]*?style=\{marketplaceInlineActionStyle\([\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?style=\{marketplaceInlineActionStyle\([\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?style=\{marketplaceInlineActionStyle\([\s\S]*?debugId="marketplace\.public-shop\.open"[\s\S]*?style=\{marketplaceInlineActionStyle\(/,
   },
+  {
+    label:
+      "Marketplace section buttons must focus one open body so old sections cannot keep the page loose",
+    pattern:
+      /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState[\s\S]*?key === "support"[\s\S]*?members: true,[\s\S]*?support: true[\s\S]*?function normalizeMarketplaceSectionState[\s\S]*?state\.support[\s\S]*?focusedMarketplaceSectionState\("support"\)[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\(key\)\)[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId\)/,
+  },
 ];
 
 for (const check of marketplaceActionSystemChecks) {

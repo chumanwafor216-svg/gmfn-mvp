@@ -219,6 +219,53 @@ const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
   support: "marketplace-loans-support",
 };
 
+function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
+  if (key === "support") {
+    return {
+      money: false,
+      tools: false,
+      members: true,
+      support: true,
+    };
+  }
+
+  return {
+    money: key === "money",
+    tools: key === "tools",
+    members: key === "members",
+    support: false,
+  };
+}
+
+function touchedMarketplaceSectionState(
+  prev: SectionState,
+  key: keyof SectionState
+): SectionState {
+  if (key === "support") {
+    return {
+      ...prev,
+      members: true,
+      support: true,
+    };
+  }
+
+  return {
+    ...prev,
+    [key]: true,
+  };
+}
+
+function normalizeMarketplaceSectionState(
+  state: SectionState | null | undefined
+): SectionState {
+  if (!state) return DEFAULT_SECTION_STATE;
+  if (state.support) return focusedMarketplaceSectionState("support");
+  if (state.members) return focusedMarketplaceSectionState("members");
+  if (state.tools) return focusedMarketplaceSectionState("tools");
+  if (state.money) return focusedMarketplaceSectionState("money");
+  return DEFAULT_SECTION_STATE;
+}
+
 const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
   {
     id: "money-in",
@@ -2363,14 +2410,15 @@ export default function MarketplacePage() {
   }
 
   function toggleSection(key: keyof SectionState) {
-    setSectionsTouched((prev) => ({
-      ...prev,
-      [key]: true,
-    }));
-    setSectionsOpen((prev) => ({
-      ...prev,
-      [key]: !prev[key],
-    }));
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
+    setSectionsOpen((prev) =>
+      prev[key]
+        ? {
+            ...prev,
+            [key]: false,
+          }
+        : focusedMarketplaceSectionState(key)
+    );
   }
 
   function toggleSectionFromButton(
@@ -2379,7 +2427,11 @@ export default function MarketplacePage() {
   ) {
     consumeMarketplaceButtonEvent(event);
     clearMarketplaceHash();
+    const willOpen = !sectionsOpen[key];
     toggleSection(key);
+    if (willOpen) {
+      scheduleMarketplaceSectionScroll(MARKETPLACE_SECTION_ANCHORS[key]);
+    }
   }
 
   function consumeMarketplaceButtonEvent(
@@ -2545,16 +2597,16 @@ export default function MarketplacePage() {
     }
 
     if (item.id === "support") {
-      setSectionsTouched((prev) => ({ ...prev, support: true }));
-      setSectionsOpen((prev) => ({ ...prev, support: true }));
+      setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
+      setSectionsOpen(focusedMarketplaceSectionState("support"));
       clearStaleMarketplaceHash("marketplace-loans-support");
       scheduleMarketplaceSectionScroll("marketplace-loans-support");
       return;
     }
 
     if (item.id === "invite") {
-      setSectionsTouched((prev) => ({ ...prev, tools: true }));
-      setSectionsOpen((prev) => ({ ...prev, tools: true }));
+      setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
+      setSectionsOpen(focusedMarketplaceSectionState("tools"));
       clearStaleMarketplaceHash("marketplace-owned-links");
       scheduleMarketplaceSectionScroll("marketplace-owned-links");
       return;
@@ -2899,7 +2951,7 @@ export default function MarketplacePage() {
       null
     );
 
-    setSectionsOpen(savedSections || DEFAULT_SECTION_STATE);
+    setSectionsOpen(normalizeMarketplaceSectionState(savedSections));
   }, [activeCommunityId]);
 
   useEffect(() => {
@@ -2909,25 +2961,16 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     if (!loanDraftId) return;
-    setSectionsOpen((prev) => ({
-      ...prev,
-      members: true,
-      support: true,
-    }));
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
+    setSectionsOpen(focusedMarketplaceSectionState("support"));
   }, [loanDraftId]);
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
     if (hash !== "marketplace-loans-support") return;
 
-    setSectionsOpen((prev) => {
-      if (prev.members && prev.support) return prev;
-      return {
-        ...prev,
-        members: true,
-        support: true,
-      };
-    });
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
+    setSectionsOpen(focusedMarketplaceSectionState("support"));
 
     if (activeCommunityId && currentGmfnId) {
       const token = `${activeCommunityId}:${currentGmfnId}:${hash}`;
@@ -2959,13 +3002,8 @@ export default function MarketplacePage() {
     const hash = safeStr(location.hash).replace(/^#/, "");
     if (hash !== "marketplace-owned-links") return;
 
-    setSectionsOpen((prev) => {
-      if (prev.tools) return prev;
-      return {
-        ...prev,
-        tools: true,
-      };
-    });
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
+    setSectionsOpen(focusedMarketplaceSectionState("tools"));
 
     scrollToMarketplaceSection("marketplace-owned-links");
   }, [location.hash, scrollToMarketplaceSection]);
@@ -3201,8 +3239,8 @@ export default function MarketplacePage() {
     sectionId: string
   ) {
     consumeMarketplaceButtonEvent(event);
-    setSectionsTouched((prev) => ({ ...prev, [key]: true }));
-    setSectionsOpen((prev) => ({ ...prev, [key]: true }));
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, key));
+    setSectionsOpen(focusedMarketplaceSectionState(key));
     clearStaleMarketplaceHash(sectionId);
     scheduleMarketplaceSectionScroll(sectionId);
   }
@@ -3380,11 +3418,8 @@ export default function MarketplacePage() {
       await loadLoanDraftContext(createdLoanId, activeCommunityId);
       await loadPage();
 
-      setSectionsOpen((prev) => ({
-        ...prev,
-        members: true,
-        support: true,
-      }));
+      setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "support"));
+      setSectionsOpen(focusedMarketplaceSectionState("support"));
 
       showNotice(
         "success",

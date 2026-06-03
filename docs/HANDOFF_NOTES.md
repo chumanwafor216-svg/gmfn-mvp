@@ -1,3 +1,37 @@
+### Marketplace buttons now focus one falling body at a time (2026-06-03)
+
+- Route/screen affected:
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`.
+- Product-owner follow-up:
+  - after the first Marketplace button geometry pass, the buttons still felt
+    too loose and the opened bodies still did not fall into place tightly
+    enough on phone.
+- Frontend change:
+  - Marketplace section buttons now open one focused body at a time instead of
+    leaving older expanded Marketplace bodies open behind the new tap;
+  - Support remains paired with Members because guarantor/support selection
+    needs visible member context;
+  - section header buttons now also schedule the phone-safe landing scroll
+    when reopening a collapsed body;
+  - restored localStorage section state is normalized, so old saved browser
+    state with multiple open Marketplace bodies cannot reopen the page loose.
+- Guardrails:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks the focused
+    Marketplace section-state helpers and the focused `openMarketplaceSection`
+    path.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-mobile-tap-stability.mjs` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is still frontend Marketplace behavior only. It does not change
+    backend deposit, support, invite, or public shop contracts. A live phone
+    review is still needed to confirm the felt tap/landing behavior.
+
 ### Marketplace button/link body stability audit tightened (2026-06-03)
 
 - Route/screen affected:
