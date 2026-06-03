@@ -1828,6 +1828,35 @@ export default function ShopGalleryPage() {
         shopTelegramText ? `Telegram ${shopTelegramText}` : "",
         "Share by shop link"
       );
+  const publicShopBuyerCue = shopLoadFailed
+    ? "This public shop has reached GSN, but the owner must refresh it before visitors can safely share or copy it."
+    : publicBlockCount > 0
+    ? `${publicBlockText}. Visitors can share the shop, copy the public link, and ask the owner for private Vault access.`
+    : "The public shop is open, but the owner has not shown public items yet. Visitors can still ask for private Vault access.";
+  const publicShopActionHelper = ownerSessionPresent
+    ? "Share and Copy link are the public visitor actions. GSN repost stays inside the network and asks you to choose a public block plus target marketplace."
+    : "Share and Copy link are for visitors. GSN repost is a signed-in network action, so guests only get a draft until they sign in.";
+  const repostButtonLabel = ownerSessionPresent
+    ? isCompact
+      ? "Repost"
+      : "GSN repost"
+    : isCompact
+    ? "Sign-in"
+    : "Sign-in repost";
+  const visitorCueCards = [
+    {
+      label: "Public link",
+      value: shopLoadFailed ? "Not ready" : "Share / copy",
+    },
+    {
+      label: "Private Vault",
+      value: "Ask owner",
+    },
+    {
+      label: "Network repost",
+      value: ownerSessionPresent ? "Signed in" : "Sign in",
+    },
+  ];
   async function shareOrCopy(params: {
     title: string;
     text: string;
@@ -2299,6 +2328,22 @@ export default function ShopGalleryPage() {
             </p>
             <div
               style={{
+                width: "min(100%, 720px)",
+                borderRadius: isCompact ? 15 : 20,
+                border: "1px solid rgba(255,255,255,0.18)",
+                background: "rgba(255,255,255,0.09)",
+                padding: isCompact ? "8px 10px" : "12px 16px",
+                color: "rgba(255,255,255,0.90)",
+                fontSize: isCompact ? 10.5 : 13.5,
+                lineHeight: 1.35,
+                fontWeight: 750,
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+              }}
+            >
+              {publicShopBuyerCue}
+            </div>
+            <div
+              style={{
                 display: "flex",
                 flexWrap: "wrap",
                 gap: isCompact ? 5 : 8,
@@ -2328,6 +2373,63 @@ export default function ShopGalleryPage() {
               >
                 {shopLocationText}
               </span>
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "repeat(3, minmax(0, 1fr))"
+                  : "repeat(3, minmax(0, 160px))",
+                gap: isCompact ? 5 : 8,
+                width: "min(100%, 540px)",
+                marginTop: isCompact ? 2 : 4,
+              }}
+              aria-label="Public shop visitor cues"
+            >
+              {visitorCueCards.map((item) => (
+                <div
+                  key={item.label}
+                  style={{
+                    minWidth: 0,
+                    borderRadius: isCompact ? 12 : 16,
+                    border: "1px solid rgba(246,215,122,0.24)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.13) 0%, rgba(255,255,255,0.07) 100%)",
+                    padding: isCompact ? "6px 5px" : "9px 10px",
+                    textAlign: "center",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "rgba(255,255,255,0.62)",
+                      fontSize: isCompact ? 7.8 : 10,
+                      fontWeight: 900,
+                      textTransform: "uppercase",
+                      letterSpacing: 0,
+                      lineHeight: 1.1,
+                    }}
+                  >
+                    {item.label}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 3,
+                      color: "#FFFFFF",
+                      fontSize: isCompact ? 9.4 : 12,
+                      fontWeight: 950,
+                      lineHeight: 1.12,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: "vertical" as any,
+                    }}
+                  >
+                    {item.value}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -2725,69 +2827,132 @@ export default function ShopGalleryPage() {
           </section>
         ) : null}
 
-        <div
-          className="public-shop-action-row"
+        <section
+          className="public-shop-section public-shop-visitor-actions"
           style={{
+            ...innerCard("#F8FBFF"),
             display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gap: isCompact ? 7 : 10,
+            gap: isCompact ? 9 : 12,
+            padding: isCompact ? 12 : 16,
           }}
+          aria-label="Public shop visitor actions"
         >
-          <PrimaryButton
-            onClick={repostShop}
-            minWidth={0}
-            stableHeight={isCompact ? 40 : 52}
-            debugId="shop-gallery.repost-shop"
+          <div
             style={{
-              ...primaryBtn(shopLoadFailed),
-              minHeight: isCompact ? 40 : 52,
-              padding: isCompact ? "7px 4px" : "10px 14px",
-              borderRadius: isCompact ? 13 : 14,
-              fontSize: isCompact ? 10.7 : 14,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+              gap: isCompact ? 5 : 12,
+              alignItems: "center",
             }}
           >
-            {isCompact ? "GSN repost" : "GSN repost"}
-          </PrimaryButton>
-          <PrimaryButton
-            onClick={shareShop}
-            minWidth={0}
-            stableHeight={isCompact ? 40 : 52}
-            debugId="shop-gallery.share-shop"
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
+                Public actions
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#0B1F33",
+                  fontSize: isCompact ? 14 : 18,
+                  fontWeight: 950,
+                  lineHeight: 1.15,
+                }}
+              >
+                Share the public shop. Keep repost inside GSN.
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#526C84",
+                  fontSize: isCompact ? 10 : 12.5,
+                  lineHeight: 1.35,
+                  fontWeight: 700,
+                }}
+              >
+                {publicShopActionHelper}
+              </div>
+            </div>
+            <span
+              style={{
+                ...badge(true),
+                minHeight: isCompact ? 26 : 30,
+                color: shopLoadFailed ? "#991B1B" : "#1D4ED8",
+                background: shopLoadFailed
+                  ? "linear-gradient(180deg, rgba(254,242,242,0.98) 0%, rgba(254,226,226,0.88) 100%)"
+                  : "linear-gradient(180deg, rgba(235,244,255,0.98) 0%, rgba(218,233,249,0.88) 100%)",
+                border: shopLoadFailed
+                  ? "1px solid rgba(239,68,68,0.18)"
+                  : "1px solid rgba(29,78,216,0.12)",
+              }}
+            >
+              {shopDiaryCounterText}
+            </span>
+          </div>
+          <div
+            className="public-shop-action-row"
             style={{
-              ...primaryBtn(shopLoadFailed),
-              minHeight: isCompact ? 40 : 52,
-              padding: isCompact ? "7px 4px" : "10px 14px",
-              borderRadius: isCompact ? 13 : 14,
-              fontSize: isCompact ? 10.7 : 14,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: isCompact ? 7 : 10,
             }}
           >
-            {isCompact ? "Share" : "Share shop"}
-          </PrimaryButton>
-          <SecondaryButton
-            onClick={copyShopLink}
-            minWidth={0}
-            stableHeight={isCompact ? 40 : 52}
-            debugId="shop-gallery.copy-shop-link"
-            style={{
-              ...secondaryBtn(shopLoadFailed),
-              minHeight: isCompact ? 40 : 52,
-              padding: isCompact ? "7px 4px" : "9px 12px",
-              borderRadius: isCompact ? 13 : 14,
-              fontSize: isCompact ? 10.7 : 14,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            {isCompact ? "Copy link" : "Copy link"}
-          </SecondaryButton>
-        </div>
+            <SecondaryButton
+              onClick={repostShop}
+              minWidth={0}
+              stableHeight={isCompact ? 40 : 52}
+              debugId="shop-gallery.repost-shop"
+              style={{
+                ...secondaryBtn(shopLoadFailed),
+                minHeight: isCompact ? 40 : 52,
+                padding: isCompact ? "7px 4px" : "10px 14px",
+                borderRadius: isCompact ? 13 : 14,
+                fontSize: isCompact ? 10.4 : 14,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                color: ownerSessionPresent ? "#0B1F33" : "#475569",
+              }}
+            >
+              {repostButtonLabel}
+            </SecondaryButton>
+            <PrimaryButton
+              onClick={shareShop}
+              minWidth={0}
+              stableHeight={isCompact ? 40 : 52}
+              debugId="shop-gallery.share-shop"
+              style={{
+                ...primaryBtn(shopLoadFailed),
+                minHeight: isCompact ? 40 : 52,
+                padding: isCompact ? "7px 4px" : "10px 14px",
+                borderRadius: isCompact ? 13 : 14,
+                fontSize: isCompact ? 10.7 : 14,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {isCompact ? "Share" : "Share shop"}
+            </PrimaryButton>
+            <SecondaryButton
+              onClick={copyShopLink}
+              minWidth={0}
+              stableHeight={isCompact ? 40 : 52}
+              debugId="shop-gallery.copy-shop-link"
+              style={{
+                ...secondaryBtn(shopLoadFailed),
+                minHeight: isCompact ? 40 : 52,
+                padding: isCompact ? "7px 4px" : "9px 12px",
+                borderRadius: isCompact ? 13 : 14,
+                fontSize: isCompact ? 10.7 : 14,
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {isCompact ? "Copy link" : "Copy link"}
+            </SecondaryButton>
+          </div>
+        </section>
 
         {repostPanelOpen ? (
           <section
@@ -3264,7 +3429,8 @@ export default function ShopGalleryPage() {
                   fontWeight: 650,
                 }}
               >
-                Ask the owner if you need selected private offers. The public shop stays open below.
+                Some offers are deliberately kept out of the public shelf. Ask the owner
+                for a private Vault link before discussing selected items.
               </p>
               <div
                 style={{
@@ -3290,7 +3456,7 @@ export default function ShopGalleryPage() {
                     textOverflow: "ellipsis",
                   }}
                 >
-                  {isCompact ? "Vault access" : "Ask for Vault access"}
+                  {isCompact ? "Ask Vault" : "Ask for Vault access"}
                 </PrimaryButton>
                 <SecondaryButton
                   onClick={copyShopLink}
@@ -3423,7 +3589,43 @@ export default function ShopGalleryPage() {
                 No public items are showing yet.
               </div>
               <div style={{ marginTop: 8, ...helperText() }}>
-                Check back later or ask the owner for a private Vault link.
+                Check back later, share the shop with someone who should see it,
+                or ask the owner for a private Vault link.
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(2, minmax(0, 1fr))",
+                  gap: 10,
+                  marginTop: 14,
+                }}
+              >
+                <PrimaryButton
+                  onClick={askForVaultAccess}
+                  fullWidth
+                  stableHeight={isCompact ? 42 : 48}
+                  debugId="shop-gallery.empty-ask-vault-access"
+                  style={{
+                    ...primaryBtn(false),
+                    minHeight: isCompact ? 42 : 48,
+                  }}
+                >
+                  Ask for Vault access
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={copyShopLink}
+                  fullWidth
+                  stableHeight={isCompact ? 42 : 48}
+                  debugId="shop-gallery.empty-copy-shop-link"
+                  style={{
+                    ...secondaryBtn(shopLoadFailed),
+                    minHeight: isCompact ? 42 : 48,
+                  }}
+                >
+                  Copy public shop link
+                </SecondaryButton>
               </div>
             </div>
           ) : (

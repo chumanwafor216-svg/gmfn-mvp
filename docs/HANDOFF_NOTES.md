@@ -1,3 +1,39 @@
+### Public shop visitor actions polished (2026-06-03)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner request:
+  - polish the public shop page so visitors understand what to do, especially
+    around faint/unclear shop actions, public sharing, GSN repost, and private
+    Vault access.
+- Frontend change:
+  - public shop signboard now shows a live buyer cue based on real shop state:
+    not-ready, no public items yet, or public blocks live;
+  - compact visitor cue cards now distinguish the public link, private Vault,
+    and signed-in network repost instead of letting all actions feel the same;
+  - the loose action row is now a framed visitor-actions section;
+  - `Share shop` is the primary public action, `Copy link` stays stable, and
+    `GSN repost` is visually secondary with clear copy that it is an internal
+    signed-in network placement action;
+  - Vault copy now explains that selected offers are intentionally private and
+    need an owner-provided trust link;
+  - when no public items are showing, visitors now get explicit `Ask for Vault
+    access` and `Copy public shop link` actions.
+- Guardrails:
+  - existing stable button debug ids for repost/share/copy/Vault/shop-diary
+    actions were preserved so the public shop link and button audits still
+    protect the route.
+- Verification:
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a route-local frontend polish. It does not change backend shop,
+    Vault, or repost permissions. A real phone pass after deploy is still
+    needed to judge spacing and tap feel on the public shop surface.
+
 ### Marketplace join-link governance clarified for admins and members (2026-06-03)
 
 - Routes/screens affected:
