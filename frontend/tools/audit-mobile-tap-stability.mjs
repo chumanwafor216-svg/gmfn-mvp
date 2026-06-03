@@ -758,6 +758,15 @@ const appLayoutPath = join(sourceRoot, "layout", "AppLayout.tsx");
 const appLayoutSource = readFileSync(appLayoutPath, "utf8");
 const gmfnBrandPath = join(sourceRoot, "styles", "gmfnBrand.ts");
 const gmfnBrandSource = readFileSync(gmfnBrandPath, "utf8");
+const marketplaceActionStabilityPath = join(
+  sourceRoot,
+  "lib",
+  "marketplaceActionStability.ts"
+);
+const marketplaceActionStabilitySource = readFileSync(
+  marketplaceActionStabilityPath,
+  "utf8"
+);
 const appShellChecks = [
   {
     label:
@@ -794,6 +803,15 @@ const appShellChecks = [
       "Mobile top Menu and Tools buttons must stay fixed-height while pages load",
     pattern:
       /function mobileIconButton\(\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44,[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
+  },
+];
+
+const marketplaceLandingChecks = [
+  {
+    label:
+      "Marketplace section landing offset must reserve enough mobile header space so opened bodies do not tuck under Menu/Tools",
+    pattern:
+      /function marketplaceLandingOffsetPx\(\): number[\s\S]*?if \(\(window\.innerWidth \|\| 0\) > 980\) return 96;[\s\S]*?Math\.min\([\s\S]*?196,[\s\S]*?Math\.max\(132,[\s\S]*?viewportHeight \* 0\.16[\s\S]*?addressBarDelta \* 0\.5/,
   },
 ];
 
@@ -836,6 +854,17 @@ for (const check of sharedTapTargetChecks) {
       line: 1,
       label: check.label,
       text: "Unexpected stacking-layer style found in brandStableTapTarget().",
+    });
+  }
+}
+
+for (const check of marketplaceLandingChecks) {
+  if (!check.pattern.test(marketplaceActionStabilitySource)) {
+    findings.push({
+      file: relative(frontendRoot, marketplaceActionStabilityPath),
+      line: 1,
+      label: check.label,
+      text: "Expected Marketplace landing-offset pattern was not found.",
     });
   }
 }

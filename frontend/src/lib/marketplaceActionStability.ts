@@ -41,6 +41,8 @@ export function traceMarketplaceLanding(detail: MarketplaceLandingTraceDetail): 
 export function marketplaceLandingOffsetPx(): number {
   if (typeof window === "undefined") return 96;
 
+  if ((window.innerWidth || 0) > 980) return 96;
+
   const viewportHeight =
     window.visualViewport?.height ||
     window.innerHeight ||
@@ -53,8 +55,8 @@ export function marketplaceLandingOffsetPx(): number {
   );
 
   return Math.min(
-    148,
-    Math.max(84, Math.round(viewportHeight * 0.12) + Math.round(addressBarDelta * 0.35))
+    196,
+    Math.max(132, Math.round(viewportHeight * 0.16) + Math.round(addressBarDelta * 0.5))
   );
 }
 

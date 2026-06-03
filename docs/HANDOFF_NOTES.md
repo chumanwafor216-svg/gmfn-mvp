@@ -1,3 +1,49 @@
+### Marketplace whole-route button inventory and landing offset tightened (2026-06-03)
+
+- Route/screen affected:
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`
+    and supported by `frontend/src/lib/marketplaceActionStability.ts`;
+  - mobile outer navigator controls come from `frontend/src/layout/AppLayout.tsx`.
+- Product-owner correction:
+  - the earlier count of 49 Marketplace actions was too narrow for the phone
+    surface because it counted only the Marketplace page body;
+  - the owner asked for the whole route to be counted from outer navigator
+    buttons through inner body buttons, and said the opened Marketplace bodies
+    still sometimes land in the wrong place.
+- Confirmed broader count:
+  - Marketplace page body still has 49 stable source actions;
+  - those split into 15 front actions and 34 inner/body actions;
+  - the mobile app shell adds 47 controls around Marketplace:
+    2 top buttons, 30 drawer controls, 8 Tools-panel controls, and 7 bottom
+    navigation buttons;
+  - normal non-admin whole-route mobile Marketplace surface is therefore 96
+    possible controls. Admin users can add extra admin navigation controls.
+- Frontend change:
+  - mobile Marketplace section landing offset now reserves more header space
+    before scrolling an opened inner body into place;
+  - desktop keeps the prior 96px landing behavior, while mobile now uses a
+    larger 132px minimum and 196px cap so section headings should not tuck
+    under the sticky Menu/Tools bar.
+- Guardrails:
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` now reports the
+    96-control whole-route mobile inventory instead of stopping at 49;
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks the larger
+    mobile landing offset.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed and reported 96
+    whole-route mobile controls;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src/lib/marketplaceActionStability.ts tools/audit-marketplace-button-inventory.mjs tools/audit-mobile-tap-stability.mjs` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this tightens the measured route surface and the section landing position.
+    It still needs a real phone pass after Render deploy to judge whether the
+    remaining "two out of six attempts" bad landings were stale bundle/cache,
+    browser session state, or another live hit-area overlap.
+
 ### Render frontend hook secret now trimmed before deploy call (2026-06-03)
 
 - Workflow affected:

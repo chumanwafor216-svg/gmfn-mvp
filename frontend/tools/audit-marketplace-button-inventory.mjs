@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
+const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
+const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
 const expectedStableActionCount = 49;
 const expectedSourceBreakdown = {
@@ -14,6 +16,17 @@ const expectedSourceBreakdown = {
   body: 34,
 };
 const expectedVisibleIntentActionCount = 12;
+const expectedMobileShellBreakdown = {
+  top: 2,
+  drawer: 30,
+  pageTools: 8,
+  bottom: 7,
+};
+const expectedMobileShellActionCount = Object.values(
+  expectedMobileShellBreakdown
+).reduce((sum, count) => sum + count, 0);
+const expectedWholeMobileRouteActionCount =
+  expectedStableActionCount + expectedMobileShellActionCount;
 
 function lineAt(index) {
   return source.slice(0, index).split(/\r?\n/).length;
@@ -39,6 +52,16 @@ function assertNotContains(pattern, message) {
       text: source.slice(match.index, match.index + 180).replace(/\s+/g, " "),
     });
   }
+}
+
+function assertLayoutContains(pattern, message) {
+  if (pattern.test(appLayoutSource)) return;
+  findings.push({
+    file: appLayoutFile,
+    line: 1,
+    message,
+    text: "Expected Marketplace app-shell action inventory pattern was not found.",
+  });
 }
 
 function escapeRegExp(value) {
@@ -284,6 +307,41 @@ assertNotContains(
   "Marketplace front button inventory must not use emoji or text chevrons in action marks."
 );
 
+assertLayoutContains(
+  /if \(pathname === "\/app\/marketplace"\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?Loans & Support[\s\S]*?makeShopControlItem\(\)[\s\S]*?Finance[\s\S]*?Notifications[\s\S]*?Trust Passport[\s\S]*?\]\);/,
+  "Marketplace page tools must keep the six route-local navigator actions: Public Shop, Loans & Support, Shop Control, Finance, Notifications, and Trust Passport."
+);
+
+assertLayoutContains(
+  /debugId="app-layout\.mobile\.open-navigation"[\s\S]*?debugId="app-layout\.mobile\.open-tools"/,
+  "Marketplace mobile route surface must count the two fixed top navigator buttons: Menu and Tools."
+);
+
+assertLayoutContains(
+  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?mobileDrawerGroups\.map[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.title\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.drawer\.logout"/,
+  "Marketplace mobile drawer must count close, grouped route links, and logout as part of the outer navigator surface."
+);
+
+assertLayoutContains(
+  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?pageActions\.map[\s\S]*?debugId=\{`app-layout\.page-action\.\$\{item\.label\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.page-action\.logout"/,
+  "Marketplace mobile Tools panel must count close, six page actions, and logout as part of the outer navigator surface."
+);
+
+assertLayoutContains(
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?makeFinanceItem\(\)[\s\S]*?makeLoansItem\("Loans"\)[\s\S]*?label: "Trust"[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
+  "Marketplace mobile bottom rail must count the seven normal route buttons: Dashboard, Community, Marketplace, Public Shop, Finance, Loans, and Trust."
+);
+
+assertLayoutContains(
+  /function mobileIconButton\(\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function MobileTopIcon/,
+  "Marketplace mobile top Menu and Tools buttons must keep fixed 44px geometry."
+);
+
+assertLayoutContains(
+  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
+  "Marketplace mobile bottom navigator buttons must keep fixed 42px geometry and active pointer targets."
+);
+
 if (findings.length > 0) {
   console.error("Marketplace button inventory audit failed:");
   for (const finding of findings) {
@@ -298,5 +356,9 @@ console.log(
   `Marketplace button inventory audit passed: ${actions.length} stable source actions ` +
     `(${sourceBreakdown.front} front, ${sourceBreakdown.body} body; ` +
     `${visibleIntentActionCount} visible intent buttons when More marketplace tools is open), ` +
+    `${expectedMobileShellActionCount} mobile app-shell controls ` +
+    `(${expectedMobileShellBreakdown.top} top, ${expectedMobileShellBreakdown.drawer} drawer, ` +
+    `${expectedMobileShellBreakdown.pageTools} tools, ${expectedMobileShellBreakdown.bottom} bottom), ` +
+    `${expectedWholeMobileRouteActionCount} whole-route mobile controls total, ` +
     "with hidden create-community actions removed."
 );
