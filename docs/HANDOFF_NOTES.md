@@ -45,6 +45,19 @@
     passed;
   - `npm run build` passed outside the sandbox after the known Vite/esbuild
     sandbox `spawn EPERM` failure.
+- Deployment truth:
+  - committed and pushed as
+    `b64806d1bf244a528b504933d1da57fd27f9c8a2`;
+  - pushed to both `feature/vault-shops` and `main`;
+  - GitHub `Backend Tests` passed on both branches;
+  - GitHub `Trigger Render Deploy` run `26875253725` accepted the frontend
+    Render deploy hook and returned frontend deploy id `dep-d8fv0nf7f7vs73epsg0g`;
+  - the same workflow failed at `Trigger API deploy hook` because Render
+    returned HTTP 404 for the stored `RENDER_API_DEPLOY_HOOK_URL`;
+  - therefore the frontend was triggered, but the backend invite-governance
+    route change is not confirmed deployed through GitHub Actions until the
+    repository secret `RENDER_API_DEPLOY_HOOK_URL` is replaced with the real
+    `gmfn-api` deploy hook or Render auto-deploy is verified independently.
 
 ### Marketplace whole-route button inventory and landing offset tightened (2026-06-03)
 
