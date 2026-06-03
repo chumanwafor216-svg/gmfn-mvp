@@ -9,6 +9,11 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const findings = [];
 const expectedStableActionCount = 49;
+const expectedSourceBreakdown = {
+  front: 15,
+  body: 34,
+};
+const expectedVisibleIntentActionCount = 12;
 
 function lineAt(index) {
   return source.slice(0, index).split(/\r?\n/).length;
@@ -34,6 +39,37 @@ function assertNotContains(pattern, message) {
       text: source.slice(match.index, match.index + 180).replace(/\s+/g, " "),
     });
   }
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function exactDebugId(debugId) {
+  return {
+    label: debugId,
+    pattern: new RegExp(`debugId="${escapeRegExp(debugId)}"`),
+  };
+}
+
+function dynamicDebugId(label, pattern) {
+  return { label, pattern };
+}
+
+function marketplaceActionArea(debugId) {
+  if (
+    /^marketplace\.empty\./.test(debugId) ||
+    /^marketplace\.tile\./.test(debugId) ||
+    /^marketplace\.row\./.test(debugId) ||
+    debugId === "marketplace.extra-tools.toggle" ||
+    /^marketplace\.intent\./.test(debugId)
+  ) {
+    return "front";
+  }
+
+  if (/^marketplace\./.test(debugId)) return "body";
+
+  return "unknown";
 }
 
 const actionPattern = /<Stable(?:Button|CtaLink)\b[\s\S]*?(?:\/>|<\/Stable(?:Button|CtaLink)>)/g;
@@ -79,62 +115,126 @@ for (const action of actions) {
   }
 }
 
+const sourceBreakdown = actions.reduce(
+  (counts, action) => {
+    const area = marketplaceActionArea(action.debugId);
+    counts[area] = (counts[area] || 0) + 1;
+    return counts;
+  },
+  { front: 0, body: 0, unknown: 0 }
+);
+
+if (
+  sourceBreakdown.front !== expectedSourceBreakdown.front ||
+  sourceBreakdown.body !== expectedSourceBreakdown.body ||
+  sourceBreakdown.unknown !== 0
+) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace action inventory front/body split changed. Re-count visible phone actions before accepting this baseline.",
+    text:
+      `front=${sourceBreakdown.front}/${expectedSourceBreakdown.front}, ` +
+      `body=${sourceBreakdown.body}/${expectedSourceBreakdown.body}, ` +
+      `unknown=${sourceBreakdown.unknown}`,
+  });
+}
+
+const intentItemsBlock = source.match(
+  /const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem\[\] = \[[\s\S]*?\n\];/
+);
+const visibleIntentActionCount = intentItemsBlock
+  ? (intentItemsBlock[0].match(/\bid: "/g) || []).length -
+    (intentItemsBlock[0].match(/visible: false/g) || []).length
+  : 0;
+
+if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace visible intent-button count changed. Re-audit the expanded More marketplace tools panel on phone.",
+    text: `visible intent buttons=${visibleIntentActionCount}/${expectedVisibleIntentActionCount}`,
+  });
+}
+
 const expectedOrder = [
-  "marketplace.empty.community-home",
-  "marketplace.empty.dashboard",
-  "marketplace.tile.money",
-  "marketplace.tile.support",
-  "marketplace.tile.members",
-  "marketplace.tile.trust",
-  "marketplace.row.money",
-  "marketplace.row.payment-rails",
-  "marketplace.row.loan-process",
-  "marketplace.row.member-ledger",
-  "marketplace.row.demand-box",
-  "marketplace.row.records-links",
-  "marketplace.extra-tools.toggle",
-  "marketplace.intent.submit",
-  "marketplace.money.toggle",
-  "marketplace.money.money-in",
-  "marketplace.money.money-out",
-  "marketplace.money.finance",
-  "marketplace.links.toggle",
-  "marketplace.links.join.copy",
-  "marketplace.links.join.refresh",
-  "marketplace.links.join.copy-message",
-  "marketplace.links.join.email",
-  "marketplace.links.join.whatsapp",
-  "marketplace.links.community-desk.copy",
-  "marketplace.links.community-desk.email",
-  "marketplace.links.community-desk.open",
-  "marketplace.public-shop.visible-link",
-  "marketplace.public-shop.refresh",
-  "marketplace.public-shop.copy",
-  "marketplace.public-shop.email",
-  "marketplace.public-shop.open",
-  "marketplace.links.owner-shop-control",
-  "marketplace.members.toggle",
-  "marketplace.support.toggle",
-  "marketplace.support.start-request",
-  "marketplace.support.refresh-fit",
-  "marketplace.support.cancel-draft",
-  "marketplace.support.loan-readiness",
-  "marketplace.support.loan-suggestions",
-  "marketplace.support.loan-workbench",
-  "marketplace.support.finance",
-  "marketplace.support.full-loans",
-  "marketplace.support.send-guarantor-requests",
+  exactDebugId("marketplace.empty.community-home"),
+  exactDebugId("marketplace.empty.dashboard"),
+  exactDebugId("marketplace.tile.money"),
+  exactDebugId("marketplace.tile.support"),
+  exactDebugId("marketplace.tile.members"),
+  exactDebugId("marketplace.tile.trust"),
+  exactDebugId("marketplace.row.money"),
+  exactDebugId("marketplace.row.payment-rails"),
+  exactDebugId("marketplace.row.loan-process"),
+  exactDebugId("marketplace.row.member-ledger"),
+  exactDebugId("marketplace.row.demand-box"),
+  exactDebugId("marketplace.row.records-links"),
+  exactDebugId("marketplace.extra-tools.toggle"),
+  exactDebugId("marketplace.intent.submit"),
+  dynamicDebugId(
+    "marketplace.intent.${item.id}",
+    /debugId=\{`marketplace\.intent\.\$\{item\.id\}`\}/
+  ),
+  exactDebugId("marketplace.money.toggle"),
+  exactDebugId("marketplace.money.money-in"),
+  exactDebugId("marketplace.money.money-out"),
+  exactDebugId("marketplace.money.finance"),
+  exactDebugId("marketplace.links.toggle"),
+  exactDebugId("marketplace.links.join.copy"),
+  exactDebugId("marketplace.links.join.refresh"),
+  exactDebugId("marketplace.links.join.copy-message"),
+  exactDebugId("marketplace.links.join.email"),
+  exactDebugId("marketplace.links.join.whatsapp"),
+  exactDebugId("marketplace.links.community-desk.copy"),
+  exactDebugId("marketplace.links.community-desk.email"),
+  exactDebugId("marketplace.links.community-desk.open"),
+  exactDebugId("marketplace.public-shop.visible-link"),
+  exactDebugId("marketplace.public-shop.refresh"),
+  exactDebugId("marketplace.public-shop.copy"),
+  exactDebugId("marketplace.public-shop.email"),
+  exactDebugId("marketplace.public-shop.open"),
+  exactDebugId("marketplace.links.owner-shop-control"),
+  exactDebugId("marketplace.members.toggle"),
+  dynamicDebugId(
+    "marketplace.member.*.shop",
+    /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/
+  ),
+  dynamicDebugId(
+    "marketplace.member.*.choose-supporter",
+    /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.choose-supporter`\}/
+  ),
+  exactDebugId("marketplace.support.toggle"),
+  exactDebugId("marketplace.support.start-request"),
+  exactDebugId("marketplace.support.refresh-fit"),
+  exactDebugId("marketplace.support.cancel-draft"),
+  exactDebugId("marketplace.support.loan-readiness"),
+  exactDebugId("marketplace.support.loan-suggestions"),
+  exactDebugId("marketplace.support.loan-workbench"),
+  exactDebugId("marketplace.support.finance"),
+  exactDebugId("marketplace.support.full-loans"),
+  dynamicDebugId(
+    "marketplace.support.suggestion.*.choose",
+    /debugId=\{`marketplace\.support\.suggestion\.\$\{item\.key\}\.choose`\}/
+  ),
+  dynamicDebugId(
+    "marketplace.support.selected.*.remove",
+    /debugId=\{`marketplace\.support\.selected\.\$\{item\.key\}\.remove`\}/
+  ),
+  exactDebugId("marketplace.support.send-guarantor-requests"),
 ];
 
 let cursor = -1;
-for (const debugId of expectedOrder) {
-  const next = source.indexOf(`debugId="${debugId}"`, cursor + 1);
+for (const expected of expectedOrder) {
+  const afterCursor = source.slice(cursor + 1);
+  const found = expected.pattern.exec(afterCursor);
+  const next = found ? cursor + 1 + found.index : -1;
   if (next === -1) {
     findings.push({
       file: marketplaceFile,
       line: 1,
       message: "Marketplace front-to-inner action inventory is missing an expected action.",
-      text: debugId,
+      text: expected.label,
     });
     continue;
   }
@@ -143,7 +243,7 @@ for (const debugId of expectedOrder) {
       file: marketplaceFile,
       line: lineAt(next),
       message: "Marketplace front-to-inner action order changed. Re-audit phone flow before accepting this reorder.",
-      text: debugId,
+      text: expected.label,
     });
   }
   cursor = next;
@@ -195,5 +295,8 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Marketplace button inventory audit passed: ${actions.length} stable source actions, with hidden create-community actions removed.`
+  `Marketplace button inventory audit passed: ${actions.length} stable source actions ` +
+    `(${sourceBreakdown.front} front, ${sourceBreakdown.body} body; ` +
+    `${visibleIntentActionCount} visible intent buttons when More marketplace tools is open), ` +
+    "with hidden create-community actions removed."
 );

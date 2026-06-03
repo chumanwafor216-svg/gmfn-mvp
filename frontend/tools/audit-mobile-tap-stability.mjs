@@ -551,7 +551,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace guarantor request button must use one shared blocked flag",
     pattern:
-      /const guarantorRequestsBlocked =[\s\S]*?disabled=\{guarantorRequestsBlocked\}[\s\S]*?marketplaceActionStyle\([\s\S]*?guarantorRequestsBlocked/,
+      /const guarantorRequestsBlocked =[\s\S]*?disabled=\{guarantorRequestsBlocked\}[\s\S]*?stableHeight=\{58\}[\s\S]*?marketplaceInlineActionStyle\([\s\S]*?guarantorRequestsBlocked/,
   },
   {
     label:

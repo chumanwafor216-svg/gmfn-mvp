@@ -1611,7 +1611,9 @@ function marketplaceInlineActionsStyle(
     gridAutoRows: "58px",
     gap: 8,
     alignItems: "stretch",
+    alignContent: "start",
     overflowAnchor: "none",
+    transition: "none",
   };
 }
 
@@ -1656,13 +1658,18 @@ function intentChoiceStyle(
 ): React.CSSProperties {
   return {
     ...marketplaceActionStyle(tone),
-    minHeight: 74,
+    height: 82,
+    minHeight: 82,
     maxHeight: 82,
     alignItems: "flex-start",
     flexDirection: "column",
+    justifyContent: "center",
     gap: 4,
     padding: "10px 12px",
     textAlign: "left",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
   };
 }
 
@@ -4471,7 +4478,8 @@ export default function MarketplacePage() {
                   debugId="marketplace.money.money-in"
                   type="button"
                   onClick={(event) => openMarketplaceCta(event, "moneyIn")}
-                  style={marketplaceActionStyle("primary")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("primary", false, isCompact)}
                 >
                   Money In
                 </StableButton>
@@ -4515,7 +4523,8 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     openMarketplaceCta(event, "moneyOut")
                   }
-                  style={marketplaceActionStyle("secondary")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
                 >
                   Money Out
                 </StableButton>
@@ -4556,7 +4565,8 @@ export default function MarketplacePage() {
                   debugId="marketplace.money.finance"
                   type="button"
                   onClick={(event) => openMarketplaceCta(event, "finance")}
-                  style={marketplaceActionStyle("secondary")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
                 >
                   See this in Finance
                 </StableButton>
@@ -5252,17 +5262,18 @@ export default function MarketplacePage() {
                       {(row.shopTo || fitSuggestion) ? (
                         <div
                           style={{
-                            display: "flex",
+                            ...marketplaceInlineActionsStyle(isCompact),
+                            marginTop: 0,
+                            minWidth: isCompact ? "100%" : 260,
                             justifyContent: isCompact ? "flex-start" : "flex-end",
-                            gap: 10,
-                            flexWrap: "wrap",
                           }}
                         >
                           {row.shopTo ? (
                             <StableCtaLink
                               debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`}
                               to={row.shopTo}
-                              style={marketplaceActionStyle("secondary")}
+                              stableHeight={58}
+                              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
                             >
                               Open shop
                             </StableCtaLink>
@@ -5277,9 +5288,12 @@ export default function MarketplacePage() {
                                   toggleMemberAsSupporter(row);
                                 });
                               }}
-                              style={
-                                selected ? marketplaceActionStyle("primary") : marketplaceActionStyle("soft")
-                              }
+                              stableHeight={58}
+                              style={marketplaceInlineActionStyle(
+                                selected ? "primary" : "soft",
+                                false,
+                                isCompact
+                              )}
                             >
                               {selected ? "Chosen" : "Choose supporter"}
                             </StableButton>
@@ -5416,10 +5430,8 @@ export default function MarketplacePage() {
 
               <div
                 style={{
+                  ...marketplaceInlineActionsStyle(isCompact),
                   marginTop: 16,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
                 }}
               >
                 <StableButton
@@ -5432,7 +5444,12 @@ export default function MarketplacePage() {
                     });
                   }}
                   disabled={startingLoanDraft}
-                  style={marketplaceActionStyle("primary", startingLoanDraft)}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle(
+                    "primary",
+                    startingLoanDraft,
+                    isCompact
+                  )}
                 >
                   {startingLoanDraft ? "Starting..." : "Start Support Request"}
                 </StableButton>
@@ -5448,7 +5465,12 @@ export default function MarketplacePage() {
                       });
                     }}
                     disabled={loadingSuggestions}
-                    style={marketplaceActionStyle("secondary", loadingSuggestions)}
+                    stableHeight={58}
+                    style={marketplaceInlineActionStyle(
+                      "secondary",
+                      loadingSuggestions,
+                      isCompact
+                    )}
                   >
                     {loadingSuggestions ? "Refreshing..." : "Refresh Fit Check"}
                   </StableButton>
@@ -5465,7 +5487,12 @@ export default function MarketplacePage() {
                       });
                     }}
                     disabled={cancellingLoanDraft}
-                    style={marketplaceActionStyle("secondary", cancellingLoanDraft)}
+                    stableHeight={58}
+                    style={marketplaceInlineActionStyle(
+                      "secondary",
+                      cancellingLoanDraft,
+                      isCompact
+                    )}
                   >
                     {cancellingLoanDraft ? "Cancelling..." : "Cancel Draft"}
                   </StableButton>
@@ -5474,10 +5501,8 @@ export default function MarketplacePage() {
 
               <div
                 style={{
+                  ...marketplaceInlineActionsStyle(isCompact),
                   marginTop: 12,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
                 }}
               >
                 <StableButton
@@ -5486,7 +5511,8 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     openMarketplaceCta(event, "loanReadiness")
                   }
-                  style={marketplaceActionStyle("soft")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
                 >
                   Loan Readiness
                 </StableButton>
@@ -5496,7 +5522,8 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     openMarketplaceCta(event, "loanSuggestions")
                   }
-                  style={marketplaceActionStyle("soft")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
                 >
                   Loan Suggestions
                 </StableButton>
@@ -5506,7 +5533,8 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     openMarketplaceCta(event, "loanWorkbench")
                   }
-                  style={marketplaceActionStyle("soft")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
                 >
                   Loan Workbench
                 </StableButton>
@@ -5514,7 +5542,8 @@ export default function MarketplacePage() {
                   debugId="marketplace.support.finance"
                   type="button"
                   onClick={(event) => openMarketplaceCta(event, "finance")}
-                  style={marketplaceActionStyle("soft")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
                 >
                   Finance
                 </StableButton>
@@ -5522,7 +5551,8 @@ export default function MarketplacePage() {
                   debugId="marketplace.support.full-loans"
                   type="button"
                   onClick={(event) => openMarketplaceCta(event, "loans")}
-                  style={marketplaceActionStyle("soft")}
+                  stableHeight={58}
+                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
                 >
                   Full Loans View
                 </StableButton>
@@ -5646,11 +5676,12 @@ export default function MarketplacePage() {
                                         toggleSuggestedSupporter(item);
                                       });
                                     }}
-                                    style={
-                                      selected
-                                        ? marketplaceActionStyle("primary")
-                                        : marketplaceActionStyle("secondary")
-                                    }
+                                    stableHeight={58}
+                                    style={marketplaceInlineActionStyle(
+                                      selected ? "primary" : "secondary",
+                                      false,
+                                      isCompact
+                                    )}
                                   >
                                     {selected ? "Selected" : "Choose"}
                                   </StableButton>
@@ -5676,10 +5707,8 @@ export default function MarketplacePage() {
 
                           <div
                             style={{
+                              ...marketplaceInlineActionsStyle(isCompact),
                               marginTop: 10,
-                              display: "flex",
-                              gap: 8,
-                              flexWrap: "wrap",
                             }}
                           >
                             {visibleSelectedSupporters.map((item) => (
@@ -5692,9 +5721,10 @@ export default function MarketplacePage() {
                                     toggleSuggestedSupporter(item);
                                   });
                                 }}
-                                style={marketplaceActionStyle("soft")}
+                                stableHeight={58}
+                                style={marketplaceInlineActionStyle("soft", false, isCompact)}
                               >
-                                {item.name} ×
+                                {item.name} x
                               </StableButton>
                             ))}
                           </div>
@@ -5712,10 +5742,8 @@ export default function MarketplacePage() {
 
                       <div
                         style={{
+                          ...marketplaceInlineActionsStyle(isCompact),
                           marginTop: 14,
-                          display: "flex",
-                          gap: 10,
-                          flexWrap: "wrap",
                         }}
                       >
                         <StableButton
@@ -5728,9 +5756,11 @@ export default function MarketplacePage() {
                             });
                           }}
                           disabled={guarantorRequestsBlocked}
-                          style={marketplaceActionStyle(
+                          stableHeight={58}
+                          style={marketplaceInlineActionStyle(
                             "primary",
-                            guarantorRequestsBlocked
+                            guarantorRequestsBlocked,
+                            isCompact
                           )}
                         >
                           {sendingGuarantorRequests

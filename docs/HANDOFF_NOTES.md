@@ -1,3 +1,44 @@
+### Marketplace button/link body stability audit tightened (2026-06-03)
+
+- Route/screen affected:
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`.
+- Product-owner report:
+  - marketplace/deposit/link controls felt jumpy on phone;
+  - the action surfaces needed to be counted from the front controls through
+    the expanded inner button bodies before tightening them.
+- Confirmed source count:
+  - Marketplace now audits 49 stable source actions total;
+  - 15 are front/landing source actions;
+  - 34 are expanded body source actions;
+  - the More marketplace tools panel renders 12 visible intent buttons when
+    opened.
+- Frontend change:
+  - More marketplace tools intent buttons now use one fixed 82px height;
+  - Money In, Money Out, Finance, member shop/supporter controls, support
+    request controls, loan-route controls, guarantor suggestion controls, and
+    send-guarantor controls now use the fixed 58px Marketplace inline action
+    slots instead of freer wrapping rows;
+  - selected-guarantor remove labels now use plain ASCII `x`.
+- Guardrails:
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` now reports the
+    front/body action split and checks the dynamic intent, member, and support
+    action debug IDs that the older order list skipped;
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now expects the guarantor
+    send button to keep its shared blocked flag inside the fixed 58px slot.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-button-inventory.mjs tools/audit-mobile-tap-stability.mjs` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this did not change backend deposit, invite, public shop, or support
+    contracts. It only tightens frontend action geometry and source-count
+    guardrails. A live phone tap sweep is still the real proof of felt
+    stability.
+
 ### Free Spotlight uses saved shop identity, not repeated shop setup (2026-06-02)
 
 - Route/screen affected:
