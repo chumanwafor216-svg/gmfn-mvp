@@ -549,8 +549,8 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopBlockPath[\s\S]*?product_id=\$\{encodeURIComponent\(productId\)\}[\s\S]*?shop-block-\$\{Math\.trunc\(blockNumber\)\}[\s\S]*?product-\$\{productId\}[\s\S]*?PUBLIC_SHOP_DIARIES_ANCHOR[\s\S]*?return `\$\{path\}\$\{productQuery\}#\$\{encodeURIComponent\(anchor\)\}`;/,
-  "Product/block shares must preserve product_id and block anchors so shared item links open inside Shop Diaries."
+  /export function publicShopBlockPath[\s\S]*?const query = new URLSearchParams\(\);[\s\S]*?query\.set\("product_id", productId\);[\s\S]*?query\.set\("block", String\(Math\.trunc\(blockNumber\)\)\);[\s\S]*?shop-block-\$\{Math\.trunc\(blockNumber\)\}[\s\S]*?product-\$\{productId\}[\s\S]*?PUBLIC_SHOP_DIARIES_ANCHOR[\s\S]*?return `\$\{path\}\$\{productQuery\}#\$\{encodeURIComponent\(anchor\)\}`;/,
+  "Product/block shares must preserve product_id, block query context, and block anchors so shared item links open inside Shop Diaries."
 );
 
 assertContains(

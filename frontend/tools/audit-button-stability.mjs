@@ -1144,14 +1144,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.open-spotlight-preview"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.open-spotlight-preview"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.contact`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
   "Shop Gallery must use shared stable primitives for hero, vault, product, spotlight, and remaining public-shop actions."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /audioUnlockLabel="🔊"[\s\S]*?audioUnlockOffLabel="🔇"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?\{isProductOpen \? "🔼" : "👁️"\}[\s\S]*?aria-label=\{`Share \$\{displayTitle\}`\}[\s\S]*?📤/,
-  "Shop Gallery product cards must use compact real-life signs for sound, open/close, and share while keeping accessible action labels."
+  /audioUnlockLabel="🔊"[\s\S]*?audioUnlockOffLabel="🔇"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?\{isProductOpen \? "🔼" : "👁️"\}[\s\S]*?aria-label=\{`Share \$\{displayTitle\}`\}[\s\S]*?🔗[\s\S]*?aria-label=\{`Contact owner about \$\{displayTitle\}`\}[\s\S]*?💬/,
+  "Shop Gallery product cards must use compact real-life signs for sound, open/close, block share, and owner contact while keeping accessible action labels."
 );
 
 assertNotContains(

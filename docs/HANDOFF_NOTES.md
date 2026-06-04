@@ -34143,3 +34143,49 @@ GSN-branded invite composer and invite-entry continuity.
     an old generated shop name, the frontend will mask it here, but the cleaner
     long-term correction is for the user/shop-control flow to save a real shop
     name and for the backend to keep rejecting weak public identity fallbacks.
+
+## Public shop block sharing and product-card tightening (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, especially the public Shop Diaries product cards and
+    Private Vault promo.
+- Frontend change:
+  - `frontend/src/lib/publicLinks.ts` now keeps both `product_id` and `block`
+    in public shop block links before the `shop-block-n` hash anchor. This
+    makes product-card share links target the exact block instead of collapsing
+    back to the whole public shop route.
+  - `frontend/src/pages/ShopGalleryPage.tsx` now reads `block` / `slot` query
+    parameters as well as `product_id`, then opens and scrolls to the matching
+    Shop Diaries block after the shelf loads.
+  - Product-card share feedback now says the link opens that block directly,
+    not the full public shop.
+  - Opened product cards now use a fixed compact info dock with icon-only
+    close/open, block-link, and owner-contact actions. The dock height is
+    capped so item media remains the main surface and buttons cannot expand the
+    card unpredictably.
+  - The product-level contact action opens the owner WhatsApp route with a
+    message naming the selected product and block.
+  - The Private Vault promo and code-drawn vault emblem were reduced so the
+    vault section no longer takes disproportionate attention above Shop
+    Diaries.
+- Guardrails:
+  - `frontend/tools/audit-button-stability.mjs` now checks the exact product
+    toggle/share/contact debug IDs and compact sign-only controls.
+  - `frontend/tools/audit-link-contracts.mjs` now checks the `product_id` plus
+    `block` query contract for product/block shares.
+- Verification:
+  - Passed ESLint for touched frontend files and audits.
+  - Passed `npm run audit:button-stability`,
+    `npm run audit:link-contracts`, `npm run audit:marketplace-actions`,
+    `npm run audit:tap-stability`,
+    `npm run audit:marketplace-button-inventory`, and
+    `npm run audit:global-raw-action-elements`.
+  - `npm run build` failed inside the sandbox with Vite/esbuild `spawn EPERM`,
+    then passed when rerun outside the sandbox.
+- Remaining truth:
+  - The exact photo-real vault bitmap from the owner's screenshot is still not
+    in the repository, so this pass improves the existing code-drawn vault
+    illustration rather than replacing it with the supplied reference image.
+  - A real phone check on the deployed public shop is still needed to prove the
+    selected block opens directly from WhatsApp/browser shares on the pilot
+    device.

@@ -320,10 +320,10 @@ function isInteractiveCardTarget(target: EventTarget | null): boolean {
 }
 
 function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
-  const size = compact ? 116 : 170;
-  const doorSize = compact ? 78 : 112;
-  const wheelSize = compact ? 30 : 42;
-  const boltSize = compact ? 9 : 12;
+  const size = compact ? 92 : 132;
+  const doorSize = compact ? 62 : 90;
+  const wheelSize = compact ? 28 : 38;
+  const boltSize = compact ? 8 : 10;
 
   return (
     <div
@@ -334,7 +334,7 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
         borderRadius: compact ? 18 : 22,
         border: "1px solid rgba(255,232,160,0.62)",
         background:
-          "radial-gradient(circle at 28% 18%, rgba(255,255,255,0.82) 0%, rgba(255,244,204,0.38) 20%, transparent 38%), linear-gradient(145deg, #FFF1B4 0%, #E6C45F 38%, #A66D16 100%)",
+          "radial-gradient(circle at 26% 20%, rgba(255,255,255,0.82) 0%, rgba(255,244,204,0.34) 20%, transparent 40%), linear-gradient(145deg, #FFE9A0 0%, #D7AA45 40%, #8F5A12 100%)",
         boxShadow:
           "inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -14px 30px rgba(96,60,8,0.18), 0 18px 36px rgba(138,100,14,0.24)",
         display: "grid",
@@ -361,7 +361,7 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
           height: doorSize,
           borderRadius: compact ? 18 : 22,
           background:
-            "radial-gradient(circle at 35% 24%, rgba(255,255,255,0.20), transparent 28%), linear-gradient(145deg, #536A7F 0%, #233A52 40%, #05172B 100%)",
+            "radial-gradient(circle at 28% 20%, rgba(255,255,255,0.18), transparent 30%), linear-gradient(145deg, #43596E 0%, #172D44 42%, #041426 100%)",
           border: "2px solid rgba(255,236,173,0.58)",
           boxShadow:
             "inset 0 2px 8px rgba(255,255,255,0.24), inset 0 -10px 22px rgba(3,16,31,0.60), 0 18px 34px rgba(8,35,61,0.32)",
@@ -402,7 +402,7 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
             transform: "translate(-50%, -50%)",
             borderRadius: "50%",
             border: "2px solid rgba(255,236,173,0.60)",
-          background:
+            background:
               "radial-gradient(circle, rgba(255,244,204,0.92) 0%, rgba(214,170,69,0.38) 42%, rgba(3,16,31,0.52) 100%)",
             boxShadow: "inset 0 1px 3px rgba(255,255,255,0.24)",
           }}
@@ -980,6 +980,10 @@ export default function ShopGalleryPage() {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("product_id") || query.get("product"));
   }, [location.search]);
+  const routeBlockNumber = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(query.get("block") || query.get("slot"));
+  }, [location.search]);
   const publicShopReturnPath = useMemo(() => {
     const path = `${location.pathname || ""}${location.search || ""}${
       location.hash || ""
@@ -1502,7 +1506,7 @@ export default function ShopGalleryPage() {
 
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (!location.hash) return;
+    if (!location.hash && routeProductId <= 0 && routeBlockNumber <= 0) return;
     if (loading) return;
 
     const id = location.hash.replace(/^#/, "");
@@ -1510,6 +1514,12 @@ export default function ShopGalleryPage() {
     const matchedProduct = shouldRevealProduct
       ? products.find((product) => {
           return routeProductId > 0 && product.id === routeProductId;
+        }) ||
+        products.find((product) => {
+          return (
+            routeBlockNumber > 0 &&
+            positiveNumber(product.slotNumber) === routeBlockNumber
+          );
         }) ||
         products.find((product) => {
           return (
@@ -1527,7 +1537,7 @@ export default function ShopGalleryPage() {
       }
       setOpenProductId(matchedProduct.id ?? matchedProduct.slotNumber);
       revealGalleryTarget(publicShopBlockAnchorId(matchedProduct));
-    } else {
+    } else if (id) {
       revealGalleryTarget(id);
     }
 
@@ -1540,6 +1550,7 @@ export default function ShopGalleryPage() {
     location.hash,
     products,
     revealGalleryTarget,
+    routeBlockNumber,
     routeProductId,
   ]);
 
@@ -1896,9 +1907,24 @@ export default function ShopGalleryPage() {
 
     void shareOrCopy({
       title,
-      text: `${blockLabel}\n${text}\n${product.priceText}\nFrom ${shopContext}.\nOpen the full public shop and check this block there.`,
+      text: `${blockLabel}\n${text}\n${product.priceText}\nFrom ${shopContext}.\nOpen this public shop block directly.`,
       url: productUrl,
-      successText: `Full public shop share ready. Mention ${blockLabel} in your message.`,
+      successText: `${blockLabel} share ready. This link opens that block directly.`,
+    });
+  }
+
+  function contactOwnerAboutProduct(product: ShopProduct) {
+    const productTitle = productDisplayTitle(product);
+    const blockLabel = publicShopBlockLabel(product);
+    const message = `Hello, I am asking about ${productTitle} (${blockLabel}) in your GSN public shop.`;
+
+    if (openOwnerWhatsAppChat(message, "Owner WhatsApp opened for this shop block.")) {
+      return;
+    }
+
+    setNotice({
+      tone: "error",
+      text: "Owner WhatsApp is not ready for this shop block. Use the main WhatsApp button near the shop signboard.",
     });
   }
 
@@ -2865,25 +2891,25 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               overflow: "hidden",
-              borderRadius: isCompact ? 20 : 26,
-              padding: isCompact ? 12 : 22,
+              borderRadius: isCompact ? 18 : 24,
+              padding: isCompact ? 10 : 16,
               border: "1px solid rgba(212,175,55,0.62)",
               background:
                 "radial-gradient(circle at 100% 0%, rgba(212,175,55,0.24) 0%, transparent 36%), linear-gradient(145deg, #061827 0%, #082A4C 58%, #031424 100%)",
               boxShadow:
-                "0 24px 52px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.12)",
+                "0 18px 38px rgba(2,12,27,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "minmax(112px, 36%) minmax(0, 1fr)"
-                : "230px minmax(0, 1fr)",
+                ? "92px minmax(0, 1fr)"
+                : "170px minmax(0, 1fr)",
               alignItems: "center",
-              gap: isCompact ? 10 : 18,
+              gap: isCompact ? 10 : 16,
             }}
           >
             <div
               aria-hidden="true"
               style={{
-                minHeight: isCompact ? 104 : 150,
+                minHeight: isCompact ? 92 : 132,
                 display: "grid",
                 placeItems: "stretch",
               }}
@@ -2898,7 +2924,7 @@ export default function ShopGalleryPage() {
                 style={{
                   marginTop: 8,
                   color: "#FFFFFF",
-                  fontSize: isCompact ? 19 : 27,
+                  fontSize: isCompact ? 16 : 23,
                   fontWeight: 950,
                   lineHeight: 1.15,
                 }}
@@ -2907,10 +2933,10 @@ export default function ShopGalleryPage() {
               </div>
               <p
                 style={{
-                  margin: "8px 0 0",
+                  margin: "5px 0 0",
                   color: "rgba(235,245,255,0.78)",
-                  fontSize: isCompact ? 11 : 14,
-                  lineHeight: 1.35,
+                  fontSize: isCompact ? 10.5 : 13,
+                  lineHeight: 1.28,
                   fontWeight: 650,
                 }}
               >
@@ -3135,20 +3161,21 @@ export default function ShopGalleryPage() {
                 const isProductOpen = openProductId === productOpenId;
                 const diaryActionHeight = isProductOpen
                   ? isCompact
-                    ? 42
-                    : 46
+                    ? 36
+                    : 40
                   : isCompact
                   ? 38
                   : 42;
                 const diaryActionWidth = isProductOpen
                   ? isCompact
-                    ? 44
-                    : 48
+                    ? 36
+                    : 40
                   : isCompact
                   ? 40
                   : 44;
                 const diaryMediaControlHeight = isCompact ? 36 : 40;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
+                const diaryOpenDockHeight = isCompact ? 126 : 132;
 
                 return (
                   <article
@@ -3293,46 +3320,52 @@ export default function ShopGalleryPage() {
                         minWidth: 0,
                         padding: isProductOpen
                           ? isCompact
-                            ? "12px"
-                            : "16px"
+                            ? "9px 10px"
+                            : "11px 13px"
                           : isCompact
                           ? "6px 7px"
                           : "7px 9px",
                         boxSizing: "border-box",
                         display: "grid",
                         gridTemplateColumns: isProductOpen
-                          ? "1fr"
+                          ? `minmax(0, 1fr) ${diaryActionWidth * 3 + (isCompact ? 12 : 16)}px`
                           : `minmax(0, 1fr) ${diaryActionWidth}px`,
-                        gridTemplateRows: isProductOpen ? undefined : "auto auto",
-                        gap: isProductOpen ? (isCompact ? 8 : 10) : "2px 7px",
+                        gridTemplateRows: isProductOpen
+                          ? "auto auto auto"
+                          : "auto auto",
+                        gap: isProductOpen ? (isCompact ? 4 : 5) : "2px 7px",
                         alignContent: "end",
                         background:
                           isProductOpen
                             ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #FFFFFF 100%)"
                             : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, #FFFFFF 100%)",
                         borderTop: "1px solid rgba(13,95,168,0.14)",
-                        maxHeight: isProductOpen ? undefined : diaryClosedDockHeight,
-                        minHeight: isProductOpen ? undefined : diaryClosedDockHeight,
+                        maxHeight: isProductOpen
+                          ? diaryOpenDockHeight
+                          : diaryClosedDockHeight,
+                        minHeight: isProductOpen
+                          ? diaryOpenDockHeight
+                          : diaryClosedDockHeight,
                         overflow: "hidden",
                       }}
                     >
                       <div
                         style={{
-                          gridColumn: isProductOpen ? undefined : "1",
-                          gridRow: isProductOpen ? undefined : "1",
+                          gridColumn: isProductOpen ? "1 / -1" : "1",
+                          gridRow: isProductOpen ? "1" : "1",
                           minWidth: 0,
                           color: "#07172C",
                           fontWeight: 950,
                           fontSize: isProductOpen
                             ? isCompact
-                              ? 20
-                              : 22
+                              ? 18
+                              : 20
                             : isCompact
                             ? 13
                             : 17,
                           lineHeight: 1.08,
                           display: "-webkit-box",
-                          WebkitLineClamp: isProductOpen ? 2 : isCompact ? 1 : 2,
+                          WebkitLineClamp: isProductOpen ? 1 : isCompact ? 1 : 2,
                           WebkitBoxOrient: "vertical" as any,
                           overflow: "hidden",
                         }}
@@ -3346,8 +3379,10 @@ export default function ShopGalleryPage() {
                             fontWeight: 650,
                             fontSize: isCompact ? 13 : 14,
                             lineHeight: 1.18,
+                            gridColumn: "1 / -1",
+                            gridRow: "2",
                             display: "-webkit-box",
-                            WebkitLineClamp: 3,
+                            WebkitLineClamp: 1,
                             WebkitBoxOrient: "vertical" as any,
                             overflow: "hidden",
                           }}
@@ -3358,8 +3393,8 @@ export default function ShopGalleryPage() {
                       <span
                         style={{
                           ...badge(true),
-                          gridColumn: isProductOpen ? undefined : "1",
-                          gridRow: isProductOpen ? undefined : "2",
+                          gridColumn: isProductOpen ? "1" : "1",
+                          gridRow: isProductOpen ? "3" : "2",
                           width: "fit-content",
                           maxWidth: "100%",
                           minHeight: isProductOpen
@@ -3393,13 +3428,13 @@ export default function ShopGalleryPage() {
                       </span>
                       <div
                         style={{
-                          gridColumn: isProductOpen ? undefined : "2",
-                          gridRow: isProductOpen ? undefined : "1 / span 2",
+                          gridColumn: isProductOpen ? "2" : "2",
+                          gridRow: isProductOpen ? "3" : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: isProductOpen
-                            ? `repeat(2, ${diaryActionWidth}px)`
+                            ? `repeat(3, ${diaryActionWidth}px)`
                             : `${diaryActionWidth}px`,
-                          gap: isCompact ? 8 : 10,
+                          gap: isCompact ? 6 : 8,
                           width: "fit-content",
                           maxWidth: "100%",
                           minWidth: 0,
@@ -3473,7 +3508,40 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          📤
+                          🔗
+                        </SecondaryButton>
+                        <SecondaryButton
+                          onClick={() => {
+                            contactOwnerAboutProduct(product);
+                          }}
+                          minWidth={0}
+                          stableHeight={diaryActionHeight}
+                          debugId={`shop-gallery.product.${productOpenId}.contact`}
+                          aria-label={`Contact owner about ${displayTitle}`}
+                          title="Contact owner"
+                          style={{
+                            ...secondaryBtn(false),
+                            display: isProductOpen ? "inline-flex" : "none",
+                            width: diaryActionWidth,
+                            maxWidth: diaryActionWidth,
+                            minWidth: 0,
+                            minHeight: diaryActionHeight,
+                            padding: 0,
+                            borderRadius: 999,
+                            fontSize: isCompact ? 17 : 19,
+                            lineHeight: 1,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            overflowWrap: "normal",
+                            overflowAnchor: "none",
+                            background:
+                              "linear-gradient(180deg, rgba(37,211,102,0.98) 0%, rgba(18,140,76,0.94) 100%)",
+                            color: "#FFFFFF",
+                            borderColor: "rgba(18,140,76,0.52)",
+                          }}
+                        >
+                          💬
                         </SecondaryButton>
                       </div>
                     </div>

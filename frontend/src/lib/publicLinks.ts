@@ -264,9 +264,14 @@ export function publicShopBlockPath(params: {
   const productId = cleanText(params.productId);
   const blockNumber = Number(params.block || 0);
   const hasBlock = Number.isFinite(blockNumber) && blockNumber > 0;
-  const productQuery = productId
-    ? `?product_id=${encodeURIComponent(productId)}`
-    : "";
+  const query = new URLSearchParams();
+  if (productId) {
+    query.set("product_id", productId);
+  }
+  if (hasBlock) {
+    query.set("block", String(Math.trunc(blockNumber)));
+  }
+  const productQuery = query.toString() ? `?${query.toString()}` : "";
   const anchor = hasBlock
     ? `shop-block-${Math.trunc(blockNumber)}`
     : productId
