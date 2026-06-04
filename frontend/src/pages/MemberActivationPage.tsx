@@ -154,11 +154,11 @@ function pageShell(): React.CSSProperties {
 
 function screenWrap(isCompact = false): React.CSSProperties {
   return {
-    width: isCompact ? "min(100%, 376px)" : "min(100%, 860px)",
-    maxWidth: isCompact ? 376 : 860,
+    width: isCompact ? "min(100%, 430px)" : "min(100%, 860px)",
+    maxWidth: isCompact ? 430 : 860,
     minWidth: 0,
     display: "grid",
-    gap: 20,
+    gap: isCompact ? 14 : 20,
     margin: "0 auto",
     boxSizing: "border-box",
   };
@@ -169,12 +169,14 @@ function topRailCard(isCompact = false): React.CSSProperties {
     position: "relative",
     overflow: "hidden",
     display: "grid",
-    gridTemplateColumns: isCompact ? "54px minmax(0, 1fr)" : "64px minmax(0, 1fr) auto",
+    gridTemplateColumns: isCompact
+      ? "48px minmax(0, 1fr) auto"
+      : "64px minmax(0, 1fr) auto",
     alignItems: "center",
-    gap: isCompact ? "12px 14px" : 18,
-    minHeight: isCompact ? 116 : 124,
+    gap: isCompact ? 10 : 18,
+    minHeight: isCompact ? 96 : 124,
     borderRadius: 28,
-    padding: isCompact ? "12px 14px" : "16px clamp(16px, 4vw, 28px)",
+    padding: isCompact ? "12px" : "16px clamp(16px, 4vw, 28px)",
     boxSizing: "border-box",
     border: "1px solid rgba(214,170,69,0.42)",
     background:
@@ -194,7 +196,7 @@ function activationCard(): React.CSSProperties {
       "linear-gradient(180deg, rgba(8,31,55,0.96) 0%, rgba(5,23,41,0.985) 58%, rgba(6,20,36,0.99) 100%)",
     boxShadow:
       "0 32px 76px rgba(0,0,0,0.40), inset 0 1px 0 rgba(255,255,255,0.10)",
-    padding: "clamp(26px, 5vw, 56px)",
+    padding: "clamp(24px, 5vw, 56px)",
     minWidth: 0,
     boxSizing: "border-box",
   };
@@ -227,20 +229,20 @@ function brandLockup(isCompact = false): React.CSSProperties {
     alignItems: "center",
     justifyContent: isCompact ? "flex-start" : "center",
     minWidth: 0,
-    gap: isCompact ? 12 : 22,
+    gap: isCompact ? 10 : 22,
   };
 }
 
 function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSProperties {
   const about = kind === "about";
   return {
-    minHeight: isCompact ? 36 : 40,
-    height: isCompact ? 36 : 40,
-    maxHeight: isCompact ? 36 : 40,
+    minHeight: isCompact ? 34 : 40,
+    height: isCompact ? 34 : 40,
+    maxHeight: isCompact ? 34 : 40,
     minWidth: 0,
-    width: isCompact ? "100%" : undefined,
+    width: undefined,
     borderRadius: 999,
-    padding: isCompact ? "0 8px" : about ? "0 18px" : "0 20px",
+    padding: isCompact ? "0 9px" : about ? "0 18px" : "0 20px",
     border: about
       ? "1px solid rgba(242,199,102,0.78)"
       : "1px solid rgba(123,161,204,0.20)",
@@ -249,8 +251,8 @@ function railActionStyle(kind: "about" | "guide", isCompact = false): React.CSSP
       : "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
     color: about ? "#F4D37C" : "#DDEAFF",
     fontWeight: 1000,
-    fontSize: isCompact ? 10.25 : 12,
-    letterSpacing: 0.55,
+    fontSize: isCompact ? 9.5 : 12,
+    letterSpacing: isCompact ? 0.25 : 0.55,
     textTransform: "uppercase",
     whiteSpace: "nowrap",
     boxShadow: about
@@ -263,10 +265,10 @@ function labelText(): React.CSSProperties {
   return {
     display: "flex",
     alignItems: "center",
-    gap: 12,
+    gap: 10,
     color: "#F2C766",
     fontWeight: 1000,
-    fontSize: 20,
+    fontSize: 19,
     lineHeight: 1.1,
   };
 }
@@ -292,12 +294,12 @@ function inputShell(): React.CSSProperties {
 function inputStyle(readOnly = false, hasTrailing = false): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: 74,
-    padding: hasTrailing ? "18px 68px 18px 28px" : "18px 68px 18px 28px",
-    borderRadius: 22,
+    minHeight: 68,
+    padding: hasTrailing ? "16px 64px 16px 24px" : "16px 64px 16px 24px",
+    borderRadius: 20,
     border: "1px solid rgba(156,180,207,0.44)",
     outline: "none",
-    fontSize: 24,
+    fontSize: 22,
     lineHeight: 1.2,
     background:
       "linear-gradient(180deg, rgba(5,25,45,0.92) 0%, rgba(4,19,35,0.95) 100%)",
@@ -321,7 +323,7 @@ function labelIconStyle(tone: "id" | "number" | "lock" | "check"): React.CSSProp
     background:
       "linear-gradient(180deg, #F8D978 0%, #D6AA45 100%)",
     color: "#08233A",
-    fontSize: tone === "lock" ? 18 : 12,
+    fontSize: tone === "number" ? 14 : 18,
     fontWeight: 1000,
     lineHeight: 1,
     boxShadow:
@@ -342,7 +344,7 @@ function fieldCheckStyle(): React.CSSProperties {
     borderRadius: 999,
     border: "2px solid rgba(94,197,124,0.85)",
     color: "#7EE092",
-    fontSize: 10.5,
+    fontSize: 16,
     fontWeight: 1000,
     letterSpacing: 0.2,
     pointerEvents: "none",
@@ -362,11 +364,11 @@ function passwordToggleStyle(): React.CSSProperties {
     height: 36,
     maxHeight: 36,
     borderRadius: 999,
-    border: "1px solid rgba(242,199,102,0.20)",
+    border: "1px solid rgba(242,199,102,0.24)",
     background: "rgba(4,19,35,0.28)",
     color: "#F2C766",
     fontWeight: 1000,
-    fontSize: 10,
+    fontSize: 18,
     letterSpacing: 0.2,
     boxShadow: "none",
   };
@@ -375,10 +377,10 @@ function passwordToggleStyle(): React.CSSProperties {
 function chipRail(isCompact = false): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-    gap: isCompact ? 12 : 18,
-    padding: isCompact ? 14 : 22,
-    margin: "26px 0 30px",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: isCompact ? 10 : 18,
+    padding: isCompact ? 12 : 22,
+    margin: "24px 0 28px",
     borderRadius: 22,
     boxSizing: "border-box",
     border: "1px solid rgba(123,161,204,0.14)",
@@ -389,12 +391,12 @@ function chipRail(isCompact = false): React.CSSProperties {
 
 function chipStyle(tone: "green" | "blue", isCompact = false): React.CSSProperties {
   return {
-    minHeight: isCompact ? 52 : 58,
+    minHeight: isCompact ? 50 : 58,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: 14,
-    padding: isCompact ? "10px 14px" : "12px 20px",
+    gap: isCompact ? 10 : 14,
+    padding: isCompact ? "10px 12px" : "12px 20px",
     borderRadius: isCompact ? 17 : 20,
     border:
       tone === "green"
@@ -405,7 +407,7 @@ function chipStyle(tone: "green" | "blue", isCompact = false): React.CSSProperti
         ? "linear-gradient(180deg, rgba(14,79,78,0.84) 0%, rgba(8,64,67,0.80) 100%)"
         : "linear-gradient(180deg, rgba(20,83,162,0.82) 0%, rgba(12,61,128,0.82) 100%)",
     color: "#F8FBFF",
-    fontSize: isCompact ? 17 : 20,
+    fontSize: isCompact ? 14 : 20,
     fontWeight: 1000,
     boxShadow:
       "0 16px 26px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.10)",
@@ -453,7 +455,7 @@ function infoIconStyle(tone: "info" | "shield", isCompact = false): React.CSSPro
         ? "linear-gradient(180deg, #1E73DD 0%, #0E53B6 100%)"
         : "linear-gradient(180deg, #1A62C0 0%, #0D4696 100%)",
     color: "#FFFFFF",
-    fontSize: isCompact ? 20 : 24,
+    fontSize: isCompact ? 22 : 24,
     fontWeight: 1000,
     boxShadow:
       "0 14px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.16)",
@@ -467,7 +469,7 @@ function ghostIconStyle(isCompact = false): React.CSSProperties {
     height: 52,
     placeItems: "center",
     color: "rgba(180,204,235,0.36)",
-    fontSize: 24,
+    fontSize: 34,
     fontWeight: 1000,
   };
 }
@@ -486,15 +488,15 @@ function infoTextStyle(tone: "primary" | "muted", isCompact = false): React.CSSP
 function primaryActionStyle(isCompact = false): React.CSSProperties {
   return {
     width: "100%",
-    minHeight: isCompact ? 54 : 58,
-    height: isCompact ? 54 : 58,
-    maxHeight: isCompact ? 54 : 58,
-    borderRadius: 16,
+    minHeight: isCompact ? 64 : 72,
+    height: isCompact ? 64 : 72,
+    maxHeight: isCompact ? 64 : 72,
+    borderRadius: 18,
     border: "1px solid rgba(172,204,255,0.58)",
     background:
       "linear-gradient(180deg, #2F86FF 0%, #1761E6 48%, #0E43BE 100%)",
     color: "#FFFFFF",
-    fontSize: isCompact ? 19 : 23,
+    fontSize: isCompact ? 21 : 26,
     fontWeight: 1000,
     boxShadow:
       "0 12px 24px rgba(22,95,230,0.23), inset 0 1px 0 rgba(255,255,255,0.22)",
@@ -569,30 +571,6 @@ function noticeToastStyle(
     boxShadow:
       "0 20px 46px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.12)",
     backdropFilter: "blur(10px)",
-  };
-}
-
-function identityGuideStyle(): React.CSSProperties {
-  return {
-    display: "grid",
-    gap: 10,
-    margin: "4px 0 26px",
-    padding: "16px 18px",
-    borderRadius: 20,
-    border: "1px solid rgba(242,199,102,0.18)",
-    background: "rgba(7,28,50,0.62)",
-    color: "#C8D8EA",
-    lineHeight: 1.55,
-    fontSize: 15,
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
-  };
-}
-
-function fieldHintStyle(): React.CSSProperties {
-  return {
-    color: "#AFC3DA",
-    fontSize: 14,
-    lineHeight: 1.45,
   };
 }
 
@@ -917,19 +895,19 @@ export default function MemberActivationPage() {
                 "0 16px 28px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.12)",
             }}
           >
-            {"<"}
+            {"←"}
           </StableCtaLink>
 
           <div style={{ ...brandLockup(isCompact), position: "relative", zIndex: 1 }}>
-            <div style={crestStyle(isCompact ? 58 : 78)}>GSN</div>
+            <div style={crestStyle(isCompact ? 52 : 78)}>GSN</div>
             <div style={{ display: "grid", justifyItems: "start", minWidth: 0 }}>
               <div
                 style={{
                   color: "#F4D37C",
                   fontFamily: "Georgia, serif",
-                  fontSize: isCompact ? 38 : "clamp(38px, 8vw, 64px)",
+                  fontSize: isCompact ? 34 : "clamp(38px, 8vw, 64px)",
                   fontWeight: 900,
-                  letterSpacing: isCompact ? 8 : 13,
+                  letterSpacing: isCompact ? 7 : 13,
                   lineHeight: 0.96,
                   textShadow:
                     "0 2px 0 rgba(255,255,255,0.14), 0 16px 34px rgba(214,170,69,0.24)",
@@ -956,19 +934,17 @@ export default function MemberActivationPage() {
             style={{
               position: "relative",
               zIndex: 1,
-              display: isCompact ? "grid" : "flex",
-              gridTemplateColumns: isCompact ? "1fr" : undefined,
+              display: "flex",
               gap: isCompact ? 8 : 12,
-              justifyContent: isCompact ? "stretch" : "flex-end",
-              flexWrap: isCompact ? undefined : "wrap",
-              gridColumn: isCompact ? "1 / -1" : undefined,
+              justifyContent: "flex-end",
+              flexWrap: "nowrap",
               minWidth: 0,
             }}
           >
             <SubtleButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 36 : 40}
+              stableHeight={isCompact ? 34 : 40}
               debugId="member-activation.about"
               style={railActionStyle("about", isCompact)}
             >
@@ -977,7 +953,7 @@ export default function MemberActivationPage() {
             <PrimaryButton
               type="button"
               onClick={() => setGuideOpen((current) => !current)}
-              stableHeight={isCompact ? 36 : 40}
+              stableHeight={isCompact ? 34 : 40}
               debugId="member-activation.guide"
               style={railActionStyle("guide", isCompact)}
             >
@@ -1064,14 +1040,16 @@ export default function MemberActivationPage() {
               <div style={chipRail(isCompact)}>
                 {initialGmfnId ? (
                   <div style={chipStyle("green", isCompact)}>
-                    <span style={{ ...labelIconStyle("id"), width: 36, height: 28 }}>ID</span>
+                    <span style={{ ...labelIconStyle("id"), width: 36, height: 28 }}>
+                      🪪
+                    </span>
                     <span>GSN ID detected</span>
                   </div>
                 ) : null}
                 {initialRequestId ? (
                   <div style={chipStyle("blue", isCompact)}>
                     <span style={{ ...labelIconStyle("number"), width: 32, height: 36 }}>
-                      123
+                      🧾
                     </span>
                     <span>Request ID: {initialRequestId}</span>
                   </div>
@@ -1079,19 +1057,10 @@ export default function MemberActivationPage() {
               </div>
             )}
 
-            <div style={identityGuideStyle()}>
-              <div>
-                <strong style={{ color: "#F4D37C" }}>GSN ID</strong> is your permanent member identity. Use it when approval has already issued one.
-              </div>
-              <div>
-                <strong style={{ color: "#F4D37C" }}>Request ID</strong> is only the approval record number. Use it if this page does not already have your GSN ID.
-              </div>
-            </div>
-
             <div style={{ display: "grid", gap: 24 }}>
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-gsn-id">
-                  <span style={labelIconStyle("id")}>ID</span>
+                  <span style={labelIconStyle("id")}>🆔</span>
                   GSN ID
                 </label>
                 <div style={inputShell()}>
@@ -1103,16 +1072,13 @@ export default function MemberActivationPage() {
                     autoComplete="username"
                     style={inputStyle(false)}
                   />
-                  {hasGsnId ? <span style={fieldCheckStyle()}>OK</span> : null}
-                </div>
-                <div style={fieldHintStyle()}>
-                  Keep this as the approved GSN ID. If your account is already active, this page will move you to sign in.
+                  {hasGsnId ? <span style={fieldCheckStyle()}>✓</span> : null}
                 </div>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-request-id">
-                  <span style={labelIconStyle("number")}>123</span>
+                  <span style={labelIconStyle("number")}>🔢</span>
                   Request ID
                 </label>
                 <div style={inputShell()}>
@@ -1125,16 +1091,13 @@ export default function MemberActivationPage() {
                     style={inputStyle(Boolean(initialRequestId))}
                     readOnly={Boolean(initialRequestId)}
                   />
-                  {hasRequestId ? <span style={fieldCheckStyle()}>OK</span> : null}
-                </div>
-                <div style={fieldHintStyle()}>
-                  This can stay blank when the GSN ID is already filled. It is mainly for finding the approval before a GSN ID is issued.
+                  {hasRequestId ? <span style={fieldCheckStyle()}>✓</span> : null}
                 </div>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-password">
-                  <span style={labelIconStyle("lock")}>L</span>
+                  <span style={labelIconStyle("lock")}>🔒</span>
                   Password
                 </label>
                 <div style={inputShell()}>
@@ -1156,14 +1119,14 @@ export default function MemberActivationPage() {
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     style={passwordToggleStyle()}
                   >
-                    {showPassword ? "Hide" : "View"}
+                    {showPassword ? "🙈" : "👁️"}
                   </SubtleButton>
                 </div>
               </div>
 
               <div style={{ display: "grid", gap: 12 }}>
                 <label style={labelText()} htmlFor="member-activation-confirm-password">
-                  <span style={labelIconStyle("check")}>OK</span>
+                  <span style={labelIconStyle("check")}>✅</span>
                   Confirm password
                 </label>
                 <div style={inputShell()}>
@@ -1189,7 +1152,7 @@ export default function MemberActivationPage() {
                     }
                     style={passwordToggleStyle()}
                   >
-                    {showConfirmPassword ? "Hide" : "View"}
+                    {showConfirmPassword ? "🙈" : "👁️"}
                   </SubtleButton>
                 </div>
               </div>
@@ -1197,18 +1160,18 @@ export default function MemberActivationPage() {
 
             <div style={infoPanel()}>
               <div style={infoRowStyle(false, isCompact)}>
-                <span style={infoIconStyle("info", isCompact)}>i</span>
+                <span style={infoIconStyle("info", isCompact)}>ℹ️</span>
                 <span style={infoTextStyle("primary", isCompact)}>
-                  Use the GSN ID when it is present. Use the request ID only when the GSN ID is not yet available.
+                  Use the approved GSN ID and request ID linked to your membership.
                 </span>
-                <span style={ghostIconStyle(isCompact)}>ID</span>
+                <span style={ghostIconStyle(isCompact)}>👥</span>
               </div>
               <div style={infoRowStyle(true, isCompact)}>
-                <span style={infoIconStyle("shield", isCompact)}>S</span>
+                <span style={infoIconStyle("shield", isCompact)}>🛡️</span>
                 <span style={infoTextStyle("muted", isCompact)}>
                   Your password protects your account.
                 </span>
-                <span style={ghostIconStyle(isCompact)}>OK</span>
+                <span style={ghostIconStyle(isCompact)}>🛡️</span>
               </div>
             </div>
 
@@ -1218,7 +1181,7 @@ export default function MemberActivationPage() {
                 disabled={busy || activated}
                 busy={busy}
                 busyLabel="Finishing activation..."
-                stableHeight={isCompact ? 54 : 58}
+                stableHeight={isCompact ? 64 : 72}
                 fullWidth
                 debugId="member-activation.finish"
                 style={primaryActionStyle(isCompact)}
@@ -1228,17 +1191,17 @@ export default function MemberActivationPage() {
                   style={{
                     display: "inline-grid",
                     placeItems: "center",
-                    width: isCompact ? 28 : 32,
-                    height: isCompact ? 28 : 32,
+                    width: isCompact ? 32 : 38,
+                    height: isCompact ? 32 : 38,
                     borderRadius: 999,
                     color: "#FFFFFF",
-                    background: "rgba(255,255,255,0.14)",
-                    fontSize: isCompact ? 10 : 11,
+                    background: "rgba(255,255,255,0.12)",
+                    fontSize: isCompact ? 23 : 28,
                     fontWeight: 1000,
-                    marginRight: 6,
+                    marginRight: 8,
                   }}
                 >
-                  GO
+                  🚀
                 </span>
                 Finish activation
               </PrimaryButton>

@@ -1,3 +1,53 @@
+### Member activation page reference-emoji remodel (2026-06-04)
+
+- Route/screen affected:
+  - `/activate-membership`, implemented by
+    `frontend/src/pages/MemberActivationPage.tsx`.
+- Product-owner screenshot truth:
+  - the activation page should follow the attached dark GSN `Finish your
+    activation` reference and use real-life emoji cues where the screenshot
+    uses them;
+  - button/input stability remains part of the work because phone testing has
+    exposed hard-to-hit and unstable actions.
+- Frontend change:
+  - kept the live route contract and activation submit logic unchanged;
+  - confirmed from `frontend/src/App.tsx` that `MemberActivationPage.tsx` is
+    the live `/activate-membership` route, while the older
+    `ActivateMembershipPage.tsx` is not wired to that route;
+  - changed weak placeholder markers (`ID`, `123`, `L`, `OK`, `GO`, and
+    text-only password toggles) into real-life reference-style emoji cues:
+    ID card, receipt, number, lock, check, eye/hidden-eye, info, shield, and
+    rocket;
+  - tightened the top rail so compact layouts keep the back control, GSN
+    lockup, About, and Activation Guide in one stable rail;
+  - removed extra manual/hint text that was not present in the reference so the
+    screen stays focused on the deterministic activation task;
+  - enlarged the Finish activation CTA to a stable 64px compact / 72px desktop
+    height with a rocket cue.
+- Button/tap truth:
+  - preserved shared `StableCtaLink`, `PrimaryButton`, `SubtleButton`, and
+    `CardActionRow` primitives;
+  - preserved the audited debug IDs, including `member-activation.finish`,
+    `member-activation.about`, `member-activation.guide`,
+    `member-activation.build-first-circle`, `member-activation.trust`, and
+    `member-activation.notifications`.
+- Verification:
+  - `npm exec -- eslint src/pages/MemberActivationPage.tsx` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:entry-auth` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only visual/button-fit correction. It does not change
+    backend activation, approval, identity reuse, password, invite, or
+    membership rules;
+  - phone evidence after deploy is still required to confirm the compact top
+    rail and emoji rendering match the real handset.
+
 ### Pending join review page visual and button stability tightened (2026-06-04)
 
 - Route/screen affected:
