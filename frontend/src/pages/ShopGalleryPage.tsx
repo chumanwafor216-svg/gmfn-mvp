@@ -1969,7 +1969,8 @@ export default function ShopGalleryPage() {
       <OwnerOnlySurfaceNav
         ownerGmfnId={shopOwnerGmfnId}
         compact={isCompact}
-        label="GSN navigation"
+        label="Public Shop shortcuts"
+        ariaLabel="Public Shop signed-in shortcuts"
         links={memberSurfaceLinks}
         refreshKey={shopReconnectRetryKey}
         requireOwnerMatch={false}

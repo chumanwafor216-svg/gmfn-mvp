@@ -892,8 +892,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import OwnerOnlySurfaceNav from "\.\.\/components\/OwnerOnlySurfaceNav";[\s\S]*?import \{ APP_ROUTES, routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?label: "Community Home"[\s\S]*?routeWithCommunity\(APP_ROUTES\.COMMUNITY, ownerSurfaceCommunityId\)[\s\S]*?label: "Marketplace"[\s\S]*?routeWithCommunity\(APP_ROUTES\.MARKETPLACE, ownerSurfaceCommunityId\)[\s\S]*?label: "Paid Repost"[\s\S]*?APP_ROUTES\.MARKETPLACE\}#marketplace-paid-network-placement[\s\S]*?debugId: "shop-gallery\.member-nav\.paid-placement"[\s\S]*?label: "My Shop"[\s\S]*?routeWithCommunity\(APP_ROUTES\.SHOP_ME, ownerSurfaceCommunityId\)[\s\S]*?<OwnerOnlySurfaceNav[\s\S]*?label="GSN navigation"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{false\}/,
-  "Public Shop signed-in navigation must route members to Dashboard, Community Home, Marketplace, paid repost placement, and My Shop while staying hidden from public visitors."
+  /import OwnerOnlySurfaceNav from "\.\.\/components\/OwnerOnlySurfaceNav";[\s\S]*?import \{ APP_ROUTES, routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?label: "Community Home"[\s\S]*?routeWithCommunity\(APP_ROUTES\.COMMUNITY, ownerSurfaceCommunityId\)[\s\S]*?label: "Marketplace"[\s\S]*?routeWithCommunity\(APP_ROUTES\.MARKETPLACE, ownerSurfaceCommunityId\)[\s\S]*?label: "Paid Repost"[\s\S]*?APP_ROUTES\.MARKETPLACE\}#marketplace-paid-network-placement[\s\S]*?debugId: "shop-gallery\.member-nav\.paid-placement"[\s\S]*?label: "My Shop"[\s\S]*?routeWithCommunity\(APP_ROUTES\.SHOP_ME, ownerSurfaceCommunityId\)[\s\S]*?<OwnerOnlySurfaceNav[\s\S]*?label="Public Shop shortcuts"[\s\S]*?ariaLabel="Public Shop signed-in shortcuts"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{false\}/,
+  "Public Shop signed-in shortcuts must route members to Dashboard, Community Home, Marketplace, paid repost placement, and My Shop while staying hidden from public visitors."
 );
 
 assertContains(
@@ -904,7 +904,7 @@ assertContains(
 
 assertContains(
   "src/components/OwnerOnlySurfaceNav.tsx",
-  /requireOwnerMatch = true[\s\S]*?getStoredGmfnId[\s\S]*?meRes\?\.gmfn_id[\s\S]*?meRes\?\.member_global_id[\s\S]*?getStoredGmfnId\(\)[\s\S]*?getAccessToken\(\)[\s\S]*?requireOwnerMatch[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
+  /ariaLabel = "Owner surface navigation"[\s\S]*?hasSignedInSession[\s\S]*?getAccessToken\(\)[\s\S]*?setHasSignedInSession\(Boolean\(token\)\)[\s\S]*?meRes\?\.gmfn_id[\s\S]*?meRes\?\.member_global_id[\s\S]*?hasSignedInSession[\s\S]*?requireOwnerMatch[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
   "Owner surface navigation must remain hidden from public visitors, while allowing public-shop member navigation to opt out of owner matching for signed-in users."
 );
 

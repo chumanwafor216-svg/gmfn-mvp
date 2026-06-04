@@ -1,3 +1,44 @@
+### Public Shop shortcuts visibility and label tightened (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - shared signed-in shortcut strip implemented by
+    `frontend/src/components/OwnerOnlySurfaceNav.tsx`.
+- Product-owner truth:
+  - the Public Shop user shortcuts must be present for signed-in GSN users;
+  - ordinary public visitors must not see those internal shortcuts;
+  - the strip should clearly read as `Public Shop shortcuts`, not a generic
+    `GSN navigation` surface.
+- Confirmed source truth:
+  - the shortcuts had not been deleted from source. They were still routed to
+    Dashboard, Community Home, Marketplace, Paid Repost, and My Shop;
+  - the visible label was too generic, which made the phone surface look like
+    the expected Public Shop shortcuts were missing.
+- Frontend change:
+  - changed the public-shop shortcut strip label to `Public Shop shortcuts`;
+  - added a page-specific aria label: `Public Shop signed-in shortcuts`;
+  - tightened `OwnerOnlySurfaceNav` session detection by storing
+    `hasSignedInSession` in state and refreshing it from `getAccessToken()`,
+    instead of only checking token presence during render.
+- Guardrail:
+  - `frontend/tools/audit-link-contracts.mjs` now requires the public-shop
+    shortcut strip to keep Dashboard, Community Home, Marketplace, Paid Repost,
+    and My Shop links, with `requireOwnerMatch={false}` so signed-in users can
+    use the strip on public shop pages without exposing it to visitors.
+- Verification:
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm exec -- eslint src/components/OwnerOnlySurfaceNav.tsx src/pages/ShopGalleryPage.tsx tools/audit-link-contracts.mjs`
+    passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - if the deployed phone view still does not show `Public Shop shortcuts`, the
+    next suspect is not this strip being absent in code. It would likely be the
+    browser/app instance not having a valid signed-in access token, or the phone
+    still showing an older cached/deployed bundle.
+
 ### Money In currency selector and tile tightening (2026-06-04)
 
 - Route/screen affected:

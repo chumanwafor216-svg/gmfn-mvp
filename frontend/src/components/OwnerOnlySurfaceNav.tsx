@@ -16,6 +16,7 @@ type OwnerOnlySurfaceNavProps = {
   ownerGmfnId?: string | null;
   compact?: boolean;
   label?: string;
+  ariaLabel?: string;
   links?: OwnerSurfaceNavLink[];
   refreshKey?: string | number;
   requireOwnerMatch?: boolean;
@@ -43,12 +44,16 @@ export default function OwnerOnlySurfaceNav({
   ownerGmfnId,
   compact = false,
   label = "Owner view",
+  ariaLabel = "Owner surface navigation",
   links = DEFAULT_OWNER_SURFACE_LINKS,
   refreshKey = "",
   requireOwnerMatch = true,
 }: OwnerOnlySurfaceNavProps) {
   const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
     () => getStoredGmfnId() || ""
+  );
+  const [hasSignedInSession, setHasSignedInSession] = useState<boolean>(
+    () => Boolean(getAccessToken())
   );
 
   useEffect(() => {
@@ -58,8 +63,13 @@ export default function OwnerOnlySurfaceNav({
     let refreshFrame: number | null = null;
 
     async function refreshSignedInOwnerIdentity() {
-      if (!getAccessToken()) {
-        if (alive) setSignedInGmfnId("");
+      const token = getAccessToken();
+      if (alive) setHasSignedInSession(Boolean(token));
+
+      if (!token) {
+        if (alive) {
+          setSignedInGmfnId("");
+        }
         return;
       }
 
@@ -102,14 +112,14 @@ export default function OwnerOnlySurfaceNav({
   const shouldShowOwnerNav = useMemo(
     () =>
       Boolean(
-        getAccessToken() &&
+        hasSignedInSession &&
           (requireOwnerMatch
             ? signedInGmfnId &&
               ownerGmfnId &&
               ownerSurfaceIdentityMatches(signedInGmfnId, ownerGmfnId)
             : true)
       ),
-    [ownerGmfnId, requireOwnerMatch, signedInGmfnId]
+    [hasSignedInSession, ownerGmfnId, requireOwnerMatch, signedInGmfnId]
   );
 
   if (!shouldShowOwnerNav) return null;
@@ -120,7 +130,7 @@ export default function OwnerOnlySurfaceNav({
 
   return (
     <nav
-      aria-label="Owner surface navigation"
+      aria-label={ariaLabel}
       style={{
         display: "grid",
         gridTemplateColumns: compact ? "1fr" : "auto minmax(0, 1fr)",
