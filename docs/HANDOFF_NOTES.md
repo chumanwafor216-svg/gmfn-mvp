@@ -1,3 +1,60 @@
+### Public shop repost removed; paid repost moved into Marketplace (2026-06-04)
+
+- Product-owner truth:
+  - the public shop page must not expose a public `Repost` block/action;
+  - repost is an internal GSN Marketplace action, paid through Subscription
+    Spotlight, and it sends one selected public block at a time into a chosen
+    target marketplace/community spotlight;
+  - public visitors may verify the shop, inspect public blocks, use owner
+    contact, and copy/share block/shop links where already supported, but they
+    should not see a network repost workflow on the outside page.
+- Frontend changes:
+  - removed the public-shop `Public actions` card and the `Live GSN repost`
+    panel from `frontend/src/pages/ShopGalleryPage.tsx`;
+  - removed public-shop repost state, community loading, signed-in repost
+    draft logic, and `createMarketplaceRepost` usage from the public route;
+  - added an internal `Paid network repost` card to
+    `frontend/src/pages/MarketplacePage.tsx` inside the Marketplace-owned links
+    section;
+  - the new Marketplace card loads eligible public shop blocks, requires one
+    selected block plus a target marketplace ID, then calls the repost API;
+  - added stable 58px actions:
+    `marketplace.network-repost.place` and
+    `marketplace.network-repost.subscription`.
+- Backend changes:
+  - `POST /marketplace/products/{product_id}/repost` now requires the current
+    user to be the owner of the product's active shop;
+  - it requires an unused `spotlight_priority` entitlement for that shop and
+    consumes one credit when the repost creates the target community spotlight;
+  - the created `MarketplaceBroadcast` now uses `priority_mode="paid"` and
+    `visibility_scope="marketplace_repost"` in the target `clan_id`.
+- Community-common truth confirmed in this pass:
+  - Marketplace Spotlight is community-scoped by `MarketplaceBroadcast.clan_id`;
+  - paid repost places the selected block into the target community spotlight;
+  - Demand Box appears to be routed by selected community in the frontend, but
+    its full backend membership/common-surface behavior was not changed in this
+    pass and should be audited separately before claiming complete parity.
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx tools/audit-button-stability.mjs tools/audit-link-contracts.mjs tools/audit-marketplace-button-inventory.mjs` passed;
+  - `npm run audit:marketplace-button-inventory` passed with 51 stable
+    Marketplace source actions: 15 front and 36 body;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - sandboxed pytest hit Windows temp-directory permission failures, but the
+    exact unsandboxed command
+    `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py --basetemp .pytest-basetemp-marketplace-public-escalated`
+    passed: 15 tests;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this change enforces paid owner reposts. It does not yet implement a
+    third-party user paying to repost another owner's block, because the current
+    entitlement model is shop-owner/shop-scoped;
+  - if the product needs third-party paid reposts later, the backend must first
+    add a clear payer/subscription ownership rule.
+
 ### Money In payment instructions reference remodel (2026-06-04)
 
 - Route/screen affected:

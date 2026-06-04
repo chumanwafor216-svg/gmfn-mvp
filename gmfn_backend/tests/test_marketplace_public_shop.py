@@ -230,7 +230,7 @@ def test_public_shop_face_masks_internal_phone_identity_fallback(client):
     assert "pending.gmfn.local" not in body["item"]["owner_name"]
 
 
-def test_product_repost_creates_target_marketplace_spotlight(client, monkeypatch):
+def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spotlight(client, monkeypatch):
     monkeypatch.setenv("SECRET_KEY", "pytest-marketplace-repost-secret")
     _ensure_marketplace_tables()
 
@@ -262,7 +262,8 @@ def test_product_repost_creates_target_marketplace_spotlight(client, monkeypatch
                 INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
                 VALUES
                     (1, 1, 1, 'member', 0),
-                    (2, 2, 2, 'member', 0)
+                    (2, 2, 2, 'member', 0),
+                    (3, 2, 1, 'member', 0)
                 """
             )
         )
@@ -294,8 +295,48 @@ def test_product_repost_creates_target_marketplace_spotlight(client, monkeypatch
             )
         )
 
-    token = create_access_token({"sub": "reposter@example.com"})
+    non_owner_token = create_access_token({"sub": "reposter@example.com"})
+    non_owner_headers = {"Authorization": f"Bearer {non_owner_token}"}
+
+    non_owner = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_clan_id": 2},
+        headers=non_owner_headers,
+    )
+    assert non_owner.status_code == 403, non_owner.text
+    assert "Only the shop owner" in non_owner.json()["detail"]
+
+    token = create_access_token({"sub": "seller@example.com"})
     headers = {"Authorization": f"Bearer {token}"}
+
+    blocked = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_clan_id": 2},
+        headers=headers,
+    )
+    assert blocked.status_code == 403, blocked.text
+    assert "Subscription Spotlight credit" in blocked.json()["detail"]
+
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
+                    1, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-REPOST'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=30),
+            },
+        )
 
     res = client.post(
         "/marketplace/products/1/repost",
@@ -311,12 +352,37 @@ def test_product_repost_creates_target_marketplace_spotlight(client, monkeypatch
     assert body["broadcast"]["source_shop_name"] == "Seller Public Shop"
     assert body["broadcast"]["message"] == "Fresh Rice - Bag of rice"
     assert body["broadcast"]["visibility_scope"] == "marketplace_repost"
+    assert body["broadcast"]["priority_mode"] == "paid"
 
     feed = client.get("/marketplace/broadcasts?clan_id=2", headers=headers)
     assert feed.status_code == 200, feed.text
     feed_body = feed.json()
     assert feed_body["total"] == 1
     assert feed_body["items"][0]["id"] == body["broadcast"]["id"]
+
+    with engine.begin() as conn:
+        entitlement = conn.execute(
+            text(
+                """
+                SELECT quantity_used
+                FROM feature_entitlements
+                WHERE id = 1
+                """
+            )
+        ).fetchone()
+        usage_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM feature_usage_events
+                WHERE feature_code = 'spotlight_priority'
+                  AND reference_key LIKE 'marketplace.repost:%'
+                """
+            )
+        ).scalar_one()
+
+    assert int(entitlement[0]) == 1
+    assert int(usage_count) == 1
 
 
 def test_public_shop_picture_stays_scoped_to_one_shop_in_shared_community(

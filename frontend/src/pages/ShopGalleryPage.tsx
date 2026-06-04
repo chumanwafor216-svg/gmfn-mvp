@@ -6,7 +6,6 @@ import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
 import {
-  createMarketplaceRepost,
   createMarketplaceShop,
   getAccessToken,
   getCurrentClan,
@@ -81,11 +80,6 @@ type ShopBroadcast = {
 };
 
 type NoticeTone = "success" | "error";
-
-type RepostCommunityOption = {
-  id: number;
-  name: string;
-};
 
 const GALLERY_SLOTS_TOTAL = 12;
 const PLACEHOLDER_TEXTS = new Set([
@@ -963,13 +957,6 @@ export default function ShopGalleryPage() {
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
   const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
-  const [repostPanelOpen, setRepostPanelOpen] = useState(false);
-  const [repostCommunities, setRepostCommunities] = useState<RepostCommunityOption[]>([]);
-  const [repostCommunitiesLoading, setRepostCommunitiesLoading] = useState(false);
-  const [selectedRepostProductId, setSelectedRepostProductId] = useState<number>(0);
-  const [selectedRepostClanId, setSelectedRepostClanId] = useState<number>(0);
-  const [repostMarketplaceIdInput, setRepostMarketplaceIdInput] = useState("");
-  const [repostingProduct, setRepostingProduct] = useState(false);
   const autoRefreshAttemptedRef = useRef("");
 
   const forceOwnerReconnect = useCallback(() => {
@@ -1003,49 +990,6 @@ export default function ShopGalleryPage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
-
-  useEffect(() => {
-    if (!repostPanelOpen) return;
-    if (!getAccessToken()) return;
-
-    let alive = true;
-    setRepostCommunitiesLoading(true);
-
-    listMyClans()
-      .then((res) => {
-        if (!alive) return;
-        const rows = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
-        const options = rows
-          .map((row: any) => {
-            const id = positiveNumber(row?.id || row?.clan_id || row?.community_id);
-            const name = firstMeaningful(
-              row?.marketplace_name,
-              row?.name,
-              row?.display_name,
-              id ? `Community ${id}` : ""
-            );
-            return id && name ? { id, name } : null;
-          })
-          .filter(Boolean) as RepostCommunityOption[];
-
-        setRepostCommunities(options);
-      })
-      .catch(() => {
-        if (!alive) return;
-        setRepostCommunities([]);
-        setNotice({
-          tone: "error",
-          text: "Could not load your communities for live repost. Sign in again and try from inside GSN.",
-        });
-      })
-      .finally(() => {
-        if (alive) setRepostCommunitiesLoading(false);
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [repostPanelOpen]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1635,49 +1579,6 @@ export default function ShopGalleryPage() {
     [products, showAllProducts]
   );
   const overflowProductCount = Math.max(0, products.length - GALLERY_SLOTS_TOTAL);
-  const repostableProducts = useMemo(() => {
-    return products.filter((product) => {
-      return (
-        positiveNumber(product.id) > 0 &&
-        product.visibilityMode === "community_visible" &&
-        product.distributionSlotsRemaining > 0
-      );
-    });
-  }, [products]);
-  const selectedRepostProduct = useMemo(() => {
-    return (
-      repostableProducts.find(
-        (product) => Number(product.id || 0) === Number(selectedRepostProductId || 0)
-      ) ||
-      repostableProducts[0] ||
-      null
-    );
-  }, [repostableProducts, selectedRepostProductId]);
-  const targetRepostCommunities = useMemo(() => {
-    const originClanId = positiveNumber(selectedRepostProduct?.originClanId);
-    return repostCommunities.filter((community) => community.id !== originClanId);
-  }, [repostCommunities, selectedRepostProduct?.originClanId]);
-  const selectedRepostCommunity = useMemo(() => {
-    return (
-      targetRepostCommunities.find(
-        (community) => community.id === Number(selectedRepostClanId || 0)
-      ) ||
-      targetRepostCommunities[0] ||
-      null
-    );
-  }, [targetRepostCommunities, selectedRepostClanId]);
-  const typedRepostMarketplaceId = positiveNumber(repostMarketplaceIdInput);
-  const resolvedRepostMarketplaceId =
-    typedRepostMarketplaceId || positiveNumber(selectedRepostCommunity?.id);
-  const resolvedRepostMarketplaceName =
-    typedRepostMarketplaceId > 0
-      ? firstMeaningful(
-          targetRepostCommunities.find(
-            (community) => community.id === typedRepostMarketplaceId
-          )?.name,
-          `marketplace ID ${typedRepostMarketplaceId}`
-        )
-      : firstMeaningful(selectedRepostCommunity?.name);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -1833,16 +1734,6 @@ export default function ShopGalleryPage() {
     : publicBlockCount > 0
     ? `${publicBlockText}. Visitors can share the shop, copy the public link, and ask the owner for private Vault access.`
     : "The public shop is open, but the owner has not shown public items yet. Visitors can still ask for private Vault access.";
-  const publicShopActionHelper = ownerSessionPresent
-    ? "Share and Copy link are the public visitor actions. GSN repost stays inside the network and asks you to choose a public block plus target marketplace."
-    : "Share and Copy link are for visitors. GSN repost is a signed-in network action, so guests only get a draft until they sign in.";
-  const repostButtonLabel = ownerSessionPresent
-    ? isCompact
-      ? "Repost"
-      : "GSN repost"
-    : isCompact
-    ? "Sign-in"
-    : "Sign-in repost";
   const visitorCueCards = [
     {
       label: "Public link",
@@ -1853,8 +1744,8 @@ export default function ShopGalleryPage() {
       value: "Ask owner",
     },
     {
-      label: "Network repost",
-      value: ownerSessionPresent ? "Signed in" : "Sign in",
+      label: "Owner contact",
+      value: shopContactText,
     },
   ];
   async function shareOrCopy(params: {
@@ -1909,37 +1800,6 @@ export default function ShopGalleryPage() {
       text: copied
         ? "Public shop poster link copied."
         : "Clipboard copy was blocked. Use the visible public shop link instead.",
-    });
-  }
-
-  function shareShop() {
-    if (shopLoadFailed) {
-      setNotice({
-        tone: "error",
-        text: "This shop link needs the owner to refresh it from Marketplace before it can be shared.",
-      });
-      return;
-    }
-
-    const shopTitle = firstMeaningful(
-      effectiveShop?.shopName,
-      effectiveShop?.ownerName,
-      "Shop"
-    );
-
-    const shopText = firstMeaningful(
-      effectiveShop?.description,
-      effectiveShop?.communityName
-        ? `${effectiveShop?.communityName} shop`
-        : "",
-      "Visit this trusted shop."
-    );
-
-    void shareOrCopy({
-      title: shopTitle,
-      text: shopText,
-      url: absoluteShopShareLink || absoluteShopLink,
-      successText: "Public shop poster share ready.",
     });
   }
 
@@ -2087,124 +1947,6 @@ export default function ShopGalleryPage() {
       text: copied
         ? "Vault access request copied. Send it to the shop owner."
         : "Clipboard copy was blocked. Ask the shop owner for a private Vault access link.",
-    });
-  }
-
-  async function repostShop() {
-    if (shopLoadFailed) {
-      setNotice({
-        tone: "error",
-        text: "This shop link needs the owner to refresh it from Marketplace before it can be reposted.",
-      });
-      return;
-    }
-
-    if (!getAccessToken()) {
-      const copied = await safeCopy(
-        `GSN network repost draft:\n${shopNameText}\n${shopDescriptionText}\n${absoluteShopLink}`
-      );
-      setNotice({
-        tone: copied ? "success" : "error",
-        text: copied
-          ? "Draft copied. Sign in to complete a live GSN repost into another community."
-          : "Sign in to repost inside GSN, or use Share for an outside link.",
-      });
-      return;
-    }
-
-    if (repostableProducts.length === 0) {
-      setNotice({
-        tone: "error",
-        text: "No public block currently has repost slots available.",
-      });
-      return;
-    }
-
-    setRepostPanelOpen((open) => !open);
-    setSelectedRepostProductId((current) => {
-      if (current > 0 && repostableProducts.some((product) => product.id === current)) {
-        return current;
-      }
-      return positiveNumber(repostableProducts[0]?.id);
-    });
-  }
-
-  async function submitLiveRepost() {
-    const product = selectedRepostProduct;
-    const targetMarketplaceId = resolvedRepostMarketplaceId;
-    const targetMarketplaceName =
-      resolvedRepostMarketplaceName || `marketplace ID ${targetMarketplaceId}`;
-
-    if (!product?.id) {
-      setNotice({
-        tone: "error",
-        text: "Choose a public block before reposting.",
-      });
-      return;
-    }
-
-    if (!targetMarketplaceId) {
-      setNotice({
-        tone: "error",
-        text: "Enter the target marketplace ID or choose one of your marketplaces.",
-      });
-      return;
-    }
-
-    setRepostingProduct(true);
-    try {
-      const res = await createMarketplaceRepost({
-        product_id: Number(product.id),
-        target_clan_id: Number(targetMarketplaceId),
-      });
-      const remaining = positiveNumber(
-        res?.product?.distribution_slots_remaining ||
-          res?.product?.remaining_distribution_slots ||
-          product.distributionSlotsRemaining - 1
-      );
-      setProducts((prev) =>
-        prev.map((item) =>
-          Number(item.id || 0) === Number(product.id)
-            ? {
-                ...item,
-                distributionSlotsRemaining: Math.max(0, remaining),
-                repostsUsed: item.repostsUsed + 1,
-              }
-            : item
-        )
-      );
-      setNotice({
-        tone: "success",
-        text: `${publicShopBlockLabel(product)} landed inside ${targetMarketplaceName} spotlight.`,
-      });
-      setRepostPanelOpen(false);
-      setRepostMarketplaceIdInput("");
-    } catch (err: any) {
-      setNotice({
-        tone: "error",
-        text:
-          safeStr(err?.message) ||
-          "Live repost did not complete. Check membership, target community, and remaining slots.",
-      });
-    } finally {
-      setRepostingProduct(false);
-    }
-  }
-
-  async function copyRepostDraft() {
-    const product = selectedRepostProduct || repostableProducts[0];
-    const blockText = product
-      ? `${publicShopBlockLabel(product)} - ${productDisplayTitle(product)}`
-      : shopNameText;
-
-    const copied = await safeCopy(
-      `GSN network repost draft:\n${blockText}\n${shopDescriptionText}\n${absoluteShopLink}`
-    );
-    setNotice({
-      tone: copied ? "success" : "error",
-      text: copied
-        ? "Network repost draft copied. A live repost still needs a product and target community inside GSN."
-        : "Clipboard copy was blocked. Use the visible public shop link instead.",
     });
   }
 
@@ -2822,344 +2564,6 @@ export default function ShopGalleryPage() {
                 }}
               >
                 Call phone
-              </SecondaryButton>
-            </div>
-          </section>
-        ) : null}
-
-        <section
-          className="public-shop-section public-shop-visitor-actions"
-          style={{
-            ...innerCard("#F8FBFF"),
-            display: "grid",
-            gap: isCompact ? 9 : 12,
-            padding: isCompact ? 12 : 16,
-          }}
-          aria-label="Public shop visitor actions"
-        >
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
-              gap: isCompact ? 5 : 12,
-              alignItems: "center",
-            }}
-          >
-            <div style={{ minWidth: 0 }}>
-              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
-                Public actions
-              </div>
-              <div
-                style={{
-                  marginTop: 4,
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 14 : 18,
-                  fontWeight: 950,
-                  lineHeight: 1.15,
-                }}
-              >
-                Share the public shop. Keep repost inside GSN.
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  color: "#526C84",
-                  fontSize: isCompact ? 10 : 12.5,
-                  lineHeight: 1.35,
-                  fontWeight: 700,
-                }}
-              >
-                {publicShopActionHelper}
-              </div>
-            </div>
-            <span
-              style={{
-                ...badge(true),
-                minHeight: isCompact ? 26 : 30,
-                color: shopLoadFailed ? "#991B1B" : "#1D4ED8",
-                background: shopLoadFailed
-                  ? "linear-gradient(180deg, rgba(254,242,242,0.98) 0%, rgba(254,226,226,0.88) 100%)"
-                  : "linear-gradient(180deg, rgba(235,244,255,0.98) 0%, rgba(218,233,249,0.88) 100%)",
-                border: shopLoadFailed
-                  ? "1px solid rgba(239,68,68,0.18)"
-                  : "1px solid rgba(29,78,216,0.12)",
-              }}
-            >
-              {shopDiaryCounterText}
-            </span>
-          </div>
-          <div
-            className="public-shop-action-row"
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: isCompact ? 7 : 10,
-            }}
-          >
-            <SecondaryButton
-              onClick={repostShop}
-              minWidth={0}
-              stableHeight={isCompact ? 40 : 52}
-              debugId="shop-gallery.repost-shop"
-              style={{
-                ...secondaryBtn(shopLoadFailed),
-                minHeight: isCompact ? 40 : 52,
-                padding: isCompact ? "7px 4px" : "10px 14px",
-                borderRadius: isCompact ? 13 : 14,
-                fontSize: isCompact ? 10.4 : 14,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                color: ownerSessionPresent ? "#0B1F33" : "#475569",
-              }}
-            >
-              {repostButtonLabel}
-            </SecondaryButton>
-            <PrimaryButton
-              onClick={shareShop}
-              minWidth={0}
-              stableHeight={isCompact ? 40 : 52}
-              debugId="shop-gallery.share-shop"
-              style={{
-                ...primaryBtn(shopLoadFailed),
-                minHeight: isCompact ? 40 : 52,
-                padding: isCompact ? "7px 4px" : "10px 14px",
-                borderRadius: isCompact ? 13 : 14,
-                fontSize: isCompact ? 10.7 : 14,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {isCompact ? "Share" : "Share shop"}
-            </PrimaryButton>
-            <SecondaryButton
-              onClick={copyShopLink}
-              minWidth={0}
-              stableHeight={isCompact ? 40 : 52}
-              debugId="shop-gallery.copy-shop-link"
-              style={{
-                ...secondaryBtn(shopLoadFailed),
-                minHeight: isCompact ? 40 : 52,
-                padding: isCompact ? "7px 4px" : "9px 12px",
-                borderRadius: isCompact ? 13 : 14,
-                fontSize: isCompact ? 10.7 : 14,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {isCompact ? "Copy link" : "Copy link"}
-            </SecondaryButton>
-          </div>
-        </section>
-
-        {repostPanelOpen ? (
-          <section
-            className="public-shop-section"
-            style={{
-              ...innerCard("#F8FBFF"),
-              display: "grid",
-              gap: isCompact ? 10 : 12,
-            }}
-            aria-label="Live GSN repost"
-          >
-            <div>
-              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
-                Live GSN repost
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 15 : 18,
-                  fontWeight: 950,
-                  lineHeight: 1.15,
-                }}
-              >
-                Place one public block into a target marketplace spotlight.
-              </div>
-              <div
-                style={{
-                  marginTop: 6,
-                  color: "#526C84",
-                  fontSize: isCompact ? 10.5 : 12.5,
-                  lineHeight: 1.35,
-                  fontWeight: 700,
-                }}
-              >
-                This stays inside GSN. Enter the marketplace ID where this block should land.
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "minmax(0, 1fr) minmax(0, 1fr)",
-                gap: isCompact ? 8 : 10,
-              }}
-            >
-              <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
-                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Target marketplace ID</span>
-                <input
-                  inputMode="numeric"
-                  value={repostMarketplaceIdInput}
-                  onChange={(event) =>
-                    setRepostMarketplaceIdInput(
-                      event.target.value.replace(/[^\d]/g, "")
-                    )
-                  }
-                  placeholder="Enter marketplace ID"
-                  style={{
-                    minHeight: isCompact ? 42 : 46,
-                    borderRadius: 14,
-                    border: "1px solid rgba(13,95,168,0.20)",
-                    background: "#FFFFFF",
-                    color: "#0B1F33",
-                    fontWeight: 850,
-                    padding: "8px 10px",
-                    width: "100%",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </label>
-
-              <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
-                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Public block</span>
-                <select
-                  value={String(selectedRepostProduct?.id || "")}
-                  onChange={(event) => setSelectedRepostProductId(Number(event.target.value || 0))}
-                  style={{
-                    minHeight: isCompact ? 42 : 46,
-                    borderRadius: 14,
-                    border: "1px solid rgba(13,95,168,0.20)",
-                    background: "#FFFFFF",
-                    color: "#0B1F33",
-                    fontWeight: 800,
-                    padding: "8px 10px",
-                    width: "100%",
-                  }}
-                >
-                  {repostableProducts.map((product) => (
-                    <option key={`repost-product-${product.id}`} value={product.id}>
-                      {publicShopBlockLabel(product)} - {productDisplayTitle(product)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label style={{ display: "grid", gap: 5, color: "#0B1F33", fontWeight: 850 }}>
-                <span style={{ fontSize: isCompact ? 10.5 : 12 }}>Known marketplace</span>
-                <select
-                  value={String(selectedRepostCommunity?.id || "")}
-                  onChange={(event) => {
-                    const nextId = Number(event.target.value || 0);
-                    setSelectedRepostClanId(nextId);
-                    setRepostMarketplaceIdInput(nextId > 0 ? String(nextId) : "");
-                  }}
-                  disabled={repostCommunitiesLoading || targetRepostCommunities.length === 0}
-                  style={{
-                    minHeight: isCompact ? 42 : 46,
-                    borderRadius: 14,
-                    border: "1px solid rgba(13,95,168,0.20)",
-                    background: "#FFFFFF",
-                    color: "#0B1F33",
-                    fontWeight: 800,
-                    padding: "8px 10px",
-                    width: "100%",
-                  }}
-                >
-                  {targetRepostCommunities.length === 0 ? (
-                    <option value="">
-                      {repostCommunitiesLoading
-                        ? "Loading your communities..."
-                        : "No eligible target marketplace"}
-                    </option>
-                  ) : (
-                    targetRepostCommunities.map((community) => (
-                      <option key={`repost-community-${community.id}`} value={community.id}>
-                        ID {community.id} - {community.name}
-                      </option>
-                    ))
-                  )}
-                </select>
-              </label>
-            </div>
-
-            {selectedRepostProduct ? (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-                  gap: isCompact ? 7 : 8,
-                  color: "#526C84",
-                  fontSize: isCompact ? 10.5 : 12,
-                  fontWeight: 800,
-                }}
-              >
-                <span style={badge(true)}>
-                  {selectedRepostProduct.distributionSlotsRemaining} slots left
-                </span>
-                <span style={badge(true)}>
-                  {selectedRepostProduct.repostsUsed} reposts used
-                </span>
-                <span style={badge(Boolean(resolvedRepostMarketplaceId))}>
-                  {resolvedRepostMarketplaceId ? "Target ready" : "Target needed"}
-                </span>
-              </div>
-            ) : null}
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "minmax(0, 1fr) minmax(0, 1fr)",
-                gap: isCompact ? 7 : 10,
-              }}
-            >
-              <PrimaryButton
-                onClick={submitLiveRepost}
-                minWidth={0}
-                stableHeight={isCompact ? 42 : 48}
-                busy={repostingProduct}
-                disabled={
-                  repostingProduct ||
-                  !selectedRepostProduct ||
-                  !resolvedRepostMarketplaceId ||
-                  repostCommunitiesLoading
-                }
-                debugId="shop-gallery.repost-submit"
-                style={{
-                  ...primaryBtn(
-                    repostingProduct ||
-                      !selectedRepostProduct ||
-                      !resolvedRepostMarketplaceId ||
-                      repostCommunitiesLoading
-                  ),
-                  minHeight: isCompact ? 42 : 48,
-                  borderRadius: 14,
-                  fontSize: isCompact ? 11.2 : 13,
-                }}
-              >
-                {repostingProduct ? "Placing..." : "Place in spotlight"}
-              </PrimaryButton>
-
-              <SecondaryButton
-                onClick={copyRepostDraft}
-                minWidth={0}
-                stableHeight={isCompact ? 42 : 48}
-                debugId="shop-gallery.repost-copy-draft"
-                style={{
-                  ...secondaryBtn(false),
-                  minHeight: isCompact ? 42 : 48,
-                  borderRadius: 14,
-                  fontSize: isCompact ? 11.2 : 13,
-                }}
-              >
-                Copy draft instead
               </SecondaryButton>
             </div>
           </section>

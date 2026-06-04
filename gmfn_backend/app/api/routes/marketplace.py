@@ -2052,6 +2052,28 @@ def repost_marketplace_product(
             detail="Vault products cannot be reposted into ordinary community distribution.",
         )
 
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(product.shop_id))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(
+            status_code=400,
+            detail="Repost requires the product's shop to be active.",
+        )
+    if not bool(getattr(shop, "is_active", True)):
+        raise HTTPException(
+            status_code=400,
+            detail="Repost requires the product's shop to be active.",
+        )
+
+    if int(getattr(shop, "owner_user_id", 0) or 0) != int(current_user.id):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the shop owner can repost this product through Subscription Spotlight.",
+        )
+
     target_clan_id = int(payload.target_clan_id)
     origin_clan_id = int(product.clan_id)
 
@@ -2090,6 +2112,28 @@ def repost_marketplace_product(
         )
 
     current_time = _now_utc()
+    if not has_active_feature(
+        db,
+        owner_user_id=int(current_user.id),
+        feature_code=FEATURE_SPOTLIGHT_PRIORITY,
+        shop_id=int(shop.id),
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Live marketplace repost requires an unused Subscription Spotlight credit for this shop.",
+        )
+
+    active_paid_count = _count_active_paid_spotlights_for_shop(
+        db=db,
+        shop_id=int(shop.id),
+        now=current_time,
+    )
+    if active_paid_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="A paid spotlight is already active for this shop. Wait for it to end before reposting another block.",
+        )
+
     if not _spotlight_capacity_pilot_override_active(current_time):
         active_count = _count_active_spotlights_for_clan(
             db=db,
@@ -2133,7 +2177,7 @@ def repost_marketplace_product(
         message=spotlight_message,
         image_url=_safe_str(getattr(product, "image_url", None)) or None,
         video_url=_safe_str(getattr(product, "video_url", None)) or None,
-        priority_mode=SPOTLIGHT_FREE,
+        priority_mode=SPOTLIGHT_PAID,
         visibility_scope="marketplace_repost",
         expires_at=spotlight_expires_at,
         created_at=current_time,
@@ -2141,6 +2185,22 @@ def repost_marketplace_product(
     db.add(repost)
     db.add(broadcast)
     db.flush()
+
+    usage = consume_feature_units(
+        db,
+        owner_user_id=int(current_user.id),
+        feature_code=FEATURE_SPOTLIGHT_PRIORITY,
+        units=1,
+        shop_id=int(shop.id),
+        reference_key=f"marketplace.repost:{int(broadcast.id)}",
+        note="Subscription Spotlight repost",
+        commit=False,
+    )
+    if not usage.get("ok"):
+        raise HTTPException(
+            status_code=403,
+            detail="No unused Subscription Spotlight credit is available for this shop.",
+        )
 
     remaining_after = _remaining_distribution_slots(db, product_id=int(product.id))
 
@@ -2159,6 +2219,9 @@ def repost_marketplace_product(
             "repost_id": int(repost.id),
             "broadcast_id": int(broadcast.id),
             "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
+            "priority_mode": SPOTLIGHT_PAID,
+            "feature_code": FEATURE_SPOTLIGHT_PRIORITY,
+            "paid_feature_consumed": bool(usage.get("ok")),
             "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
             "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
             "distribution_slots_remaining": remaining_after,

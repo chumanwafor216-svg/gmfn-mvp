@@ -842,22 +842,16 @@ assertNotContains(
   "Shop Gallery spotlight community links must not generate the retired public /community/:clanId route."
 );
 
-assertContains(
+assertWholeFileNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /createMarketplaceRepost,[\s\S]*?listMyClans,[\s\S]*?repostMarketplaceIdInput[\s\S]*?resolvedRepostMarketplaceId[\s\S]*?async function submitLiveRepost\(\)[\s\S]*?targetMarketplaceId = resolvedRepostMarketplaceId[\s\S]*?createMarketplaceRepost\(\{[\s\S]*?product_id: Number\(product\.id\),[\s\S]*?target_clan_id: Number\(targetMarketplaceId\),/,
-  "Public Shop Gallery GSN repost must call the real backend product repost route with a product and target marketplace ID, not only copy a text draft."
+  /createMarketplaceRepost|repostPanelOpen|shop-gallery\.repost|Live GSN repost|Place in spotlight/,
+  "Public Shop Gallery must not expose in-network repost as an outside/public shop action."
 );
 
 assertContains(
-  "src/pages/ShopGalleryPage.tsx",
-  /repostPanelOpen[\s\S]*?Live GSN repost[\s\S]*?Target marketplace ID[\s\S]*?Public block[\s\S]*?Known marketplace[\s\S]*?Place in spotlight/,
-  "Public Shop Gallery must show a live repost panel so users choose a public block and target marketplace before placing it into spotlight."
-);
-
-assertContains(
-  "src/pages/ShopGalleryPage.tsx",
-  /<SecondaryButton[\s\S]*?onClick=\{copyShopLink\}[\s\S]*?debugId="shop-gallery\.copy-shop-link"[\s\S]*?\.\.\.secondaryBtn\(shopLoadFailed\)/,
-  "Public Shop Gallery Copy link button must visibly lock when the public shop load failed."
+  "src/pages/MarketplacePage.tsx",
+  /createMarketplaceRepost,[\s\S]*?getMarketplaceProducts,[\s\S]*?Paid network repost[\s\S]*?Target marketplace ID[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?submitMarketplaceRepost/,
+  "Marketplace must own the in-network paid repost composer with one public block and one target marketplace ID."
 );
 
 assertContains(

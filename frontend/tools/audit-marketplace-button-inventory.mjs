@@ -10,10 +10,10 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableActionCount = 49;
+const expectedStableActionCount = 51;
 const expectedSourceBreakdown = {
   front: 15,
-  body: 34,
+  body: 36,
 };
 const expectedVisibleIntentActionCount = 12;
 const expectedMobileShellBreakdown = {
@@ -217,6 +217,8 @@ const expectedOrder = [
   exactDebugId("marketplace.public-shop.copy"),
   exactDebugId("marketplace.public-shop.email"),
   exactDebugId("marketplace.public-shop.open"),
+  exactDebugId("marketplace.network-repost.place"),
+  exactDebugId("marketplace.network-repost.subscription"),
   exactDebugId("marketplace.links.owner-shop-control"),
   exactDebugId("marketplace.members.toggle"),
   dynamicDebugId(

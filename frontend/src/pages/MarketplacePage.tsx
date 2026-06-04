@@ -12,7 +12,7 @@ import {
   resolveCtaTarget,
   type CtaIntent,
 } from "../lib/ctaTargets";
-import { routeWithCommunity } from "../lib/appRoutes";
+import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
   publicFrontendUrl,
   publicShopDiariesUrl,
@@ -24,6 +24,7 @@ import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
+  createMarketplaceRepost,
   createMarketplaceShop,
   createClanInvite,
   createLoanRequest,
@@ -32,6 +33,7 @@ import {
   getCurrentClan,
   getLoanGuarantorSuggestions,
   getLoanSummary,
+  getMarketplaceProducts,
   getMarketplaceShopByGmfnId,
   getMarketplaceShops,
   getMe,
@@ -143,6 +145,16 @@ type MarketplaceShop = {
   vault_private?: boolean | null;
   is_private?: boolean | null;
 };
+
+type RepostProductOption = {
+  id: number;
+  title: string;
+  description: string;
+  visibilityMode: ShopVisibilityMode;
+  remainingSlots: number;
+  repostsUsed: number;
+};
+
 type LoanSupportItem = {
   id?: number;
   clan_id?: number;
@@ -751,6 +763,50 @@ function normalizeMarketplaceShop(raw: any): MarketplaceShop | null {
     vault_private: src?.vault_private ?? null,
     is_private: src?.is_private ?? null,
   };
+}
+
+function stripPublicBlockMetadata(description: any): string {
+  return safeStr(description)
+    .replace(/\[BLOCK:\s*\d+\]/gi, "")
+    .replace(/\[LABEL:\s*[^\]]+\]/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function normalizeRepostProductOption(raw: any): RepostProductOption | null {
+  const src = raw?.item || raw?.product || raw;
+  const id = positiveNumber(src?.id || src?.product_id);
+  if (!id) return null;
+
+  const visibilityMode =
+    firstTruthy(src?.visibility_mode, src?.visibilityMode) === "vault_private"
+      ? "vault_private"
+      : "community_visible";
+
+  const title = firstTruthy(src?.name, src?.title, `Public block ${id}`);
+  const description = stripPublicBlockMetadata(src?.description);
+
+  return {
+    id,
+    title,
+    description,
+    visibilityMode,
+    remainingSlots: positiveNumber(
+      firstDefined(
+        src?.distribution_slots_remaining,
+        src?.remaining_distribution_slots,
+        src?.remainingSlots
+      )
+    ),
+    repostsUsed: positiveNumber(firstDefined(src?.reposts_used, src?.repostsUsed)),
+  };
+}
+
+function repostProductLabel(product: RepostProductOption | null): string {
+  if (!product) return "Choose public block";
+  return product.description
+    ? `${product.title} - ${product.description}`
+    : product.title;
 }
 
 function communityIdentity(row: CommunityRow | null | undefined): string {
@@ -2286,6 +2342,11 @@ export default function MarketplacePage() {
   const [publicShopRecord, setPublicShopRecord] =
     useState<MarketplaceShop | null>(null);
   const [preparingPublicShopLink, setPreparingPublicShopLink] = useState(false);
+  const [repostProducts, setRepostProducts] = useState<RepostProductOption[]>([]);
+  const [loadingRepostProducts, setLoadingRepostProducts] = useState(false);
+  const [selectedRepostProductId, setSelectedRepostProductId] = useState(0);
+  const [repostTargetMarketplaceId, setRepostTargetMarketplaceId] = useState("");
+  const [placingMarketplaceRepost, setPlacingMarketplaceRepost] = useState(false);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
@@ -2389,6 +2450,68 @@ export default function MarketplacePage() {
   const publicShopUnavailableText = !currentGmfnId
     ? "Your GSN ID is not ready yet."
     : "Prepare your public shop link first so it is connected to an active shop before you send it.";
+
+  useEffect(() => {
+    const shopId = positiveNumber(publicShopRecord?.id);
+    if (!shopId) {
+      setRepostProducts([]);
+      setSelectedRepostProductId(0);
+      return;
+    }
+
+    let alive = true;
+    setLoadingRepostProducts(true);
+
+    getMarketplaceProducts({
+      shop_id: shopId,
+      only_active: true,
+      include_reposted: false,
+      limit: 60,
+      header_clan_id: activeCommunityId || undefined,
+    })
+      .then((res) => {
+        if (!alive) return;
+        const options = rowsOf<any>(res)
+          .map(normalizeRepostProductOption)
+          .filter((item): item is RepostProductOption => {
+            return Boolean(
+              item &&
+                item.visibilityMode === "community_visible" &&
+                item.remainingSlots > 0
+            );
+          });
+        setRepostProducts(options);
+        setSelectedRepostProductId((current) =>
+          options.some((item) => item.id === current) ? current : options[0]?.id || 0
+        );
+      })
+      .catch(() => {
+        if (!alive) return;
+        setRepostProducts([]);
+      })
+      .finally(() => {
+        if (alive) setLoadingRepostProducts(false);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [activeCommunityId, publicShopRecord?.id]);
+
+  const selectedRepostProduct = useMemo(() => {
+    return (
+      repostProducts.find((product) => product.id === selectedRepostProductId) ||
+      repostProducts[0] ||
+      null
+    );
+  }, [repostProducts, selectedRepostProductId]);
+
+  const resolvedRepostTargetMarketplaceId = positiveNumber(repostTargetMarketplaceId);
+  const marketplaceRepostLocked =
+    loadingRepostProducts ||
+    placingMarketplaceRepost ||
+    !selectedRepostProduct ||
+    !resolvedRepostTargetMarketplaceId;
 
   const controlledMarketplaceLinkNote = useMemo(() => {
     if (!selectedCommunity) {
@@ -2927,6 +3050,62 @@ export default function MarketplacePage() {
 
     if (typeof window !== "undefined") {
       window.location.assign(link);
+    }
+  }
+
+  async function submitMarketplaceRepost() {
+    const product = selectedRepostProduct;
+    const targetMarketplaceId = resolvedRepostTargetMarketplaceId;
+
+    if (!product?.id) {
+      showNotice("error", "Choose one public block before placing it into another marketplace.");
+      return;
+    }
+
+    if (!targetMarketplaceId) {
+      showNotice("error", "Enter the target marketplace ID where this paid repost should appear.");
+      return;
+    }
+
+    setPlacingMarketplaceRepost(true);
+    try {
+      const res = await createMarketplaceRepost({
+        product_id: product.id,
+        target_clan_id: targetMarketplaceId,
+      });
+      const remaining = positiveNumber(
+        firstDefined(
+          res?.product?.distribution_slots_remaining,
+          res?.product?.remaining_distribution_slots,
+          product.remainingSlots - 1
+        )
+      );
+      setRepostProducts((prev) =>
+        prev
+          .map((item) =>
+            item.id === product.id
+              ? {
+                  ...item,
+                  remainingSlots: Math.max(0, remaining),
+                  repostsUsed: item.repostsUsed + 1,
+                }
+              : item
+          )
+          .filter((item) => item.remainingSlots > 0)
+      );
+      setRepostTargetMarketplaceId("");
+      showNotice(
+        "success",
+        `${product.title} was placed into marketplace ID ${targetMarketplaceId} spotlight with one Subscription Spotlight credit.`
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) ||
+          "Paid repost could not complete. Check the target marketplace, membership, and Subscription Spotlight credit."
+      );
+    } finally {
+      setPlacingMarketplaceRepost(false);
     }
   }
 
@@ -5161,6 +5340,114 @@ export default function MarketplacePage() {
                     >
                       Open Shop Face
                     </StableButton>
+                  </div>
+                </div>
+
+                <div style={innerCard("#F8FBFF")}>
+                  <div style={sectionLabel()}>Paid network repost</div>
+                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                    Pick one public shop block, enter the target marketplace ID,
+                    and place it into that community spotlight with one
+                    Subscription Spotlight credit.
+                  </div>
+                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={badge(Boolean(selectedRepostProduct))}>
+                      {loadingRepostProducts
+                        ? "Loading public blocks"
+                        : selectedRepostProduct
+                        ? "One block selected"
+                        : "No eligible public block"}
+                    </span>
+                    <span style={badge(Boolean(resolvedRepostTargetMarketplaceId))}>
+                      {resolvedRepostTargetMarketplaceId
+                        ? `Target ID ${resolvedRepostTargetMarketplaceId}`
+                        : "Target needed"}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "1fr"
+                        : "minmax(0, 1fr) minmax(0, 1fr)",
+                      gap: 10,
+                      marginTop: 12,
+                    }}
+                  >
+                    <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
+                      <span style={{ fontSize: 12 }}>Public block</span>
+                      <select
+                        value={String(selectedRepostProduct?.id || "")}
+                        onChange={(event) =>
+                          setSelectedRepostProductId(Number(event.target.value || 0))
+                        }
+                        disabled={loadingRepostProducts || repostProducts.length === 0}
+                        style={inputStyle()}
+                      >
+                        {repostProducts.length === 0 ? (
+                          <option value="">
+                            {loadingRepostProducts
+                              ? "Loading public blocks..."
+                              : "No public block with repost slots"}
+                          </option>
+                        ) : (
+                          repostProducts.map((product) => (
+                            <option key={`marketplace-repost-product-${product.id}`} value={product.id}>
+                              {repostProductLabel(product)}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </label>
+                    <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
+                      <span style={{ fontSize: 12 }}>Target marketplace ID</span>
+                      <input
+                        inputMode="numeric"
+                        value={repostTargetMarketplaceId}
+                        onChange={(event) =>
+                          setRepostTargetMarketplaceId(event.target.value.replace(/[^\d]/g, ""))
+                        }
+                        placeholder="Enter marketplace ID"
+                        style={inputStyle()}
+                      />
+                    </label>
+                  </div>
+                  {selectedRepostProduct ? (
+                    <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <span style={badge(true)}>
+                        {selectedRepostProduct.remainingSlots} slots left
+                      </span>
+                      <span style={badge(true)}>
+                        {selectedRepostProduct.repostsUsed} used
+                      </span>
+                    </div>
+                  ) : null}
+                  <div style={marketplaceInlineActionsStyle(isCompact)}>
+                    <StableButton
+                      type="button"
+                      debugId="marketplace.network-repost.place"
+                      stableHeight={58}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          void submitMarketplaceRepost();
+                        });
+                      }}
+                      style={marketplaceInlineActionStyle(
+                        "primary",
+                        marketplaceRepostLocked,
+                        isCompact
+                      )}
+                    >
+                      {placingMarketplaceRepost ? "Placing..." : "Place in Spotlight"}
+                    </StableButton>
+                    <StableCtaLink
+                      to={routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, activeCommunityId)}
+                      debugId="marketplace.network-repost.subscription"
+                      stableHeight={58}
+                      style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+                    >
+                      Subscription Spotlight
+                    </StableCtaLink>
                   </div>
                 </div>
 

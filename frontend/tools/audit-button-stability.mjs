@@ -151,6 +151,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.network-repost\.place"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.network-repost\.subscription"[\s\S]*?stableHeight=\{58\}/,
+  "Marketplace paid network repost controls must keep stable fixed-height buttons inside Marketplace, not Public Shop."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /import \{[\s\S]*?marketplaceSectionStyle[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\} from "\.\.\/lib\/marketplaceActionStability";[\s\S]*?scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200, 1800\]\.forEach[\s\S]*?marketplaceSectionStyle\(\)/,
   "Marketplace section buttons must use the shared Marketplace landing helper with repeated phone-safe landing passes and section scroll margins."
 );
@@ -1126,8 +1132,14 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.repost-shop"[\s\S]*?debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.copy-shop-link"[\s\S]*?debugId="shop-gallery\.absolute-shop-link"[\s\S]*?debugId="shop-gallery\.open-spotlight-preview"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
-  "Shop Gallery must use shared stable primitives for shop, vault, product, and public-link actions."
+  /import \{ PrimaryButton, SecondaryButton, StableCtaLink \} from "\.\.\/components\/StableButton";[\s\S]*?debugId="shop-gallery\.absolute-shop-link"[\s\S]*?debugId="shop-gallery\.open-spotlight-preview"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.toggle`\}[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.share`\}[\s\S]*?debugId="shop-gallery\.toggle-all-products"/,
+  "Shop Gallery must use shared stable primitives for vault, product, spotlight, and public-link actions."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /shop-gallery\.repost|repostPanelOpen|createMarketplaceRepost/,
+  "Public Shop Gallery must not expose the in-network repost action as a public visitor button."
 );
 
 assertNotContains(
