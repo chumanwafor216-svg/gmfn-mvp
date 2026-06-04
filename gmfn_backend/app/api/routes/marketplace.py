@@ -1114,7 +1114,7 @@ def get_public_marketplace_shop_by_gmfn_id(
         home_clan_id = requested_clan_id or _safe_int(getattr(shop, "clan_id", None), 0)
         effective_clan_id = int(home_clan_id or 0)
     else:
-        effective_clan_id = 0
+        effective_clan_id = int(requested_clan_id)
     if effective_clan is None and effective_clan_id > 0:
         effective_clan = (
             db.query(Clan)

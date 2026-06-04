@@ -809,6 +809,8 @@ def test_shop_gallery_products_follow_owner_across_membership_communities(
 
     public_shop = client.get("/marketplace/public/shop/GMFN-U-GLOBALSHOP?clan_id=2")
     assert public_shop.status_code == 200, public_shop.text
+    assert public_shop.json()["clan_id"] == 2
+    assert public_shop.json()["community_name"] == "Second Marketplace"
     public_names = [item["name"] for item in public_shop.json()["products"]]
     assert set(public_names) == {"Origin Public Product", "Second Community Product"}
     assert "Private Vault Product" not in public_names

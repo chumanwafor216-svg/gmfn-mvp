@@ -34426,3 +34426,34 @@ GSN-branded invite composer and invite-entry continuity.
   - A real phone check on the deployed public shop is still needed to prove the
     selected block opens directly from WhatsApp/browser shares on the pilot
     device.
+### Public Shop verify scan and owner-mediated community confirmation (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - public shop API serializer in
+    `gmfn_backend/app/api/routes/marketplace.py`.
+- Product-owner truth:
+  - the Verify panel should not expose the QR scan and also show an `Open
+    Public Shop` action that does the same visual job;
+  - `Ask Community` should not send a random public visitor directly into the
+    community confirmation surface. It should ask the shop owner to provide or
+    broker the correct community confirmation route;
+  - every community-backed public shop should expose the actual community ID
+    when backend truth has it.
+- Backend change:
+  - fixed the public shop response for `/marketplace/public/shop/:gmfn_id` when
+    a `clan_id` query is supplied. The endpoint now returns that effective
+    `clan_id` instead of accidentally dropping it to `None`.
+- Frontend change:
+  - Verify QR is now closed by default and opens only after the visitor taps the
+    scan action;
+  - the old direct `Open Public Shop` verify action now toggles the QR scan
+    (`Show community scan` or `Show shop scan`);
+  - the old direct `Ask Community` link is now an owner-mediated `Ask owner`
+    request. It opens WhatsApp to the owner when possible, or copies the
+    request text and the best available verification context.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now protects on-demand QR
+    behavior and the owner-mediated community confirmation request;
+  - `frontend/tools/audit-button-stability.mjs` now protects the stable scan
+    toggle and owner request actions.

@@ -880,14 +880,20 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{ QRCodeSVG \} from "qrcode\.react";[\s\S]*?publicFrontendUrl[\s\S]*?const shopCommunityVerifyPath = shopCommunityIdText[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(shopCommunityIdText\)\}[\s\S]*?const shopPublicQrTarget = shopRootPath \? publicFrontendUrl\(shopRootPath\) : ""[\s\S]*?const shopVerificationQrKind = shopCommunityVerifyPath[\s\S]*?"community"[\s\S]*?"shop"[\s\S]*?const shopVerificationQrTarget = shopVerificationQrKind === "community"[\s\S]*?publicFrontendUrl\(shopCommunityVerifyPath\)[\s\S]*?shopVerificationQrKind === "shop"[\s\S]*?shopPublicQrTarget[\s\S]*?<QRCodeSVG[\s\S]*?value=\{shopVerificationQrTarget\}/,
-  "Public Shop Verify panel QR must prefer the public community verification record when available, with an explicit public-shop QR fallback instead of a dead proof box."
+  /const \[shopVerificationQrOpen, setShopVerificationQrOpen\] = useState\(false\);[\s\S]*?const shopCommunityVerifyPath = shopCommunityIdText[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(shopCommunityIdText\)\}[\s\S]*?const shopPublicQrTarget = shopRootPath \? publicFrontendUrl\(shopRootPath\) : ""[\s\S]*?const shopVerificationQrKind = shopCommunityVerifyPath[\s\S]*?"community"[\s\S]*?"shop"[\s\S]*?const shopVerificationQrTarget = shopVerificationQrKind === "community"[\s\S]*?publicFrontendUrl\(shopCommunityVerifyPath\)[\s\S]*?shopVerificationQrKind === "shop"[\s\S]*?shopPublicQrTarget/,
+  "Public Shop Verify panel must compute community-first QR targets with public-shop fallback."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for live proof[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-public-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Trust check options/,
-  "Public Shop Verify panel must expose shop identity, community context, trust-check options, and separate TrustSlip/shop/community actions on demand."
+  /shopVerificationQrOpen \? \([\s\S]*?<QRCodeSVG[\s\S]*?value=\{shopVerificationQrTarget\}[\s\S]*?onClick=\{\(\) => setShopVerificationQrOpen\(\(open\) => !open\)\}[\s\S]*?\{shopVerificationScanButtonText\}/,
+  "Public Shop Verify panel must expose the QR only after the visitor taps the scan action."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for live proof[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?async function requestCommunityConfirmationFromOwner\(\)[\s\S]*?Please connect me with the right community confirmation route[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-public-shop"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Ask owner[\s\S]*?Trust check options/,
+  "Public Shop Verify panel must expose identity/community context while routing community confirmation requests through the owner instead of direct random community contact."
 );
 
 assertContains(

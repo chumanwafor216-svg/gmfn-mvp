@@ -1195,6 +1195,7 @@ export default function ShopGalleryPage() {
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
   const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
+  const [shopVerificationQrOpen, setShopVerificationQrOpen] = useState(false);
   const autoRefreshAttemptedRef = useRef("");
 
   const forceOwnerReconnect = useCallback(() => {
@@ -2080,6 +2081,15 @@ export default function ShopGalleryPage() {
     : shopVerificationQrKind === "shop"
     ? "Scan public shop"
     : "Public shop QR is not ready";
+  const shopVerificationScanButtonText = shopVerificationQrKind === "community"
+    ? shopVerificationQrOpen
+      ? "Hide scan"
+      : "Show community scan"
+    : shopVerificationQrKind === "shop"
+    ? shopVerificationQrOpen
+      ? "Hide scan"
+      : "Show shop scan"
+    : "Scan not ready";
   const shopVerificationRows = [
     { icon: "🏪", label: "Shop name", value: shopNameText },
     { icon: "🪪", label: "Shop owner ID", value: shopGmfnText || "Not ready" },
@@ -2237,7 +2247,11 @@ export default function ShopGalleryPage() {
 
   function toggleShopVerificationPanel() {
     setOwnerContactPanelOpen(false);
-    setShopVerificationOpen((open) => !open);
+    setShopVerificationOpen((open) => {
+      const nextOpen = !open;
+      if (!nextOpen) setShopVerificationQrOpen(false);
+      return nextOpen;
+    });
   }
 
   function toggleOwnerContactPanel() {
@@ -2250,6 +2264,7 @@ export default function ShopGalleryPage() {
     }
 
     setShopVerificationOpen(false);
+    setShopVerificationQrOpen(false);
     setOwnerContactPanelOpen((open) => !open);
   }
 
@@ -2325,6 +2340,42 @@ export default function ShopGalleryPage() {
       tone: copied ? "success" : "error",
       text: copied
         ? "TrustSlip request copied. Send it to the shop owner."
+        : "Owner WhatsApp is not ready and clipboard copy was blocked.",
+    });
+  }
+
+  async function requestCommunityConfirmationFromOwner() {
+    const shopTitle = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this GSN shop"
+    );
+    const communityLabel = firstMeaningful(
+      shopCommunityText,
+      shopLocationText,
+      "this community"
+    );
+    const message = `Hello, I am checking ${shopTitle} on GSN. Please connect me with the right community confirmation route for ${communityLabel}, or send the current community verification link for this shop owner (${shopGmfnText || "owner ID not visible yet"}).`;
+    const proofContext = firstMeaningful(
+      shopCommunityVerifyPath ? publicFrontendUrl(shopCommunityVerifyPath) : "",
+      absoluteShopShareLink,
+      absoluteShopLink
+    );
+
+    if (
+      openOwnerWhatsAppChat(
+        message,
+        "WhatsApp opened. Ask the owner for the community confirmation route."
+      )
+    ) {
+      return;
+    }
+
+    const copied = await safeCopy(`${message}\n${proofContext}`);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Community confirmation request copied. Send it to the shop owner."
         : "Owner WhatsApp is not ready and clipboard copy was blocked.",
     });
   }
@@ -3005,7 +3056,10 @@ export default function ShopGalleryPage() {
               style={{
                 position: "relative",
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "178px minmax(0, 1fr)",
+                gridTemplateColumns:
+                  isCompact || !shopVerificationQrOpen
+                    ? "1fr"
+                    : "178px minmax(0, 1fr)",
                 gap: isCompact ? 10 : 14,
                 alignItems: "stretch",
                 borderRadius: isCompact ? 20 : 24,
@@ -3015,53 +3069,55 @@ export default function ShopGalleryPage() {
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
               }}
             >
-              <div
-                style={{
-                  minHeight: isCompact ? 132 : 148,
-                  borderRadius: isCompact ? 14 : 16,
-                  border: "1px solid rgba(246,196,83,0.28)",
-                  background:
-                    "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
-                  display: "grid",
-                  placeItems: "center",
-                  padding: isCompact ? 10 : 12,
-                }}
-              >
-                {shopVerificationQrTarget ? (
-                  <div style={{ display: "grid", gap: 7, justifyItems: "center" }}>
-                    <QRCodeSVG
-                      value={shopVerificationQrTarget}
-                      size={isCompact ? 106 : 126}
-                      marginSize={1}
-                      fgColor="#07172C"
-                      bgColor="#FFFFFF"
-                    />
+              {shopVerificationQrOpen ? (
+                <div
+                  style={{
+                    minHeight: isCompact ? 132 : 148,
+                    borderRadius: isCompact ? 14 : 16,
+                    border: "1px solid rgba(246,196,83,0.28)",
+                    background:
+                      "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+                    display: "grid",
+                    placeItems: "center",
+                    padding: isCompact ? 10 : 12,
+                  }}
+                >
+                  {shopVerificationQrTarget ? (
+                    <div style={{ display: "grid", gap: 7, justifyItems: "center" }}>
+                      <QRCodeSVG
+                        value={shopVerificationQrTarget}
+                        size={isCompact ? 106 : 126}
+                        marginSize={1}
+                        fgColor="#07172C"
+                        bgColor="#FFFFFF"
+                      />
+                      <span
+                        style={{
+                          color: "#526C84",
+                          fontSize: isCompact ? 9.4 : 10.4,
+                          fontWeight: 850,
+                          textAlign: "center",
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        {shopVerificationQrLabel}
+                      </span>
+                    </div>
+                  ) : (
                     <span
                       style={{
                         color: "#526C84",
-                        fontSize: isCompact ? 9.4 : 10.4,
+                        fontSize: isCompact ? 11 : 12,
                         fontWeight: 850,
                         textAlign: "center",
-                        lineHeight: 1.2,
+                        lineHeight: 1.25,
                       }}
                     >
                       {shopVerificationQrLabel}
                     </span>
-                  </div>
-                ) : (
-                  <span
-                    style={{
-                      color: "#526C84",
-                      fontSize: isCompact ? 11 : 12,
-                      fontWeight: 850,
-                      textAlign: "center",
-                      lineHeight: 1.25,
-                    }}
-                  >
-                    {shopVerificationQrLabel}
-                  </span>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : null}
 
               <div
                 style={{
@@ -3180,15 +3236,15 @@ export default function ShopGalleryPage() {
               >
                 Request TrustSlip
               </PrimaryButton>
-              <StableCtaLink
-                to={shopRootPath || "#"}
-                disabled={!shopRootPath}
+              <SecondaryButton
+                onClick={() => setShopVerificationQrOpen((open) => !open)}
+                disabled={!shopVerificationQrTarget}
                 fullWidth
                 minWidth={0}
                 stableHeight={isCompact ? 44 : 50}
                 debugId="shop-gallery.verify-shop.open-public-shop"
                 style={{
-                  ...secondaryBtn(!shopRootPath),
+                  ...secondaryBtn(!shopVerificationQrTarget),
                   minHeight: isCompact ? 44 : 50,
                   borderRadius: isCompact ? 13 : 14,
                   fontSize: isCompact ? 12 : 14,
@@ -3197,17 +3253,16 @@ export default function ShopGalleryPage() {
                   background: "rgba(255,255,255,0.08)",
                 }}
               >
-                Open Public Shop
-              </StableCtaLink>
-              <StableCtaLink
-                to={shopCommunityVerifyPath || "#"}
-                disabled={!shopCommunityVerifyPath}
+                {shopVerificationScanButtonText}
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() => void requestCommunityConfirmationFromOwner()}
                 fullWidth
                 minWidth={0}
                 stableHeight={isCompact ? 44 : 50}
                 debugId="shop-gallery.verify-shop.open-community-record"
                 style={{
-                  ...secondaryBtn(!shopCommunityVerifyPath),
+                  ...secondaryBtn(false),
                   minHeight: isCompact ? 44 : 50,
                   borderRadius: isCompact ? 13 : 14,
                   fontSize: isCompact ? 12 : 14,
@@ -3216,8 +3271,8 @@ export default function ShopGalleryPage() {
                   background: "rgba(246,196,83,0.08)",
                 }}
               >
-                Ask Community
-              </StableCtaLink>
+                Ask owner
+              </SecondaryButton>
             </div>
 
             <div
