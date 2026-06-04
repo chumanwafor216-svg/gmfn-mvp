@@ -1,3 +1,64 @@
+### Public Shop identity/emblem and Shop Diaries tightening (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - public marketplace shop API serializer in
+    `gmfn_backend/app/api/routes/marketplace.py`.
+- Product-owner truth:
+  - the public shop hero must show the real saved shop/business name when the
+    backend has it. The user should not have to keep retyping the name on the
+    public face;
+  - the public shop hero should use the same sharp GSN shield/trust mark used
+    by the Cover/brand system, not a weaker page-local coin mark;
+  - `General merchandise` must not appear twice in the hero;
+  - Shop Diaries cards should give product media more space and keep view/share
+    controls compact and stable.
+- Backend change:
+  - `_shop_out()` still returns the existing `name` field for compatibility,
+    and now also returns `shop_name` with the same sanitized shop display name.
+    This makes the API contract explicit that this value is the shop name.
+- Frontend change:
+  - public shop normalization now prefers `shop_name`, `business_name`,
+    marketplace shop aliases, and then `name`, so generic `name` fallbacks no
+    longer override explicit shop/business identity;
+  - replaced the local `GsnSealEmblem` coin with `GsnTrustEmblem`, using the
+    shared `GSNBrandMark` shield component from the cover/brand system;
+  - the brand bar also uses `GSNBrandMark` instead of a text-only gold coin;
+  - added a category helper and suppresses the hero description when it is only
+    repeating the category text;
+  - tightened the Private Vault illustration colors so it reads more like a
+    premium safe/vault surface;
+  - Shop Diaries cards are taller and more media-first when closed. Closed cards
+    show only title, price, and one compact view toggle. The buyer cue and share
+    action appear only when the product card is opened.
+- Button/tap guardrails:
+  - no raw buttons or anchors were introduced;
+  - existing stable debug IDs remain for hero actions, product toggle/share, and
+    signed-in shortcuts;
+  - public shop, marketplace, and global action audits still pass after the
+    changes.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - sandboxed `pytest` runs were blocked by Windows temp-directory permissions,
+    then unsandboxed `python -m pytest
+    gmfn_backend/tests/test_marketplace_public_shop.py -q` passed with the new
+    `shop_name` assertion: 15 passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - if a live public shop still shows `My GSN Shop`, the API and frontend are
+    now correctly able to display a saved shop name. The remaining cause would
+    be data: the canonical `marketplace_shops.shop_name` row itself is still
+    saved as `My GSN Shop` or another generic fallback and must be updated from
+    Shop Control / backend data, not repainted on the public page.
+
 ### Money Out guided payout remodel + Marketplace section-action audit (2026-06-04)
 
 - Route/screen affected:

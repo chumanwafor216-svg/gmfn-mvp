@@ -667,6 +667,7 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         "trust_band": trust_band,
         "trust_score": trust_score,
         "name": shop_display_name,
+        "shop_name": shop_display_name,
         "description": shop.description,
         "whatsapp_number": shop.whatsapp_number,
         "telegram_handle": shop.telegram_handle,

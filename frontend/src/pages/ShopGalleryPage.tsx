@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { QRCodeSVG } from "qrcode.react";
 import { useLocation, useParams } from "react-router-dom";
 import GsnInstallPrompt from "../components/GsnInstallPrompt";
+import GSNBrandMark from "../components/GSNBrandMark";
 import OwnerOnlySurfaceNav from "../components/OwnerOnlySurfaceNav";
 import SpotlightMediaFrame from "../components/SpotlightMediaFrame";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
@@ -135,6 +136,10 @@ function publicOwnerName(...values: any[]): string {
 
 function publicShopName(...values: any[]): string {
   return publicName(...values) || "Public GSN Shop";
+}
+
+function publicShopCategory(...values: any[]): string {
+  return firstMeaningful(...values) || "General merchandise";
 }
 
 function normalizeWhatsAppRecipient(value: any): string {
@@ -328,7 +333,7 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
         borderRadius: compact ? 18 : 22,
         border: "1px solid rgba(214,170,69,0.42)",
         background:
-          "radial-gradient(circle at 50% 10%, rgba(255,245,205,0.86) 0%, rgba(231,190,82,0.56) 30%, rgba(255,244,204,0.10) 62%), linear-gradient(145deg, #FFF8DD 0%, #D7A832 100%)",
+          "linear-gradient(145deg, #FFF8DD 0%, #F0D477 42%, #B88622 100%)",
         boxShadow:
           "inset 0 1px 0 rgba(255,255,255,0.82), 0 16px 30px rgba(138,100,14,0.18)",
         display: "grid",
@@ -354,7 +359,7 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
           height: doorSize,
           borderRadius: compact ? 18 : 22,
           background:
-            "linear-gradient(145deg, #5B6C7D 0%, #24364A 44%, #0A2038 100%)",
+            "linear-gradient(145deg, #607284 0%, #253A51 42%, #071C32 100%)",
           border: "2px solid rgba(255,236,173,0.42)",
           boxShadow:
             "inset 0 2px 7px rgba(255,255,255,0.20), inset 0 -8px 18px rgba(3,16,31,0.50), 0 16px 30px rgba(8,35,61,0.26)",
@@ -444,64 +449,34 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function GsnSealEmblem({ compact = false }: { compact?: boolean }) {
-  const size = compact ? 112 : 184;
-  const inner = compact ? 72 : 122;
-
+function GsnTrustEmblem({ compact = false }: { compact?: boolean }) {
   return (
     <div
       aria-hidden="true"
       style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
+        width: compact ? 116 : 190,
+        height: compact ? 142 : 224,
+        borderRadius: compact ? 24 : 32,
         display: "grid",
         placeItems: "center",
         position: "relative",
-        background:
-          "radial-gradient(circle at 40% 30%, #FFF4C7 0%, #E6B640 38%, #8A6418 64%, #211506 100%)",
-        border: "1px solid rgba(255,232,160,0.72)",
+        background: "linear-gradient(145deg, rgba(255,247,216,0.18), rgba(8,42,76,0.20))",
+        border: "1px solid rgba(255,232,160,0.54)",
         boxShadow:
-          "0 22px 46px rgba(0,0,0,0.30), 0 0 34px rgba(214,170,69,0.28), inset 0 2px 0 rgba(255,255,255,0.38)",
+          "0 22px 46px rgba(0,0,0,0.28), 0 0 28px rgba(47,128,237,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
+        overflow: "hidden",
       }}
     >
       <span
         style={{
           position: "absolute",
-          inset: compact ? 8 : 14,
-          borderRadius: "50%",
-          border: "2px solid rgba(255,236,173,0.62)",
-          boxShadow: "inset 0 0 18px rgba(7,24,39,0.35)",
+          inset: compact ? 7 : 10,
+          borderRadius: compact ? 20 : 28,
+          border: "1px solid rgba(255,236,173,0.22)",
+          boxShadow: "inset 0 0 24px rgba(7,24,39,0.28)",
         }}
       />
-      <span
-        style={{
-          position: "absolute",
-          inset: compact ? 18 : 30,
-          borderRadius: "50%",
-          border: "1px solid rgba(7,24,39,0.34)",
-          background:
-            "radial-gradient(circle at 45% 35%, #FFE8A8 0%, #D6AA45 50%, #6E4F14 100%)",
-        }}
-      />
-      <span
-        style={{
-          position: "relative",
-          zIndex: 2,
-          width: inner,
-          height: inner,
-          borderRadius: "50%",
-          display: "grid",
-          placeItems: "center",
-          color: "#071827",
-          fontSize: compact ? 26 : 46,
-          fontWeight: 950,
-          letterSpacing: 0,
-          textShadow: "0 1px 0 rgba(255,255,255,0.45)",
-        }}
-      >
-        GSN
-      </span>
+      <GSNBrandMark width={compact ? 86 : 132} height={compact ? 108 : 164} />
     </div>
   );
 }
@@ -611,11 +586,13 @@ function normalizeShop(
   );
 
   const shopName = publicShopName(
-    src?.name,
     src?.shop_name,
+    src?.business_name,
+    src?.marketplace_shop_name,
+    src?.shop_display_name,
+    src?.name,
     src?.display_name,
-    src?.title,
-    src?.business_name
+    src?.title
   );
 
   const description = firstMeaningful(
@@ -1754,6 +1731,7 @@ export default function ShopGalleryPage() {
     publicShopReturnPath
   )}`;
   const shopNameText = safeStr(effectiveShop?.shopName || "Shop");
+  const shopCategoryText = publicShopCategory();
   const shopDescriptionText = safeStr(
     autoRefreshingShop
       ? "This public shop link is reconnecting to the owner's active shop so Shop Diaries can load."
@@ -1762,6 +1740,9 @@ export default function ShopGalleryPage() {
       : effectiveShop?.description ||
           "Public shop face for trusted products. Private Vault offers open only through a trust link."
   );
+  const showShopHeroDescription =
+    Boolean(shopDescriptionText) &&
+    shopDescriptionText.toLowerCase() !== shopCategoryText.toLowerCase();
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopCommunityText = safeStr(effectiveShop?.communityName);
   const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
@@ -2073,19 +2054,16 @@ export default function ShopGalleryPage() {
             style={{
               width: isCompact ? 44 : 54,
               height: isCompact ? 44 : 54,
-              borderRadius: "50%",
+              borderRadius: isCompact ? 14 : 16,
               display: "grid",
               placeItems: "center",
-              color: "#071827",
-              fontSize: isCompact ? 14 : 17,
-              fontWeight: 950,
-              background:
-                "radial-gradient(circle at 42% 30%, #FFF4C7 0%, #E6B640 42%, #7A5612 100%)",
-              border: "1px solid rgba(255,232,160,0.7)",
-              boxShadow: "0 12px 24px rgba(0,0,0,0.24)",
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,232,160,0.34)",
+              boxShadow: "0 12px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.14)",
+              overflow: "hidden",
             }}
           >
-            GSN
+            <GSNBrandMark width={isCompact ? 27 : 34} height={isCompact ? 34 : 42} />
           </div>
           <div style={{ minWidth: 0 }}>
             <div
@@ -2144,7 +2122,7 @@ export default function ShopGalleryPage() {
               gap: isCompact ? 12 : 22,
             }}
           >
-            <GsnSealEmblem compact={isCompact} />
+            <GsnTrustEmblem compact={isCompact} />
             <div
               style={{
                 display: "grid",
@@ -2197,7 +2175,7 @@ export default function ShopGalleryPage() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  General merchandise
+                  {shopCategoryText}
                 </span>
               </div>
               {shopGmfnText ? (
@@ -2230,21 +2208,23 @@ export default function ShopGalleryPage() {
               >
                 👥 Homeland: <strong style={{ color: "#F6D77A" }}>{shopLocationText}</strong>
               </div>
-              <p
-                style={{
-                  margin: 0,
-                  color: "rgba(255,255,255,0.76)",
-                  fontSize: isCompact ? 11.2 : 13.5,
-                  lineHeight: 1.35,
-                  maxWidth: 720,
-                  display: "-webkit-box",
-                  WebkitLineClamp: isCompact ? 2 : 2,
-                  WebkitBoxOrient: "vertical" as any,
-                  overflow: "hidden",
-                }}
-              >
-                {shopDescriptionText}
-              </p>
+              {showShopHeroDescription ? (
+                <p
+                  style={{
+                    margin: 0,
+                    color: "rgba(255,255,255,0.76)",
+                    fontSize: isCompact ? 11.2 : 13.5,
+                    lineHeight: 1.35,
+                    maxWidth: 720,
+                    display: "-webkit-box",
+                    WebkitLineClamp: isCompact ? 2 : 2,
+                    WebkitBoxOrient: "vertical" as any,
+                    overflow: "hidden",
+                  }}
+                >
+                  {shopDescriptionText}
+                </p>
+              ) : null}
             </div>
           </div>
           <div
@@ -3167,15 +3147,15 @@ export default function ShopGalleryPage() {
                           ? 430
                           : 380
                         : isCompact
-                        ? 214
-                        : 270,
+                        ? 258
+                        : 300,
                       aspectRatio: isProductOpen
                         ? isCompact
                           ? "1 / 1.16"
                           : "1.65 / 1"
                         : isCompact
-                        ? "0.78 / 1"
-                        : "1.35 / 1",
+                        ? "0.72 / 1"
+                        : "1.22 / 1",
                       gridColumn: isProductOpen ? "1 / -1" : undefined,
                       cursor: isProductOpen ? "zoom-out" : "zoom-in",
                       scrollMarginTop: 18,
@@ -3279,15 +3259,22 @@ export default function ShopGalleryPage() {
                             ? "12px"
                             : "16px"
                           : isCompact
-                          ? "8px"
-                          : "12px",
+                          ? "7px"
+                          : "9px",
                         boxSizing: "border-box",
                         display: "grid",
-                        gap: isProductOpen ? (isCompact ? 8 : 10) : isCompact ? 5 : 7,
+                        gap: isProductOpen ? (isCompact ? 8 : 10) : isCompact ? 4 : 5,
                         alignContent: "end",
                         background:
-                          "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, #FFFFFF 100%)",
-                        borderTop: "1px solid rgba(13,95,168,0.08)",
+                          isProductOpen
+                            ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #FFFFFF 100%)"
+                            : "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.94) 20%, #FFFFFF 100%)",
+                        borderTop: isProductOpen
+                          ? "1px solid rgba(13,95,168,0.08)"
+                          : "none",
+                        maxHeight: isProductOpen ? undefined : isCompact ? 92 : 108,
+                        minHeight: isProductOpen ? undefined : isCompact ? 82 : 94,
+                        overflow: "hidden",
                       }}
                     >
                       <div
@@ -3310,26 +3297,22 @@ export default function ShopGalleryPage() {
                       >
                         {displayTitle}
                       </div>
-                      <div
-                        style={{
-                          color: "#526C84",
-                          fontWeight: 650,
-                          fontSize: isProductOpen
-                            ? isCompact
-                              ? 13
-                              : 14
-                            : isCompact
-                            ? 10
-                            : 12.5,
-                          lineHeight: 1.18,
-                          display: "-webkit-box",
-                          WebkitLineClamp: isProductOpen ? 3 : 1,
-                          WebkitBoxOrient: "vertical" as any,
-                          overflow: "hidden",
-                        }}
-                      >
-                        {buyerCue}
-                      </div>
+                      {isProductOpen ? (
+                        <div
+                          style={{
+                            color: "#526C84",
+                            fontWeight: 650,
+                            fontSize: isCompact ? 13 : 14,
+                            lineHeight: 1.18,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical" as any,
+                            overflow: "hidden",
+                          }}
+                        >
+                          {buyerCue}
+                        </div>
+                      ) : null}
                       <span
                         style={{
                           ...badge(true),
@@ -3367,7 +3350,9 @@ export default function ShopGalleryPage() {
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: `repeat(2, ${diaryActionWidth}px)`,
+                          gridTemplateColumns: isProductOpen
+                            ? `repeat(2, ${diaryActionWidth}px)`
+                            : `${diaryActionWidth}px`,
                           gap: isCompact ? 8 : 10,
                           width: "fit-content",
                           maxWidth: "100%",
@@ -3423,6 +3408,7 @@ export default function ShopGalleryPage() {
                           title="Share"
                           style={{
                             ...secondaryBtn(false),
+                            display: isProductOpen ? "inline-flex" : "none",
                             width: diaryActionWidth,
                             maxWidth: diaryActionWidth,
                             minWidth: 0,

@@ -157,6 +157,7 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     assert body["ok"] is True
     assert body["is_public_shop_face"] is True
     assert body["item"]["name"] == "CHUMA INTERNATIONAL SHOP"
+    assert body["item"]["shop_name"] == "CHUMA INTERNATIONAL SHOP"
     assert body["item"]["gmfn_id"] == "GMFN-U-TESTSHOP"
     assert body["item"]["image_url"] == image_url
     assert body["community_name"] == "Golden boys Marketplace"
