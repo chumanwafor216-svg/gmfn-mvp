@@ -1720,11 +1720,6 @@ export default function ShopGalleryPage() {
     { label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
     { label: "Shop name", value: shopNameText },
   ];
-  const publicShopBuyerCue = shopLoadFailed
-    ? "This public shop has reached GSN, but the owner must refresh it before visitors can safely share or copy it."
-    : publicBlockCount > 0
-    ? `${publicBlockText}. Visitors can share the shop, copy the public link, and ask the owner for private Vault access.`
-    : "The public shop is open, but the owner has not shown public items yet. Visitors can still ask for private Vault access.";
   const shopContactText = autoRefreshingShop
     ? "Owner refresh running"
     : shopLoadFailed
@@ -1801,7 +1796,7 @@ export default function ShopGalleryPage() {
       tone: copied ? "success" : "error",
       text: copied
         ? "Public shop poster link copied."
-        : "Clipboard copy was blocked. Use the visible public shop link instead.",
+        : "Clipboard copy was blocked. Use Share, or copy the page address from your browser.",
     });
   }
 
@@ -2072,22 +2067,6 @@ export default function ShopGalleryPage() {
             >
               {shopDescriptionText}
             </p>
-            <div
-              style={{
-                width: "min(100%, 720px)",
-                borderRadius: isCompact ? 15 : 20,
-                border: "1px solid rgba(255,255,255,0.18)",
-                background: "rgba(255,255,255,0.09)",
-                padding: isCompact ? "8px 10px" : "12px 16px",
-                color: "rgba(255,255,255,0.90)",
-                fontSize: isCompact ? 10.5 : 13.5,
-                lineHeight: 1.35,
-                fontWeight: 750,
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
-              }}
-            >
-              {publicShopBuyerCue}
-            </div>
             <div
               style={{
                 display: "flex",
@@ -2606,63 +2585,6 @@ export default function ShopGalleryPage() {
               </SecondaryButton>
             </div>
           </section>
-        ) : null}
-
-        {absoluteShopLink && shopLoadFailed ? (
-          <span
-            aria-disabled
-            onClick={() =>
-              setNotice({
-                tone: "error",
-                text: "This public shop link is not active yet. Ask the owner to refresh the shop link from Marketplace before opening it.",
-              })
-            }
-            style={{
-              display: "block",
-              minHeight: 42,
-              padding: isCompact ? "8px 10px" : "10px 12px",
-              borderRadius: 14,
-              border: "1px solid rgba(13,95,168,0.14)",
-              background: "rgba(255,255,255,0.78)",
-              color: "#22415D",
-              fontSize: isCompact ? 10.2 : 12,
-              fontWeight: 850,
-              lineHeight: 1.35,
-              cursor: "not-allowed",
-              opacity: 0.78,
-              textDecoration: "none",
-              textUnderlineOffset: 3,
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {absoluteShopLink}
-          </span>
-        ) : absoluteShopLink ? (
-          <StableCtaLink
-            to={absoluteShopLink}
-            target="_blank"
-            rel="noreferrer"
-            debugId="shop-gallery.absolute-shop-link"
-            style={{
-              display: "block",
-              minHeight: 42,
-              padding: isCompact ? "8px 10px" : "10px 12px",
-              borderRadius: 14,
-              border: "1px solid rgba(13,95,168,0.14)",
-              background: "rgba(255,255,255,0.78)",
-              color: "#22415D",
-              fontSize: isCompact ? 10.2 : 12,
-              fontWeight: 850,
-              lineHeight: 1.35,
-              textDecoration: "underline",
-              textUnderlineOffset: 3,
-              overflowWrap: "anywhere",
-              wordBreak: "break-word",
-            }}
-          >
-            {absoluteShopLink}
-          </StableCtaLink>
         ) : null}
 
         <div

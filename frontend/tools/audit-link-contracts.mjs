@@ -808,7 +808,7 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteShopShareLink = useMemo[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\);[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use the visible public shop link instead\./,
+  /const absoluteShopShareLink = useMemo[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\);[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
   "Public Shop Gallery copy must block failed public-shop links and copy the frontend-domain preview-ready route only after clipboard success."
 );
 
@@ -854,16 +854,16 @@ assertContains(
   "Marketplace must own the in-network paid repost composer with one public block and one target marketplace ID."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /absoluteShopLink && shopLoadFailed[\s\S]*?<span[\s\S]*?aria-disabled[\s\S]*?not active yet[\s\S]*?<\/span>[\s\S]*?: absoluteShopLink \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}[\s\S]*?<\/StableCtaLink>/,
-  "Public Shop Gallery must show failed public-shop URLs as locked text, not clickable links that recirculate stale shop URLs."
+  /debugId="shop-gallery\.absolute-shop-link"|absoluteShopLink && shopLoadFailed[\s\S]*?<span[\s\S]*?\{absoluteShopLink\}[\s\S]*?<\/span>|<StableCtaLink[\s\S]*?to=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}[\s\S]*?<\/StableCtaLink>/,
+  "Public Shop Gallery must not show the standalone raw public shop URL block; Share, Copy, QR, and owner actions carry the link."
 );
 
-assertContains(
+assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
-  /to=\{absoluteShopLink\}[\s\S]*?\{absoluteShopLink\}/,
-  "Public Shop Gallery must visibly show the complete public shop domain as a real link."
+  /Visitors can share the shop, copy the public link|publicShopBuyerCue/,
+  "Public Shop Gallery must not keep the wordy billboard buyer cue that repeats the Share, Copy, and owner-contact buttons."
 );
 
 assertContains(

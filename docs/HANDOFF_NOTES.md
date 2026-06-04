@@ -1,3 +1,41 @@
+### Public shop page trimmed to reduce repeated buyer text (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner truth:
+  - the public shop page should not repeat instructions that are already clear
+    from the visible Share, Copy link, Owner contact, WhatsApp, Vault, and
+    Verify shop actions;
+  - the inner billboard sentence block beginning with the public-block count
+    was too wordy and was not directly addressing the user at the moment;
+  - the standalone raw public URL below the verification/contact area repeated
+    the Share and Copy link actions and made the page look busier.
+- Frontend change:
+  - removed the billboard buyer cue block that said visitors can share/copy/ask
+    owner for Vault access;
+  - removed the standalone raw public URL/locked URL block from the page body;
+  - kept the underlying public shop link logic for Share, Copy, QR, metadata,
+    and owner/contact actions;
+  - updated the clipboard-failure response so it no longer tells users to use a
+    visible raw link that the page no longer shows.
+- Audit changes:
+  - `audit-link-contracts` now prevents the removed raw URL block and wordy
+    buyer cue from returning;
+  - `audit-button-stability` now checks the remaining stable Shop Gallery
+    actions without requiring the removed raw URL CTA.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx tools/audit-button-stability.mjs tools/audit-link-contracts.mjs` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only public-shop decluttering and button/link contract
+    correction. It does not change backend shop visibility, Vault access,
+    TrustSlip, QR, Share, Copy, or owner-contact rules.
+
 ### Public shop verification moved into billboard action slot (2026-06-04)
 
 - Route/screen affected:
