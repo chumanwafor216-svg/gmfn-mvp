@@ -170,6 +170,20 @@ function buildWhatsAppChatUrl(recipient: any, message: string): string {
   return `https://wa.me/${phone}?text=${encodeURIComponent(cleanText(message))}`;
 }
 
+function buildPhoneCallUrl(value: any): string {
+  const raw = cleanText(value);
+  if (!raw) return "";
+
+  const compact = raw.replace(/[^\d+]/g, "");
+  if (!compact) return "";
+
+  if (compact.startsWith("+")) {
+    return `tel:${compact}`;
+  }
+
+  return `tel:${compact.replace(/\D/g, "")}`;
+}
+
 function isDisconnectedPublicShopError(message: any): boolean {
   return /seller identity|shop not found|not connected|active shop|404/i.test(
     safeStr(message)
@@ -941,6 +955,7 @@ export default function ShopGalleryPage() {
   const [error, setError] = useState<string>("");
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
+  const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
   const autoRefreshAttemptedRef = useRef("");
 
@@ -1675,6 +1690,8 @@ export default function ShopGalleryPage() {
   );
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopCommunityText = safeStr(effectiveShop?.communityName);
+  const shopWhatsAppText = safeStr(effectiveShop?.whatsapp);
+  const shopTelegramText = safeStr(effectiveShop?.telegram);
   const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
   const publicBlockText = autoRefreshingShop
     ? "Reconnecting shop"
@@ -1708,6 +1725,15 @@ export default function ShopGalleryPage() {
     : publicBlockCount > 0
     ? `${publicBlockText}. Visitors can share the shop, copy the public link, and ask the owner for private Vault access.`
     : "The public shop is open, but the owner has not shown public items yet. Visitors can still ask for private Vault access.";
+  const shopContactText = autoRefreshingShop
+    ? "Owner refresh running"
+    : shopLoadFailed
+    ? "Owner refresh needed"
+    : firstMeaningful(
+        shopWhatsAppText ? `WhatsApp ${shopWhatsAppText}` : "",
+        shopTelegramText ? `Telegram ${shopTelegramText}` : "",
+        "Ask owner"
+      );
   const visitorCueCards = [
     {
       label: "Public link",
@@ -1718,8 +1744,10 @@ export default function ShopGalleryPage() {
       value: "Ask owner",
     },
     {
-      label: "Shop verification",
-      value: shopVerificationOpen ? "Proof open" : "Tap verify",
+      label: "Owner contact",
+      value: shopContactText,
+      action: toggleOwnerContactPanel,
+      debugId: "shop-gallery.owner-contact.choose",
     },
   ];
   async function shareOrCopy(params: {
@@ -1823,7 +1851,66 @@ export default function ShopGalleryPage() {
   }
 
   function toggleShopVerificationPanel() {
+    setOwnerContactPanelOpen(false);
     setShopVerificationOpen((open) => !open);
+  }
+
+  function toggleOwnerContactPanel() {
+    if (shopLoadFailed) {
+      setNotice({
+        tone: "error",
+        text: "This shop link needs the owner to refresh it from Marketplace before owner contact can be trusted.",
+      });
+      return;
+    }
+
+    setShopVerificationOpen(false);
+    setOwnerContactPanelOpen((open) => !open);
+  }
+
+  function callOwnerPhone() {
+    const phoneUrl = buildPhoneCallUrl(effectiveShop?.whatsapp);
+    if (!phoneUrl || typeof window === "undefined") {
+      setNotice({
+        tone: "error",
+        text: "No owner phone number is ready on this public shop yet.",
+      });
+      return;
+    }
+
+    window.location.href = phoneUrl;
+    setOwnerContactPanelOpen(false);
+    setNotice({
+      tone: "success",
+      text: "Phone call opened. If the call prompt does not appear, use the visible owner number on the shop card.",
+    });
+  }
+
+  async function contactOwnerByWhatsApp() {
+    const shopTitle = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this GSN shop"
+    );
+    const message = `Hello, I found ${shopTitle} on GSN. I would like to chat with the owner.`;
+
+    if (
+      openOwnerWhatsAppChat(
+        message,
+        "WhatsApp chat opened for the shop owner. If WhatsApp says this number is not registered, come back and use Call phone."
+      )
+    ) {
+      setOwnerContactPanelOpen(false);
+      return;
+    }
+
+    const copied = await safeCopy(`${message}\n${absoluteShopLink}`);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "Owner WhatsApp is not ready on this shop. The message and shop link were copied instead."
+        : "Owner WhatsApp is not ready on this shop, and clipboard copy was blocked.",
+    });
   }
 
   async function askForVaultAccess() {
@@ -2045,10 +2132,8 @@ export default function ShopGalleryPage() {
               }}
               aria-label="Public shop visitor cues"
             >
-              {visitorCueCards.map((item) => (
-                <div
-                  key={item.label}
-                  style={{
+              {visitorCueCards.map((item) => {
+                const cueCardStyle: React.CSSProperties = {
                     minWidth: 0,
                     borderRadius: isCompact ? 12 : 16,
                     border: "1px solid rgba(246,215,122,0.24)",
@@ -2057,38 +2142,70 @@ export default function ShopGalleryPage() {
                     padding: isCompact ? "6px 5px" : "9px 10px",
                     textAlign: "center",
                     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
-                  }}
-                >
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,0.62)",
-                      fontSize: isCompact ? 7.8 : 10,
-                      fontWeight: 900,
-                      textTransform: "uppercase",
-                      letterSpacing: 0,
-                      lineHeight: 1.1,
-                    }}
-                  >
-                    {item.label}
+                  };
+                const cueContent = (
+                  <>
+                    <div
+                      style={{
+                        color: "rgba(255,255,255,0.62)",
+                        fontSize: isCompact ? 7.8 : 10,
+                        fontWeight: 900,
+                        textTransform: "uppercase",
+                        letterSpacing: 0,
+                        lineHeight: 1.1,
+                      }}
+                    >
+                      {item.label}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 3,
+                        color: "#FFFFFF",
+                        fontSize: isCompact ? 9.4 : 12,
+                        fontWeight: 950,
+                        lineHeight: 1.12,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical" as any,
+                      }}
+                    >
+                      {item.value}
+                    </div>
+                  </>
+                );
+
+                if ("action" in item) {
+                  return (
+                    <SecondaryButton
+                      key={item.label}
+                      onClick={item.action}
+                      debugId={item.debugId}
+                      minWidth={0}
+                      fullWidth
+                      stableHeight={isCompact ? 44 : 56}
+                      aria-expanded={ownerContactPanelOpen}
+                      aria-controls="public-shop-owner-contact-panel"
+                      style={{
+                        ...cueCardStyle,
+                        display: "grid",
+                        alignContent: "center",
+                        justifyItems: "center",
+                        gap: 0,
+                      }}
+                    >
+                      {cueContent}
+                    </SecondaryButton>
+                  );
+                }
+
+                return (
+                  <div key={item.label} style={cueCardStyle}>
+                    {cueContent}
                   </div>
-                  <div
-                    style={{
-                      marginTop: 3,
-                      color: "#FFFFFF",
-                      fontSize: isCompact ? 9.4 : 12,
-                      fontWeight: 950,
-                      lineHeight: 1.12,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical" as any,
-                    }}
-                  >
-                    {item.value}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -2406,6 +2523,87 @@ export default function ShopGalleryPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+        ) : null}
+
+        {ownerContactPanelOpen ? (
+          <section
+            id="public-shop-owner-contact-panel"
+            className="public-shop-section"
+            style={{
+              ...innerCard("#F8FBFF"),
+              display: "grid",
+              gap: isCompact ? 9 : 12,
+            }}
+            aria-label="Owner contact choices"
+          >
+            <div>
+              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
+                Owner contact
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#0B1F33",
+                  fontSize: isCompact ? 14 : 17,
+                  fontWeight: 950,
+                  lineHeight: 1.16,
+                }}
+              >
+                Choose WhatsApp chat or a normal phone call.
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#526C84",
+                  fontSize: isCompact ? 10.5 : 12.5,
+                  lineHeight: 1.35,
+                  fontWeight: 750,
+                }}
+              >
+                GSN can open the chat link, but only WhatsApp can confirm whether
+                this number is registered there.
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(2, minmax(0, 1fr))",
+                gap: isCompact ? 8 : 10,
+              }}
+            >
+              <PrimaryButton
+                onClick={() => void contactOwnerByWhatsApp()}
+                minWidth={0}
+                stableHeight={isCompact ? 42 : 50}
+                debugId="shop-gallery.owner-contact.whatsapp-chat"
+                style={{
+                  ...primaryBtn(false),
+                  minHeight: isCompact ? 42 : 50,
+                  borderRadius: isCompact ? 13 : 14,
+                  fontSize: isCompact ? 12 : 14,
+                }}
+              >
+                WhatsApp chat
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={callOwnerPhone}
+                minWidth={0}
+                stableHeight={isCompact ? 42 : 50}
+                debugId="shop-gallery.owner-contact.phone-call"
+                style={{
+                  ...secondaryBtn(false),
+                  minHeight: isCompact ? 42 : 50,
+                  borderRadius: isCompact ? 13 : 14,
+                  fontSize: isCompact ? 12 : 14,
+                }}
+              >
+                Call phone
+              </SecondaryButton>
             </div>
           </section>
         ) : null}

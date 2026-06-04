@@ -5,17 +5,19 @@
 - Product-owner truth:
   - the public shop page should not expose Shop Verification as a large
     always-visible block near the top;
-  - the top billboard/status strip should use the third slot for `Verify shop`
-    instead of repeating owner contact / WhatsApp;
-  - owner contact remains available through the Vault request path, so the top
-    surface does not duplicate WhatsApp/contact information.
+  - the upper billboard cue row should keep the third slot as `Owner contact`
+    because it carries the visible WhatsApp/Telegram/contact reading;
+  - the lower `12 / Vault / Verify shop` strip should carry the `Verify shop`
+    button and open the proof panel on demand.
 - Frontend change:
-  - replaced the third top status-strip action with a stable
+  - replaced the third lower status-strip action with a stable
     `Verify shop` button using `debugId="shop-gallery.verify-shop.toggle"`;
+  - restored the upper billboard cue row to `Owner contact` after the
+    product-owner clarified that the contact reading should not be removed;
+  - restored the upper contact cue as a stable trigger for the WhatsApp chat /
+    Call phone contact panel;
   - the QR/identity proof panel now mounts only after tapping that button and
     includes a `Hide proof` close action;
-  - removed the unreachable owner-contact panel and phone-call helper that were
-    left behind after the top contact slot was replaced;
   - kept the public shop QR target, TrustSlip wording, shop owner ID,
     marketplace, community ID, and shop name verification rows unchanged.
 - Verification:
