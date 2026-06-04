@@ -1,3 +1,56 @@
+### Money In payment instructions reference remodel (2026-06-04)
+
+- Route/screen affected:
+  - `/app/payment/pool`, reached from `/money-in`, implemented by
+    `frontend/src/pages/PaymentInstructionsPage.tsx`.
+- Product-owner screenshot truth:
+  - the Money In page should follow the attached dark `Money In / Payment
+    Instructions` reference: dark top rail, community strip, four-step
+    amount/generate/pay/confirm rail, awaiting-instruction state, white
+    amount/reference/route/reconciliation tiles, a compact generate form, and
+    clear safety strips;
+  - real-life emoji cues should be used where the reference uses visual symbols;
+  - button stability remains part of the work because live phone testing has
+    exposed jumpy and hard-to-hit actions across finance and marketplace.
+- Frontend change:
+  - kept the live route contract and Money In backend calls unchanged;
+  - preserved deterministic handlers for route refresh, instruction generation,
+    reference/instruction copy, payment confirmation, reset, and next-route
+    links;
+  - replaced the old exposed explanatory top stack with the reference-style
+    dark Money In surface and compact pre-instruction task state;
+  - moved generated-instruction details, result reading, and next-route actions
+    behind state gates so the first screen stays focused until an instruction
+    exists or the task can widen;
+  - added stable real-life emoji cues for marketplace, steps, awaiting time,
+    amount, reference, route, reconciliation, instruction, shield, and info;
+  - reset the page-local section memory key from `gmfn.moneyin.sections.v1` to
+    `gmfn.moneyin.sections.v2` so old expanded/collapsed preferences do not
+    force the old busy layout onto the remodeled screen.
+- Button/tap truth:
+  - preserved shared `PrimaryButton`, `SecondaryButton`, `StableCtaLink`, and
+    `SubtleButton` primitives;
+  - preserved audited Money In debug IDs, including
+    `money-in.toggle-overview`, `money-in.generate-instruction`,
+    `money-in.copy-reference`, `money-in.confirm-paid`,
+    `money-in.reset-task`, `money-in.route.finance`, and
+    `money-in.route.notifications`.
+- Verification:
+  - `npm exec -- eslint src/pages/PaymentInstructionsPage.tsx` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only visual/button-fit correction. It does not change
+    custody rules, ledger/payment event matching, deposit instruction
+    generation, reconciliation, or backend money movement rules;
+  - phone evidence after deploy is still required to confirm the compact render
+    against the handset screenshot.
+
 ### Community join requests reference-emoji remodel (2026-06-04)
 
 - Route/screen affected:

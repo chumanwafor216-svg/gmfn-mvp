@@ -34,7 +34,7 @@ type PersistedDepositTask = {
   updatedAt?: string | null;
 };
 
-const MONEY_IN_UI_STORAGE_KEY = "gmfn.moneyin.sections.v1";
+const MONEY_IN_UI_STORAGE_KEY = "gmfn.moneyin.sections.v2";
 const MONEY_IN_TASK_STORAGE_KEY_PREFIX = "gmfn.moneyin.task.v1";
 
 function safeStr(x: unknown): string {
@@ -65,55 +65,6 @@ function safeDateTime(x: unknown): string {
   const d = new Date(raw);
   if (!Number.isFinite(d.getTime())) return raw;
   return d.toLocaleString();
-}
-
-function apiBase(): string {
-  const raw =
-    (typeof import.meta !== "undefined" &&
-      (import.meta as any)?.env &&
-      (import.meta as any).env.VITE_API_BASE_URL) ||
-    "/api";
-
-  return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function apiOrigin(): string {
-  const base = apiBase();
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      return `${u.protocol}//${u.host}`;
-    } catch {
-      return "";
-    }
-  }
-
-  if (typeof window !== "undefined") {
-    return String(window.location.origin || "").trim().replace(/\/+$/, "");
-  }
-
-  return "";
-}
-
-function resolveMediaUrl(src: string): string {
-  const raw = safeStr(src);
-  if (!raw) return "";
-
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("data:") ||
-    raw.startsWith("blob:")
-  ) {
-    return raw;
-  }
-
-  const origin = apiOrigin();
-  if (!origin) return raw;
-
-  if (raw.startsWith("/")) return `${origin}${raw}`;
-  return `${origin}/${raw.replace(/^\/+/, "")}`;
 }
 
 function pageCard(bg = "#FFFFFF"): React.CSSProperties {
@@ -159,20 +110,6 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   };
 }
 
-function statTile(bg = "#FFFFFF"): React.CSSProperties {
-  return {
-    borderRadius: 16,
-    border: "1px solid rgba(123,161,204,0.14)",
-    background:
-      bg === "#FFFFFF"
-        ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
-        : bg,
-    padding: 14,
-    boxShadow:
-      "0 14px 28px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
-  };
-}
-
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
@@ -180,26 +117,6 @@ function sectionLabel(): React.CSSProperties {
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
-  };
-}
-
-function badge(primary = false): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    gap: 6,
-    minHeight: 32,
-    borderRadius: 999,
-    padding: "7px 12px",
-    background: primary ? "rgba(32,76,133,0.36)" : "rgba(255,255,255,0.08)",
-    border: primary
-      ? "1px solid rgba(123,161,204,0.24)"
-      : "1px solid rgba(123,161,204,0.14)",
-    color: primary ? "#CFE3FF" : "#E6EEF8",
-    fontSize: 12,
-    fontWeight: 1000,
-    whiteSpace: "normal",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
 
@@ -275,23 +192,6 @@ function moneyInCollapseButtonStyle(): React.CSSProperties {
   };
 }
 
-function inputStyle(): React.CSSProperties {
-  return {
-    width: "100%",
-    minHeight: 46,
-    borderRadius: 14,
-    border: "1px solid rgba(11,31,51,0.12)",
-    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
-    padding: "11px 12px",
-    fontSize: 14,
-    color: "#0B1F33",
-    boxShadow:
-      "0 12px 24px rgba(15,23,42,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
-    outline: "none",
-    boxSizing: "border-box" as const,
-  };
-}
-
 function helperText(): React.CSSProperties {
   return {
     color: "#C8D8EA",
@@ -343,9 +243,9 @@ function defaultCollapseState(): CollapseState {
     overview: false,
     warning: false,
     amount: false,
-    instruction: false,
-    result: false,
-    routes: false,
+    instruction: true,
+    result: true,
+    routes: true,
   };
 }
 
@@ -407,23 +307,6 @@ function getCommunityRole(currentClan: any): string {
   );
 }
 
-function getCommunityImageSrc(currentClan: any): string {
-  const raw = firstTruthy(
-    currentClan?.community_image_url,
-    currentClan?.profile_image_url,
-    currentClan?.marketplace_image_url,
-    currentClan?.cover_image_url,
-    currentClan?.banner_url,
-    currentClan?.image_url,
-    currentClan?.logo_url,
-    currentClan?.community?.community_image_url,
-    currentClan?.community?.image_url,
-    currentClan?.profile?.profile_image_url
-  );
-
-  return resolveMediaUrl(raw);
-}
-
 function settlementLines(settlement: CommunityMoneySettlement | null): string[] {
   if (!settlement) return [];
 
@@ -470,6 +353,146 @@ function findMatchingDepositEvent(reference: string, recentEvents: any[]): any |
 
 function routeTarget(intent: CtaIntent, communityId: number, debugId: string): string {
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
+}
+
+function moneyInShell(): React.CSSProperties {
+  return {
+    width: "100%",
+    maxWidth: 1180,
+    margin: "0 auto",
+    padding: "0 0 40px",
+    display: "grid",
+    gap: 16,
+    color: "#F8FBFF",
+  };
+}
+
+function moneyInTopRail(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact ? "64px minmax(0, 1fr) 94px" : "96px minmax(0, 1fr) 126px",
+    alignItems: "center",
+    gap: isCompact ? 10 : 16,
+    padding: isCompact ? "12px 10px 6px" : "16px 0 8px",
+  };
+}
+
+function moneyInNavButton(): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(214,228,242,0.18)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
+    color: "#F8FBFF",
+    boxShadow:
+      "0 14px 28px rgba(2,6,23,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
+    fontWeight: 1000,
+    fontSize: 14,
+  };
+}
+
+function moneyInDarkPanel(padding = 16): React.CSSProperties {
+  return {
+    borderRadius: 20,
+    border: "1px solid rgba(214,228,242,0.16)",
+    background:
+      "linear-gradient(135deg, rgba(8,31,53,0.98) 0%, rgba(9,44,77,0.96) 100%)",
+    padding,
+    boxShadow:
+      "0 18px 38px rgba(2,6,23,0.24), inset 0 1px 0 rgba(255,255,255,0.05)",
+    overflow: "hidden",
+  };
+}
+
+function moneyInWhitePanel(padding = 16): React.CSSProperties {
+  return {
+    borderRadius: 22,
+    border: "1px solid rgba(214,228,242,0.72)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.996) 0%, rgba(247,250,255,0.99) 100%)",
+    padding,
+    color: "#07172C",
+    boxShadow:
+      "0 18px 38px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.92)",
+    overflow: "hidden",
+  };
+}
+
+function moneyInStep(active: boolean): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    background: active
+      ? "linear-gradient(180deg, #F2C766 0%, #D6AA45 100%)"
+      : "linear-gradient(180deg, rgba(126,157,198,0.58) 0%, rgba(73,98,130,0.72) 100%)",
+    color: active ? "#07172C" : "#E6EEF8",
+    fontWeight: 1000,
+    boxShadow: active
+      ? "0 10px 22px rgba(214,170,69,0.26), inset 0 1px 0 rgba(255,255,255,0.32)"
+      : "inset 0 1px 0 rgba(255,255,255,0.10)",
+    flex: "0 0 auto",
+  };
+}
+
+function moneyInIconCircle(color = "#0B63D1"): React.CSSProperties {
+  return {
+    width: 54,
+    height: 54,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border: `1px solid ${color}33`,
+    background: "#F8FBFF",
+    color,
+    fontSize: 28,
+    flex: "0 0 auto",
+  };
+}
+
+function moneyInFactTile(): React.CSSProperties {
+  return {
+    minHeight: 116,
+    borderRadius: 18,
+    border: "1px solid rgba(214,228,242,0.74)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.99) 100%)",
+    padding: 14,
+    display: "grid",
+    gridTemplateColumns: "56px minmax(0, 1fr)",
+    gap: 12,
+    alignItems: "center",
+    boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+  };
+}
+
+function moneyInInputShell(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "minmax(0, 1fr) 72px",
+    alignItems: "center",
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.14)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F9FCFF 100%)",
+    boxShadow:
+      "0 12px 24px rgba(15,23,42,0.06), inset 0 1px 0 rgba(255,255,255,0.86)",
+    overflow: "hidden",
+  };
+}
+
+function moneyInNoticeStrip(color = "#D6AA45"): React.CSSProperties {
+  return {
+    ...moneyInDarkPanel(14),
+    display: "grid",
+    gridTemplateColumns: "44px minmax(0, 1fr)",
+    gap: 12,
+    alignItems: "center",
+    borderColor: `${color}55`,
+  };
 }
 
 export default function PaymentInstructionsPage() {
@@ -674,10 +697,6 @@ export default function PaymentInstructionsPage() {
 
   const memberRole = useMemo(() => {
     return getCommunityRole(currentClan);
-  }, [currentClan]);
-
-  const pictureSrc = useMemo(() => {
-    return getCommunityImageSrc(currentClan);
   }, [currentClan]);
 
   const poolCurrency = useMemo(() => {
@@ -1022,445 +1041,486 @@ export default function PaymentInstructionsPage() {
   }
 
   return (
-    <div
-      style={{
-        maxWidth: 1180,
-        margin: "0 auto",
-        paddingBottom: 40,
-        display: "grid",
-        gap: 18,
-      }}
-    >
-      <PageTopNav
-        sectionLabel="Money In"
-        title="Payment Instructions"
-        subtitle="Money In stays on one route from context to instruction, payment confirmation, and reconciliation."
-        homeTo={routes.dashboard}
-        homeLabel="Dashboard"
-        backTo={routes.marketplace}
-        backLabel="Marketplace"
-      />
+    <div style={moneyInShell()}>
+      <section style={moneyInTopRail(isCompact)}>
+        <StableCtaLink
+          to={routes.dashboard}
+          debugId="money-in.header.menu"
+          stableHeight={isCompact ? 64 : 68}
+          fullWidth
+          style={moneyInNavButton()}
+        >
+          ☰ {isCompact ? "" : "Menu"}
+        </StableCtaLink>
 
-      <ExplainToggle
-        label="What this screen does"
-        what="Money In guides one pay-in route from context, amount, and reference generation through payment confirmation and reconciliation."
-        why="Pay-in only works cleanly when the exact amount, exact reference, and matching rule stay visible in one guided place."
-        next="Confirm the route context first, generate the instruction, pay with the exact amount and reference, then wait for reconciliation to complete."
-        tone="light"
-      />
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              color: "#F8FBFF",
+              fontSize: isCompact ? 28 : 36,
+              fontWeight: 1000,
+              letterSpacing: 0,
+              lineHeight: 1.02,
+              textTransform: "uppercase",
+            }}
+          >
+            Money In
+          </div>
+          <div
+            style={{
+              marginTop: 4,
+              color: "#C8D8EA",
+              fontSize: isCompact ? 17 : 20,
+              lineHeight: 1.25,
+              fontWeight: 750,
+            }}
+          >
+            Payment Instructions
+          </div>
+        </div>
+
+        <StableCtaLink
+          to={routes.finance}
+          debugId="money-in.header.tools"
+          stableHeight={isCompact ? 64 : 68}
+          fullWidth
+          style={moneyInNavButton()}
+        >
+          🛠️ {isCompact ? "Tools" : "Tools"}
+        </StableCtaLink>
+      </section>
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <div style={{ ...softCard(resultTone.bg), border: resultTone.border }}>
-        <div style={sectionLabel()}>Active Money In process</div>
+      <section style={moneyInDarkPanel(0)}>
         <div
           style={{
-            marginTop: 8,
-            color: resultTone.text,
-            fontSize: 18,
-            fontWeight: 900,
-            lineHeight: 1.3,
+            display: "flex",
+            gap: 14,
+            alignItems: "center",
+            padding: isCompact ? 14 : 18,
+            border: "1px solid rgba(214,170,69,0.30)",
+            borderRadius: 20,
           }}
         >
-          {inferredResult.title}
+          <div
+            style={{
+              width: 54,
+              height: 54,
+              borderRadius: 999,
+              border: "1px solid rgba(214,170,69,0.48)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 28,
+              color: "#F2C766",
+              flex: "0 0 auto",
+            }}
+          >
+            🏪
+          </div>
+          <div
+            style={{
+              color: "#F8FBFF",
+              fontSize: isCompact ? 20 : 24,
+              fontWeight: 1000,
+              lineHeight: 1.2,
+              minWidth: 0,
+            }}
+          >
+            {communityLabel}
+          </div>
         </div>
-        <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-          {generatingInstruction || refreshingRoute
-            ? "GSN is working on this money-in step now. Other money-in actions are held until the response returns."
-            : inferredResult.detail}
-        </div>
-      </div>
+      </section>
 
-      <section
-        style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
-      >
+      <section style={moneyInDarkPanel(14)}>
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "180px minmax(0, 1fr) 320px",
-            gap: 16,
-            alignItems: "start",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gap: isCompact ? 6 : 12,
+            alignItems: "center",
           }}
         >
-          <div>
+          {[
+            ["1", "Amount", !instruction],
+            ["2", "Generate", Boolean(instruction) && !paymentConfirmed],
+            ["3", "Pay", Boolean(instruction) && !paymentConfirmed],
+            ["4", "Confirm", Boolean(paymentConfirmed || matchedEvent)],
+          ].map(([num, label, active], index, steps) => (
             <div
+              key={`money-in-step-${num}`}
               style={{
-                width: "100%",
-                height: 148,
-                borderRadius: 20,
-                border: "1px solid rgba(212,175,55,0.22)",
-                overflow: "hidden",
-                background: "linear-gradient(180deg, rgba(16,36,58,0.84) 0%, rgba(38,82,124,0.92) 100%)",
-                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
-                display: "flex",
+                display: "grid",
+                gridTemplateColumns: "34px minmax(0, 1fr)",
+                gap: 8,
                 alignItems: "center",
-                justifyContent: "center",
+                minWidth: 0,
               }}
             >
-              {pictureSrc ? (
-                <img
-                  src={pictureSrc}
-                  alt={communityLabel}
+              <span style={moneyInStep(Boolean(active))}>{num}</span>
+              <span
+                style={{
+                  color: active ? "#F2C766" : "#C8D8EA",
+                  fontWeight: 1000,
+                  fontSize: isCompact ? 13 : 15,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {label}
+              </span>
+              {index < steps.length - 1 && !isCompact ? (
+                <span
                   style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
+                    position: "relative",
+                    left: "calc(100% + 4px)",
+                    height: 2,
+                    width: 36,
+                    background: "rgba(200,216,234,0.38)",
                   }}
                 />
-              ) : (
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontWeight: 900,
-                    fontSize: 20,
-                    textAlign: "center",
-                    padding: 12,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {communityLabel}
-                </div>
-              )}
+              ) : null}
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section style={moneyInDarkPanel(isCompact ? 16 : 22)}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "74px minmax(0, 1fr)",
+            gap: 14,
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              width: 68,
+              height: 68,
+              borderRadius: 999,
+              border: "1px solid rgba(214,170,69,0.34)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.05) 100%)",
+              color: "#F2C766",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 34,
+            }}
+          >
+            🕘
           </div>
-
           <div>
-            <div style={sectionLabel()}>Fixed pay-in context</div>
-
             <div
               style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
+                color: "#FFFFFF",
                 fontSize: isCompact ? 28 : 34,
+                fontWeight: 1000,
                 lineHeight: 1.1,
               }}
             >
-              Pay into {communityLabel}
+              {generatingInstruction || refreshingRoute
+                ? "Working on instruction"
+                : inferredResult.title}
             </div>
-
-            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              GSN is not the custodian of the money. This route generates the exact
-              matching reference so payment into the community account can later be
-              matched and reflected correctly.
-            </div>
-
             <div
               style={{
-                marginTop: 14,
-                display: "flex",
-                gap: 8,
-                flexWrap: "wrap",
+                marginTop: 6,
+                color: "#C8D8EA",
+                fontSize: isCompact ? 15 : 17,
+                lineHeight: 1.45,
+                fontWeight: 700,
               }}
             >
-              <span style={badge(true)}>Community ID: {publicCommunityCode}</span>
-              <span style={badge(false)}>GSN ID: {currentGmfnId || "Awaiting issue"}</span>
-              <span style={badge(false)}>Member: {memberName}</span>
-              {memberRole ? <span style={badge(false)}>Role: {memberRole}</span> : null}
-              <span style={badge(false)}>Current stage: {inferredResult.step}</span>
-            </div>
-          </div>
-
-          <div
-            style={{
-              ...softCard(resultTone.bg),
-              border: resultTone.border,
-            }}
-          >
-            <div style={sectionLabel()}>Current route state</div>
-
-            <div
-              style={{
-                marginTop: 10,
-                color: resultTone.text,
-                fontWeight: 900,
-                fontSize: 20,
-                lineHeight: 1.25,
-              }}
-            >
-              {inferredResult.title}
-            </div>
-
-            <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
-              {inferredResult.detail}
+              {generatingInstruction || refreshingRoute
+                ? "GSN is handling this step now. Other money-in actions are held until the response returns."
+                : instruction
+                  ? inferredResult.detail
+                  : "Enter amount to create the exact payment reference."}
             </div>
           </div>
         </div>
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={moneyInWhitePanel(12)}>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "repeat(2, minmax(0, 1fr))"
+              : "repeat(4, minmax(0, 1fr))",
             gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Money In overview</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              The core pay-in facts stay visible in one place.
+          {[
+            {
+              icon: "💲",
+              label: "Amount",
+              value: formattedInputAmount
+                ? `${formattedInputAmount} ${poolCurrency}`
+                : "Awaiting amount",
+              color: "#0B63D1",
+            },
+            {
+              icon: "🔖",
+              label: "Reference",
+              value: firstTruthy(instruction?.reference, "Awaiting reference"),
+              color: "#0B63D1",
+            },
+            {
+              icon: "👥",
+              label: "Route",
+              value: communityRailReady
+                ? "Community pay-in ready"
+                : "Community pay-in pending",
+              color: "#0B63D1",
+            },
+            {
+              icon: "🛡️",
+              label: "Reconciliation",
+              value: matchedEvent
+                ? "Matched event visible"
+                : paymentConfirmed
+                  ? "Waiting for reconciliation"
+                  : "Not confirmed yet",
+              color: matchedEvent ? "#2E9B62" : "#92400E",
+            },
+          ].map((tile) => (
+            <div key={tile.label} style={moneyInFactTile()}>
+              <span style={moneyInIconCircle(tile.color)}>{tile.icon}</span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    color: "#617085",
+                    fontWeight: 1000,
+                    fontSize: 12,
+                    lineHeight: 1.1,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {tile.label}
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 6,
+                    color: tile.color,
+                    fontSize: isCompact ? 18 : 20,
+                    lineHeight: 1.14,
+                    fontWeight: 1000,
+                    overflowWrap: "anywhere",
+                  }}
+                >
+                  {tile.value}
+                </span>
+              </span>
             </div>
-          </div>
-
-          <SubtleButton
-            onClick={() => toggleSection("overview")}
-            minWidth={128}
-            stableHeight={46}
-            debugId="money-in.toggle-overview"
-            style={moneyInCollapseButtonStyle()}
-          >
-            {collapsed.overview ? "Open" : "Collapse"}
-          </SubtleButton>
+          ))}
         </div>
 
-        <ExplainToggle
-          label="What this overview shows"
-          what="This overview keeps the core pay-in facts together: amount, route status, reference, and reconciliation state."
-          why="It gives you one quick reading before you move deeper into instruction details or reconciliation."
-          next="Confirm the route is ready, then generate or check the instruction below before making payment."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
+        <SubtleButton
+          onClick={() => toggleSection("overview")}
+          minWidth={148}
+          stableHeight={42}
+          debugId="money-in.toggle-overview"
+          style={{
+            ...moneyInActionButtonStyle("soft"),
+            margin: "12px auto 0",
+            border: "1px solid rgba(11,99,209,0.12)",
+            background: "linear-gradient(180deg, #FFFFFF 0%, #F4F8FF 100%)",
+            color: "#0B63D1",
+            boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+          }}
+        >
+          {collapsed.overview ? "Show Details" : "Hide Details"}
+        </SubtleButton>
 
         {!collapsed.overview ? (
           <div
             style={{
-              marginTop: 14,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr 1fr"
-                : "repeat(4, minmax(0, 1fr))",
-              gap: 12,
+              marginTop: 10,
+              color: "#617085",
+              fontSize: 14,
+              lineHeight: 1.5,
+              fontWeight: 700,
+              textAlign: "center",
             }}
           >
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Pay-in amount</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 18,
-                  fontWeight: 900,
-                }}
-              >
-                {formattedInputAmount ? `${formattedInputAmount} ${poolCurrency}` : "Awaiting amount"}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Route status</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 16,
-                  fontWeight: 900,
-                }}
-              >
-                {communityRailReady ? "Community pay-in details ready" : "Community pay-in details pending"}
-              </div>
-            </div>
-
-            <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Reference</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B63D1",
-                  fontSize: 16,
-                  fontWeight: 900,
-                  wordBreak: "break-word",
-                }}
-              >
-                {firstTruthy(instruction?.reference, "Awaiting reference")}
-              </div>
-            </div>
-
-            <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Reconciliation state</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#92400E",
-                  fontSize: 16,
-                  fontWeight: 900,
-                }}
-              >
-                {matchedEvent
-                  ? "Matched event visible"
-                  : paymentConfirmed
-                  ? "Waiting for reconciliation"
-                  : "Not yet confirmed"}
-              </div>
-            </div>
+            Amount, reference, route, and reconciliation stay together until this
+            payment is clearly matched.
           </div>
         ) : null}
       </section>
 
-      <section style={pageCard("#FFFFFF")}>
+      <section style={moneyInWhitePanel(isCompact ? 16 : 20)}>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            display: "grid",
+            gridTemplateColumns: "46px minmax(0, 1fr)",
             gap: 12,
             alignItems: "center",
-            flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Non-custodial warning</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Keep this warning visible before payment is made.
-            </div>
-          </div>
-
-          <SubtleButton
-            onClick={() => toggleSection("warning")}
-            minWidth={128}
-            stableHeight={46}
-            debugId="money-in.toggle-warning"
-            style={moneyInCollapseButtonStyle()}
+          <span
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 999,
+              background: "#08233A",
+              color: "#F8FBFF",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 24,
+            }}
           >
-            {collapsed.warning ? "Open" : "Collapse"}
-          </SubtleButton>
+            📋
+          </span>
+          <h2
+            style={{
+              margin: 0,
+              color: "#07172C",
+              fontSize: isCompact ? 23 : 28,
+              lineHeight: 1.12,
+              fontWeight: 1000,
+            }}
+          >
+            Generate payment instruction
+          </h2>
         </div>
 
-        {!collapsed.warning ? (
-          <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
-            <div style={innerCard("#FFFBEF")}>
-              <div style={sectionLabel()}>Pay-in rule</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                GSN does not hold your funds. Pay into the community account
-                using the exact generated reference.
-              </div>
-            </div>
+        <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+          <label style={moneyInInputShell()}>
+            <input
+              value={amountInput}
+              onChange={(e) => {
+                setAmountInput(e.target.value);
+                setInstruction(null);
+                setPaymentConfirmed(false);
+                setPaymentConfirmedAt(null);
+              }}
+              disabled={generatingInstruction}
+              placeholder="Enter amount"
+              inputMode="decimal"
+              style={{
+                border: 0,
+                outline: "none",
+                background: "transparent",
+                minHeight: 54,
+                padding: "0 16px",
+                fontSize: 18,
+                color: "#07172C",
+                fontWeight: 750,
+                minWidth: 0,
+              }}
+            />
+            <span
+              style={{
+                marginRight: 10,
+                minHeight: 42,
+                borderRadius: 12,
+                border: "1px solid rgba(11,31,51,0.12)",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#07172C",
+                fontWeight: 1000,
+                background: "#F8FBFF",
+              }}
+            >
+              {poolCurrency}
+            </span>
+          </label>
 
-            <div style={innerCard("#FFFBEF")}>
-              <div style={sectionLabel()}>Matching rule</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                A wrong reference or wrong amount may delay reconciliation and leave the payment unmatched.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFBEF")}>
-              <div style={sectionLabel()}>Critical rule</div>
-              <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
-                Money In does not use guarantor logic. It stays a pay-in route,
-                not a support route.
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </section>
-
-      <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Amount and code generation</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Enter the amount, then generate the exact matching instruction.
-            </div>
-          </div>
-
-          <SubtleButton
-            onClick={() => toggleSection("amount")}
-            minWidth={128}
-            stableHeight={46}
-            debugId="money-in.toggle-amount"
-            style={moneyInCollapseButtonStyle()}
-          >
-            {collapsed.amount ? "Open" : "Collapse"}
-          </SubtleButton>
-        </div>
-
-        {!collapsed.amount ? (
           <div
             style={{
-              marginTop: 16,
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 320px",
-              gap: 16,
-              alignItems: "start",
+              gridTemplateColumns: isCompact ? "minmax(0, 1fr) minmax(0, 0.78fr)" : "minmax(0, 1fr) 280px",
+              gap: 12,
+              alignItems: "stretch",
             }}
           >
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Pay-in amount</div>
+            <PrimaryButton
+              onClick={() => void handleGenerateInstruction()}
+              disabled={generatingInstruction}
+              debugId="money-in.generate-instruction"
+              stableHeight={62}
+              fullWidth
+              style={moneyInActionButtonStyle("primary", generatingInstruction)}
+            >
+              {generatingInstruction ? "Generating..." : "Generate Instruction"}
+            </PrimaryButton>
 
-              <div style={{ marginTop: 14, display: "grid", gap: 12, maxWidth: 420 }}>
-                <div>
-                  <div
-                    style={{
-                      marginBottom: 8,
-                      color: "#475569",
-                      fontWeight: 900,
-                      fontSize: 14,
-                    }}
-                  >
-                    How much do you want to pay in?
-                  </div>
-
-                  <input
-                    value={amountInput}
-                    onChange={(e) => {
-                      setAmountInput(e.target.value);
-                      setInstruction(null);
-                      setPaymentConfirmed(false);
-                      setPaymentConfirmedAt(null);
-                    }}
-                    disabled={generatingInstruction}
-                    placeholder="Enter amount"
-                    style={inputStyle()}
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <PrimaryButton
-                    onClick={() => void handleGenerateInstruction()}
-                    disabled={generatingInstruction}
-                    debugId="money-in.generate-instruction"
-                    style={moneyInActionButtonStyle("primary", generatingInstruction)}
-                  >
-                    {generatingInstruction ? "Generating..." : "Generate Instruction"}
-                  </PrimaryButton>
-
-                  <SecondaryButton
-                    onClick={() => void handleRefreshRoute()}
-                    disabled={generatingInstruction || refreshingRoute}
-                    debugId="money-in.refresh-route"
-                    style={moneyInActionButtonStyle(
-                      "secondary",
-                      generatingInstruction || refreshingRoute
-                    )}
-                  >
-                    {refreshingRoute ? "Refreshing..." : "Refresh Route"}
-                  </SecondaryButton>
-                </div>
-              </div>
-            </div>
-
-            <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>What generation does</div>
-              <div style={{ marginTop: 8, ...helperText() }}>
-                The generated code/reference is the matching identity for the payment event.
-                It ties together your community, GSN identity, amount, and currency.
-              </div>
-            </div>
+            <SecondaryButton
+              onClick={() => void handleRefreshRoute()}
+              disabled={generatingInstruction || refreshingRoute}
+              debugId="money-in.refresh-route"
+              stableHeight={62}
+              fullWidth
+              style={moneyInActionButtonStyle(
+                "secondary",
+                generatingInstruction || refreshingRoute
+              )}
+            >
+              {refreshingRoute ? "Refreshing..." : "Refresh"}
+            </SecondaryButton>
           </div>
-        ) : null}
+
+          <SubtleButton
+            onClick={handleResetTask}
+            stableHeight={38}
+            debugId="money-in.reset-task"
+            style={{
+              ...moneyInActionButtonStyle("soft"),
+              justifySelf: "center",
+              minWidth: 120,
+              border: "0",
+              background: "transparent",
+              boxShadow: "none",
+              color: "#0B63D1",
+              fontSize: 17,
+            }}
+          >
+            Reset
+          </SubtleButton>
+        </div>
       </section>
 
+      <section style={{ display: "grid", gap: 12 }}>
+        <div style={moneyInNoticeStrip("#D6AA45")}>
+          <span style={{ color: "#F2C766", fontSize: 28, textAlign: "center" }}>🛡️</span>
+          <span
+            style={{
+              color: "#F8FBFF",
+              fontSize: isCompact ? 15 : 16,
+              lineHeight: 1.45,
+              fontWeight: 800,
+            }}
+          >
+            GSN is non-custodial. Pay only with the exact generated reference.
+          </span>
+        </div>
+
+        <div style={moneyInNoticeStrip("#2D7CFF")}>
+          <span style={{ color: "#6BA7FF", fontSize: 30, textAlign: "center" }}>ℹ️</span>
+          <span
+            style={{
+              color: "#D8E7FA",
+              fontSize: isCompact ? 15 : 16,
+              lineHeight: 1.45,
+              fontWeight: 800,
+            }}
+          >
+            Stay on this route until payment is confirmed or clearly awaiting reconciliation.
+          </span>
+        </div>
+      </section>
+
+      {instruction ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1608,7 +1668,9 @@ export default function PaymentInstructionsPage() {
           )
         ) : null}
       </section>
+      ) : null}
 
+      {instruction ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1763,7 +1825,9 @@ export default function PaymentInstructionsPage() {
           </div>
         ) : null}
       </section>
+      ) : null}
 
+      {moneyInCanWidenRoutes ? (
       <section style={pageCard("#FFFFFF")}>
         <div
           style={{
@@ -1902,6 +1966,7 @@ export default function PaymentInstructionsPage() {
           )
         ) : null}
       </section>
+      ) : null}
     </div>
   );
 }
