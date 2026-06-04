@@ -1,3 +1,57 @@
+### Marketplace Money Pool button route hardening (2026-06-04)
+
+- Route/screen affected:
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`.
+- Product-owner truth:
+  - Marketplace is still the most worrying route for phone button jumpiness;
+  - the reported bad case was tapping the pool/dues/contributions block and
+    landing at Trust Passport instead of the money lane;
+  - before live money-pool/support practice, Marketplace button routing must be
+    trustworthy.
+- Frontend change:
+  - renamed the first Marketplace operating tile from `Dues & Contributions`
+    to `Money Pool`;
+  - changed its helper to `Dues, Money In, Money Out` so the purpose is clearer;
+  - added explicit `aria-label` values to the first Marketplace tile row and
+    operating-lane buttons so the intended route/action is unambiguous;
+  - kept `marketplace.tile.money` wired to
+    `openMarketplaceSection(event, "money", "marketplace-money-routes")`;
+  - kept `marketplace.tile.support` wired to the support section and
+    `marketplace.tile.trust` wired only to the local trust-summary toggle.
+- Audit changes:
+  - `audit-marketplace-button-inventory` now fails if:
+    - Money Pool stops opening the money section;
+    - Support Requests stops opening the support section;
+    - Trust tile stops being only the local marketplace-trust toggle;
+    - Money In, Money Out, or Finance detail buttons stop using their shared
+      CTA targets.
+- Current money/support chain truth:
+  - backend/source tests currently cover confirmed pool-event borrowing truth,
+    marketplace request pool summaries, guarantor invite/decision contracts,
+    clan pool behavior, repayment completion service, guarantor earnings, and
+    loan hardening;
+  - this is still not the same as a full live-device walk-through with a real
+    community account setup, deposit reference, confirmation, withdrawal, and
+    support/guarantor practice.
+- Verification:
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-button-inventory.mjs` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure;
+  - `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py gmfn_backend\tests\test_marketplace_requests.py gmfn_backend\tests\test_guarantor_invite_list.py gmfn_backend\tests\test_guarantor_decision.py` passed: 14 tests;
+  - `python -m pytest -q gmfn_backend\tests\test_clan_pool.py gmfn_backend\tests\test_repayment_completion_service.py gmfn_backend\tests\test_guarantor_earnings_service.py gmfn_backend\tests\test_loan_hardening_service.py` passed: 11 tests.
+- Remaining truth:
+  - this does not prove that a real deployed phone session cannot be affected by
+    stale cache, old downloaded app shell, or browser/service-worker state;
+  - after deploy, the next live check should tap `Money Pool`, `Money In /
+    Money Out`, `Money In`, `Money Out`, `Finance`, and `Support Requests`
+    from Marketplace and confirm every route lands where this source contract
+    says it should.
+
 ### Public shop diary controls changed from words to compact signs (2026-06-04)
 
 - Route/screen affected:

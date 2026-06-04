@@ -4063,6 +4063,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.money"
+              aria-label="Open Money In, Money Out, dues and contributions"
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -4078,19 +4079,20 @@ export default function MarketplacePage() {
                 <MarketplaceGlyph name="card" size={isCompact ? 28 : 32} />
               </span>
               <span style={marketplaceOsTileTitleStyle(isCompact)}>
-                Dues & Contributions
+                Money Pool
               </span>
               <span style={marketplaceOsTileMetricStyle("#0B63D1", isCompact)}>
                 {marketplacePoolLabel}
               </span>
               <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Shared money position
+                Dues, Money In, Money Out
               </span>
             </StableButton>
 
             <StableButton
               type="button"
               debugId="marketplace.tile.support"
+              aria-label="Open Support Requests, guarantors and loans"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -4123,6 +4125,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.members"
+              aria-label="Open trusted trade, members and visible shops"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -4155,6 +4158,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.tile.trust"
+              aria-label="Open this marketplace trust summary"
               onClick={toggleProfileDetails}
               aria-expanded={profileDetailsOpen}
               style={marketplaceOsTileStyle(isCompact)}
@@ -4245,6 +4249,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.money"
+              aria-label="Open Money In and Money Out for this marketplace"
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
@@ -4275,6 +4280,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.payment-rails"
+              aria-label="Open Banking Rails for this marketplace"
               onClick={(event) =>
                 openMarketplaceCta(event, "paymentRails")
               }
@@ -4305,6 +4311,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.loan-process"
+              aria-label="Open Loan Process and support workbench"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -4339,6 +4346,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.member-ledger"
+              aria-label="Open Member Ledger and visible shops"
               onClick={(event) =>
                 openMarketplaceSection(
                   event,
@@ -4373,6 +4381,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.demand-box"
+              aria-label="Open Demand Box for this marketplace"
               onClick={(event) => openMarketplaceCta(event, "demandBox")}
               style={marketplaceOsRowStyle(isCompact)}
             >
@@ -4401,6 +4410,7 @@ export default function MarketplacePage() {
             <StableButton
               type="button"
               debugId="marketplace.row.records-links"
+              aria-label="Open Records and Links for this marketplace"
               onClick={(event) =>
                 openMarketplaceSection(event, "tools", "marketplace-owned-links")
               }

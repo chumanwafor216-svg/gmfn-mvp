@@ -180,6 +180,41 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
   });
 }
 
+assertContains(
+  /debugId="marketplace\.tile\.money"[\s\S]{0,260}aria-label="Open Money In, Money Out, dues and contributions"[\s\S]{0,260}openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]{0,520}Money Pool[\s\S]{0,260}Dues, Money In, Money Out/,
+  "Marketplace Money Pool tile must open the money section only, with a clear label that cannot be confused with Trust Passport."
+);
+
+assertContains(
+  /debugId="marketplace\.tile\.support"[\s\S]{0,300}aria-label="Open Support Requests, guarantors and loans"[\s\S]{0,320}openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)/,
+  "Marketplace Support Requests tile must open the support section only."
+);
+
+assertContains(
+  /debugId="marketplace\.tile\.trust"[\s\S]{0,300}aria-label="Open this marketplace trust summary"[\s\S]{0,180}onClick=\{toggleProfileDetails\}/,
+  "Marketplace Trust tile must toggle the local marketplace trust summary, not hijack the Money Pool tile or route directly to Trust Passport."
+);
+
+assertContains(
+  /debugId="marketplace\.row\.money"[\s\S]{0,300}aria-label="Open Money In and Money Out for this marketplace"[\s\S]{0,300}openMarketplaceSection\(event, "money", "marketplace-money-routes"\)/,
+  "Marketplace Money In / Money Out row must open the money section only."
+);
+
+assertContains(
+  /debugId="marketplace\.money\.money-in"[\s\S]{0,260}onClick=\{\(event\) => openMarketplaceCta\(event, "moneyIn"\)\}/,
+  "Marketplace Money In detail button must route through the shared moneyIn CTA target."
+);
+
+assertContains(
+  /debugId="marketplace\.money\.money-out"[\s\S]{0,320}openMarketplaceCta\(event, "moneyOut"\)/,
+  "Marketplace Money Out detail button must route through the shared moneyOut CTA target."
+);
+
+assertContains(
+  /debugId="marketplace\.money\.finance"[\s\S]{0,260}onClick=\{\(event\) => openMarketplaceCta\(event, "finance"\)\}/,
+  "Marketplace Finance detail button must route through the shared finance CTA target."
+);
+
 const expectedOrder = [
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
