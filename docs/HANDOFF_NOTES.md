@@ -1,3 +1,53 @@
+### Community join requests reference-emoji remodel (2026-06-04)
+
+- Route/screen affected:
+  - `/app/community/:clanId/join-requests`, implemented by
+    `frontend/src/pages/CommunityJoinRequestsPage.tsx`.
+- Product-owner screenshot truth:
+  - the reviewer/admin page should follow the attached dark GSN `Join
+    Requests` reference: focused task top rail, dark review hero, selected
+    community card, compact count tiles, approval-rule note, and white request
+    cards;
+  - real-life emoji cues are preferred where the reference uses them;
+  - button stability remains part of the work because live phone testing has
+    exposed jumpy and hard-to-hit marketplace/community actions.
+- Frontend change:
+  - kept the live route contract and backend join request API calls unchanged;
+  - confirmed from `frontend/src/App.tsx` that the live route is the nested
+    community route, not an older detached review page;
+  - replaced the older explanatory/manual-style surface with the screenshot
+    structure: `Focused Task / Join Requests`, dark `Review Join Requests`
+    hero, selected community panel, total/pending/approved/rejected tiles,
+    approval rule note, and request cards;
+  - added real-life emoji cues for mail, community, home, market, refresh,
+    pending, approved, rejected, invite keys, dates, active members, applicant
+    identity, info, copy, link, activation, and admin review;
+  - tightened Home, Market, Refresh, Approve, Reject, and approval-package
+    actions to stable fixed-height button rows so labels do not jump or fall
+    out of place on compact phone widths.
+- Button/tap truth:
+  - preserved shared `PrimaryButton`, `SecondaryButton`, `StableCtaLink`, and
+    `CardActionRow` primitives;
+  - preserved audited debug IDs, including
+    `community-join-requests.refresh`, `community-join-requests.approve`, and
+    the existing community/marketplace CTA debug IDs required by the audits.
+- Verification:
+  - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:admin-ops-actions` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only visual/button-fit correction. It does not change
+    backend approval thresholds, voting, rejection, invite, membership, or
+    activation-package rules;
+  - phone evidence after deploy is still required to confirm the exact compact
+    rendering against the handset screenshot.
+
 ### Member activation page reference-emoji remodel (2026-06-04)
 
 - Route/screen affected:

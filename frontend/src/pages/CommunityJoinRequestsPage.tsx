@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import {
   CardActionRow,
@@ -8,12 +7,6 @@ import {
   SecondaryButton,
   StableCtaLink,
 } from "../components/StableButton";
-import {
-  institutionalInnerCard,
-  institutionalPageCard,
-  institutionalSoftCard,
-  institutionalStatTile,
-} from "../lib/institutionalSurface";
 import {
   getCommunityJoinRequests,
   pilotApproveJoinRequest,
@@ -92,28 +85,59 @@ type VoteResponse = {
   request?: JoinRequestItem;
 };
 
-function pageCard(bg = "#FFFFFF"): React.CSSProperties {
+function pageShell(): React.CSSProperties {
   return {
-    ...institutionalPageCard(bg),
-    border: "1px solid rgba(11,31,51,0.08)",
-    padding: 18,
+    minHeight: "100vh",
+    margin: "0 -20px -30px",
+    padding: "0 20px 34px",
+    background:
+      "radial-gradient(circle at 82% 6%, rgba(53,111,181,0.22) 0%, rgba(53,111,181,0) 32%), radial-gradient(circle at 4% 38%, rgba(64,112,169,0.16) 0%, rgba(64,112,169,0) 28%), linear-gradient(180deg, #031222 0%, #061B2D 36%, #08233A 100%)",
+    boxSizing: "border-box",
   };
 }
 
-function softCard(bg = "#F8FBFF"): React.CSSProperties {
+function contentRail(): React.CSSProperties {
   return {
-    ...institutionalSoftCard(bg),
-    border: "1px solid rgba(11,31,51,0.08)",
-    padding: 14,
+    width: "100%",
+    maxWidth: 980,
+    margin: "0 auto",
+    display: "grid",
+    gap: 16,
   };
 }
 
-function sectionLabel(): React.CSSProperties {
+function darkPanel(padding = 18): React.CSSProperties {
+  return {
+    position: "relative",
+    overflow: "hidden",
+    borderRadius: 22,
+    border: "1px solid rgba(123,161,204,0.30)",
+    background:
+      "linear-gradient(180deg, rgba(8,32,57,0.96) 0%, rgba(6,24,43,0.985) 100%)",
+    boxShadow:
+      "0 22px 54px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.08)",
+    padding,
+    boxSizing: "border-box",
+  };
+}
+
+function whitePanel(padding = 18): React.CSSProperties {
+  return {
+    borderRadius: 18,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 18px 34px rgba(0,0,0,0.16)",
+    padding,
+    boxSizing: "border-box",
+  };
+}
+
+function sectionLabel(color = "#D6AA45"): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#4F6B8A",
+    color,
     fontWeight: 1000,
-    letterSpacing: 0.45,
+    letterSpacing: 0.55,
     textTransform: "uppercase",
   };
 }
@@ -126,12 +150,12 @@ function reviewerBadge(canPilotApprove = false): React.CSSProperties {
     padding: "6px 10px",
     borderRadius: 999,
     background: canPilotApprove
-      ? "linear-gradient(180deg, #FFF7E8 0%, #FBE8B4 100%)"
-      : "#F8FAFC",
+      ? "linear-gradient(180deg, rgba(255,247,232,0.98) 0%, rgba(251,232,180,0.96) 100%)"
+      : "linear-gradient(180deg, rgba(22,76,127,0.92) 0%, rgba(12,51,92,0.92) 100%)",
     border: canPilotApprove
       ? "1px solid rgba(201,161,54,0.28)"
-      : "1px solid rgba(11,31,51,0.08)",
-    color: canPilotApprove ? "#7C5A06" : "#475569",
+      : "1px solid rgba(123,161,204,0.22)",
+    color: canPilotApprove ? "#7C5A06" : "#F8FBFF",
     fontWeight: 900,
     fontSize: 12,
     whiteSpace: "normal",
@@ -140,31 +164,106 @@ function reviewerBadge(canPilotApprove = false): React.CSSProperties {
 
 function requestFactTile(): React.CSSProperties {
   return {
-    ...institutionalInnerCard("#FFFFFF"),
     border: "1px solid rgba(11,31,51,0.08)",
-    borderRadius: 14,
-    padding: 12,
-    minHeight: 74,
+    borderRadius: 0,
+    padding: "10px 12px",
+    minHeight: 72,
+    background: "#FBFCFE",
+    boxSizing: "border-box",
   };
 }
 
 function requestFactLabel(): React.CSSProperties {
   return {
-    fontSize: 11,
+    fontSize: 12,
     color: "#64748B",
     fontWeight: 1000,
-    letterSpacing: 0.3,
-    textTransform: "uppercase",
+    letterSpacing: 0.1,
   };
 }
 
 function requestFactValue(): React.CSSProperties {
   return {
-    marginTop: 6,
+    marginTop: 5,
     color: "#0B1F33",
     fontWeight: 900,
-    lineHeight: 1.45,
+    lineHeight: 1.35,
     wordBreak: "break-word",
+  };
+}
+
+function navActionStyle(kind: "light" | "blue" = "light"): React.CSSProperties {
+  const blue = kind === "blue";
+  return {
+    minHeight: 58,
+    height: 58,
+    maxHeight: 58,
+    borderRadius: 14,
+    padding: "0 14px",
+    fontSize: 16,
+    fontWeight: 1000,
+    background: blue
+      ? "linear-gradient(180deg, #2278F2 0%, #0D57C7 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F5F8FC 100%)",
+    color: blue ? "#FFFFFF" : "#0B1F33",
+    border: blue ? "1px solid rgba(172,204,255,0.42)" : "1px solid rgba(11,31,51,0.08)",
+    boxShadow: blue
+      ? "0 14px 24px rgba(13,87,199,0.30), inset 0 1px 0 rgba(255,255,255,0.18)"
+      : "0 12px 22px rgba(0,8,18,0.12), inset 0 1px 0 rgba(255,255,255,0.86)",
+  };
+}
+
+function decisionButtonStyle(kind: "approve" | "reject"): React.CSSProperties {
+  const approve = kind === "approve";
+  return {
+    minHeight: 58,
+    height: 58,
+    maxHeight: 58,
+    borderRadius: 12,
+    fontSize: 17,
+    fontWeight: 1000,
+    background: approve
+      ? "linear-gradient(180deg, #1977F2 0%, #0754C7 100%)"
+      : "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+    color: approve ? "#FFFFFF" : "#0B1F33",
+    border: approve ? "1px solid rgba(172,204,255,0.44)" : "1px solid rgba(11,31,51,0.12)",
+  };
+}
+
+function statTile(color: string): React.CSSProperties {
+  return {
+    minHeight: 98,
+    borderRadius: 16,
+    border: "1px solid rgba(11,31,51,0.08)",
+    background: "#FFFFFF",
+    boxShadow: "0 16px 30px rgba(0,0,0,0.14)",
+    padding: 14,
+    display: "grid",
+    alignContent: "center",
+    gap: 9,
+    color,
+    boxSizing: "border-box",
+  };
+}
+
+function statusPill(status: string): React.CSSProperties {
+  const approved = status === "approved";
+  const rejected = status === "rejected";
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
+    minHeight: 42,
+    padding: "8px 14px",
+    borderRadius: 12,
+    background: approved ? "#EEF9EF" : rejected ? "#FEF2F2" : "#FFF8E7",
+    border: approved
+      ? "1px solid rgba(34,197,94,0.18)"
+      : rejected
+        ? "1px solid rgba(239,68,68,0.18)"
+        : "1px solid rgba(214,170,69,0.22)",
+    color: approved ? "#2E7D32" : rejected ? "#B91C1C" : "#8A5A08",
+    fontWeight: 1000,
   };
 }
 
@@ -387,209 +486,249 @@ export default function CommunityJoinRequestsPage() {
   }
 
   return (
-    <div style={{ padding: 20, maxWidth: 980, margin: "0 auto", paddingBottom: 30 }}>
+    <div style={pageShell()}>
       <PageTopNav
-        sectionLabel="Community Join Requests"
-        title="Community Join Requests"
-        subtitle="Review incoming requests for your current community and decide whether to approve or reject them."
+        sectionLabel="Focused Task"
+        title="Join Requests"
+        subtitle=""
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen gathers incoming join requests for one community so you can review each applicant and decide whether to approve or reject the request."
-        why="It keeps community entry decisions clear and tied to the right community instead of mixing them into the wider community workspace."
-        next="Confirm the community first, read the request counts, and then review each applicant card before voting."
-        tone="light"
-        style={{ marginTop: 18 }}
-      />
-
-      <div
-        style={{
-          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)"),
-          marginTop: 18,
-        }}
-      >
-        <div style={sectionLabel()}>Selected community</div>
-
-        <div
+      <div style={contentRail()}>
+        <section
           style={{
-            marginTop: 10,
-            fontSize: 30,
-            fontWeight: 1000,
-            color: "#F8FBFF",
-            lineHeight: 1.15,
+            ...darkPanel(isCompact ? 18 : 26),
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr 128px" : "minmax(0, 1fr) 220px",
+            gap: isCompact ? 10 : 18,
+            alignItems: "center",
           }}
         >
-          {selectedCommunityName}
-        </div>
-
-        <div
-          style={{
-            marginTop: 8,
-            color: "#D7E3F1",
-            lineHeight: 1.8,
-          }}
-        >
-          This belongs to the community approval flow. Review join requests
-          here, then return to Community Home or Marketplace when this review task is complete.
-        </div>
-
-        <div
-          style={{
-            marginTop: 16,
-            display: "flex",
-            gap: 10,
-            flexWrap: "wrap",
-          }}
-        >
-          <span
+          <div style={{ minWidth: 0 }}>
+            <div style={sectionLabel()}>✉️ Community join requests</div>
+            <h1
+              style={{
+                margin: "12px 0 0",
+                color: "#FFFFFF",
+                fontSize: isCompact ? 31 : 40,
+                lineHeight: 1.06,
+                fontWeight: 1000,
+              }}
+            >
+              Review Join Requests
+            </h1>
+            <p
+              style={{
+                margin: "12px 0 0",
+                color: "#D7E3F1",
+                fontSize: isCompact ? 17 : 21,
+                lineHeight: 1.5,
+              }}
+            >
+              Approve or reject new members for your current community.
+            </p>
+          </div>
+          <div
+            aria-hidden="true"
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              minHeight: 30,
-              padding: "6px 10px",
-              borderRadius: 999,
-              background: "#F8FAFC",
-              border: "1px solid rgba(11,31,51,0.08)",
-              color: "#475569",
-              fontWeight: 900,
-              fontSize: 12,
-              whiteSpace: "normal",
+              display: "grid",
+              placeItems: "center",
+              minHeight: isCompact ? 118 : 172,
+              color: "#D6AA45",
+              fontSize: isCompact ? 78 : 118,
+              opacity: 0.92,
+              filter: "drop-shadow(0 20px 28px rgba(214,170,69,0.18))",
             }}
           >
-            Current step: Community review
-          </span>
-          <span style={reviewerBadge(reviewerCanPilotApprove)}>
-            Reviewer role: {safeStr(reviewerRole || "user")}
-          </span>
-          <SecondaryButton
-            type="button"
-            onClick={goBack}
-            debugId={communityHomeCta.debugId}
-          >
-            Community Home
-          </SecondaryButton>
+            🛡️
+          </div>
+        </section>
 
-          <StableCtaLink
-            to={ctaPath(marketplaceCta)}
-            kind="secondary"
-            debugId={marketplaceCta.debugId}
-          >
-            Marketplace
-          </StableCtaLink>
-
-          <PrimaryButton
-            type="button"
-            onClick={() => void load()}
-            disabled={loading}
-            busy={loading}
-            busyLabel="Refreshing..."
-            debugId="community-join-requests.refresh"
-          >
-            Refresh
-          </PrimaryButton>
-        </div>
-      </div>
-
-      {error ? (
-        <div
+        <section
           style={{
-            ...pageCard("#FEF2F2"),
-            marginTop: 18,
-            border: "1px solid #FECACA",
-            color: "#991B1B",
-            fontWeight: 900,
+            ...darkPanel(isCompact ? 18 : 26),
+            display: "grid",
+            gap: 16,
           }}
         >
-          {error}
-        </div>
-      ) : null}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact ? "minmax(0, 1fr) 120px" : "minmax(0, 1fr) 190px",
+              gap: 14,
+              alignItems: "center",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>🏘️ Selected community</div>
+              <div
+                style={{
+                  marginTop: 10,
+                  fontSize: isCompact ? 30 : 40,
+                  fontWeight: 1000,
+                  color: "#FFFFFF",
+                  lineHeight: 1.08,
+                }}
+              >
+                {selectedCommunityName}
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#D7E3F1",
+                  fontSize: isCompact ? 15 : 18,
+                }}
+              >
+                Community review is active.
+              </div>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
+                <span style={reviewerBadge(false)}>🧭 Step: Review</span>
+                <span style={reviewerBadge(reviewerCanPilotApprove)}>
+                  👤 Role: {safeStr(reviewerRole || "user")}
+                </span>
+              </div>
+            </div>
+            <div
+              aria-hidden="true"
+              style={{
+                display: "grid",
+                placeItems: "center",
+                color: "#F2C766",
+                fontSize: isCompact ? 74 : 112,
+                filter: "drop-shadow(0 18px 22px rgba(214,170,69,0.16))",
+              }}
+            >
+              🏘️
+            </div>
+          </div>
 
-      {success ? (
-        <div
+          <CardActionRow
+            align="stretch"
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "repeat(3, minmax(0, 1fr))"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+              minHeight: 0,
+            }}
+          >
+            <SecondaryButton
+              type="button"
+              onClick={goBack}
+              stableHeight={58}
+              debugId={communityHomeCta.debugId}
+              style={navActionStyle("light")}
+            >
+              🏠 Home
+            </SecondaryButton>
+
+            <StableCtaLink
+              to={ctaPath(marketplaceCta)}
+              kind="secondary"
+              stableHeight={58}
+              debugId={marketplaceCta.debugId}
+              style={navActionStyle("light")}
+            >
+              🛍️ Market
+            </StableCtaLink>
+
+            <PrimaryButton
+              type="button"
+              onClick={() => void load()}
+              disabled={loading}
+              busy={loading}
+              busyLabel="Refreshing..."
+              stableHeight={58}
+              debugId="community-join-requests.refresh"
+              style={navActionStyle("blue")}
+            >
+              🔄 Refresh
+            </PrimaryButton>
+          </CardActionRow>
+        </section>
+
+        {error ? (
+          <div
+            style={{
+              ...whitePanel(16),
+              border: "1px solid #FECACA",
+              color: "#991B1B",
+              fontWeight: 900,
+            }}
+          >
+            ⚠️ {error}
+          </div>
+        ) : null}
+
+        {success ? (
+          <div
+            style={{
+              ...whitePanel(16),
+              border: "1px solid #A7F3D0",
+              color: "#065F46",
+              fontWeight: 900,
+            }}
+          >
+            ✅ {success}
+          </div>
+        ) : null}
+
+        <section
           style={{
-            ...pageCard("#ECFDF5"),
-            marginTop: 18,
-            border: "1px solid #A7F3D0",
-            color: "#065F46",
-            fontWeight: 900,
+            display: "grid",
+            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gap: isCompact ? 10 : 14,
           }}
         >
-          {success}
-        </div>
-      ) : null}
+          {[
+            ["✉️", "Total", summary.total, "#0B1F33"],
+            ["⏳", "Pending", summary.pending, "#9A6A10"],
+            ["✅", "Approved", summary.approved, "#2E9B62"],
+            ["❌", "Rejected", summary.rejected, "#DC2626"],
+          ].map(([emoji, label, value, color]) => (
+            <div key={String(label)} style={statTile(String(color))}>
+              <div style={{ fontWeight: 1000, fontSize: isCompact ? 13 : 15 }}>
+                {emoji} {label}
+              </div>
+              <div style={{ fontSize: isCompact ? 30 : 36, fontWeight: 1000 }}>
+                {value}
+              </div>
+            </div>
+          ))}
+        </section>
 
-      <div
-        style={{
-          marginTop: 18,
-          display: "grid",
-          gridTemplateColumns: isCompact
-            ? "repeat(2, minmax(0, 1fr))"
-            : "repeat(4, minmax(0, 1fr))",
-          gap: 14,
-        }}
-      >
-        <div style={institutionalStatTile("#FFFFFF")}>
-          <div style={sectionLabel()}>Total</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {summary.total}
-          </div>
-        </div>
-
-        <div style={institutionalStatTile("#FFFFFF")}>
-          <div style={sectionLabel()}>Pending</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {summary.pending}
-          </div>
-        </div>
-
-        <div style={institutionalStatTile("#FFFFFF")}>
-          <div style={sectionLabel()}>Approved</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {summary.approved}
-          </div>
-        </div>
-
-        <div style={institutionalStatTile("#FFFFFF")}>
-          <div style={sectionLabel()}>Rejected</div>
-          <div style={{ marginTop: 8, fontSize: 26, fontWeight: 1000, color: "#0B1F33" }}>
-            {summary.rejected}
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{
-          ...pageCard("#FFFDF7"),
-          marginTop: 18,
-          border: "1px solid rgba(201,161,54,0.22)",
-        }}
-      >
-        <div style={sectionLabel()}>Approval rule</div>
-        <div
+        <section
           style={{
-            marginTop: 10,
-            color: "#42556C",
-            lineHeight: 1.8,
-            fontSize: 15,
+            ...whitePanel(16),
+            background:
+              "linear-gradient(180deg, #FFF7DA 0%, #FFF2C6 100%)",
+            border: "1px solid rgba(201,161,54,0.24)",
           }}
         >
-          A request can stay pending even after one approval if this community
-          currently has enough active members to require more than one approval.
-          Use the <strong>Active members</strong> and <strong>Required approvals</strong>{" "}
-          lines inside each request card to see the current threshold clearly.
-        </div>
-      </div>
+          <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 17 }}>
+            🧠 Approval rule
+          </div>
+          <div
+            style={{
+              marginTop: 8,
+              color: "#42556C",
+              lineHeight: 1.55,
+              fontSize: 14,
+              fontWeight: 650,
+            }}
+          >
+            Some communities need more than one approval. Check 👥 Active members and ✅ Required approvals on each request.
+          </div>
+        </section>
 
       {activationPack?.gmfn_id ? (
         <div
           style={{
-            ...pageCard("#F8FBFF"),
-            marginTop: 18,
+            ...whitePanel(18),
           }}
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-            Approval to activation package
+            ✅ Approval to activation package
           </div>
 
           <div
@@ -631,7 +770,8 @@ export default function CommunityJoinRequestsPage() {
             style={{
               marginTop: 14,
               padding: 12,
-              ...institutionalInnerCard("#FFFFFF"),
+              background: "#FFFFFF",
+              borderRadius: 14,
               border: "1px solid rgba(11,31,51,0.08)",
             }}
           >
@@ -669,7 +809,7 @@ export default function CommunityJoinRequestsPage() {
               onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
               debugId="community-join-requests.copy-activation-message"
             >
-              Copy Activation Message
+              📋 Copy Activation Message
             </PrimaryButton>
 
             <SecondaryButton
@@ -678,7 +818,7 @@ export default function CommunityJoinRequestsPage() {
               onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
               debugId="community-join-requests.copy-activation-link"
             >
-              Copy Activation Link
+              🔗 Copy Activation Link
             </SecondaryButton>
 
             {safeStr(activationPack.activation_link || "") ? (
@@ -689,7 +829,7 @@ export default function CommunityJoinRequestsPage() {
                 rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noopener noreferrer" : undefined}
                 debugId="community-join-requests.open-activation"
               >
-                Open Activation Page
+                🚀 Open Activation Page
               </StableCtaLink>
             ) : null}
           </CardActionRow>
@@ -697,18 +837,18 @@ export default function CommunityJoinRequestsPage() {
       ) : null}
 
       {loading ? (
-        <div style={{ ...pageCard(), marginTop: 18 }}>
-          <strong>Loading join requests...</strong>
+        <div style={whitePanel(18)}>
+          <strong>⏳ Loading join requests...</strong>
         </div>
       ) : null}
 
       {!loading && !error && !items.length ? (
-        <div style={{ ...pageCard(), marginTop: 18 }}>
-          <strong>No join requests are currently shown.</strong>
+        <div style={whitePanel(18)}>
+          <strong>📭 No join requests are currently shown.</strong>
         </div>
       ) : null}
 
-      <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+      <div style={{ display: "grid", gap: 16 }}>
         {items.map((item) => {
           const status = friendlyStatus(item.status);
           const isPending = status === "pending";
@@ -721,66 +861,77 @@ export default function CommunityJoinRequestsPage() {
           );
 
           return (
-            <div key={item.id} style={pageCard()}>
-              <div style={{ marginBottom: 8, fontWeight: 1000, color: "#0B1F33" }}>
-                Request #{item.id}
+            <article key={item.id} style={whitePanel(isCompact ? 16 : 20)}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "start",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  marginBottom: 8,
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: isCompact ? 27 : 32, fontWeight: 1000, color: "#0B1F33" }}>
+                    Request #{item.id}
+                  </div>
+                  <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "#334155", fontWeight: 700 }}>
+                    <strong>{applicantLabel}</strong> invited by{" "}
+                    <strong>
+                      {safeStr(
+                        item.invited_by_display ||
+                          item.invited_by_email ||
+                          "a community member"
+                      )}
+                    </strong>
+                  </div>
+                  <div style={{ marginTop: 2, fontSize: 13, color: "#334155", fontWeight: 700 }}>
+                    Wants to join <strong>{safeStr(item.clan_name || "this community")}</strong>
+                  </div>
+                </div>
+                <span style={statusPill(status)}>
+                  {status === "approved" ? "✅" : status === "rejected" ? "❌" : "⏳"}{" "}
+                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                </span>
               </div>
 
               <div style={{ fontSize: 14, lineHeight: 1.7, color: "#334155" }}>
-                <div>
-                  <strong>{applicantLabel}</strong> invited by{" "}
-                  <strong>
-                    {safeStr(
-                      item.invited_by_display ||
-                        item.invited_by_email ||
-                        "a community member"
-                    )}
-                  </strong>{" "}
-                  wants to join <strong>{safeStr(item.clan_name || "this community")}</strong>.
-                </div>
-
                 <div
                   style={{
                     marginTop: 12,
                     display: "grid",
                     gridTemplateColumns: isCompact
-                      ? "1fr"
+                      ? "repeat(2, minmax(0, 1fr))"
                       : "repeat(3, minmax(0, 1fr))",
-                    gap: 10,
+                    gap: 0,
+                    overflow: "hidden",
+                    borderRadius: 14,
+                    border: "1px solid rgba(11,31,51,0.08)",
                   }}
                 >
                   {[
-                    ["Community ID", safeStr(item.community_code || "Awaiting issue")],
                     [
-                      "Community / Market",
+                      "🏘️ Community",
                       safeStr(
                         item.marketplace_name ||
                           item.clan_name ||
                           "Not available yet"
                       ),
                     ],
-                    ["Invite code", safeStr(item.invite_code || "Not available yet")],
-                    ["Status", status],
-                    ["Submitted", safeDateTime(item.created_at)],
-                    ["Required approvals", String(Number(item.required_approvals || 0))],
-                    ["Approvals", String(Number(item.approvals || 0))],
-                    ["Rejects", String(Number(item.rejects || 0))],
-                    ["Active members", String(Number(item.active_member_count || 0))],
+                    ["🆔 Community ID", safeStr(item.community_code || "Awaiting issue")],
+                    ["🔑 Invite", safeStr(item.invite_code || "Not available yet")],
+                    ["📅 Submitted", safeDateTime(item.created_at)],
+                    ["✅ Required", String(Number(item.required_approvals || 0))],
+                    ["💎 Approvals", String(Number(item.approvals || 0))],
+                    ["❌ Rejects", String(Number(item.rejects || 0))],
+                    ["👥 Active", String(Number(item.active_member_count || 0))],
+                    ["🪪 Applicant", safeStr(item.applicant_gmfn_id || "Not issued yet")],
                   ].map(([label, value]) => (
                     <div key={`${item.id}-${label}`} style={requestFactTile()}>
                       <div style={requestFactLabel()}>{label}</div>
                       <div style={requestFactValue()}>{value}</div>
                     </div>
                   ))}
-
-                  {safeStr(item.applicant_gmfn_id || "") ? (
-                    <div style={requestFactTile()}>
-                      <div style={requestFactLabel()}>Applicant GSN ID</div>
-                      <div style={requestFactValue()}>
-                        {safeStr(item.applicant_gmfn_id)}
-                      </div>
-                    </div>
-                  ) : null}
                 </div>
               </div>
 
@@ -789,44 +940,44 @@ export default function CommunityJoinRequestsPage() {
                   style={{
                     marginTop: 14,
                     padding: 12,
-                    ...institutionalInnerCard("#F8FAFC"),
+                    borderRadius: 12,
+                    border: status === "approved"
+                      ? "1px solid rgba(34,197,94,0.18)"
+                      : "1px solid rgba(239,68,68,0.18)",
+                    background: status === "approved" ? "#F0FDF4" : "#FEF2F2",
                     color: "#0B1F33",
                     fontWeight: 800,
                   }}
                 >
-                  This request has already been {status}.
+                  {status === "approved" ? "✅" : "❌"} This request has already been {status}.
                 </div>
               ) : (
                 <>
                   <div
                     style={{
-                      ...softCard("#F8FBFF"),
                       marginTop: 14,
+                      padding: 12,
+                      borderRadius: 12,
+                      border: "1px solid rgba(59,130,246,0.15)",
+                      background: "#EFF6FF",
+                      color: "#1E3A8A",
+                      fontWeight: 800,
                     }}
                   >
-                    <div style={sectionLabel()}>What happens now</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        color: "#475569",
-                        lineHeight: 1.75,
-                        fontSize: 14,
-                      }}
-                    >
-                      This request stays pending until the approval count reaches
-                      the current threshold for this community.
-                    </div>
+                    ℹ️ Waiting until approvals reach the community threshold.
                   </div>
 
                   {reviewerCanPilotApprove ? (
                     <div
                       style={{
-                        ...softCard("#FFF7E8"),
                         marginTop: 12,
+                        padding: 12,
+                        borderRadius: 12,
+                        background: "#FFF7E8",
                         border: "1px solid rgba(201,161,54,0.24)",
                       }}
                     >
-                      <div style={sectionLabel()}>Admin review option</div>
+                      <div style={sectionLabel("#8A5A08")}>⚡ Admin review option</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -840,16 +991,29 @@ export default function CommunityJoinRequestsPage() {
                     </div>
                   ) : null}
 
-                  <CardActionRow style={{ marginTop: 14 }}>
+                  <CardActionRow
+                    align="stretch"
+                    style={{
+                      marginTop: 14,
+                      display: "grid",
+                      gridTemplateColumns: reviewerCanPilotApprove
+                        ? isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))"
+                        : "repeat(2, minmax(0, 1fr))",
+                      gap: 12,
+                      minHeight: 0,
+                    }}
+                  >
                     <PrimaryButton
                       type="button"
                       onClick={() => handleVote(item.id, "approve")}
                       disabled={isBusy}
                       busy={isBusy}
                       busyLabel="Working..."
+                      stableHeight={58}
                       debugId="community-join-requests.approve"
+                      style={decisionButtonStyle("approve")}
                     >
-                      Approve
+                      ✅ Approve
                     </PrimaryButton>
 
                     <SecondaryButton
@@ -858,9 +1022,11 @@ export default function CommunityJoinRequestsPage() {
                       disabled={isBusy}
                       busy={isBusy}
                       busyLabel="Working..."
+                      stableHeight={58}
                       debugId="community-join-requests.reject"
+                      style={decisionButtonStyle("reject")}
                     >
-                      Reject
+                      ❌ Reject
                     </SecondaryButton>
 
                     {reviewerCanPilotApprove ? (
@@ -870,17 +1036,20 @@ export default function CommunityJoinRequestsPage() {
                         disabled={isBusy}
                         busy={isBusy}
                         busyLabel="Working..."
+                        stableHeight={58}
                         debugId="community-join-requests.pilot-approve"
+                        style={decisionButtonStyle("reject")}
                       >
-                        Approve now
+                        ⚡ Approve now
                       </SecondaryButton>
                     ) : null}
                   </CardActionRow>
                 </>
               )}
-            </div>
+            </article>
           );
         })}
+      </div>
       </div>
     </div>
   );
