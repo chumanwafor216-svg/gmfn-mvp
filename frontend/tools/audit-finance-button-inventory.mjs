@@ -129,12 +129,12 @@ assertContains(
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 96 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
+  /stableHeight=\{isCompact \? 124 : 132\}[\s\S]*?debugId=\{`finance\.tool\.\$\{item\.id\}`\}/,
   "Finance main tools must keep tightened fixed phone geometry."
 );
 
 assertContains(
-  /stableHeight=\{isCompact \? 68 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
+  /stableHeight=\{isCompact \? 88 : 76\}[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
   "Finance mini tools must keep tightened fixed phone geometry."
 );
 

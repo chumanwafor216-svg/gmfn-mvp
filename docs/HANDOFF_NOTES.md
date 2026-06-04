@@ -1,3 +1,37 @@
+### Finance mobile action cards text fit corrected (2026-06-04)
+
+- Route/screen affected:
+  - `/app/finance`, implemented by `frontend/src/pages/FinancePage.tsx`.
+- Product-owner screenshot truth:
+  - on phone, the Finance action tiles under `Choose what you need now` and
+    `More Finance Tools` were still too short, so titles and helper copy were
+    colliding inside the buttons.
+- Frontend change:
+  - compact main Finance tool tiles now use a stable 124px height instead of
+    96px;
+  - compact secondary Finance mini tool tiles now use a stable 88px height
+    instead of 68px;
+  - title/helper line heights and compact helper text sizing were tightened so
+    labels can sit inside the tile instead of falling into each other.
+- Guardrails updated:
+  - `frontend/tools/audit-finance-button-inventory.mjs`;
+  - `frontend/tools/audit-finance-actions.mjs`;
+  - `frontend/tools/audit-button-stability.mjs`.
+- Verification:
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-button-inventory.mjs tools/audit-finance-actions.mjs tools/audit-button-stability.mjs` passed;
+  - `npm run audit:finance-button-inventory` passed;
+  - `npm run audit:finance-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only text-fit/stability correction. It does not change
+    backend finance, loan, deposit, withdrawal, or support-cycle logic;
+  - phone evidence should be checked after deploy to confirm the screenshot
+    overlap is gone on the real device.
+
 ### Money cycle backend truth and deterministic process feedback tightened (2026-06-04)
 
 - Routes/screens affected:

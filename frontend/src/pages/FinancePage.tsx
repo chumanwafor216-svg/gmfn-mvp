@@ -693,10 +693,13 @@ function FinanceSectionLabel({
 }
 
 function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
+  const compactHeight = 124;
+  const desktopHeight = 132;
+
   return {
-    height: isCompact ? 96 : 132,
-    minHeight: isCompact ? 96 : 132,
-    maxHeight: isCompact ? 96 : 132,
+    height: isCompact ? compactHeight : desktopHeight,
+    minHeight: isCompact ? compactHeight : desktopHeight,
+    maxHeight: isCompact ? compactHeight : desktopHeight,
     borderRadius: 22,
     border: "1px solid rgba(19, 95, 209, 0.14)",
     background:
@@ -705,10 +708,10 @@ function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
       "0 14px 30px rgba(7,23,44,0.09), inset 0 1px 0 rgba(255,255,255,0.85)",
     color: "#07172C",
     display: "grid",
-    gap: isCompact ? 6 : 10,
+    gap: isCompact ? 7 : 10,
     justifyItems: "center",
     alignContent: "center",
-    padding: isCompact ? 12 : 16,
+    padding: isCompact ? "13px 10px" : 16,
     textAlign: "center",
     minWidth: 0,
     overflow: "hidden",
@@ -716,11 +719,14 @@ function financeToolButtonStyle(isCompact: boolean): React.CSSProperties {
 }
 
 function financeMiniToolButtonStyle(isCompact: boolean): React.CSSProperties {
+  const compactHeight = 88;
+  const desktopHeight = 76;
+
   return {
-    height: isCompact ? 68 : 76,
-    minHeight: isCompact ? 68 : 76,
-    maxHeight: isCompact ? 68 : 76,
-    padding: isCompact ? "10px 9px" : "12px",
+    height: isCompact ? compactHeight : desktopHeight,
+    minHeight: isCompact ? compactHeight : desktopHeight,
+    maxHeight: isCompact ? compactHeight : desktopHeight,
+    padding: isCompact ? "12px 10px" : "12px",
     borderRadius: 20,
     border: "1px solid rgba(216, 227, 238, 0.95)",
     background:
@@ -2034,7 +2040,7 @@ export default function FinancePage() {
               key={item.id}
               onClick={item.action}
               fullWidth
-              stableHeight={isCompact ? 96 : 132}
+              stableHeight={isCompact ? 124 : 132}
               debugId={`finance.tool.${item.id}`}
               style={financeToolButtonStyle(isCompact)}
             >
@@ -2060,7 +2066,7 @@ export default function FinancePage() {
                   ...brandClampLines(2),
                   fontSize: isCompact ? 14 : 15,
                   fontWeight: 950,
-                  lineHeight: 1.18,
+                  lineHeight: 1.12,
                 }}
               >
                 {item.label}
@@ -2069,9 +2075,9 @@ export default function FinancePage() {
                 style={{
                   ...brandClampLines(2),
                   color: "#52697F",
-                  fontSize: 12,
+                  fontSize: isCompact ? 11 : 12,
                   fontWeight: 750,
-                  lineHeight: 1.35,
+                  lineHeight: 1.18,
                 }}
               >
                 {item.detail}
@@ -2130,7 +2136,7 @@ export default function FinancePage() {
                 key={tool.label}
                 onClick={tool.action}
                 fullWidth
-                stableHeight={isCompact ? 68 : 76}
+                stableHeight={isCompact ? 88 : 76}
                 debugId={`finance.mini-tool.${tool.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                 style={financeMiniToolButtonStyle(isCompact)}
               >
