@@ -1,3 +1,42 @@
+### Money In top-rail contrast and status-tile polish (2026-06-04)
+
+- Route/screen affected:
+  - `/app/payment/pool`, implemented by
+    `frontend/src/pages/PaymentInstructionsPage.tsx`.
+- Product-owner truth:
+  - the first Money In surface looked washed out on phone;
+  - the amount/reference/route/status cards needed better alignment and more
+    natural visual signs;
+  - this pass is visual/button stability only, not a backend rail or payment
+    rule change.
+- Frontend change:
+  - gave the Money In route header its own deep-navy institutional panel so the
+    `Money In / Payment Instructions` text no longer depends on a pale page
+    background;
+  - changed the header menu/tools controls to solid white/navy buttons for
+    stronger contrast;
+  - made the four status tiles compact-safe by using vertical tile layout on
+    phones, centered icon/text alignment, and shorter labels where long words
+    were causing crowding;
+  - changed the visible tile signs to more natural emoji cues: money, tag,
+    bank/route, and shield/status.
+- Button/tap guardrails:
+  - no raw buttons or links were introduced;
+  - existing stable Money In debug IDs and shared CTA primitives remain intact.
+- Verification:
+  - `npm exec -- eslint src/pages/PaymentInstructionsPage.tsx` passed;
+  - `npm run audit:finance-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:link-contracts` passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this does not activate new settlement rails, bank accounts, FX, or payment
+    providers. The selected currency still depends on backend rail readiness
+    for real reconciliation.
+
 ### Public Shop identity/emblem and Shop Diaries tightening (2026-06-04)
 
 - Route/screen affected:

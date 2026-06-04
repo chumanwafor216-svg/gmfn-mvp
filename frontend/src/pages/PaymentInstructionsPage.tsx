@@ -392,19 +392,26 @@ function moneyInTopRail(isCompact: boolean): React.CSSProperties {
     gridTemplateColumns: isCompact ? "64px minmax(0, 1fr) 94px" : "96px minmax(0, 1fr) 126px",
     alignItems: "center",
     gap: isCompact ? 10 : 16,
-    padding: isCompact ? "12px 10px 6px" : "16px 0 8px",
+    padding: isCompact ? "14px 12px" : "18px 20px",
+    borderRadius: isCompact ? 22 : 26,
+    border: "1px solid rgba(214,170,69,0.18)",
+    background:
+      "linear-gradient(135deg, rgba(6,24,39,0.99) 0%, rgba(8,35,58,0.98) 58%, rgba(11,45,74,0.96) 100%)",
+    boxShadow:
+      "0 18px 42px rgba(2,6,23,0.24), inset 0 1px 0 rgba(255,255,255,0.08)",
+    isolation: "isolate",
   };
 }
 
 function moneyInNavButton(): React.CSSProperties {
   return {
     borderRadius: 18,
-    border: "1px solid rgba(214,228,242,0.18)",
+    border: "1px solid rgba(214,228,242,0.78)",
     background:
-      "linear-gradient(180deg, rgba(255,255,255,0.11) 0%, rgba(255,255,255,0.06) 100%)",
-    color: "#F8FBFF",
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,247,255,0.96) 100%)",
+    color: "#07172C",
     boxShadow:
-      "0 14px 28px rgba(2,6,23,0.20), inset 0 1px 0 rgba(255,255,255,0.12)",
+      "0 14px 28px rgba(2,6,23,0.18), inset 0 1px 0 rgba(255,255,255,0.88)",
     fontWeight: 1000,
     fontSize: 14,
   };
@@ -465,27 +472,34 @@ function moneyInIconCircle(color = "#0B63D1"): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
-    border: `1px solid ${color}33`,
-    background: "#F8FBFF",
+    border: `1px solid ${color}2D`,
+    background:
+      "radial-gradient(circle at 32% 24%, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.96) 42%, rgba(231,240,252,0.96) 100%)",
     color,
-    fontSize: 24,
+    fontSize: 25,
+    lineHeight: 1,
+    boxShadow:
+      "0 10px 22px rgba(15,23,42,0.08), inset 0 1px 0 rgba(255,255,255,0.92)",
     flex: "0 0 auto",
   };
 }
 
-function moneyInFactTile(): React.CSSProperties {
+function moneyInFactTile(compact = false): React.CSSProperties {
   return {
-    minHeight: 104,
+    minHeight: compact ? 132 : 104,
     borderRadius: 18,
     border: "1px solid rgba(214,228,242,0.74)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.99) 100%)",
     padding: 12,
     display: "grid",
-    gridTemplateColumns: "46px minmax(0, 1fr)",
-    gap: 10,
+    gridTemplateColumns: compact ? "1fr" : "46px minmax(0, 1fr)",
+    gridTemplateRows: compact ? "44px minmax(0, 1fr)" : undefined,
+    gap: compact ? 8 : 10,
     alignItems: "center",
+    justifyItems: compact ? "center" : "stretch",
     boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
+    overflow: "hidden",
   };
 }
 
@@ -1304,7 +1318,7 @@ export default function PaymentInstructionsPage() {
         >
           {[
             {
-              icon: "💲",
+              icon: "💵",
               label: "Amount",
               value: formattedInputAmount
                 ? `${formattedInputAmount} ${poolCurrency}`
@@ -1318,16 +1332,16 @@ export default function PaymentInstructionsPage() {
               color: "#0B63D1",
             },
             {
-              icon: "👥",
+              icon: "🏦",
               label: "Route",
               value: communityRailReady
-                ? "Pay-in ready"
+                ? "Ready"
                 : "Pay-in pending",
               color: "#0B63D1",
             },
             {
               icon: "🛡️",
-              label: "Reconciliation",
+              label: "Status",
               value: matchedEvent
                 ? "Matched"
                 : paymentConfirmed
@@ -1336,9 +1350,17 @@ export default function PaymentInstructionsPage() {
               color: matchedEvent ? "#2E9B62" : "#92400E",
             },
           ].map((tile) => (
-            <div key={tile.label} style={moneyInFactTile()}>
-              <span style={moneyInIconCircle(tile.color)}>{tile.icon}</span>
-              <span style={{ minWidth: 0 }}>
+            <div key={tile.label} style={moneyInFactTile(isCompact)}>
+              <span style={moneyInIconCircle(tile.color)} aria-hidden="true">
+                {tile.icon}
+              </span>
+              <span
+                style={{
+                  minWidth: 0,
+                  width: "100%",
+                  textAlign: isCompact ? "center" : "left",
+                }}
+              >
                 <span
                   style={{
                     display: "block",
@@ -1347,6 +1369,7 @@ export default function PaymentInstructionsPage() {
                     fontSize: 12,
                     lineHeight: 1.1,
                     textTransform: "uppercase",
+                    whiteSpace: "normal",
                   }}
                 >
                   {tile.label}
@@ -1356,12 +1379,13 @@ export default function PaymentInstructionsPage() {
                     display: "block",
                     marginTop: 6,
                     color: tile.color,
-                    fontSize: isCompact ? 15 : 19,
-                    lineHeight: 1.2,
+                    fontSize: isCompact ? 17 : 19,
+                    lineHeight: 1.16,
                     fontWeight: 1000,
                     overflowWrap: tile.label === "Reference" && instruction ? "anywhere" : "normal",
                     wordBreak: "normal",
                     hyphens: "none",
+                    maxWidth: "100%",
                   }}
                 >
                   {tile.value}
