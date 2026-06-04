@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List
+from urllib.parse import parse_qs, urlparse
 
 from sqlalchemy.orm import Session
 
@@ -60,6 +61,47 @@ def _community_code(clan_id: int) -> str:
 
 def _safe_str(value: Any) -> str:
     return str(value or "").strip()
+
+
+def _join_request_id_from_action_url(action_url: Any) -> int:
+    raw = _safe_str(action_url)
+    if not raw or "join-requests" not in raw:
+        return 0
+
+    parsed = urlparse(raw)
+    request_values = parse_qs(parsed.query).get("request_id") or []
+    for value in request_values:
+        try:
+            request_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if request_id > 0:
+            return request_id
+    return 0
+
+
+def _join_request_status_for_notification(
+    db: Session,
+    notification: Notification,
+) -> Dict[str, Any]:
+    request_id = _join_request_id_from_action_url(notification.action_url)
+    if request_id <= 0:
+        return {}
+
+    join_request = db.get(ClanJoinRequest, int(request_id))
+    if not join_request:
+        return {
+            "join_request_id": int(request_id),
+            "join_request_status": "missing",
+            "join_request_resolved": True,
+        }
+
+    status = _safe_str(getattr(join_request, "status", None)).lower() or "pending"
+    return {
+        "join_request_id": int(request_id),
+        "join_request_status": status,
+        "join_request_resolved": status != "pending",
+    }
 
 
 def _notification_text(
@@ -164,7 +206,7 @@ def ensure_join_review_notifications(
     reviewer_user: User,
 ) -> Dict[str, Any]:
     if reviewer_user is None or is_user_activation_pending(reviewer_user):
-        return {"ok": True, "created": 0}
+        return {"ok": True, "created": 0, "retired": 0}
 
     memberships = (
         db.query(ClanMembership, Clan)
@@ -177,11 +219,19 @@ def ensure_join_review_notifications(
         .all()
     )
 
-    if not memberships:
-        return {"ok": True, "created": 0}
-
     active_clan_ids = [int(membership.clan_id) for membership, _clan in memberships]
     clan_by_id = {int(clan.id): clan for membership, clan in memberships}
+
+    retired = _retire_stale_join_review_notifications(
+        db,
+        reviewer_user_id=int(reviewer_user.id),
+        active_clan_ids=active_clan_ids,
+    )
+
+    if not memberships:
+        if retired:
+            db.commit()
+        return {"ok": True, "created": 0, "retired": int(retired)}
 
     pending_requests = (
         db.query(ClanJoinRequest)
@@ -251,10 +301,57 @@ def ensure_join_review_notifications(
         )
         created += 1
 
-    if created:
+    if created or retired:
         db.commit()
 
-    return {"ok": True, "created": int(created)}
+    return {"ok": True, "created": int(created), "retired": int(retired)}
+
+
+def _retire_stale_join_review_notifications(
+    db: Session,
+    *,
+    reviewer_user_id: int,
+    active_clan_ids: List[int],
+) -> int:
+    active_ids = {int(clan_id) for clan_id in active_clan_ids}
+    rows = (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == int(reviewer_user_id),
+            Notification.kind == "approval_request",
+            Notification.is_read == False,  # noqa: E712
+        )
+        .all()
+    )
+
+    retired = 0
+    now = _now_utc()
+
+    for row in rows:
+        request_id = _join_request_id_from_action_url(row.action_url)
+        if request_id <= 0:
+            continue
+
+        join_request = db.get(ClanJoinRequest, int(request_id))
+        status = _safe_str(getattr(join_request, "status", None)).lower()
+        request_clan_id = int(getattr(join_request, "clan_id", 0) or 0)
+        applicant_user_id = int(getattr(join_request, "applicant_user_id", 0) or 0)
+        still_actionable = bool(
+            join_request
+            and status == "pending"
+            and request_clan_id in active_ids
+            and applicant_user_id != int(reviewer_user_id)
+        )
+
+        if still_actionable:
+            continue
+
+        row.is_read = True
+        row.read_at = now
+        db.add(row)
+        retired += 1
+
+    return int(retired)
 
 
 def list_my_notifications(
@@ -295,6 +392,11 @@ def list_my_notifications(
                 "is_read": bool(r.is_read),
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "read_at": r.read_at.isoformat() if r.read_at else None,
+                **(
+                    _join_request_status_for_notification(db, r)
+                    if str(r.kind) == "approval_request"
+                    else {}
+                ),
             }
         )
 

@@ -1138,6 +1138,20 @@ function normalizeNotificationNotice(raw: any): GuidanceNotice {
   };
 }
 
+function isResolvedJoinReviewNotification(raw: any): boolean {
+  const kind = safeStr(raw?.kind).toLowerCase();
+  if (kind !== "approval_request") return false;
+
+  if (raw?.join_request_resolved === true) return true;
+
+  const status = firstTruthy(
+    raw?.join_request_status,
+    raw?.request_status,
+    raw?.status
+  ).toLowerCase();
+  return Boolean(status && status !== "pending");
+}
+
 function buildGuarantorInboxNotices(raw: any): GuidanceNotice[] {
   const rows = toArrayRows(raw);
 
@@ -1837,9 +1851,9 @@ function buildActionInboxSummary(params: {
   me?: any | null;
   voice?: GuidanceVoice;
 }): GuidanceActionInboxSummary {
-  const notificationRows = toArrayRows(params.rawNotifications).map(
-    normalizeNotificationNotice
-  );
+  const notificationRows = toArrayRows(params.rawNotifications)
+    .filter((item) => !isResolvedJoinReviewNotification(item))
+    .map(normalizeNotificationNotice);
   const guarantorRows = buildGuarantorInboxNotices(params.rawGuarantorInbox);
   const identityRows = buildIdentityEvidenceNotices({
     rawTrustEvents: params.rawTrustEvents,

@@ -218,6 +218,12 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/guidance.ts",
+  /function isResolvedJoinReviewNotification\(raw: any\): boolean \{[\s\S]*?kind !== "approval_request"[\s\S]*?join_request_resolved === true[\s\S]*?join_request_status[\s\S]*?status !== "pending"[\s\S]*?toArrayRows\(params\.rawNotifications\)[\s\S]*?\.filter\(\(item\) => !isResolvedJoinReviewNotification\(item\)\)[\s\S]*?\.map\(normalizeNotificationNotice\)/,
+  "Guidance and Companion must not keep completed join-review notifications in Act Now after backend reports the request is no longer pending."
+);
+
+assertContains(
   "src/pages/NotificationsPage.tsx",
   /"free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
   "Notifications must resolve spotlight aliases to the real Shop Control spotlight targets, not legacy redirect aliases."

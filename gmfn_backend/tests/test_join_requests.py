@@ -456,6 +456,78 @@ def test_notifications_endpoint_backfills_missing_join_review_notice_for_late_re
         )
 
 
+def test_notifications_endpoint_retires_join_review_notice_after_request_is_done(
+    client,
+):
+    _seed_join_context()
+
+    with SessionLocal() as db:
+        applicant = User(
+            id=2,
+            email="pending@example.com",
+            hashed_password="hashed",
+            role="user",
+        )
+        db.add(applicant)
+        db.flush()
+        db.add(
+            ClanJoinRequest(
+                id=1,
+                clan_id=1,
+                applicant_user_id=2,
+                invited_by_user_id=1,
+                status="approved",
+                created_at=datetime.now(timezone.utc),
+                decided_at=datetime.now(timezone.utc),
+            )
+        )
+        db.add(
+            Notification(
+                id=1,
+                user_id=1,
+                kind="approval_request",
+                title="New join request",
+                message="Donatus wants to join Aberdeen City ICA (GMFN-C-000001).",
+                action_url="/app/community/1/join-requests?request_id=1&community_code=GMFN-C-000001",
+                action_label="Review",
+                is_read=False,
+                created_at=datetime.now(timezone.utc),
+            )
+        )
+        db.commit()
+
+    def fake_current_user():
+        return SimpleNamespace(
+            id=1,
+            email="admin@example.com",
+            role="admin",
+            hashed_password="hashed",
+        )
+
+    app.dependency_overrides[auth.get_current_user] = fake_current_user
+    try:
+        res = client.get("/notifications/me")
+        assert res.status_code == 200, res.text
+        item = res.json()["items"][0]
+        assert item["id"] == 1
+        assert item["is_read"] is True
+        assert item["join_request_id"] == 1
+        assert item["join_request_status"] == "approved"
+        assert item["join_request_resolved"] is True
+
+        unread = client.get("/notifications/me?unread_only=true")
+        assert unread.status_code == 200, unread.text
+        assert unread.json()["items"] == []
+    finally:
+        app.dependency_overrides.pop(auth.get_current_user, None)
+
+    with SessionLocal() as db:
+        notification = db.get(Notification, 1)
+        assert notification is not None
+        assert notification.is_read is True
+        assert notification.read_at is not None
+
+
 def test_public_join_request_creates_pending_activation_identity(client):
     _seed_join_context()
 

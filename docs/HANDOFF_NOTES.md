@@ -1,3 +1,47 @@
+### Completed join-request Companion nudges retired (2026-06-04)
+
+- Route/screens affected:
+  - Dashboard Companion / action guidance surface that uses
+    `frontend/src/lib/guidance.ts`;
+  - `/notifications/me` and `/notifications/me/unread-count`, implemented by
+    `gmfn_backend/app/api/routes/notifications.py`;
+  - join-review route target remains
+    `/app/community/:clanId/join-requests`.
+- Product-owner truth:
+  - `New join request` should appear only while a request still needs review;
+  - once a join request is approved, rejected, missing, self-owned, or otherwise
+    no longer actionable by that reviewer, Companion must not keep bringing it
+    back as an active task.
+- Backend change:
+  - `ensure_join_review_notifications()` now retires stale unread
+    `approval_request` notifications before backfilling pending requests;
+  - retired review notices are marked read with `read_at` instead of deleted,
+    preserving history while removing them from unread/action surfaces;
+  - notification list rows for join-review notices now include
+    `join_request_id`, `join_request_status`, and
+    `join_request_resolved` when the action URL points to a join request.
+- Frontend change:
+  - guidance/action inbox now filters resolved `approval_request` rows before
+    they can reach `Act Now` or Companion candidate selection;
+  - pending join-review rows still remain actionable.
+- Guardrail:
+  - `audit-link-contracts` now fails if guidance stops filtering resolved
+    join-review notifications before building the action inbox.
+- Verification:
+  - `python -m pytest -q gmfn_backend\tests\test_join_requests.py::test_notifications_endpoint_backfills_missing_join_review_notice_for_late_reviewer gmfn_backend\tests\test_join_requests.py::test_notifications_endpoint_retires_join_review_notice_after_request_is_done gmfn_backend\tests\test_join_requests.py::test_admin_can_pilot_approve_join_request_without_waiting_for_threshold gmfn_backend\tests\test_join_requests.py::test_activated_reviewer_reject_vote_reaches_rejected_state_and_notifies_applicant` passed: 4 tests;
+  - `npm exec -- eslint src/lib/guidance.ts tools/audit-link-contracts.mjs`
+    passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this does not remove old historical notifications from the full
+    Notifications page; it prevents completed join-review work from appearing
+    as unread/active Companion work.
+
 ### Public shop signed-in user navigation restored (2026-06-04)
 
 - Route/screens affected:
