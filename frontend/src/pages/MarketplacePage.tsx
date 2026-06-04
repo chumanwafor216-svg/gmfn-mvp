@@ -1813,7 +1813,7 @@ function marketplaceMoneyIconBubbleStyle(
     justifyContent: "center",
     color,
     background:
-      "radial-gradient(circle at 35% 28%, rgba(255,255,255,0.98) 0%, rgba(236,244,255,0.98) 58%, rgba(224,235,248,0.98) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(236,244,255,0.98) 58%, rgba(224,235,248,0.98) 100%)",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.92), 0 10px 20px rgba(10,24,49,0.08)",
     flexShrink: 0,
@@ -1916,7 +1916,7 @@ function marketplaceMoneyChartBubbleStyle(isCompact: boolean): React.CSSProperti
     justifyContent: "center",
     color: "#2C68D8",
     background:
-      "radial-gradient(circle at 35% 25%, rgba(255,255,255,0.98) 0%, rgba(235,243,255,0.96) 60%, rgba(222,234,250,0.96) 100%)",
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(235,243,255,0.96) 60%, rgba(222,234,250,0.96) 100%)",
     boxShadow:
       "inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 20px rgba(10,24,49,0.08)",
     flexShrink: 0,

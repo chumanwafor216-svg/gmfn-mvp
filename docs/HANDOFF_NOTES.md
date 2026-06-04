@@ -1,3 +1,64 @@
+### Money Out guided payout remodel + Marketplace section-action audit (2026-06-04)
+
+- Route/screen affected:
+  - `/app/withdrawal-instructions`, implemented by
+    `frontend/src/pages/WithdrawalInstructionsPage.tsx`;
+  - Marketplace route-action guardrails in `frontend/src/pages/MarketplacePage.tsx`;
+  - Marketplace action audit in `frontend/tools/audit-marketplace-actions.mjs`.
+- Product-owner truth:
+  - Money Out should follow the supplied dark-navy guided payout reference more
+    closely: clear Money Out identity, compact step spine, identity/status
+    feedback, short overview, amount decision, payout preview, rail, and result;
+  - the page should not force long scrolling through repeated explanations just
+    to complete one withdrawal path;
+  - Marketplace buttons remain a serious pilot risk and must be audited while
+    adjacent finance routes are changed.
+- Frontend change:
+  - removed route-local explanation blocks from Money Out and compressed the
+    first surface into a focused guided payout cockpit;
+  - changed old expanded section storage from `v5` to `v6` so pilot phones do
+    not reopen the previous heavy layout from local storage;
+  - keeps payout editing and route-monitor links collapsed by default while the
+    core amount, payout preview, community rail, and result remain visible;
+  - retained all real Money Out handlers: direct withdrawal, support handoff,
+    payout save/copy, rail refresh/copy, status refresh, summary copy, reset,
+    and route links;
+  - removed two Marketplace decorative radial backgrounds from money route
+    bubbles because the Marketplace action audit forbids radial glow/orb
+    decoration on this page.
+- Button/route truth:
+  - Money Out still resolves all route targets through `resolveCtaTarget`, not
+    hard-coded `/app/...` strings;
+  - Marketplace Money Pool source still opens `marketplace-money-routes`, not
+    Trust Passport;
+  - Marketplace Money Out still resolves the shared `moneyOut` CTA target;
+  - the broader Marketplace action audit had a stale not-ready-link pattern and
+    a stale section-landing regex. These were updated to protect the current
+    source truth: tappable not-ready explainers and shared phone-safe section
+    landing through `scrollElementToMarketplaceLanding`.
+- Verification:
+  - line-auditor subagent confirmed Money Out route aliases, backend/API truth,
+    and Marketplace Money Pool/Money Out source wiring;
+  - `npm run audit:finance-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:marketplace-actions` passed after the Marketplace source and
+    audit-pattern fixes;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx src/pages/MarketplacePage.tsx tools/audit-marketplace-actions.mjs`
+    passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this is a frontend UX/action-contract change only. It does not change
+    backend withdrawal, payout destination, pool, support, ledger, or payment
+    movement rules;
+  - no browser screenshot workflow exists in this frontend package, so
+    verification remains code/audit/lint/build evidence plus phone pilot
+    testing.
+
 ### Public Shop trust-marketplace visual remodel (2026-06-04)
 
 - Route/screen affected:

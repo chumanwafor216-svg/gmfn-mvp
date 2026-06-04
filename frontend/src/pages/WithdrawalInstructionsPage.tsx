@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
 import { navigateWithOrigin } from "../lib/nav";
@@ -38,7 +37,7 @@ type PersistedWithdrawalTask = {
   updatedAt?: string | null;
 };
 
-const WITHDRAWAL_UI_STORAGE_KEY = "gmfn.withdrawal.sections.v5";
+const WITHDRAWAL_UI_STORAGE_KEY = "gmfn.withdrawal.sections.v6";
 const WITHDRAWAL_TASK_STORAGE_KEY_PREFIX = "gmfn.withdrawal.task.v5";
 
 function safeStr(x: any): string {
@@ -89,45 +88,6 @@ function apiBase(): string {
     "/api";
 
   return String(raw || "").trim().replace(/\/+$/, "");
-}
-
-function apiOrigin(): string {
-  const base = apiBase();
-
-  if (base.startsWith("http://") || base.startsWith("https://")) {
-    try {
-      const u = new URL(base);
-      return `${u.protocol}//${u.host}`;
-    } catch {
-      return "";
-    }
-  }
-
-  if (typeof window !== "undefined") {
-    return String(window.location.origin || "").trim().replace(/\/+$/, "");
-  }
-
-  return "";
-}
-
-function resolveMediaUrl(src: string): string {
-  const raw = safeStr(src);
-  if (!raw) return "";
-
-  if (
-    raw.startsWith("http://") ||
-    raw.startsWith("https://") ||
-    raw.startsWith("data:") ||
-    raw.startsWith("blob:")
-  ) {
-    return raw;
-  }
-
-  const origin = apiOrigin();
-  if (!origin) return raw;
-
-  if (raw.startsWith("/")) return `${origin}${raw}`;
-  return `${origin}/${raw.replace(/^\/+/, "")}`;
 }
 
 function buildHeaders(clanId?: number): Record<string, string> {
@@ -184,22 +144,6 @@ function extractRecommendation(raw: any): string {
     raw?.readiness?.recommendation,
     raw?.decision?.recommendation
   );
-}
-
-function extractReasons(raw: any): string[] {
-  const candidates = [
-    raw?.reasons,
-    raw?.readiness?.reasons,
-    raw?.decision?.reasons,
-  ];
-
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate)) {
-      return candidate.map((item) => safeStr(item)).filter(Boolean);
-    }
-  }
-
-  return [];
 }
 
 function extractGuarantorCount(raw: any): number {
@@ -456,10 +400,10 @@ function defaultCollapseState(): CollapseState {
   return {
     overview: false,
     request: false,
-    destination: false,
+    destination: true,
     rail: false,
     result: false,
-    routes: false,
+    routes: true,
   };
 }
 
@@ -549,23 +493,6 @@ function communityRole(currentClan: any): string {
       currentClan?.participant_role
     ) || ""
   );
-}
-
-function communityImageSrc(currentClan: any): string {
-  const raw = firstTruthy(
-    currentClan?.community_image_url,
-    currentClan?.profile_image_url,
-    currentClan?.marketplace_image_url,
-    currentClan?.cover_image_url,
-    currentClan?.banner_url,
-    currentClan?.image_url,
-    currentClan?.logo_url,
-    currentClan?.community?.community_image_url,
-    currentClan?.community?.image_url,
-    currentClan?.profile?.profile_image_url
-  );
-
-  return resolveMediaUrl(raw);
 }
 
 function routeTarget(
@@ -803,13 +730,8 @@ export default function WithdrawalInstructionsPage() {
     return communityRole(currentClan);
   }, [currentClan]);
 
-  const pictureSrc = useMemo(() => {
-    return communityImageSrc(currentClan);
-  }, [currentClan]);
-
   const poolCurrency = safeStr(moneySurface?.poolCurrency || "NGN");
   const effectiveAvailableText = safeStr(moneySurface?.effectiveAvailable || "");
-  const pendingWithdrawalsText = safeStr(moneySurface?.pendingWithdrawals || "");
   const effectiveAvailableKnown = Boolean(effectiveAvailableText);
 
   const requestedAmount = parseMoneyNumber(amountInput);
@@ -837,8 +759,6 @@ export default function WithdrawalInstructionsPage() {
   const payoutReady = destinationReady(destination);
 
   const readinessRecommendation = extractRecommendation(readinessPlan);
-  const readinessReasons = extractReasons(readinessPlan);
-  const preflightReasons = extractReasons(borrowerPreflight);
   const suggestedSafeAmount = extractSuggestedSafeAmount(readinessPlan);
   const suggestedGuarantorCount =
     extractGuarantorCount(readinessPlan) || extractGuarantorCount(borrowerPreflight);
@@ -930,31 +850,6 @@ export default function WithdrawalInstructionsPage() {
     payoutReady,
     requiresSupport,
   ]);
-
-  const guideTone =
-    guidedState.tone === "green"
-      ? {
-          bg: "#F3FBF5",
-          border: "1px solid rgba(34,197,94,0.16)",
-          text: "#166534",
-        }
-      : guidedState.tone === "gold"
-      ? {
-          bg: "#FFFBEF",
-          border: "1px solid rgba(245,158,11,0.16)",
-          text: "#92400E",
-        }
-      : guidedState.tone === "red"
-      ? {
-          bg: "#FFF5F5",
-          border: "1px solid rgba(239,68,68,0.16)",
-          text: "#991B1B",
-        }
-      : {
-          bg: "#F8FBFF",
-          border: "1px solid rgba(11,99,209,0.12)",
-          text: "#0B63D1",
-        };
 
   const withdrawalCanWidenRoutes =
     effectiveAvailableKnown && (!requiresSupport ? Boolean(latestWithdrawalResult) : false);
@@ -1277,9 +1172,26 @@ export default function WithdrawalInstructionsPage() {
   const effectiveAvailableDisplay = effectiveAvailableKnown
     ? `${effectiveAvailableText} ${poolCurrency}`
     : "Awaiting pool reading";
-  const pendingWithdrawalsDisplay = pendingWithdrawalsText
-    ? `${pendingWithdrawalsText} ${poolCurrency}`
-    : "Awaiting pool reading";
+  const identityReady = Boolean(selectedClanId && currentGmfnId);
+  const supportGapDisplay =
+    requestedAmount <= 0
+      ? "Awaiting amount"
+      : !effectiveAvailableKnown
+      ? "Awaiting pool reading"
+      : requiresSupport
+      ? `${fmtMoney(supportGap)} ${poolCurrency}`
+      : `0.00 ${poolCurrency}`;
+  const pathDisplay =
+    requestedAmount <= 0
+      ? "Awaiting amount"
+      : !effectiveAvailableKnown
+      ? "Awaiting pool reading"
+      : requiresSupport
+      ? "Support-backed"
+      : "Direct withdrawal";
+  const latestResultText = latestWithdrawalResult
+    ? firstTruthy(latestWithdrawalResult?.status, latestWithdrawalResult?.state, "Response received")
+    : "Awaiting";
 
   if (loading) {
     return (
@@ -1314,50 +1226,78 @@ export default function WithdrawalInstructionsPage() {
   return (
     <div
       style={{
-        maxWidth: 1180,
+        maxWidth: 920,
         margin: "0 auto",
-        paddingBottom: 40,
+        padding: isCompact ? "0 4px 36px" : "0 0 44px",
         display: "grid",
-        gap: 18,
+        gap: 16,
       }}
     >
       <PageTopNav
-        sectionLabel="Money Out"
-        title="Guided Withdrawal"
-        subtitle="Money Out stays guided from beginning to outcome. The community rail stays fixed, the personal payout destination stays explicit, and support takes over only when the amount goes above the effective available position."
+        sectionLabel="Focused Task"
+        title="Loans & Support"
+        subtitle="Money Out"
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.marketplace}
         backLabel="Marketplace"
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="Money Out guides one withdrawal route from request through destination, rail review, decision logic, and final execution."
-        why="Withdrawal can switch into support when the amount exceeds the effective available position, so the user needs one route that keeps the logic visible."
-        next="Check the current route state first, confirm the amount and payout destination, then follow the route guidance until it ends in direct withdrawal or support."
-        tone="light"
-      />
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
-      <div style={{ ...softCard(guideTone.bg), border: guideTone.border }}>
-        <div style={sectionLabel()}>Active Money Out process</div>
+      <div
+        style={{
+          ...softCard(
+            identityReady
+              ? "linear-gradient(180deg, rgba(11,48,39,0.94) 0%, rgba(13,35,56,0.96) 100%)"
+              : "linear-gradient(180deg, rgba(58,38,21,0.94) 0%, rgba(13,35,56,0.96) 100%)"
+          ),
+          border: identityReady
+            ? "1px solid rgba(46,155,98,0.28)"
+            : "1px solid rgba(214,170,69,0.44)",
+          display: "grid",
+          gridTemplateColumns: "52px minmax(0, 1fr) 28px",
+          gap: 14,
+          alignItems: "center",
+        }}
+      >
         <div
+          aria-hidden="true"
           style={{
-            marginTop: 8,
-            color: guideTone.text,
-            fontSize: 18,
-            fontWeight: 900,
-            lineHeight: 1.3,
+            width: 48,
+            height: 48,
+            borderRadius: 16,
+            display: "grid",
+            placeItems: "center",
+            fontSize: 27,
+            background: identityReady
+              ? "rgba(46,155,98,0.14)"
+              : "rgba(214,170,69,0.18)",
           }}
         >
-          {guidedState.title}
+          {identityReady ? "✅" : "⚠️"}
         </div>
-        <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
-          {submittingWithdrawal
-            ? "GSN is submitting this withdrawal request now. Other withdrawal actions are held until the response returns."
-            : guidedState.detail}
+        <div>
+          <div
+            style={{
+              color: identityReady ? "#D8F6E4" : "#F6D878",
+              fontSize: 18,
+              fontWeight: 1000,
+              lineHeight: 1.2,
+            }}
+          >
+            {identityReady ? guidedState.title : "Identity not ready"}
+          </div>
+          <div style={{ marginTop: 4, ...helperText(), lineHeight: 1.45 }}>
+            {submittingWithdrawal
+              ? "Submitting now. Other Money Out actions stay held until the response returns."
+              : identityReady
+              ? guidedState.detail
+              : "Activate the right community to continue."}
+          </div>
+        </div>
+        <div aria-hidden="true" style={{ color: "#D5E7FA", fontSize: 28, fontWeight: 900 }}>
+          ›
         </div>
       </div>
 
@@ -1367,79 +1307,53 @@ export default function WithdrawalInstructionsPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "180px minmax(0, 1fr) 320px",
-            gap: 16,
-            alignItems: "start",
+            gridTemplateColumns: isCompact ? "76px minmax(0, 1fr)" : "112px minmax(0, 1fr)",
+            gap: 18,
+            alignItems: "center",
           }}
         >
-          <div>
-            <div
-              style={{
-                width: "100%",
-                height: 148,
-                borderRadius: 20,
-                border: "1px solid rgba(212,175,55,0.22)",
-                overflow: "hidden",
-                background: "linear-gradient(180deg, rgba(16,36,58,0.84) 0%, rgba(38,82,124,0.92) 100%)",
-                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {pictureSrc ? (
-                <img
-                  src={pictureSrc}
-                  alt={communityLabel}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    display: "block",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontWeight: 900,
-                    fontSize: 20,
-                    textAlign: "center",
-                    padding: 12,
-                    lineHeight: 1.3,
-                  }}
-                >
-                  {communityLabel}
-                </div>
-              )}
-            </div>
+          <div
+            aria-hidden="true"
+            style={{
+              width: isCompact ? 70 : 96,
+              height: isCompact ? 70 : 96,
+              borderRadius: 24,
+              display: "grid",
+              placeItems: "center",
+              color: "#A9D5FF",
+              fontSize: isCompact ? 34 : 44,
+              background:
+                "radial-gradient(circle at 30% 20%, rgba(49,132,255,0.42), rgba(16,54,94,0.9) 64%, rgba(7,20,36,0.98))",
+              border: "1px solid rgba(78,143,231,0.34)",
+              boxShadow:
+                "0 22px 42px rgba(2,6,23,0.32), inset 0 1px 0 rgba(255,255,255,0.10)",
+            }}
+          >
+            👛
           </div>
 
           <div>
-            <div style={sectionLabel()}>Fixed withdrawal context</div>
+            <div style={{ ...sectionLabel(), color: "#87BDFD" }}>Money Out</div>
 
             <div
               style={{
-                marginTop: 10,
+                marginTop: 5,
                 color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.1,
+                fontWeight: 1000,
+                fontSize: isCompact ? 30 : 40,
+                lineHeight: 1.06,
               }}
             >
-              Withdraw from {communityLabel}
+              Simple guided payout
             </div>
 
-            <div style={{ marginTop: 12, ...helperText(), maxWidth: 860 }}>
-              Money Out should not behave like a loose dashboard card. Once you
-              choose withdrawal, the flow should guide you from context and
-              amount, through payout and rail confirmation, to direct result or
-              support-backed continuation.
+            <div style={{ marginTop: 8, ...helperText(), maxWidth: 720, lineHeight: 1.45 }}>
+              {communityLabel}
             </div>
 
             <div
               style={{
-                marginTop: 14,
+                marginTop: 12,
                 display: "flex",
                 gap: 8,
                 flexWrap: "wrap",
@@ -1453,31 +1367,70 @@ export default function WithdrawalInstructionsPage() {
               <span style={badge(false)}>Current step: {guidedState.step}</span>
             </div>
           </div>
+        </div>
 
-          <div
-            style={{
-              ...softCard(guideTone.bg),
-              border: guideTone.border,
-            }}
-          >
-            <div style={sectionLabel()}>Current route state</div>
-
+        <div
+          style={{
+            marginTop: 18,
+            display: "grid",
+            gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+            gap: isCompact ? 7 : 10,
+            alignItems: "start",
+          }}
+        >
+          {[
+            ["🧭", "Context", identityReady],
+            ["💰", "Amount", requestedAmount > 0],
+            ["🏦", "Payout", payoutReady],
+            ["🛤️", "Rail", communityRailReady],
+            ["✅", "Result", Boolean(latestWithdrawalResult) || withdrawalCanWidenRoutes],
+          ].map(([icon, label, active]) => (
             <div
+              key={String(label)}
               style={{
-                marginTop: 10,
-                color: guideTone.text,
+                minWidth: 0,
+                display: "flex",
+                alignItems: "center",
+                flexDirection: "column",
+                gap: 6,
+                color: active ? "#F8FBFF" : "#8FA7C2",
                 fontWeight: 900,
-                fontSize: 20,
-                lineHeight: 1.25,
+                fontSize: isCompact ? 10.5 : 12,
               }}
             >
-              {guidedState.title}
+              <span
+                style={{
+                  width: isCompact ? 34 : 42,
+                  height: isCompact ? 34 : 42,
+                  borderRadius: 999,
+                  display: "grid",
+                  placeItems: "center",
+                  background: active
+                    ? "linear-gradient(180deg, #2468EA 0%, #103D91 100%)"
+                    : "rgba(255,255,255,0.08)",
+                  border: active
+                    ? "1px solid rgba(78,143,231,0.52)"
+                    : "1px solid rgba(154,177,207,0.20)",
+                  boxShadow: active
+                    ? "0 12px 22px rgba(18,77,176,0.28)"
+                    : "inset 0 1px 0 rgba(255,255,255,0.06)",
+                  fontSize: isCompact ? 16 : 18,
+                }}
+              >
+                {icon}
+              </span>
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  maxWidth: "100%",
+                }}
+              >
+                {label}
+              </span>
             </div>
-
-            <div style={{ marginTop: 10, ...helperText(), color: "#F8FBFF" }}>
-              {guidedState.detail}
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
@@ -1492,7 +1445,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Withdrawal overview</div>
+            <div style={sectionLabel()}>Overview</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Keep the amount-led decision together.
             </div>
@@ -1509,15 +1462,6 @@ export default function WithdrawalInstructionsPage() {
           </SubtleButton>
         </div>
 
-        <ExplainToggle
-          label="What this overview shows"
-          what="This overview gives the main withdrawal reading first: requested amount, available position, support gap, and current path."
-          why="It helps you understand quickly whether the request can stay direct or needs support-backed continuation."
-          next="Check the path and support gap first, then use the decision lane below to continue with the right route."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
         {!collapsed.overview ? (
           <div
             style={{
@@ -1525,12 +1469,12 @@ export default function WithdrawalInstructionsPage() {
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr 1fr"
-                : "repeat(4, minmax(0, 1fr))",
+                : "repeat(3, minmax(0, 1fr))",
               gap: 12,
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>Requested amount</div>
+              <div style={sectionLabel()}>💵 Requested</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1545,7 +1489,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Effective available</div>
+              <div style={sectionLabel()}>🛡️ Available</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1560,7 +1504,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>Support gap</div>
+              <div style={sectionLabel()}>🟠 Support gap</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1570,18 +1514,12 @@ export default function WithdrawalInstructionsPage() {
                   lineHeight: 1.25,
                 }}
               >
-                {requestedAmount <= 0
-                  ? "Awaiting amount"
-                  : !effectiveAvailableKnown
-                  ? "Awaiting pool reading"
-                  : requiresSupport
-                  ? `${fmtMoney(supportGap)} ${poolCurrency}`
-                  : `0.00 ${poolCurrency}`}
+                {supportGapDisplay}
               </div>
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>Path</div>
+              <div style={sectionLabel()}>🧭 Path</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1591,18 +1529,12 @@ export default function WithdrawalInstructionsPage() {
                   lineHeight: 1.25,
                 }}
               >
-                {requestedAmount <= 0
-                  ? "Awaiting amount"
-                  : !effectiveAvailableKnown
-                  ? "Awaiting pool reading"
-                  : requiresSupport
-                  ? "Support-backed withdrawal"
-                  : "Direct withdrawal"}
+                {pathDisplay}
               </div>
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Community rail</div>
+              <div style={sectionLabel()}>🛤️ Rail</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1617,7 +1549,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>Personal payout</div>
+              <div style={sectionLabel()}>👤 Payout</div>
               <div
                 style={{
                   marginTop: 8,
@@ -1631,65 +1563,6 @@ export default function WithdrawalInstructionsPage() {
               </div>
             </div>
 
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Pending withdrawals</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 16,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {pendingWithdrawalsDisplay}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Suggested safe amount</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 16,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {safeStr(suggestedSafeAmount || "Not returned")}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Suggested guarantors</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 16,
-                  fontWeight: 900,
-                  lineHeight: 1.25,
-                }}
-              >
-                {suggestedGuarantorCount > 0 ? String(suggestedGuarantorCount) : "Not returned"}
-              </div>
-            </div>
-
-            <div style={statTile()}>
-              <div style={sectionLabel()}>Recommendation</div>
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#F8FBFF",
-                  fontSize: 15,
-                  fontWeight: 900,
-                  lineHeight: 1.3,
-                }}
-              >
-                {safeStr(readinessRecommendation || "No explicit recommendation")}
-              </div>
-            </div>
           </div>
         ) : null}
       </section>
@@ -1705,9 +1578,9 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Withdrawal decision lane</div>
+            <div style={sectionLabel()}>💰 Amount Decision</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Amount first, then the route determines direct withdrawal or support-backed continuation.
+              Enter how much you want to withdraw.
             </div>
           </div>
 
@@ -1721,15 +1594,6 @@ export default function WithdrawalInstructionsPage() {
             {collapsed.request ? "Open" : "Collapse"}
           </SubtleButton>
         </div>
-
-        <ExplainToggle
-          label="How this decision works"
-          what="This section compares the amount you want against your effective available pool and decides whether the route stays direct or moves into support."
-          why="It makes the branch visible before you act, so you know whether you are completing a withdrawal or handing off into the support flow."
-          next="Enter the amount, read the decision and intelligence panels, then continue with either direct withdrawal or loan-readiness handoff."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
 
         {!collapsed.request ? (
           <div
@@ -1753,14 +1617,15 @@ export default function WithdrawalInstructionsPage() {
                 }}
               >
                 <div>
-                  <div style={sectionLabel()}>How much do you want to withdraw?</div>
+                  <div style={sectionLabel()}>Amount</div>
                   <input
                     value={amountInput}
                     onChange={(e) => {
                       setAmountInput(e.target.value);
                       setLatestWithdrawalResult(null);
                     }}
-                    placeholder="Enter amount"
+                    placeholder="0.00"
+                    inputMode="decimal"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
                 </div>
@@ -1782,7 +1647,7 @@ export default function WithdrawalInstructionsPage() {
                   ...helperText(),
                 }}
               >
-                The route checks this amount against your effective available pool. If the amount stays inside your effective available position, it remains direct withdrawal. If it goes above that level, the route becomes support-backed and continues into the support flow.
+                  Amount, payout, rail, and result stay together until this request is clearly matched.
               </div>
 
               <div
@@ -1794,7 +1659,7 @@ export default function WithdrawalInstructionsPage() {
                 }}
               >
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Decision reading</div>
+                  <div style={sectionLabel()}>🚦 Path Status</div>
                   <div
                     style={{
                       marginTop: 8,
@@ -1820,7 +1685,7 @@ export default function WithdrawalInstructionsPage() {
                 </div>
 
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Intelligence reading</div>
+                  <div style={sectionLabel()}>Safe route check</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {[
                       readinessRecommendation
@@ -1839,39 +1704,10 @@ export default function WithdrawalInstructionsPage() {
                 </div>
               </div>
 
-              {readinessReasons.length > 0 || preflightReasons.length > 0 ? (
-                <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                  {readinessReasons.length > 0 ? (
-                    <div style={innerCard("#FFFBEF")}>
-                      <div style={sectionLabel()}>Readiness reasons</div>
-                      <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                        {readinessReasons.map((item, index) => (
-                          <div key={`readiness-reason-${index}`} style={helperText()}>
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {preflightReasons.length > 0 ? (
-                    <div style={innerCard("#F8FBFF")}>
-                      <div style={sectionLabel()}>Borrower preflight reasons</div>
-                      <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
-                        {preflightReasons.map((item, index) => (
-                          <div key={`preflight-reason-${index}`} style={helperText()}>
-                            {item}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
 
             <div style={softCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Decision actions</div>
+                <div style={sectionLabel()}>Actions</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {!effectiveAvailableKnown ? (
@@ -1880,7 +1716,7 @@ export default function WithdrawalInstructionsPage() {
                     debugId="money-out.awaiting-pool"
                     style={moneyOutActionButtonStyle("primary", true)}
                   >
-                    Awaiting Pool Reading
+                    Awaiting
                   </PrimaryButton>
                 ) : !requiresSupport ? (
                   <PrimaryButton
@@ -1902,7 +1738,7 @@ export default function WithdrawalInstructionsPage() {
                   >
                     {submittingWithdrawal
                       ? "Submitting..."
-                      : "Continue Direct Withdrawal"}
+                      : "Check path"}
                   </PrimaryButton>
                 ) : (
                   <PrimaryButton
@@ -1914,7 +1750,7 @@ export default function WithdrawalInstructionsPage() {
                       requestedAmount <= 0 || !communityRailReady || !payoutReady
                     )}
                   >
-                    Open Loan Readiness Support
+                    Open Support
                   </PrimaryButton>
                 )}
 
@@ -1923,7 +1759,7 @@ export default function WithdrawalInstructionsPage() {
                   debugId="money-out.copy-summary"
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Copy Withdrawal Summary
+                  Copy Summary
                 </SecondaryButton>
 
                 <SubtleButton
@@ -1932,7 +1768,7 @@ export default function WithdrawalInstructionsPage() {
                   debugId="money-out.reset-task"
                   style={moneyOutActionButtonStyle("soft")}
                 >
-                  Reset Task
+                  Reset
                 </SubtleButton>
               </div>
             </div>
@@ -1951,9 +1787,9 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Personal payout account</div>
+            <div style={sectionLabel()}>🏦 Payout Preview</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Approved withdrawal should land here. It stays separate from the fixed community rail.
+              Complete payout details only when the preview is incomplete.
             </div>
           </div>
 
@@ -2161,10 +1997,9 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Community money-out rail</div>
+            <div style={sectionLabel()}>🛤️ Community Money-Out Rail</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              This fixed community withdrawal rail is separate from your
-              personal payout destination.
+              Fixed community withdrawal rail.
             </div>
           </div>
 
@@ -2174,18 +2009,9 @@ export default function WithdrawalInstructionsPage() {
             debugId="money-out.refresh-community-rail"
             style={moneyOutActionButtonStyle("secondary", loadingRoute)}
           >
-            {loadingRoute ? "Loading..." : "Refresh Community Rail"}
+            {loadingRoute ? "Loading..." : "Refresh Rail"}
           </SecondaryButton>
         </div>
-
-        <ExplainToggle
-          label="What this rail is for"
-          what="This is the community-side withdrawal rail that must be visible before money-out can complete cleanly."
-          why="It stays separate from your personal payout account so the community route and your destination do not get mixed together."
-          next="Refresh or review the rail details, copy them if needed, and make sure they are ready before you continue with execution."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
 
         {!collapsed.rail ? (
           <div
@@ -2235,7 +2061,7 @@ export default function WithdrawalInstructionsPage() {
                     debugId="money-out.copy-community-rail"
                     style={moneyOutActionButtonStyle("primary", !communityRailReady)}
                   >
-                  Copy Community Rail
+                  Copy Rail
                 </PrimaryButton>
 
                 <StableCtaLink
@@ -2244,7 +2070,7 @@ export default function WithdrawalInstructionsPage() {
                   stableHeight={48}
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Open Finance
+                  Finance
                 </StableCtaLink>
 
                 <StableCtaLink
@@ -2253,7 +2079,7 @@ export default function WithdrawalInstructionsPage() {
                   stableHeight={48}
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Open Payout Details
+                  Payout
                 </StableCtaLink>
               </div>
             </div>
@@ -2268,7 +2094,7 @@ export default function WithdrawalInstructionsPage() {
             debugId="money-out.toggle-rail"
             style={moneyOutCollapseButtonStyle()}
           >
-            {collapsed.rail ? "Open rail details" : "Collapse rail details"}
+            {collapsed.rail ? "Show Rail" : "Hide Rail"}
           </SubtleButton>
         </div>
       </section>
@@ -2284,9 +2110,9 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Execution and result</div>
+            <div style={sectionLabel()}>⏳ Execution & Result</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              Direct withdrawal can complete here. Support-backed withdrawal continues immediately into support continuation.
+              {latestResultText}
             </div>
           </div>
 
@@ -2307,19 +2133,10 @@ export default function WithdrawalInstructionsPage() {
               debugId="money-out.refresh-status"
               style={moneyOutActionButtonStyle("secondary", refreshing)}
             >
-              {refreshing ? "Refreshing..." : "Refresh Status"}
+              {refreshing ? "Refreshing..." : "Refresh"}
             </SecondaryButton>
           </div>
         </div>
-
-        <ExplainToggle
-          label="What happens next"
-          what="This final section shows the outcome of the current withdrawal task and whether it completed here or moved into support continuation."
-          why="It keeps the result visible in one place so you can tell the difference between a completed direct withdrawal and a support-backed handoff."
-          next="Refresh the status when needed, then either confirm the direct result or follow the support continuation the page presents."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
 
         {!collapsed.result ? (
           <div
@@ -2332,7 +2149,7 @@ export default function WithdrawalInstructionsPage() {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Current execution state</div>
+                  <div style={sectionLabel()}>Current state</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
                 <div style={innerCard("#FFFFFF")}>
@@ -2440,7 +2257,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={48}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
-                        Open Loan Readiness
+                        Loan Readiness
                       </StableCtaLink>
 
                       <StableCtaLink
@@ -2449,7 +2266,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={48}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
-                        Open Loan Suggestions
+                        Loan Suggestions
                       </StableCtaLink>
 
                       <StableCtaLink
@@ -2458,7 +2275,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={48}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
-                        Open Loan Workbench
+                        Loan Workbench
                       </StableCtaLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
@@ -2469,7 +2286,7 @@ export default function WithdrawalInstructionsPage() {
                       stableHeight={48}
                       style={moneyOutActionButtonStyle("secondary")}
                     >
-                      Open Finance
+                      Finance
                     </StableCtaLink>
 
                       <StableCtaLink
@@ -2478,7 +2295,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={48}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
-                        Open Payout Details
+                        Payout
                       </StableCtaLink>
                   </>
                 ) : null}
@@ -2500,7 +2317,7 @@ export default function WithdrawalInstructionsPage() {
         >
           <div>
             <div style={sectionLabel()}>
-              {withdrawalCanWidenRoutes ? "Next routes" : "Route focus"}
+              Connections monitor
             </div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {withdrawalCanWidenRoutes
