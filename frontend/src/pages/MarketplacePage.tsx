@@ -3636,6 +3636,26 @@ export default function MarketplacePage() {
     loanDraftSummary?.approved_guarantors
   );
   const sentGuarantorCount = positiveNumber(loanDraftSummary?.guarantors_total);
+  const supportProcessBusy =
+    startingLoanDraft ||
+    loadingSuggestions ||
+    sendingGuarantorRequests ||
+    cancellingLoanDraft;
+  const supportDraftStillOpen =
+    !loanDraftId ||
+    loanStatusLower === "pending" ||
+    loanStatusLower === "incomplete" ||
+    !loanStatusLower;
+  const supportProcessMessage =
+    supportProcessBusy
+      ? "GSN is working on this support step now. Other support actions are held until this response finishes."
+      : loanStatusLower === "incomplete"
+      ? "Support is not complete yet. Choose another fit guarantor, send the next request, or cancel the draft if it should stop."
+      : loanStatusLower === "approved"
+      ? "Support is approved. Move to the loan summary or repayment path instead of sending more guarantor requests."
+      : loanDraftId
+      ? "Support is open. Keep the draft, suggestions, selected guarantors, and next response together here."
+      : "Start one support request first. After it starts, GSN will show the next required response in this same lane.";
 
   const visibleSelectedSupporters = useMemo(
     () =>
@@ -3649,6 +3669,7 @@ export default function MarketplacePage() {
     sendingGuarantorRequests ||
     requiredGuarantorCount <= 0 ||
     visibleSelectedSupporters.length < requiredGuarantorCount ||
+    !supportDraftStillOpen ||
     loanStatusLower === "approved";
 
   if (loading) {
@@ -5466,6 +5487,7 @@ export default function MarketplacePage() {
                   <input
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(e.target.value)}
+                    disabled={supportProcessBusy}
                     placeholder="Enter amount"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
@@ -5478,6 +5500,7 @@ export default function MarketplacePage() {
                     min="1"
                     value={loanDurationDays}
                     onChange={(e) => setLoanDurationDays(e.target.value)}
+                    disabled={supportProcessBusy}
                     placeholder="Duration in days"
                     style={{ ...inputStyle(), marginTop: 8 }}
                   />
@@ -5488,6 +5511,7 @@ export default function MarketplacePage() {
                   <textarea
                     value={loanPurpose}
                     onChange={(e) => setLoanPurpose(e.target.value)}
+                    disabled={supportProcessBusy}
                     placeholder="State what the support is for..."
                     style={{ ...textAreaStyle(), marginTop: 8 }}
                   />
@@ -5509,11 +5533,11 @@ export default function MarketplacePage() {
                       void handleStartLoanDraft();
                     });
                   }}
-                  disabled={startingLoanDraft}
+                  disabled={supportProcessBusy}
                   stableHeight={58}
                   style={marketplaceInlineActionStyle(
                     "primary",
-                    startingLoanDraft,
+                    supportProcessBusy,
                     isCompact
                   )}
                 >
@@ -5530,11 +5554,11 @@ export default function MarketplacePage() {
                         void handleRefreshSuggestions();
                       });
                     }}
-                    disabled={loadingSuggestions}
+                    disabled={supportProcessBusy}
                     stableHeight={58}
                     style={marketplaceInlineActionStyle(
                       "secondary",
-                      loadingSuggestions,
+                      supportProcessBusy,
                       isCompact
                     )}
                   >
@@ -5552,11 +5576,11 @@ export default function MarketplacePage() {
                         void handleCancelLoanDraft();
                       });
                     }}
-                    disabled={cancellingLoanDraft}
+                    disabled={supportProcessBusy}
                     stableHeight={58}
                     style={marketplaceInlineActionStyle(
                       "secondary",
-                      cancellingLoanDraft,
+                      supportProcessBusy,
                       isCompact
                     )}
                   >
@@ -5577,8 +5601,9 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     openMarketplaceCta(event, "loanReadiness")
                   }
+                  disabled={supportProcessBusy}
                   stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
+                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                 >
                   Loan Readiness
                 </StableButton>
@@ -5588,8 +5613,9 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     openMarketplaceCta(event, "loanSuggestions")
                   }
+                  disabled={supportProcessBusy}
                   stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
+                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                 >
                   Loan Suggestions
                 </StableButton>
@@ -5599,8 +5625,9 @@ export default function MarketplacePage() {
                   onClick={(event) =>
                     openMarketplaceCta(event, "loanWorkbench")
                   }
+                  disabled={supportProcessBusy}
                   stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
+                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                 >
                   Loan Workbench
                 </StableButton>
@@ -5608,8 +5635,9 @@ export default function MarketplacePage() {
                   debugId="marketplace.support.finance"
                   type="button"
                   onClick={(event) => openMarketplaceCta(event, "finance")}
+                  disabled={supportProcessBusy}
                   stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
+                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                 >
                   Finance
                 </StableButton>
@@ -5617,8 +5645,9 @@ export default function MarketplacePage() {
                   debugId="marketplace.support.full-loans"
                   type="button"
                   onClick={(event) => openMarketplaceCta(event, "loans")}
+                  disabled={supportProcessBusy}
                   stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", false, isCompact)}
+                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
                 >
                   Full Loans View
                 </StableButton>
@@ -5662,8 +5691,7 @@ export default function MarketplacePage() {
                     </div>
 
                     <div style={{ marginTop: 12, ...helperText() }}>
-                      {extractSuggestionMessage(loanSuggestionRaw) ||
-                        "Review the fit suggestions below if the support draft needs guarantors."}
+                      {supportProcessMessage}
                     </div>
                   </div>
 

@@ -1051,6 +1051,26 @@ export default function PaymentInstructionsPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      <div style={{ ...softCard(resultTone.bg), border: resultTone.border }}>
+        <div style={sectionLabel()}>Active Money In process</div>
+        <div
+          style={{
+            marginTop: 8,
+            color: resultTone.text,
+            fontSize: 18,
+            fontWeight: 900,
+            lineHeight: 1.3,
+          }}
+        >
+          {inferredResult.title}
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+          {generatingInstruction || refreshingRoute
+            ? "GSN is working on this money-in step now. Other money-in actions are held until the response returns."
+            : inferredResult.detail}
+        </div>
+      </div>
+
       <section
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}
       >
@@ -1399,6 +1419,7 @@ export default function PaymentInstructionsPage() {
                       setPaymentConfirmed(false);
                       setPaymentConfirmedAt(null);
                     }}
+                    disabled={generatingInstruction}
                     placeholder="Enter amount"
                     style={inputStyle()}
                   />
@@ -1416,9 +1437,12 @@ export default function PaymentInstructionsPage() {
 
                   <SecondaryButton
                     onClick={() => void handleRefreshRoute()}
-                    disabled={refreshingRoute}
+                    disabled={generatingInstruction || refreshingRoute}
                     debugId="money-in.refresh-route"
-                    style={moneyInActionButtonStyle("secondary", refreshingRoute)}
+                    style={moneyInActionButtonStyle(
+                      "secondary",
+                      generatingInstruction || refreshingRoute
+                    )}
                   >
                     {refreshingRoute ? "Refreshing..." : "Refresh Route"}
                   </SecondaryButton>
@@ -1572,10 +1596,11 @@ export default function PaymentInstructionsPage() {
 
                   <SecondaryButton
                     onClick={handleConfirmPaymentMade}
+                    disabled={paymentConfirmed}
                     debugId="money-in.confirm-paid"
-                    style={moneyInActionButtonStyle("secondary")}
+                    style={moneyInActionButtonStyle("secondary", paymentConfirmed)}
                   >
-                    I Have Paid Using This Reference
+                    {paymentConfirmed ? "Payment Declared" : "I Have Paid Using This Reference"}
                   </SecondaryButton>
                 </div>
               </div>

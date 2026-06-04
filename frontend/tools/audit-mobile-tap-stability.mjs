@@ -545,7 +545,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace async support buttons must expose inactive state through stable disabled props",
     pattern:
-      /disabled=\{startingLoanDraft\}[\s\S]*?disabled=\{loadingSuggestions\}[\s\S]*?disabled=\{cancellingLoanDraft\}/,
+      /const supportProcessBusy =[\s\S]*?startingLoanDraft[\s\S]*?loadingSuggestions[\s\S]*?sendingGuarantorRequests[\s\S]*?cancellingLoanDraft[\s\S]*?disabled=\{supportProcessBusy\}[\s\S]*?disabled=\{supportProcessBusy\}[\s\S]*?disabled=\{supportProcessBusy\}/,
   },
   {
     label:

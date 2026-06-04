@@ -837,12 +837,24 @@ export default function LoanSummaryPage() {
   );
 
   const loanStatus = lc(summary?.status);
-  const canActOnGuarantors = loanStatus === "pending";
-  const canRepay = loanStatus === "approved" || loanStatus === "disbursed";
+  const canActOnGuarantors =
+    loanStatus === "pending" || loanStatus === "incomplete";
+  const canRepay =
+    loanStatus === "approved" || loanStatus === "disbursed" || loanStatus === "active";
   const supportItemActive =
     loanStatus === "pending" ||
+    loanStatus === "incomplete" ||
     loanStatus === "approved" ||
-    loanStatus === "disbursed";
+    loanStatus === "disbursed" ||
+    loanStatus === "active";
+  const supportProcessMessage =
+    loanStatus === "incomplete"
+      ? "Support is not complete yet. Add another guarantor, wait for pending replies, or cancel this request if it should not continue."
+      : loanStatus === "pending"
+      ? "Support is open. Keep each guarantor decision explicit until the backend can approve or mark what is still missing."
+      : canRepay
+      ? "Support has moved into the money stage. Repayment is now the next deterministic action."
+      : "No support action is currently open. Review the record before choosing the next route.";
 
   const latestEvent = useMemo(() => {
     const xs = [...events].filter((e) => !!e.created_at);
@@ -1022,7 +1034,8 @@ export default function LoanSummaryPage() {
     if (!canActOnGuarantors) {
       setFeedback({
         tone: "error",
-        text: "Guarantor decisions are only available while the loan is pending.",
+        text:
+          "Guarantor decisions are only available while support is pending or incomplete.",
       });
       return;
     }
@@ -1365,7 +1378,7 @@ export default function LoanSummaryPage() {
                 }}
               >
                 {canActOnGuarantors
-                  ? "Review guarantor progress and keep the pending decisions moving."
+                  ? supportProcessMessage
                   : canRepay
                   ? "Review repayment state and continue with the money path."
                   : "Review the evidence and status before taking another step."}
@@ -1654,6 +1667,24 @@ export default function LoanSummaryPage() {
             tone="light"
             style={{ marginTop: 12 }}
           />
+
+          <div
+            style={{
+              ...innerCard(loanStatus === "incomplete" ? "#FFF7ED" : "#F8FBFF"),
+              marginTop: 12,
+              border:
+                loanStatus === "incomplete"
+                  ? "1px solid rgba(194,65,12,0.22)"
+                  : "1px solid rgba(11,99,209,0.14)",
+            }}
+          >
+            <div style={sectionLabel()}>
+              {loanStatus === "incomplete" ? "Support still needs action" : "Current support process"}
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+              {supportProcessMessage}
+            </div>
+          </div>
 
           {!collapsed.guarantors ? (
             <div style={{ marginTop: 14, display: "grid", gap: 10 }}>

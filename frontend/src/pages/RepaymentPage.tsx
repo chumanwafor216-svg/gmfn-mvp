@@ -687,6 +687,26 @@ export default function RepaymentPage() {
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
+      <div style={{ ...softCard(routeState.toneBg), border: routeState.toneBorder }}>
+        <div style={sectionLabel()}>Active repayment process</div>
+        <div
+          style={{
+            marginTop: 8,
+            color: routeState.toneText,
+            fontSize: 18,
+            fontWeight: 900,
+            lineHeight: 1.3,
+          }}
+        >
+          {routeState.title}
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+          {generatingInstruction
+            ? "GSN is generating this repayment instruction now. Other repayment actions are held until the response returns."
+            : routeState.detail}
+        </div>
+      </div>
+
       <section style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}>
         <div
           style={{
@@ -916,7 +936,7 @@ export default function RepaymentPage() {
                   <SecondaryButton
                     type="button"
                     onClick={handleCopyReference}
-                    disabled={!instruction}
+                    disabled={generatingInstruction || !instruction}
                     stableHeight={54}
                     debugId="repayment.copy-reference"
                   >
@@ -926,7 +946,7 @@ export default function RepaymentPage() {
                   <SecondaryButton
                     type="button"
                     onClick={handleCopyInstruction}
-                    disabled={!instruction}
+                    disabled={generatingInstruction || !instruction}
                     stableHeight={54}
                     debugId="repayment.copy-full-instruction"
                   >

@@ -1,3 +1,68 @@
+### Money cycle backend truth and deterministic process feedback tightened (2026-06-04)
+
+- Routes/screens affected:
+  - backend `POST /loans`, implemented by
+    `gmfn_backend/app/api/routes/loans.py`;
+  - `/app/marketplace` Borrow / Lend / Support lane, implemented by
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - `/app/loan-summary/:loanId`, implemented by
+    `frontend/src/pages/LoanSummaryPage.tsx`;
+  - `/app/payment/pool`, implemented by
+    `frontend/src/pages/PaymentInstructionsPage.tsx`;
+  - `/app/withdrawal-instructions`, implemented by
+    `frontend/src/pages/WithdrawalInstructionsPage.tsx`;
+  - `/app/payment/loans/:loanId`, implemented by
+    `frontend/src/pages/RepaymentPage.tsx`.
+- Backend truth now enforced:
+  - loan creation now reads the member's confirmed/effective pool position from
+    `compute_pool_balances(...)`, so borrowing uses the same pool-event ledger
+    as deposits and withdrawals;
+  - legacy `ClanMembership.personal_pool_balance` no longer silently decides
+    whether a new loan is self-covered;
+  - creating a self-covered loan no longer deducts the legacy membership field,
+    because confirmed pool events plus loan `reserved_pool` are now the money
+    truth for the borrowing decision.
+- Frontend process change:
+  - `LoanSummaryPage` treats both `pending` and `incomplete` loans as live
+    guarantor/support states, matching backend truth that `incomplete` means
+    continue by adding/deciding guarantors, not a dead support item;
+  - Marketplace support now has one shared `supportProcessBusy` lock, so while
+    a support draft/start/refresh/send/cancel operation is running, competing
+    support actions step back until the response returns;
+  - Money In, Money Out, and Repayment now show a visible active-process card
+    near the top of the route so the user receives a plain response without
+    scrolling into a hidden result area;
+  - Money Out copy now says a direct withdrawal request is waiting for
+    community confirmation before money movement is complete;
+  - Money In and Repayment declaration/copy buttons now hold inactive states
+    more clearly while a deterministic money step is active.
+- Guardrails:
+  - `gmfn_backend/tests/test_loan_pool_event_truth.py` proves confirmed pool
+    events support borrowing and legacy membership balance does not override
+    the pool-event ledger;
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now checks the shared
+    Marketplace support process lock instead of the older separate busy flags.
+- Verification:
+  - `python -m py_compile gmfn_backend\app\api\routes\loans.py gmfn_backend\tests\test_loan_pool_event_truth.py` passed;
+  - `python -m pytest -q gmfn_backend\tests\test_loan_pool_event_truth.py gmfn_backend\tests\test_marketplace_requests.py gmfn_backend\tests\test_guarantor_invite_list.py gmfn_backend\tests\test_guarantor_decision.py` passed: 14 tests;
+  - `npm exec -- eslint src/pages/LoanSummaryPage.tsx src/pages/MarketplacePage.tsx src/pages/PaymentInstructionsPage.tsx src/pages/WithdrawalInstructionsPage.tsx src/pages/RepaymentPage.tsx tools/audit-mobile-tap-stability.mjs` passed;
+  - `npm run audit:marketplace-button-inventory` passed and still reports 96
+    whole-route mobile Marketplace controls;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:finance-actions` passed;
+  - `npm run audit:loans-actions` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this does not create a new payout rail or bank transfer executor. Deposits,
+    withdrawals, and repayments still rely on instruction generation plus
+    reconciliation/admin confirmation before money movement is complete;
+  - the old `membership_pool_balance` summary field still exists as a legacy
+    display/data field, but new loan creation no longer treats it as the money
+    source of truth.
+
 ### Public shop visitor actions polished (2026-06-03)
 
 - Route/screen affected:

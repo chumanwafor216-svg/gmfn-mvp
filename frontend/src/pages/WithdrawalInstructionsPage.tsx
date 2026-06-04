@@ -1141,7 +1141,7 @@ export default function WithdrawalInstructionsPage() {
 
       showNotice(
         "success",
-        "Direct withdrawal request submitted successfully."
+        "Direct withdrawal request submitted. It is waiting for community confirmation before money movement is complete."
       );
     } finally {
       setSubmittingWithdrawal(false);
@@ -1340,6 +1340,26 @@ export default function WithdrawalInstructionsPage() {
       />
 
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
+
+      <div style={{ ...softCard(guideTone.bg), border: guideTone.border }}>
+        <div style={sectionLabel()}>Active Money Out process</div>
+        <div
+          style={{
+            marginTop: 8,
+            color: guideTone.text,
+            fontSize: 18,
+            fontWeight: 900,
+            lineHeight: 1.3,
+          }}
+        >
+          {guidedState.title}
+        </div>
+        <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
+          {submittingWithdrawal
+            ? "GSN is submitting this withdrawal request now. Other withdrawal actions are held until the response returns."
+            : guidedState.detail}
+        </div>
+      </div>
 
       <section
         style={pageCard("linear-gradient(180deg, #10243A 0%, #173654 52%, #26527C 100%)")}

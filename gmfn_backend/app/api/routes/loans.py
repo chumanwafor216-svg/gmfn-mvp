@@ -36,6 +36,7 @@ from app.services.loans_service import (
     list_loan_guarantors,
     update_loan_guarantor_status,
 )
+from app.services.pool_service import compute_pool_balances
 from app.services.repayments_service import create_repayment, list_repayments
 from app.services.trust_events_services import log_trust_event
 from app.services.trust_score_service import loan_policy_for_band, trust_enforcement_enabled
@@ -98,10 +99,14 @@ def create_loan(
             detail="amount must be > 0",
         )
 
-    personal_pool_raw = getattr(membership, "personal_pool_balance", None)
-    personal_pool = (
-        Decimal("0") if personal_pool_raw is None else Decimal(str(personal_pool_raw))
+    ccy = (getattr(payload, "currency", None) or "NGN").strip().upper() or "NGN"
+    pool_balances = compute_pool_balances(
+        db,
+        clan_id=int(clan.id),
+        user_id=_uid(current_user),
+        currency=ccy,
     )
+    personal_pool = Decimal(str(pool_balances.get("effective_available") or "0"))
 
     snap = compute_loan_snapshot(
         loan_amount=requested,
@@ -139,7 +144,7 @@ def create_loan(
         clan_id=clan.id,
         borrower_user_id=_uid(current_user),
         amount=requested,
-        currency=getattr(payload, "currency", None) or "NGN",
+        currency=ccy,
         status=new_status,
         guarantors_required=int(guarantors_required),
         personal_pool_at_request=personal_pool,
@@ -149,13 +154,6 @@ def create_loan(
         decision_at=decision_at,
     )
     db.add(loan)
-
-    if within_pool:
-        db_membership = db.get(ClanMembership, membership.id)
-        if db_membership:
-            db_membership.personal_pool_balance = Decimal(str(personal_pool)) - Decimal(
-                str(requested)
-            )
 
     db.commit()
     db.refresh(loan)
