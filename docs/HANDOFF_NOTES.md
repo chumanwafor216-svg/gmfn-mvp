@@ -1,3 +1,47 @@
+### Public Shop focused block links and spotlight fallback (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner truth:
+  - the public shop page share button should share the whole shop;
+  - an individual Shop Diaries block share must open only that selected block,
+    not behave like another whole-shop link;
+  - member shops with live public blocks should not show a dead Spotlight card
+    just because no live broadcast/paid spotlight exists yet.
+- Frontend change:
+  - exact public block URLs with `product_id`, `block`, `#shop-block-n`, or
+    `#product-n` now enter focused block mode;
+  - focused block mode asks the public shop API for the exact `product_id`,
+    renders only the matching block in Shop Diaries, labels the surface as a
+    shared block link, and hides secondary Spotlight/Vault promo sections so
+    the receiver does not land in the whole shop experience;
+  - whole-shop links still keep the signboard, status strip, Spotlight, Vault,
+    and normal 12-block Shop Diaries shelf;
+  - when a public shop has no live broadcast, the Spotlight preview now falls
+    back to that shop's own first live public block with image/video instead of
+    showing the empty shopping-bag placeholder.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now protects both behaviors:
+    whole-shop links keep the shelf, while exact block links focus one block;
+  - the same audit now protects the product-based Spotlight fallback.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
+    tools/audit-link-contracts.mjs` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed and still reports 51
+    stable Marketplace source actions;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - sandboxed `npm run build` hit the known Windows Vite/esbuild `spawn
+    EPERM`, then `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this does not create a backend broadcast for every shop. It makes the
+    public shop page show a truthful fallback from the shop's own live public
+    block when no broadcast exists.
+
 ### Money Out / Marketplace Finance / Verify QR tightening (2026-06-04)
 
 - Routes/screens affected:

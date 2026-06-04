@@ -910,14 +910,26 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const GALLERY_SLOTS_TOTAL = 12;[\s\S]*?const visibleProducts = useMemo\([\s\S]*?products\.slice\(0, GALLERY_SLOTS_TOTAL\)[\s\S]*?const overflowProductCount = Math\.max\(0, products\.length - GALLERY_SLOTS_TOTAL\);/,
-  "Public Shop Gallery must render the full approved 12 public-block shelf before any overflow control."
+  /function isPublicShopBlockHash\(value: string\): boolean \{[\s\S]*?\^shop-block-\\d\{1,2\}\$[\s\S]*?\^product-\\d\+\$[\s\S]*?const focusedBlockProduct = useMemo\([\s\S]*?publicShopBlockAnchorId\(product\)[\s\S]*?legacyProductAnchorId\(product\)[\s\S]*?if \(focusedBlockLinkActive\) return focusedBlockProduct \? \[focusedBlockProduct\] : \[\];[\s\S]*?products\.slice\(0, GALLERY_SLOTS_TOTAL\)[\s\S]*?const overflowProductCount = focusedBlockLinkActive[\s\S]*?: Math\.max\(0, products\.length - GALLERY_SLOTS_TOTAL\);/,
+  "Public Shop Gallery must focus exact product/block links to one block while whole-shop links keep the approved 12-block shelf."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /className="public-shop-signboard"[\s\S]*?className="public-shop-status-strip"[\s\S]*?className="public-shop-section public-shop-spotlight"[\s\S]*?className="public-shop-section public-shop-vault-ad"[\s\S]*?id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}/,
   "Public Shop Gallery must land as a whole public shop: signboard, trust/status cues, mini spotlight, Vault promo, then the public 12-block shelf."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /product_id: routeProductId > 0 \? routeProductId : undefined,[\s\S]*?display: focusedBlockLinkActive \? "none" : "grid"[\s\S]*?This shared link opens only this public shop block\./,
+  "Public Shop Gallery exact block links must request the exact product and hide secondary public-shop sections while focused."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /const shopSpotlightFallbackProduct = useMemo\([\s\S]*?products\.find\(\(product\) => product\.imageUrl \|\| product\.videoUrl\)[\s\S]*?This spotlight preview is using this shop's own live public block\.[\s\S]*?const publicShopSpotlightActive = Boolean\([\s\S]*?miniSpotlight \|\| shopSpotlightFallbackProduct[\s\S]*?publicShopSpotlightActive[\s\S]*?miniSpotlightView\.title/,
+  "Public Shop Spotlight must fall back to the current shop's own live public block when no broadcast exists."
 );
 
 assertContains(

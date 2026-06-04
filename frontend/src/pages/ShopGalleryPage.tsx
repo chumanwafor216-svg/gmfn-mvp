@@ -313,6 +313,11 @@ function legacyProductAnchorId(product: ShopProduct): string {
   return product.id ? `product-${product.id}` : "";
 }
 
+function isPublicShopBlockHash(value: string): boolean {
+  const id = safeStr(value).replace(/^#/, "");
+  return /^shop-block-\d{1,2}$/i.test(id) || /^product-\d+$/i.test(id);
+}
+
 function isInteractiveCardTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return Boolean(
@@ -1379,6 +1384,7 @@ export default function ShopGalleryPage() {
       if (!cleanedGmfnId) return null;
 
       const publicShopRes = await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
+        product_id: routeProductId > 0 ? routeProductId : undefined,
         product_limit: 100,
         broadcast_limit: 24,
       });
@@ -1584,7 +1590,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [gmfnId, shopReconnectRetryKey]);
+  }, [gmfnId, routeProductId, shopReconnectRetryKey]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
@@ -1828,11 +1834,42 @@ export default function ShopGalleryPage() {
     }
   }, [openProductId, products]);
 
-  const visibleProducts = useMemo(
-    () => (showAllProducts ? products : products.slice(0, GALLERY_SLOTS_TOTAL)),
-    [products, showAllProducts]
-  );
-  const overflowProductCount = Math.max(0, products.length - GALLERY_SLOTS_TOTAL);
+  const focusedBlockLinkActive = useMemo(() => {
+    return (
+      routeProductId > 0 ||
+      routeBlockNumber > 0 ||
+      isPublicShopBlockHash(location.hash)
+    );
+  }, [location.hash, routeBlockNumber, routeProductId]);
+
+  const focusedBlockProduct = useMemo(() => {
+    if (!focusedBlockLinkActive) return null;
+
+    const hashId = safeStr(location.hash).replace(/^#/, "");
+    return (
+      products.find((product) => routeProductId > 0 && product.id === routeProductId) ||
+      products.find(
+        (product) =>
+          routeBlockNumber > 0 &&
+          positiveNumber(product.slotNumber) === routeBlockNumber
+      ) ||
+      products.find(
+        (product) =>
+          hashId === publicShopBlockAnchorId(product) ||
+          hashId === legacyProductAnchorId(product)
+      ) ||
+      null
+    );
+  }, [focusedBlockLinkActive, location.hash, products, routeBlockNumber, routeProductId]);
+
+  const visibleProducts = useMemo(() => {
+    if (focusedBlockLinkActive) return focusedBlockProduct ? [focusedBlockProduct] : [];
+    return showAllProducts ? products : products.slice(0, GALLERY_SLOTS_TOTAL);
+  }, [focusedBlockLinkActive, focusedBlockProduct, products, showAllProducts]);
+
+  const overflowProductCount = focusedBlockLinkActive
+    ? 0
+    : Math.max(0, products.length - GALLERY_SLOTS_TOTAL);
 
   const heroImage = useMemo(() => {
     return effectiveShop?.imageUrl || "";
@@ -1843,8 +1880,44 @@ export default function ShopGalleryPage() {
     return communitySpotlights[miniSpotlightIndex % communitySpotlights.length] || communitySpotlights[0];
   }, [communitySpotlights, miniSpotlightIndex]);
 
+  const shopSpotlightFallbackProduct = useMemo(() => {
+    return (
+      products.find((product) => product.imageUrl || product.videoUrl) ||
+      products[0] ||
+      null
+    );
+  }, [products]);
+
   const miniSpotlightView = useMemo(() => {
     const currentShopGmfnId = firstMeaningful(effectiveShop?.gmfnId).toUpperCase();
+    if (!miniSpotlight && shopSpotlightFallbackProduct) {
+      const fallbackTitle = productDisplayTitle(shopSpotlightFallbackProduct);
+      const fallbackDetail = productBuyerCue(
+        shopSpotlightFallbackProduct,
+        firstMeaningful(effectiveShop?.shopName, effectiveShop?.ownerName)
+      );
+      return {
+        title: fallbackTitle,
+        detail: fallbackDetail,
+        tagLabel: publicShopBlockLabel(shopSpotlightFallbackProduct),
+        communityName: firstMeaningful(effectiveShop?.communityName),
+        trustBand: firstMeaningful(effectiveShop?.trustBand, "Public shelf"),
+        createdAt: firstMeaningful(shopSpotlightFallbackProduct.createdAt),
+        createdLabel: shopSpotlightFallbackProduct.createdAt
+          ? formatWhen(shopSpotlightFallbackProduct.createdAt)
+          : "",
+        imageUrl: firstMeaningful(shopSpotlightFallbackProduct.imageUrl),
+        videoUrl: firstMeaningful(shopSpotlightFallbackProduct.videoUrl),
+        shopTo: "",
+        communityTo: "",
+        isCurrentShop: true,
+        shopLabel: "Shop",
+        communityLabel: "Community",
+        helperLine:
+          "This spotlight preview is using this shop's own live public block.",
+      };
+    }
+
     const spotlightShopGmfnId = firstMeaningful(miniSpotlight?.authorGmfnId);
     const messageParts = splitSpotlightMessage(miniSpotlight?.message);
     const isCurrentShop =
@@ -1883,7 +1956,11 @@ export default function ShopGalleryPage() {
         ? "This public page keeps visitors inside the current shop view."
         : "This live spotlight item does not currently expose a linked shop.",
     };
-  }, [miniSpotlight, effectiveShop]);
+  }, [miniSpotlight, shopSpotlightFallbackProduct, effectiveShop]);
+
+  const publicShopSpotlightActive = Boolean(
+    miniSpotlight || shopSpotlightFallbackProduct
+  );
 
   const absoluteShopLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
@@ -2294,6 +2371,14 @@ export default function ShopGalleryPage() {
   }
 
   function openSpotlightPreview() {
+    if (!miniSpotlight && shopSpotlightFallbackProduct) {
+      setOpenProductId(
+        shopSpotlightFallbackProduct.id ?? shopSpotlightFallbackProduct.slotNumber
+      );
+      revealGalleryTarget(publicShopBlockAnchorId(shopSpotlightFallbackProduct));
+      return;
+    }
+
     revealGalleryTarget(PUBLIC_SHOP_DIARIES_ANCHOR);
   }
 
@@ -3301,7 +3386,7 @@ export default function ShopGalleryPage() {
 
         <div
           style={{
-            display: "grid",
+            display: focusedBlockLinkActive ? "none" : "grid",
             gridTemplateColumns: "1fr",
             gap: 14,
           }}
@@ -3341,7 +3426,7 @@ export default function ShopGalleryPage() {
                     lineHeight: 1.1,
                   }}
                 >
-                  {miniSpotlight
+                  {publicShopSpotlightActive
                     ? miniSpotlightView.title
                     : "Discover what's new"}
                 </div>
@@ -3354,7 +3439,7 @@ export default function ShopGalleryPage() {
                     fontWeight: 720,
                   }}
                 >
-                  {miniSpotlight
+                  {publicShopSpotlightActive
                     ? miniSpotlightView.detail
                     : "Fresh items, hot deals, and trusted shop updates."}
                 </div>
@@ -3613,10 +3698,18 @@ export default function ShopGalleryPage() {
                   fontWeight: 700,
                 }}
               >
-                These are the 12 public blocks anyone can browse or share.
+                {focusedBlockLinkActive
+                  ? "This shared link opens only this public shop block."
+                  : "These are the 12 public blocks anyone can browse or share."}
               </div>
             </div>
-            <span style={badge(true)}>{shopDiaryCounterText}</span>
+            <span style={badge(true)}>
+              {focusedBlockProduct
+                ? publicShopBlockLabel(focusedBlockProduct)
+                : focusedBlockLinkActive
+                ? "Shared block"
+                : shopDiaryCounterText}
+            </span>
           </div>
 
           {loading ? (
