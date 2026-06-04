@@ -1,3 +1,65 @@
+### System-level Public Shop spotlight, verification, and button-route repair (2026-06-04)
+
+- Supersedes the earlier page-level public-shop Spotlight fallback note from
+  2026-06-04. The public shop must not invent a local product fallback or pull
+  the signed-in owner's old broadcast feed. Spotlight is now backend-scoped to
+  the effective community context returned by the public shop API.
+- Routes/screens affected:
+  - backend `/marketplace/public/shop/:gmfn_id`, implemented by
+    `gmfn_backend/app/api/routes/marketplace.py`;
+  - frontend `/shop/:gmfnId`, implemented by
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - Marketplace public-shop entry/share actions in
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - shared public-link helpers in `frontend/src/lib/publicLinks.ts`.
+- Backend truth now returned by the public shop route:
+  - `spotlight_scope: "community"` and `spotlight_clan_ids` identify the
+    community pool used for Spotlight selection;
+  - live Spotlight rows are selected from the effective community, paid first
+    then newest, so an old owner broadcast from another community cannot leak
+    into a different public shop;
+  - `verification` returns the system-level scan contract, including
+    `scan_kind`, `primary_scan_path`, `community_verify_path`,
+    `public_shop_path`, owner-mediated confirmation mode, community ID/name,
+    shop owner ID, and plain-language TrustSlip guidance.
+- Frontend behavior:
+  - public shop reads Spotlight and verification from the backend public-shop
+    payload only; it no longer calls the signed-in marketplace broadcast feed
+    to patch the public page;
+  - whole-shop share/open links now go to `/shop/:gmfnId`;
+  - product/block share links keep `product_id`, `block`, and
+    `#shop-block-n`, so WhatsApp/shared block links open that block directly;
+  - Verify QR is still hidden until the visitor taps the scan action, and
+    community confirmation remains owner-mediated instead of random direct
+    community contact.
+- Button and route guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now protects root-vs-block public
+    links, backend-fed Spotlight/Verify truth, on-demand QR behavior, and
+    owner-mediated confirmation;
+  - `frontend/tools/audit-button-stability.mjs` protects the stable Verify scan
+    toggle and product-card button IDs;
+  - Marketplace button inventory still reports 51 stable source actions, 47
+    mobile app-shell controls, and 98 whole-route mobile controls.
+- Verification:
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - targeted ESLint for touched frontend files and audit tools passed;
+  - `python -m pytest gmfn_backend\tests\test_marketplace_public_shop.py -q
+    --basetemp=C:\tmp\gmfn_pytest_public_shop` passed outside the sandbox
+    after sandboxed pytest hit the known Windows temp cleanup permission issue;
+  - `npm run build` passed outside the sandbox after the known Windows
+    Vite/esbuild sandbox `spawn EPERM`.
+- Remaining truth:
+  - this makes the public shop and verification contracts system-level for the
+    existing route. It does not create a new TrustSlip issuance backend; the
+    response intentionally says TrustSlip proof is on request until that live
+    proof route exists.
+
 ### Public Shop focused block links and spotlight fallback (2026-06-04)
 
 - Route/screen affected:

@@ -161,6 +161,10 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     assert body["item"]["gmfn_id"] == "GMFN-U-TESTSHOP"
     assert body["item"]["image_url"] == image_url
     assert body["community_name"] == "Golden boys Marketplace"
+    assert body["verification"]["scan_kind"] == "community"
+    assert body["verification"]["community_verify_path"] == "/verify/community/1"
+    assert body["verification"]["community_confirmation_mode"] == "owner_mediated"
+    assert body["verification"]["trustslip_available"] is False
     assert len(body["products"]) == 1
     assert body["products"][0]["name"] == "Fresh Rice"
     assert body["products"][0]["image_url"] == product_image_url
@@ -562,6 +566,104 @@ def test_public_shop_face_falls_back_to_live_community_spotlight(client, tmp_pat
     assert body["primary_broadcast"]["source_shop_name"] == "LIVE SPOTLIGHT SHOP"
     assert body["primary_broadcast"]["image_url"] == community_spotlight_url
     assert len(body["broadcasts"]) == 1
+
+
+def test_public_shop_face_uses_current_community_spotlight_not_owner_old_broadcast(
+    client,
+    monkeypatch,
+    tmp_path,
+):
+    monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
+    _ensure_marketplace_tables()
+
+    owner_old_image_url = _write_upload(tmp_path, "marketplace/images/owner-old.jpg")
+    community_spotlight_url = _write_upload(tmp_path, "marketplace/images/ardent-live.jpg")
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'cbuk@example.com', 'hashed', 'CBUK Green Energy', 'user', 'GMFN-U-CBUK'),
+                    (2, 'ardent@example.com', 'hashed', 'Ardent Ebony', 'user', 'GMFN-U-ARDENT')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'GNS', 'GNS Marketplace', 'GNSLIVE1'),
+                    (2, 'Old Route', 'Old Route Marketplace', 'OLDROUTE1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0),
+                    (3, 1, 2, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES
+                    (1, 1, 1, 'CBUK GREEN ENERGY', 'Renewable products', 1),
+                    (3, 1, 2, 'ARDENT EBONY UPLIFT LTD', 'General merchandise', 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_broadcasts (
+                    id, clan_id, author_user_id, shop_id, message,
+                    image_url, video_url, priority_mode, visibility_scope,
+                    expires_at, created_at
+                ) VALUES
+                    (
+                        1, 2, 1, 1, 'Owner old spotlight that must not leak',
+                        :owner_old_image_url, NULL, 'free', 'direct_communities',
+                        :expires_at, :owner_created_at
+                    ),
+                    (
+                        2, 1, 2, 3, 'Ardent community spotlight',
+                        :community_spotlight_url, NULL, 'free', 'direct_communities',
+                        :expires_at, :community_created_at
+                    )
+                """
+            ),
+            {
+                "owner_old_image_url": owner_old_image_url,
+                "community_spotlight_url": community_spotlight_url,
+                "expires_at": datetime.now(timezone.utc) + timedelta(hours=3),
+                "owner_created_at": datetime.now(timezone.utc) + timedelta(minutes=1),
+                "community_created_at": datetime.now(timezone.utc),
+            },
+        )
+
+    res = client.get("/marketplace/public/shop/GMFN-U-CBUK")
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["clan_id"] == 1
+    assert body["spotlight_scope"] == "community"
+    assert body["spotlight_clan_ids"] == [1]
+    assert body["primary_broadcast"]["message"] == "Ardent community spotlight"
+    assert body["primary_broadcast"]["author_gmfn_id"] == "GMFN-U-ARDENT"
+    assert body["primary_broadcast"]["source_shop_name"] == "ARDENT EBONY UPLIFT LTD"
+    assert body["primary_broadcast"]["image_url"] == community_spotlight_url
+    assert body["verification"]["primary_scan_path"] == "/verify/community/1"
 
 
 def test_refresh_public_shop_link_reactivates_stale_owner_shop(

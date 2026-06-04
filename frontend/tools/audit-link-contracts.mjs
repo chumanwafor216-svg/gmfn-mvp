@@ -544,7 +544,7 @@ assertContains(
 assertContains(
   "src/lib/publicLinks.ts",
   /export function publicShopDiariesPath\(gmfnId: string\): string \{[\s\S]*?return path \? `\$\{path\}#\$\{PUBLIC_SHOP_DIARIES_ANCHOR\}` : "";[\s\S]*?\}[\s\S]*?export function publicShopDiariesUrl\(gmfnId: string\): string \{/,
-  "Outward shop sharing must have a dedicated Shop Diaries helper so visitors land on the 12 public blocks."
+  "Exact Shop Diaries links must stay available as a dedicated deep-link helper without becoming the ordinary public shop share URL."
 );
 
 assertContains(
@@ -555,8 +555,8 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopSharePath\(params:[\s\S]*?return publicShopBlockPath\(params\);[\s\S]*?export function publicShopShareUrl\(params:[\s\S]*?return path \? shareablePublicFrontendUrl\(path\) : "";/,
-  "Outward public shop sharing must use the frontend public shop route so WhatsApp previews resolve from gmfn-frontend.onrender.com while preserving product and block context."
+  /export function publicShopSharePath\(params:[\s\S]*?const productId = cleanText\(params\.productId\);[\s\S]*?const hasBlock = Number\.isFinite\(blockNumber\) && blockNumber > 0;[\s\S]*?if \(productId \|\| hasBlock\) \{[\s\S]*?return publicShopBlockPath\(params\);[\s\S]*?return publicShopPath\(params\.gmfnId\);[\s\S]*?export function publicShopShareUrl\(params:[\s\S]*?return path \? shareablePublicFrontendUrl\(path\) : "";/,
+  "Ordinary public shop sharing must use the canonical shop root, while exact product/block shares preserve product and block context."
 );
 
 assertContains(
@@ -579,8 +579,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const publicShopOwnerId = firstTruthy\([\s\S]*?publicShopRecord\?\.owner_gmfn_id,[\s\S]*?publicShopRecord\?\.gmfn_id,[\s\S]*?currentGmfnId[\s\S]*?\);[\s\S]*?const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!publicShopOwnerId \|\| !publicShopRecord\) return "";[\s\S]*?return publicShopDiariesUrl\(publicShopOwnerId\);[\s\S]*?}, \[publicShopOwnerId, publicShopRecord\]\);/,
-  "Marketplace public shop copy/open actions must use the backend-confirmed owner ID and send outsiders to Shop Diaries only after an active owner shop exists."
+  /const publicShopOwnerId = firstTruthy\([\s\S]*?publicShopRecord\?\.owner_gmfn_id,[\s\S]*?publicShopRecord\?\.gmfn_id,[\s\S]*?currentGmfnId[\s\S]*?\);[\s\S]*?const publicShopViewLink = useMemo\(\(\) => \{[\s\S]*?if \(!publicShopOwnerId \|\| !publicShopRecord\) return "";[\s\S]*?return publicShopUrl\(publicShopOwnerId\);[\s\S]*?}, \[publicShopOwnerId, publicShopRecord\]\);/,
+  "Marketplace ordinary public shop copy/open actions must use the backend-confirmed owner ID and send outsiders to the canonical public shop root after an active owner shop exists."
 );
 
 assertContains(
@@ -700,8 +700,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /getMarketplaceBroadcasts\(\{\s*active_only:\s*true,\s*limit:\s*24,\s*\}\)[\s\S]*?authorGmfnId && authorGmfnId === cleanedGmfnId\.toUpperCase\(\)/,
-  "Public Shop must use the signed-in live broadcast feed as a fallback so Dashboard Spotlight and Public Shop Spotlight do not drift."
+  /setPublicShopVerification\(publicShopRes\?\.verification \|\| null\);[\s\S]*?async function loadPublicShop\(cleanedGmfnId: string\)[\s\S]*?getPublicMarketplaceShopByGmfnId\(cleanedGmfnId, \{[\s\S]*?clan_id: routeClanId > 0 \? routeClanId : undefined/,
+  "Public Shop must use the backend public-shop payload for spotlight and verification truth, scoped by route community when present."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /getMarketplaceBroadcasts\(\{\s*active_only:\s*true,\s*limit:\s*24,\s*\}\)|primary_broadcast:\s*ownerFeed|shopSpotlightFallbackProduct/,
+  "Public Shop must not patch over backend spotlight truth with owner-feed or product-card page-local fallbacks."
 );
 
 assertContains(
@@ -814,8 +820,8 @@ assertNotContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const absoluteShopShareLink = useMemo[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\);[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
-  "Public Shop Gallery copy must block failed public-shop links and copy the frontend-domain preview-ready route only after clipboard success."
+  /const absoluteShopLink = useMemo\(\(\) => \{[\s\S]*?publicShopUrl\(ownerId\)[\s\S]*?const absoluteShopShareLink = useMemo\(\(\) => \{[\s\S]*?publicShopShareUrl\(\{ gmfnId: ownerId \}\)[\s\S]*?async function copyShopLink\(\) \{[\s\S]*?if \(shopLoadFailed\)[\s\S]*?not active yet[\s\S]*?return;[\s\S]*?const copied = await safeCopy\(absoluteShopShareLink\);[\s\S]*?Public shop poster link copied\.[\s\S]*?Clipboard copy was blocked\. Use Share, or copy the page address from your browser\./,
+  "Public Shop Gallery copy must block failed public-shop links and copy the canonical root shop route only after clipboard success."
 );
 
 assertContains(
@@ -880,8 +886,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const \[shopVerificationQrOpen, setShopVerificationQrOpen\] = useState\(false\);[\s\S]*?const shopCommunityVerifyPath = shopCommunityIdText[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(shopCommunityIdText\)\}[\s\S]*?const shopPublicQrTarget = shopRootPath \? publicFrontendUrl\(shopRootPath\) : ""[\s\S]*?const shopVerificationQrKind = shopCommunityVerifyPath[\s\S]*?"community"[\s\S]*?"shop"[\s\S]*?const shopVerificationQrTarget = shopVerificationQrKind === "community"[\s\S]*?publicFrontendUrl\(shopCommunityVerifyPath\)[\s\S]*?shopVerificationQrKind === "shop"[\s\S]*?shopPublicQrTarget/,
-  "Public Shop Verify panel must compute community-first QR targets with public-shop fallback."
+  /const \[publicShopVerification, setPublicShopVerification\] = useState<[\s\S]*?Record<string, any> \| null[\s\S]*?>\(null\);[\s\S]*?const \[shopVerificationQrOpen, setShopVerificationQrOpen\] = useState\(false\);[\s\S]*?const verificationCommunityId = firstMeaningful\([\s\S]*?publicShopVerification\?\.community_id,[\s\S]*?effectiveShop\?\.clanId[\s\S]*?const shopCommunityVerifyPath = firstMeaningful\([\s\S]*?publicShopVerification\?\.community_verify_path,[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(shopCommunityIdText\)\}[\s\S]*?const verificationPublicShopPath = firstMeaningful\([\s\S]*?publicShopVerification\?\.public_shop_path,[\s\S]*?shopRootPath[\s\S]*?const verificationScanKind = safeStr\(publicShopVerification\?\.scan_kind\)\.toLowerCase\(\);[\s\S]*?const verificationPrimaryScanPath = firstMeaningful\([\s\S]*?publicShopVerification\?\.primary_scan_path/,
+  "Public Shop Verify panel must compute scan targets from backend verification truth with community/public-shop fallback."
 );
 
 assertContains(
@@ -892,7 +898,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for live proof[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?async function requestCommunityConfirmationFromOwner\(\)[\s\S]*?Please connect me with the right community confirmation route[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-public-shop"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Ask owner[\s\S]*?Trust check options/,
+  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for live proof[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?async function requestCommunityConfirmationFromOwner\(\)[\s\S]*?Please connect me with the right community confirmation route[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle-scan"[\s\S]*?onClick=\{\(\) => void requestCommunityConfirmationFromOwner\(\)\}[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Ask owner[\s\S]*?Trust check options/,
   "Public Shop Verify panel must expose identity/community context while routing community confirmation requests through the owner instead of direct random community contact."
 );
 
@@ -934,8 +940,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const shopSpotlightFallbackProduct = useMemo\([\s\S]*?products\.find\(\(product\) => product\.imageUrl \|\| product\.videoUrl\)[\s\S]*?This spotlight preview is using this shop's own live public block\.[\s\S]*?const publicShopSpotlightActive = Boolean\([\s\S]*?miniSpotlight \|\| shopSpotlightFallbackProduct[\s\S]*?publicShopSpotlightActive[\s\S]*?miniSpotlightView\.title/,
-  "Public Shop Spotlight must fall back to the current shop's own live public block when no broadcast exists."
+  /const miniSpotlightView = useMemo\(\(\) => \{[\s\S]*?if \(!miniSpotlight\) \{[\s\S]*?No live community spotlight is attached to this shop context yet\.[\s\S]*?const publicShopSpotlightActive = Boolean\(miniSpotlight\);/,
+  "Public Shop Spotlight must render only backend community spotlight truth and show an honest quiet state when no live community spotlight exists."
 );
 
 assertContains(

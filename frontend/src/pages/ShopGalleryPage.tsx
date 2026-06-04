@@ -10,7 +10,6 @@ import {
   createMarketplaceShop,
   getAccessToken,
   getCurrentClan,
-  getMarketplaceBroadcasts,
   listMyClans,
   getMe,
   getPublicMarketplaceShopByGmfnId,
@@ -20,9 +19,9 @@ import {
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
   publicFrontendUrl,
-  publicShopDiariesUrl,
   publicShopPath,
   publicShopShareUrl,
+  publicShopUrl,
 } from "../lib/publicLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
@@ -1158,6 +1157,12 @@ export default function ShopGalleryPage() {
     const query = new URLSearchParams(location.search);
     return positiveNumber(query.get("block") || query.get("slot"));
   }, [location.search]);
+  const routeClanId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("clan_id") || query.get("community_id") || query.get("community")
+    );
+  }, [location.search]);
   const publicShopReturnPath = useMemo(() => {
     const path = `${location.pathname || ""}${location.search || ""}${
       location.hash || ""
@@ -1187,6 +1192,9 @@ export default function ShopGalleryPage() {
   >({});
   const [showAllProducts, setShowAllProducts] = useState(false);
   const [currentClan, setCurrentClan] = useState<any>(null);
+  const [publicShopVerification, setPublicShopVerification] = useState<
+    Record<string, any> | null
+  >(null);
   const [notice, setNotice] = useState<{ tone: NoticeTone; text: string } | null>(
     null
   );
@@ -1283,14 +1291,16 @@ export default function ShopGalleryPage() {
         cleanedGmfnId,
         {
           id: positiveNumber(
-            publicShopRes?.clan_id ||
+            publicShopRes?.verification?.community_id ||
+              publicShopRes?.clan_id ||
               publicShopRes?.community_id ||
               clanRes?.id ||
               clanRes?.clan_id ||
               clanRes?.community_id
           ),
           clan_id: positiveNumber(
-            publicShopRes?.clan_id ||
+            publicShopRes?.verification?.community_id ||
+              publicShopRes?.clan_id ||
               publicShopRes?.community_id ||
               clanRes?.id ||
               clanRes?.clan_id ||
@@ -1369,6 +1379,7 @@ export default function ShopGalleryPage() {
 
       setCurrentClan(clanRes || null);
       setShop(normalizedShop);
+      setPublicShopVerification(publicShopRes?.verification || null);
       setProducts(arrangedProducts);
       setBroadcast(relevantBroadcast);
       setCommunitySpotlights(normalizedBroadcasts);
@@ -1385,43 +1396,13 @@ export default function ShopGalleryPage() {
       if (!cleanedGmfnId) return null;
 
       const publicShopRes = await getPublicMarketplaceShopByGmfnId(cleanedGmfnId, {
+        clan_id: routeClanId > 0 ? routeClanId : undefined,
         product_id: routeProductId > 0 ? routeProductId : undefined,
         product_limit: 100,
         broadcast_limit: 24,
       });
 
-      const publicBroadcasts = [
-        publicShopRes?.primary_broadcast,
-        publicShopRes?.primaryBroadcast,
-        ...rowsOf<any>(publicShopRes?.broadcasts),
-      ].filter(Boolean);
-
-      if (publicBroadcasts.length > 0 || !getAccessToken()) {
-        return publicShopRes;
-      }
-
-      const ownerFeedRes = await getMarketplaceBroadcasts({
-        active_only: true,
-        limit: 24,
-      }).catch(() => null);
-      const ownerFeed = rowsOf<any>(ownerFeedRes)
-        .map((row) => normalizeBroadcast(row))
-        .filter(Boolean)
-        .filter(broadcastIsActive)
-        .filter((row) => {
-          const authorGmfnId = safeStr(row?.authorGmfnId).toUpperCase();
-          return Boolean(
-            authorGmfnId && authorGmfnId === cleanedGmfnId.toUpperCase()
-          );
-        });
-
-      if (ownerFeed.length <= 0) return publicShopRes;
-
-      return {
-        ...publicShopRes,
-        broadcasts: ownerFeed,
-        primary_broadcast: ownerFeed[0],
-      };
+      return publicShopRes;
     }
 
     async function refreshOwnerShop(cleanedGmfnId: string, clanRes: any) {
@@ -1591,7 +1572,7 @@ export default function ShopGalleryPage() {
         document.removeEventListener("visibilitychange", handleVisibilityRefresh);
       }
     };
-  }, [gmfnId, routeProductId, shopReconnectRetryKey]);
+  }, [gmfnId, routeClanId, routeProductId, shopReconnectRetryKey]);
 
   useEffect(() => {
     setMiniSpotlightIndex(0);
@@ -1881,41 +1862,26 @@ export default function ShopGalleryPage() {
     return communitySpotlights[miniSpotlightIndex % communitySpotlights.length] || communitySpotlights[0];
   }, [communitySpotlights, miniSpotlightIndex]);
 
-  const shopSpotlightFallbackProduct = useMemo(() => {
-    return (
-      products.find((product) => product.imageUrl || product.videoUrl) ||
-      products[0] ||
-      null
-    );
-  }, [products]);
-
   const miniSpotlightView = useMemo(() => {
     const currentShopGmfnId = firstMeaningful(effectiveShop?.gmfnId).toUpperCase();
-    if (!miniSpotlight && shopSpotlightFallbackProduct) {
-      const fallbackTitle = productDisplayTitle(shopSpotlightFallbackProduct);
-      const fallbackDetail = productBuyerCue(
-        shopSpotlightFallbackProduct,
-        firstMeaningful(effectiveShop?.shopName, effectiveShop?.ownerName)
-      );
+    if (!miniSpotlight) {
       return {
-        title: fallbackTitle,
-        detail: fallbackDetail,
-        tagLabel: publicShopBlockLabel(shopSpotlightFallbackProduct),
+        title: "Discover what's new",
+        detail: "No live community spotlight is attached to this shop context yet.",
+        tagLabel: "",
         communityName: firstMeaningful(effectiveShop?.communityName),
-        trustBand: firstMeaningful(effectiveShop?.trustBand, "Public shelf"),
-        createdAt: firstMeaningful(shopSpotlightFallbackProduct.createdAt),
-        createdLabel: shopSpotlightFallbackProduct.createdAt
-          ? formatWhen(shopSpotlightFallbackProduct.createdAt)
-          : "",
-        imageUrl: firstMeaningful(shopSpotlightFallbackProduct.imageUrl),
-        videoUrl: firstMeaningful(shopSpotlightFallbackProduct.videoUrl),
+        trustBand: "Community spotlight",
+        createdAt: "",
+        createdLabel: "",
+        imageUrl: "",
+        videoUrl: "",
         shopTo: "",
         communityTo: "",
         isCurrentShop: true,
         shopLabel: "Shop",
         communityLabel: "Community",
         helperLine:
-          "This spotlight preview is using this shop's own live public block.",
+          "Spotlight is now rendered only from the backend community spotlight contract.",
       };
     }
 
@@ -1957,15 +1923,13 @@ export default function ShopGalleryPage() {
         ? "This public page keeps visitors inside the current shop view."
         : "This live spotlight item does not currently expose a linked shop.",
     };
-  }, [miniSpotlight, shopSpotlightFallbackProduct, effectiveShop]);
+  }, [miniSpotlight, effectiveShop]);
 
-  const publicShopSpotlightActive = Boolean(
-    miniSpotlight || shopSpotlightFallbackProduct
-  );
+  const publicShopSpotlightActive = Boolean(miniSpotlight);
 
   const absoluteShopLink = useMemo(() => {
     const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
-    return ownerId ? publicShopDiariesUrl(ownerId) : "";
+    return ownerId ? publicShopUrl(ownerId) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
   const absoluteShopShareLink = useMemo(() => {
@@ -2056,20 +2020,43 @@ export default function ShopGalleryPage() {
     shopCommunityText,
     "GSN public marketplace"
   );
-  const shopCommunityIdText = safeStr(effectiveShop?.clanId);
-  const shopCommunityVerifyPath = shopCommunityIdText
-    ? `/verify/community/${encodeURIComponent(shopCommunityIdText)}`
+  const verificationCommunityId = firstMeaningful(
+    publicShopVerification?.community_id,
+    effectiveShop?.clanId
+  );
+  const shopCommunityIdText = safeStr(verificationCommunityId);
+  const shopCommunityVerifyPath = firstMeaningful(
+    publicShopVerification?.community_verify_path,
+    shopCommunityIdText
+      ? `/verify/community/${encodeURIComponent(shopCommunityIdText)}`
+      : ""
+  );
+  const verificationPublicShopPath = firstMeaningful(
+    publicShopVerification?.public_shop_path,
+    shopRootPath
+  );
+  const verificationScanKind = safeStr(publicShopVerification?.scan_kind).toLowerCase();
+  const shopPublicQrTarget = verificationPublicShopPath
+    ? publicFrontendUrl(verificationPublicShopPath)
     : "";
-  const shopPublicQrTarget = shopRootPath ? publicFrontendUrl(shopRootPath) : "";
-  const shopVerificationQrKind = shopCommunityVerifyPath
-    ? "community"
-    : shopPublicQrTarget
-    ? "shop"
-    : "";
-  const shopVerificationQrTarget = shopVerificationQrKind === "community"
-    ? publicFrontendUrl(shopCommunityVerifyPath)
-    : shopVerificationQrKind === "shop"
-    ? shopPublicQrTarget
+  const shopVerificationQrKind =
+    verificationScanKind === "community" && shopCommunityVerifyPath
+      ? "community"
+      : verificationScanKind === "shop" && shopPublicQrTarget
+      ? "shop"
+      : shopCommunityVerifyPath
+      ? "community"
+      : shopPublicQrTarget
+      ? "shop"
+      : "";
+  const verificationPrimaryScanPath = firstMeaningful(
+    publicShopVerification?.primary_scan_path,
+    shopVerificationQrKind === "community"
+      ? shopCommunityVerifyPath
+      : verificationPublicShopPath
+  );
+  const shopVerificationQrTarget = verificationPrimaryScanPath
+    ? publicFrontendUrl(verificationPrimaryScanPath)
     : "";
   const shopVerificationStatusText = shopVerificationQrKind === "community"
     ? "Community record ready"
@@ -2422,14 +2409,6 @@ export default function ShopGalleryPage() {
   }
 
   function openSpotlightPreview() {
-    if (!miniSpotlight && shopSpotlightFallbackProduct) {
-      setOpenProductId(
-        shopSpotlightFallbackProduct.id ?? shopSpotlightFallbackProduct.slotNumber
-      );
-      revealGalleryTarget(publicShopBlockAnchorId(shopSpotlightFallbackProduct));
-      return;
-    }
-
     revealGalleryTarget(PUBLIC_SHOP_DIARIES_ANCHOR);
   }
 
@@ -3242,7 +3221,7 @@ export default function ShopGalleryPage() {
                 fullWidth
                 minWidth={0}
                 stableHeight={isCompact ? 44 : 50}
-                debugId="shop-gallery.verify-shop.open-public-shop"
+                debugId="shop-gallery.verify-shop.toggle-scan"
                 style={{
                   ...secondaryBtn(!shopVerificationQrTarget),
                   minHeight: isCompact ? 44 : 50,

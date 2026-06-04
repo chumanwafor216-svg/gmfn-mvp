@@ -317,7 +317,15 @@ export function publicShopSharePath(params: {
   productId?: string | number | null;
   block?: string | number | null;
 }): string {
-  return publicShopBlockPath(params);
+  const productId = cleanText(params.productId);
+  const blockNumber = Number(params.block || 0);
+  const hasBlock = Number.isFinite(blockNumber) && blockNumber > 0;
+
+  if (productId || hasBlock) {
+    return publicShopBlockPath(params);
+  }
+
+  return publicShopPath(params.gmfnId);
 }
 
 export function publicShopShareUrl(params: {

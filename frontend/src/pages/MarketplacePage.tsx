@@ -15,9 +15,9 @@ import {
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
   publicFrontendUrl,
-  publicShopDiariesUrl,
   publicShopPath,
   publicShopShareUrl,
+  publicShopUrl,
 } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StableButton, StableCtaLink } from "../components/StableButton";
@@ -2621,7 +2621,7 @@ export default function MarketplacePage() {
 
   const publicShopViewLink = useMemo(() => {
     if (!publicShopOwnerId || !publicShopRecord) return "";
-    return publicShopDiariesUrl(publicShopOwnerId);
+    return publicShopUrl(publicShopOwnerId);
   }, [publicShopOwnerId, publicShopRecord]);
 
   const publicShopPosterLink = useMemo(() => {
@@ -3158,7 +3158,7 @@ export default function MarketplacePage() {
         normalized?.gmfn_id,
         currentGmfnId
       );
-      const link = ownerId ? publicShopDiariesUrl(ownerId) : "";
+      const link = ownerId ? publicShopUrl(ownerId) : "";
       setNotice({
         tone: "success",
         text: link

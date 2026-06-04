@@ -66,8 +66,8 @@ function assertStableActionsHaveDebugIds(file) {
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /return publicShopDiariesUrl\(publicShopOwnerId\);[\s\S]*?const link = ownerId \? publicShopDiariesUrl\(ownerId\) : "";/,
-  "Marketplace owner share/copy/open actions must send outward visitors to Shop Diaries, not only the upper shop face."
+  /return publicShopUrl\(publicShopOwnerId\);[\s\S]*?const link = ownerId \? publicShopUrl\(ownerId\) : "";/,
+  "Marketplace owner share/copy/open actions must send outward visitors to the canonical public shop root; exact block links are handled by Shop Diaries item actions."
 );
 
 assertContains(

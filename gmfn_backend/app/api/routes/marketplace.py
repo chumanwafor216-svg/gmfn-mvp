@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
@@ -439,6 +439,48 @@ def _count_active_paid_spotlights_for_shop(
     )
 
 
+def _active_spotlight_rows_for_clan_ids(
+    *,
+    db: Session,
+    clan_ids: list[int],
+    limit: int,
+    now: Optional[datetime] = None,
+) -> list[MarketplaceBroadcast]:
+    current_time = now or _now_utc()
+    clean_clan_ids: list[int] = []
+    seen: set[int] = set()
+    for clan_id in clan_ids:
+        safe_clan_id = int(clan_id or 0)
+        if safe_clan_id <= 0 or safe_clan_id in seen:
+            continue
+        clean_clan_ids.append(safe_clan_id)
+        seen.add(safe_clan_id)
+
+    if not clean_clan_ids:
+        return []
+
+    priority_rank = case(
+        (MarketplaceBroadcast.priority_mode == SPOTLIGHT_PAID, 1),
+        else_=0,
+    )
+
+    return (
+        db.query(MarketplaceBroadcast)
+        .filter(MarketplaceBroadcast.clan_id.in_(clean_clan_ids))
+        .filter(
+            (MarketplaceBroadcast.expires_at.is_(None))
+            | (MarketplaceBroadcast.expires_at > current_time)
+        )
+        .order_by(
+            priority_rank.desc(),
+            MarketplaceBroadcast.created_at.desc(),
+            MarketplaceBroadcast.id.desc(),
+        )
+        .limit(int(limit))
+        .all()
+    )
+
+
 def _member_count_for_clan(
     *,
     db: Session,
@@ -844,6 +886,54 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
     }
 
 
+def _public_shop_verification_out(
+    *,
+    shop: MarketplaceShop,
+    owner: User,
+    effective_clan: Optional[Clan],
+    effective_clan_id: int,
+) -> Dict[str, Any]:
+    owner_gmfn_id = _safe_str(getattr(owner, "gmfn_id", None))
+    shop_path = (
+        f"/shop/{owner_gmfn_id}"
+        if owner_gmfn_id
+        else f"/shop/{int(getattr(owner, 'id', 0) or 0)}"
+    )
+    community_name = (
+        _safe_str(getattr(effective_clan, "marketplace_name", None))
+        or _safe_str(getattr(effective_clan, "name", None))
+        or None
+    )
+    has_community = int(effective_clan_id or 0) > 0
+
+    return {
+        "status": "community_record_ready" if has_community else "trust_proof_on_request",
+        "scan_kind": "community" if has_community else "shop",
+        "primary_scan_path": (
+            f"/verify/community/{int(effective_clan_id)}" if has_community else shop_path
+        ),
+        "community_verify_path": (
+            f"/verify/community/{int(effective_clan_id)}" if has_community else None
+        ),
+        "public_shop_path": shop_path,
+        "community_confirmation_mode": "owner_mediated",
+        "trustslip_available": False,
+        "trustslip_request_required": True,
+        "community_id": int(effective_clan_id) if has_community else None,
+        "community_name": community_name,
+        "shop_owner_id": owner_gmfn_id or str(getattr(owner, "id", "")),
+        "shop_name": _public_identity_name(
+            getattr(shop, "name", None),
+            fallback="Public GSN Shop",
+        ),
+        "plain_language": (
+            "This shop has a public community record. Ask the owner for live TrustSlip proof when you need fresh confirmation."
+            if has_community
+            else "This shop can be reopened by QR. Ask the owner for TrustSlip or community confirmation before trading."
+        ),
+    }
+
+
 def _repost_out(db: Session, repost: MarketplaceProductRepost) -> Dict[str, Any]:
     product = (
         db.query(MarketplaceProduct)
@@ -1008,6 +1098,43 @@ def get_public_marketplace_shop_by_gmfn_id(
         raise HTTPException(status_code=404, detail="Shop not found")
 
     requested_clan_id = _safe_int(clan_id, 0)
+    requested_product_id = _safe_int(product_id, 0)
+    requested_product = None
+    if requested_product_id > 0:
+        requested_product = (
+            db.query(MarketplaceProduct)
+            .filter(MarketplaceProduct.id == int(requested_product_id))
+            .filter(MarketplaceProduct.shop_id.in_(active_owner_shop_ids))
+            .filter(MarketplaceProduct.seller_user_id == int(owner.id))
+            .filter(MarketplaceProduct.is_active.is_(True))
+            .filter(
+                MarketplaceProduct.visibility_mode.in_(
+                    [VISIBILITY_COMMUNITY, "public", "community"]
+                )
+            )
+            .first()
+        )
+        if requested_product is not None:
+            requested_shop_id = int(getattr(requested_product, "shop_id", 0) or 0)
+            product_shop = next(
+                (row for row in active_owner_shops if int(row.id) == requested_shop_id),
+                None,
+            )
+            if product_shop is not None:
+                shop = product_shop
+
+    if requested_product is None and requested_clan_id > 0:
+        clan_shop = next(
+            (
+                row
+                for row in active_owner_shops
+                if int(getattr(row, "clan_id", 0) or 0) == requested_clan_id
+            ),
+            None,
+        )
+        if clan_shop is not None:
+            shop = clan_shop
+
     requested_clan = None
     if requested_clan_id > 0:
         if not _shop_is_visible_in_clan(db, shop=shop, clan_id=requested_clan_id):
@@ -1018,6 +1145,19 @@ def get_public_marketplace_shop_by_gmfn_id(
         requested_clan = (
             db.query(Clan)
             .filter(Clan.id == int(requested_clan_id))
+            .first()
+        )
+
+    effective_clan = requested_clan
+    if effective_clan is None:
+        home_clan_id = requested_clan_id or _safe_int(getattr(shop, "clan_id", None), 0)
+        effective_clan_id = int(home_clan_id or 0)
+    else:
+        effective_clan_id = int(requested_clan_id)
+    if effective_clan is None and effective_clan_id > 0:
+        effective_clan = (
+            db.query(Clan)
+            .filter(Clan.id == int(effective_clan_id))
             .first()
         )
 
@@ -1042,8 +1182,7 @@ def get_public_marketplace_shop_by_gmfn_id(
         .all()
     )
 
-    requested_product_id = _safe_int(product_id, 0)
-    if requested_product_id > 0 and all(
+    if requested_product is None and requested_product_id > 0 and all(
         int(getattr(row, "id", 0) or 0) != requested_product_id
         for row in product_rows
     ):
@@ -1060,67 +1199,23 @@ def get_public_marketplace_shop_by_gmfn_id(
             )
             .first()
         )
-        if requested_product is not None:
-            product_rows = [requested_product, *product_rows]
 
-    current_time = _now_utc()
-    broadcast_query = (
-        db.query(MarketplaceBroadcast)
-        .filter(MarketplaceBroadcast.author_user_id == int(owner.id))
-        .filter(
-            (MarketplaceBroadcast.expires_at.is_(None))
-            | (MarketplaceBroadcast.expires_at > current_time)
-        )
+    if requested_product is not None and all(
+        int(getattr(row, "id", 0) or 0) != requested_product_id
+        for row in product_rows
+    ):
+        product_rows = [requested_product, *product_rows]
+
+    spotlight_clan_ids = (
+        [int(effective_clan_id)]
+        if int(effective_clan_id or 0) > 0
+        else active_owner_clan_ids
     )
-    if requested_clan_id > 0:
-        broadcast_query = broadcast_query.filter(
-            MarketplaceBroadcast.clan_id == int(requested_clan_id)
-        )
-
-    broadcast_rows = (
-        broadcast_query.order_by(
-            MarketplaceBroadcast.created_at.desc(),
-            MarketplaceBroadcast.id.desc(),
-        )
-        .limit(int(broadcast_limit))
-        .all()
+    broadcast_rows = _active_spotlight_rows_for_clan_ids(
+        db=db,
+        clan_ids=spotlight_clan_ids,
+        limit=int(broadcast_limit),
     )
-
-    if not broadcast_rows:
-        fallback_clan_ids = (
-            [int(requested_clan_id)]
-            if requested_clan_id > 0
-            else list(dict.fromkeys(active_owner_clan_ids))
-        )
-
-        if fallback_clan_ids:
-            broadcast_rows = (
-                db.query(MarketplaceBroadcast)
-                .filter(MarketplaceBroadcast.clan_id.in_(fallback_clan_ids))
-                .filter(
-                    (MarketplaceBroadcast.expires_at.is_(None))
-                    | (MarketplaceBroadcast.expires_at > current_time)
-                )
-                .order_by(
-                    MarketplaceBroadcast.created_at.desc(),
-                    MarketplaceBroadcast.id.desc(),
-                )
-                .limit(int(broadcast_limit))
-                .all()
-            )
-
-    effective_clan = requested_clan
-    if effective_clan is None:
-        home_clan_id = requested_clan_id or _safe_int(getattr(shop, "clan_id", None), 0)
-        effective_clan_id = int(home_clan_id or 0)
-    else:
-        effective_clan_id = int(requested_clan_id)
-    if effective_clan is None and effective_clan_id > 0:
-        effective_clan = (
-            db.query(Clan)
-            .filter(Clan.id == int(effective_clan_id))
-            .first()
-        )
 
     return {
         "ok": True,
@@ -1128,12 +1223,20 @@ def get_public_marketplace_shop_by_gmfn_id(
         "products": [_product_out(db, row) for row in product_rows],
         "broadcasts": [_broadcast_out(db, row) for row in broadcast_rows],
         "primary_broadcast": _broadcast_out(db, broadcast_rows[0]) if broadcast_rows else None,
+        "spotlight_scope": "community",
+        "spotlight_clan_ids": [int(clan_id) for clan_id in spotlight_clan_ids],
         "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
         "clan_id": int(effective_clan_id) if int(effective_clan_id or 0) > 0 else None,
         "community_name": (
             _safe_str(getattr(effective_clan, "marketplace_name", None))
             or _safe_str(getattr(effective_clan, "name", None))
             or None
+        ),
+        "verification": _public_shop_verification_out(
+            shop=shop,
+            owner=owner,
+            effective_clan=effective_clan,
+            effective_clan_id=int(effective_clan_id or 0),
         ),
         "is_public_shop_face": True,
     }
