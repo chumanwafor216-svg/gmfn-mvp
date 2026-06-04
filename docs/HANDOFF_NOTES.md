@@ -1,3 +1,47 @@
+### Public Shop Verify panel screenshot-level completion (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner truth:
+  - the previous pass made Verify functionally correct, but it did not yet
+    match the dark premium reference closely enough;
+  - the UI still must not claim a live TrustSlip or final merchant proof unless
+    the backend exposes that proof.
+- Frontend change:
+  - strengthened the opened Verify panel with a darker navy/gold institutional
+    surface, shield watermark, richer header shield, and larger centered status
+    pill;
+  - changed the identity rows into icon-led rows matching the reference mood:
+    shop name, shop owner ID, marketplace, community, and community ID;
+  - added the missing `Trust check options` block:
+    `Request TrustSlip for live proof`, `Ask community for extra confirmation`,
+    and `Use IDs to avoid name confusion`;
+  - kept the QR target on the community verification route when community ID is
+    available, not the ordinary public shop/gallery link;
+  - kept the stable actions `Request TrustSlip`, `Open Public Shop`, and
+    `Ask Community`.
+- Button/link guardrails:
+  - no raw buttons or anchors were introduced;
+  - the link-contract audit now requires the trust-check options block so the
+    verification panel cannot regress to the earlier incomplete version.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
+    tools/audit-link-contracts.mjs` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed and still reports 51
+    stable Marketplace source actions;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this completes the requested visual/detail pass for the current frontend
+    truth. A true TrustSlip QR still requires backend/public payload support for
+    a live TrustSlip code or verification token.
+
 ### Public Shop merchant verification signboard pass (2026-06-04)
 
 - Route/screen affected:

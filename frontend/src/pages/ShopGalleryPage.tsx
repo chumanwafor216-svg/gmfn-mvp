@@ -1850,11 +1850,16 @@ export default function ShopGalleryPage() {
     ? "Community record ready"
     : "Trust proof on request";
   const shopVerificationRows = [
-    { label: "Shop name", value: shopNameText },
-    { label: "Shop owner ID", value: shopGmfnText || "Not ready" },
-    { label: "Marketplace", value: shopLocationText },
-    { label: "Community", value: shopCommunityText || "Not exposed yet" },
-    { label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
+    { icon: "🏪", label: "Shop name", value: shopNameText },
+    { icon: "🪪", label: "Shop owner ID", value: shopGmfnText || "Not ready" },
+    { icon: "🌍", label: "Marketplace", value: shopLocationText },
+    { icon: "👥", label: "Community", value: shopCommunityText || "Not exposed yet" },
+    { icon: "🔐", label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
+  ];
+  const shopTrustCheckOptions = [
+    { icon: "📄", text: "Request TrustSlip for live proof" },
+    { icon: "👥", text: "Ask community for extra confirmation" },
+    { icon: "🔎", text: "Use IDs to avoid name confusion" },
   ];
   async function shareOrCopy(params: {
     title: string;
@@ -2603,37 +2608,65 @@ export default function ShopGalleryPage() {
             className="public-shop-section public-shop-verify"
             style={{
               ...innerCard("#061827"),
+              position: "relative",
+              overflow: "hidden",
               display: "grid",
               gap: isCompact ? 11 : 14,
-              padding: isCompact ? 13 : 18,
+              padding: isCompact ? 16 : 22,
               border: "1px solid rgba(246,196,83,0.44)",
               background:
-                "radial-gradient(circle at 90% 8%, rgba(246,196,83,0.18) 0%, transparent 34%), linear-gradient(145deg, #061827 0%, #082A4C 100%)",
+                "radial-gradient(circle at 92% 12%, rgba(246,196,83,0.22) 0%, transparent 36%), radial-gradient(circle at 12% 8%, rgba(47,128,237,0.18) 0%, transparent 32%), linear-gradient(145deg, #061827 0%, #082A4C 100%)",
               boxShadow:
                 "0 24px 54px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.12)",
             }}
             aria-label="Shop verification summary"
           >
             <div
+              aria-hidden="true"
               style={{
+                position: "absolute",
+                right: isCompact ? -32 : -14,
+                top: isCompact ? 62 : 42,
+                opacity: 0.12,
+                transform: "rotate(-7deg)",
+                pointerEvents: "none",
+              }}
+            >
+              <GSNBrandMark width={isCompact ? 150 : 210} height={isCompact ? 190 : 270} />
+            </div>
+            <span
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "repeating-linear-gradient(135deg, transparent 0 35px, rgba(255,255,255,0.025) 35px 36px)",
+                pointerEvents: "none",
+              }}
+            />
+            <div
+              style={{
+                position: "relative",
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "54px minmax(0, 1fr) 140px",
+                gridTemplateColumns: isCompact ? "42px minmax(0, 1fr)" : "64px minmax(0, 1fr) 140px",
                 gap: isCompact ? 9 : 12,
-                alignItems: "center",
+                alignItems: "start",
               }}
             >
               <div
                 aria-hidden="true"
                 style={{
-                  width: isCompact ? 42 : 54,
-                  height: isCompact ? 42 : 54,
+                  width: isCompact ? 42 : 58,
+                  height: isCompact ? 42 : 58,
                   borderRadius: isCompact ? 14 : 18,
                   display: "grid",
                   placeItems: "center",
                   color: "#F6D77A",
-                  background: "rgba(246,215,122,0.12)",
-                  border: "1px solid rgba(246,215,122,0.24)",
-                  fontSize: isCompact ? 24 : 30,
+                  background:
+                    "linear-gradient(145deg, rgba(255,236,173,0.18), rgba(47,128,237,0.16))",
+                  border: "1px solid rgba(246,215,122,0.34)",
+                  fontSize: isCompact ? 24 : 32,
+                  boxShadow: "0 14px 28px rgba(0,0,0,0.24)",
                 }}
               >
                 🛡️
@@ -2692,16 +2725,46 @@ export default function ShopGalleryPage() {
             </div>
 
             <div
+              style={{
+                position: "relative",
+                justifySelf: "center",
+                width: "fit-content",
+                maxWidth: "100%",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                minHeight: isCompact ? 36 : 42,
+                padding: isCompact ? "7px 13px" : "8px 17px",
+                borderRadius: 999,
+                color: shopVerificationQrTarget ? "#86EFAC" : "#FDE68A",
+                background: shopVerificationQrTarget
+                  ? "rgba(34,197,94,0.15)"
+                  : "rgba(246,196,83,0.15)",
+                border: shopVerificationQrTarget
+                  ? "1px solid rgba(34,197,94,0.32)"
+                  : "1px solid rgba(246,196,83,0.30)",
+                boxShadow: "0 12px 24px rgba(0,0,0,0.18)",
+                fontSize: isCompact ? 13 : 15,
+                fontWeight: 950,
+              }}
+            >
+              <span aria-hidden="true">{shopVerificationQrTarget ? "✅" : "🟡"}</span>
+              <span>{shopVerificationStatusText}</span>
+            </div>
+
+            <div
               id="public-shop-verify-panel"
               style={{
+                position: "relative",
                 display: "grid",
                 gridTemplateColumns: isCompact ? "1fr" : "178px minmax(0, 1fr)",
                 gap: isCompact ? 10 : 14,
                 alignItems: "stretch",
-                borderRadius: isCompact ? 16 : 18,
+                borderRadius: isCompact ? 20 : 24,
                 border: "1px solid rgba(246,196,83,0.34)",
                 background: "rgba(3,20,36,0.48)",
-                padding: isCompact ? 10 : 12,
+                padding: isCompact ? 11 : 14,
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
               }}
             >
               <div
@@ -2759,72 +2822,88 @@ export default function ShopGalleryPage() {
                   alignContent: "start",
                 }}
               >
-                <div
-                  style={{
-                    width: "fit-content",
-                    maxWidth: "100%",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 7,
-                    minHeight: isCompact ? 30 : 34,
-                    padding: isCompact ? "5px 9px" : "6px 12px",
-                    borderRadius: 999,
-                    color: shopVerificationQrTarget ? "#BBF7D0" : "#FDE68A",
-                    background: shopVerificationQrTarget
-                      ? "rgba(34,197,94,0.14)"
-                      : "rgba(246,196,83,0.14)",
-                    border: shopVerificationQrTarget
-                      ? "1px solid rgba(34,197,94,0.28)"
-                      : "1px solid rgba(246,196,83,0.26)",
-                    fontSize: isCompact ? 10.5 : 12,
-                    fontWeight: 900,
-                  }}
-                >
-                  <span aria-hidden="true">{shopVerificationQrTarget ? "✅" : "🟡"}</span>
-                  <span>{shopVerificationStatusText}</span>
-                </div>
                 {shopVerificationRows.map((row) => (
                   <div
                     key={row.label}
                     style={{
                       display: "grid",
                       gridTemplateColumns: isCompact
-                        ? "1fr"
-                        : "128px minmax(0, 1fr)",
-                      gap: isCompact ? 2 : 8,
+                        ? "42px minmax(0, 1fr)"
+                        : "54px minmax(0, 1fr)",
+                      gap: isCompact ? 8 : 10,
                       alignItems: "center",
-                      borderRadius: 12,
+                      borderRadius: isCompact ? 14 : 16,
                       border: "1px solid rgba(255,255,255,0.08)",
                       background: "rgba(234,243,255,0.08)",
-                      padding: isCompact ? "8px 9px" : "9px 10px",
+                      padding: isCompact ? "8px 9px" : "10px 12px",
                     }}
                   >
                     <span
+                      aria-hidden="true"
                       style={{
-                        color: "rgba(255,236,173,0.78)",
-                        fontSize: isCompact ? 9.5 : 11,
-                        fontWeight: 900,
-                        textTransform: "uppercase",
-                        letterSpacing: 0,
+                        width: isCompact ? 36 : 44,
+                        height: isCompact ? 36 : 44,
+                        borderRadius: "50%",
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#F6D77A",
+                        background: "rgba(255,255,255,0.10)",
+                        border: "1px solid rgba(246,196,83,0.16)",
+                        fontSize: isCompact ? 18 : 22,
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
                       }}
                     >
-                      {row.label}
+                      {row.icon}
                     </span>
-                    <span
-                      style={{
-                        color: "#FFFFFF",
-                        fontSize: isCompact ? 11.5 : 13,
-                        fontWeight: 900,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                      title={row.value}
-                    >
-                      {row.value}
-                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                          color: "rgba(255,236,173,0.82)",
+                          fontSize: isCompact ? 10 : 11.5,
+                          fontWeight: 850,
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        <span aria-hidden="true" style={{ fontSize: isCompact ? 10 : 12 }}>
+                          {row.icon}
+                        </span>
+                        <span>{row.label}</span>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: 3,
+                          color: "#FFFFFF",
+                          fontSize: isCompact ? 12.4 : 14.5,
+                          fontWeight: 950,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                        title={row.value}
+                      >
+                        {row.value}
+                      </div>
+                    </div>
                   </div>
                 ))}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 7,
+                    color: "rgba(246,215,122,0.86)",
+                    fontSize: isCompact ? 10.4 : 12,
+                    fontWeight: 760,
+                    lineHeight: 1.3,
+                    padding: isCompact ? "2px 2px 0" : "3px 4px 0",
+                  }}
+                >
+                  <span aria-hidden="true">ⓘ</span>
+                  <span>Community ID confirms the exact community.</span>
+                </div>
               </div>
             </div>
 
@@ -2891,6 +2970,87 @@ export default function ShopGalleryPage() {
               >
                 Ask Community
               </StableCtaLink>
+            </div>
+
+            <div
+              style={{
+                position: "relative",
+                overflow: "hidden",
+                borderRadius: isCompact ? 18 : 22,
+                border: "1px solid rgba(246,196,83,0.30)",
+                background:
+                  "linear-gradient(145deg, rgba(3,20,36,0.58), rgba(8,42,76,0.46))",
+                padding: isCompact ? "12px 13px" : "16px 18px",
+                display: "grid",
+                gap: isCompact ? 9 : 11,
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  right: isCompact ? 12 : 20,
+                  bottom: isCompact ? 10 : 14,
+                  fontSize: isCompact ? 72 : 96,
+                  lineHeight: 1,
+                  color: "rgba(246,215,122,0.08)",
+                }}
+              >
+                🛡️
+              </span>
+              <div
+                style={{
+                  position: "relative",
+                  color: "#F6D77A",
+                  fontSize: isCompact ? 12 : 14,
+                  fontWeight: 950,
+                  lineHeight: 1.1,
+                }}
+              >
+                Trust check options
+              </div>
+              <div
+                style={{
+                  position: "relative",
+                  display: "grid",
+                  gap: isCompact ? 7 : 8,
+                }}
+              >
+                {shopTrustCheckOptions.map((item) => (
+                  <div
+                    key={item.text}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "28px minmax(0, 1fr)"
+                        : "34px minmax(0, 1fr)",
+                      gap: isCompact ? 8 : 10,
+                      alignItems: "center",
+                      color: "rgba(255,255,255,0.88)",
+                      fontSize: isCompact ? 11.2 : 13,
+                      fontWeight: 780,
+                      lineHeight: 1.22,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: "inline-grid",
+                        placeItems: "center",
+                        width: isCompact ? 24 : 28,
+                        height: isCompact ? 24 : 28,
+                        borderRadius: 9,
+                        color: "#F6D77A",
+                        background: "rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      {item.icon}
+                    </span>
+                    <span>{item.text}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         ) : null}

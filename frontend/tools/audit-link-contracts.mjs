@@ -886,8 +886,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-public-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"/,
-  "Public Shop Verify panel must expose shop identity, community context, and separate TrustSlip/shop/community actions on demand."
+  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?const shopTrustCheckOptions = \[[\s\S]*?Request TrustSlip for live proof[\s\S]*?Ask community for extra confirmation[\s\S]*?Use IDs to avoid name confusion[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-public-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"[\s\S]*?Trust check options/,
+  "Public Shop Verify panel must expose shop identity, community context, trust-check options, and separate TrustSlip/shop/community actions on demand."
 );
 
 assertContains(
