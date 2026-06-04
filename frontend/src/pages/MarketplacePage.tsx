@@ -1760,6 +1760,169 @@ function marketplaceInlineActionStyle(
   };
 }
 
+function marketplaceMoneyPanelStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 16,
+    display: "grid",
+    gap: isCompact ? 10 : 12,
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function marketplaceMoneyRouteCardStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minHeight: isCompact ? 134 : 150,
+    borderRadius: isCompact ? 20 : 24,
+    border: "1px solid rgba(16,37,59,0.08)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,252,255,0.98) 100%)",
+    boxShadow:
+      "0 16px 30px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.92)",
+    padding: isCompact ? "18px 18px" : "22px 24px",
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "72px minmax(0, 1fr)"
+      : "92px minmax(0, 1fr) auto",
+    gridTemplateAreas: isCompact
+      ? '"icon text" "icon status"'
+      : '"icon text status"',
+    gap: isCompact ? "10px 16px" : "14px 24px",
+    alignItems: "center",
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transform: "none",
+    transition: "none",
+  };
+}
+
+function marketplaceMoneyIconBubbleStyle(
+  isCompact: boolean,
+  tone: "blue" | "gold" | "soft"
+): React.CSSProperties {
+  const color =
+    tone === "gold" ? "#D6AA45" : tone === "blue" ? "#1B66D2" : "#244969";
+
+  return {
+    gridArea: "icon",
+    width: isCompact ? 68 : 80,
+    height: isCompact ? 68 : 80,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color,
+    background:
+      "radial-gradient(circle at 35% 28%, rgba(255,255,255,0.98) 0%, rgba(236,244,255,0.98) 58%, rgba(224,235,248,0.98) 100%)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.92), 0 10px 20px rgba(10,24,49,0.08)",
+    flexShrink: 0,
+  };
+}
+
+function marketplaceMoneyTextStackStyle(): React.CSSProperties {
+  return {
+    gridArea: "text",
+    minWidth: 0,
+    display: "grid",
+    gap: 8,
+    alignContent: "center",
+  };
+}
+
+function marketplaceMoneyTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#08233A",
+    fontSize: isCompact ? 18 : 20,
+    fontWeight: 950,
+    lineHeight: 1.14,
+    overflowWrap: "break-word",
+    wordBreak: "normal",
+  };
+}
+
+function marketplaceMoneyValueStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#061827",
+    fontSize: isCompact ? 30 : 42,
+    fontWeight: 950,
+    lineHeight: 1,
+    letterSpacing: 0,
+    overflowWrap: "break-word",
+    wordBreak: "normal",
+  };
+}
+
+function marketplaceMoneyRouteValueStyle(
+  isCompact: boolean,
+  ready: boolean
+): React.CSSProperties {
+  return {
+    ...marketplaceMoneyValueStyle(isCompact),
+    fontSize: ready ? (isCompact ? 24 : 30) : isCompact ? 30 : 42,
+    lineHeight: ready ? 1.08 : 1,
+    display: "-webkit-box",
+    WebkitLineClamp: ready ? 2 : 1,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden",
+  };
+}
+
+function marketplaceMoneyHelperStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#5C6D7F",
+    fontSize: isCompact ? 15 : 17,
+    fontWeight: 750,
+    lineHeight: 1.24,
+    overflowWrap: "break-word",
+    wordBreak: "normal",
+  };
+}
+
+function marketplaceMoneyStatusAreaStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    gridArea: "status",
+    justifySelf: isCompact ? "start" : "end",
+    alignSelf: "center",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 10,
+    minWidth: 0,
+  };
+}
+
+function marketplaceMoneyStatusPillStyle(ready = false): React.CSSProperties {
+  return {
+    ...stableStatusPillStyle(ready),
+    minWidth: 104,
+    justifyContent: "center",
+    color: ready ? "#1D6D46" : "#3D4F61",
+    background: ready
+      ? "linear-gradient(180deg, #EFFBF4 0%, #DCEFE5 100%)"
+      : "linear-gradient(180deg, #F5F8FC 0%, #E9EEF6 100%)",
+    border: ready
+      ? "1px solid rgba(46,155,98,0.18)"
+      : "1px solid rgba(16,37,59,0.06)",
+  };
+}
+
+function marketplaceMoneyChartBubbleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    width: isCompact ? 58 : 68,
+    height: isCompact ? 58 : 68,
+    borderRadius: 999,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#2C68D8",
+    background:
+      "radial-gradient(circle at 35% 25%, rgba(255,255,255,0.98) 0%, rgba(235,243,255,0.96) 60%, rgba(222,234,250,0.96) 100%)",
+    boxShadow:
+      "inset 0 1px 0 rgba(255,255,255,0.9), 0 10px 20px rgba(10,24,49,0.08)",
+    flexShrink: 0,
+  };
+}
+
 function intentGuideCardStyle(): React.CSSProperties {
   return {
     marginTop: 14,
@@ -2038,9 +2201,11 @@ type MarketplaceGlyphName =
   | "bank"
   | "card"
   | "cash"
+  | "chart"
   | "chevron"
   | "chevronUp"
   | "demand"
+  | "eye"
   | "heart"
   | "ledger"
   | "links"
@@ -2092,6 +2257,15 @@ function MarketplaceGlyph({
         </>
       );
       break;
+    case "chart":
+      glyph = (
+        <>
+          <path d="M4 18h16" />
+          <path d="M6 15l4-4 3 2.5 5-7" />
+          <path d="M18 6.5h1.5V8" />
+        </>
+      );
+      break;
     case "chevron":
       glyph = <path d="M9 5.5 15.5 12 9 18.5" />;
       break;
@@ -2104,6 +2278,15 @@ function MarketplaceGlyph({
           <path d="M4 13h3l8 4V7l-8 4H4z" />
           <path d="M7 13l1 5" />
           <path d="M18 9.5c.8.7 1.2 1.5 1.2 2.5s-.4 1.8-1.2 2.5" />
+        </>
+      );
+      break;
+    case "eye":
+      glyph = (
+        <>
+          <path d="M3.5 12s3.2-5.2 8.5-5.2 8.5 5.2 8.5 5.2-3.2 5.2-8.5 5.2S3.5 12 3.5 12z" />
+          <circle cx="12" cy="12" r="2.8" />
+          <circle cx="12.9" cy="11.1" r="0.7" />
         </>
       );
       break;
@@ -4567,7 +4750,12 @@ export default function MarketplacePage() {
       {sectionsOpen.money ? (
       <section
         id="marketplace-money-routes"
-        style={{ ...pageCard("#FFFFFF"), ...marketplaceSectionStyle(), order: 8 }}
+        style={{
+          ...pageCard("#FFFFFF"),
+          ...marketplaceSectionStyle(),
+          order: 8,
+          padding: isCompact ? 14 : 18,
+        }}
       >
         <div
           style={{
@@ -4578,11 +4766,46 @@ export default function MarketplacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Money route detail</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This marketplace's local money rails and the handoff into the
-              fuller Finance record.
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #2F73D8 0%, #1B4DA6 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="chart" size={26} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#08233A",
+                  fontSize: isCompact ? 20 : 24,
+                  fontWeight: 950,
+                  lineHeight: 1.08,
+                  overflowWrap: "break-word",
+                }}
+              >
+                Marketplace Finance
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#5E6F82",
+                  fontSize: isCompact ? 14 : 16,
+                  fontWeight: 750,
+                  lineHeight: 1.25,
+                }}
+              >
+                Finance overview
+              </div>
             </div>
           </div>
 
@@ -4592,257 +4815,131 @@ export default function MarketplacePage() {
             onClick={(event) => toggleSectionFromButton(event, "money")}
             style={marketplaceActionStyle("soft")}
           >
-            {sectionsOpen.money ? "Collapse" : "Open"}
+            {sectionsOpen.money ? "Collapse" : "Open"}{" "}
+            <span aria-hidden="true" style={{ display: "inline-flex" }}>
+              <MarketplaceGlyph
+                name={sectionsOpen.money ? "chevronUp" : "chevron"}
+                size={16}
+              />
+            </span>
           </StableButton>
         </div>
 
-        <ExplainToggle
-          label="What these routes do"
-          what="These routes tell you whether money can come in, move out, or continue into the fuller finance view for this community."
-          why="Marketplace activity feels safer when users can confirm the community account, personal payout path, and live money status before acting."
-          next="Check which route is ready first, then open Money In, Money Out, or Finance depending on whether you are funding, withdrawing, or reviewing the deeper money record."
-          tone="light"
-          style={{ marginTop: 12 }}
-        />
-
         {sectionsOpen.money ? (
-          <div
-            style={{
-              marginTop: 16,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
-            }}
-          >
-            <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>Visible pool position</div>
-
-              <ExplainToggle
-                label="What this pool reading does"
-                what="This shows the pool amount currently visible in the community so users can read the shared money position at a glance."
-                why="It helps people separate the community pool from personal payout and from the fixed settlement destination used for Money In."
-                next="Use this as a quick shared-money reading, then open Money In, Money Out, or Finance when you need to act on the underlying routes."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 22,
-                  lineHeight: 1.2,
-                }}
+          <div style={marketplaceMoneyPanelStyle(isCompact)}>
+            <div style={marketplaceMoneyRouteCardStyle(isCompact)}>
+              <span
+                aria-hidden="true"
+                style={marketplaceMoneyIconBubbleStyle(isCompact, "soft")}
               >
-                {visiblePoolAmount} {visiblePoolCurrency}
+                <MarketplaceGlyph name="eye" size={isCompact ? 34 : 40} />
+              </span>
+              <div style={marketplaceMoneyTextStackStyle()}>
+                <div style={marketplaceMoneyTitleStyle(isCompact)}>
+                  Visible Pool
+                </div>
+                <div style={marketplaceMoneyValueStyle(isCompact)}>
+                  {visiblePoolAmount} {visiblePoolCurrency}
+                </div>
+                <div style={marketplaceMoneyHelperStyle(isCompact)}>
+                  Current pool view
+                </div>
               </div>
-
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                This shows the pool amount currently visible in your community.
-              </div>
-            </div>
-
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Community account</div>
-
-              <ExplainToggle
-                label="What this account does"
-                what="This is the fixed community settlement destination that Money In depends on for this marketplace."
-                why="It keeps community funding separate from personal payout so users can tell which money lane belongs to the whole community."
-                next="Check whether this account is ready before opening Money In, then use personal payout separately only for approved Money Out activity."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
-              >
-                {settlementSummary(moneySurface?.communitySettlement || null)}
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Money In uses this fixed community account and settlement route.
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <span style={communitySettlementReady ? badge(true) : badge(false)}>
-                  {communitySettlementReady ? "Community account ready" : "Community account not ready"}
+              <div style={marketplaceMoneyStatusAreaStyle(isCompact)}>
+                <span
+                  aria-hidden="true"
+                  style={marketplaceMoneyChartBubbleStyle(isCompact)}
+                >
+                  <MarketplaceGlyph name="chart" size={isCompact ? 30 : 34} />
                 </span>
               </div>
             </div>
 
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Personal payout</div>
-
-              <ExplainToggle
-                label="What this payout does"
-                what="This is the personal payout destination that approved Money Out should use for the current member."
-                why="It keeps member withdrawals separate from the shared community settlement route so users can see which money lane belongs to them personally."
-                next="Check whether this payout path is ready before opening Money Out, and use the community account separately when the action is funding the wider community."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
+            <div style={marketplaceMoneyRouteCardStyle(isCompact)}>
+              <span
+                aria-hidden="true"
+                style={marketplaceMoneyIconBubbleStyle(isCompact, "gold")}
               >
-                {payoutSummary(moneySurface)}
+                <MarketplaceGlyph name="bank" size={isCompact ? 34 : 40} />
+              </span>
+              <div style={marketplaceMoneyTextStackStyle()}>
+                <div style={marketplaceMoneyTitleStyle(isCompact)}>
+                  Community Account
+                </div>
+                <div
+                  style={marketplaceMoneyRouteValueStyle(
+                    isCompact,
+                    communitySettlementReady
+                  )}
+                >
+                  {communitySettlementReady
+                    ? settlementSummary(moneySurface?.communitySettlement || null)
+                    : "Not ready"}
+                </div>
+                <div style={marketplaceMoneyHelperStyle(isCompact)}>
+                  Money In route
+                </div>
               </div>
-
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                Approved Money Out should land here. It stays separate from the fixed community account.
-              </div>
-
-              <div style={{ marginTop: 12 }}>
-                <span style={payoutReady ? badge(true) : badge(false)}>
-                  {payoutReady ? "Personal payout ready" : "Personal payout not ready"}
+              <div style={marketplaceMoneyStatusAreaStyle(isCompact)}>
+                <span style={marketplaceMoneyStatusPillStyle(communitySettlementReady)}>
+                  {communitySettlementReady ? "Ready" : "Not ready"}
                 </span>
               </div>
             </div>
 
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Money In</div>
-
-              <ExplainToggle
-                label="What this pay-in route does"
-                what="This opens the guided route for paying money into the community pool through the community settlement path."
-                why="It gives users one clear funding lane instead of making pay-in feel interchangeable with payout or support activity."
-                next="Use this when the goal is to fund the community, then follow the guided pay-in flow through reference, confirmation, and reconciliation."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
+            <div style={marketplaceMoneyRouteCardStyle(isCompact)}>
+              <span
+                aria-hidden="true"
+                style={marketplaceMoneyIconBubbleStyle(isCompact, "blue")}
               >
-                Pay into the community pool
+                <MarketplaceGlyph name="card" size={isCompact ? 34 : 40} />
+              </span>
+              <div style={marketplaceMoneyTextStackStyle()}>
+                <div style={marketplaceMoneyTitleStyle(isCompact)}>
+                  Personal Payout
+                </div>
+                <div style={marketplaceMoneyRouteValueStyle(isCompact, payoutReady)}>
+                  {payoutReady ? payoutSummary(moneySurface) : "Not ready"}
+                </div>
+                <div style={marketplaceMoneyHelperStyle(isCompact)}>
+                  Money Out route
+                </div>
               </div>
-
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                  Start the guided pay-in route for this community. Once opened, the
-                  pay-in route should carry the member through reference generation,
-                  payment confirmation, and reconciliation.
-              </div>
-
-              <div style={{ marginTop: 14 }}>
-                <StableButton
-                  debugId="marketplace.money.money-in"
-                  type="button"
-                  onClick={(event) => openMarketplaceCta(event, "moneyIn")}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("primary", false, isCompact)}
-                >
-                  Money In
-                </StableButton>
+              <div style={marketplaceMoneyStatusAreaStyle(isCompact)}>
+                <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>
+                  {payoutReady ? "Ready" : "Not ready"}
+                </span>
               </div>
             </div>
 
-            <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>Money Out</div>
-
-              <ExplainToggle
-                label="What this withdrawal route does"
-                what="This opens the guided route for taking money out through the member-side withdrawal path for the current community."
-                why="It keeps withdrawal separate from community funding and makes it clear that the route will decide whether direct payout or support-backed continuation applies."
-                next="Use this when the goal is withdrawal, then let the guided route determine whether it can complete directly or needs to continue into support."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
+            <div style={marketplaceInlineActionsStyle(isCompact)}>
+              <StableButton
+                debugId="marketplace.money.money-in"
+                type="button"
+                onClick={(event) => openMarketplaceCta(event, "moneyIn")}
+                stableHeight={58}
+                style={marketplaceInlineActionStyle("primary", false, isCompact)}
               >
-                Withdraw through the guided route
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                  Start the guided withdrawal route for this community. The route
-                  decides direct withdrawal or support-backed continuation from the
-                  requested amount and available position.
-              </div>
-
-              <div style={{ marginTop: 14 }}>
-                <StableButton
-                  debugId="marketplace.money.money-out"
-                  type="button"
-                  onClick={(event) =>
-                    openMarketplaceCta(event, "moneyOut")
-                  }
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                >
-                  Money Out
-                </StableButton>
-              </div>
-            </div>
-
-            <div style={innerCard("#F8FBFF")}>
-              <div style={sectionLabel()}>Finance</div>
-
-              <ExplainToggle
-                label="What this finance view does"
-                what="This opens the fuller money record for the current community, including pool activity, support movement, locks, releases, and visible financial history."
-                why="It gives users a deeper reading when the summary money cards are no longer enough to understand what is happening."
-                next="Use this after reading the lighter marketplace money cards when you need the full financial story behind funding, withdrawal, or support activity."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
-
-              <div
-                style={{
-                  marginTop: 8,
-                  color: "#0B1F33",
-                  fontWeight: 900,
-                  fontSize: 17,
-                  lineHeight: 1.3,
-                }}
+                Money In
+              </StableButton>
+              <StableButton
+                debugId="marketplace.money.money-out"
+                type="button"
+                onClick={(event) => openMarketplaceCta(event, "moneyOut")}
+                stableHeight={58}
+                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
               >
-                Pool, support, locks, releases
-              </div>
-
-              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                  Open the fuller financial truth for this community, including pay-in,
-                  withdrawal, support, locks, releases, and visible event history.
-              </div>
-
-              <div style={{ marginTop: 14 }}>
-                <StableButton
-                  debugId="marketplace.money.finance"
-                  type="button"
-                  onClick={(event) => openMarketplaceCta(event, "finance")}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                >
-                  See this in Finance
-                </StableButton>
-              </div>
+                Money Out
+              </StableButton>
+              <StableButton
+                debugId="marketplace.money.finance"
+                type="button"
+                onClick={(event) => openMarketplaceCta(event, "finance")}
+                stableHeight={58}
+                style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+              >
+                Finance
+              </StableButton>
             </div>
           </div>
         ) : null}

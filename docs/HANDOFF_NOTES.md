@@ -1,3 +1,63 @@
+### Marketplace money route detail reference-card remodel (2026-06-04)
+
+- Route/screen affected:
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`;
+  - section anchor: `#marketplace-money-routes`.
+- Product-owner truth:
+  - the opened Marketplace money-route detail should match the supplied phone
+    reference more closely: `Marketplace Finance`, compact `Finance overview`,
+    then three clear cards for `Visible Pool`, `Community Account`, and
+    `Personal Payout`;
+  - Marketplace button stability is part of the visual work, not a separate
+    optional cleanup, because Marketplace has repeatedly shown phone tap
+    jumpiness.
+- Frontend change:
+  - replaced the older text-heavy explanatory money-detail grid with three
+    reference-style finance reading cards;
+  - removed the nested explanation toggles from the money detail so the phone
+    surface stays light and direct;
+  - kept the actual route actions as explicit stable buttons below the cards:
+    `marketplace.money.money-in`, `marketplace.money.money-out`, and
+    `marketplace.money.finance`;
+  - preserved shared CTA routing for Money In, Money Out, and Finance;
+  - added local `eye` and `chart` Marketplace glyphs so the cards can use clear
+    visual signs without relying on large text-heavy labels.
+- Button/tap guardrails:
+  - money cards are reading cards, not hidden navigation triggers;
+  - route buttons remain fixed `stableHeight={58}` controls using
+    `marketplaceInlineActionStyle`;
+  - ready account/payout text is clamped and reduced in size so a real bank or
+    payout string cannot stretch the cards into the action row;
+  - `audit-marketplace-button-inventory` now checks that the money detail
+    section exposes only the four audited money actions: collapse, Money In,
+    Money Out, and Finance;
+  - the same audit now blocks Trust Passport, TrustSlip, CCI, and identity route
+    wording/calls inside the money detail section;
+  - the audit also verifies `moneyIn -> MONEY_IN`, `moneyOut -> MONEY_OUT`, and
+    `finance -> FINANCE`, plus selected-community query carry for those routes;
+  - `audit-button-stability` now protects the fixed/clamped money card geometry.
+- Line-auditor result:
+  - a read-only sub-agent inspected the section and found no current source
+    evidence that the money tile or money detail buttons are wired to Trust
+    Passport or another wrong route;
+  - remaining live-device risk is perceived jumpiness from the intentional
+    repeated landing scroll passes used to land opened Marketplace sections on
+    phone, not a miswired money button in source.
+- Verification:
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-button-inventory.mjs tools/audit-button-stability.mjs` passed;
+  - `npm run audit:marketplace-button-inventory` passed with 51 stable
+    Marketplace source actions: 15 front and 36 body;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this is a frontend Marketplace section remodel and button-contract
+    hardening. It does not change backend money movement, community settlement,
+    payout setup, deposits, withdrawals, support, or ledger truth.
+
 ### Completed join-request Companion nudges retired (2026-06-04)
 
 - Route/screens affected:

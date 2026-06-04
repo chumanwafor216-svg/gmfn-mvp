@@ -7,8 +7,12 @@ import { fileURLToPath } from "node:url";
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
+const appRoutesFile = "src/lib/appRoutes.ts";
+const ctaTargetsFile = "src/lib/ctaTargets.ts";
 const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
+const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
+const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");
 const findings = [];
 const expectedStableActionCount = 51;
 const expectedSourceBreakdown = {
@@ -62,6 +66,24 @@ function assertLayoutContains(pattern, message) {
     message,
     text: "Expected Marketplace app-shell action inventory pattern was not found.",
   });
+}
+
+function assertFileContains(file, text, pattern, message) {
+  if (pattern.test(text)) return;
+  findings.push({
+    file,
+    line: 1,
+    message,
+    text: "Expected pattern was not found.",
+  });
+}
+
+function sectionBetween(startPattern, endPattern) {
+  const start = source.search(startPattern);
+  if (start === -1) return "";
+  const rest = source.slice(start);
+  const end = rest.search(endPattern);
+  return end === -1 ? rest : rest.slice(0, end);
 }
 
 function escapeRegExp(value) {
@@ -201,18 +223,94 @@ assertContains(
 );
 
 assertContains(
+  /id="marketplace-money-routes"[\s\S]*?Marketplace Finance[\s\S]*?Finance overview[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Community Account[\s\S]*?Money In route[\s\S]*?Personal Payout[\s\S]*?Money Out route/,
+  "Marketplace money route detail must keep the compact Marketplace Finance reference-card structure."
+);
+
+const moneySection = sectionBetween(
+  /id="marketplace-money-routes"/,
+  /id="marketplace-owned-links"/
+);
+
+if (!moneySection) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace money route section was not found for scoped button auditing.",
+    text: "Expected id=\"marketplace-money-routes\" before id=\"marketplace-owned-links\".",
+  });
+} else {
+  const moneyActionIds = [
+    ...moneySection.matchAll(/debugId="(marketplace\.money\.[^"]+)"/g),
+  ].map((item) => item[1]);
+  const expectedMoneyActionIds = [
+    "marketplace.money.toggle",
+    "marketplace.money.money-in",
+    "marketplace.money.money-out",
+    "marketplace.money.finance",
+  ];
+
+  if (moneyActionIds.join("|") !== expectedMoneyActionIds.join("|")) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(moneySection)),
+      message: "Marketplace money detail section must expose only the audited money actions in the audited order.",
+      text: `found=${moneyActionIds.join(", ") || "none"}`,
+    });
+  }
+
+  if (/(trust|trustSlip|trustslip|cci|identity|Trust Passport|TrustSlip|CCI)/.test(moneySection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(moneySection)),
+      message: "Marketplace money detail section must not contain Trust Passport, TrustSlip, CCI, or identity route wording/calls.",
+      text: "Money detail should remain Money In, Money Out, and Finance only.",
+    });
+  }
+}
+
+assertContains(
   /debugId="marketplace\.money\.money-in"[\s\S]{0,260}onClick=\{\(event\) => openMarketplaceCta\(event, "moneyIn"\)\}/,
   "Marketplace Money In detail button must route through the shared moneyIn CTA target."
 );
 
 assertContains(
-  /debugId="marketplace\.money\.money-out"[\s\S]{0,320}openMarketplaceCta\(event, "moneyOut"\)/,
+  /debugId="marketplace\.money\.money-in"[\s\S]{0,220}stableHeight=\{58\}[\s\S]{0,220}marketplaceInlineActionStyle\("primary", false, isCompact\)/,
+  "Marketplace Money In detail button must keep fixed 58px geometry and the audited inline action style."
+);
+
+assertContains(
+  /debugId="marketplace\.money\.money-out"[\s\S]{0,260}openMarketplaceCta\(event, "moneyOut"\)/,
   "Marketplace Money Out detail button must route through the shared moneyOut CTA target."
+);
+
+assertContains(
+  /debugId="marketplace\.money\.money-out"[\s\S]{0,220}stableHeight=\{58\}[\s\S]{0,220}marketplaceInlineActionStyle\("secondary", false, isCompact\)/,
+  "Marketplace Money Out detail button must keep fixed 58px geometry and the audited inline action style."
 );
 
 assertContains(
   /debugId="marketplace\.money\.finance"[\s\S]{0,260}onClick=\{\(event\) => openMarketplaceCta\(event, "finance"\)\}/,
   "Marketplace Finance detail button must route through the shared finance CTA target."
+);
+
+assertContains(
+  /debugId="marketplace\.money\.finance"[\s\S]{0,220}stableHeight=\{58\}[\s\S]{0,220}marketplaceInlineActionStyle\("secondary", false, isCompact\)/,
+  "Marketplace Finance detail button must keep fixed 58px geometry and the audited inline action style."
+);
+
+assertFileContains(
+  ctaTargetsFile,
+  ctaTargetsSource,
+  /moneyIn:\s*"MONEY_IN"[\s\S]*?moneyOut:\s*"MONEY_OUT"[\s\S]*?finance:\s*"FINANCE"/,
+  "CTA resolver must keep Marketplace money intents mapped to Money In, Money Out, and Finance route keys."
+);
+
+assertFileContains(
+  appRoutesFile,
+  appRoutesSource,
+  /MONEY_IN:\s*"\/app\/payment\/pool"[\s\S]*?MONEY_OUT:\s*"\/app\/withdrawal-instructions"[\s\S]*?FINANCE:\s*"\/app\/finance"[\s\S]*?\[[\s\S]*?"MONEY_IN"[\s\S]*?"MONEY_OUT"[\s\S]*?"FINANCE"/,
+  "Money In, Money Out, and Finance routes must stay in the shared route registry and preserve selected-community query carry."
 );
 
 const expectedOrder = [
