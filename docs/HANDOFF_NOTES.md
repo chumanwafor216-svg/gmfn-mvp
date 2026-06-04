@@ -1,3 +1,25 @@
+### Public Shop reference visual correction (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner truth:
+  - the previous in-code shop/vault picture arrangement was not acceptable;
+  - the requested bitmap references were supplied in chat, but no actual image
+    asset file/path exists in the repository yet, so this pass cannot literally
+    embed the screenshot bitmap.
+- Frontend change:
+  - replaced the visible Public Shop signboard illustration with a stronger
+    navy/gold SVG-style shopping bag, cart, gift, and star visual matching the
+    requested signboard mood;
+  - replaced the visible Private Vault visual with a realistic navy/gold safe
+    illustration and removed the weak overlaid `Private Vault` label from the
+    picture itself;
+  - kept the signboard and vault action buttons wired to the existing stable
+    handlers and debug IDs.
+- Remaining truth:
+  - if the product owner wants the literal screenshot image used as the exact
+    asset, that image must be added to the workspace/repo as an actual file.
+
 ### Public Shop Verify panel screenshot-level completion (2026-06-04)
 
 - Route/screen affected:

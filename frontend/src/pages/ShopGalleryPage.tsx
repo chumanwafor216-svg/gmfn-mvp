@@ -321,138 +321,136 @@ function isInteractiveCardTarget(target: EventTarget | null): boolean {
 }
 
 function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
-  const size = compact ? 92 : 132;
-  const doorSize = compact ? 62 : 90;
-  const wheelSize = compact ? 28 : 38;
-  const boltSize = compact ? 8 : 10;
+  const uid = compact ? "compact" : "full";
 
   return (
     <div
       aria-hidden="true"
       style={{
         width: "100%",
-        minHeight: size,
-        borderRadius: compact ? 18 : 22,
-        border: "1px solid rgba(255,232,160,0.62)",
+        minHeight: compact ? 92 : 132,
+        aspectRatio: "1.48 / 1",
+        borderRadius: compact ? 18 : 24,
+        border: "1px solid rgba(255,218,132,0.74)",
         background:
-          "radial-gradient(circle at 26% 20%, rgba(255,255,255,0.82) 0%, rgba(255,244,204,0.34) 20%, transparent 40%), linear-gradient(145deg, #FFE9A0 0%, #D7AA45 40%, #8F5A12 100%)",
+          "radial-gradient(circle at 22% 18%, rgba(255,237,178,0.34) 0%, transparent 34%), linear-gradient(145deg, #041424 0%, #082A4C 56%, #03111F 100%)",
         boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -14px 30px rgba(96,60,8,0.18), 0 18px 36px rgba(138,100,14,0.24)",
+          "0 18px 36px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.13), inset 0 0 44px rgba(246,196,83,0.10)",
         display: "grid",
         placeItems: "center",
         overflow: "hidden",
         position: "relative",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          inset: compact ? 10 : 14,
-          borderRadius: compact ? 16 : 20,
-          border: "1px solid rgba(143,107,25,0.38)",
-          background:
-            "linear-gradient(145deg, rgba(255,255,255,0.30), rgba(255,255,255,0.04))",
-          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
-        }}
-      />
-      <div
-        style={{
-          position: "relative",
-          width: doorSize,
-          height: doorSize,
-          borderRadius: compact ? 18 : 22,
-          background:
-            "radial-gradient(circle at 28% 20%, rgba(255,255,255,0.18), transparent 30%), linear-gradient(145deg, #43596E 0%, #172D44 42%, #041426 100%)",
-          border: "2px solid rgba(255,236,173,0.58)",
-          boxShadow:
-            "inset 0 2px 8px rgba(255,255,255,0.24), inset 0 -10px 22px rgba(3,16,31,0.60), 0 18px 34px rgba(8,35,61,0.32)",
-        }}
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 320 216"
+        focusable="false"
+        role="presentation"
+        style={{ display: "block" }}
       >
-        <span
-          style={{
-            position: "absolute",
-            inset: compact ? 8 : 11,
-            borderRadius: compact ? 13 : 16,
-            border: "1px solid rgba(255,255,255,0.14)",
-          }}
-        />
-        {[8, doorSize - 8 - boltSize].map((top) =>
-          [6, doorSize - 6 - boltSize].map((left) => (
-            <span
-              key={`${top}-${left}`}
-              style={{
-                position: "absolute",
-                top,
-                left,
-                width: boltSize,
-                height: boltSize,
-                borderRadius: "50%",
-                background: "rgba(255,236,173,0.42)",
-                boxShadow: "0 1px 3px rgba(3,16,31,0.35)",
-              }}
-            />
-          ))
-        )}
-        <span
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            width: wheelSize,
-            height: wheelSize,
-            transform: "translate(-50%, -50%)",
-            borderRadius: "50%",
-            border: "2px solid rgba(255,236,173,0.60)",
-            background:
-              "radial-gradient(circle, rgba(255,244,204,0.92) 0%, rgba(214,170,69,0.38) 42%, rgba(3,16,31,0.52) 100%)",
-            boxShadow: "inset 0 1px 3px rgba(255,255,255,0.24)",
-          }}
-        />
-        <span
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            width: compact ? 38 : 54,
-            height: 2,
-            transform: "translate(-50%, -50%) rotate(28deg)",
-            borderRadius: 999,
-            background: "rgba(255,236,173,0.76)",
-          }}
-        />
-        <span
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            width: compact ? 38 : 54,
-            height: 2,
-            transform: "translate(-50%, -50%) rotate(-32deg)",
-            borderRadius: 999,
-            background: "rgba(255,236,173,0.72)",
-          }}
-        />
-      </div>
-      <div
-        style={{
-          position: "absolute",
-          left: 8,
-          right: 8,
-          bottom: compact ? 9 : 12,
-          color: "#08233D",
-          fontSize: compact ? 10.5 : 14,
-          fontWeight: 950,
-          textAlign: "center",
-          textShadow: "0 1px 0 rgba(255,255,255,0.36)",
-        }}
-      >
-        Private Vault
-      </div>
+        <defs>
+          <linearGradient id={`vaultBody-${uid}`} x1="38" y1="32" x2="272" y2="188" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#1B4E78" />
+            <stop offset="0.38" stopColor="#071E35" />
+            <stop offset="1" stopColor="#020A13" />
+          </linearGradient>
+          <linearGradient id={`vaultGold-${uid}`} x1="72" y1="24" x2="250" y2="194" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#FFF0B6" />
+            <stop offset="0.33" stopColor="#E4B85D" />
+            <stop offset="0.68" stopColor="#9C6A1E" />
+            <stop offset="1" stopColor="#F0CA74" />
+          </linearGradient>
+          <radialGradient id={`vaultGlow-${uid}`} cx="52%" cy="44%" r="62%">
+            <stop offset="0" stopColor="#FFE6A3" stopOpacity="0.34" />
+            <stop offset="0.42" stopColor="#2F80ED" stopOpacity="0.10" />
+            <stop offset="1" stopColor="#000000" stopOpacity="0" />
+          </radialGradient>
+          <filter id={`vaultShadow-${uid}`} x="-20%" y="-20%" width="140%" height="150%">
+            <feDropShadow dx="0" dy="16" stdDeviation="12" floodColor="#000814" floodOpacity="0.45" />
+          </filter>
+        </defs>
+        <rect x="0" y="0" width="320" height="216" rx="30" fill={`url(#vaultGlow-${uid})`} />
+        <ellipse cx="166" cy="187" rx="118" ry="18" fill="#000814" opacity="0.36" />
+        <g filter={`url(#vaultShadow-${uid})`}>
+          <path
+            d="M64 54C64 40 76 28 90 28h128c15 0 28 12 28 28v122H82c-10 0-18-8-18-18V54Z"
+            fill={`url(#vaultBody-${uid})`}
+          />
+          <path
+            d="M84 28h132c15 0 28 12 28 28v122H84c-15 0-28-12-28-28V56c0-16 12-28 28-28Z"
+            fill="none"
+            stroke={`url(#vaultGold-${uid})`}
+            strokeWidth="7"
+          />
+          <rect
+            x="100"
+            y="52"
+            width="154"
+            height="126"
+            rx="20"
+            fill="#071B30"
+            stroke={`url(#vaultGold-${uid})`}
+            strokeWidth="7"
+          />
+          <rect
+            x="116"
+            y="68"
+            width="122"
+            height="94"
+            rx="14"
+            fill="none"
+            stroke="#7F682F"
+            strokeWidth="2"
+            opacity="0.75"
+          />
+          <rect x="50" y="64" width="34" height="24" rx="8" fill="#142D49" stroke="#F0CA74" strokeWidth="3" />
+          <rect x="50" y="126" width="34" height="24" rx="8" fill="#142D49" stroke="#F0CA74" strokeWidth="3" />
+          <rect x="80" y="67" width="22" height="18" rx="5" fill="#E8BD62" opacity="0.92" />
+          <rect x="80" y="129" width="22" height="18" rx="5" fill="#E8BD62" opacity="0.92" />
+          <circle cx="177" cy="115" r="36" fill="#071522" stroke={`url(#vaultGold-${uid})`} strokeWidth="8" />
+          <circle cx="177" cy="115" r="10" fill="#F5D680" stroke="#805411" strokeWidth="2" />
+          {Array.from({ length: 6 }).map((_, index) => {
+            const angle = index * 60;
+            return (
+              <line
+                key={angle}
+                x1="177"
+                y1="115"
+                x2="177"
+                y2="82"
+                stroke="#E8BD62"
+                strokeWidth="5"
+                strokeLinecap="round"
+                transform={`rotate(${angle} 177 115)`}
+              />
+            );
+          })}
+          {[126, 228].map((x) =>
+            [74, 150].map((y) => (
+              <circle
+                key={`${x}-${y}`}
+                cx={x}
+                cy={y}
+                r="6"
+                fill="#F0CA74"
+                stroke="#865A19"
+                strokeWidth="2"
+              />
+            ))
+          )}
+          <rect x="96" y="178" width="28" height="12" rx="4" fill="#A8782D" opacity="0.85" />
+          <rect x="210" y="178" width="28" height="12" rx="4" fill="#A8782D" opacity="0.85" />
+        </g>
+      </svg>
     </div>
   );
 }
 
-function ShopSignboardVisual({ compact = false }: { compact?: boolean }) {
+// Retained briefly as a rollback comparison for the public shop visual pass.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _ShopSignboardVisual({ compact = false }: { compact?: boolean }) {
   return (
     <div
       aria-hidden="true"
@@ -523,6 +521,126 @@ function ShopSignboardVisual({ compact = false }: { compact?: boolean }) {
         🎁
       </span>
       <GSNBrandMark width={compact ? 44 : 62} height={compact ? 58 : 82} />
+    </div>
+  );
+}
+
+function ReferenceShopSignboardVisual({ compact = false }: { compact?: boolean }) {
+  const uid = compact ? "compact" : "full";
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: compact ? 116 : 204,
+        height: compact ? 128 : 194,
+        borderRadius: compact ? 22 : 32,
+        position: "relative",
+        display: "grid",
+        placeItems: "center",
+        overflow: "hidden",
+        border: "1px solid rgba(255,226,151,0.66)",
+        background:
+          "radial-gradient(circle at 34% 30%, rgba(255,224,138,0.25) 0%, transparent 38%), linear-gradient(145deg, rgba(4,16,29,0.72), rgba(9,42,74,0.96))",
+        boxShadow:
+          "0 24px 46px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 0 42px rgba(246,196,83,0.08)",
+      }}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 260 250"
+        focusable="false"
+        role="presentation"
+        style={{ display: "block" }}
+      >
+        <defs>
+          <linearGradient
+            id={`shopGold-${uid}`}
+            x1="28"
+            y1="30"
+            x2="220"
+            y2="220"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopColor="#FFF1B8" />
+            <stop offset="0.32" stopColor="#E4B85D" />
+            <stop offset="0.72" stopColor="#9C6A1E" />
+            <stop offset="1" stopColor="#F6D77A" />
+          </linearGradient>
+          <linearGradient
+            id={`shopBlue-${uid}`}
+            x1="80"
+            y1="52"
+            x2="182"
+            y2="178"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stopColor="#163E65" />
+            <stop offset="0.62" stopColor="#08233A" />
+            <stop offset="1" stopColor="#03111F" />
+          </linearGradient>
+          <radialGradient id={`shopSpark-${uid}`} cx="36%" cy="32%" r="64%">
+            <stop offset="0" stopColor="#FFE8A7" stopOpacity="0.50" />
+            <stop offset="0.38" stopColor="#D6AA45" stopOpacity="0.13" />
+            <stop offset="1" stopColor="#000000" stopOpacity="0" />
+          </radialGradient>
+          <filter id={`shopDrop-${uid}`} x="-25%" y="-25%" width="150%" height="155%">
+            <feDropShadow dx="0" dy="14" stdDeviation="10" floodColor="#000814" floodOpacity="0.44" />
+          </filter>
+        </defs>
+        <rect x="0" y="0" width="260" height="250" rx="34" fill={`url(#shopSpark-${uid})`} />
+        <rect x="15" y="14" width="230" height="222" rx="30" fill="none" stroke="#F6D77A" strokeOpacity="0.32" strokeWidth="2" />
+        <g filter={`url(#shopDrop-${uid})`}>
+          <path
+            d="M72 113c0-20 16-36 36-36h54c20 0 36 16 36 36v89H72v-89Z"
+            fill={`url(#shopBlue-${uid})`}
+            stroke={`url(#shopGold-${uid})`}
+            strokeWidth="5"
+          />
+          <path
+            d="M103 82c2-28 22-48 49-48 28 0 48 20 50 48"
+            fill="none"
+            stroke={`url(#shopGold-${uid})`}
+            strokeWidth="7"
+            strokeLinecap="round"
+          />
+          <path
+            d="M126 135l8-17 8 17 18 2-13 12 4 18-17-9-16 9 3-18-13-12 18-2Z"
+            fill="#F6D77A"
+            stroke="#8C5A12"
+            strokeWidth="2"
+          />
+          <path
+            d="M27 178h36l8 28H39l-12-28Z"
+            fill="#163E65"
+            stroke={`url(#shopGold-${uid})`}
+            strokeWidth="4"
+          />
+          <path d="M34 178h52" stroke={`url(#shopGold-${uid})`} strokeWidth="5" strokeLinecap="round" />
+          <path d="M74 178l12-26h34l-9 26" fill="none" stroke={`url(#shopGold-${uid})`} strokeWidth="5" strokeLinejoin="round" />
+          <circle cx="47" cy="214" r="6" fill="#E4B85D" />
+          <circle cx="84" cy="214" r="6" fill="#E4B85D" />
+          <rect x="40" y="150" width="36" height="36" rx="8" fill="#0A2B48" stroke="#E4B85D" strokeWidth="3" />
+          <path d="M40 167h36M58 150v36" stroke="#F6D77A" strokeWidth="3" />
+          <path d="M42 149l-10-12m32 12l11-12" stroke="#F6D77A" strokeWidth="4" strokeLinecap="round" />
+        </g>
+        {[
+          [45, 58],
+          [55, 76],
+          [217, 76],
+          [205, 58],
+          [31, 104],
+          [220, 150],
+        ].map(([cx, cy]) => (
+          <path
+            key={`${cx}-${cy}`}
+            d={`M${cx} ${cy - 7}l2 5 5 2-5 2-2 5-2-5-5-2 5-2 2-5Z`}
+            fill="#F6D77A"
+            opacity="0.88"
+          />
+        ))}
+      </svg>
     </div>
   );
 }
@@ -2263,7 +2381,7 @@ export default function ShopGalleryPage() {
               gap: isCompact ? 12 : 22,
             }}
           >
-            <ShopSignboardVisual compact={isCompact} />
+            <ReferenceShopSignboardVisual compact={isCompact} />
             <div
               style={{
                 display: "grid",
