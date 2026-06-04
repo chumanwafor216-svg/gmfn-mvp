@@ -11,7 +11,9 @@
   - kept the route contract and backend approval logic unchanged;
   - replaced placeholder letter badges with route-local CSS/SVG-style visual
     icons for the GSN mark, shield hero, fact rows, review steps, progress,
-    main actions, helpful links, and reviewed-not-automatic note;
+    and main actions;
+  - corrected the helper-link and reviewed-not-automatic symbols to real
+    reference-style emoji cues: book, target, wave, and lock;
   - kept the hero in the same phone reference composition: status copy on the
     left and the shield/trust visual on the right;
   - changed the mobile `What happens next` section back to a stable three-card
