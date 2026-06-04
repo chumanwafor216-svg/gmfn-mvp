@@ -880,14 +880,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{ QRCodeSVG \} from "qrcode\.react";[\s\S]*?const shopVerificationQrTarget = firstMeaningful\([\s\S]*?absoluteShopShareLink,[\s\S]*?absoluteShopLink[\s\S]*?\);[\s\S]*?TrustSlip proof is on request[\s\S]*?<QRCodeSVG[\s\S]*?value=\{shopVerificationQrTarget\}/,
-  "Public Shop Verify panel must use the public shop link as its QR target and must not claim TrustSlip proof without a live TrustSlip code."
+  /import \{ QRCodeSVG \} from "qrcode\.react";[\s\S]*?publicFrontendUrl[\s\S]*?const shopCommunityVerifyPath = shopCommunityIdText[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(shopCommunityIdText\)\}[\s\S]*?const shopVerificationQrTarget = shopCommunityVerifyPath[\s\S]*?publicFrontendUrl\(shopCommunityVerifyPath\)[\s\S]*?<QRCodeSVG[\s\S]*?value=\{shopVerificationQrTarget\}/,
+  "Public Shop Verify panel QR must target the public community verification record when available, not silently reopen the shop gallery."
 );
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?Community ID[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Shop name|Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community ID[\s\S]*?Shop name[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"/,
-  "Public Shop Verify panel must expose shop-owned identity and community context on demand, not as a crowded always-on signboard dump."
+  /const shopVerificationRows = \[[\s\S]*?Shop name[\s\S]*?Shop owner ID[\s\S]*?Marketplace[\s\S]*?Community[\s\S]*?Community ID[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.verify-shop\.request-trustslip"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-public-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.open-community-record"/,
+  "Public Shop Verify panel must expose shop identity, community context, and separate TrustSlip/shop/community actions on demand."
 );
 
 assertContains(

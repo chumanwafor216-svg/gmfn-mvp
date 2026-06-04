@@ -19,6 +19,7 @@ import {
 } from "../lib/api";
 import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
+  publicFrontendUrl,
   publicShopDiariesUrl,
   publicShopPath,
   publicShopShareUrl,
@@ -451,34 +452,77 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function GsnTrustEmblem({ compact = false }: { compact?: boolean }) {
+function ShopSignboardVisual({ compact = false }: { compact?: boolean }) {
   return (
     <div
       aria-hidden="true"
       style={{
-        width: compact ? 116 : 190,
-        height: compact ? 142 : 224,
-        borderRadius: compact ? 24 : 32,
+        width: compact ? 116 : 204,
+        height: compact ? 128 : 194,
+        borderRadius: compact ? 24 : 34,
+        position: "relative",
         display: "grid",
         placeItems: "center",
-        position: "relative",
-        background: "linear-gradient(145deg, rgba(255,247,216,0.18), rgba(8,42,76,0.20))",
-        border: "1px solid rgba(255,232,160,0.54)",
-        boxShadow:
-          "0 22px 46px rgba(0,0,0,0.28), 0 0 28px rgba(47,128,237,0.18), inset 0 1px 0 rgba(255,255,255,0.18)",
         overflow: "hidden",
+        border: "1px solid rgba(255,226,151,0.56)",
+        background:
+          "radial-gradient(circle at 34% 26%, rgba(255,224,138,0.40) 0%, transparent 34%), linear-gradient(145deg, rgba(6,24,43,0.72), rgba(8,42,76,0.94))",
+        boxShadow:
+          "0 24px 46px rgba(0,0,0,0.30), inset 0 1px 0 rgba(255,255,255,0.18)",
       }}
     >
       <span
         style={{
           position: "absolute",
-          inset: compact ? 7 : 10,
+          inset: compact ? 8 : 12,
           borderRadius: compact ? 20 : 28,
-          border: "1px solid rgba(255,236,173,0.22)",
-          boxShadow: "inset 0 0 24px rgba(7,24,39,0.28)",
+          border: "1px solid rgba(255,236,173,0.20)",
+          boxShadow: "inset 0 0 28px rgba(255,215,118,0.10)",
         }}
       />
-      <GSNBrandMark width={compact ? 86 : 132} height={compact ? 108 : 164} />
+      <span
+        style={{
+          position: "absolute",
+          left: compact ? 13 : 20,
+          top: compact ? 14 : 22,
+          width: compact ? 34 : 48,
+          height: compact ? 34 : 48,
+          display: "grid",
+          placeItems: "center",
+          borderRadius: "50%",
+          background: "linear-gradient(180deg, #FFECA8 0%, #D6AA45 100%)",
+          color: "#061827",
+          fontSize: compact ? 13 : 17,
+          fontWeight: 950,
+          boxShadow: "0 10px 22px rgba(214,170,69,0.30)",
+        }}
+      >
+        GSN
+      </span>
+      <span
+        style={{
+          position: "absolute",
+          right: compact ? 12 : 20,
+          bottom: compact ? 16 : 24,
+          fontSize: compact ? 44 : 72,
+          filter: "drop-shadow(0 14px 20px rgba(0,0,0,0.28))",
+          transform: "rotate(-4deg)",
+        }}
+      >
+        🛒
+      </span>
+      <span
+        style={{
+          position: "absolute",
+          left: compact ? 32 : 50,
+          bottom: compact ? 23 : 36,
+          fontSize: compact ? 34 : 58,
+          filter: "drop-shadow(0 12px 18px rgba(0,0,0,0.24))",
+        }}
+      >
+        🎁
+      </span>
+      <GSNBrandMark width={compact ? 44 : 62} height={compact ? 58 : 82} />
     </div>
   );
 }
@@ -1712,6 +1756,11 @@ export default function ShopGalleryPage() {
     return ownerId ? publicShopShareUrl({ gmfnId: ownerId }) : "";
   }, [effectiveShop?.gmfnId, gmfnId]);
 
+  const shopRootPath = useMemo(() => {
+    const ownerId = firstMeaningful(effectiveShop?.gmfnId, gmfnId);
+    return ownerId ? publicShopPath(ownerId) : "";
+  }, [effectiveShop?.gmfnId, gmfnId]);
+
   const shopLoadFailed = Boolean(error);
   const ownerSessionPresent = Boolean(getAccessToken());
   const shopOwnerGmfnId = firstMeaningful(
@@ -1791,15 +1840,21 @@ export default function ShopGalleryPage() {
     "GSN public marketplace"
   );
   const shopCommunityIdText = safeStr(effectiveShop?.clanId);
-  const shopVerificationQrTarget = firstMeaningful(
-    absoluteShopShareLink,
-    absoluteShopLink
-  );
+  const shopCommunityVerifyPath = shopCommunityIdText
+    ? `/verify/community/${encodeURIComponent(shopCommunityIdText)}`
+    : "";
+  const shopVerificationQrTarget = shopCommunityVerifyPath
+    ? publicFrontendUrl(shopCommunityVerifyPath)
+    : "";
+  const shopVerificationStatusText = shopVerificationQrTarget
+    ? "Community record ready"
+    : "Trust proof on request";
   const shopVerificationRows = [
+    { label: "Shop name", value: shopNameText },
     { label: "Shop owner ID", value: shopGmfnText || "Not ready" },
     { label: "Marketplace", value: shopLocationText },
+    { label: "Community", value: shopCommunityText || "Not exposed yet" },
     { label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
-    { label: "Shop name", value: shopNameText },
   ];
   async function shareOrCopy(params: {
     title: string;
@@ -2007,6 +2062,37 @@ export default function ShopGalleryPage() {
     });
   }
 
+  async function requestShopTrustSlip() {
+    const shopTitle = firstMeaningful(
+      effectiveShop?.shopName,
+      effectiveShop?.ownerName,
+      "this GSN shop"
+    );
+    const proofContext = firstMeaningful(
+      shopVerificationQrTarget,
+      absoluteShopShareLink,
+      absoluteShopLink
+    );
+    const message = `Hello, I am checking ${shopTitle} on GSN. Please send the current TrustSlip or merchant verification proof for this shop owner (${shopGmfnText || "owner ID not visible yet"}).`;
+
+    if (
+      openOwnerWhatsAppChat(
+        message,
+        "WhatsApp opened. Ask the owner for the current TrustSlip or merchant verification proof."
+      )
+    ) {
+      return;
+    }
+
+    const copied = await safeCopy(`${message}\n${proofContext}`);
+    setNotice({
+      tone: copied ? "success" : "error",
+      text: copied
+        ? "TrustSlip request copied. Send it to the shop owner."
+        : "Owner WhatsApp is not ready and clipboard copy was blocked.",
+    });
+  }
+
   async function askForVaultAccess() {
     const shopTitle = firstMeaningful(
       effectiveShop?.shopName,
@@ -2167,12 +2253,12 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: isCompact ? "auto minmax(0, 1fr)" : "210px minmax(0, 1fr)",
+              gridTemplateColumns: isCompact ? "auto minmax(0, 1fr)" : "220px minmax(0, 1fr)",
               alignItems: "center",
               gap: isCompact ? 12 : 22,
             }}
           >
-            <GsnTrustEmblem compact={isCompact} />
+            <ShopSignboardVisual compact={isCompact} />
             <div
               style={{
                 display: "grid",
@@ -2183,13 +2269,15 @@ export default function ShopGalleryPage() {
               <h1
                 style={{
                   margin: 0,
-                  color: "#FFFFFF",
-                  fontSize: isCompact ? 27 : 44,
-                  lineHeight: 0.98,
+                  color: "#F6D77A",
+                  fontFamily: "Georgia, 'Times New Roman', serif",
+                  fontSize: isCompact ? 26 : 46,
+                  lineHeight: 0.96,
                   fontWeight: 950,
                   textTransform: "uppercase",
                   letterSpacing: 0,
-                  textShadow: "0 8px 26px rgba(0,0,0,0.34)",
+                  textShadow:
+                    "0 2px 0 rgba(255,255,255,0.10), 0 12px 30px rgba(0,0,0,0.40)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   display: "-webkit-box",
@@ -2228,35 +2316,80 @@ export default function ShopGalleryPage() {
                   {shopCategoryText}
                 </span>
               </div>
-              {shopGmfnText ? (
-                <div
-                  style={{
-                    color: "rgba(255,255,255,0.84)",
-                    fontSize: isCompact ? 11.5 : 14,
-                    fontWeight: 760,
-                    lineHeight: 1.24,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                  title={shopGmfnText}
-                >
-                  GMFN ID: <strong>{shopGmfnText}</strong>
-                </div>
-              ) : null}
               <div
                 style={{
-                  color: "rgba(255,255,255,0.80)",
-                  fontSize: isCompact ? 11.5 : 14,
-                  fontWeight: 760,
-                  lineHeight: 1.24,
+                  display: "grid",
+                  gap: 0,
+                  borderRadius: isCompact ? 15 : 18,
+                  border: "1px solid rgba(255,232,160,0.26)",
+                  background: "rgba(3,20,36,0.34)",
                   overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)",
                 }}
-                title={shopLocationText}
               >
-                👥 Homeland: <strong style={{ color: "#F6D77A" }}>{shopLocationText}</strong>
+                {[
+                  { icon: "🪪", label: "GMFN ID", value: shopGmfnText || "Not ready" },
+                  { icon: "👥", label: "Homeland", value: shopLocationText },
+                ].map((row, rowIndex) => (
+                  <div
+                    key={row.label}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "24px minmax(0, 1fr)"
+                        : "34px minmax(0, 1fr)",
+                      gap: isCompact ? 6 : 10,
+                      alignItems: "center",
+                      minWidth: 0,
+                      padding: isCompact ? "8px 9px" : "10px 12px",
+                      borderTop:
+                        rowIndex > 0 ? "1px solid rgba(255,255,255,0.10)" : "none",
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        display: "grid",
+                        placeItems: "center",
+                        width: isCompact ? 22 : 28,
+                        height: isCompact ? 22 : 28,
+                        borderRadius: 8,
+                        background: "rgba(246,215,122,0.15)",
+                        color: "#F6D77A",
+                        fontSize: isCompact ? 13 : 16,
+                      }}
+                    >
+                      {row.icon}
+                    </span>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 5,
+                        alignItems: "baseline",
+                        minWidth: 0,
+                        color: "rgba(255,255,255,0.86)",
+                        fontSize: isCompact ? 11.2 : 13.5,
+                        fontWeight: 760,
+                        lineHeight: 1.22,
+                      }}
+                      title={row.value}
+                    >
+                      <span style={{ color: "rgba(255,236,173,0.88)" }}>
+                        {row.label}:
+                      </span>
+                      <strong
+                        style={{
+                          color: row.label === "Homeland" ? "#F6D77A" : "#FFFFFF",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {row.value}
+                      </strong>
+                    </div>
+                  </div>
+                ))}
               </div>
               {showShopHeroDescription ? (
                 <p
@@ -2376,10 +2509,14 @@ export default function ShopGalleryPage() {
           }}
         >
           {[
-            { mark: "✅", title: "Verified Shop", detail: "Trusted seller" },
+            {
+              mark: "🛡️",
+              title: "Community Checked",
+              detail: shopCommunityIdText ? "Member review" : "Record pending",
+            },
             { mark: "🌐", title: "Public Shelf", detail: publicBlockText },
             { mark: "🔒", title: "Private Vault", detail: "By trust link" },
-            { mark: "🏅", title: "Trusted Identity", detail: "Authentic shop" },
+            { mark: "🏅", title: "Trust Identity", detail: "GSN ID visible" },
           ].map((item, itemIndex) => {
             const statusItemStyle: React.CSSProperties = {
                 minHeight: isCompact ? 58 : 76,
@@ -2465,47 +2602,68 @@ export default function ShopGalleryPage() {
           <section
             className="public-shop-section public-shop-verify"
             style={{
-              ...innerCard("#F8FBFF"),
+              ...innerCard("#061827"),
               display: "grid",
-              gap: isCompact ? 10 : 12,
-              padding: isCompact ? 12 : 16,
+              gap: isCompact ? 11 : 14,
+              padding: isCompact ? 13 : 18,
+              border: "1px solid rgba(246,196,83,0.44)",
+              background:
+                "radial-gradient(circle at 90% 8%, rgba(246,196,83,0.18) 0%, transparent 34%), linear-gradient(145deg, #061827 0%, #082A4C 100%)",
+              boxShadow:
+                "0 24px 54px rgba(2,12,27,0.30), inset 0 1px 0 rgba(255,255,255,0.12)",
             }}
             aria-label="Shop verification summary"
           >
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 140px",
+                gridTemplateColumns: isCompact ? "1fr" : "54px minmax(0, 1fr) 140px",
                 gap: isCompact ? 9 : 12,
                 alignItems: "center",
               }}
             >
+              <div
+                aria-hidden="true"
+                style={{
+                  width: isCompact ? 42 : 54,
+                  height: isCompact ? 42 : 54,
+                  borderRadius: isCompact ? 14 : 18,
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#F6D77A",
+                  background: "rgba(246,215,122,0.12)",
+                  border: "1px solid rgba(246,215,122,0.24)",
+                  fontSize: isCompact ? 24 : 30,
+                }}
+              >
+                🛡️
+              </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
+                <div style={{ ...sectionLabel(), color: "#F6D77A" }}>
                   Shop verification
                 </div>
                 <div
                   style={{
                     marginTop: 5,
-                    color: "#0B1F33",
-                    fontSize: isCompact ? 13.5 : 16,
+                    color: "#FFFFFF",
+                    fontSize: isCompact ? 18 : 24,
                     fontWeight: 950,
                     lineHeight: 1.16,
                   }}
                 >
-                  Check the shop identity before you trade.
+                  Verify this shop before you trade.
                 </div>
                 <div
                   style={{
                     marginTop: 5,
-                    color: "#526C84",
-                    fontSize: isCompact ? 10.2 : 12.2,
+                    color: "rgba(255,255,255,0.76)",
+                    fontSize: isCompact ? 10.8 : 12.8,
                     lineHeight: 1.35,
                     fontWeight: 720,
                   }}
                 >
-                  The QR reopens this public shop. TrustSlip proof is on request
-                  until a live TrustSlip code is attached.
+                  Community membership and shop IDs are visible here. Request a
+                  live TrustSlip when you need fresh proof from the owner.
                 </div>
               </div>
 
@@ -2521,6 +2679,9 @@ export default function ShopGalleryPage() {
                   minHeight: isCompact ? 40 : 46,
                   borderRadius: isCompact ? 13 : 14,
                   fontSize: isCompact ? 11.2 : 13.5,
+                  color: "#FFFFFF",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  background: "rgba(255,255,255,0.08)",
                   whiteSpace: "nowrap",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
@@ -2534,12 +2695,12 @@ export default function ShopGalleryPage() {
               id="public-shop-verify-panel"
               style={{
                 display: "grid",
-                gridTemplateColumns: isCompact ? "1fr" : "160px minmax(0, 1fr)",
+                gridTemplateColumns: isCompact ? "1fr" : "178px minmax(0, 1fr)",
                 gap: isCompact ? 10 : 14,
                 alignItems: "stretch",
                 borderRadius: isCompact ? 16 : 18,
-                border: "1px solid rgba(13,95,168,0.14)",
-                background: "#FFFFFF",
+                border: "1px solid rgba(246,196,83,0.34)",
+                background: "rgba(3,20,36,0.48)",
                 padding: isCompact ? 10 : 12,
               }}
             >
@@ -2547,22 +2708,35 @@ export default function ShopGalleryPage() {
                 style={{
                   minHeight: isCompact ? 132 : 148,
                   borderRadius: isCompact ? 14 : 16,
-                  border: "1px solid rgba(13,95,168,0.13)",
+                  border: "1px solid rgba(246,196,83,0.28)",
                   background:
-                    "linear-gradient(180deg, #FFFFFF 0%, #F2F7FC 100%)",
+                    "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
                   display: "grid",
                   placeItems: "center",
                   padding: isCompact ? 10 : 12,
                 }}
               >
                 {shopVerificationQrTarget ? (
-                  <QRCodeSVG
-                    value={shopVerificationQrTarget}
-                    size={isCompact ? 116 : 132}
-                    marginSize={1}
-                    fgColor="#07172C"
-                    bgColor="#FFFFFF"
-                  />
+                  <div style={{ display: "grid", gap: 7, justifyItems: "center" }}>
+                    <QRCodeSVG
+                      value={shopVerificationQrTarget}
+                      size={isCompact ? 106 : 126}
+                      marginSize={1}
+                      fgColor="#07172C"
+                      bgColor="#FFFFFF"
+                    />
+                    <span
+                      style={{
+                        color: "#526C84",
+                        fontSize: isCompact ? 9.4 : 10.4,
+                        fontWeight: 850,
+                        textAlign: "center",
+                        lineHeight: 1.2,
+                      }}
+                    >
+                      Scan community record
+                    </span>
+                  </div>
                 ) : (
                   <span
                     style={{
@@ -2573,7 +2747,7 @@ export default function ShopGalleryPage() {
                       lineHeight: 1.25,
                     }}
                   >
-                    Shop link not ready
+                    Community verification QR is not ready
                   </span>
                 )}
               </div>
@@ -2581,10 +2755,34 @@ export default function ShopGalleryPage() {
               <div
                 style={{
                   display: "grid",
-                  gap: isCompact ? 7 : 8,
+                  gap: isCompact ? 8 : 9,
                   alignContent: "start",
                 }}
               >
+                <div
+                  style={{
+                    width: "fit-content",
+                    maxWidth: "100%",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 7,
+                    minHeight: isCompact ? 30 : 34,
+                    padding: isCompact ? "5px 9px" : "6px 12px",
+                    borderRadius: 999,
+                    color: shopVerificationQrTarget ? "#BBF7D0" : "#FDE68A",
+                    background: shopVerificationQrTarget
+                      ? "rgba(34,197,94,0.14)"
+                      : "rgba(246,196,83,0.14)",
+                    border: shopVerificationQrTarget
+                      ? "1px solid rgba(34,197,94,0.28)"
+                      : "1px solid rgba(246,196,83,0.26)",
+                    fontSize: isCompact ? 10.5 : 12,
+                    fontWeight: 900,
+                  }}
+                >
+                  <span aria-hidden="true">{shopVerificationQrTarget ? "✅" : "🟡"}</span>
+                  <span>{shopVerificationStatusText}</span>
+                </div>
                 {shopVerificationRows.map((row) => (
                   <div
                     key={row.label}
@@ -2596,13 +2794,14 @@ export default function ShopGalleryPage() {
                       gap: isCompact ? 2 : 8,
                       alignItems: "center",
                       borderRadius: 12,
-                      background: "rgba(234,243,255,0.72)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                      background: "rgba(234,243,255,0.08)",
                       padding: isCompact ? "8px 9px" : "9px 10px",
                     }}
                   >
                     <span
                       style={{
-                        color: "#617085",
+                        color: "rgba(255,236,173,0.78)",
                         fontSize: isCompact ? 9.5 : 11,
                         fontWeight: 900,
                         textTransform: "uppercase",
@@ -2613,7 +2812,7 @@ export default function ShopGalleryPage() {
                     </span>
                     <span
                       style={{
-                        color: "#07172C",
+                        color: "#FFFFFF",
                         fontSize: isCompact ? 11.5 : 13,
                         fontWeight: 900,
                         overflow: "hidden",
@@ -2627,6 +2826,71 @@ export default function ShopGalleryPage() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1.2fr 1fr 1fr",
+                gap: isCompact ? 8 : 10,
+              }}
+            >
+              <PrimaryButton
+                onClick={() => void requestShopTrustSlip()}
+                minWidth={0}
+                fullWidth
+                stableHeight={isCompact ? 44 : 50}
+                debugId="shop-gallery.verify-shop.request-trustslip"
+                style={{
+                  ...primaryBtn(false),
+                  minHeight: isCompact ? 44 : 50,
+                  borderRadius: isCompact ? 13 : 14,
+                  fontSize: isCompact ? 12 : 14,
+                  background:
+                    "linear-gradient(180deg, #F8D36A 0%, #D6AA45 100%)",
+                  color: "#07172C",
+                }}
+              >
+                Request TrustSlip
+              </PrimaryButton>
+              <StableCtaLink
+                to={shopRootPath || "#"}
+                disabled={!shopRootPath}
+                fullWidth
+                minWidth={0}
+                stableHeight={isCompact ? 44 : 50}
+                debugId="shop-gallery.verify-shop.open-public-shop"
+                style={{
+                  ...secondaryBtn(!shopRootPath),
+                  minHeight: isCompact ? 44 : 50,
+                  borderRadius: isCompact ? 13 : 14,
+                  fontSize: isCompact ? 12 : 14,
+                  color: "#FFFFFF",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  background: "rgba(255,255,255,0.08)",
+                }}
+              >
+                Open Public Shop
+              </StableCtaLink>
+              <StableCtaLink
+                to={shopCommunityVerifyPath || "#"}
+                disabled={!shopCommunityVerifyPath}
+                fullWidth
+                minWidth={0}
+                stableHeight={isCompact ? 44 : 50}
+                debugId="shop-gallery.verify-shop.open-community-record"
+                style={{
+                  ...secondaryBtn(!shopCommunityVerifyPath),
+                  minHeight: isCompact ? 44 : 50,
+                  borderRadius: isCompact ? 13 : 14,
+                  fontSize: isCompact ? 12 : 14,
+                  color: "#F6D77A",
+                  border: "1px solid rgba(246,196,83,0.32)",
+                  background: "rgba(246,196,83,0.08)",
+                }}
+              >
+                Ask Community
+              </StableCtaLink>
             </div>
           </section>
         ) : null}

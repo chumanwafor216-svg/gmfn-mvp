@@ -1,3 +1,55 @@
+### Public Shop merchant verification signboard pass (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner truth:
+  - the Public Shop signboard should feel like a premium trusted marketplace
+    identity card, not a dull or generic shop page;
+  - the Verify action must not pretend the QR is a TrustSlip when the backend
+    does not expose a live TrustSlip code in the public shop payload;
+  - community voting/membership is a real trust signal, so it can be surfaced as
+    a community verification record, while TrustSlip remains request-based until
+    a live code exists.
+- Frontend change:
+  - replaced the old signboard emblem with a richer shop/trust visual using the
+    GSN mark plus product/trade signs;
+  - changed the signboard title treatment to a stronger navy/gold merchant
+    identity surface and grouped GMFN ID plus Homeland into a framed identity
+    block;
+  - changed the status strip from overclaiming `Verified Shop` to the more
+    honest `Community Checked` / `Member review` language;
+  - changed the Verify panel QR target from the public shop/gallery link to the
+    public community verification route
+    `/verify/community/:communityId` when a community ID is available;
+  - added stable Verify panel actions for `Request TrustSlip`, `Open Public
+    Shop`, and `Ask Community`;
+  - `Request TrustSlip` opens the owner WhatsApp message when possible, or
+    copies the proof request text as a fallback.
+- Button/link guardrails:
+  - no raw buttons or anchors were introduced;
+  - new verification actions use shared stable primitives and debug IDs:
+    `shop-gallery.verify-shop.request-trustslip`,
+    `shop-gallery.verify-shop.open-public-shop`, and
+    `shop-gallery.verify-shop.open-community-record`;
+  - `audit-link-contracts` now protects the rule that the Verify QR targets the
+    community verification record and does not silently reopen the shop gallery;
+  - `audit-button-stability` now protects the new Verify panel action IDs.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
+    tools/audit-link-contracts.mjs tools/audit-button-stability.mjs` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed and still reports 51
+    stable Marketplace source actions;
+  - `npm run audit:global-raw-action-elements` passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - a true TrustSlip QR still requires the backend/public shop payload to expose
+    a live TrustSlip code or verification token. This pass does not invent one.
+
 ### Public Shop block-slot truth and diary rail polish (2026-06-04)
 
 - Routes/screens affected:
