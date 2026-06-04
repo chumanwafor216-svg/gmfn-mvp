@@ -532,8 +532,8 @@ function ReferenceShopSignboardVisual({ compact = false }: { compact?: boolean }
     <div
       aria-hidden="true"
       style={{
-        width: compact ? 116 : 204,
-        height: compact ? 128 : 194,
+        width: compact ? 98 : 204,
+        height: compact ? 96 : 194,
         borderRadius: compact ? 22 : 32,
         position: "relative",
         display: "grid",
@@ -2376,8 +2376,9 @@ export default function ShopGalleryPage() {
             style={{
               position: "relative",
               display: "grid",
-              gridTemplateColumns: isCompact ? "auto minmax(0, 1fr)" : "220px minmax(0, 1fr)",
+              gridTemplateColumns: isCompact ? "1fr" : "220px minmax(0, 1fr)",
               alignItems: "center",
+              justifyItems: isCompact ? "center" : "stretch",
               gap: isCompact ? 12 : 22,
             }}
           >
@@ -2387,6 +2388,8 @@ export default function ShopGalleryPage() {
                 display: "grid",
                 gap: isCompact ? 8 : 10,
                 minWidth: 0,
+                width: "100%",
+                justifySelf: "stretch",
               }}
             >
               <h1
@@ -2487,6 +2490,7 @@ export default function ShopGalleryPage() {
                     <div
                       style={{
                         display: "flex",
+                        flexWrap: "wrap",
                         gap: 5,
                         alignItems: "baseline",
                         minWidth: 0,
@@ -2498,14 +2502,19 @@ export default function ShopGalleryPage() {
                       title={row.value}
                     >
                       <span style={{ color: "rgba(255,236,173,0.88)" }}>
-                        {row.label}:
+                        {row.label === "Homeland"
+                          ? "Community"
+                          : row.label === "GMFN ID"
+                          ? "GSN Global ID"
+                          : row.label}
+                        :
                       </span>
                       <strong
                         style={{
                           color: row.label === "Homeland" ? "#F6D77A" : "#FFFFFF",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          minWidth: 0,
+                          overflowWrap: "anywhere",
+                          wordBreak: "break-word",
                         }}
                       >
                         {row.value}

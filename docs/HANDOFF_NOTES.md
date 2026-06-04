@@ -2,6 +2,13 @@
 
 - Route/screen affected:
   - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Follow-up correction:
+  - compact/mobile signboard now lifts the shop illustration above the identity
+    copy so the identity rows get the full card width;
+  - signboard identity display now shows `GSN Global ID` and `Community`
+    instead of the old `GMFN ID` / `Homeland` wording;
+  - identity values wrap instead of being forced into ellipsis, so the GMFN/GSN
+    ID and community/marketplace name can be read completely.
 - Product-owner truth:
   - the previous in-code shop/vault picture arrangement was not acceptable;
   - the requested bitmap references were supplied in chat, but no actual image
