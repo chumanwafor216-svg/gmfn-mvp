@@ -91,6 +91,7 @@ type CollapseState = {
 type ShopAssetsPageProps = {
   embedded?: boolean;
   preferredClanId?: number | null;
+  preferredGmfnId?: string | null;
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
@@ -723,7 +724,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       const meRes = await getMe().catch(() => null);
       setMe(meRes || null);
 
-      const gmfnId = firstTruthy(meRes?.gmfn_id);
+      const gmfnId = firstTruthy(props.preferredGmfnId, meRes?.gmfn_id);
       if (!gmfnId) {
         setShop(null);
         setProducts([]);
@@ -799,7 +800,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     } finally {
       setLoading(false);
     }
-  }, [selectedClanId]);
+  }, [props.preferredGmfnId, selectedClanId]);
 
   useEffect(() => {
     void loadPage();

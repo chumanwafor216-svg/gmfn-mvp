@@ -1,3 +1,30 @@
+### Shop Control embedded gallery context repair (2026-06-04)
+
+- Follow-up after the owner showed `/app/shop-control` still displaying
+  `0 / 12 live blocks` while the public shop showed `5/12`.
+- Confirmed live backend public truth:
+  - `GET https://gmfn-api.onrender.com/marketplace/public/shop/GMFN-U-63655DE6?product_limit=200&broadcast_limit=1`
+    returns shop `Ardent Ebony Uplift LTD`, `clan_id: 8`, and five active
+    `community_visible` products.
+- Root truth:
+  - the remaining mismatch was not the public backend read path;
+  - embedded `ShopAssetsPage` inside `ShopControlPage` still rediscovered the
+    shop owner mainly from `getMe()` and selected local clan context, even
+    though `ShopControlPage` already had the resolved shop identity.
+- Repair:
+  - `ShopAssetsPage` now accepts `preferredGmfnId`;
+  - `ShopControlPage` passes `shop.owner_gmfn_id || shop.gmfn_id` into the
+    embedded gallery beside the resolved clan id;
+  - marketplace product management now tolerates owner-wide active shop ids on
+    the manage read path, protecting older/live data that may not perfectly
+    match the current unique-owner schema.
+- Remaining truth:
+  - if the deployed phone still shows `0 / 12` after this commit deploys and
+    the browser cache is refreshed, the next suspect is not the public API. It
+    is either an authenticated `/marketplace/shops/by-gmfn/:gmfn_id` response
+    for the logged-in session, or the phone is not signed in as the owner whose
+    public shop is being viewed.
+
 ### Shop identity durability and public-block count repair (2026-06-04)
 
 - Routes/screens affected:

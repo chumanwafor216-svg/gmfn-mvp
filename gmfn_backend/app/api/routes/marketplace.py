@@ -1660,8 +1660,22 @@ def list_marketplace_products(
                 detail="Only the shop owner can open private shop management items",
             )
 
+        owner_shop_ids = [
+            int(row.id)
+            for row in (
+                db.query(MarketplaceShop.id)
+                .filter(
+                    MarketplaceShop.owner_user_id == int(shop.owner_user_id),
+                    MarketplaceShop.is_active.is_(True),
+                )
+                .all()
+            )
+        ]
+        if not owner_shop_ids:
+            owner_shop_ids = [int(shop_id)]
+
         q = db.query(MarketplaceProduct).filter(
-            MarketplaceProduct.shop_id == int(shop_id)
+            MarketplaceProduct.shop_id.in_(owner_shop_ids)
         )
 
         if only_active:

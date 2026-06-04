@@ -44,6 +44,7 @@ type ShopRecord = {
   clan_id?: number | null;
   owner_user_id?: number | null;
   gmfn_id?: string | null;
+  owner_gmfn_id?: string | null;
   name?: string | null;
   description?: string | null;
   whatsapp_number?: string | null;
@@ -2656,7 +2657,11 @@ export default function ShopControlPage() {
           id="shop-control-gallery-tools"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)")}
         >
-          <ShopAssetsPage embedded preferredClanId={effectiveShopClanId || selectedClanId || null} />
+          <ShopAssetsPage
+            embedded
+            preferredClanId={effectiveShopClanId || selectedClanId || null}
+            preferredGmfnId={firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id) || null}
+          />
         </section>
       ) : null}
       {activeOwnerLayer === "paid-tools" ? (
