@@ -1,3 +1,63 @@
+### Shop Control public-block truth and owner-contact chooser repair (2026-06-04)
+
+- Routes/screens affected:
+  - `/app/shop-control#shop-control-gallery-tools`, through embedded
+    `frontend/src/pages/ShopAssetsPage.tsx`;
+  - `/shop/:gmfnId`, owner-contact chooser in
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - backend `/marketplace/shops/by-gmfn/:gmfn_id`, implemented by
+    `gmfn_backend/app/api/routes/marketplace.py`.
+- Product-owner truth:
+  - if the public shop can show four live public media blocks, the owner-side
+    Shop Control block grid must not claim `0 / 12 live blocks`;
+  - the owner contact chooser should feel like the premium GSN surface, while
+    keeping WhatsApp and phone actions stable and traceable.
+- System-level repair:
+  - the authenticated shop lookup now returns active public-gallery products
+    across the owner's active shop rows, matching the public shop route's
+    product scope instead of only the canonical shop row;
+  - the authenticated route now accepts the legacy public visibility aliases
+    `public` and `community` alongside `community_visible`;
+  - embedded Shop Assets hydrates from the authenticated owner data, the
+    managed product list, and the public-shop payload, merging by product ID so
+    the owner grid sees the same public blocks visitors see without duplicating
+    rows;
+  - Shop Assets uses one shared public-gallery visibility helper so the `0 / 12`
+    badge and the 12 slots count the same public truth.
+- UI/button repair:
+  - the Public Shop owner-contact panel now uses a dark navy/gold GSN card with
+    a shield mark, one clear heading, a route explanation, and fixed-height
+    WhatsApp Chat / Call Phone rows;
+  - existing debug IDs were preserved:
+    `shop-gallery.owner-contact.choose`,
+    `shop-gallery.owner-contact.whatsapp-chat`, and
+    `shop-gallery.owner-contact.phone-call`.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now protects the embedded Shop
+    Control public-shop hydration path and the backend authenticated shop
+    lookup scope/visibility aliases.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopAssetsPage.tsx
+    src/pages/ShopGalleryPage.tsx tools/audit-link-contracts.mjs` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-button-inventory` passed and still reports 51
+    stable Marketplace source actions, 47 mobile app-shell controls, and 98
+    whole-route mobile controls;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:global-raw-action-elements` passed;
+  - sandboxed backend pytest hit the known Windows `C:\tmp` permission error,
+    then `python -m pytest gmfn_backend\tests\test_marketplace_public_shop.py
+    -q --basetemp=C:\tmp\gmfn_pytest_shop_blocks` passed outside the sandbox;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`, then
+    `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this corrects the data path that can make Shop Control look empty while the
+    public shop has live blocks. It does not inspect the live production DB row
+    values directly, so the exact production cause could still be canonical-shop
+    duplication, legacy visibility aliases, or both.
+
 ### System-level Public Shop spotlight, verification, and button-route repair (2026-06-04)
 
 - Supersedes the earlier page-level public-shop Spotlight fallback note from

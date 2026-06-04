@@ -386,6 +386,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /getPublicMarketplaceShopByGmfnId[\s\S]*?PUBLIC_GALLERY_VISIBILITY_MODES[\s\S]*?"community_visible"[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?function mergeProductsById[\s\S]*?getPublicMarketplaceShopByGmfnId\(gmfnId,[\s\S]*?product_limit: 200[\s\S]*?mergeProductsById\(nextProducts, publicShopProducts\)[\s\S]*?products\.filter\(\(item\) => isPublicGalleryProduct\(item\)\)/,
+  "Embedded Shop Control must hydrate its 12 public blocks from the same public-shop truth and visibility aliases that visitors see."
+);
+
+assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /function extractPublicBlockNumber\(description: any\): number[\s\S]*?function stripProductLabel\(description: any\): string[\s\S]*?function arrangeProductsByPublicBlock\(items: ShopProduct\[\]\)[\s\S]*?const arrangedProducts = arrangeProductsByPublicBlock\(normalizedProducts\)[\s\S]*?setProducts\(arrangedProducts\)/,
   "Public Shop Gallery must honor hidden public block metadata while stripping it from visitor-facing descriptions."
@@ -702,6 +708,12 @@ assertContains(
   "src/pages/ShopGalleryPage.tsx",
   /setPublicShopVerification\(publicShopRes\?\.verification \|\| null\);[\s\S]*?async function loadPublicShop\(cleanedGmfnId: string\)[\s\S]*?getPublicMarketplaceShopByGmfnId\(cleanedGmfnId, \{[\s\S]*?clan_id: routeClanId > 0 \? routeClanId : undefined/,
   "Public Shop must use the backend public-shop payload for spotlight and verification truth, scoped by route community when present."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/marketplace.py",
+  /def get_marketplace_shop_by_gmfn_id\([\s\S]*?active_owner_shops = \([\s\S]*?active_owner_shop_ids[\s\S]*?MarketplaceProduct\.shop_id\.in_\(active_owner_shop_ids\)[\s\S]*?MarketplaceProduct\.seller_user_id == int\(owner\.id\)[\s\S]*?MarketplaceProduct\.visibility_mode\.in_\([\s\S]*?VISIBILITY_COMMUNITY[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?"products": \[_product_out\(db, p\) for p in product_rows\]/,
+  "Authenticated shop lookup must return the same owner public-block product scope and visibility aliases that the public shop can display."
 );
 
 assertNotContains(

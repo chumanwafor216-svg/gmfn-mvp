@@ -17,6 +17,7 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   getMe,
+  getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
   safeCopy,
   uploadMarketplaceImageFile as uploadMarketplaceImageFileApi,
@@ -92,6 +93,11 @@ type ShopAssetsPageProps = {
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
+const PUBLIC_GALLERY_VISIBILITY_MODES = new Set([
+  "community_visible",
+  "public",
+  "community",
+]);
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -492,6 +498,27 @@ function arrangePublicProductsIntoSlots(items: ProductRecord[]): (ProductRecord 
   return slots;
 }
 
+function isPublicGalleryProduct(item: ProductRecord | null | undefined): boolean {
+  const mode = firstTruthy(item?.visibility_mode, "community_visible");
+  return PUBLIC_GALLERY_VISIBILITY_MODES.has(mode) && item?.is_active !== false;
+}
+
+function mergeProductsById(...groups: ProductRecord[][]): ProductRecord[] {
+  const out: ProductRecord[] = [];
+  const seen = new Set<number>();
+
+  groups.forEach((items) => {
+    items.forEach((item) => {
+      const id = Number(item?.id || 0);
+      if (!id || seen.has(id)) return;
+      seen.add(id);
+      out.push(item);
+    });
+  });
+
+  return out;
+}
+
 function apiAssetOrigin(): string {
   if (typeof window === "undefined") return "";
 
@@ -706,7 +733,36 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}?clan_id=${selectedClanId || 0}`
       ).catch(() => null);
 
-      const shopItem = (shopRes?.item || null) as ShopRecord | null;
+      let shopItem = (shopRes?.item || null) as ShopRecord | null;
+      let nextProducts: ProductRecord[] = Array.isArray(shopRes?.products)
+        ? (shopRes.products as ProductRecord[])
+        : [];
+
+      const publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
+        clan_id: selectedClanId || undefined,
+        product_limit: 200,
+        broadcast_limit: 1,
+      }).catch(() => null);
+      const publicShopItem = (publicShopRes?.item || null) as ShopRecord | null;
+      const publicShopProducts: ProductRecord[] = Array.isArray(publicShopRes?.products)
+        ? (publicShopRes.products as ProductRecord[])
+        : [];
+      if (!shopItem && publicShopItem) {
+        shopItem = publicShopItem;
+      }
+
+      if (shopItem?.id) {
+        const productsRes = await apiJson<any>(
+          `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&only_active=false&limit=200`
+        ).catch(() => ({ items: nextProducts }));
+
+        const managedProducts = Array.isArray(productsRes?.items)
+          ? (productsRes.items as ProductRecord[])
+          : [];
+        nextProducts = mergeProductsById(nextProducts, managedProducts);
+      }
+
+      nextProducts = mergeProductsById(nextProducts, publicShopProducts);
       setShop(shopItem);
 
       if (shopItem) {
@@ -723,20 +779,6 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         setShopTelegram("");
         setShopImageUrlInput("");
         setShopPreviewUrl("");
-      }
-
-      let nextProducts: ProductRecord[] = Array.isArray(shopRes?.products)
-        ? (shopRes.products as ProductRecord[])
-        : [];
-
-      if (shopItem?.id) {
-        const productsRes = await apiJson<any>(
-          `/api/marketplace/products?clan_id=${selectedClanId || 0}&shop_id=${shopItem.id}&include_private_manage=true&only_active=false&limit=200`
-        ).catch(() => ({ items: nextProducts }));
-
-        nextProducts = Array.isArray(productsRes?.items)
-          ? (productsRes.items as ProductRecord[])
-          : nextProducts;
       }
 
       setProducts(nextProducts);
@@ -758,12 +800,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const shopLink = useMemo(() => buildShopLink(gmfnId), [gmfnId]);
 
   const publicProducts = useMemo(
-    () =>
-      products.filter(
-        (item) =>
-          firstTruthy(item?.visibility_mode, "community_visible") === "community_visible" &&
-          item?.is_active !== false
-      ),
+    () => products.filter((item) => isPublicGalleryProduct(item)),
     [products]
   );
 

@@ -1018,6 +1018,19 @@ def get_marketplace_shop_by_gmfn_id(
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
 
+    active_owner_shops = (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.owner_user_id == int(owner.id),
+            MarketplaceShop.is_active.is_(True),
+        )
+        .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
+        .all()
+    )
+    active_owner_shop_ids = [int(row.id) for row in active_owner_shops]
+    if not active_owner_shop_ids:
+        raise HTTPException(status_code=404, detail="Shop not found")
+
     resolved_clan_id = int(requested_clan_id)
     if (
         int(owner.id) == int(current_user.id)
@@ -1035,25 +1048,22 @@ def get_marketplace_shop_by_gmfn_id(
 
     product_rows = (
         db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.shop_id.in_(active_owner_shop_ids))
+        .filter(MarketplaceProduct.seller_user_id == int(owner.id))
+        .filter(MarketplaceProduct.is_active.is_(True))
         .filter(
-            MarketplaceProduct.shop_id == int(shop.id),
-            MarketplaceProduct.is_active.is_(True),
+            MarketplaceProduct.visibility_mode.in_(
+                [VISIBILITY_COMMUNITY, "public", "community"]
+            )
         )
         .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
         .all()
     )
 
-    visible_products = [
-        _product_out(db, p)
-        for p in product_rows
-        if _safe_str(getattr(p, "visibility_mode", None), VISIBILITY_COMMUNITY)
-        == VISIBILITY_COMMUNITY
-    ]
-
     return {
         "ok": True,
         "item": _shop_out(db, shop),
-        "products": visible_products,
+        "products": [_product_out(db, p) for p in product_rows],
         "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
         "clan_id": resolved_clan_id,
     }

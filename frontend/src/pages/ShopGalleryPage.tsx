@@ -3342,78 +3342,196 @@ export default function ShopGalleryPage() {
             id="public-shop-owner-contact-panel"
             className="public-shop-section"
             style={{
-              ...innerCard("#F8FBFF"),
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: isCompact ? 22 : 28,
+              padding: isCompact ? 16 : 22,
+              border: "1px solid rgba(246,215,122,0.58)",
+              background:
+                "radial-gradient(circle at 82% 8%, rgba(246,196,83,0.20) 0%, transparent 34%), linear-gradient(145deg, #071827 0%, #0A2B45 58%, #061827 100%)",
+              boxShadow:
+                "0 24px 56px rgba(3,15,28,0.26), inset 0 1px 0 rgba(255,255,255,0.10)",
               display: "grid",
-              gap: isCompact ? 9 : 12,
+              gap: isCompact ? 13 : 16,
             }}
             aria-label="Owner contact choices"
           >
-            <div>
-              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
-                Owner contact
-              </div>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                inset: "auto -40px -70px auto",
+                width: 190,
+                height: 190,
+                borderRadius: "50%",
+                border: "1px solid rgba(246,215,122,0.16)",
+                opacity: 0.65,
+              }}
+            />
+            <div style={{ position: "relative", textAlign: "center" }}>
               <div
                 style={{
-                  marginTop: 5,
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 14 : 17,
-                  fontWeight: 950,
-                  lineHeight: 1.16,
+                  margin: "0 auto 10px",
+                  width: isCompact ? 48 : 56,
+                  height: isCompact ? 48 : 56,
+                  borderRadius: 18,
+                  border: "1px solid rgba(246,215,122,0.42)",
+                  background:
+                    "linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))",
+                  display: "grid",
+                  placeItems: "center",
+                  boxShadow:
+                    "0 14px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
+                  color: "#F6D77A",
+                  fontSize: isCompact ? 24 : 28,
                 }}
               >
-                Choose WhatsApp chat or a normal phone call.
+                <span aria-hidden="true">🛡️</span>
+              </div>
+              <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner contact</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  color: "#FFFFFF",
+                  fontSize: isCompact ? 22 : 30,
+                  fontWeight: 950,
+                  lineHeight: 1.08,
+                }}
+              >
+                Choose how to reach the seller
               </div>
               <div
                 style={{
-                  marginTop: 6,
-                  color: "#526C84",
-                  fontSize: isCompact ? 10.5 : 12.5,
-                  lineHeight: 1.35,
+                  marginTop: 8,
+                  color: "rgba(234,244,255,0.78)",
+                  fontSize: isCompact ? 12 : 14,
+                  lineHeight: 1.5,
                   fontWeight: 750,
                 }}
               >
-                GSN can open the chat link, but only WhatsApp can confirm whether
-                this number is registered there.
+                Select your preferred contact method to continue.
               </div>
             </div>
 
             <div
               style={{
+                position: "relative",
                 display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(2, minmax(0, 1fr))",
+                gridTemplateColumns: "auto minmax(0, 1fr)",
+                gap: 12,
+                alignItems: "center",
+                padding: isCompact ? 12 : 14,
+                borderRadius: 18,
+                border: "1px solid rgba(255,255,255,0.12)",
+                background: "rgba(255,255,255,0.055)",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: 15,
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#F6D77A",
+                  background: "rgba(246,215,122,0.10)",
+                  border: "1px solid rgba(246,215,122,0.20)",
+                  fontSize: 20,
+                }}
+              >
+                🛡️
+              </span>
+              <div style={{ color: "rgba(234,244,255,0.82)", fontWeight: 780, lineHeight: 1.4 }}>
+                GSN can open the contact route.{" "}
+                <strong style={{ color: "#74E48E" }}>WhatsApp</strong> confirms
+                availability.
+              </div>
+            </div>
+
+            <div
+              style={{
+                position: "relative",
+                display: "grid",
+                gridTemplateColumns: "1fr",
                 gap: isCompact ? 8 : 10,
               }}
             >
               <PrimaryButton
                 onClick={() => void contactOwnerByWhatsApp()}
                 minWidth={0}
-                stableHeight={isCompact ? 42 : 50}
+                fullWidth
+                stableHeight={isCompact ? 58 : 66}
                 debugId="shop-gallery.owner-contact.whatsapp-chat"
                 style={{
                   ...primaryBtn(false),
-                  minHeight: isCompact ? 42 : 50,
-                  borderRadius: isCompact ? 13 : 14,
-                  fontSize: isCompact ? 12 : 14,
+                  minHeight: isCompact ? 58 : 66,
+                  borderRadius: isCompact ? 18 : 20,
+                  justifyContent: "space-between",
+                  padding: isCompact ? "12px 14px" : "14px 18px",
+                  fontSize: isCompact ? 17 : 20,
+                  background:
+                    "linear-gradient(180deg, rgba(12,91,56,0.98) 0%, rgba(6,61,43,0.98) 100%)",
+                  border: "1px solid rgba(116,228,142,0.78)",
+                  boxShadow:
+                    "0 0 0 1px rgba(116,228,142,0.10), 0 16px 32px rgba(20,185,92,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
                 }}
               >
-                WhatsApp chat
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+                  <span aria-hidden="true" style={{ fontSize: isCompact ? 24 : 28 }}>
+                    💬
+                  </span>
+                  <span>WhatsApp Chat</span>
+                </span>
+                <span aria-hidden="true" style={{ color: "#74E48E" }}>
+                  ›
+                </span>
               </PrimaryButton>
               <SecondaryButton
                 onClick={callOwnerPhone}
                 minWidth={0}
-                stableHeight={isCompact ? 42 : 50}
+                fullWidth
+                stableHeight={isCompact ? 58 : 66}
                 debugId="shop-gallery.owner-contact.phone-call"
                 style={{
                   ...secondaryBtn(false),
-                  minHeight: isCompact ? 42 : 50,
-                  borderRadius: isCompact ? 13 : 14,
-                  fontSize: isCompact ? 12 : 14,
+                  minHeight: isCompact ? 58 : 66,
+                  borderRadius: isCompact ? 18 : 20,
+                  justifyContent: "space-between",
+                  padding: isCompact ? "12px 14px" : "14px 18px",
+                  fontSize: isCompact ? 17 : 20,
+                  color: "#FFFFFF",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
+                  border: "1px solid rgba(246,215,122,0.66)",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
                 }}
               >
-                Call phone
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
+                  <span aria-hidden="true" style={{ fontSize: isCompact ? 24 : 28 }}>
+                    📞
+                  </span>
+                  <span>Call Phone</span>
+                </span>
+                <span aria-hidden="true" style={{ color: "#F6D77A" }}>
+                  ›
+                </span>
               </SecondaryButton>
+            </div>
+            <div
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                color: "rgba(234,244,255,0.66)",
+                fontSize: isCompact ? 11 : 13,
+                fontWeight: 760,
+              }}
+            >
+              <span aria-hidden="true">🔒</span>
+              <span>Private contact route. Your details stay secure.</span>
             </div>
           </section>
         ) : null}
