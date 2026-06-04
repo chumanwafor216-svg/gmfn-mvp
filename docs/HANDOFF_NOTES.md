@@ -1,3 +1,36 @@
+### Public shop verification moved into billboard action slot (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner truth:
+  - the public shop page should not expose Shop Verification as a large
+    always-visible block near the top;
+  - the top billboard/status strip should use the third slot for `Verify shop`
+    instead of repeating owner contact / WhatsApp;
+  - owner contact remains available through the Vault request path, so the top
+    surface does not duplicate WhatsApp/contact information.
+- Frontend change:
+  - replaced the third top status-strip action with a stable
+    `Verify shop` button using `debugId="shop-gallery.verify-shop.toggle"`;
+  - the QR/identity proof panel now mounts only after tapping that button and
+    includes a `Hide proof` close action;
+  - removed the unreachable owner-contact panel and phone-call helper that were
+    left behind after the top contact slot was replaced;
+  - kept the public shop QR target, TrustSlip wording, shop owner ID,
+    marketplace, community ID, and shop name verification rows unchanged.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx tools/audit-button-stability.mjs tools/audit-link-contracts.mjs` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only public-shop layout/button tightening. It does not
+    change backend shop verification, TrustSlip generation, shop ownership, or
+    Vault access rules.
+
 ### Public shop repost removed; paid repost moved into Marketplace (2026-06-04)
 
 - Product-owner truth:

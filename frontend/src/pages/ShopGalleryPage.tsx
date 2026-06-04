@@ -170,20 +170,6 @@ function buildWhatsAppChatUrl(recipient: any, message: string): string {
   return `https://wa.me/${phone}?text=${encodeURIComponent(cleanText(message))}`;
 }
 
-function buildPhoneCallUrl(value: any): string {
-  const raw = cleanText(value);
-  if (!raw) return "";
-
-  const compact = raw.replace(/[^\d+]/g, "");
-  if (!compact) return "";
-
-  if (compact.startsWith("+")) {
-    return `tel:${compact}`;
-  }
-
-  return `tel:${compact.replace(/\D/g, "")}`;
-}
-
 function isDisconnectedPublicShopError(message: any): boolean {
   return /seller identity|shop not found|not connected|active shop|404/i.test(
     safeStr(message)
@@ -955,7 +941,6 @@ export default function ShopGalleryPage() {
   const [error, setError] = useState<string>("");
   const [autoRefreshingShop, setAutoRefreshingShop] = useState(false);
   const [shopReconnectRetryKey, setShopReconnectRetryKey] = useState(0);
-  const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
   const autoRefreshAttemptedRef = useRef("");
 
@@ -1690,8 +1675,6 @@ export default function ShopGalleryPage() {
   );
   const shopGmfnText = safeStr(effectiveShop?.gmfnId);
   const shopCommunityText = safeStr(effectiveShop?.communityName);
-  const shopWhatsAppText = safeStr(effectiveShop?.whatsapp);
-  const shopTelegramText = safeStr(effectiveShop?.telegram);
   const publicBlockCount = Math.min(products.length, GALLERY_SLOTS_TOTAL);
   const publicBlockText = autoRefreshingShop
     ? "Reconnecting shop"
@@ -1720,15 +1703,6 @@ export default function ShopGalleryPage() {
     { label: "Community ID", value: shopCommunityIdText || "Not exposed yet" },
     { label: "Shop name", value: shopNameText },
   ];
-  const shopContactText = autoRefreshingShop
-    ? "Owner refresh running"
-    : shopLoadFailed
-    ? "Owner refresh needed"
-    : firstMeaningful(
-        shopWhatsAppText ? `WhatsApp ${shopWhatsAppText}` : "",
-        shopTelegramText ? `Telegram ${shopTelegramText}` : "",
-        "Share by shop link"
-      );
   const publicShopBuyerCue = shopLoadFailed
     ? "This public shop has reached GSN, but the owner must refresh it before visitors can safely share or copy it."
     : publicBlockCount > 0
@@ -1744,8 +1718,8 @@ export default function ShopGalleryPage() {
       value: "Ask owner",
     },
     {
-      label: "Owner contact",
-      value: shopContactText,
+      label: "Shop verification",
+      value: shopVerificationOpen ? "Proof open" : "Tap verify",
     },
   ];
   async function shareOrCopy(params: {
@@ -1848,65 +1822,8 @@ export default function ShopGalleryPage() {
     return true;
   }
 
-  function toggleOwnerContactPanel() {
-    if (shopLoadFailed) {
-      setNotice({
-        tone: "error",
-        text: "This shop link needs the owner to refresh it from Marketplace before owner contact can be trusted.",
-      });
-      return;
-    }
-
-    setOwnerContactPanelOpen((open) => !open);
-  }
-
   function toggleShopVerificationPanel() {
     setShopVerificationOpen((open) => !open);
-  }
-
-  function callOwnerPhone() {
-    const phoneUrl = buildPhoneCallUrl(effectiveShop?.whatsapp);
-    if (!phoneUrl || typeof window === "undefined") {
-      setNotice({
-        tone: "error",
-        text: "No owner phone number is ready on this public shop yet.",
-      });
-      return;
-    }
-
-    window.location.href = phoneUrl;
-    setOwnerContactPanelOpen(false);
-    setNotice({
-      tone: "success",
-      text: "Phone call opened. If the call prompt does not appear, use the visible owner number on the shop card.",
-    });
-  }
-
-  async function contactOwnerByWhatsApp() {
-    const shopTitle = firstMeaningful(
-      effectiveShop?.shopName,
-      effectiveShop?.ownerName,
-      "this GSN shop"
-    );
-    const message = `Hello, I found ${shopTitle} on GSN. I would like to chat with the owner.`;
-
-    if (
-      openOwnerWhatsAppChat(
-        message,
-        "WhatsApp chat opened for the shop owner. If WhatsApp says this number is not registered, come back and use Call phone."
-      )
-    ) {
-      setOwnerContactPanelOpen(false);
-      return;
-    }
-
-    const copied = await safeCopy(`${message}\n${absoluteShopLink}`);
-    setNotice({
-      tone: copied ? "success" : "error",
-      text: copied
-        ? "Owner WhatsApp is not ready on this shop. The message and shop link were copied instead."
-        : "Owner WhatsApp is not ready on this shop, and clipboard copy was blocked.",
-    });
   }
 
   async function askForVaultAccess() {
@@ -2193,7 +2110,11 @@ export default function ShopGalleryPage() {
           {[
             { mark: "12", title: publicBlockText, detail: "Open shelf" },
             { mark: "V", title: "Vault", detail: "By trust link" },
-            { mark: "W", title: shopContactText, detail: "Owner contact" },
+            {
+              mark: "ID",
+              title: "Verify shop",
+              detail: shopVerificationOpen ? "Hide proof" : "Shop identity",
+            },
           ].map((item, itemIndex) => {
             const statusItemStyle: React.CSSProperties = {
                 minHeight: isCompact ? 58 : 86,
@@ -2218,8 +2139,8 @@ export default function ShopGalleryPage() {
                     display: "grid",
                     placeItems: "center",
                     background:
-                      item.mark === "W"
-                        ? "linear-gradient(180deg, #22C55E 0%, #15803D 100%)"
+                      item.mark === "ID"
+                        ? "linear-gradient(180deg, #D6AA45 0%, #8A6418 100%)"
                         : item.mark === "V"
                         ? "radial-gradient(circle at 50% 44%, rgba(255,244,204,0.92) 0%, rgba(214,170,69,0.46) 26%, rgba(8,35,61,0.18) 27%, rgba(8,35,61,0.18) 33%, transparent 34%), linear-gradient(145deg, #4E6175 0%, #102A44 58%, #071827 100%)"
                         : "linear-gradient(180deg, #1F5FB7 0%, #123D7C 100%)",
@@ -2282,17 +2203,18 @@ export default function ShopGalleryPage() {
               </>
             );
 
-            return item.mark === "W" ? (
+            return item.mark === "ID" ? (
               <SecondaryButton
                 key={`${item.mark}-${item.title}`}
                 className="public-shop-status-item"
-                onClick={toggleOwnerContactPanel}
-                debugId="shop-gallery.owner-contact.choose"
+                onClick={toggleShopVerificationPanel}
+                debugId="shop-gallery.verify-shop.toggle"
                 fullWidth
                 minWidth={0}
-                aria-expanded={ownerContactPanelOpen}
-                aria-controls="public-shop-owner-contact-panel"
-                aria-label="Choose how to contact the shop owner"
+                stableHeight={isCompact ? 58 : 86}
+                aria-expanded={shopVerificationOpen}
+                aria-controls="public-shop-verify-panel"
+                aria-label="Open shop verification"
                 style={{
                   ...statusItemStyle,
                   width: "100%",
@@ -2318,75 +2240,75 @@ export default function ShopGalleryPage() {
           })}
         </div>
 
-        <section
-          className="public-shop-section public-shop-verify"
-          style={{
-            ...innerCard("#F8FBFF"),
-            display: "grid",
-            gap: isCompact ? 10 : 12,
-            padding: isCompact ? 12 : 16,
-          }}
-          aria-label="Shop verification summary"
-        >
-          <div
+        {shopVerificationOpen ? (
+          <section
+            className="public-shop-section public-shop-verify"
             style={{
+              ...innerCard("#F8FBFF"),
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 170px",
-              gap: isCompact ? 9 : 12,
-              alignItems: "center",
+              gap: isCompact ? 10 : 12,
+              padding: isCompact ? 12 : 16,
             }}
+            aria-label="Shop verification summary"
           >
-            <div style={{ minWidth: 0 }}>
-              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
-                Shop verification
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 13.5 : 16,
-                  fontWeight: 950,
-                  lineHeight: 1.16,
-                }}
-              >
-                Check the shop identity before you trade.
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  color: "#526C84",
-                  fontSize: isCompact ? 10.2 : 12.2,
-                  lineHeight: 1.35,
-                  fontWeight: 720,
-                }}
-              >
-                The QR reopens this public shop. TrustSlip proof is on request
-                until a live TrustSlip code is attached.
-              </div>
-            </div>
-
-            <SecondaryButton
-              onClick={toggleShopVerificationPanel}
-              minWidth={0}
-              stableHeight={isCompact ? 40 : 46}
-              debugId="shop-gallery.verify-shop.toggle"
-              aria-expanded={shopVerificationOpen}
-              aria-controls="public-shop-verify-panel"
+            <div
               style={{
-                ...secondaryBtn(false),
-                minHeight: isCompact ? 40 : 46,
-                borderRadius: isCompact ? 13 : 14,
-                fontSize: isCompact ? 11.2 : 13.5,
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) 140px",
+                gap: isCompact ? 9 : 12,
+                alignItems: "center",
               }}
             >
-              {shopVerificationOpen ? "Hide proof" : "Verify shop"}
-            </SecondaryButton>
-          </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
+                  Shop verification
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#0B1F33",
+                    fontSize: isCompact ? 13.5 : 16,
+                    fontWeight: 950,
+                    lineHeight: 1.16,
+                  }}
+                >
+                  Check the shop identity before you trade.
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#526C84",
+                    fontSize: isCompact ? 10.2 : 12.2,
+                    lineHeight: 1.35,
+                    fontWeight: 720,
+                  }}
+                >
+                  The QR reopens this public shop. TrustSlip proof is on request
+                  until a live TrustSlip code is attached.
+                </div>
+              </div>
 
-          {shopVerificationOpen ? (
+              <SecondaryButton
+                onClick={toggleShopVerificationPanel}
+                minWidth={0}
+                stableHeight={isCompact ? 40 : 46}
+                debugId="shop-gallery.verify-shop.close"
+                aria-expanded={shopVerificationOpen}
+                aria-controls="public-shop-verify-panel"
+                style={{
+                  ...secondaryBtn(false),
+                  minHeight: isCompact ? 40 : 46,
+                  borderRadius: isCompact ? 13 : 14,
+                  fontSize: isCompact ? 11.2 : 13.5,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                Hide proof
+              </SecondaryButton>
+            </div>
+
             <div
               id="public-shop-verify-panel"
               style={{
@@ -2484,87 +2406,6 @@ export default function ShopGalleryPage() {
                   </div>
                 ))}
               </div>
-            </div>
-          ) : null}
-        </section>
-
-        {ownerContactPanelOpen ? (
-          <section
-            id="public-shop-owner-contact-panel"
-            className="public-shop-section"
-            style={{
-              ...innerCard("#F8FBFF"),
-              display: "grid",
-              gap: isCompact ? 9 : 12,
-            }}
-            aria-label="Owner contact choices"
-          >
-            <div>
-              <div style={{ ...sectionLabel(), color: "#0B4A7A" }}>
-                Owner contact
-              </div>
-              <div
-                style={{
-                  marginTop: 5,
-                  color: "#0B1F33",
-                  fontSize: isCompact ? 14 : 17,
-                  fontWeight: 950,
-                  lineHeight: 1.16,
-                }}
-              >
-                Choose WhatsApp chat or a normal phone call.
-              </div>
-              <div
-                style={{
-                  marginTop: 6,
-                  color: "#526C84",
-                  fontSize: isCompact ? 10.5 : 12.5,
-                  lineHeight: 1.35,
-                  fontWeight: 750,
-                }}
-              >
-                GSN can open the chat link, but only WhatsApp can confirm whether
-                this number is registered there.
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(2, minmax(0, 1fr))",
-                gap: isCompact ? 8 : 10,
-              }}
-            >
-              <PrimaryButton
-                onClick={() => void contactOwnerByWhatsApp()}
-                minWidth={0}
-                stableHeight={isCompact ? 42 : 50}
-                debugId="shop-gallery.owner-contact.whatsapp-chat"
-                style={{
-                  ...primaryBtn(false),
-                  minHeight: isCompact ? 42 : 50,
-                  borderRadius: isCompact ? 13 : 14,
-                  fontSize: isCompact ? 12 : 14,
-                }}
-              >
-                WhatsApp chat
-              </PrimaryButton>
-              <SecondaryButton
-                onClick={callOwnerPhone}
-                minWidth={0}
-                stableHeight={isCompact ? 42 : 50}
-                debugId="shop-gallery.owner-contact.phone-call"
-                style={{
-                  ...secondaryBtn(false),
-                  minHeight: isCompact ? 42 : 50,
-                  borderRadius: isCompact ? 13 : 14,
-                  fontSize: isCompact ? 12 : 14,
-                }}
-              >
-                Call phone
-              </SecondaryButton>
             </div>
           </section>
         ) : null}
