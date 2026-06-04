@@ -1136,6 +1136,18 @@ assertContains(
   "Shop Gallery must use shared stable primitives for vault, product, spotlight, and remaining public-shop actions."
 );
 
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /audioUnlockLabel="🔊"[\s\S]*?audioUnlockOffLabel="🔇"[\s\S]*?aria-label=\{isProductOpen \? `Close \$\{displayTitle\}` : `Open \$\{displayTitle\}`\}[\s\S]*?\{isProductOpen \? "❌" : "👁️"\}[\s\S]*?aria-label=\{`Share \$\{displayTitle\}`\}[\s\S]*?📤/,
+  "Shop Gallery product cards must use compact real-life signs for sound, open/close, and share while keeping accessible action labels."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /audioUnlockLabel="Sound on"|>Sound on<|>Sound off<|>Share shop<|>Open<|>Close</,
+  "Shop Gallery product cards must not bring back oversized text-only media/open/share buttons."
+);
+
 assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
   /shop-gallery\.repost|repostPanelOpen|createMarketplaceRepost/,

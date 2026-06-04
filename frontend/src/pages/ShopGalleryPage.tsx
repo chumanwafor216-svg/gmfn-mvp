@@ -2699,14 +2699,18 @@ export default function ShopGalleryPage() {
                     mutedVideo={Boolean(miniSpotlightView.videoUrl)}
                     loopVideo={Boolean(miniSpotlightView.videoUrl)}
                     showAudioUnlock={Boolean(miniSpotlightView.videoUrl)}
-                    audioUnlockLabel="Sound on"
+                    audioUnlockLabel="🔊"
+                    audioUnlockOffLabel="🔇"
+                    audioUnlockErrorLabel="▶️"
                     audioUnlockStyle={{
                       top: "auto",
                       right: isCompact ? 7 : 10,
                       bottom: isCompact ? 7 : 10,
-                      minHeight: isCompact ? 28 : 34,
-                      padding: isCompact ? "6px 9px" : "8px 11px",
-                      fontSize: isCompact ? 10.5 : 12,
+                      minWidth: isCompact ? 34 : 38,
+                      width: isCompact ? 34 : 38,
+                      minHeight: isCompact ? 34 : 38,
+                      padding: 0,
+                      fontSize: isCompact ? 16 : 18,
                       boxShadow: "0 10px 18px rgba(2, 12, 27, 0.22)",
                     }}
                     maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
@@ -3024,10 +3028,9 @@ export default function ShopGalleryPage() {
                 );
                 const productOpenId = product.id ?? product.slotNumber;
                 const isProductOpen = openProductId === productOpenId;
-                const diaryActionHeight = isCompact ? 38 : 40;
-                const diaryActionPadding = isCompact ? "7px 9px" : "8px 12px";
-                const diaryActionFontSize = isCompact ? 12 : 13;
-                const diaryMediaControlHeight = isCompact ? 32 : 36;
+                const diaryActionHeight = isCompact ? 42 : 46;
+                const diaryActionWidth = isCompact ? 44 : 48;
+                const diaryMediaControlHeight = isCompact ? 36 : 40;
 
                 return (
                   <article
@@ -3098,13 +3101,17 @@ export default function ShopGalleryPage() {
                           mutedVideo={true}
                           loopVideo={!isProductOpen}
                           showAudioUnlock={hasVideoStory}
-                          audioUnlockLabel="Sound on"
+                          audioUnlockLabel="🔊"
+                          audioUnlockOffLabel="🔇"
+                          audioUnlockErrorLabel="▶️"
                           audioUnlockStyle={{
                             top: isCompact ? 9 : 12,
                             right: isCompact ? 9 : 12,
+                            minWidth: diaryMediaControlHeight,
+                            width: diaryMediaControlHeight,
                             minHeight: diaryMediaControlHeight,
-                            padding: isCompact ? "6px 9px" : "8px 11px",
-                            fontSize: isCompact ? 10.5 : 12,
+                            padding: 0,
+                            fontSize: isCompact ? 17 : 19,
                             boxShadow: "0 10px 18px rgba(2, 12, 27, 0.24)",
                             overflowAnchor: "none",
                           }}
@@ -3259,13 +3266,13 @@ export default function ShopGalleryPage() {
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                          gridTemplateColumns: `repeat(2, ${diaryActionWidth}px)`,
                           gap: isCompact ? 8 : 10,
-                          width: "100%",
+                          width: "fit-content",
                           maxWidth: "100%",
                           minWidth: 0,
-                          justifyContent: "stretch",
-                          justifyItems: "stretch",
+                          justifyContent: "start",
+                          justifyItems: "start",
                           alignItems: "center",
                           boxSizing: "border-box",
                           overflow: "hidden",
@@ -3281,15 +3288,17 @@ export default function ShopGalleryPage() {
                           minWidth={0}
                           stableHeight={diaryActionHeight}
                           debugId={`shop-gallery.product.${productOpenId}.toggle`}
+                          aria-label={isProductOpen ? `Close ${displayTitle}` : `Open ${displayTitle}`}
+                          title={isProductOpen ? "Close" : "Open"}
                           style={{
                             ...secondaryBtn(false),
-                            width: "100%",
-                            maxWidth: "100%",
+                            width: diaryActionWidth,
+                            maxWidth: diaryActionWidth,
                             minWidth: 0,
                             minHeight: diaryActionHeight,
-                            padding: diaryActionPadding,
+                            padding: 0,
                             borderRadius: 999,
-                            fontSize: diaryActionFontSize,
+                            fontSize: isCompact ? 18 : 20,
                             lineHeight: 1,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
@@ -3300,7 +3309,7 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          {isProductOpen ? "Close" : "Open"}
+                          {isProductOpen ? "❌" : "👁️"}
                         </SecondaryButton>
                         <SecondaryButton
                           onClick={() => {
@@ -3309,15 +3318,17 @@ export default function ShopGalleryPage() {
                           minWidth={0}
                           stableHeight={diaryActionHeight}
                           debugId={`shop-gallery.product.${productOpenId}.share`}
+                          aria-label={`Share ${displayTitle}`}
+                          title="Share"
                           style={{
                             ...secondaryBtn(false),
-                            width: "100%",
-                            maxWidth: "100%",
+                            width: diaryActionWidth,
+                            maxWidth: diaryActionWidth,
                             minWidth: 0,
                             minHeight: diaryActionHeight,
-                            padding: diaryActionPadding,
+                            padding: 0,
                             borderRadius: 999,
-                            fontSize: diaryActionFontSize,
+                            fontSize: isCompact ? 18 : 20,
                             lineHeight: 1,
                             whiteSpace: "nowrap",
                             overflow: "hidden",
@@ -3328,7 +3339,7 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          Share shop
+                          📤
                         </SecondaryButton>
                       </div>
                     </div>

@@ -18,6 +18,8 @@ type SpotlightMediaFrameProps = {
   maxVideoSeconds?: number | null;
   showAudioUnlock?: boolean;
   audioUnlockLabel?: string;
+  audioUnlockOffLabel?: string;
+  audioUnlockErrorLabel?: string;
   audioUnlockStyle?: React.CSSProperties;
 };
 
@@ -213,6 +215,14 @@ export default function SpotlightMediaFrame(
       </div>
     ) : null;
 
+  const audioOnLabel = props.audioUnlockLabel || "Sound on";
+  const audioOffLabel = props.audioUnlockOffLabel || "Sound off";
+  const audioVisibleLabel = audioUnlocked
+    ? audioOffLabel
+    : audioError
+    ? props.audioUnlockErrorLabel || audioError
+    : audioOnLabel;
+
   const audioUnlockButton = shouldShowAudioUnlock ? (
     <SecondaryButton
       data-media-control="true"
@@ -239,15 +249,14 @@ export default function SpotlightMediaFrame(
         touchAction: "manipulation",
         ...props.audioUnlockStyle,
       }}
+      title={audioUnlocked ? "Turn video sound off" : "Turn video sound on"}
       aria-label={
         audioUnlocked
           ? "Turn video sound off"
-          : props.audioUnlockLabel || "Turn video sound on"
+          : "Turn video sound on"
       }
     >
-      {audioUnlocked
-        ? "Sound off"
-        : audioError || props.audioUnlockLabel || "Sound on"}
+      {audioVisibleLabel}
     </SecondaryButton>
   ) : null;
 

@@ -1,3 +1,43 @@
+### Public shop diary controls changed from words to compact signs (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - media control helper: `frontend/src/components/SpotlightMediaFrame.tsx`.
+- Product-owner truth:
+  - on phone, product-card buttons such as `Sound on`, `Open`, and `Share shop`
+    were too large for the diary tiles and were blocking the product media;
+  - the requested meaning of "emoji" here is compact real-life signs that use
+    less space and are easier for low-literacy users to understand.
+- Frontend change:
+  - product-card video sound now shows compact speaker signs: `🔊`, `🔇`, and
+    `▶️` for the fallback retry state;
+  - product-card open/close now shows compact signs: `👁️` and `❌`;
+  - product-card share now shows `📤`;
+  - all compact sign buttons keep text `aria-label` and `title` values for
+    accessibility and traceability;
+  - product-card action buttons are fixed-size round controls instead of wide
+    text pills, reducing overlap and freeing media space.
+- Shared component note:
+  - `SpotlightMediaFrame` gained optional `audioUnlockOffLabel` and
+    `audioUnlockErrorLabel` props. Existing screens still default to the old
+    text labels unless they opt into signs.
+- Audit changes:
+  - `audit-button-stability` now locks Shop Gallery product cards to compact
+    signed controls and prevents the old oversized `Sound on`, `Open`,
+    `Close`, and `Share shop` labels from returning there.
+- Verification:
+  - `npm exec -- eslint src/components/SpotlightMediaFrame.tsx src/pages/ShopGalleryPage.tsx tools/audit-button-stability.mjs tools/audit-link-contracts.mjs` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only Shop Diaries control polish. It does not change
+    product opening, product sharing, video playback, public shop visibility,
+    or backend marketplace behavior.
+
 ### Public shop page trimmed to reduce repeated buyer text (2026-06-04)
 
 - Route/screen affected:
