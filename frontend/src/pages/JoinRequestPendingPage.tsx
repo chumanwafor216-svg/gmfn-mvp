@@ -11,8 +11,24 @@ type ReviewerLine = {
   roleLabel: string;
 };
 
+type IconName =
+  | "approval"
+  | "book"
+  | "community"
+  | "decision"
+  | "details"
+  | "entry"
+  | "eye"
+  | "focus"
+  | "lock"
+  | "market"
+  | "progress"
+  | "request"
+  | "shield"
+  | "welcome";
+
 type FactRow = {
-  icon: string;
+  icon: IconName;
   label: string;
   value: string;
 };
@@ -55,9 +71,9 @@ function reviewerRoleLabel(role: string): string {
 function shellStyle(isCompact: boolean): React.CSSProperties {
   return {
     minHeight: "100vh",
-    padding: isCompact ? "18px 14px 30px" : "28px 20px 40px",
+    padding: isCompact ? "16px 14px 28px" : "28px 20px 40px",
     background:
-      "radial-gradient(circle at 84% 2%, rgba(70,118,181,0.18) 0%, rgba(70,118,181,0.00) 30%), linear-gradient(180deg, #030813 0%, #06182A 26%, #08233A 64%, #061827 100%)",
+      "radial-gradient(circle at 86% 4%, rgba(70,118,181,0.20) 0%, rgba(70,118,181,0.00) 29%), radial-gradient(circle at 50% 38%, rgba(28,89,156,0.16) 0%, rgba(28,89,156,0.00) 42%), linear-gradient(180deg, #020816 0%, #06182A 26%, #08233A 64%, #061827 100%)",
     color: "#F8FBFF",
     boxSizing: "border-box",
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
@@ -67,10 +83,10 @@ function shellStyle(isCompact: boolean): React.CSSProperties {
 function pageRail(isCompact: boolean): React.CSSProperties {
   return {
     width: "100%",
-    maxWidth: 880,
+    maxWidth: isCompact ? 430 : 880,
     margin: "0 auto",
     display: "grid",
-    gap: isCompact ? 14 : 18,
+    gap: isCompact ? 12 : 18,
   };
 }
 
@@ -130,15 +146,253 @@ function iconBubble(size = 46): React.CSSProperties {
   };
 }
 
+function IconGlyph({
+  name,
+  size = 22,
+}: {
+  name: IconName;
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "approval":
+      return (
+        <svg {...common}>
+          <path d="M4 11.5 9.2 6l5.2 5.5v8.5H4z" />
+          <path d="M9 20v-5h5v5" />
+          <path d="M15.8 11.2h4.2v8.8h-4.2" />
+        </svg>
+      );
+    case "book":
+      return (
+        <svg {...common}>
+          <path d="M5 5.5c2.5-1.2 4.6-1.2 7 0v14c-2.4-1.2-4.5-1.2-7 0z" />
+          <path d="M12 5.5c2.4-1.2 4.5-1.2 7 0v14c-2.5-1.2-4.6-1.2-7 0z" />
+        </svg>
+      );
+    case "community":
+      return (
+        <svg {...common}>
+          <path d="M4 20v-7l8-7 8 7v7" />
+          <path d="M9 20v-6h6v6" />
+        </svg>
+      );
+    case "decision":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
+          <path d="m8.6 12.2 2.2 2.2 4.8-5" />
+        </svg>
+      );
+    case "details":
+      return (
+        <svg {...common}>
+          <path d="M7 4h10v16H7z" />
+          <path d="M10 8h4" />
+          <path d="M10 12h4" />
+          <path d="M10 16h3" />
+        </svg>
+      );
+    case "entry":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
+          <path d="M9 12h6" />
+          <path d="M12 9v6" />
+        </svg>
+      );
+    case "eye":
+      return (
+        <svg {...common}>
+          <path d="M3.5 12s3-5 8.5-5 8.5 5 8.5 5-3 5-8.5 5-8.5-5-8.5-5z" />
+          <circle cx="12" cy="12" r="2.4" />
+        </svg>
+      );
+    case "focus":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="7" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 5v3" />
+          <path d="M19 12h-3" />
+        </svg>
+      );
+    case "lock":
+      return (
+        <svg {...common}>
+          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          <path d="M6.5 11h11v9h-11z" />
+          <path d="M12 15v2" />
+        </svg>
+      );
+    case "market":
+      return (
+        <svg {...common}>
+          <path d="M6 8h12l-1 12H7z" />
+          <path d="M9 8a3 3 0 0 1 6 0" />
+        </svg>
+      );
+    case "progress":
+      return (
+        <svg {...common}>
+          <path d="M5 19V9" />
+          <path d="M10 19V5" />
+          <path d="M15 19v-7" />
+          <path d="M20 19V7" />
+        </svg>
+      );
+    case "request":
+      return (
+        <svg {...common}>
+          <path d="M7 4h10v16H7z" />
+          <path d="M9.5 9h5" />
+          <path d="M9.5 13h5" />
+          <path d="M9.5 17h3" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
+          <path d="M8.3 13h7.4" />
+          <path d="M12 9.3v7.4" />
+        </svg>
+      );
+    case "welcome":
+      return (
+        <svg {...common}>
+          <path d="M5 12c2-4 4.4-4 6.4 0 1.9 3.8 4.2 3.8 6.6 0" />
+          <path d="M4 17h16" />
+          <path d="M7 7h.01" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function GsnMark({ isCompact }: { isCompact: boolean }) {
+  const size = isCompact ? 38 : 44;
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        position: "relative",
+        width: size,
+        height: size,
+        display: "inline-block",
+        flex: `0 0 ${size}px`,
+      }}
+    >
+      <span
+        style={{
+          position: "absolute",
+          inset: 6,
+          borderRadius: 999,
+          border: "6px solid #4B8DFF",
+          borderRightColor: "transparent",
+          transform: "rotate(34deg)",
+          boxShadow: "0 0 20px rgba(75,141,255,0.34)",
+        }}
+      />
+      <span
+        style={{
+          position: "absolute",
+          inset: 6,
+          borderRadius: 999,
+          border: "6px solid #6EA6FF",
+          borderLeftColor: "transparent",
+          transform: "rotate(-34deg)",
+          opacity: 0.9,
+        }}
+      />
+    </span>
+  );
+}
+
+function ShieldVisual({ isCompact }: { isCompact: boolean }) {
+  const width = isCompact ? 112 : 152;
+  const height = isCompact ? 130 : 168;
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "relative",
+        width,
+        height,
+        display: "grid",
+        placeItems: "center",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          width: width * 0.78,
+          height: 26,
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(90,156,255,0.95) 0%, rgba(44,97,198,0.36) 54%, rgba(44,97,198,0.00) 72%)",
+          filter: "blur(1px)",
+        }}
+      />
+      <div
+        style={{
+          width: width * 0.82,
+          height: height * 0.82,
+          borderRadius: "42px 42px 50px 50px",
+          clipPath: "polygon(50% 0%, 92% 16%, 88% 67%, 50% 100%, 12% 67%, 8% 16%)",
+          background:
+            "linear-gradient(180deg, rgba(111,173,255,0.96) 0%, rgba(39,101,202,0.94) 68%, rgba(17,55,120,0.98) 100%)",
+          border: "1px solid rgba(190,220,255,0.72)",
+          boxShadow:
+            "0 24px 44px rgba(24,100,220,0.38), inset 0 2px 0 rgba(255,255,255,0.30)",
+          display: "grid",
+          placeItems: "center",
+          color: "#DCEBFF",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "end", gap: 5 }}>
+          {[18, 26, 18].map((dotSize, index) => (
+            <span
+              key={index}
+              style={{
+                display: "grid",
+                placeItems: "center",
+                width: dotSize,
+                height: dotSize,
+                borderRadius: 999,
+                background:
+                  "linear-gradient(180deg, rgba(218,236,255,0.98), rgba(117,166,244,0.96))",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function actionStyle(kind: "primary" | "secondary"): React.CSSProperties {
   const primary = kind === "primary";
   return {
-    minHeight: 54,
-    height: 54,
-    maxHeight: 54,
+    minHeight: 62,
+    height: 62,
+    maxHeight: 62,
     minWidth: 0,
     width: "100%",
-    borderRadius: 16,
+    borderRadius: 18,
     padding: "0 14px",
     border: primary
       ? "1px solid rgba(172,204,255,0.58)"
@@ -158,15 +412,15 @@ function actionStyle(kind: "primary" | "secondary"): React.CSSProperties {
   };
 }
 
-function helpfulLinkStyle(): React.CSSProperties {
+function helpfulLinkStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: 48,
-    height: 48,
-    maxHeight: 48,
+    minHeight: isCompact ? 56 : 50,
+    height: isCompact ? 56 : 50,
+    maxHeight: isCompact ? 56 : 50,
     minWidth: 0,
     width: "100%",
     borderRadius: 999,
-    padding: "0 12px",
+    padding: isCompact ? "0 8px" : "0 12px",
     border: "1px solid rgba(142,184,238,0.24)",
     background:
       "linear-gradient(180deg, rgba(13,43,74,0.84) 0%, rgba(9,31,56,0.84) 100%)",
@@ -174,11 +428,37 @@ function helpfulLinkStyle(): React.CSSProperties {
     boxShadow:
       "0 10px 20px rgba(0,8,18,0.16), inset 0 1px 0 rgba(255,255,255,0.08)",
     fontWeight: 900,
-    fontSize: 14,
-    lineHeight: 1.15,
+    fontSize: isCompact ? 12 : 14,
+    lineHeight: 1.1,
     whiteSpace: "normal",
     overflowWrap: "normal",
   };
+}
+
+function inlineButtonContent(icon: IconName, label: string) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 10,
+        minWidth: 0,
+        width: "100%",
+      }}
+    >
+      <IconGlyph name={icon} size={21} />
+      <span
+        style={{
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {label}
+      </span>
+    </span>
+  );
 }
 
 function progressPercent(approvals: number, requiredApprovals: number): number {
@@ -475,14 +755,14 @@ export default function JoinRequestPendingPage() {
   const factRows = useMemo<FactRow[]>(
     () =>
       [
-        { icon: "H", label: "Community", value: communityName },
+        { icon: "community" as IconName, label: "Community", value: communityName },
         {
-          icon: "M",
+          icon: "market" as IconName,
           label: "Market",
           value: marketplaceName || `${communityName} Marketplace`,
         },
-        { icon: "ID", label: "Community ID", value: communityCode },
-        { icon: "R", label: "Request ID", value: requestId },
+        { icon: "details" as IconName, label: "Community ID", value: communityCode },
+        { icon: "request" as IconName, label: "Request ID", value: requestId },
       ].filter((row) => safeStr(row.value)),
     [communityCode, communityName, marketplaceName, requestId]
   );
@@ -495,46 +775,33 @@ export default function JoinRequestPendingPage() {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            gap: 12,
-            paddingTop: isCompact ? 2 : 6,
+            gap: 10,
+            paddingTop: isCompact ? 0 : 6,
           }}
         >
-          <div
-            aria-hidden="true"
-            style={{
-              width: 38,
-              height: 38,
-              borderRadius: 14,
-              display: "grid",
-              placeItems: "center",
-              background:
-                "linear-gradient(135deg, rgba(71,132,255,0.95), rgba(118,166,255,0.86))",
-              color: "#061827",
-              fontWeight: 1000,
-              boxShadow: "0 14px 26px rgba(46,116,255,0.28)",
-            }}
-          >
-            G
+          <GsnMark isCompact={isCompact} />
+          <div style={{ fontSize: isCompact ? 34 : 38, lineHeight: 1, fontWeight: 1000 }}>
+            GSN
           </div>
-          <div style={{ fontSize: 34, lineHeight: 1, fontWeight: 1000 }}>GSN</div>
         </header>
 
         <section
           style={{
-            ...panelStyle(isCompact ? 22 : 28),
+            ...panelStyle(isCompact ? 20 : 28),
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.2fr) 240px",
-            gap: isCompact ? 20 : 28,
+            gridTemplateColumns: isCompact ? "minmax(0, 1fr) 118px" : "minmax(0, 1.2fr) 240px",
+            gap: isCompact ? 12 : 28,
             alignItems: "center",
+            minHeight: isCompact ? 188 : undefined,
           }}
         >
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div style={sectionLabel()}>Join request</div>
             <h1
               style={{
                 margin: "8px 0 0",
                 color: "#FFFFFF",
-                fontSize: isCompact ? 38 : 48,
+                fontSize: isCompact ? 35 : 48,
                 lineHeight: 1.02,
                 fontWeight: 1000,
                 letterSpacing: 0,
@@ -547,19 +814,19 @@ export default function JoinRequestPendingPage() {
             </div>
             <div
               style={{
-                marginTop: 18,
+                marginTop: 16,
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
-                minHeight: 44,
-                padding: "8px 18px",
+                minHeight: 40,
+                padding: isCompact ? "7px 15px" : "8px 18px",
                 borderRadius: 999,
                 color: "#FFD96D",
                 background:
                   "linear-gradient(180deg, rgba(88,72,25,0.74) 0%, rgba(48,43,20,0.72) 100%)",
                 border: "1px solid rgba(242,199,102,0.32)",
                 fontWeight: 1000,
-                fontSize: 20,
+                fontSize: isCompact ? 17 : 20,
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
               }}
             >
@@ -580,31 +847,12 @@ export default function JoinRequestPendingPage() {
           <div
             aria-hidden="true"
             style={{
-              minHeight: isCompact ? 138 : 184,
+              minHeight: isCompact ? 128 : 184,
               display: "grid",
               placeItems: "center",
             }}
           >
-            <div
-              style={{
-                width: isCompact ? 116 : 152,
-                height: isCompact ? 130 : 168,
-                borderRadius: "42px 42px 50px 50px",
-                clipPath: "polygon(50% 0%, 92% 16%, 88% 67%, 50% 100%, 12% 67%, 8% 16%)",
-                background:
-                  "linear-gradient(180deg, rgba(103,166,255,0.95) 0%, rgba(31,87,177,0.94) 68%, rgba(17,55,120,0.98) 100%)",
-                border: "1px solid rgba(190,220,255,0.66)",
-                boxShadow:
-                  "0 26px 48px rgba(24,100,220,0.36), inset 0 2px 0 rgba(255,255,255,0.28)",
-                display: "grid",
-                placeItems: "center",
-                color: "#DCEBFF",
-                fontSize: isCompact ? 42 : 58,
-                fontWeight: 1000,
-              }}
-            >
-              ID
-            </div>
+            <ShieldVisual isCompact={isCompact} />
           </div>
         </section>
 
@@ -616,29 +864,30 @@ export default function JoinRequestPendingPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "44px minmax(0, 1fr)"
+                    ? "44px minmax(0, 1fr) minmax(92px, auto)"
                     : "54px minmax(0, 1fr) minmax(0, 1.15fr)",
                   gap: isCompact ? "8px 12px" : 12,
                   alignItems: "center",
-                  minHeight: isCompact ? 68 : 74,
-                  padding: isCompact ? "8px 0" : 0,
+                  minHeight: isCompact ? 60 : 74,
+                  padding: isCompact ? "6px 0" : 0,
                   borderBottom:
                     index === factRows.length - 1
                       ? "none"
                       : "1px solid rgba(123,161,204,0.14)",
                 }}
               >
-                <span style={iconBubble(isCompact ? 40 : 46)}>{row.icon}</span>
-                <span style={{ ...mutedText(isCompact ? 16 : 18), color: "#DCE7F4", fontWeight: 780 }}>
+                <span style={iconBubble(isCompact ? 40 : 46)}>
+                  <IconGlyph name={row.icon} size={isCompact ? 20 : 23} />
+                </span>
+                <span style={{ ...mutedText(isCompact ? 15 : 18), color: "#DCE7F4", fontWeight: 780 }}>
                   {row.label}
                 </span>
                 <span
                   style={{
                     color: "#FFFFFF",
-                    fontSize: isCompact ? 16 : 18,
+                    fontSize: isCompact ? 14 : 18,
                     fontWeight: 1000,
-                    textAlign: isCompact ? "left" : "right",
-                    gridColumn: isCompact ? "2 / -1" : undefined,
+                    textAlign: "right",
                     overflowWrap: "anywhere",
                   }}
                 >
@@ -667,20 +916,20 @@ export default function JoinRequestPendingPage() {
             style={{
               ...panelStyle(14),
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-              gap: 12,
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: isCompact ? 8 : 12,
             }}
           >
             {[
               {
                 step: "1",
-                icon: "R",
+                icon: "community" as IconName,
                 title: "Review",
                 body: "Members review your request.",
               },
               {
                 step: "2",
-                icon: "D",
+                icon: "decision" as IconName,
                 title: "Decision",
                 body: identityReused
                   ? "If approved, your existing GSN ID is reused."
@@ -688,7 +937,7 @@ export default function JoinRequestPendingPage() {
               },
               {
                 step: "3",
-                icon: "A",
+                icon: identityReused ? "community" as IconName : "lock" as IconName,
                 title: identityReused ? "Enter" : "Activate",
                 body: identityReused
                   ? "Open the community and continue."
@@ -699,12 +948,13 @@ export default function JoinRequestPendingPage() {
                 key={item.step}
                 style={{
                   position: "relative",
-                  borderRadius: 20,
+                  borderRadius: isCompact ? 18 : 20,
                   border: "1px solid rgba(123,161,204,0.16)",
                   background:
                     "linear-gradient(180deg, rgba(9,35,63,0.86) 0%, rgba(8,28,51,0.86) 100%)",
-                  padding: "24px 14px 16px",
-                  minHeight: 132,
+                  padding: isCompact ? "24px 8px 12px" : "24px 14px 16px",
+                  minHeight: isCompact ? 132 : 132,
+                  overflow: "visible",
                 }}
               >
                 <div
@@ -728,13 +978,26 @@ export default function JoinRequestPendingPage() {
                 >
                   {item.step}
                 </div>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <span style={iconBubble(48)}>{item.icon}</span>
-                  <div>
-                    <div style={{ color: "#FFFFFF", fontSize: 20, fontWeight: 1000 }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isCompact ? "1fr" : "48px minmax(0, 1fr)",
+                    justifyItems: isCompact ? "center" : "start",
+                    gap: isCompact ? 8 : 12,
+                    alignItems: "center",
+                    textAlign: isCompact ? "center" : "left",
+                  }}
+                >
+                  <span style={iconBubble(isCompact ? 42 : 48)}>
+                    <IconGlyph name={item.icon} size={isCompact ? 20 : 23} />
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: "#FFFFFF", fontSize: isCompact ? 15 : 20, fontWeight: 1000 }}>
                       {item.title}
                     </div>
-                    <div style={{ marginTop: 5, ...mutedText(14) }}>{item.body}</div>
+                    <div style={{ marginTop: 5, ...mutedText(isCompact ? 11 : 14), lineHeight: isCompact ? 1.28 : 1.58 }}>
+                      {item.body}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -751,7 +1014,9 @@ export default function JoinRequestPendingPage() {
               alignItems: "center",
             }}
           >
-            <span style={iconBubble(40)}>B</span>
+            <span style={iconBubble(40)}>
+              <IconGlyph name="progress" size={20} />
+            </span>
             <div>
               <div style={{ color: "#FFFFFF", fontSize: 22, fontWeight: 1000 }}>
                 Review reading
@@ -886,10 +1151,10 @@ export default function JoinRequestPendingPage() {
               kind="primary"
               disabled={!approvalCta.enabled}
               debugId={approvalCta.debugId}
-              stableHeight={54}
+              stableHeight={62}
               style={actionStyle("primary")}
             >
-              Open approval status
+              {inlineButtonContent("eye", "Open approval status")}
             </StableCtaLink>
             <StableCtaLink
               to="#review-details"
@@ -899,10 +1164,13 @@ export default function JoinRequestPendingPage() {
                 setReviewDetailsOpen((current) => !current);
               }}
               debugId="join-pending.review-details.toggle"
-              stableHeight={54}
+              stableHeight={62}
               style={actionStyle("secondary")}
             >
-              {reviewDetailsOpen ? "Hide review details" : "View review details"}
+              {inlineButtonContent(
+                "details",
+                reviewDetailsOpen ? "Hide review details" : "View review details"
+              )}
             </StableCtaLink>
           </CardActionRow>
         </section>
@@ -914,7 +1182,7 @@ export default function JoinRequestPendingPage() {
               marginTop: 10,
               display: "grid",
               gridTemplateColumns: isCompact
-                ? "1fr"
+                ? "repeat(3, minmax(0, 1fr))"
                 : "repeat(3, minmax(0, 1fr))",
               gap: isCompact ? 9 : 10,
               minHeight: 0,
@@ -924,28 +1192,28 @@ export default function JoinRequestPendingPage() {
               to={ctaPath(guideCta)}
               kind="secondary"
               debugId={guideCta.debugId}
-              stableHeight={48}
-              style={helpfulLinkStyle()}
+              stableHeight={isCompact ? 56 : 50}
+              style={helpfulLinkStyle(isCompact)}
             >
-              Full GSN guide
+              {inlineButtonContent("book", "Full GSN guide")}
             </StableCtaLink>
             <StableCtaLink
               to={ctaPath(guideCta)}
               kind="secondary"
               debugId="join-pending.focus-guide"
-              stableHeight={48}
-              style={helpfulLinkStyle()}
+              stableHeight={isCompact ? 56 : 50}
+              style={helpfulLinkStyle(isCompact)}
             >
-              Focus Commitments
+              {inlineButtonContent("focus", "Focus Commitments")}
             </StableCtaLink>
             <StableCtaLink
               to={ctaPath(welcomeCta)}
               kind="secondary"
               debugId={welcomeCta.debugId}
-              stableHeight={48}
-              style={helpfulLinkStyle()}
+              stableHeight={isCompact ? 56 : 50}
+              style={helpfulLinkStyle(isCompact)}
             >
-              Welcome
+              {inlineButtonContent("welcome", "Welcome")}
             </StableCtaLink>
           </CardActionRow>
         </section>
@@ -962,7 +1230,9 @@ export default function JoinRequestPendingPage() {
             fontWeight: 800,
           }}
         >
-          <span style={iconBubble(38)}>L</span>
+          <span style={iconBubble(38)}>
+            <IconGlyph name="lock" size={18} />
+          </span>
           Entry is reviewed, not automatic.
         </section>
       </div>

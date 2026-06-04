@@ -1,3 +1,45 @@
+### Pending join review page visual and button stability tightened (2026-06-04)
+
+- Route/screen affected:
+  - `/pending-approval`, implemented by
+    `frontend/src/pages/JoinRequestPendingPage.tsx`.
+- Product-owner screenshot truth:
+  - the page should match the dark GSN `Pending Review` reference more closely;
+  - button stability is part of this work because phone/data-network testing has
+    exposed jumpy or hard-to-hit actions across the app.
+- Frontend change:
+  - kept the route contract and backend approval logic unchanged;
+  - replaced placeholder letter badges with route-local CSS/SVG-style visual
+    icons for the GSN mark, shield hero, fact rows, review steps, progress,
+    main actions, helpful links, and reviewed-not-automatic note;
+  - kept the hero in the same phone reference composition: status copy on the
+    left and the shield/trust visual on the right;
+  - changed the mobile `What happens next` section back to a stable three-card
+    row, matching the reference instead of stacking the cards vertically;
+  - tightened request fact rows so phone labels and values sit on the same row;
+  - raised main action buttons to a stable 62px height and helpful links to a
+    stable 56px compact height with icon+label wrappers.
+- Button/tap truth:
+  - the page already used shared `StableCtaLink` and `CardActionRow` primitives;
+  - this pass preserved those shared stable primitives and removed more visual
+    causes of perceived movement: no transform/transition movement, fixed
+    heights, fixed columns, and clipped/contained labels.
+- Verification:
+  - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:member-entry-actions` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this is a frontend-only visual/button-fit correction. It does not change
+    backend join approval, activation, identity reuse, invite, or membership
+    rules;
+  - phone evidence after deploy is still required to confirm the real handset
+    matches the screenshot target and that tap feel is improved on mobile data.
+
 ### Finance mobile action cards text fit corrected (2026-06-04)
 
 - Route/screen affected:
