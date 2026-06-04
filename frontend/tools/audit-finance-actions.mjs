@@ -113,6 +113,18 @@ assertContains(
 
 assertContains(
   "src/pages/PaymentInstructionsPage.tsx",
+  /const MONEY_IN_CURRENCY_OPTIONS = \[[\s\S]*?code: "NGN"[\s\S]*?code: "USD"[\s\S]*?code: "GBP"[\s\S]*?code: "EUR"[\s\S]*?<select[\s\S]*?aria-label="Payment currency"/,
+  "Money In must expose a real currency selector instead of a fixed currency chip."
+);
+
+assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /createPoolDepositInstruction\([\s\S]*?currency: selectedCurrency/,
+  "Money In must submit the selected currency when generating a pool payment instruction."
+);
+
+assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
   /debugId="money-in\.route\.finance"[\s\S]*?debugId="money-in\.route\.money-out"[\s\S]*?debugId="money-in\.route\.payment-rails"[\s\S]*?debugId="money-in\.route\.payout-details"[\s\S]*?debugId="money-in\.route\.loans"/,
   "Money In next-route actions must keep their route-specific debug IDs."
 );

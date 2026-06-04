@@ -28,6 +28,7 @@ type CollapseState = {
 
 type PersistedDepositTask = {
   amountInput: string;
+  currency?: string;
   instruction: CommunityMoneyRoute | null;
   paymentConfirmed: boolean;
   paymentConfirmedAt?: string | null;
@@ -35,7 +36,19 @@ type PersistedDepositTask = {
 };
 
 const MONEY_IN_UI_STORAGE_KEY = "gmfn.moneyin.sections.v2";
-const MONEY_IN_TASK_STORAGE_KEY_PREFIX = "gmfn.moneyin.task.v1";
+const MONEY_IN_TASK_STORAGE_KEY_PREFIX = "gmfn.moneyin.task.v2";
+const MONEY_IN_CURRENCY_OPTIONS = [
+  { code: "NGN", label: "Naira" },
+  { code: "USD", label: "Dollar" },
+  { code: "GBP", label: "Pound" },
+  { code: "EUR", label: "Euro" },
+  { code: "GHS", label: "Cedi" },
+  { code: "KES", label: "Shilling" },
+  { code: "UGX", label: "Shilling" },
+];
+const MONEY_IN_CURRENCY_CODES = new Set(
+  MONEY_IN_CURRENCY_OPTIONS.map((item) => item.code)
+);
 
 function safeStr(x: unknown): string {
   return String(x ?? "").trim();
@@ -47,6 +60,12 @@ function firstTruthy(...values: unknown[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function normalizeCurrency(value: unknown, fallback = "NGN"): string {
+  const code = safeStr(value).toUpperCase();
+  if (MONEY_IN_CURRENCY_CODES.has(code)) return code;
+  return fallback;
 }
 
 function parseMoneyNumber(value: unknown): number {
@@ -263,8 +282,8 @@ function normalizeCollapseState(raw: unknown): CollapseState {
   };
 }
 
-function taskStorageKey(clanId: number, gmfnId: string): string {
-  return `${MONEY_IN_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}`;
+function taskStorageKey(clanId: number, gmfnId: string, currency: string): string {
+  return `${MONEY_IN_TASK_STORAGE_KEY_PREFIX}.${gmfnId || "me"}.${clanId || 0}.${normalizeCurrency(currency)}`;
 }
 
 function copyText(text: string) {
@@ -440,8 +459,8 @@ function moneyInStep(active: boolean): React.CSSProperties {
 
 function moneyInIconCircle(color = "#0B63D1"): React.CSSProperties {
   return {
-    width: 54,
-    height: 54,
+    width: 44,
+    height: 44,
     borderRadius: 999,
     display: "inline-flex",
     alignItems: "center",
@@ -449,22 +468,22 @@ function moneyInIconCircle(color = "#0B63D1"): React.CSSProperties {
     border: `1px solid ${color}33`,
     background: "#F8FBFF",
     color,
-    fontSize: 28,
+    fontSize: 24,
     flex: "0 0 auto",
   };
 }
 
 function moneyInFactTile(): React.CSSProperties {
   return {
-    minHeight: 116,
+    minHeight: 104,
     borderRadius: 18,
     border: "1px solid rgba(214,228,242,0.74)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.99) 100%)",
-    padding: 14,
+    padding: 12,
     display: "grid",
-    gridTemplateColumns: "56px minmax(0, 1fr)",
-    gap: 12,
+    gridTemplateColumns: "46px minmax(0, 1fr)",
+    gap: 10,
     alignItems: "center",
     boxShadow: "0 10px 22px rgba(15,23,42,0.05)",
   };
@@ -473,7 +492,7 @@ function moneyInFactTile(): React.CSSProperties {
 function moneyInInputShell(): React.CSSProperties {
   return {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) 72px",
+    gridTemplateColumns: "minmax(0, 1fr) 104px",
     alignItems: "center",
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.14)",
@@ -501,6 +520,10 @@ export default function PaymentInstructionsPage() {
     () => communityIdFromSearch(location.search),
     [location.search]
   );
+  const routeCurrency = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return normalizeCurrency(params.get("currency"));
+  }, [location.search]);
   const selectedClanId =
     routeClanId || Number((api as any).getSelectedClanId?.() || 0);
   const routes = useMemo(
@@ -551,6 +574,8 @@ export default function PaymentInstructionsPage() {
     null
   );
   const [amountInput, setAmountInput] = useState<string>("");
+  const [selectedCurrency, setSelectedCurrency] =
+    useState<string>(routeCurrency);
   const [instruction, setInstruction] = useState<CommunityMoneyRoute | null>(
     null
   );
@@ -564,6 +589,10 @@ export default function PaymentInstructionsPage() {
       (api as any).setSelectedClanId?.(routeClanId);
     }
   }, [routeClanId]);
+
+  useEffect(() => {
+    setSelectedCurrency(routeCurrency);
+  }, [routeCurrency]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -626,8 +655,8 @@ export default function PaymentInstructionsPage() {
         }
 
         const [surface, route] = await Promise.all([
-          getCommunityMoneySurface(selectedClanId, gmfnId, "NGN").catch(() => null),
-          loadCommunityDepositRoute(selectedClanId, gmfnId, "NGN").catch(() => null),
+          getCommunityMoneySurface(selectedClanId, gmfnId, selectedCurrency).catch(() => null),
+          loadCommunityDepositRoute(selectedClanId, gmfnId, selectedCurrency).catch(() => null),
         ]);
 
         if (!alive) return;
@@ -636,11 +665,12 @@ export default function PaymentInstructionsPage() {
         setDepositRoute(route || surface?.depositRoute || null);
 
         const stored = readLocalJSON<PersistedDepositTask | null>(
-          taskStorageKey(selectedClanId, gmfnId),
+          taskStorageKey(selectedClanId, gmfnId, selectedCurrency),
           null
         );
 
         setAmountInput(safeStr(stored?.amountInput));
+        setSelectedCurrency(normalizeCurrency(stored?.currency, selectedCurrency));
         setInstruction(stored?.instruction || null);
         setPaymentConfirmed(Boolean(stored?.paymentConfirmed));
         setPaymentConfirmedAt(stored?.paymentConfirmedAt || null);
@@ -654,13 +684,14 @@ export default function PaymentInstructionsPage() {
     return () => {
       alive = false;
     };
-  }, [selectedClanId]);
+  }, [selectedClanId, selectedCurrency]);
 
   useEffect(() => {
     if (!selectedClanId || !currentGmfnId) return;
 
-    writeLocalJSON(taskStorageKey(selectedClanId, currentGmfnId), {
+    writeLocalJSON(taskStorageKey(selectedClanId, currentGmfnId, selectedCurrency), {
       amountInput,
+      currency: selectedCurrency,
       instruction,
       paymentConfirmed,
       paymentConfirmedAt,
@@ -670,6 +701,7 @@ export default function PaymentInstructionsPage() {
     selectedClanId,
     currentGmfnId,
     amountInput,
+    selectedCurrency,
     instruction,
     paymentConfirmed,
     paymentConfirmedAt,
@@ -702,11 +734,12 @@ export default function PaymentInstructionsPage() {
   const poolCurrency = useMemo(() => {
     return firstTruthy(
       instruction?.currency,
+      selectedCurrency,
       depositRoute?.currency,
       moneySurface?.poolCurrency,
       "NGN"
     );
-  }, [instruction, depositRoute, moneySurface]);
+  }, [instruction, depositRoute, moneySurface, selectedCurrency]);
 
   const formattedInputAmount = useMemo(() => {
     return safeStr(amountInput) ? fmtMoney(amountInput) : "";
@@ -824,8 +857,8 @@ export default function PaymentInstructionsPage() {
 
     try {
       const [surface, route] = await Promise.all([
-        getCommunityMoneySurface(selectedClanId, currentGmfnId, "NGN").catch(() => null),
-        loadCommunityDepositRoute(selectedClanId, currentGmfnId, "NGN").catch(() => null),
+        getCommunityMoneySurface(selectedClanId, currentGmfnId, selectedCurrency).catch(() => null),
+        loadCommunityDepositRoute(selectedClanId, currentGmfnId, selectedCurrency).catch(() => null),
       ]);
 
       setMoneySurface(surface);
@@ -871,7 +904,7 @@ export default function PaymentInstructionsPage() {
       const generated = await createPoolDepositInstruction({
         clanId: selectedClanId,
         amount: safeStr(amountInput),
-        currency: poolCurrency,
+        currency: selectedCurrency,
       });
 
       if (!generated) {
@@ -928,12 +961,26 @@ export default function PaymentInstructionsPage() {
     setPaymentConfirmedAt(null);
 
     if (selectedClanId && currentGmfnId) {
-      writeLocalJSON(taskStorageKey(selectedClanId, currentGmfnId), null);
+      writeLocalJSON(taskStorageKey(selectedClanId, currentGmfnId, selectedCurrency), null);
     }
 
     setNotice({
       tone: "success",
       text: "Money In task reset.",
+    });
+  }
+
+  function handleCurrencyChange(value: string) {
+    const nextCurrency = normalizeCurrency(value, selectedCurrency);
+    if (nextCurrency === selectedCurrency) return;
+
+    setSelectedCurrency(nextCurrency);
+    setInstruction(null);
+    setPaymentConfirmed(false);
+    setPaymentConfirmedAt(null);
+    setNotice({
+      tone: "success",
+      text: `Currency set to ${nextCurrency}. Generate a fresh instruction for this currency.`,
     });
   }
 
@@ -1274,18 +1321,18 @@ export default function PaymentInstructionsPage() {
               icon: "👥",
               label: "Route",
               value: communityRailReady
-                ? "Community pay-in ready"
-                : "Community pay-in pending",
+                ? "Pay-in ready"
+                : "Pay-in pending",
               color: "#0B63D1",
             },
             {
               icon: "🛡️",
               label: "Reconciliation",
               value: matchedEvent
-                ? "Matched event visible"
+                ? "Matched"
                 : paymentConfirmed
-                  ? "Waiting for reconciliation"
-                  : "Not confirmed yet",
+                  ? "Reconciling"
+                  : "Not confirmed",
               color: matchedEvent ? "#2E9B62" : "#92400E",
             },
           ].map((tile) => (
@@ -1309,10 +1356,12 @@ export default function PaymentInstructionsPage() {
                     display: "block",
                     marginTop: 6,
                     color: tile.color,
-                    fontSize: isCompact ? 18 : 20,
-                    lineHeight: 1.14,
+                    fontSize: isCompact ? 15 : 19,
+                    lineHeight: 1.2,
                     fontWeight: 1000,
-                    overflowWrap: "anywhere",
+                    overflowWrap: tile.label === "Reference" && instruction ? "anywhere" : "normal",
+                    wordBreak: "normal",
+                    hyphens: "none",
                   }}
                 >
                   {tile.value}
@@ -1418,23 +1467,44 @@ export default function PaymentInstructionsPage() {
                 minWidth: 0,
               }}
             />
-            <span
+            <select
+              value={selectedCurrency}
+              onChange={(e) => handleCurrencyChange(e.target.value)}
+              disabled={generatingInstruction}
+              aria-label="Payment currency"
               style={{
                 marginRight: 10,
                 minHeight: 42,
                 borderRadius: 12,
                 border: "1px solid rgba(11,31,51,0.12)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
                 color: "#07172C",
                 fontWeight: 1000,
+                fontSize: 15,
                 background: "#F8FBFF",
+                padding: "0 8px",
+                outline: "none",
+                cursor: generatingInstruction ? "not-allowed" : "pointer",
               }}
             >
-              {poolCurrency}
-            </span>
+              {MONEY_IN_CURRENCY_OPTIONS.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.code}
+                </option>
+              ))}
+            </select>
           </label>
+
+          <div
+            style={{
+              color: "#617085",
+              fontSize: 13,
+              lineHeight: 1.45,
+              fontWeight: 750,
+            }}
+          >
+            Choose the currency for this instruction. The payment rail shown below
+            remains the route GSN can currently reconcile for that currency.
+          </div>
 
           <div
             style={{

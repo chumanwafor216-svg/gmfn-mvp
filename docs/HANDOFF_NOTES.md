@@ -1,3 +1,50 @@
+### Money In currency selector and tile tightening (2026-06-04)
+
+- Route/screen affected:
+  - `/app/payment/pool`, implemented by
+    `frontend/src/pages/PaymentInstructionsPage.tsx`.
+- Product-owner truth:
+  - Money In must not look locked to Naira/`NGN` because GSN is intended to be
+    international;
+  - the amount/reference/route/reconciliation tiles must not split words into
+    stacked fragments on phone;
+  - button stability is part of this fix, not an optional follow-up.
+- Backend truth confirmed:
+  - `/payment-instructions/pool` already accepts `currency` in
+    `gmfn_backend/app/api/routes/payment_instructions.py`;
+  - `create_pool_deposit_instruction()` already stores the currency in
+    `gmfn_backend/app/services/payment_instruction_service.py`;
+  - active payment rails are still limited by
+    `gmfn_backend/app/services/payment_rail_service.py`. `USD`, `GBP`, `EUR`,
+    and other codes can be submitted as currency codes, but true live
+    international settlement still depends on matching active rails being
+    configured.
+- Frontend change:
+  - replaced the fixed `NGN` chip in the amount input with a real currency
+    selector covering `NGN`, `USD`, `GBP`, `EUR`, `GHS`, `KES`, and `UGX`;
+  - Money In route loading, route refresh, persisted task storage, and
+    `createPoolDepositInstruction()` now use the selected currency instead of a
+    hardcoded `NGN`;
+  - Money In task drafts are now stored per selected currency so one currency's
+    instruction does not leak into another;
+  - tightened the amount/reference/route/reconciliation tiles by reducing icon
+    width, reducing compact text size, shortening route/reconciliation labels,
+    and removing harsh `overflowWrap: "anywhere"` from normal words.
+- Guardrail:
+  - `frontend/tools/audit-finance-actions.mjs` now checks that Money In exposes
+    a real payment currency selector and submits `selectedCurrency` when
+    generating a pool payment instruction.
+- Verification:
+  - `npm run audit:finance-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this is a frontend Money In UX and request-payload fix. It does not activate
+    new settlement rails, FX conversion, bank accounts, card rails, or mobile
+    money providers for those currencies.
+
 ### Marketplace money route detail reference-card remodel (2026-06-04)
 
 - Route/screen affected:
