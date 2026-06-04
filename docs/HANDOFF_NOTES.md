@@ -1,3 +1,59 @@
+### Public Shop trust-marketplace visual remodel (2026-06-04)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner truth:
+  - the public shop page had become visually heavy and dull for younger/public
+    visitors;
+  - the new direction is closer to the supplied phone reference: richer navy and
+    gold trust identity, clearer shop hero, lighter trust-status strip, brighter
+    Spotlight, dark Private Vault, and cleaner Shop Diaries cards;
+  - Public Shop is one of the steadier button pages, so the remodel must not
+    reintroduce jumpy or falling buttons.
+- Frontend change:
+  - added a local `GsnSealEmblem` and a compact GSN brand bar;
+  - rebuilt the signboard into a reference-style trust hero with shop name,
+    category chip, GMFN ID, marketplace context, and three stable actions:
+    Share, Verify, and WhatsApp/contact;
+  - kept Verify Shop as an on-demand panel with shop owner ID, marketplace,
+    community ID, shop name, and QR;
+  - changed the status strip into four compact trust cues:
+    Verified Shop, Public Shelf, Private Vault, and Trusted Identity;
+  - changed Spotlight to a warmer, brighter feature block and kept its action
+    wired to the Shop Diaries reveal;
+  - changed Private Vault to a dark trust-card style with the vault emblem first
+    and existing Vault ask/copy actions intact;
+  - changed Shop Diaries product cards so the lower information/action panel is
+    light and clear while the product media stays prominent.
+- Button/tap guardrails:
+  - no raw `<button>` or raw `<a>` elements were introduced;
+  - hero Share, Verify, and owner-contact actions use shared stable primitives;
+  - product open/share controls keep compact sign buttons with fixed dimensions;
+  - local button styles no longer use `overflowWrap: "anywhere"`, which can
+    split words into ugly stacked fragments on phone.
+- Guardrail:
+  - `frontend/tools/audit-button-stability.mjs` now protects the new hero action
+    row by requiring `shop-gallery.share-shop`,
+    `shop-gallery.verify-shop.toggle`, and `shop-gallery.owner-contact.choose`
+    before the rest of the public-shop action contracts.
+- Verification:
+  - line-auditor subagent inspected current Public Shop action contracts and
+    identified must-preserve public vs signed-in surfaces;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx tools/audit-button-stability.mjs`
+    passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`;
+  - `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this is a frontend visual/interaction remodel only. It does not change
+    backend shop identity, product loading, QR target rules, Vault access rules,
+    or paid repost behavior;
+  - this frontend package does not include a Playwright/browser screenshot
+    workflow, so the evidence here is code review, audits, lint, and production
+    build, not a captured browser screenshot.
+
 ### Public Shop shortcuts visibility and label tightened (2026-06-04)
 
 - Route/screen affected:
