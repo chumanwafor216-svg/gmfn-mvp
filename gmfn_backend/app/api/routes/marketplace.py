@@ -1129,7 +1129,7 @@ def get_public_marketplace_shop_by_gmfn_id(
         "broadcasts": [_broadcast_out(db, row) for row in broadcast_rows],
         "primary_broadcast": _broadcast_out(db, broadcast_rows[0]) if broadcast_rows else None,
         "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
-        "clan_id": requested_clan_id if requested_clan_id > 0 else None,
+        "clan_id": int(effective_clan_id) if int(effective_clan_id or 0) > 0 else None,
         "community_name": (
             _safe_str(getattr(effective_clan, "marketplace_name", None))
             or _safe_str(getattr(effective_clan, "name", None))

@@ -151,7 +151,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceMoneyRouteCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? 134 : 150[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?overflow: "hidden"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?function marketplaceMoneyRouteValueStyle[\s\S]*?WebkitLineClamp: ready \? 2 : 1[\s\S]*?function marketplaceMoneyStatusPillStyle[\s\S]*?stableStatusPillStyle\(ready\)[\s\S]*?function marketplaceMoneyChartBubbleStyle/,
+  /function marketplaceMoneyRouteCardStyle\(isCompact: boolean\): React\.CSSProperties \{[\s\S]*?minHeight: isCompact \? 92 : 150[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?"50px minmax\(0, 1fr\) auto"[\s\S]*?gridTemplateAreas: isCompact[\s\S]*?"icon text status"[\s\S]*?overflow: "hidden"[\s\S]*?overflowAnchor: "none"[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?function marketplaceMoneyRouteValueStyle[\s\S]*?WebkitLineClamp: ready \? 2 : 1[\s\S]*?function marketplaceMoneyStatusPillStyle[\s\S]*?stableStatusPillStyle\(ready\)[\s\S]*?function marketplaceMoneyChartBubbleStyle/,
   "Marketplace money detail cards must keep fixed, clamped, phone-safe geometry so readiness text cannot stretch cards or create jumpy taps."
 );
 

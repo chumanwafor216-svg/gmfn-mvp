@@ -205,7 +205,7 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     borderRadius: 16,
     border: "1px solid rgba(123,161,204,0.14)",
     background:
-      bg === "#FFFFFF" || bg === "#F8FBFF"
+      bg === "#FFFFFF" || bg === "#F8FBFF" || bg === "#FCFEFF"
         ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
     padding: 14,
@@ -219,7 +219,7 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
     borderRadius: 16,
     border: "1px solid rgba(123,161,204,0.14)",
     background:
-      bg === "#FFFFFF"
+      bg === "#FFFFFF" || bg === "#F8FBFF"
         ? "linear-gradient(180deg, rgba(15,33,54,0.94) 0%, rgba(21,45,71,0.92) 100%)"
         : bg,
     padding: 14,
@@ -231,7 +231,7 @@ function statTile(bg = "#FFFFFF"): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#9CB4CF",
+    color: "#C9DAEC",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
@@ -358,7 +358,7 @@ function textAreaStyle(): React.CSSProperties {
 
 function helperText(): React.CSSProperties {
   return {
-    color: "#C8D8EA",
+    color: "#DCE8F5",
     fontSize: 14.5,
     lineHeight: 1.75,
   };
@@ -1307,21 +1307,21 @@ export default function WithdrawalInstructionsPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "76px minmax(0, 1fr)" : "112px minmax(0, 1fr)",
-            gap: 18,
+            gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "112px minmax(0, 1fr)",
+            gap: isCompact ? 12 : 18,
             alignItems: "center",
           }}
         >
           <div
             aria-hidden="true"
             style={{
-              width: isCompact ? 70 : 96,
-              height: isCompact ? 70 : 96,
-              borderRadius: 24,
+              width: isCompact ? 58 : 96,
+              height: isCompact ? 58 : 96,
+              borderRadius: isCompact ? 18 : 24,
               display: "grid",
               placeItems: "center",
               color: "#A9D5FF",
-              fontSize: isCompact ? 34 : 44,
+              fontSize: isCompact ? 29 : 44,
               background:
                 "radial-gradient(circle at 30% 20%, rgba(49,132,255,0.42), rgba(16,54,94,0.9) 64%, rgba(7,20,36,0.98))",
               border: "1px solid rgba(78,143,231,0.34)",
@@ -1340,8 +1340,8 @@ export default function WithdrawalInstructionsPage() {
                 marginTop: 5,
                 color: "#F8FBFF",
                 fontWeight: 1000,
-                fontSize: isCompact ? 30 : 40,
-                lineHeight: 1.06,
+                fontSize: isCompact ? 25 : 40,
+                lineHeight: isCompact ? 1.02 : 1.06,
               }}
             >
               Simple guided payout
@@ -1357,6 +1357,7 @@ export default function WithdrawalInstructionsPage() {
                 display: "flex",
                 gap: 8,
                 flexWrap: "wrap",
+                alignItems: "center",
               }}
             >
               <span style={badge(true)}>Community ID: {publicCommunityId}</span>

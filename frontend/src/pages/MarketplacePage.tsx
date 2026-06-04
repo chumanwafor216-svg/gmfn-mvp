@@ -1762,9 +1762,9 @@ function marketplaceInlineActionStyle(
 
 function marketplaceMoneyPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
-    marginTop: 16,
+    marginTop: isCompact ? 12 : 16,
     display: "grid",
-    gap: isCompact ? 10 : 12,
+    gap: isCompact ? 8 : 12,
     overflowAnchor: "none",
     transition: "none",
   };
@@ -1772,22 +1772,22 @@ function marketplaceMoneyPanelStyle(isCompact: boolean): React.CSSProperties {
 
 function marketplaceMoneyRouteCardStyle(isCompact: boolean): React.CSSProperties {
   return {
-    minHeight: isCompact ? 134 : 150,
-    borderRadius: isCompact ? 20 : 24,
+    minHeight: isCompact ? 92 : 150,
+    borderRadius: isCompact ? 18 : 24,
     border: "1px solid rgba(16,37,59,0.08)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,252,255,0.98) 100%)",
     boxShadow:
       "0 16px 30px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.92)",
-    padding: isCompact ? "18px 18px" : "22px 24px",
+    padding: isCompact ? "12px 13px" : "22px 24px",
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "72px minmax(0, 1fr)"
+      ? "50px minmax(0, 1fr) auto"
       : "92px minmax(0, 1fr) auto",
     gridTemplateAreas: isCompact
-      ? '"icon text" "icon status"'
+      ? '"icon text status"'
       : '"icon text status"',
-    gap: isCompact ? "10px 16px" : "14px 24px",
+    gap: isCompact ? "9px" : "14px 24px",
     alignItems: "center",
     overflow: "hidden",
     overflowAnchor: "none",
@@ -1805,8 +1805,8 @@ function marketplaceMoneyIconBubbleStyle(
 
   return {
     gridArea: "icon",
-    width: isCompact ? 68 : 80,
-    height: isCompact ? 68 : 80,
+    width: isCompact ? 48 : 80,
+    height: isCompact ? 48 : 80,
     borderRadius: 999,
     display: "inline-flex",
     alignItems: "center",
@@ -1825,7 +1825,7 @@ function marketplaceMoneyTextStackStyle(): React.CSSProperties {
     gridArea: "text",
     minWidth: 0,
     display: "grid",
-    gap: 8,
+    gap: 5,
     alignContent: "center",
   };
 }
@@ -1833,7 +1833,7 @@ function marketplaceMoneyTextStackStyle(): React.CSSProperties {
 function marketplaceMoneyTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#08233A",
-    fontSize: isCompact ? 18 : 20,
+    fontSize: isCompact ? 15 : 20,
     fontWeight: 950,
     lineHeight: 1.14,
     overflowWrap: "break-word",
@@ -1844,9 +1844,9 @@ function marketplaceMoneyTitleStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceMoneyValueStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#061827",
-    fontSize: isCompact ? 30 : 42,
+    fontSize: isCompact ? 21 : 42,
     fontWeight: 950,
-    lineHeight: 1,
+    lineHeight: isCompact ? 1.04 : 1,
     letterSpacing: 0,
     overflowWrap: "break-word",
     wordBreak: "normal",
@@ -1859,7 +1859,7 @@ function marketplaceMoneyRouteValueStyle(
 ): React.CSSProperties {
   return {
     ...marketplaceMoneyValueStyle(isCompact),
-    fontSize: ready ? (isCompact ? 24 : 30) : isCompact ? 30 : 42,
+    fontSize: ready ? (isCompact ? 18 : 30) : isCompact ? 21 : 42,
     lineHeight: ready ? 1.08 : 1,
     display: "-webkit-box",
     WebkitLineClamp: ready ? 2 : 1,
@@ -1870,8 +1870,8 @@ function marketplaceMoneyRouteValueStyle(
 
 function marketplaceMoneyHelperStyle(isCompact: boolean): React.CSSProperties {
   return {
-    color: "#5C6D7F",
-    fontSize: isCompact ? 15 : 17,
+    color: "#41556B",
+    fontSize: isCompact ? 12.5 : 17,
     fontWeight: 750,
     lineHeight: 1.24,
     overflowWrap: "break-word",
@@ -1879,10 +1879,10 @@ function marketplaceMoneyHelperStyle(isCompact: boolean): React.CSSProperties {
   };
 }
 
-function marketplaceMoneyStatusAreaStyle(isCompact: boolean): React.CSSProperties {
+function marketplaceMoneyStatusAreaStyle(): React.CSSProperties {
   return {
     gridArea: "status",
-    justifySelf: isCompact ? "start" : "end",
+    justifySelf: "end",
     alignSelf: "center",
     display: "inline-flex",
     alignItems: "center",
@@ -1894,7 +1894,8 @@ function marketplaceMoneyStatusAreaStyle(isCompact: boolean): React.CSSPropertie
 function marketplaceMoneyStatusPillStyle(ready = false): React.CSSProperties {
   return {
     ...stableStatusPillStyle(ready),
-    minWidth: 104,
+    minWidth: 0,
+    padding: "0 10px",
     justifyContent: "center",
     color: ready ? "#1D6D46" : "#3D4F61",
     background: ready
@@ -1908,8 +1909,8 @@ function marketplaceMoneyStatusPillStyle(ready = false): React.CSSProperties {
 
 function marketplaceMoneyChartBubbleStyle(isCompact: boolean): React.CSSProperties {
   return {
-    width: isCompact ? 58 : 68,
-    height: isCompact ? 58 : 68,
+    width: isCompact ? 38 : 68,
+    height: isCompact ? 38 : 68,
     borderRadius: 999,
     display: "inline-flex",
     alignItems: "center",
@@ -4832,7 +4833,7 @@ export default function MarketplacePage() {
                 aria-hidden="true"
                 style={marketplaceMoneyIconBubbleStyle(isCompact, "soft")}
               >
-                <MarketplaceGlyph name="eye" size={isCompact ? 34 : 40} />
+                <MarketplaceGlyph name="eye" size={isCompact ? 24 : 40} />
               </span>
               <div style={marketplaceMoneyTextStackStyle()}>
                 <div style={marketplaceMoneyTitleStyle(isCompact)}>
@@ -4845,12 +4846,12 @@ export default function MarketplacePage() {
                   Current pool view
                 </div>
               </div>
-              <div style={marketplaceMoneyStatusAreaStyle(isCompact)}>
+              <div style={marketplaceMoneyStatusAreaStyle()}>
                 <span
                   aria-hidden="true"
                   style={marketplaceMoneyChartBubbleStyle(isCompact)}
                 >
-                  <MarketplaceGlyph name="chart" size={isCompact ? 30 : 34} />
+                  <MarketplaceGlyph name="chart" size={isCompact ? 22 : 34} />
                 </span>
               </div>
             </div>
@@ -4860,7 +4861,7 @@ export default function MarketplacePage() {
                 aria-hidden="true"
                 style={marketplaceMoneyIconBubbleStyle(isCompact, "gold")}
               >
-                <MarketplaceGlyph name="bank" size={isCompact ? 34 : 40} />
+                <MarketplaceGlyph name="bank" size={isCompact ? 24 : 40} />
               </span>
               <div style={marketplaceMoneyTextStackStyle()}>
                 <div style={marketplaceMoneyTitleStyle(isCompact)}>
@@ -4880,7 +4881,7 @@ export default function MarketplacePage() {
                   Money In route
                 </div>
               </div>
-              <div style={marketplaceMoneyStatusAreaStyle(isCompact)}>
+              <div style={marketplaceMoneyStatusAreaStyle()}>
                 <span style={marketplaceMoneyStatusPillStyle(communitySettlementReady)}>
                   {communitySettlementReady ? "Ready" : "Not ready"}
                 </span>
@@ -4892,7 +4893,7 @@ export default function MarketplacePage() {
                 aria-hidden="true"
                 style={marketplaceMoneyIconBubbleStyle(isCompact, "blue")}
               >
-                <MarketplaceGlyph name="card" size={isCompact ? 34 : 40} />
+                <MarketplaceGlyph name="card" size={isCompact ? 24 : 40} />
               </span>
               <div style={marketplaceMoneyTextStackStyle()}>
                 <div style={marketplaceMoneyTitleStyle(isCompact)}>
@@ -4905,7 +4906,7 @@ export default function MarketplacePage() {
                   Money Out route
                 </div>
               </div>
-              <div style={marketplaceMoneyStatusAreaStyle(isCompact)}>
+              <div style={marketplaceMoneyStatusAreaStyle()}>
                 <span style={marketplaceMoneyStatusPillStyle(payoutReady)}>
                   {payoutReady ? "Ready" : "Not ready"}
                 </span>

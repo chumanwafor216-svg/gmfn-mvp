@@ -1,3 +1,71 @@
+### Money Out / Marketplace Finance / Verify QR tightening (2026-06-04)
+
+- Routes/screens affected:
+  - `/app/withdrawal-instructions` / Money Out, implemented by
+    `frontend/src/pages/WithdrawalInstructionsPage.tsx`;
+  - `/app/marketplace` Marketplace Finance panel, implemented by
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - `/shop/:gmfnId` Verify panel, implemented by
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - public shop API serializer in
+    `gmfn_backend/app/api/routes/marketplace.py`.
+- Product-owner truth:
+  - Money Out phone layout had too much open space and several inner panels
+    looked washed out because pale labels were landing on light panels;
+  - Marketplace Finance route cards were too tall on phone and could make
+    readiness words appear broken or oversized;
+  - Public Shop Verify QR was not ready because the public shop response did
+    not always expose the effective community ID at the top level even though
+    the backend had already resolved it.
+- Backend change:
+  - public shop response now returns the effective resolved `clan_id` when the
+    shop has one, not only when the request explicitly supplied a clan.
+    This lets the frontend build the real `/verify/community/:id` route when
+    backend truth is available.
+- Frontend change:
+  - Money Out hero is tighter on compact screens, with reduced icon/title
+    geometry and less empty hero space;
+  - Money Out inner panels that use light-looking helper blocks now stay on
+    the dark institutional surface when their labels and helper copy expect
+    light text, removing the washed-out look;
+  - Marketplace Finance cards now use fixed compact row geometry on phones:
+    smaller icons, shorter card height, status on the same row, and clamped
+    route values;
+  - Public Shop Verify now prefers the community verification QR when
+    `clan_id` is exposed and falls back to a public-shop QR instead of a dead
+    "not ready" proof box;
+  - the Verify close control uses `Hide` on compact screens to avoid clipped
+    `Hide proof` text.
+- Guardrails:
+  - `frontend/tools/audit-button-stability.mjs` now protects the compact
+    Marketplace Finance fixed-row geometry;
+  - `frontend/tools/audit-link-contracts.mjs` now protects the Verify QR rule:
+    prefer community verification when available, otherwise use an explicit
+    public-shop QR fallback.
+- Verification:
+  - `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx
+    src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx
+    tools/audit-button-stability.mjs tools/audit-link-contracts.mjs` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed and still reports 51
+    stable Marketplace source actions;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run audit:finance-actions` passed;
+  - `npm run audit:loans-actions` passed;
+  - sandboxed backend pytest hit the known Windows temp permission failure,
+    then `python -m pytest gmfn_backend\tests\test_marketplace_public_shop.py
+    -q` passed outside the sandbox: 15 passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`, then
+    `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - this does not create a live TrustSlip QR. It makes the real community
+    verification QR available when the shop community ID is exposed and gives
+    public visitors a valid public-shop QR fallback otherwise.
+
 ### Public Shop reference visual correction (2026-06-04)
 
 - Route/screen affected:

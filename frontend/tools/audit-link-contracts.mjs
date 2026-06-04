@@ -880,8 +880,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{ QRCodeSVG \} from "qrcode\.react";[\s\S]*?publicFrontendUrl[\s\S]*?const shopCommunityVerifyPath = shopCommunityIdText[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(shopCommunityIdText\)\}[\s\S]*?const shopVerificationQrTarget = shopCommunityVerifyPath[\s\S]*?publicFrontendUrl\(shopCommunityVerifyPath\)[\s\S]*?<QRCodeSVG[\s\S]*?value=\{shopVerificationQrTarget\}/,
-  "Public Shop Verify panel QR must target the public community verification record when available, not silently reopen the shop gallery."
+  /import \{ QRCodeSVG \} from "qrcode\.react";[\s\S]*?publicFrontendUrl[\s\S]*?const shopCommunityVerifyPath = shopCommunityIdText[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(shopCommunityIdText\)\}[\s\S]*?const shopPublicQrTarget = shopRootPath \? publicFrontendUrl\(shopRootPath\) : ""[\s\S]*?const shopVerificationQrKind = shopCommunityVerifyPath[\s\S]*?"community"[\s\S]*?"shop"[\s\S]*?const shopVerificationQrTarget = shopVerificationQrKind === "community"[\s\S]*?publicFrontendUrl\(shopCommunityVerifyPath\)[\s\S]*?shopVerificationQrKind === "shop"[\s\S]*?shopPublicQrTarget[\s\S]*?<QRCodeSVG[\s\S]*?value=\{shopVerificationQrTarget\}/,
+  "Public Shop Verify panel QR must prefer the public community verification record when available, with an explicit public-shop QR fallback instead of a dead proof box."
 );
 
 assertContains(

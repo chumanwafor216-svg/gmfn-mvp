@@ -788,7 +788,14 @@ function normalizeShop(
 
   return {
     id: positiveNumber(src?.id) || undefined,
-    clanId: positiveNumber(src?.clan_id) || undefined,
+    clanId:
+      positiveNumber(src?.clan_id) ||
+      positiveNumber(src?.clanId) ||
+      positiveNumber(src?.community_id) ||
+      positiveNumber(currentClan?.id) ||
+      positiveNumber(currentClan?.clan_id) ||
+      positiveNumber(currentClan?.community_id) ||
+      undefined,
     gmfnId: ownerGmfnId,
     ownerName,
     shopName,
@@ -1269,6 +1276,20 @@ export default function ShopGalleryPage() {
         publicShopRes?.item || publicShopRes,
         cleanedGmfnId,
         {
+          id: positiveNumber(
+            publicShopRes?.clan_id ||
+              publicShopRes?.community_id ||
+              clanRes?.id ||
+              clanRes?.clan_id ||
+              clanRes?.community_id
+          ),
+          clan_id: positiveNumber(
+            publicShopRes?.clan_id ||
+              publicShopRes?.community_id ||
+              clanRes?.id ||
+              clanRes?.clan_id ||
+              clanRes?.community_id
+          ),
           marketplace_name: firstMeaningful(
             publicShopRes?.community_name,
             clanRes?.marketplace_name,
@@ -1961,12 +1982,27 @@ export default function ShopGalleryPage() {
   const shopCommunityVerifyPath = shopCommunityIdText
     ? `/verify/community/${encodeURIComponent(shopCommunityIdText)}`
     : "";
-  const shopVerificationQrTarget = shopCommunityVerifyPath
-    ? publicFrontendUrl(shopCommunityVerifyPath)
+  const shopPublicQrTarget = shopRootPath ? publicFrontendUrl(shopRootPath) : "";
+  const shopVerificationQrKind = shopCommunityVerifyPath
+    ? "community"
+    : shopPublicQrTarget
+    ? "shop"
     : "";
-  const shopVerificationStatusText = shopVerificationQrTarget
+  const shopVerificationQrTarget = shopVerificationQrKind === "community"
+    ? publicFrontendUrl(shopCommunityVerifyPath)
+    : shopVerificationQrKind === "shop"
+    ? shopPublicQrTarget
+    : "";
+  const shopVerificationStatusText = shopVerificationQrKind === "community"
     ? "Community record ready"
+    : shopVerificationQrKind === "shop"
+    ? "Public shop QR ready"
     : "Trust proof on request";
+  const shopVerificationQrLabel = shopVerificationQrKind === "community"
+    ? "Scan community record"
+    : shopVerificationQrKind === "shop"
+    ? "Scan public shop"
+    : "Public shop QR is not ready";
   const shopVerificationRows = [
     { icon: "🏪", label: "Shop name", value: shopNameText },
     { icon: "🪪", label: "Shop owner ID", value: shopGmfnText || "Not ready" },
@@ -2847,7 +2883,7 @@ export default function ShopGalleryPage() {
                   textOverflow: "ellipsis",
                 }}
               >
-                Hide proof
+                {isCompact ? "Hide" : "Hide proof"}
               </SecondaryButton>
             </div>
 
@@ -2924,7 +2960,7 @@ export default function ShopGalleryPage() {
                         lineHeight: 1.2,
                       }}
                     >
-                      Scan community record
+                      {shopVerificationQrLabel}
                     </span>
                   </div>
                 ) : (
@@ -2937,7 +2973,7 @@ export default function ShopGalleryPage() {
                       lineHeight: 1.25,
                     }}
                   >
-                    Community verification QR is not ready
+                    {shopVerificationQrLabel}
                   </span>
                 )}
               </div>
