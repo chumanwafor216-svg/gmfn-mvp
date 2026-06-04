@@ -1,3 +1,59 @@
+### Public Shop block-slot truth and diary rail polish (2026-06-04)
+
+- Routes/screens affected:
+  - `/app/shop-control` embedded Public gallery block control, implemented by
+    `frontend/src/pages/ShopAssetsPage.tsx`;
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - marketplace product serialization in
+    `gmfn_backend/app/api/routes/marketplace.py`.
+- Product-owner truth:
+  - public gallery blocks that already contain products must show as occupied
+    in Shop Control so the owner can edit, hide, replace, or copy the correct
+    block without guessing;
+  - Public Shop diary cards were still letting the bottom title/action rail eat
+    too much of the product media;
+  - the original Private Vault reference picture is not present anywhere in the
+    repository. Until that bitmap is supplied as a file/path, the implementation
+    can only improve the code-drawn vault illustration.
+- Backend change:
+  - `_product_out()` now returns `public_block_number` and `slot_number`,
+    derived from the existing stored `[BLOCK:n]` product-description marker.
+    This keeps the database contract unchanged while making the block number
+    explicit for frontend screens.
+- Frontend change:
+  - Shop Control and Public Shop now prefer the explicit API block fields before
+    falling back to parsing `[BLOCK:n]` from descriptions;
+  - the Public Shop brand bar was tightened into a framed GSN identity row with
+    stronger alignment and contrast;
+  - the Private Vault illustration was enlarged and sharpened, but it is still
+    a generated/code illustration, not the missing original vault photo asset;
+  - Shop Diaries closed cards now have a stronger frame and a short fixed
+    bottom rail with title, price, and one compact eye toggle. Share remains
+    available after opening the item, preserving the existing route behavior.
+- Button/tap guardrails:
+  - no raw buttons or links were introduced;
+  - existing stable debug IDs remain for shop shortcuts, hero actions, vault
+    actions, product toggle/share, and remaining product controls;
+  - the button-stability audit now protects the softer `🔼` close sign instead
+    of the older red X.
+- Verification:
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed and reports 51 stable
+    Marketplace source actions;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:global-raw-action-elements` passed;
+  - sandboxed `python -m pytest
+    gmfn_backend\tests\test_marketplace_public_shop.py -q` was blocked by
+    Windows temp-directory permissions, then the same focused test passed
+    outside the sandbox: 15 passed;
+  - sandboxed `npm run build` hit the known Vite/esbuild `spawn EPERM`, then
+    `npm run build` passed outside the sandbox.
+- Remaining truth:
+  - if the owner wants the exact vault picture from the reference mockup, that
+    image still needs to be added to the repo or provided as a local path.
+
 ### Money In top-rail contrast and status-tile polish (2026-06-04)
 
 - Route/screen affected:

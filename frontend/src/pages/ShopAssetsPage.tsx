@@ -70,6 +70,8 @@ type ProductRecord = {
   image_url?: string | null;
   video_url?: string | null;
   visibility_mode?: string | null;
+  public_block_number?: number | string | null;
+  slot_number?: number | string | null;
   is_active?: boolean;
   created_at?: string | null;
   origin_clan_id?: number;
@@ -458,6 +460,11 @@ function composeProductDescription(
 }
 
 function publicBlockNumberForProduct(item: ProductRecord | null | undefined): number {
+  const explicitBlock = Number(
+    firstTruthy(item?.public_block_number, item?.slot_number)
+  );
+  if (explicitBlock >= 1 && explicitBlock <= 12) return explicitBlock;
+
   return extractPublicBlockNumber(firstTruthy(item?.description));
 }
 

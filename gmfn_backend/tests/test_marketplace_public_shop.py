@@ -310,6 +310,12 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
     token = create_access_token({"sub": "seller@example.com"})
     headers = {"Authorization": f"Bearer {token}"}
 
+    products = client.get("/marketplace/products?clan_id=1", headers=headers)
+    assert products.status_code == 200, products.text
+    product_body = products.json()
+    assert product_body["items"][0]["public_block_number"] == 5
+    assert product_body["items"][0]["slot_number"] == 5
+
     blocked = client.post(
         "/marketplace/products/1/repost",
         json={"target_clan_id": 2},

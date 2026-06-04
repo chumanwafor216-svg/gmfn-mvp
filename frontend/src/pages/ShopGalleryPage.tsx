@@ -50,6 +50,7 @@ type ShopProfile = {
 type ShopProduct = {
   id?: number;
   slotNumber: number;
+  publicBlockNumber?: number;
   name: string;
   description: string;
   priceText: string;
@@ -319,10 +320,10 @@ function isInteractiveCardTarget(target: EventTarget | null): boolean {
 }
 
 function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
-  const size = compact ? 104 : 150;
-  const doorSize = compact ? 66 : 92;
-  const wheelSize = compact ? 24 : 34;
-  const boltSize = compact ? 8 : 10;
+  const size = compact ? 116 : 170;
+  const doorSize = compact ? 78 : 112;
+  const wheelSize = compact ? 30 : 42;
+  const boltSize = compact ? 9 : 12;
 
   return (
     <div
@@ -331,11 +332,11 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
         width: "100%",
         minHeight: size,
         borderRadius: compact ? 18 : 22,
-        border: "1px solid rgba(214,170,69,0.42)",
+        border: "1px solid rgba(255,232,160,0.62)",
         background:
-          "linear-gradient(145deg, #FFF8DD 0%, #F0D477 42%, #B88622 100%)",
+          "radial-gradient(circle at 28% 18%, rgba(255,255,255,0.82) 0%, rgba(255,244,204,0.38) 20%, transparent 38%), linear-gradient(145deg, #FFF1B4 0%, #E6C45F 38%, #A66D16 100%)",
         boxShadow:
-          "inset 0 1px 0 rgba(255,255,255,0.82), 0 16px 30px rgba(138,100,14,0.18)",
+          "inset 0 1px 0 rgba(255,255,255,0.86), inset 0 -14px 30px rgba(96,60,8,0.18), 0 18px 36px rgba(138,100,14,0.24)",
         display: "grid",
         placeItems: "center",
         overflow: "hidden",
@@ -347,9 +348,10 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
           position: "absolute",
           inset: compact ? 10 : 14,
           borderRadius: compact ? 16 : 20,
-          border: "1px solid rgba(143,107,25,0.26)",
+          border: "1px solid rgba(143,107,25,0.38)",
           background:
-            "linear-gradient(145deg, rgba(255,255,255,0.18), rgba(255,255,255,0.02))",
+            "linear-gradient(145deg, rgba(255,255,255,0.30), rgba(255,255,255,0.04))",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
         }}
       />
       <div
@@ -359,10 +361,10 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
           height: doorSize,
           borderRadius: compact ? 18 : 22,
           background:
-            "linear-gradient(145deg, #607284 0%, #253A51 42%, #071C32 100%)",
-          border: "2px solid rgba(255,236,173,0.42)",
+            "radial-gradient(circle at 35% 24%, rgba(255,255,255,0.20), transparent 28%), linear-gradient(145deg, #536A7F 0%, #233A52 40%, #05172B 100%)",
+          border: "2px solid rgba(255,236,173,0.58)",
           boxShadow:
-            "inset 0 2px 7px rgba(255,255,255,0.20), inset 0 -8px 18px rgba(3,16,31,0.50), 0 16px 30px rgba(8,35,61,0.26)",
+            "inset 0 2px 8px rgba(255,255,255,0.24), inset 0 -10px 22px rgba(3,16,31,0.60), 0 18px 34px rgba(8,35,61,0.32)",
         }}
       >
         <span
@@ -400,8 +402,8 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
             transform: "translate(-50%, -50%)",
             borderRadius: "50%",
             border: "2px solid rgba(255,236,173,0.60)",
-            background:
-              "radial-gradient(circle, rgba(255,244,204,0.82) 0%, rgba(214,170,69,0.28) 38%, rgba(3,16,31,0.46) 100%)",
+          background:
+              "radial-gradient(circle, rgba(255,244,204,0.92) 0%, rgba(214,170,69,0.38) 42%, rgba(3,16,31,0.52) 100%)",
             boxShadow: "inset 0 1px 3px rgba(255,255,255,0.24)",
           }}
         />
@@ -437,7 +439,7 @@ function PublicVaultEmblem({ compact = false }: { compact?: boolean }) {
           right: 8,
           bottom: compact ? 9 : 12,
           color: "#08233D",
-          fontSize: compact ? 10 : 14,
+          fontSize: compact ? 10.5 : 14,
           fontWeight: 950,
           textAlign: "center",
           textShadow: "0 1px 0 rgba(255,255,255,0.36)",
@@ -730,6 +732,20 @@ function extractPublicBlockNumber(description: any): number {
   return blockNumber >= 1 && blockNumber <= GALLERY_SLOTS_TOTAL ? blockNumber : 0;
 }
 
+function publicBlockNumberFromProduct(src: any, description: any): number {
+  const explicitBlockNumber = Number(
+    firstMeaningful(src?.public_block_number, src?.slot_number)
+  );
+  if (
+    explicitBlockNumber >= 1 &&
+    explicitBlockNumber <= GALLERY_SLOTS_TOTAL
+  ) {
+    return explicitBlockNumber;
+  }
+
+  return extractPublicBlockNumber(description);
+}
+
 function stripPublicBlockNumber(description: any): string {
   return safeStr(description).replace(/^\[BLOCK:\d{1,2}\]\s*/i, "");
 }
@@ -755,7 +771,7 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
     src?.detail,
     src?.summary
   );
-  const explicitSlotNumber = extractPublicBlockNumber(rawDescription);
+  const explicitSlotNumber = publicBlockNumberFromProduct(src, rawDescription);
   const resolvedSlotNumber = explicitSlotNumber || slotNumber;
   const description = stripProductLabel(rawDescription);
 
@@ -773,6 +789,7 @@ function normalizeProduct(raw: any, slotNumber: number): ShopProduct | null {
   return {
     id: productId,
     slotNumber: resolvedSlotNumber,
+    publicBlockNumber: explicitSlotNumber || undefined,
     name,
     description,
     priceText: moneyText(
@@ -2044,9 +2061,14 @@ export default function ShopGalleryPage() {
             display: "grid",
             gridTemplateColumns: "auto minmax(0, 1fr)",
             alignItems: "center",
-            gap: isCompact ? 9 : 12,
+            gap: isCompact ? 12 : 16,
             color: "#FFFFFF",
-            padding: isCompact ? "0 4px" : "0 6px",
+            padding: isCompact ? "6px 8px 8px" : "8px 12px 10px",
+            borderRadius: isCompact ? 18 : 22,
+            background:
+              "linear-gradient(90deg, rgba(255,232,160,0.08) 0%, rgba(255,255,255,0.03) 54%, rgba(23,92,168,0.10) 100%)",
+            border: "1px solid rgba(255,232,160,0.18)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
           }}
         >
           <div
@@ -2059,7 +2081,8 @@ export default function ShopGalleryPage() {
               placeItems: "center",
               background: "rgba(255,255,255,0.08)",
               border: "1px solid rgba(255,232,160,0.34)",
-              boxShadow: "0 12px 24px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.14)",
+              boxShadow:
+                "0 12px 24px rgba(0,0,0,0.24), 0 0 18px rgba(47,128,237,0.12), inset 0 1px 0 rgba(255,255,255,0.14)",
               overflow: "hidden",
             }}
           >
@@ -2071,6 +2094,7 @@ export default function ShopGalleryPage() {
                 fontSize: isCompact ? 20 : 26,
                 fontWeight: 950,
                 lineHeight: 1,
+                letterSpacing: 0,
               }}
             >
               GSN
@@ -2078,9 +2102,9 @@ export default function ShopGalleryPage() {
             <div
               style={{
                 marginTop: 3,
-                color: "rgba(255,255,255,0.78)",
+                color: "rgba(255,255,255,0.84)",
                 fontSize: isCompact ? 11.5 : 14,
-                fontWeight: 700,
+                fontWeight: 760,
                 lineHeight: 1.25,
               }}
             >
@@ -3109,9 +3133,22 @@ export default function ShopGalleryPage() {
                 );
                 const productOpenId = product.id ?? product.slotNumber;
                 const isProductOpen = openProductId === productOpenId;
-                const diaryActionHeight = isCompact ? 42 : 46;
-                const diaryActionWidth = isCompact ? 44 : 48;
+                const diaryActionHeight = isProductOpen
+                  ? isCompact
+                    ? 42
+                    : 46
+                  : isCompact
+                  ? 38
+                  : 42;
+                const diaryActionWidth = isProductOpen
+                  ? isCompact
+                    ? 44
+                    : 48
+                  : isCompact
+                  ? 40
+                  : 44;
                 const diaryMediaControlHeight = isCompact ? 36 : 40;
+                const diaryClosedDockHeight = isCompact ? 58 : 68;
 
                 return (
                   <article
@@ -3132,11 +3169,11 @@ export default function ShopGalleryPage() {
                     style={{
                       position: "relative",
                       borderRadius: isCompact ? 18 : 20,
-                      border: "1px solid rgba(13,95,168,0.14)",
+                      border: "2px solid rgba(8,31,51,0.62)",
                       background: "#FFFFFF",
                       overflow: "hidden",
                       boxShadow:
-                        "0 14px 28px rgba(8,38,67,0.14), inset 0 1px 0 rgba(255,255,255,0.92)",
+                        "0 16px 30px rgba(8,38,67,0.18), 0 0 0 1px rgba(255,232,160,0.20), inset 0 1px 0 rgba(255,255,255,0.92)",
                       width: "100%",
                       maxWidth: "100%",
                       boxSizing: "border-box",
@@ -3259,26 +3296,31 @@ export default function ShopGalleryPage() {
                             ? "12px"
                             : "16px"
                           : isCompact
-                          ? "7px"
-                          : "9px",
+                          ? "6px 7px"
+                          : "7px 9px",
                         boxSizing: "border-box",
                         display: "grid",
-                        gap: isProductOpen ? (isCompact ? 8 : 10) : isCompact ? 4 : 5,
+                        gridTemplateColumns: isProductOpen
+                          ? "1fr"
+                          : `minmax(0, 1fr) ${diaryActionWidth}px`,
+                        gridTemplateRows: isProductOpen ? undefined : "auto auto",
+                        gap: isProductOpen ? (isCompact ? 8 : 10) : "2px 7px",
                         alignContent: "end",
                         background:
                           isProductOpen
                             ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #FFFFFF 100%)"
-                            : "linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.94) 20%, #FFFFFF 100%)",
-                        borderTop: isProductOpen
-                          ? "1px solid rgba(13,95,168,0.08)"
-                          : "none",
-                        maxHeight: isProductOpen ? undefined : isCompact ? 92 : 108,
-                        minHeight: isProductOpen ? undefined : isCompact ? 82 : 94,
+                            : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, #FFFFFF 100%)",
+                        borderTop: "1px solid rgba(13,95,168,0.14)",
+                        maxHeight: isProductOpen ? undefined : diaryClosedDockHeight,
+                        minHeight: isProductOpen ? undefined : diaryClosedDockHeight,
                         overflow: "hidden",
                       }}
                     >
                       <div
                         style={{
+                          gridColumn: isProductOpen ? undefined : "1",
+                          gridRow: isProductOpen ? undefined : "1",
+                          minWidth: 0,
                           color: "#07172C",
                           fontWeight: 950,
                           fontSize: isProductOpen
@@ -3316,6 +3358,8 @@ export default function ShopGalleryPage() {
                       <span
                         style={{
                           ...badge(true),
+                          gridColumn: isProductOpen ? undefined : "1",
+                          gridRow: isProductOpen ? undefined : "2",
                           width: "fit-content",
                           maxWidth: "100%",
                           minHeight: isProductOpen
@@ -3349,6 +3393,8 @@ export default function ShopGalleryPage() {
                       </span>
                       <div
                         style={{
+                          gridColumn: isProductOpen ? undefined : "2",
+                          gridRow: isProductOpen ? undefined : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: isProductOpen
                             ? `repeat(2, ${diaryActionWidth}px)`
@@ -3360,6 +3406,7 @@ export default function ShopGalleryPage() {
                           justifyContent: "start",
                           justifyItems: "start",
                           alignItems: "center",
+                          alignSelf: "center",
                           boxSizing: "border-box",
                           overflow: "hidden",
                           overflowAnchor: "none",
@@ -3395,7 +3442,7 @@ export default function ShopGalleryPage() {
                               "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,248,255,0.92) 100%)",
                           }}
                         >
-                          {isProductOpen ? "❌" : "👁️"}
+                          {isProductOpen ? "🔼" : "👁️"}
                         </SecondaryButton>
                         <SecondaryButton
                           onClick={() => {

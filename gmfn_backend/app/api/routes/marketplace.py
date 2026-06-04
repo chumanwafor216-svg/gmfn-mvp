@@ -118,6 +118,18 @@ def _public_product_display_text(value: Any) -> str:
     return text.strip()
 
 
+def _public_product_block_number(value: Any) -> Optional[int]:
+    match = re.match(r"^\[BLOCK:(\d{1,2})\]\s*", _safe_str(value), flags=re.IGNORECASE)
+    if not match:
+        return None
+
+    block_number = _safe_int(match.group(1), 0)
+    if block_number < 1 or block_number > FREE_COMMUNITY_PRODUCT_SLOTS:
+        return None
+
+    return block_number
+
+
 def _uploads_root() -> Path:
     raw = str(os.getenv("GMFN_UPLOADS_DIR", "uploads") or "").strip()
     return Path(raw or "uploads").expanduser()
@@ -700,6 +712,9 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
     )
     image_url = _stored_media_url(getattr(product, "image_url", None))
     video_url = _stored_media_url(getattr(product, "video_url", None))
+    public_block_number = _public_product_block_number(
+        getattr(product, "description", None)
+    )
     vault_block = None
     if visibility_mode == VISIBILITY_VAULT:
         vault_block = find_vault_block_for_product(db, product_id=int(product.id))
@@ -719,6 +734,8 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "image_url_available": _media_url_available(image_url),
         "video_url_available": _media_url_available(video_url),
         "visibility_mode": visibility_mode,
+        "public_block_number": public_block_number,
+        "slot_number": public_block_number,
         "vault_slot_number": (
             int(vault_block.slot_number)
             if vault_block is not None and getattr(vault_block, "slot_number", None) is not None
