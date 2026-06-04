@@ -1669,6 +1669,14 @@ export default function ShopGalleryPage() {
         debugId: "shop-gallery.member-nav.marketplace",
       },
       {
+        label: "Paid Repost",
+        to: routeWithCommunity(
+          `${APP_ROUTES.MARKETPLACE}#marketplace-paid-network-placement`,
+          ownerSurfaceCommunityId
+        ),
+        debugId: "shop-gallery.member-nav.paid-placement",
+      },
+      {
         label: "My Shop",
         to: routeWithCommunity(APP_ROUTES.SHOP_ME, ownerSurfaceCommunityId),
         debugId: "shop-gallery.member-nav.my-shop",

@@ -886,8 +886,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import OwnerOnlySurfaceNav from "\.\.\/components\/OwnerOnlySurfaceNav";[\s\S]*?import \{ APP_ROUTES, routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?label: "Community Home"[\s\S]*?routeWithCommunity\(APP_ROUTES\.COMMUNITY, ownerSurfaceCommunityId\)[\s\S]*?label: "Marketplace"[\s\S]*?routeWithCommunity\(APP_ROUTES\.MARKETPLACE, ownerSurfaceCommunityId\)[\s\S]*?label: "My Shop"[\s\S]*?routeWithCommunity\(APP_ROUTES\.SHOP_ME, ownerSurfaceCommunityId\)[\s\S]*?<OwnerOnlySurfaceNav[\s\S]*?label="GSN navigation"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{false\}/,
-  "Public Shop signed-in navigation must route members to Dashboard, Community Home, Marketplace, and My Shop while staying hidden from public visitors."
+  /import OwnerOnlySurfaceNav from "\.\.\/components\/OwnerOnlySurfaceNav";[\s\S]*?import \{ APP_ROUTES, routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?const memberSurfaceLinks = useMemo\([\s\S]*?label: "Dashboard"[\s\S]*?APP_ROUTES\.DASHBOARD[\s\S]*?label: "Community Home"[\s\S]*?routeWithCommunity\(APP_ROUTES\.COMMUNITY, ownerSurfaceCommunityId\)[\s\S]*?label: "Marketplace"[\s\S]*?routeWithCommunity\(APP_ROUTES\.MARKETPLACE, ownerSurfaceCommunityId\)[\s\S]*?label: "Paid Repost"[\s\S]*?APP_ROUTES\.MARKETPLACE\}#marketplace-paid-network-placement[\s\S]*?debugId: "shop-gallery\.member-nav\.paid-placement"[\s\S]*?label: "My Shop"[\s\S]*?routeWithCommunity\(APP_ROUTES\.SHOP_ME, ownerSurfaceCommunityId\)[\s\S]*?<OwnerOnlySurfaceNav[\s\S]*?label="GSN navigation"[\s\S]*?links=\{memberSurfaceLinks\}[\s\S]*?requireOwnerMatch=\{false\}/,
+  "Public Shop signed-in navigation must route members to Dashboard, Community Home, Marketplace, paid repost placement, and My Shop while staying hidden from public visitors."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-paid-network-placement"[\s\S]*?Paid network repost[\s\S]*?debugId="marketplace\.network-repost\.place"/,
+  "Public Shop signed-in paid repost navigation must land on the internal Marketplace placement card, not a public visitor action."
 );
 
 assertContains(

@@ -156,6 +156,12 @@ assertContains(
 );
 
 assertContains(
+  "src/components/OwnerOnlySurfaceNav.tsx",
+  /const navGridTemplateColumns = compact[\s\S]*?repeat\(auto-fit, minmax\(78px, 1fr\)\)[\s\S]*?repeat\(auto-fit, minmax\(120px, 1fr\)\)[\s\S]*?gridTemplateColumns: navGridTemplateColumns/,
+  "Owner/member surface navigation must wrap signed-in user links into stable cells instead of squeezing all buttons into one phone row."
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /import \{[\s\S]*?marketplaceSectionStyle[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\} from "\.\.\/lib\/marketplaceActionStability";[\s\S]*?scrollTimeoutRefs[\s\S]*?cancelMarketplaceSectionScroll[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200, 1800\]\.forEach[\s\S]*?marketplaceSectionStyle\(\)/,
   "Marketplace section buttons must use the shared Marketplace landing helper with repeated phone-safe landing passes and section scroll margins."

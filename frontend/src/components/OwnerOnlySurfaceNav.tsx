@@ -114,6 +114,10 @@ export default function OwnerOnlySurfaceNav({
 
   if (!shouldShowOwnerNav) return null;
 
+  const navGridTemplateColumns = compact
+    ? "repeat(auto-fit, minmax(78px, 1fr))"
+    : "repeat(auto-fit, minmax(120px, 1fr))";
+
   return (
     <nav
       aria-label="Owner surface navigation"
@@ -146,9 +150,7 @@ export default function OwnerOnlySurfaceNav({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: compact
-            ? `repeat(${links.length}, minmax(0, 1fr))`
-            : `repeat(${links.length}, minmax(120px, 1fr))`,
+          gridTemplateColumns: navGridTemplateColumns,
           gap: compact ? 7 : 8,
         }}
       >

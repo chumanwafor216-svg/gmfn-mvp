@@ -1,3 +1,43 @@
+### Public shop signed-in user navigation restored (2026-06-04)
+
+- Route/screens affected:
+  - `/shop/:gmfnId`, implemented by `frontend/src/pages/ShopGalleryPage.tsx`;
+  - `/app/marketplace`, implemented by `frontend/src/pages/MarketplacePage.tsx`;
+  - signed-in owner/member navigation helper:
+    `frontend/src/components/OwnerOnlySurfaceNav.tsx`.
+- Product-owner truth:
+  - the public shop page should stay light for visitors;
+  - user-facing GSN/member navigation must still be available to signed-in users
+    on the public shop page because visitors cannot see that private strip;
+  - paid repost belongs inside Marketplace, but signed-in public-shop users need
+    a clear way back to that internal work area.
+- Frontend change:
+  - restored a signed-in-only `Paid Repost` entry in the public-shop `GSN
+    navigation` strip;
+  - the link routes to `/app/marketplace#marketplace-paid-network-placement`
+    with the current community query when available;
+  - added the matching Marketplace anchor on the internal `Paid network repost`
+    card;
+  - tightened `OwnerOnlySurfaceNav` so member buttons wrap into stable phone
+    cells instead of squeezing all links into one row.
+- Guardrails:
+  - `audit-link-contracts` now requires the signed-in public-shop nav to include
+    Dashboard, Community Home, Marketplace, Paid Repost, and My Shop while still
+    using `requireOwnerMatch={false}` and remaining hidden from visitors;
+  - `audit-button-stability` now protects the wrapping member-nav grid.
+- Verification:
+  - `npm exec -- eslint src/components/OwnerOnlySurfaceNav.tsx src/pages/ShopGalleryPage.tsx src/pages/MarketplacePage.tsx tools/audit-link-contracts.mjs tools/audit-button-stability.mjs` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:action-response-protocol` passed;
+  - `npm run build` passed outside the sandbox after the known Vite/esbuild
+    sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this restores user-only navigation. It does not bring back the old public
+    visitor `Repost/Public actions` card, and that is intentional because
+    visitors should not see internal paid placement controls.
+
 ### Marketplace Money Pool button route hardening (2026-06-04)
 
 - Route/screen affected:

@@ -5353,7 +5353,13 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                <div style={innerCard("#F8FBFF")}>
+                <div
+                  id="marketplace-paid-network-placement"
+                  style={{
+                    ...innerCard("#F8FBFF"),
+                    scrollMarginTop: isCompact ? 84 : 104,
+                  }}
+                >
                   <div style={sectionLabel()}>Paid network repost</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Pick one public shop block, enter the target marketplace ID,
