@@ -2656,7 +2656,7 @@ export default function ShopControlPage() {
           id="shop-control-gallery-tools"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)")}
         >
-          <ShopAssetsPage embedded />
+          <ShopAssetsPage embedded preferredClanId={effectiveShopClanId || selectedClanId || null} />
         </section>
       ) : null}
       {activeOwnerLayer === "paid-tools" ? (

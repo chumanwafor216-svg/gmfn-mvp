@@ -1,3 +1,54 @@
+### Shop identity durability and public-block count repair (2026-06-04)
+
+- Routes/screens affected:
+  - backend `/marketplace/shops/by-gmfn/:gmfn_id`,
+    `/marketplace/public/shop/:gmfn_id`, `/marketplace/shops`, and
+    `/marketplace/shops/:shop_id`, implemented by
+    `gmfn_backend/app/api/routes/marketplace.py`;
+  - `/app/shop-control#shop-control-gallery-tools`, implemented by
+    `frontend/src/pages/ShopControlPage.tsx` and embedded
+    `frontend/src/pages/ShopAssetsPage.tsx`.
+- Root truth found:
+  - the public shop could show live media while owner-side Shop Control still
+    displayed a default shop name or `0 / 12 live blocks` when the frontend
+    hydrated through stale selected-community context or a generic shop
+    fallback;
+  - the backend read path aggregated public products but still allowed generic
+    fallback names such as `My GSN Shop` to overwrite a real saved shop name;
+  - the 12-block cap counted only exact `community_visible` rows even though
+    reads accepted legacy aliases `public` and `community`.
+- System-level repair:
+  - backend now has a public-shop identity selector that prefers active owner
+    shops with a real non-default name, live public-gallery products, image, and
+    newer identity data instead of blindly trusting the oldest active row;
+  - authenticated and public shop lookups, plus shop upsert, now use that public
+    identity selector;
+  - shop update/upsert refuses to downgrade a real shop name to generic
+    fallback names such as `My GSN Shop`;
+  - the public-gallery slot limit now counts `community_visible`, `public`, and
+    `community` consistently;
+  - embedded Shop Assets accepts the resolved Shop Control clan context and
+    retries public/authenticated shop hydration without a clan filter if stale
+    local selected-clan context fails.
+- Button stability:
+  - no button structure was redesigned in this pass;
+  - the existing owner 12-slot debug IDs remain slot-based and stable.
+- Verification:
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - targeted backend regressions passed:
+    `python -m pytest tests\test_marketplace_public_shop.py::test_public_shop_name_is_not_downgraded_by_default_fallback tests\test_marketplace_public_shop.py::test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases -q`;
+  - full `tests\test_marketplace_public_shop.py` reached 13 passing tests but
+    remaining temp-file tests were blocked by Windows `PermissionError` on the
+    pytest temp directory, not by assertions;
+  - `npm run build` passed outside the sandbox after sandboxed Vite/esbuild hit
+    `spawn EPERM`.
+- Remaining truth:
+  - a local generated folder,
+    `gmfn_backend/.pytest_tmp_marketplace_20260604`, is permission-denied on
+    this machine after pytest; it is not staged or part of the code change.
+
 ### Shop Control public-block truth and owner-contact chooser repair (2026-06-04)
 
 - Routes/screens affected:

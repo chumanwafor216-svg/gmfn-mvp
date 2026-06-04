@@ -90,6 +90,7 @@ type CollapseState = {
 
 type ShopAssetsPageProps = {
   embedded?: boolean;
+  preferredClanId?: number | null;
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
@@ -619,7 +620,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const [deletingProductId, setDeletingProductId] = useState<number | null>(null);
   const [restoringProductId, setRestoringProductId] = useState<number | null>(null);
 
-  const selectedClanId = Number(getSelectedClanId() || 0);
+  const selectedClanId = Number(props.preferredClanId || getSelectedClanId() || 0);
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "shop-assets.route.dashboard"),
@@ -729,20 +730,31 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         return [];
       }
 
-      const shopRes = await apiJson<any>(
+      let shopRes = await apiJson<any>(
         `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}?clan_id=${selectedClanId || 0}`
       ).catch(() => null);
+      if (!shopRes && selectedClanId > 0) {
+        shopRes = await apiJson<any>(
+          `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}`
+        ).catch(() => null);
+      }
 
       let shopItem = (shopRes?.item || null) as ShopRecord | null;
       let nextProducts: ProductRecord[] = Array.isArray(shopRes?.products)
         ? (shopRes.products as ProductRecord[])
         : [];
 
-      const publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
+      let publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
         clan_id: selectedClanId || undefined,
         product_limit: 200,
         broadcast_limit: 1,
       }).catch(() => null);
+      if (!publicShopRes && selectedClanId > 0) {
+        publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
+          product_limit: 200,
+          broadcast_limit: 1,
+        }).catch(() => null);
+      }
       const publicShopItem = (publicShopRes?.item || null) as ShopRecord | null;
       const publicShopProducts: ProductRecord[] = Array.isArray(publicShopRes?.products)
         ? (publicShopRes.products as ProductRecord[])

@@ -362,6 +362,78 @@ def _get_canonical_shop_by_owner(
     )
 
 
+_DEFAULT_PUBLIC_SHOP_NAMES = {
+    "",
+    "my gsn shop",
+    "my gmfn shop",
+    "public gsn shop",
+    "gsn public shop",
+    "public shop",
+}
+
+
+def _is_default_public_shop_name(value: Any) -> bool:
+    return _safe_str(value).lower() in _DEFAULT_PUBLIC_SHOP_NAMES
+
+
+def _public_shop_product_count(
+    db: Session,
+    *,
+    shop_id: int,
+    owner_user_id: int,
+) -> int:
+    return (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.shop_id == int(shop_id))
+        .filter(MarketplaceProduct.seller_user_id == int(owner_user_id))
+        .filter(MarketplaceProduct.is_active.is_(True))
+        .filter(
+            MarketplaceProduct.visibility_mode.in_(
+                [VISIBILITY_COMMUNITY, "public", "community"]
+            )
+        )
+        .count()
+    )
+
+
+def _get_public_shop_identity_by_owner(
+    db: Session,
+    *,
+    owner_user_id: int,
+) -> Optional[MarketplaceShop]:
+    shops = (
+        db.query(MarketplaceShop)
+        .filter(
+            MarketplaceShop.owner_user_id == int(owner_user_id),
+            MarketplaceShop.is_active.is_(True),
+        )
+        .order_by(MarketplaceShop.created_at.asc(), MarketplaceShop.id.asc())
+        .all()
+    )
+    if not shops:
+        return None
+
+    def rank(shop: MarketplaceShop) -> tuple[int, int, int, float, int]:
+        has_real_name = 0 if _is_default_public_shop_name(getattr(shop, "name", None)) else 1
+        public_count = _public_shop_product_count(
+            db,
+            shop_id=int(shop.id),
+            owner_user_id=int(owner_user_id),
+        )
+        has_image = 1 if _safe_str(_get_shop_image_value(shop)) else 0
+        created_at = getattr(shop, "created_at", None)
+        created_ts = created_at.timestamp() if hasattr(created_at, "timestamp") else 0.0
+        return (
+            has_real_name,
+            public_count,
+            has_image,
+            created_ts,
+            int(getattr(shop, "id", 0) or 0),
+        )
+
+    return max(shops, key=rank)
+
+
 def _get_user_by_identity_key(
     db: Session,
     *,
@@ -598,11 +670,16 @@ def _count_active_products_for_shop(
     visibility_mode: str,
     exclude_product_id: Optional[int] = None,
 ) -> int:
+    visibility_modes = (
+        [VISIBILITY_COMMUNITY, "public", "community"]
+        if str(visibility_mode) == VISIBILITY_COMMUNITY
+        else [str(visibility_mode)]
+    )
     q = (
         db.query(MarketplaceProduct)
         .filter(MarketplaceProduct.shop_id == int(shop_id))
         .filter(MarketplaceProduct.is_active.is_(True))
-        .filter(MarketplaceProduct.visibility_mode == str(visibility_mode))
+        .filter(MarketplaceProduct.visibility_mode.in_(visibility_modes))
     )
 
     if exclude_product_id is not None:
@@ -1011,7 +1088,7 @@ def get_marketplace_shop_by_gmfn_id(
     if not owner:
         raise HTTPException(status_code=404, detail="Seller identity not found")
 
-    shop = _get_canonical_shop_by_owner(
+    shop = _get_public_shop_identity_by_owner(
         db,
         owner_user_id=int(owner.id),
     )
@@ -1082,7 +1159,7 @@ def get_public_marketplace_shop_by_gmfn_id(
     if not owner:
         raise HTTPException(status_code=404, detail="Seller identity not found")
 
-    shop = _get_canonical_shop_by_owner(
+    shop = _get_public_shop_identity_by_owner(
         db,
         owner_user_id=int(owner.id),
     )
@@ -1272,7 +1349,7 @@ def create_marketplace_shop(
         clan_id=resolved_clan_id,
     )
 
-    existing_shop = _get_canonical_shop_by_owner(
+    existing_shop = _get_public_shop_identity_by_owner(
         db,
         owner_user_id=int(current_user.id),
     )
@@ -1280,9 +1357,14 @@ def create_marketplace_shop(
     if existing_shop:
         changed = False
 
-        if _safe_str(payload.name) and existing_shop.name != _safe_str(payload.name):
-            existing_shop.name = _safe_str(payload.name)
-            changed = True
+        incoming_name = _safe_str(payload.name)
+        if incoming_name and existing_shop.name != incoming_name:
+            if not (
+                _is_default_public_shop_name(incoming_name)
+                and not _is_default_public_shop_name(existing_shop.name)
+            ):
+                existing_shop.name = incoming_name
+                changed = True
 
         if payload.description is not None:
             new_description = _safe_str(payload.description) or None
@@ -1477,8 +1559,12 @@ def update_marketplace_shop(
         if not new_name:
             raise HTTPException(status_code=400, detail="Shop name cannot be empty")
         if shop.name != new_name:
-            shop.name = new_name
-            changed = True
+            if not (
+                _is_default_public_shop_name(new_name)
+                and not _is_default_public_shop_name(shop.name)
+            ):
+                shop.name = new_name
+                changed = True
 
     if "description" in provided:
         new_description = _safe_str(payload.description) or None
