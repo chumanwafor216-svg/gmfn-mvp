@@ -99,7 +99,10 @@ const PUBLIC_GALLERY_VISIBILITY_MODES = new Set([
   "community_visible",
   "public",
   "community",
+  "public_gallery",
+  "shop_gallery",
 ]);
+const PAID_REPOST_HASH = "marketplace-paid-network-placement";
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
@@ -469,11 +472,79 @@ function composeProductDescription(
 
 function publicBlockNumberForProduct(item: ProductRecord | null | undefined): number {
   const explicitBlock = Number(
-    firstTruthy(item?.public_block_number, item?.slot_number)
+    firstTruthy(
+      item?.public_block_number,
+      item?.slot_number,
+      (item as any)?.source_product_slot_number,
+      (item as any)?.sourceProductSlotNumber,
+      (item as any)?.block,
+      (item as any)?.block_number
+    )
   );
   if (explicitBlock >= 1 && explicitBlock <= 12) return explicitBlock;
 
   return extractPublicBlockNumber(firstTruthy(item?.description));
+}
+
+function unwrapProductRecord(raw: any): any {
+  return raw?.item || raw?.product || raw?.data || raw;
+}
+
+function normalizeProductRecord(raw: any): ProductRecord | null {
+  if (!raw) return null;
+  const src = unwrapProductRecord(raw);
+  if (!src) return null;
+
+  const id = Number(src?.id || 0);
+  const shopId = Number(src?.shop_id || src?.shopId || 0);
+  const publicBlockNumber = Number(
+    firstTruthy(
+      src?.public_block_number,
+      src?.slot_number,
+      src?.source_product_slot_number,
+      src?.sourceProductSlotNumber,
+      src?.block,
+      src?.block_number
+    )
+  );
+  const rawDescription = firstTruthy(src?.description, src?.detail, src?.summary);
+
+  return {
+    ...src,
+    id,
+    shop_id: shopId,
+    clan_id: Number(src?.clan_id || src?.community_id || 0) || undefined,
+    seller_user_id: Number(src?.seller_user_id || 0) || undefined,
+    seller_gmfn_id: firstTruthy(src?.seller_gmfn_id, src?.owner_gmfn_id),
+    name: firstTruthy(src?.name, src?.title, src?.product_name),
+    description: rawDescription,
+    price: firstTruthy(src?.price, src?.amount),
+    currency: firstTruthy(src?.currency, src?.currency_code, "NGN"),
+    image_url: firstTruthy(
+      src?.image_url,
+      src?.thumbnail_url,
+      src?.photo_url,
+      src?.cover_image_url
+    ),
+    video_url: firstTruthy(src?.video_url),
+    visibility_mode: firstTruthy(src?.visibility_mode, "community_visible"),
+    public_block_number:
+      publicBlockNumber >= 1 && publicBlockNumber <= 12
+        ? publicBlockNumber
+        : extractPublicBlockNumber(rawDescription),
+    slot_number: firstTruthy(src?.slot_number),
+    is_active: src?.is_active,
+    created_at: firstTruthy(src?.created_at),
+    origin_clan_id: Number(src?.origin_clan_id || src?.source_clan_id || 0) || undefined,
+    origin_shop_id: Number(src?.origin_shop_id || src?.source_shop_id || 0) || undefined,
+    origin_shop_name: firstTruthy(src?.origin_shop_name, src?.source_shop_name),
+  };
+}
+
+function normalizeProductRecords(items: any[]): ProductRecord[] {
+  return items
+    .map((item) => normalizeProductRecord(item))
+    .filter(Boolean) as ProductRecord[];
 }
 
 function arrangePublicProductsIntoSlots(items: ProductRecord[]): (ProductRecord | null)[] {
@@ -501,19 +572,31 @@ function arrangePublicProductsIntoSlots(items: ProductRecord[]): (ProductRecord 
 }
 
 function isPublicGalleryProduct(item: ProductRecord | null | undefined): boolean {
-  const mode = firstTruthy(item?.visibility_mode, "community_visible");
+  const mode = firstTruthy(item?.visibility_mode, "community_visible").toLowerCase();
   return PUBLIC_GALLERY_VISIBILITY_MODES.has(mode) && item?.is_active !== false;
 }
 
 function mergeProductsById(...groups: ProductRecord[][]): ProductRecord[] {
   const out: ProductRecord[] = [];
   const seen = new Set<number>();
+  const seenFallback = new Set<string>();
 
   groups.forEach((items) => {
     items.forEach((item) => {
       const id = Number(item?.id || 0);
-      if (!id || seen.has(id)) return;
-      seen.add(id);
+      if (id > 0) {
+        if (seen.has(id)) return;
+        seen.add(id);
+      } else {
+        const fallbackKey = [
+          Number(item?.shop_id || 0),
+          publicBlockNumberForProduct(item),
+          firstTruthy(item?.name),
+          firstTruthy(item?.image_url, item?.video_url),
+        ].join("|");
+        if (seenFallback.has(fallbackKey)) return;
+        seenFallback.add(fallbackKey);
+      }
       out.push(item);
     });
   });
@@ -742,7 +825,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
 
       let shopItem = (shopRes?.item || null) as ShopRecord | null;
       let nextProducts: ProductRecord[] = Array.isArray(shopRes?.products)
-        ? (shopRes.products as ProductRecord[])
+        ? normalizeProductRecords(shopRes.products)
         : [];
 
       let publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
@@ -758,7 +841,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       }
       const publicShopItem = (publicShopRes?.item || null) as ShopRecord | null;
       const publicShopProducts: ProductRecord[] = Array.isArray(publicShopRes?.products)
-        ? (publicShopRes.products as ProductRecord[])
+        ? normalizeProductRecords(publicShopRes.products)
         : [];
       if (!shopItem && publicShopItem) {
         shopItem = publicShopItem;
@@ -770,7 +853,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         ).catch(() => ({ items: nextProducts }));
 
         const managedProducts = Array.isArray(productsRes?.items)
-          ? (productsRes.items as ProductRecord[])
+          ? normalizeProductRecords(productsRes.items)
           : [];
         nextProducts = mergeProductsById(nextProducts, managedProducts);
       }
@@ -811,6 +894,25 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     [shop]
   );
   const shopLink = useMemo(() => buildShopLink(gmfnId), [gmfnId]);
+  const marketplaceBasePath = useMemo(
+    () =>
+      routeTarget(
+        "marketplace",
+        selectedClanId,
+        "shop-assets.route.paid-repost"
+      ),
+    [selectedClanId]
+  );
+
+  function buildPaidRepostPath(product: ProductRecord, blockNumber: number): string {
+    const productId = Number(product?.id || 0);
+    const params = new URLSearchParams();
+    if (productId > 0) params.set("repost_product_id", String(productId));
+    if (blockNumber >= 1 && blockNumber <= 12) params.set("block", String(blockNumber));
+    params.set("source", "shop-control-gallery");
+    const joiner = marketplaceBasePath.includes("?") ? "&" : "?";
+    return `${marketplaceBasePath}${joiner}${params.toString()}#${PAID_REPOST_HASH}`;
+  }
 
   const publicProducts = useMemo(
     () => products.filter((item) => isPublicGalleryProduct(item)),
@@ -835,6 +937,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
   const publicGallerySlots = useMemo(
     () => arrangePublicProductsIntoSlots(publicProducts),
     [publicProducts]
+  );
+  const occupiedPublicSlotCount = useMemo(
+    () => publicGallerySlots.filter(Boolean).length,
+    [publicGallerySlots]
   );
 
   const selectedPublicProduct = publicGallerySlots[selectedPublicSlot - 1] || null;
@@ -1909,8 +2015,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
             </div>
 
-            <span style={badge(publicProducts.length > 0)}>
-              {publicProducts.length} / 12 live blocks
+            <span style={badge(occupiedPublicSlotCount > 0)}>
+              {occupiedPublicSlotCount} / 12 live blocks
             </span>
           </div>
 
@@ -2193,6 +2299,39 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     >
                       Copy shop link
                     </SubtleButton>
+
+                    <StableCtaLink
+                      to={buildPaidRepostPath(
+                        selectedPublicProduct,
+                        selectedPublicSlot
+                      )}
+                      fullWidth
+                      stableHeight={isCompact ? 56 : 48}
+                      debugId={`shop-assets.public-slot.${selectedPublicSlot}.paid-repost`}
+                      aria-label={`Repost block ${selectedPublicSlot} into another community Spotlight`}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        width: "100%",
+                        minHeight: isCompact ? 56 : 48,
+                        borderRadius: 999,
+                        padding: "0 14px",
+                        textDecoration: "none",
+                        fontSize: isCompact ? 15 : 14,
+                        fontWeight: 950,
+                        background:
+                          "linear-gradient(180deg, #123A63 0%, #0B2544 100%)",
+                        color: "#FFFFFF",
+                        border: "1px solid rgba(12, 44, 78, 0.22)",
+                        boxShadow:
+                          "0 12px 24px rgba(8, 30, 54, 0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
+                        whiteSpace: "nowrap",
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      Repost
+                    </StableCtaLink>
                   </>
                 ) : (
                   <PrimaryButton

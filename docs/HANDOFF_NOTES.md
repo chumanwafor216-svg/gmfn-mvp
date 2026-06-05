@@ -1,3 +1,72 @@
+### Owner Shop Control public gallery parity and Repost handle (2026-06-05)
+
+- Routes/screens affected:
+  - Shop Control / embedded owner Shop Assets:
+    `frontend/src/pages/ShopControlPage.tsx`,
+    `frontend/src/pages/ShopAssetsPage.tsx`;
+  - public Shop Diaries owner handoff:
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - route/button auditors:
+    `frontend/tools/audit-shop-assets-slots.mjs`,
+    `frontend/tools/audit-route-fallthrough.mjs`, and existing Marketplace /
+    Community Home button auditors.
+- Product-owner request:
+  - owner-side `Public gallery block control` must read the same occupied blocks
+    visible on the public Shop Diaries shelf (`5 / 12`, not a false `0 / 12`);
+  - `Repost` should be available from the owner block-control surface, not only
+    as a generic Marketplace shortcut;
+  - public visitors must not get the owner-only block Repost handle;
+  - button stabilisation is part of the repair.
+- Frontend repair:
+  - `ShopAssetsPage` now normalizes wrapped product rows from authenticated shop,
+    public shop, and managed-products responses (`item`, `product`, `data`, or
+    raw rows);
+  - public gallery slot aliases are preserved:
+    `public_block_number`, `slot_number`, `source_product_slot_number`,
+    `sourceProductSlotNumber`, `block`, and `block_number`;
+  - id-less rows are no longer silently dropped when the slot/name/media key is
+    still enough to place them;
+  - owner block count is now derived from arranged occupied slots, so the control
+    reports actual live block occupancy instead of raw API array length;
+  - a live selected block now exposes a fixed-height owner `Repost` route into
+    `#marketplace-paid-network-placement` with `repost_product_id`, `block`, and
+    `source=shop-control-gallery`.
+- Button stability:
+  - selected live block actions keep fixed heights and debug IDs for Edit, Hide,
+    Copy link, and Repost;
+  - empty selected blocks keep a fixed Add action;
+  - Marketplace and Community Home button inventories were rerun and stayed
+    stable.
+- Audit truth:
+  - added `npm run audit:shop-assets-slots` to protect product normalization,
+    occupied-slot counting, selected-block routing, and fixed selected-block
+    action handles;
+  - `audit:route-fallthrough` now accepts the intentional PWA front-door
+    exception (`token && !isPwaFrontDoor`) documented in `SCREEN_SPECS.md`,
+    while still protecting publish recovery into `/app` routes.
+- Verification:
+  - targeted eslint passed for `ShopAssetsPage` and the updated auditors;
+  - `npm run audit:shop-assets-slots` passed;
+  - `npm run audit:route-fallthrough` passed;
+  - `npm run audit:community-shop-actions` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:marketplace-button-inventory` passed with `55` stable
+    Marketplace source actions and `102` whole-route mobile controls;
+  - `npm run audit:community-home-button-inventory` passed;
+  - `npm run audit:community-home-phone-buttons` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:global-action-debugids` passed;
+  - `npm run audit:global-raw-action-elements` passed;
+  - `npm run build` passed after the known Windows sandbox `spawn EPERM`
+    required approved Vite/esbuild build escalation.
+- Remaining truth:
+  - this fixes the frontend owner control's slot reading and block-level Repost
+    handoff; it does not create a new backend money rail;
+  - the deeper backend paid-Repost/payment-rail split remains a separate system
+    contract decision.
+
 ### Paid Repost community/shop handle relocation (2026-06-05)
 
 - Routes/screens affected:
