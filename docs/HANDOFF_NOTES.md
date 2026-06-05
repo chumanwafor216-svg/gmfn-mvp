@@ -34685,3 +34685,65 @@ GSN-branded invite composer and invite-entry continuity.
     behavior and the owner-mediated community confirmation request;
   - `frontend/tools/audit-button-stability.mjs` now protects the stable scan
     toggle and owner request actions.
+
+### Network Spotlight placement system repair (2026-06-05)
+
+- Route/screens affected:
+  - Marketplace internal repost/placement tool in
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - product repost API contract:
+    `POST /marketplace/products/{product_id}/repost`;
+  - target community spotlight broadcast output from
+    `gmfn_backend/app/api/routes/marketplace.py`.
+- Product-owner truth captured:
+  - this is an outside/community-to-community `Network Spotlight placement`,
+    not public-shop sharing and not a page-level decorative repost;
+  - visible copy must not say a block was "paid to appear";
+  - the product block identity must remain intact so one selected block moves
+    outward, not the whole public shop;
+  - GSN may sponsor or promote useful community information, so the language is
+    "Network Spotlight placement" rather than a pure money-machine label.
+- Backend change:
+  - repost placement now accepts either `target_clan_id` or a public target
+    community code such as `GMFN-C-000008`;
+  - target lookup no longer requires the shop owner to already belong to the
+    target community. The placement can move outside the owner's normal
+    community boundary while still requiring an active public product and an
+    available Subscription Spotlight credit;
+  - inactive public-shop blocks are rejected before placement;
+  - duplicate same-product placements are no longer blocked by the old one-time
+    repost guard, and target public-shop slot limits no longer block the
+    Network Spotlight route;
+  - placement records now keep `duration_days`, `expires_at`, target community
+    code/name, and preserve `source_product_id`, `source_product_block`, and
+    `source_product_slot_number` on the spotlight broadcast output.
+- Frontend change:
+  - the Marketplace placement card now says `Network Spotlight placement`,
+    asks for `Target community ID`, and includes a duration selector;
+  - the product picker can fetch owner/manage-visible public blocks through
+    `include_private_manage=true`, so valid shop blocks are not hidden from the
+    owner-side placement workflow;
+  - the placement button is now truly disabled when required fields are missing
+    instead of only looking locked.
+- Guardrails:
+  - `frontend/tools/audit-link-contracts.mjs` now protects the updated
+    "Network Spotlight placement" wording and target-community contract.
+- Verification:
+  - Passed `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k repost --basetemp .pytest-basetemp-repost`.
+  - Passed `npm exec -- eslint src/pages/MarketplacePage.tsx src/lib/api.ts tools/audit-link-contracts.mjs`.
+  - Passed `npm run audit:button-stability`,
+    `npm run audit:tap-stability`, `npm run audit:link-contracts`,
+    `npm run audit:marketplace-button-inventory`, and
+    `npm run audit:marketplace-actions`.
+  - `npm run build` still fails inside the sandbox with the known Vite/esbuild
+    `spawn EPERM`, then passes when rerun with the approved elevated build
+    command.
+- Remaining truth:
+  - pricing is still one Subscription Spotlight credit per placement. The
+    backend now stores a placement duration and expiry, but a full variable
+    pricing/billing engine for days, weeks, or sponsored GSN broadcasts is not
+    implemented yet;
+  - target Spotlight UI surfaces must consume the new
+    `source_product_id` / `source_product_block` broadcast fields wherever they
+    open a placement, otherwise the backend truth will be present but a page may
+    still visually fall back to a general shop/spotlight view.

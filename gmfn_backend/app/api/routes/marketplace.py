@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from math import floor
 import os
 from pathlib import Path
@@ -188,6 +188,77 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return int(value)
     except Exception:
         return default
+
+
+def _clan_public_code(clan: Optional[Clan]) -> Optional[str]:
+    if clan is None:
+        return None
+    saved = _safe_str(getattr(clan, "community_code", None))
+    if saved:
+        return saved
+    clan_id = _safe_int(getattr(clan, "id", None), 0)
+    return f"GMFN-C-{clan_id:06d}" if clan_id else None
+
+
+def _community_code_candidates(value: Any) -> list[str]:
+    raw = _safe_str(value).upper()
+    if not raw:
+        return []
+    compact = re.sub(r"\s+", "", raw)
+    candidates = {compact}
+
+    for prefix in ("GSN-C-", "GMFM-C-"):
+        if compact.startswith(prefix):
+            candidates.add(f"GMFN-C-{compact[len(prefix):]}")
+
+    if compact.startswith("GSN-COM-"):
+        candidates.add(f"GMFN-COM-{compact[len('GSN-COM-'):]}")
+
+    return sorted(candidates)
+
+
+def _resolve_repost_target_clan(db: Session, payload: Any) -> Clan:
+    target_clan_id = _safe_int(getattr(payload, "target_clan_id", None), 0)
+    target_code = _safe_str(getattr(payload, "target_community_code", None))
+
+    if target_clan_id:
+        clan = db.query(Clan).filter(Clan.id == target_clan_id).first()
+    elif target_code:
+        clan = None
+        numeric_id = _safe_int(target_code, 0)
+        candidates = _community_code_candidates(target_code)
+        if candidates:
+            clan = (
+                db.query(Clan)
+                .filter(func.upper(Clan.community_code).in_(candidates))
+                .first()
+            )
+        if clan is None:
+            match = re.search(r"(?:GMFN|GMFM|GSN)-C-(\d+)$", target_code.upper().strip())
+            if match:
+                numeric_id = _safe_int(match.group(1), 0)
+        if clan is None and numeric_id:
+            clan = db.query(Clan).filter(Clan.id == numeric_id).first()
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Enter the target community ID for this Network Spotlight placement.",
+        )
+
+    if clan is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Target community not found. Use the community ID, for example GMFN-C-000008.",
+        )
+
+    status = _safe_str(getattr(clan, "status", None)).lower()
+    if status and status not in {"active", "open", "approved"}:
+        raise HTTPException(
+            status_code=400,
+            detail="Target community is not open for Network Spotlight placement.",
+        )
+
+    return clan
 
 
 def _is_admin(user: Any) -> bool:
@@ -753,7 +824,9 @@ class MarketplaceBroadcastCreateIn(BaseModel):
 
 
 class MarketplaceRepostCreateIn(BaseModel):
-    target_clan_id: int = Field(gt=0)
+    target_clan_id: Optional[int] = Field(default=None, gt=0)
+    target_community_code: Optional[str] = Field(default=None, max_length=64)
+    duration_days: Optional[int] = Field(default=1, ge=1, le=365)
 
 
 def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
@@ -882,6 +955,45 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
     }
 
 
+def _broadcast_repost_product(db: Session, item: MarketplaceBroadcast) -> Optional[MarketplaceProduct]:
+    if _safe_str(getattr(item, "visibility_scope", None)) != "marketplace_repost":
+        return None
+
+    repost_query = (
+        db.query(MarketplaceProductRepost)
+        .filter(
+            MarketplaceProductRepost.target_clan_id == int(item.clan_id),
+            MarketplaceProductRepost.reposted_by_user_id == int(item.author_user_id),
+        )
+        .order_by(
+            MarketplaceProductRepost.created_at.desc(),
+            MarketplaceProductRepost.id.desc(),
+        )
+    )
+
+    if getattr(item, "created_at", None) is not None:
+        exact = repost_query.filter(
+            MarketplaceProductRepost.created_at == item.created_at
+        ).first()
+        if exact:
+            return (
+                db.query(MarketplaceProduct)
+                .filter(MarketplaceProduct.id == int(exact.original_product_id))
+                .first()
+            )
+
+    for repost in repost_query.limit(12).all():
+        product = (
+            db.query(MarketplaceProduct)
+            .filter(MarketplaceProduct.id == int(repost.original_product_id))
+            .first()
+        )
+        if product and int(getattr(product, "shop_id", 0) or 0) == int(getattr(item, "shop_id", 0) or 0):
+            return product
+
+    return None
+
+
 def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
     author = db.query(User).filter(User.id == int(item.author_user_id)).first()
     clan = db.query(Clan).filter(Clan.id == int(item.clan_id)).first()
@@ -937,6 +1049,13 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
             or str(author.id)
         )
 
+    repost_product = _broadcast_repost_product(db, item)
+    repost_block_number = (
+        _public_product_block_number(getattr(repost_product, "description", None))
+        if repost_product is not None
+        else None
+    )
+
     return {
         "id": int(item.id),
         "clan_id": int(item.clan_id),
@@ -958,6 +1077,9 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "author_name": author_name,
         "source_shop_name": shop_display_name,
         "source_clan_name": clan_display_name,
+        "source_product_id": int(repost_product.id) if repost_product is not None else None,
+        "source_product_block": repost_block_number,
+        "source_product_slot_number": repost_block_number,
         "trust_band": trust_band,
         "trust_score": trust_score,
     }
@@ -2277,6 +2399,13 @@ def repost_marketplace_product(
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
+    product_active = getattr(product, "is_active", True)
+    if product_active is False or product_active == 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Only active public shop blocks can enter Network Spotlight.",
+        )
+
     if _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY) != VISIBILITY_COMMUNITY:
         raise HTTPException(
             status_code=400,
@@ -2305,44 +2434,19 @@ def repost_marketplace_product(
             detail="Only the shop owner can repost this product through Subscription Spotlight.",
         )
 
-    target_clan_id = int(payload.target_clan_id)
+    target_clan = _resolve_repost_target_clan(db, payload)
+    target_clan_id = int(target_clan.id)
+    target_community_code = _clan_public_code(target_clan)
     origin_clan_id = int(product.clan_id)
 
     if target_clan_id == origin_clan_id:
         raise HTTPException(
             status_code=400,
-            detail="Cannot repost a product back into its origin clan",
-        )
-
-    _require_active_membership(
-        db=db,
-        user_id=int(current_user.id),
-        clan_id=target_clan_id,
-    )
-
-    existing = (
-        db.query(MarketplaceProductRepost)
-        .filter(
-            MarketplaceProductRepost.original_product_id == int(product.id),
-            MarketplaceProductRepost.reposted_by_user_id == int(current_user.id),
-            MarketplaceProductRepost.target_clan_id == target_clan_id,
-        )
-        .first()
-    )
-    if existing:
-        raise HTTPException(
-            status_code=409,
-            detail="You already reposted this product to that clan",
-        )
-
-    remaining_slots = _remaining_distribution_slots(db, product_id=int(product.id))
-    if remaining_slots <= 0:
-        raise HTTPException(
-            status_code=400,
-            detail="No distribution slots remaining for this product",
+            detail="Network Spotlight placement must target a different community.",
         )
 
     current_time = _now_utc()
+    duration_days = max(1, min(_safe_int(getattr(payload, "duration_days", 1), 1), 365))
     if not has_active_feature(
         db,
         owner_user_id=int(current_user.id),
@@ -2354,33 +2458,6 @@ def repost_marketplace_product(
             detail="Live marketplace repost requires an unused Subscription Spotlight credit for this shop.",
         )
 
-    active_paid_count = _count_active_paid_spotlights_for_shop(
-        db=db,
-        shop_id=int(shop.id),
-        now=current_time,
-    )
-    if active_paid_count > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="A paid spotlight is already active for this shop. Wait for it to end before reposting another block.",
-        )
-
-    if not _spotlight_capacity_pilot_override_active(current_time):
-        active_count = _count_active_spotlights_for_clan(
-            db=db,
-            clan_id=target_clan_id,
-            now=current_time,
-        )
-        max_allowed = _max_spotlights_for_clan(
-            db=db,
-            clan_id=target_clan_id,
-        )
-        if active_count >= max_allowed:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Spotlight capacity reached for clan {target_clan_id}. Wait for an active spotlight to expire.",
-            )
-
     spotlight_title = _safe_str(getattr(product, "name", None)) or "Marketplace repost"
     spotlight_detail = _public_product_display_text(getattr(product, "description", None))
     spotlight_message = (
@@ -2388,12 +2465,7 @@ def repost_marketplace_product(
         if spotlight_detail and spotlight_detail != spotlight_title
         else spotlight_title
     )[:2000]
-    spotlight_expires_at = current_time.replace(
-        microsecond=0,
-        hour=23,
-        minute=59,
-        second=59,
-    )
+    spotlight_expires_at = (current_time + timedelta(days=duration_days)).replace(microsecond=0)
 
     repost = MarketplaceProductRepost(
         original_product_id=int(product.id),
@@ -2447,8 +2519,11 @@ def repost_marketplace_product(
             "product_id": int(product.id),
             "origin_clan_id": origin_clan_id,
             "target_clan_id": target_clan_id,
+            "target_community_code": target_community_code,
             "repost_id": int(repost.id),
             "broadcast_id": int(broadcast.id),
+            "duration_days": duration_days,
+            "expires_at": spotlight_expires_at.isoformat(),
             "visibility_mode": _safe_str(getattr(product, "visibility_mode", None), VISIBILITY_COMMUNITY),
             "priority_mode": SPOTLIGHT_PAID,
             "feature_code": FEATURE_SPOTLIGHT_PRIORITY,
@@ -2456,7 +2531,7 @@ def repost_marketplace_product(
             "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
             "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
             "distribution_slots_remaining": remaining_after,
-            "reason": "marketplace_product_reposted_to_spotlight",
+            "reason": "marketplace_product_network_spotlight",
         },
         commit=False,
         refresh=False,
@@ -2470,6 +2545,17 @@ def repost_marketplace_product(
         "item": _repost_out(db, repost),
         "broadcast": _broadcast_out(db, broadcast),
         "product": _product_out(db, product),
+        "target_community": {
+            "id": target_clan_id,
+            "community_code": target_community_code,
+            "name": (
+                _safe_str(getattr(target_clan, "marketplace_name", None))
+                or _safe_str(getattr(target_clan, "name", None))
+                or f"Community {target_clan_id}"
+            ),
+        },
+        "duration_days": duration_days,
+        "expires_at": spotlight_expires_at.isoformat(),
     }
 
 

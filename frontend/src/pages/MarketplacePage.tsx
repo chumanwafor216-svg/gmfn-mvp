@@ -2530,6 +2530,7 @@ export default function MarketplacePage() {
   const [loadingRepostProducts, setLoadingRepostProducts] = useState(false);
   const [selectedRepostProductId, setSelectedRepostProductId] = useState(0);
   const [repostTargetMarketplaceId, setRepostTargetMarketplaceId] = useState("");
+  const [repostDurationDays, setRepostDurationDays] = useState("1");
   const [placingMarketplaceRepost, setPlacingMarketplaceRepost] = useState(false);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
@@ -2650,6 +2651,7 @@ export default function MarketplacePage() {
       shop_id: shopId,
       only_active: true,
       include_reposted: false,
+      include_private_manage: true,
       limit: 60,
       header_clan_id: activeCommunityId || undefined,
     })
@@ -2660,8 +2662,7 @@ export default function MarketplacePage() {
           .filter((item): item is RepostProductOption => {
             return Boolean(
               item &&
-                item.visibilityMode === "community_visible" &&
-                item.remainingSlots > 0
+                item.visibilityMode === "community_visible"
             );
           });
         setRepostProducts(options);
@@ -2691,11 +2692,16 @@ export default function MarketplacePage() {
   }, [repostProducts, selectedRepostProductId]);
 
   const resolvedRepostTargetMarketplaceId = positiveNumber(repostTargetMarketplaceId);
+  const resolvedRepostTargetCommunityInput = safeStr(repostTargetMarketplaceId);
+  const resolvedRepostDurationDays = Math.max(
+    1,
+    Math.min(365, positiveNumber(repostDurationDays) || 1)
+  );
   const marketplaceRepostLocked =
     loadingRepostProducts ||
     placingMarketplaceRepost ||
     !selectedRepostProduct ||
-    !resolvedRepostTargetMarketplaceId;
+    !resolvedRepostTargetCommunityInput;
 
   const controlledMarketplaceLinkNote = useMemo(() => {
     if (!selectedCommunity) {
@@ -3239,15 +3245,21 @@ export default function MarketplacePage() {
 
   async function submitMarketplaceRepost() {
     const product = selectedRepostProduct;
+    const targetCommunityInput = resolvedRepostTargetCommunityInput;
     const targetMarketplaceId = resolvedRepostTargetMarketplaceId;
+    const durationDays = resolvedRepostDurationDays;
 
-    if (!product?.id) {
-      showNotice("error", "Choose one public block before placing it into another marketplace.");
+    if (marketplaceRepostLocked) {
       return;
     }
 
-    if (!targetMarketplaceId) {
-      showNotice("error", "Enter the target marketplace ID where this paid repost should appear.");
+    if (!product?.id) {
+      showNotice("error", "Choose one public block before placing it into Network Spotlight.");
+      return;
+    }
+
+    if (!targetCommunityInput) {
+      showNotice("error", "Enter the target community ID where this block should appear.");
       return;
     }
 
@@ -3255,7 +3267,9 @@ export default function MarketplacePage() {
     try {
       const res = await createMarketplaceRepost({
         product_id: product.id,
-        target_clan_id: targetMarketplaceId,
+        target_clan_id: targetMarketplaceId || undefined,
+        target_community_code: targetMarketplaceId ? undefined : targetCommunityInput,
+        duration_days: durationDays,
       });
       const remaining = positiveNumber(
         firstDefined(
@@ -3275,18 +3289,25 @@ export default function MarketplacePage() {
                 }
               : item
           )
-          .filter((item) => item.remainingSlots > 0)
       );
       setRepostTargetMarketplaceId("");
+      setRepostDurationDays("1");
+      const targetLabel = safeStr(
+        firstDefined(
+          res?.target_community?.community_code,
+          res?.target_community?.name,
+          targetCommunityInput
+        )
+      );
       showNotice(
         "success",
-        `${product.title} was placed into marketplace ID ${targetMarketplaceId} spotlight with one Subscription Spotlight credit.`
+        `${product.title} entered ${targetLabel} Network Spotlight for ${durationDays} day${durationDays === 1 ? "" : "s"}.`
       );
     } catch (err: any) {
       showNotice(
         "error",
         safeStr(err?.message) ||
-          "Paid repost could not complete. Check the target marketplace, membership, and Subscription Spotlight credit."
+          "Network Spotlight placement could not complete. Check the target community ID and Subscription Spotlight credit."
       );
     } finally {
       setPlacingMarketplaceRepost(false);
@@ -5458,11 +5479,11 @@ export default function MarketplacePage() {
                     scrollMarginTop: isCompact ? 84 : 104,
                   }}
                 >
-                  <div style={sectionLabel()}>Paid network repost</div>
+                  <div style={sectionLabel()}>Network Spotlight placement</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Pick one public shop block, enter the target marketplace ID,
-                    and place it into that community spotlight with one
-                    Subscription Spotlight credit.
+                    Pick one public shop block, enter the target community ID,
+                    and place that exact block into the community Spotlight with
+                    Subscription Spotlight.
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(Boolean(selectedRepostProduct))}>
@@ -5472,10 +5493,13 @@ export default function MarketplacePage() {
                         ? "One block selected"
                         : "No eligible public block"}
                     </span>
-                    <span style={badge(Boolean(resolvedRepostTargetMarketplaceId))}>
-                      {resolvedRepostTargetMarketplaceId
-                        ? `Target ID ${resolvedRepostTargetMarketplaceId}`
+                    <span style={badge(Boolean(resolvedRepostTargetCommunityInput))}>
+                      {resolvedRepostTargetCommunityInput
+                        ? `Target ${resolvedRepostTargetCommunityInput}`
                         : "Target needed"}
+                    </span>
+                    <span style={badge(true)}>
+                      {resolvedRepostDurationDays} day{resolvedRepostDurationDays === 1 ? "" : "s"}
                     </span>
                   </div>
                   <div
@@ -5483,7 +5507,7 @@ export default function MarketplacePage() {
                       display: "grid",
                       gridTemplateColumns: isCompact
                         ? "1fr"
-                        : "minmax(0, 1fr) minmax(0, 1fr)",
+                        : "minmax(0, 1fr) minmax(0, 1fr) minmax(150px, 0.55fr)",
                       gap: 10,
                       marginTop: 12,
                     }}
@@ -5502,7 +5526,7 @@ export default function MarketplacePage() {
                           <option value="">
                             {loadingRepostProducts
                               ? "Loading public blocks..."
-                              : "No public block with repost slots"}
+                              : "No public block is ready"}
                           </option>
                         ) : (
                           repostProducts.map((product) => (
@@ -5514,25 +5538,40 @@ export default function MarketplacePage() {
                       </select>
                     </label>
                     <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
-                      <span style={{ fontSize: 12 }}>Target marketplace ID</span>
+                      <span style={{ fontSize: 12 }}>Target community ID</span>
                       <input
-                        inputMode="numeric"
+                        inputMode="text"
                         value={repostTargetMarketplaceId}
                         onChange={(event) =>
-                          setRepostTargetMarketplaceId(event.target.value.replace(/[^\d]/g, ""))
+                          setRepostTargetMarketplaceId(event.target.value.trim())
                         }
-                        placeholder="Enter marketplace ID"
+                        placeholder="GMFN-C-000008"
                         style={inputStyle()}
                       />
+                    </label>
+                    <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
+                      <span style={{ fontSize: 12 }}>Duration</span>
+                      <select
+                        value={repostDurationDays}
+                        onChange={(event) => setRepostDurationDays(event.target.value)}
+                        style={inputStyle()}
+                      >
+                        <option value="1">1 day</option>
+                        <option value="3">3 days</option>
+                        <option value="5">5 days</option>
+                        <option value="7">7 days</option>
+                        <option value="14">14 days</option>
+                        <option value="30">30 days</option>
+                      </select>
                     </label>
                   </div>
                   {selectedRepostProduct ? (
                     <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <span style={badge(true)}>
-                        {selectedRepostProduct.remainingSlots} slots left
+                        Block identity kept
                       </span>
                       <span style={badge(true)}>
-                        {selectedRepostProduct.repostsUsed} used
+                        {selectedRepostProduct.repostsUsed} placements recorded
                       </span>
                     </div>
                   ) : null}
@@ -5546,13 +5585,14 @@ export default function MarketplacePage() {
                           void submitMarketplaceRepost();
                         });
                       }}
+                      disabled={marketplaceRepostLocked}
                       style={marketplaceInlineActionStyle(
                         "primary",
                         marketplaceRepostLocked,
                         isCompact
                       )}
                     >
-                      {placingMarketplaceRepost ? "Placing..." : "Place in Spotlight"}
+                      {placingMarketplaceRepost ? "Placing..." : "Place on Network Spotlight"}
                     </StableButton>
                     <StableCtaLink
                       to={routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, activeCommunityId)}

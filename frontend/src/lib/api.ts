@@ -2942,6 +2942,7 @@ export async function getMarketplaceProducts(params?: {
   shop_id?: number | null;
   only_active?: boolean;
   include_reposted?: boolean;
+  include_private_manage?: boolean;
   limit?: number;
 }): Promise<any> {
   const options = buildMarketplaceReadOptions(params);
@@ -2952,6 +2953,7 @@ export async function getMarketplaceProducts(params?: {
       shop_id: params?.shop_id ?? undefined,
       only_active: params?.only_active ?? true,
       include_reposted: params?.include_reposted ?? true,
+      include_private_manage: params?.include_private_manage ?? undefined,
       limit: params?.limit ?? 100,
     })}`,
     "GET",
@@ -3140,14 +3142,20 @@ export async function getMarketplaceFeed(params?: {
 
 export async function createMarketplaceRepost(payload: {
   product_id: number;
-  target_clan_id: number;
+  target_clan_id?: number;
+  target_community_code?: string;
+  duration_days?: number;
 }): Promise<any> {
   return httpJson(
     `/marketplace/products/${encodeURIComponent(
       String(payload.product_id)
     )}/repost`,
     "POST",
-    { target_clan_id: payload.target_clan_id }
+    {
+      target_clan_id: payload.target_clan_id,
+      target_community_code: payload.target_community_code,
+      duration_days: payload.duration_days,
+    }
   );
 }
 

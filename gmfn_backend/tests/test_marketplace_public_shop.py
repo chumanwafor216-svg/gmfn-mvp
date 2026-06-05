@@ -254,10 +254,10 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
         conn.execute(
             text(
                 """
-                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                INSERT INTO clans (id, name, marketplace_name, invite_code, community_code)
                 VALUES
-                    (1, 'Source Community', 'Source Marketplace', 'SOURCE1'),
-                    (2, 'Target Community', 'Target Marketplace', 'TARGET2')
+                    (1, 'Source Community', 'Source Marketplace', 'SOURCE1', 'GMFN-C-000001'),
+                    (2, 'Target Community', 'Target Marketplace', 'TARGET2', 'GMFN-C-000002')
                 """
             )
         )
@@ -267,8 +267,7 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
                 INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
                 VALUES
                     (1, 1, 1, 'member', 0),
-                    (2, 2, 2, 'member', 0),
-                    (3, 2, 1, 'member', 0)
+                    (2, 2, 2, 'member', 0)
                 """
             )
         )
@@ -295,6 +294,10 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
                     1, 1, 1, 1, 'Fresh Rice', '[BLOCK:5] [LABEL:Rice] Bag of rice',
                     '25000', 'NGN', '/uploads/marketplace/images/rice.jpg',
                     NULL, 'community_visible', 1
+                ), (
+                    2, 1, 1, 1, 'Archived Rice', '[BLOCK:6] Hidden bag',
+                    '25000', 'NGN', '/uploads/marketplace/images/rice-old.jpg',
+                    NULL, 'community_visible', 0
                 )
                 """
             )
@@ -319,6 +322,14 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
     product_body = products.json()
     assert product_body["items"][0]["public_block_number"] == 5
     assert product_body["items"][0]["slot_number"] == 5
+
+    inactive = client.post(
+        "/marketplace/products/2/repost",
+        json={"target_clan_id": 2},
+        headers=headers,
+    )
+    assert inactive.status_code == 400, inactive.text
+    assert "active public shop blocks" in inactive.json()["detail"]
 
     blocked = client.post(
         "/marketplace/products/1/repost",
@@ -351,7 +362,7 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
 
     res = client.post(
         "/marketplace/products/1/repost",
-        json={"target_clan_id": 2},
+        json={"target_community_code": "GMFN-C-000002", "duration_days": 5},
         headers=headers,
     )
     assert res.status_code == 200, res.text
@@ -359,17 +370,27 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
 
     assert body["ok"] is True
     assert body["item"]["target_clan_id"] == 2
+    assert body["target_community"]["community_code"] == "GMFN-C-000002"
+    assert body["duration_days"] == 5
     assert body["broadcast"]["clan_id"] == 2
     assert body["broadcast"]["source_shop_name"] == "Seller Public Shop"
     assert body["broadcast"]["message"] == "Fresh Rice - Bag of rice"
     assert body["broadcast"]["visibility_scope"] == "marketplace_repost"
     assert body["broadcast"]["priority_mode"] == "paid"
+    assert body["broadcast"]["source_product_id"] == 1
+    assert body["broadcast"]["source_product_block"] == 5
+    expires_at = datetime.fromisoformat(body["broadcast"]["expires_at"])
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    assert expires_at >= now + timedelta(days=4)
 
-    feed = client.get("/marketplace/broadcasts?clan_id=2", headers=headers)
+    feed = client.get("/marketplace/broadcasts?clan_id=2", headers=non_owner_headers)
     assert feed.status_code == 200, feed.text
     feed_body = feed.json()
     assert feed_body["total"] == 1
     assert feed_body["items"][0]["id"] == body["broadcast"]["id"]
+    assert feed_body["items"][0]["source_product_id"] == 1
+    assert feed_body["items"][0]["source_product_block"] == 5
 
     with engine.begin() as conn:
         entitlement = conn.execute(
