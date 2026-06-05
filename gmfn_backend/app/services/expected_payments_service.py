@@ -311,18 +311,16 @@ def calc_vault_subscription_amount(quantity_total: int) -> Decimal:
 def calc_spotlight_subscription_amount(quantity_total: int) -> Decimal:
     """
     Pilot pricing for Subscription Spotlight:
+    - 1 paid spotlight credit = 1 day of outside Network Spotlight placement
     - 1-5 paid spotlight credits = 1.00 GBP per credit
-    - 6 paid spotlight credits = 5.00 GBP bundle
+    - every full 6-credit bundle = 5.00 GBP
     """
     qty = _positive_int(quantity_total, name="quantity_total")
 
-    if 1 <= qty <= 5:
-        return Decimal("1.00") * Decimal(qty)
-    if qty == 6:
-        return Decimal("5.00")
-
-    raise ValueError(
-        "Subscription Spotlight pricing currently supports 1 to 6 credits only."
+    bundle_count = qty // 6
+    remainder = qty % 6
+    return (Decimal("5.00") * Decimal(bundle_count)) + (
+        Decimal("1.00") * Decimal(remainder)
     )
 
 
@@ -429,9 +427,9 @@ def ensure_spotlight_subscription_expected_payment(
     refresh: bool = False,
 ) -> ExpectedPayment:
     qty = _positive_int(quantity_total, name="quantity_total")
-    if qty > 6:
+    if qty > 365:
         raise ValueError(
-            "Subscription Spotlight currently supports 1 to 6 credits only."
+            "Subscription Spotlight currently supports 1 to 365 credits only."
         )
 
     resolved_amount = calc_spotlight_subscription_amount(qty)

@@ -3159,6 +3159,52 @@ export async function createMarketplaceRepost(payload: {
   );
 }
 
+export async function createSpotlightPaymentInstruction(payload: {
+  clan_id: number;
+  shop_id: number;
+  quantity_total: number;
+  amount?: string | number | null;
+  currency?: string;
+  visibility_scope?: string;
+}): Promise<any> {
+  return httpJson("/payment-instructions/spotlight", "POST", {
+    clan_id: payload.clan_id,
+    shop_id: payload.shop_id,
+    quantity_total: payload.quantity_total,
+    amount: payload.amount ?? undefined,
+    currency: payload.currency || "GBP",
+    visibility_scope: payload.visibility_scope || "direct_communities",
+  });
+}
+
+export async function listMyPaymentInstructionExpectedPayments(payload: {
+  clan_id: number;
+  expected_type?: string;
+  status?: string;
+  currency?: string;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/payment-instructions/my/expected${buildQuery({
+      clan_id: payload.clan_id,
+      expected_type: payload.expected_type,
+      status: payload.status,
+      currency: payload.currency,
+      limit: payload.limit ?? 100,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: payload.clan_id }
+  );
+}
+
+export async function getMarketplaceShopSpotlightStatus(shopId: number): Promise<any> {
+  return httpJson(
+    `/marketplace/shops/${encodeURIComponent(String(shopId))}/spotlight-status`,
+    "GET"
+  );
+}
+
 export async function getMarketplaceProductReposts(
   productId: number
 ): Promise<any> {

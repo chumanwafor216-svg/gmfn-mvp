@@ -2447,15 +2447,22 @@ def repost_marketplace_product(
 
     current_time = _now_utc()
     duration_days = max(1, min(_safe_int(getattr(payload, "duration_days", 1), 1), 365))
-    if not has_active_feature(
+    required_spotlight_units = duration_days
+    available_spotlight_units = get_active_feature_quantity(
         db,
         owner_user_id=int(current_user.id),
         feature_code=FEATURE_SPOTLIGHT_PRIORITY,
         shop_id=int(shop.id),
-    ):
+    )
+    if available_spotlight_units < required_spotlight_units:
         raise HTTPException(
             status_code=403,
-            detail="Live marketplace repost requires an unused Subscription Spotlight credit for this shop.",
+            detail=(
+                "Live marketplace repost requires "
+                f"{required_spotlight_units} unused Subscription Spotlight "
+                f"credit{'' if required_spotlight_units == 1 else 's'} for this shop. "
+                f"{available_spotlight_units} available."
+            ),
         )
 
     spotlight_title = _safe_str(getattr(product, "name", None)) or "Marketplace repost"
@@ -2493,16 +2500,19 @@ def repost_marketplace_product(
         db,
         owner_user_id=int(current_user.id),
         feature_code=FEATURE_SPOTLIGHT_PRIORITY,
-        units=1,
+        units=required_spotlight_units,
         shop_id=int(shop.id),
         reference_key=f"marketplace.repost:{int(broadcast.id)}",
-        note="Subscription Spotlight repost",
+        note="Network Spotlight placement",
         commit=False,
     )
     if not usage.get("ok"):
         raise HTTPException(
             status_code=403,
-            detail="No unused Subscription Spotlight credit is available for this shop.",
+            detail=(
+                "Not enough unused Subscription Spotlight credits are available "
+                "for this Network Spotlight duration."
+            ),
         )
 
     remaining_after = _remaining_distribution_slots(db, product_id=int(product.id))
@@ -2528,6 +2538,8 @@ def repost_marketplace_product(
             "priority_mode": SPOTLIGHT_PAID,
             "feature_code": FEATURE_SPOTLIGHT_PRIORITY,
             "paid_feature_consumed": bool(usage.get("ok")),
+            "paid_feature_units_required": required_spotlight_units,
+            "paid_feature_units_consumed": int(usage.get("consumed") or 0),
             "distribution_slots_total": TOTAL_DISTRIBUTION_SLOTS,
             "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
             "distribution_slots_remaining": remaining_after,

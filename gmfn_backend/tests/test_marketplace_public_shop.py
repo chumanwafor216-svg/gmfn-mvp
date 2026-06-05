@@ -350,7 +350,7 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
                     payment_reference
                 ) VALUES (
                     1, 1, 1, 1, 'spotlight_priority', 'spotlight_credit_pack',
-                    1, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-REPOST'
+                    5, 0, 'active', :starts_at, :expires_at, 'GMFN-SPOT-REPOST'
                 )
                 """
             ),
@@ -413,8 +413,16 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
             )
         ).scalar_one()
 
-    assert int(entitlement[0]) == 1
+    assert int(entitlement[0]) == 5
     assert int(usage_count) == 1
+
+    second = client.post(
+        "/marketplace/products/1/repost",
+        json={"target_community_code": "GMFN-C-000002", "duration_days": 1},
+        headers=headers,
+    )
+    assert second.status_code == 403, second.text
+    assert "Subscription Spotlight credit" in second.json()["detail"]
 
 
 def test_public_shop_picture_stays_scoped_to_one_shop_in_shared_community(

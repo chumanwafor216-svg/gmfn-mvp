@@ -77,6 +77,50 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/api.ts",
+  /export async function createSpotlightPaymentInstruction[\s\S]*?\/payment-instructions\/spotlight[\s\S]*?quantity_total[\s\S]*?visibility_scope/,
+  "Network Spotlight placement must use a named frontend payment-instruction rail for paid Spotlight credits."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /export async function getMarketplaceShopSpotlightStatus[\s\S]*?\/marketplace\/shops\/[\s\S]*?\/spotlight-status/,
+  "Network Spotlight placement must read shop paid-credit status from the backend instead of inferring it from a failed repost."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /createSpotlightPaymentInstruction\(\{[\s\S]*?quantity_total: requiredCredits[\s\S]*?visibility_scope: "marketplace_repost"/,
+  "Marketplace Network Spotlight placement must generate a payment code with the exact required paid-credit quantity and marketplace_repost scope."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-paid-network-placement"[\s\S]*?availableMarketplaceRepostCredits[\s\S]*?paid credit[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"/,
+  "Marketplace Network Spotlight placement must visibly show paid credits and keep generate, refresh, and place controls in stable order."
+);
+
+{
+  const text = read("src/pages/MarketplacePage.tsx");
+  const submitStart = text.indexOf("async function submitMarketplaceRepost()");
+  const submitEnd = submitStart >= 0 ? text.indexOf("\n  useEffect", submitStart) : -1;
+  const submitBody = submitStart >= 0 && submitEnd > submitStart
+    ? text.slice(submitStart, submitEnd)
+    : "";
+  const creditGuardIndex = submitBody.indexOf("availableMarketplaceRepostCredits < durationDays");
+  const repostCallIndex = submitBody.indexOf("createMarketplaceRepost");
+  if (creditGuardIndex < 0 || repostCallIndex < 0 || creditGuardIndex > repostCallIndex) {
+    findings.push({
+      file: "src/pages/MarketplacePage.tsx",
+      line: submitStart >= 0 ? text.slice(0, submitStart).split(/\r?\n/).length : 1,
+      message:
+        "Marketplace Network Spotlight placement must check available paid credits before createMarketplaceRepost.",
+      text: "Expected availableMarketplaceRepostCredits guard before createMarketplaceRepost.",
+    });
+  }
+}
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /debugId="marketplace\.links\.join\.copy"[\s\S]*?debugId="marketplace\.links\.join\.refresh"[\s\S]*?debugId="marketplace\.links\.join\.copy-message"[\s\S]*?debugId="marketplace\.links\.join\.email"[\s\S]*?debugId="marketplace\.links\.join\.whatsapp"/,
   "Marketplace join-link controls must keep named, traceable actions in their stable order."

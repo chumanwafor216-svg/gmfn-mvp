@@ -1262,6 +1262,12 @@ assertContains(
   "Subscription Spotlight page must use shared stable button primitives for credit selection, quote, payment, and publish actions."
 );
 
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?stableHeight=\{58\}/,
+  "Marketplace paid Network Spotlight controls must keep stable fixed-height generate, refresh, and place buttons."
+);
+
 assertNotContains(
   "src/pages/SubscriptionSpotlightPage.tsx",
   /(<button|<\/button>|<a\s|buttonGuardProps|actionTapGuardProps)/,

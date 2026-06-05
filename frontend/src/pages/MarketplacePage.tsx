@@ -26,8 +26,10 @@ import {
   cancelLoanRequest,
   createMarketplaceRepost,
   createMarketplaceShop,
+  createSpotlightPaymentInstruction,
   createClanInvite,
   createLoanRequest,
+  getMarketplaceShopSpotlightStatus,
   getClanTrustScoreExplained,
   getClanInviteLink,
   getCurrentClan,
@@ -39,6 +41,7 @@ import {
   getMe,
   getPoolMe,
   getSelectedClanId,
+  listMyPaymentInstructionExpectedPayments,
   setSelectedClanId,
   listClanMembers,
   listMyClans,
@@ -126,6 +129,7 @@ type ShopVisibilityMode = "community_visible" | "vault_private";
 
 type MarketplaceShop = {
   id?: number;
+  clan_id?: number | null;
   user_id?: number;
   owner_user_id?: number;
   gmfn_id?: string | null;
@@ -153,6 +157,27 @@ type RepostProductOption = {
   visibilityMode: ShopVisibilityMode;
   remainingSlots: number;
   repostsUsed: number;
+};
+
+type ExpectedPaymentRecord = {
+  id?: number | string | null;
+  expected_type?: string | null;
+  amount?: string | number | null;
+  currency?: string | null;
+  due_at?: string | null;
+  reference?: string | null;
+  reference_display?: string | null;
+  status?: string | null;
+  confirmed_at?: string | null;
+  meta?: any;
+  meta_json?: any;
+  settlement?: any;
+};
+
+type SpotlightStatusRecord = {
+  available_paid_credits?: number | string | null;
+  active_paid_spotlights?: number | string | null;
+  can_publish_paid_spotlight?: boolean | null;
 };
 
 type LoanSupportItem = {
@@ -500,6 +525,34 @@ function rowsOf<T = any>(input: any): T[] {
 function positiveNumber(value: any): number {
   const n = Number(value || 0);
   return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function paymentQuantity(payment?: ExpectedPaymentRecord | null): number {
+  const meta = payment?.meta || payment?.meta_json || {};
+  const value = Number(firstDefined((payment as any)?.quantity_total, meta?.quantity_total, 1));
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+
+function isConfirmedPayment(payment?: ExpectedPaymentRecord | null): boolean {
+  const status = safeStr(payment?.status).toLowerCase();
+  return Boolean(payment?.confirmed_at) || status === "confirmed" || status === "matched";
+}
+
+function spotlightCreditAmount(creditCount: unknown): number {
+  const credits = Math.max(1, Math.floor(Number(creditCount || 1)));
+  const bundleCount = Math.floor(credits / 6);
+  const remainder = credits % 6;
+  return bundleCount * 5 + remainder;
+}
+
+function formatRailMoney(amount: unknown, currency = "GBP"): string {
+  const code = safeStr(currency || "GBP").toUpperCase() || "GBP";
+  const n = Number(amount);
+  if (!Number.isFinite(n)) {
+    const text = safeStr(amount);
+    return text ? `${code} ${text}` : "";
+  }
+  return `${code} ${n.toFixed(Math.abs(n % 1) > 0 ? 2 : 0)}`;
 }
 
 function mergeFirstVisible(...rows: any[]): any {
@@ -2532,6 +2585,16 @@ export default function MarketplacePage() {
   const [repostTargetMarketplaceId, setRepostTargetMarketplaceId] = useState("");
   const [repostDurationDays, setRepostDurationDays] = useState("1");
   const [placingMarketplaceRepost, setPlacingMarketplaceRepost] = useState(false);
+  const [repostSpotlightStatus, setRepostSpotlightStatus] =
+    useState<SpotlightStatusRecord | null>(null);
+  const [repostExpectedPayments, setRepostExpectedPayments] = useState<
+    ExpectedPaymentRecord[]
+  >([]);
+  const [createdRepostInstruction, setCreatedRepostInstruction] =
+    useState<ExpectedPaymentRecord | null>(null);
+  const [loadingRepostCredits, setLoadingRepostCredits] = useState(false);
+  const [creatingRepostPaymentInstruction, setCreatingRepostPaymentInstruction] =
+    useState(false);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
@@ -2636,6 +2699,41 @@ export default function MarketplacePage() {
     ? "Your GSN ID is not ready yet."
     : "Prepare your public shop link first so it is connected to an active shop before you send it.";
 
+  const loadMarketplaceRepostCredits = useCallback(
+    async (background = false) => {
+      const shopId = positiveNumber(publicShopRecord?.id);
+      const clanId = positiveNumber(activeCommunityId || publicShopRecord?.clan_id);
+
+      if (!shopId || !clanId) {
+        setRepostSpotlightStatus(null);
+        setRepostExpectedPayments([]);
+        return;
+      }
+
+      if (!background) setLoadingRepostCredits(true);
+      try {
+        const [statusRes, expectedRes] = await Promise.all([
+          getMarketplaceShopSpotlightStatus(shopId).catch(() => null),
+          listMyPaymentInstructionExpectedPayments({
+            clan_id: clanId,
+            expected_type: "spotlight_subscription",
+            limit: 100,
+          }).catch(() => ({ items: [] })),
+        ]);
+
+        setRepostSpotlightStatus((statusRes || null) as SpotlightStatusRecord | null);
+        setRepostExpectedPayments(rowsOf<ExpectedPaymentRecord>(expectedRes));
+      } finally {
+        if (!background) setLoadingRepostCredits(false);
+      }
+    },
+    [activeCommunityId, publicShopRecord?.clan_id, publicShopRecord?.id]
+  );
+
+  useEffect(() => {
+    void loadMarketplaceRepostCredits(true);
+  }, [loadMarketplaceRepostCredits]);
+
   useEffect(() => {
     const shopId = positiveNumber(publicShopRecord?.id);
     if (!shopId) {
@@ -2697,11 +2795,63 @@ export default function MarketplacePage() {
     1,
     Math.min(365, positiveNumber(repostDurationDays) || 1)
   );
+  const requiredMarketplaceRepostCredits = resolvedRepostDurationDays;
+  const confirmedMarketplaceRepostCredits = useMemo(
+    () =>
+      repostExpectedPayments
+        .filter(isConfirmedPayment)
+        .reduce((total, item) => total + paymentQuantity(item), 0),
+    [repostExpectedPayments]
+  );
+  const statusMarketplaceRepostCredits = Number(
+    repostSpotlightStatus?.available_paid_credits
+  );
+  const availableMarketplaceRepostCredits =
+    Number.isFinite(statusMarketplaceRepostCredits) &&
+    statusMarketplaceRepostCredits >= 0
+      ? statusMarketplaceRepostCredits
+      : confirmedMarketplaceRepostCredits;
+  const missingMarketplaceRepostCredits = Math.max(
+    0,
+    requiredMarketplaceRepostCredits - availableMarketplaceRepostCredits
+  );
+  const requiredMarketplaceRepostAmount = spotlightCreditAmount(
+    requiredMarketplaceRepostCredits
+  );
+  const createdRepostReference = firstTruthy(
+    createdRepostInstruction?.reference_display,
+    createdRepostInstruction?.reference
+  );
+  const latestRepostPayment =
+    (createdRepostReference
+      ? repostExpectedPayments.find(
+          (item) =>
+            firstTruthy(item.reference_display, item.reference) === createdRepostReference
+        )
+      : null) ||
+    repostExpectedPayments[0] ||
+    createdRepostInstruction ||
+    null;
+  const latestRepostPaymentReference = firstTruthy(
+    latestRepostPayment?.reference_display,
+    latestRepostPayment?.reference
+  );
+  const latestRepostPaymentAmount = formatRailMoney(
+    latestRepostPayment?.amount,
+    latestRepostPayment?.currency || "GBP"
+  );
+  const latestRepostPaymentStatus = firstTruthy(
+    latestRepostPayment?.status,
+    latestRepostPayment ? "awaiting payment" : ""
+  );
+  const canPlaceMarketplaceRepost =
+    availableMarketplaceRepostCredits >= requiredMarketplaceRepostCredits;
   const marketplaceRepostLocked =
     loadingRepostProducts ||
     placingMarketplaceRepost ||
     !selectedRepostProduct ||
-    !resolvedRepostTargetCommunityInput;
+    !resolvedRepostTargetCommunityInput ||
+    !canPlaceMarketplaceRepost;
 
   const controlledMarketplaceLinkNote = useMemo(() => {
     if (!selectedCommunity) {
@@ -3243,13 +3393,68 @@ export default function MarketplacePage() {
     }
   }
 
+  async function createMarketplaceRepostPaymentInstruction() {
+    const shopId = positiveNumber(publicShopRecord?.id);
+    const clanId = positiveNumber(activeCommunityId || publicShopRecord?.clan_id);
+    const requiredCredits = requiredMarketplaceRepostCredits;
+
+    if (!shopId || !clanId) {
+      showNotice(
+        "error",
+        "Shop and community context must be ready before GSN can generate this payment code."
+      );
+      return;
+    }
+
+    if (!selectedRepostProduct?.id) {
+      showNotice("error", "Choose one public block before generating the payment code.");
+      return;
+    }
+
+    setCreatingRepostPaymentInstruction(true);
+    try {
+      const result = await createSpotlightPaymentInstruction({
+        clan_id: clanId,
+        shop_id: shopId,
+        quantity_total: requiredCredits,
+        currency: "GBP",
+        visibility_scope: "marketplace_repost",
+      });
+      setCreatedRepostInstruction(result as ExpectedPaymentRecord);
+      const reference = firstTruthy(result?.reference_display, result?.reference);
+      if (reference) {
+        safeCopy(reference);
+      }
+      await loadMarketplaceRepostCredits(true);
+      showNotice(
+        "success",
+        `Payment code generated for ${requiredCredits} Network Spotlight day${
+          requiredCredits === 1 ? "" : "s"
+        }. Use the exact code in the transfer.`
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) ||
+          "Network Spotlight payment code could not be generated."
+      );
+    } finally {
+      setCreatingRepostPaymentInstruction(false);
+    }
+  }
+
+  async function refreshMarketplaceRepostCredits() {
+    await loadMarketplaceRepostCredits(false);
+    showNotice("success", "Network Spotlight payment status refreshed.");
+  }
+
   async function submitMarketplaceRepost() {
     const product = selectedRepostProduct;
     const targetCommunityInput = resolvedRepostTargetCommunityInput;
     const targetMarketplaceId = resolvedRepostTargetMarketplaceId;
     const durationDays = resolvedRepostDurationDays;
 
-    if (marketplaceRepostLocked) {
+    if (loadingRepostProducts || placingMarketplaceRepost) {
       return;
     }
 
@@ -3260,6 +3465,18 @@ export default function MarketplacePage() {
 
     if (!targetCommunityInput) {
       showNotice("error", "Enter the target community ID where this block should appear.");
+      return;
+    }
+
+    if (availableMarketplaceRepostCredits < durationDays) {
+      showNotice(
+        "error",
+        `This placement needs ${durationDays} paid Spotlight credit${
+          durationDays === 1 ? "" : "s"
+        }. ${availableMarketplaceRepostCredits} ${
+          availableMarketplaceRepostCredits === 1 ? "is" : "are"
+        } ready. Generate the exact payment code here first.`
+      );
       return;
     }
 
@@ -3292,6 +3509,7 @@ export default function MarketplacePage() {
       );
       setRepostTargetMarketplaceId("");
       setRepostDurationDays("1");
+      await loadMarketplaceRepostCredits(true);
       const targetLabel = safeStr(
         firstDefined(
           res?.target_community?.community_code,
@@ -3301,7 +3519,9 @@ export default function MarketplacePage() {
       );
       showNotice(
         "success",
-        `${product.title} entered ${targetLabel} Network Spotlight for ${durationDays} day${durationDays === 1 ? "" : "s"}.`
+        `${product.title} entered ${targetLabel} Network Spotlight for ${durationDays} day${
+          durationDays === 1 ? "" : "s"
+        }. ${durationDays} paid Spotlight credit${durationDays === 1 ? "" : "s"} used.`
       );
     } catch (err: any) {
       showNotice(
@@ -5501,6 +5721,9 @@ export default function MarketplacePage() {
                     <span style={badge(true)}>
                       {resolvedRepostDurationDays} day{resolvedRepostDurationDays === 1 ? "" : "s"}
                     </span>
+                    <span style={badge(canPlaceMarketplaceRepost)}>
+                      {availableMarketplaceRepostCredits} paid credit{availableMarketplaceRepostCredits === 1 ? "" : "s"} available
+                    </span>
                   </div>
                   <div
                     style={{
@@ -5573,9 +5796,92 @@ export default function MarketplacePage() {
                       <span style={badge(true)}>
                         {selectedRepostProduct.repostsUsed} placements recorded
                       </span>
+                      <span style={badge(canPlaceMarketplaceRepost)}>
+                        Needs {requiredMarketplaceRepostCredits} paid credit{requiredMarketplaceRepostCredits === 1 ? "" : "s"}
+                      </span>
                     </div>
                   ) : null}
+                  <div
+                    style={{
+                      marginTop: 12,
+                      padding: 12,
+                      borderRadius: 18,
+                      border: "1px solid rgba(11, 45, 74, 0.12)",
+                      background: canPlaceMarketplaceRepost
+                        ? "rgba(46, 155, 98, 0.08)"
+                        : "rgba(214, 170, 69, 0.12)",
+                      color: "#0B1F33",
+                      display: "grid",
+                      gap: 8,
+                    }}
+                  >
+                    <div style={{ fontWeight: 900 }}>
+                      {canPlaceMarketplaceRepost
+                        ? "Payment credit is ready for this duration."
+                        : `Generate or confirm ${missingMarketplaceRepostCredits} more paid Spotlight credit${
+                            missingMarketplaceRepostCredits === 1 ? "" : "s"
+                          } before placing.`}
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      One Network Spotlight day uses one paid Spotlight credit.
+                      {requiredMarketplaceRepostCredits} day{requiredMarketplaceRepostCredits === 1 ? "" : "s"} =
+                      {" "}{formatRailMoney(requiredMarketplaceRepostAmount, "GBP")} with the current GSN bundle rail.
+                    </div>
+                    {latestRepostPaymentReference ? (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Latest code: <strong>{latestRepostPaymentReference}</strong>
+                        {latestRepostPaymentAmount ? ` | ${latestRepostPaymentAmount}` : ""}
+                        {latestRepostPaymentStatus ? ` | ${latestRepostPaymentStatus}` : ""}
+                      </div>
+                    ) : (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        No payment code is open for this Network Spotlight placement yet.
+                      </div>
+                    )}
+                  </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
+                    <StableButton
+                      type="button"
+                      debugId="marketplace.network-repost.generate-payment-code"
+                      stableHeight={58}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          void createMarketplaceRepostPaymentInstruction();
+                        });
+                      }}
+                      disabled={
+                        creatingRepostPaymentInstruction ||
+                        loadingRepostProducts ||
+                        !selectedRepostProduct
+                      }
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        creatingRepostPaymentInstruction ||
+                          loadingRepostProducts ||
+                          !selectedRepostProduct,
+                        isCompact
+                      )}
+                    >
+                      {creatingRepostPaymentInstruction ? "Generating..." : "Generate Payment Code"}
+                    </StableButton>
+                    <StableButton
+                      type="button"
+                      debugId="marketplace.network-repost.refresh-credits"
+                      stableHeight={58}
+                      onClick={(event) => {
+                        runMarketplaceAction(event, () => {
+                          void refreshMarketplaceRepostCredits();
+                        });
+                      }}
+                      disabled={loadingRepostCredits}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        loadingRepostCredits,
+                        isCompact
+                      )}
+                    >
+                      {loadingRepostCredits ? "Refreshing..." : "Refresh Credits"}
+                    </StableButton>
                     <StableButton
                       type="button"
                       debugId="marketplace.network-repost.place"

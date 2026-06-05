@@ -119,7 +119,7 @@ class SpotlightInstructionIn(BaseModel):
     clan_id: int
     shop_id: int
     amount: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
-    quantity_total: int = Field(default=1, ge=1, le=6)
+    quantity_total: int = Field(default=1, ge=1, le=365)
     currency: str = "GBP"
     visibility_scope: str = "direct_communities"
 
@@ -319,10 +319,12 @@ def my_instruction_config(
             "billing_cycle": VAULT_DEFAULT_BILLING_CYCLE,
         },
         "spotlight_config": {
-            "max_credits": 6,
+            "max_credits": 365,
             "unit_price_gbp": "1.00",
             "bundle_credit_count": 6,
             "bundle_price_gbp": "5.00",
+            "network_repost_credit_unit_days": 1,
+            "max_network_repost_days": 365,
             "payment_instruction_expiry_days": PAYMENT_DUE_WINDOW_DAYS,
             "payment_method": "bank_transfer",
             "payment_beneficiary_scope": "platform",

@@ -1,3 +1,61 @@
+### Paid outside Network Spotlight rail connection (2026-06-05)
+
+- Routes/screens affected:
+  - Marketplace paid Network Spotlight placement panel:
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - frontend payment/API helpers:
+    `frontend/src/lib/api.ts`;
+  - backend marketplace repost route:
+    `gmfn_backend/app/api/routes/marketplace.py`;
+  - backend payment instruction and expected-payment rails:
+    `gmfn_backend/app/api/routes/payment_instructions.py`,
+    `gmfn_backend/app/services/payment_instruction_service.py`, and
+    `gmfn_backend/app/services/expected_payments_service.py`.
+- Product-owner request:
+  - paid outside placement / repost should behave like an outside Network
+    Spotlight subscription, tied to the money rails;
+  - it should keep the exact product block identity intact and not act like a
+    whole-shop share;
+  - placement should not silently proceed without paid Spotlight credit.
+- Backend truth repair:
+  - one outside Network Spotlight day now consumes one active Spotlight
+    subscription credit;
+  - multi-day outside placements consume the matching number of credits;
+  - backend rejects placement when active paid credits are insufficient;
+  - Spotlight payment instruction quantity now scales to `365` credits;
+  - bundle pricing now supports larger durations:
+    `6` credits for GBP `5`, plus GBP `1` per remaining credit.
+- Frontend repair:
+  - Marketplace now reads the shop's active Spotlight-credit status and recent
+    Spotlight expected payments;
+  - the paid placement panel shows available credits, required credits, latest
+    rail/reference status, and the amount needed for the selected duration;
+  - added stable actions to generate a Spotlight payment instruction, refresh
+    credit status, and place the exact selected block;
+  - placement is blocked in the UI and again in the submit handler until enough
+    confirmed credits are available.
+- Button stability:
+  - the new generate, refresh, and place actions use `StableButton` with fixed
+    height and are now included in marketplace action, inventory, and button
+    stability audits;
+  - marketplace source-action inventory is now `53` actions and whole-route
+    mobile controls are now `100`.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx src\lib\api.ts tools\audit-marketplace-actions.mjs tools\audit-button-stability.mjs tools\audit-marketplace-button-inventory.mjs`
+    passed;
+  - `python -m pytest -q gmfn_backend\tests\test_spotlight_subscription_pricing.py gmfn_backend\tests\test_marketplace_public_shop.py::test_product_repost_requires_paid_credit_and_creates_target_marketplace_spotlight --basetemp .pytest-basetemp-spotlight-rails`
+    passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:tap-stability` passed.
+- Remaining truth:
+  - this is the rail-connected paid outside Spotlight placement path;
+  - it does not yet implement a smart recommendation engine that suggests
+    target communities from product category/demand signals. That is a separate
+    product/backend pass.
+
 ### Network Spotlight exact block click-through repair (2026-06-05)
 
 - Routes/screens affected:
