@@ -1,3 +1,31 @@
+### Public Shop owner-contact light-card remake (2026-06-05)
+
+- Route/screen affected:
+  - `/shop/:gmfnId`, owner-contact chooser in
+    `frontend/src/pages/ShopGalleryPage.tsx`.
+- Product-owner request:
+  - remake the owner-contact surface to match the new light GSN reference:
+    shield/GSN trust feel, centered "Owner contact" heading, compact helper
+    cues, green WhatsApp chat action, and white Call phone action.
+- Repair:
+  - changed only the expanded owner-contact panel presentation;
+  - preserved the existing public shop action trigger and the route-bearing
+    buttons:
+    `shop-gallery.owner-contact.choose`,
+    `shop-gallery.owner-contact.whatsapp-chat`, and
+    `shop-gallery.owner-contact.phone-call`;
+  - kept the WhatsApp and phone handlers unchanged so this is a visual/button
+    stability repair, not a route-contract rewrite.
+- Verification:
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run build` passed outside the sandbox after the known Windows
+    Vite/esbuild `spawn EPERM` sandbox failure.
+
 ### Shop Control embedded gallery context repair (2026-06-04)
 
 - Follow-up after the owner showed `/app/shop-control` still displaying

@@ -3264,7 +3264,7 @@ export default function ShopGalleryPage() {
                   "linear-gradient(145deg, rgba(3,20,36,0.58), rgba(8,42,76,0.46))",
                 padding: isCompact ? "12px 13px" : "16px 18px",
                 display: "grid",
-                gap: isCompact ? 9 : 11,
+                gap: isCompact ? 8 : 10,
                 boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
               }}
             >
@@ -3345,14 +3345,14 @@ export default function ShopGalleryPage() {
               position: "relative",
               overflow: "hidden",
               borderRadius: isCompact ? 22 : 28,
-              padding: isCompact ? 16 : 22,
-              border: "1px solid rgba(246,215,122,0.58)",
+              padding: isCompact ? "18px 14px 16px" : "26px 24px",
+              border: "1px solid rgba(255,255,255,0.82)",
               background:
-                "radial-gradient(circle at 82% 8%, rgba(246,196,83,0.20) 0%, transparent 34%), linear-gradient(145deg, #071827 0%, #0A2B45 58%, #061827 100%)",
+                "radial-gradient(circle at 4% 2%, rgba(47,128,237,0.28) 0%, transparent 28%), radial-gradient(circle at 96% 4%, rgba(246,196,83,0.30) 0%, transparent 24%), linear-gradient(135deg, #EAF4FF 0%, #FFFFFF 48%, #FFF7DF 100%)",
               boxShadow:
-                "0 24px 56px rgba(3,15,28,0.26), inset 0 1px 0 rgba(255,255,255,0.10)",
+                "0 24px 56px rgba(8,38,67,0.18), inset 0 1px 0 rgba(255,255,255,0.96)",
               display: "grid",
-              gap: isCompact ? 13 : 16,
+              gap: isCompact ? 12 : 14,
             }}
             aria-label="Owner contact choices"
           >
@@ -3360,70 +3360,87 @@ export default function ShopGalleryPage() {
               aria-hidden="true"
               style={{
                 position: "absolute",
-                inset: "auto -40px -70px auto",
-                width: 190,
-                height: 190,
-                borderRadius: "50%",
-                border: "1px solid rgba(246,215,122,0.16)",
-                opacity: 0.65,
+                left: -58,
+                top: -54,
+                width: isCompact ? 180 : 230,
+                height: isCompact ? 114 : 142,
+                borderRadius: "0 0 90% 0",
+                background:
+                  "linear-gradient(135deg, rgba(33,96,183,0.64) 0%, rgba(33,96,183,0.18) 64%, transparent 100%)",
               }}
             />
-            <div style={{ position: "relative", textAlign: "center" }}>
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                right: -62,
+                top: -38,
+                width: isCompact ? 176 : 230,
+                height: isCompact ? 108 : 136,
+                borderRadius: "0 0 0 90%",
+                background:
+                  "linear-gradient(225deg, rgba(246,196,83,0.54) 0%, rgba(246,196,83,0.16) 58%, transparent 100%)",
+              }}
+            />
+            <div style={{ position: "relative", textAlign: "center", display: "grid", justifyItems: "center" }}>
               <div
                 style={{
-                  margin: "0 auto 10px",
-                  width: isCompact ? 48 : 56,
-                  height: isCompact ? 48 : 56,
-                  borderRadius: 18,
-                  border: "1px solid rgba(246,215,122,0.42)",
+                  margin: "0 auto 6px",
+                  width: isCompact ? 38 : 46,
+                  height: isCompact ? 38 : 46,
+                  borderRadius: 16,
+                  border: "1px solid rgba(214,170,69,0.42)",
                   background:
-                    "linear-gradient(145deg, rgba(255,255,255,0.14), rgba(255,255,255,0.04))",
+                    "linear-gradient(145deg, rgba(255,255,255,0.92), rgba(235,244,255,0.74))",
                   display: "grid",
                   placeItems: "center",
                   boxShadow:
-                    "0 14px 28px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
-                  color: "#F6D77A",
-                  fontSize: isCompact ? 24 : 28,
+                    "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+                  color: "#1F5FB7",
+                  fontSize: isCompact ? 21 : 24,
                 }}
               >
                 <span aria-hidden="true">🛡️</span>
               </div>
-              <div style={{ ...sectionLabel(), color: "#F6D77A" }}>Owner contact</div>
+              <div style={{ ...sectionLabel(), color: "#B68421" }}>Owner contact</div>
               <div
                 style={{
                   marginTop: 8,
-                  color: "#FFFFFF",
-                  fontSize: isCompact ? 22 : 30,
+                  color: "#07172C",
+                  fontSize: isCompact ? 23 : 32,
                   fontWeight: 950,
-                  lineHeight: 1.08,
+                  lineHeight: 1.04,
+                  maxWidth: 520,
                 }}
               >
-                Choose how to reach the seller
+                Choose how to contact the shop owner
               </div>
               <div
                 style={{
                   marginTop: 8,
-                  color: "rgba(234,244,255,0.78)",
-                  fontSize: isCompact ? 12 : 14,
-                  lineHeight: 1.5,
+                  color: "#5F7287",
+                  fontSize: isCompact ? 12.5 : 14,
+                  lineHeight: 1.35,
                   fontWeight: 750,
                 }}
               >
-                Select your preferred contact method to continue.
+                Pick chat or a direct call.
               </div>
             </div>
 
             <div
               style={{
                 position: "relative",
-                display: "grid",
-                gridTemplateColumns: "auto minmax(0, 1fr)",
-                gap: 12,
+                display: "flex",
+                flexWrap: "wrap",
+                justifyContent: "center",
+                gap: isCompact ? 6 : 8,
                 alignItems: "center",
-                padding: isCompact ? 12 : 14,
-                borderRadius: 18,
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.055)",
+                padding: isCompact ? 8 : 10,
+                borderRadius: 14,
+                border: "1px solid rgba(13,95,168,0.08)",
+                background: "rgba(247,250,255,0.82)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
               }}
             >
               <span
@@ -3434,18 +3451,56 @@ export default function ShopGalleryPage() {
                   borderRadius: 15,
                   display: "grid",
                   placeItems: "center",
-                  color: "#F6D77A",
-                  background: "rgba(246,215,122,0.10)",
-                  border: "1px solid rgba(246,215,122,0.20)",
-                  fontSize: 20,
+                  color: "#1F5FB7",
+                  background: "#FFFFFF",
+                  border: "1px solid rgba(13,95,168,0.14)",
+                  fontSize: 16,
                 }}
               >
                 🛡️
               </span>
-              <div style={{ color: "rgba(234,244,255,0.82)", fontWeight: 780, lineHeight: 1.4 }}>
-                GSN can open the contact route.{" "}
-                <strong style={{ color: "#74E48E" }}>WhatsApp</strong> confirms
-                availability.
+              <div
+                style={{
+                  color: "#5F7287",
+                  fontWeight: 760,
+                  lineHeight: 1.25,
+                  fontSize: isCompact ? 10.5 : 12,
+                }}
+              >
+                <strong style={{ color: "#2E9B62" }}>WhatsApp</strong> opens the
+                chat link.
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  color: "#5F7287",
+                  fontWeight: 760,
+                  lineHeight: 1.25,
+                  fontSize: isCompact ? 10.5 : 12,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-grid",
+                    placeItems: "center",
+                    width: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    color: "#1F5FB7",
+                    background: "#FFFFFF",
+                    border: "1px solid rgba(13,95,168,0.14)",
+                    fontSize: 14,
+                  }}
+                >
+                  📞
+                </span>
+                <span>
+                  A <strong style={{ color: "#1F5FB7" }}>phone call</strong> opens the
+                  number directly.
+                </span>
               </div>
             </div>
 
@@ -3454,7 +3509,7 @@ export default function ShopGalleryPage() {
                 position: "relative",
                 display: "grid",
                 gridTemplateColumns: "1fr",
-                gap: isCompact ? 8 : 10,
+                gap: isCompact ? 9 : 11,
               }}
             >
               <PrimaryButton
@@ -3468,22 +3523,22 @@ export default function ShopGalleryPage() {
                   minHeight: isCompact ? 58 : 66,
                   borderRadius: isCompact ? 18 : 20,
                   justifyContent: "space-between",
-                  padding: isCompact ? "12px 14px" : "14px 18px",
-                  fontSize: isCompact ? 17 : 20,
+                  padding: isCompact ? "12px 16px" : "14px 22px",
+                  fontSize: isCompact ? 18 : 21,
                   background:
-                    "linear-gradient(180deg, rgba(12,91,56,0.98) 0%, rgba(6,61,43,0.98) 100%)",
-                  border: "1px solid rgba(116,228,142,0.78)",
+                    "linear-gradient(180deg, #59D85B 0%, #36B848 52%, #26A141 100%)",
+                  border: "1px solid rgba(34,197,94,0.52)",
                   boxShadow:
-                    "0 0 0 1px rgba(116,228,142,0.10), 0 16px 32px rgba(20,185,92,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
+                    "0 16px 30px rgba(35,163,72,0.26), inset 0 1px 0 rgba(255,255,255,0.30)",
                 }}
               >
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
                   <span aria-hidden="true" style={{ fontSize: isCompact ? 24 : 28 }}>
                     💬
                   </span>
-                  <span>WhatsApp Chat</span>
+                  <span>WhatsApp chat</span>
                 </span>
-                <span aria-hidden="true" style={{ color: "#74E48E" }}>
+                <span aria-hidden="true" style={{ color: "#FFFFFF", fontSize: isCompact ? 25 : 29 }}>
                   ›
                 </span>
               </PrimaryButton>
@@ -3498,22 +3553,22 @@ export default function ShopGalleryPage() {
                   minHeight: isCompact ? 58 : 66,
                   borderRadius: isCompact ? 18 : 20,
                   justifyContent: "space-between",
-                  padding: isCompact ? "12px 14px" : "14px 18px",
-                  fontSize: isCompact ? 17 : 20,
-                  color: "#FFFFFF",
-                  background:
-                    "linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.035) 100%)",
-                  border: "1px solid rgba(246,215,122,0.66)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+                  padding: isCompact ? "12px 16px" : "14px 22px",
+                  fontSize: isCompact ? 18 : 21,
+                  color: "#07172C",
+                  background: "linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)",
+                  border: "1px solid rgba(13,95,168,0.22)",
+                  boxShadow:
+                    "0 10px 22px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
                 }}
               >
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 14 }}>
                   <span aria-hidden="true" style={{ fontSize: isCompact ? 24 : 28 }}>
                     📞
                   </span>
-                  <span>Call Phone</span>
+                  <span>Call phone</span>
                 </span>
-                <span aria-hidden="true" style={{ color: "#F6D77A" }}>
+                <span aria-hidden="true" style={{ color: "#1F5FB7", fontSize: isCompact ? 25 : 29 }}>
                   ›
                 </span>
               </SecondaryButton>
@@ -3525,13 +3580,13 @@ export default function ShopGalleryPage() {
                 alignItems: "center",
                 justifyContent: "center",
                 gap: 8,
-                color: "rgba(234,244,255,0.66)",
+                color: "#5F7287",
                 fontSize: isCompact ? 11 : 13,
                 fontWeight: 760,
               }}
             >
               <span aria-hidden="true">🔒</span>
-              <span>Private contact route. Your details stay secure.</span>
+              <span>Your contact details stay private and secure.</span>
             </div>
           </section>
         ) : null}
