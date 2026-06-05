@@ -87,6 +87,9 @@ type ActiveCommunitySpotlight = {
   message: string;
   imageUrl: string;
   videoUrl: string;
+  sourceProductId?: number;
+  sourceProductBlock?: number;
+  sourceProductSlotNumber?: number;
   expiresAt: string;
   createdAt: string;
 };
@@ -215,6 +218,14 @@ function normalizeActiveCommunitySpotlight(
     message: safeStr(row?.message || ""),
     imageUrl: toBackendAssetUrl(safeStr(row?.image_url || row?.imageUrl || "")),
     videoUrl: toBackendAssetUrl(safeStr(row?.video_url || row?.videoUrl || "")),
+    sourceProductId:
+      Number(row?.source_product_id || row?.sourceProductId || 0) || undefined,
+    sourceProductBlock:
+      Number(row?.source_product_block || row?.sourceProductBlock || 0) ||
+      undefined,
+    sourceProductSlotNumber:
+      Number(row?.source_product_slot_number || row?.sourceProductSlotNumber || 0) ||
+      undefined,
     expiresAt: safeStr(row?.expires_at || row?.expiresAt || ""),
     createdAt: safeStr(row?.created_at || row?.createdAt || ""),
   };

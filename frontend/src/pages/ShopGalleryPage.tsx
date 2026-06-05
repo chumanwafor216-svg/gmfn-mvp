@@ -20,6 +20,7 @@ import {
   PUBLIC_SHOP_DIARIES_ANCHOR,
   publicFrontendUrl,
   publicShopPath,
+  publicShopSharePath,
   publicShopShareUrl,
   publicShopUrl,
 } from "../lib/publicLinks";
@@ -77,6 +78,9 @@ type ShopBroadcast = {
   trustScore: string;
   authorName: string;
   authorGmfnId: string;
+  sourceProductId?: number;
+  sourceProductBlock?: number;
+  sourceProductSlotNumber?: number;
   createdAt?: string;
   expiresAt?: string;
 };
@@ -840,6 +844,16 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     trustScore: firstMeaningful(src?.trust_score, src?.trustScore),
     authorName: firstMeaningful(src?.author_name, src?.authorName),
     authorGmfnId: firstMeaningful(src?.author_gmfn_id, src?.authorGmfnId),
+    sourceProductId:
+      positiveNumber(src?.source_product_id || src?.sourceProductId) ||
+      undefined,
+    sourceProductBlock:
+      positiveNumber(src?.source_product_block || src?.sourceProductBlock) ||
+      undefined,
+    sourceProductSlotNumber:
+      positiveNumber(
+        src?.source_product_slot_number || src?.sourceProductSlotNumber
+      ) || undefined,
     createdAt: firstMeaningful(src?.created_at, src?.createdAt),
     expiresAt: firstMeaningful(src?.expires_at, src?.expiresAt),
   };
@@ -1891,8 +1905,18 @@ export default function ShopGalleryPage() {
       Boolean(currentShopGmfnId) &&
       Boolean(spotlightShopGmfnId) &&
       currentShopGmfnId === spotlightShopGmfnId.toUpperCase();
+    const spotlightProductId = positiveNumber(miniSpotlight?.sourceProductId);
+    const spotlightProductBlock =
+      positiveNumber(miniSpotlight?.sourceProductBlock) ||
+      positiveNumber(miniSpotlight?.sourceProductSlotNumber);
     const shopTo = spotlightShopGmfnId
-      ? publicShopPath(spotlightShopGmfnId)
+      ? spotlightProductId || spotlightProductBlock
+        ? publicShopSharePath({
+            gmfnId: spotlightShopGmfnId,
+            productId: spotlightProductId || undefined,
+            block: spotlightProductBlock || undefined,
+          })
+        : publicShopPath(spotlightShopGmfnId)
       : "";
     const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
     const communityTo = spotlightClanId
@@ -2409,6 +2433,20 @@ export default function ShopGalleryPage() {
   }
 
   function openSpotlightPreview() {
+    const hasExactSpotlightBlock = Boolean(
+      positiveNumber(miniSpotlight?.sourceProductId) ||
+        positiveNumber(miniSpotlight?.sourceProductBlock) ||
+        positiveNumber(miniSpotlight?.sourceProductSlotNumber)
+    );
+
+    if (
+      miniSpotlightView.shopTo &&
+      (!miniSpotlightView.isCurrentShop || hasExactSpotlightBlock)
+    ) {
+      window.location.href = miniSpotlightView.shopTo;
+      return;
+    }
+
     revealGalleryTarget(PUBLIC_SHOP_DIARIES_ANCHOR);
   }
 

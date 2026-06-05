@@ -668,7 +668,7 @@ const communityMarketplaceSpotlightChecks = [
     label:
       "Community Marketplace Spotlight must route the live spotlight CTA through the shared resolved primaryCta",
     pattern:
-      /const primaryCta = gmfnId[\s\S]*?resolveCtaTarget\("shop"[\s\S]*?publicShopPath\(gmfnId\)[\s\S]*?resolveCtaTarget\("marketplace"[\s\S]*?primaryCta[\s\S]*?to=\{ctaPath\(activeItemView\.primaryCta\)\}/,
+      /function spotlightShopPath\(item: MarketplaceFeedItem \| null\): string[\s\S]*?publicShopSharePath\(\{[\s\S]*?publicShopPath\(gmfnId\)[\s\S]*?const shopTo = spotlightShopPath\(activeItem\.feed\);[\s\S]*?const primaryCta = gmfnId[\s\S]*?resolveCtaTarget\("shop"[\s\S]*?explicitTo: shopTo[\s\S]*?resolveCtaTarget\("marketplace"[\s\S]*?primaryCta[\s\S]*?to=\{ctaPath\(activeItemView\.primaryCta\)\}/,
   },
   {
     label:

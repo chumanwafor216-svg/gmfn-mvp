@@ -927,6 +927,30 @@ assertContains(
 );
 
 assertContains(
+  "src/components/CommunityMarketplaceSpotlight.tsx",
+  /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?function spotlightShopPath\(item: MarketplaceFeedItem \| null\): string \{[\s\S]*?positiveNumber\(item\?\.source_product_id\)[\s\S]*?positiveNumber\(item\?\.source_product_block\)[\s\S]*?positiveNumber\(item\?\.source_product_slot_number\)[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?publicShopPath\(gmfnId\)/,
+  "Community Marketplace Spotlight must preserve backend source product/block truth and deep-link network placements to the exact public shop block."
+);
+
+assertContains(
+  "src/pages/DashboardPage.tsx",
+  /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?source_product_id:[\s\S]*?source\.source_product_id \?\? source\.sourceProductId \?\? null,[\s\S]*?source_product_block:[\s\S]*?source\.source_product_block \?\? source\.sourceProductBlock \?\? null,[\s\S]*?source_product_slot_number:[\s\S]*?source\.source_product_slot_number \?\? source\.sourceProductSlotNumber \?\? null,[\s\S]*?function spotlightShopTo\(item: SpotlightItem \| null\): string \{[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?navigateWithOrigin\(navigate, spotlightShopTo\(activeSpotlight\), location\)/,
+  "Dashboard Spotlight must keep source product/block fields and open paid outside spotlight placements at the exact public shop block."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?row\?\.source_product_id \|\| row\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?row\?\.source_product_block \|\| row\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?row\?\.source_product_slot_number \|\| row\?\.sourceProductSlotNumber/,
+  "Community Home spotlight normalization must preserve source product/block fields for any future exact-block spotlight actions."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /import \{[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?src\?\.source_product_id \|\| src\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?src\?\.source_product_block \|\| src\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?src\?\.source_product_slot_number \|\| src\?\.sourceProductSlotNumber[\s\S]*?const spotlightProductId = positiveNumber\(miniSpotlight\?\.sourceProductId\);[\s\S]*?const spotlightProductBlock =[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductBlock\) \|\|[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductSlotNumber\);[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: spotlightShopGmfnId,[\s\S]*?productId: spotlightProductId \|\| undefined,[\s\S]*?block: spotlightProductBlock \|\| undefined,[\s\S]*?\}\)[\s\S]*?function openSpotlightPreview\(\)[\s\S]*?hasExactSpotlightBlock[\s\S]*?miniSpotlightView\.shopTo[\s\S]*?window\.location\.href = miniSpotlightView\.shopTo/,
+  "Public Shop Spotlight must preserve broadcast source product/block truth and navigate exact sourced placements to the exact public shop block."
+);
+
+assertContains(
   "src/components/OwnerOnlySurfaceNav.tsx",
   /ariaLabel = "Owner surface navigation"[\s\S]*?hasSignedInSession[\s\S]*?getAccessToken\(\)[\s\S]*?setHasSignedInSession\(Boolean\(token\)\)[\s\S]*?meRes\?\.gmfn_id[\s\S]*?meRes\?\.member_global_id[\s\S]*?hasSignedInSession[\s\S]*?requireOwnerMatch[\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, ownerGmfnId\)[\s\S]*?if \(!shouldShowOwnerNav\) return null;/,
   "Owner surface navigation must remain hidden from public visitors, while allowing public-shop member navigation to opt out of owner matching for signed-in users."

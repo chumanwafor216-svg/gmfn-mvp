@@ -1,3 +1,63 @@
+### Network Spotlight exact block click-through repair (2026-06-05)
+
+- Routes/screens affected:
+  - Community Marketplace live Spotlight card:
+    `frontend/src/components/CommunityMarketplaceSpotlight.tsx`;
+  - Dashboard live Spotlight opener:
+    `frontend/src/pages/DashboardPage.tsx`;
+  - Community Home active Spotlight normalization:
+    `frontend/src/pages/CommunityHomePage.tsx`;
+  - Public Shop mini Spotlight:
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - contract guards:
+    `frontend/tools/audit-link-contracts.mjs` and
+    `frontend/tools/audit-mobile-tap-stability.mjs`.
+- Product-owner issue:
+  - a Network Spotlight / paid outside placement sent from one public shop block
+    still opened the whole public shop page when received elsewhere;
+  - that made the block-level share/post action behave like the signboard share,
+    which is wrong.
+- Root truth found:
+  - backend Spotlight rows already carry source product/block fields
+    (`source_product_id`, `source_product_block`,
+    `source_product_slot_number`);
+  - the frontend was dropping those fields on multiple surfaces, so the UI only
+    had the seller GMFN id and could only build `/shop/:gmfnId`.
+- System-level frontend repair:
+  - preserved source product/block fields through Marketplace Spotlight,
+    Dashboard Spotlight, Community Home, and Public Shop broadcast
+    normalization;
+  - replaced whole-shop Spotlight opens with `publicShopSharePath(...)` when a
+    product id or block number is present;
+  - retained `publicShopPath(...)` as the fallback when the Spotlight truly has
+    no exact product/block source;
+  - Public Shop mini Spotlight now navigates to the source shop/block when the
+    live Spotlight belongs to another shop or has an exact block target, but
+    keeps the local diary reveal when there is no exact target.
+- Button stability:
+  - Community Marketplace Spotlight still routes through shared
+    `resolveCtaTarget(...)` and `StableCtaLink`, not a local button handler;
+  - link and tap audits now require exact source block preservation so this
+    cannot silently regress to whole-shop opening.
+- Verification:
+  - `npm exec -- eslint src/components/CommunityMarketplaceSpotlight.tsx src/pages/DashboardPage.tsx src/pages/CommunityHomePage.tsx src/pages/ShopGalleryPage.tsx tools/audit-link-contracts.mjs tools/audit-mobile-tap-stability.mjs`
+    passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:marketplace-button-inventory` passed
+    (`51` stable marketplace source actions, `98` whole-route mobile controls);
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py -k repost --basetemp .pytest-basetemp-repost-exact`
+    passed;
+  - `npm run build` passed outside the sandbox after the known Windows
+    Vite/esbuild sandbox `spawn EPERM` failure.
+- Remaining truth:
+  - this completes the frontend/system route repair for exact Spotlight block
+    opening;
+  - the richer paid outside Spotlight subscription model (days/weeks, target
+    community recommendation, pricing duration, and broadcast governance) still
+    needs its own backend/product pass. Do not pretend that is already done.
+
 ### Public Shop owner-contact light-card remake (2026-06-05)
 
 - Route/screen affected:

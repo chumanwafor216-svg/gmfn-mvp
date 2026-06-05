@@ -16,7 +16,7 @@ import {
   SPOTLIGHT_PILOT_REFRESH_MS,
   SPOTLIGHT_PILOT_ROTATION_MS,
 } from "../lib/spotlightPilot";
-import { publicShopPath } from "../lib/publicLinks";
+import { publicShopPath, publicShopSharePath } from "../lib/publicLinks";
 
 type MarketplaceFeedItem = {
   id?: number;
@@ -36,6 +36,9 @@ type MarketplaceFeedItem = {
   trust_score?: string | number | null;
   author_name?: string | null;
   author_gmfn_id?: string | null;
+  source_product_id?: number | string | null;
+  source_product_block?: number | string | null;
+  source_product_slot_number?: number | string | null;
 };
 
 function card(): React.CSSProperties {
@@ -134,6 +137,24 @@ function spotlightFeedSortValue(item: MarketplaceFeedItem | null): number {
 
 function ctaPath(target: CtaTarget): string {
   return typeof target.to === "string" ? target.to : String(target.to);
+}
+
+function spotlightShopPath(item: MarketplaceFeedItem | null): string {
+  const gmfnId = String(item?.author_gmfn_id || "").trim();
+  if (!gmfnId) return "";
+
+  const productId = positiveNumber(item?.source_product_id);
+  const block =
+    positiveNumber(item?.source_product_block) ||
+    positiveNumber(item?.source_product_slot_number);
+
+  return productId || block
+    ? publicShopSharePath({
+        gmfnId,
+        productId: productId || undefined,
+        block: block || undefined,
+      })
+    : publicShopPath(gmfnId);
 }
 
 export default function CommunityMarketplaceSpotlight() {
@@ -307,6 +328,7 @@ export default function CommunityMarketplaceSpotlight() {
     }
 
     const gmfnId = String(activeItem.feed?.author_gmfn_id || "").trim();
+    const shopTo = spotlightShopPath(activeItem.feed);
     const sourceClanId = positiveNumber(
       activeItem.feed?.source_clan_id ||
         activeItem.feed?.clan_id ||
@@ -315,7 +337,7 @@ export default function CommunityMarketplaceSpotlight() {
     );
     const primaryCta = gmfnId
       ? resolveCtaTarget("shop", {
-          explicitTo: publicShopPath(gmfnId),
+          explicitTo: shopTo,
           communityId: sourceClanId || selectedClanId,
           debugId: "community-marketplace-spotlight.seller-shop",
         })

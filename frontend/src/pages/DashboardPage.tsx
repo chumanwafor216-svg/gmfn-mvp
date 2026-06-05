@@ -37,7 +37,7 @@ import {
   getSmartMarketWisdomPair,
   type MarketWisdomPair,
 } from "../lib/marketWisdom";
-import { publicShopPath } from "../lib/publicLinks";
+import { publicShopPath, publicShopSharePath } from "../lib/publicLinks";
 import {
   buildDashboardNextRouteCopy,
   buildDashboardTrustAttentionCore,
@@ -86,6 +86,9 @@ type SpotlightItem = {
   trust_score?: number | string | null;
   price?: string | number | null;
   currency?: string | null;
+  source_product_id?: number | string | null;
+  source_product_block?: number | string | null;
+  source_product_slot_number?: number | string | null;
   created_at?: string | null;
   expires_at?: string | null;
 };
@@ -1176,6 +1179,12 @@ function normalizeSpotlightItem(raw: any): SpotlightItem | null {
     trust_score: source.trust_score ?? source.trustScore ?? null,
     price: source.price ?? null,
     currency: safeStr(source.currency) || null,
+    source_product_id:
+      source.source_product_id ?? source.sourceProductId ?? null,
+    source_product_block:
+      source.source_product_block ?? source.sourceProductBlock ?? null,
+    source_product_slot_number:
+      source.source_product_slot_number ?? source.sourceProductSlotNumber ?? null,
     created_at: safeStr(source.created_at || source.createdAt) || null,
     expires_at: safeStr(source.expires_at || source.expiresAt) || null,
   };
@@ -2232,6 +2241,24 @@ function spotlightMarketplaceTo(item: SpotlightItem | null): string {
   }
 
   return DASHBOARD_TARGETS.MARKETPLACE;
+}
+
+function spotlightShopTo(item: SpotlightItem | null): string {
+  const gmfnId = safeStr(item?.author_gmfn_id || "");
+  if (!gmfnId) return "";
+
+  const productId = positiveNumber(item?.source_product_id);
+  const block =
+    positiveNumber(item?.source_product_block) ||
+    positiveNumber(item?.source_product_slot_number);
+
+  return productId || block
+    ? publicShopSharePath({
+        gmfnId,
+        productId: productId || undefined,
+        block: block || undefined,
+      })
+    : publicShopPath(gmfnId);
 }
 
 function defaultDashboardUIState(): DashboardUIState {
@@ -5192,11 +5219,7 @@ export default function DashboardPage() {
     const spotlightGmfnId = safeStr(activeSpotlight?.author_gmfn_id || "");
     if (!spotlightGmfnId) return;
 
-    navigateWithOrigin(
-      navigate,
-      publicShopPath(spotlightGmfnId),
-      location
-    );
+    navigateWithOrigin(navigate, spotlightShopTo(activeSpotlight), location);
   }
 
   function openSpotlightMarketplace(
