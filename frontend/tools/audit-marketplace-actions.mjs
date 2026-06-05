@@ -118,6 +118,12 @@ assertContains(
   "Marketplace Network Spotlight placement must keep backend target suggestions and Use ID buttons inside the paid placement panel."
 );
 
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /const routeRepostProductId = useMemo[\s\S]*?repost_product_id[\s\S]*?const routeRepostBlockNumber = useMemo[\s\S]*?block[\s\S]*?marketplace-paid-network-placement[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)/,
+  "Marketplace Network Spotlight placement must accept exact Shop Diaries product/block handoff instead of opening as a generic marketplace stop."
+);
+
 {
   const text = read("src/pages/MarketplacePage.tsx");
   const submitStart = text.indexOf("async function submitMarketplaceRepost()");

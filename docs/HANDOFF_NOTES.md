@@ -1,3 +1,61 @@
+### Shop Diaries exact paid placement handoff (2026-06-05)
+
+- Routes/screens affected:
+  - public shop / Shop Diaries:
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - Marketplace paid Network Spotlight placement panel:
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - link/action/button audits:
+    `frontend/tools/audit-link-contracts.mjs`,
+    `frontend/tools/audit-marketplace-actions.mjs`, and
+    `frontend/tools/audit-button-stability.mjs`.
+- Product-owner request:
+  - paid outside placement / repost must be attached to the inner Shop Diaries
+    block controls where block actions live, not only as a generic Marketplace
+    shortcut;
+  - the action must preserve the exact product block being placed;
+  - public visitors must not see in-network paid placement controls;
+  - button stability must remain part of the feature.
+- Backend truth:
+  - no new backend money rail was added in this repair;
+  - the frontend now hands the selected shop block into the already-existing
+    paid Network Spotlight rail:
+    `POST /marketplace/products/{product_id}/repost`;
+  - Marketplace still owns target community ID selection, target suggestions,
+    Spotlight credit checks, payment-instruction generation, and final
+    placement.
+- Frontend repair:
+  - Shop Diaries now detects whether the signed-in GMFN ID owns the public shop;
+  - only the signed-in owner sees the opened-block `Ad` action;
+  - the `Ad` action passes `repost_product_id`, `block`, and
+    `source=shop-diaries` into
+    `#marketplace-paid-network-placement`;
+  - Marketplace reads those route parameters, opens the paid placement tool, and
+    selects the exact product by product ID or block number.
+- Button stability:
+  - Shop Diaries product cards now use a fixed action count:
+    `3` public controls or `4` owner controls;
+  - the owner-only placement action is a `StableCtaLink` with fixed
+    `diaryActionHeight`;
+  - the action is only displayed while the product card is open, so closed cards
+    keep the same one-action rail.
+- Verification:
+  - `npm exec -- eslint src\pages\ShopGalleryPage.tsx src\pages\MarketplacePage.tsx tools\audit-link-contracts.mjs tools\audit-button-stability.mjs tools\audit-marketplace-actions.mjs`
+    passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed with `55` stable
+    Marketplace source actions and `102` whole-route mobile controls;
+  - `npm run audit:tap-stability` passed;
+  - `npm run build` passed after the known Windows sandbox `spawn EPERM`
+    required approved build escalation for Vite/esbuild.
+- Remaining truth:
+  - this is an exact block handoff into the existing Marketplace composer, not
+    an in-card payment composer;
+  - the owner must still choose or use a target community ID and have/confirm
+    paid Spotlight credit before placement succeeds.
+
 ### Network Spotlight target recommendation engine (2026-06-05)
 
 - Routes/screens affected:

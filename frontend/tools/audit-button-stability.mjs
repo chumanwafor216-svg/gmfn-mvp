@@ -1160,6 +1160,12 @@ assertNotContains(
   "Shop Gallery product cards must not bring back oversized text-only media/open/share buttons."
 );
 
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /const diaryOpenActionCount = showBlockPlacementAction \? 4 : 3;[\s\S]*?repeat\(\$\{diaryOpenActionCount\}, \$\{diaryActionWidth\}px\)[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}[\s\S]*?stableHeight=\{diaryActionHeight\}[\s\S]*?display: isProductOpen \? "inline-flex" : "none"/,
+  "Shop Gallery owner-only product placement action must share the fixed product action rail without resizing the public card controls."
+);
+
 assertNotContains(
   "src/pages/ShopGalleryPage.tsx",
   /shop-gallery\.repost|repostPanelOpen|createMarketplaceRepost/,

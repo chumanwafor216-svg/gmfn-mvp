@@ -873,9 +873,21 @@ assertWholeFileNotContains(
 );
 
 assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /const signedInOwnsShop = Boolean\([\s\S]*?ownerSurfaceIdentityMatches\(signedInGmfnId, shopOwnerGmfnId\)[\s\S]*?const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;[\s\S]*?function blockPlacementPath\(product: ShopProduct\): string[\s\S]*?params\.set\("repost_product_id", String\(productId\)\)[\s\S]*?params\.set\("block", String\(blockNumber\)\)[\s\S]*?params\.set\("source", "shop-diaries"\)[\s\S]*?APP_ROUTES\.MARKETPLACE[\s\S]*?#marketplace-paid-network-placement[\s\S]*?debugId=\{`shop-gallery\.product\.\$\{productOpenId\}\.paid-placement`\}/,
+  "Shop Diaries owner-only paid placement action must pass exact product/block identity into the internal Marketplace composer."
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /createMarketplaceRepost,[\s\S]*?getMarketplaceProducts,[\s\S]*?Network Spotlight placement[\s\S]*?Target community ID[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?submitMarketplaceRepost/,
   "Marketplace must own the in-network Network Spotlight placement composer with one public block and one target community ID."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /const routeRepostProductId = useMemo[\s\S]*?query\.get\("repost_product_id"\)[\s\S]*?const routeRepostBlockNumber = useMemo[\s\S]*?query\.get\("block"\)[\s\S]*?const routeRepostSource = useMemo[\s\S]*?query\.get\("source"\)[\s\S]*?hash === "marketplace-paid-network-placement"[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?repostProducts\.find\(\(product\) => product\.id === routeRepostProductId\)[\s\S]*?product\.blockNumber === routeRepostBlockNumber[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)[\s\S]*?scrollToMarketplaceSection\("marketplace-paid-network-placement"\)/,
+  "Marketplace must consume Shop Diaries product/block handoff and open the paid Network Spotlight composer with the exact block selected."
 );
 
 assertNotContains(

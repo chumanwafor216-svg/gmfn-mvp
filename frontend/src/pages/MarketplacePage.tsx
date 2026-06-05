@@ -153,6 +153,7 @@ type MarketplaceShop = {
 
 type RepostProductOption = {
   id: number;
+  blockNumber: number;
   title: string;
   description: string;
   visibilityMode: ShopVisibilityMode;
@@ -857,6 +858,15 @@ function normalizeRepostProductOption(raw: any): RepostProductOption | null {
 
   return {
     id,
+    blockNumber: positiveNumber(
+      firstDefined(
+        src?.public_block_number,
+        src?.slot_number,
+        src?.slotNumber,
+        src?.block,
+        src?.block_number
+      )
+    ),
     title,
     description,
     visibilityMode,
@@ -873,9 +883,10 @@ function normalizeRepostProductOption(raw: any): RepostProductOption | null {
 
 function repostProductLabel(product: RepostProductOption | null): string {
   if (!product) return "Choose public block";
+  const blockPrefix = product.blockNumber ? `Block #${product.blockNumber} - ` : "";
   return product.description
-    ? `${product.title} - ${product.description}`
-    : product.title;
+    ? `${blockPrefix}${product.title} - ${product.description}`
+    : `${blockPrefix}${product.title}`;
 }
 
 function communityIdentity(row: CommunityRow | null | undefined): string {
@@ -2667,6 +2678,22 @@ export default function MarketplacePage() {
         query.get("community_id")
     );
   }, [location.search]);
+  const routeRepostProductId = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(
+      query.get("repost_product_id") ||
+        query.get("product_id") ||
+        query.get("product")
+    );
+  }, [location.search]);
+  const routeRepostBlockNumber = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return positiveNumber(query.get("block") || query.get("slot"));
+  }, [location.search]);
+  const routeRepostSource = useMemo(() => {
+    const query = new URLSearchParams(location.search);
+    return safeStr(query.get("source")).toLowerCase();
+  }, [location.search]);
   const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
   const publicShopOwnerId = firstTruthy(
@@ -3715,6 +3742,42 @@ export default function MarketplacePage() {
 
     scrollToMarketplaceSection("marketplace-owned-links");
   }, [location.hash, scrollToMarketplaceSection]);
+
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
+    const openedFromShopBlock =
+      hash === "marketplace-paid-network-placement" ||
+      routeRepostSource === "shop-diaries" ||
+      Boolean(routeRepostProductId || routeRepostBlockNumber);
+    if (!openedFromShopBlock) return;
+
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
+    setSectionsOpen(focusedMarketplaceSectionState("tools"));
+
+    const matchedProduct =
+      (routeRepostProductId
+        ? repostProducts.find((product) => product.id === routeRepostProductId)
+        : null) ||
+      (routeRepostBlockNumber
+        ? repostProducts.find(
+            (product) => product.blockNumber === routeRepostBlockNumber
+          )
+        : null);
+
+    if (matchedProduct && selectedRepostProductId !== matchedProduct.id) {
+      setSelectedRepostProductId(matchedProduct.id);
+    }
+
+    scrollToMarketplaceSection("marketplace-paid-network-placement");
+  }, [
+    location.hash,
+    repostProducts,
+    routeRepostBlockNumber,
+    routeRepostProductId,
+    routeRepostSource,
+    scrollToMarketplaceSection,
+    selectedRepostProductId,
+  ]);
 
   const memberName = useMemo(() => {
     return (

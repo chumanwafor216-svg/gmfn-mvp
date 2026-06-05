@@ -14,6 +14,7 @@ import {
   getMe,
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
+  getStoredGmfnId,
   safeCopy,
 } from "../lib/api";
 import {
@@ -1218,6 +1219,9 @@ export default function ShopGalleryPage() {
   const [ownerContactPanelOpen, setOwnerContactPanelOpen] = useState(false);
   const [shopVerificationOpen, setShopVerificationOpen] = useState(false);
   const [shopVerificationQrOpen, setShopVerificationQrOpen] = useState(false);
+  const [signedInGmfnId, setSignedInGmfnId] = useState<string>(
+    () => getStoredGmfnId() || ""
+  );
   const autoRefreshAttemptedRef = useRef("");
 
   const forceOwnerReconnect = useCallback(() => {
@@ -1251,6 +1255,30 @@ export default function ShopGalleryPage() {
 
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!getAccessToken()) {
+      setSignedInGmfnId("");
+      return;
+    }
+
+    let alive = true;
+
+    getMe()
+      .then((meRes) => {
+        if (!alive) return;
+        setSignedInGmfnId(
+          firstMeaningful(meRes?.gmfn_id, meRes?.gmfnId, getStoredGmfnId())
+        );
+      })
+      .catch(() => {
+        if (alive) setSignedInGmfnId(getStoredGmfnId() || "");
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [shopReconnectRetryKey]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1976,6 +2004,26 @@ export default function ShopGalleryPage() {
   const ownerSurfaceCommunityId = positiveNumber(
     effectiveShop?.clanId || getSelectedClanId()
   );
+  const signedInOwnsShop = Boolean(
+    ownerSessionPresent &&
+      signedInGmfnId &&
+      shopOwnerGmfnId &&
+      ownerSurfaceIdentityMatches(signedInGmfnId, shopOwnerGmfnId)
+  );
+  const showBlockPlacementAction = signedInOwnsShop && !shopLoadFailed;
+  function blockPlacementPath(product: ShopProduct): string {
+    const params = new URLSearchParams();
+    const productId = positiveNumber(product.id);
+    const blockNumber = positiveNumber(product.slotNumber);
+    if (productId) params.set("repost_product_id", String(productId));
+    if (blockNumber) params.set("block", String(blockNumber));
+    params.set("source", "shop-diaries");
+
+    return routeWithCommunity(
+      `${APP_ROUTES.MARKETPLACE}?${params.toString()}#marketplace-paid-network-placement`,
+      ownerSurfaceCommunityId
+    );
+  }
   const memberSurfaceLinks = useMemo(
     () => [
       {
@@ -4101,6 +4149,7 @@ export default function ShopGalleryPage() {
                 const diaryMediaControlHeight = isCompact ? 36 : 40;
                 const diaryClosedDockHeight = isCompact ? 58 : 68;
                 const diaryOpenDockHeight = isCompact ? 126 : 132;
+                const diaryOpenActionCount = showBlockPlacementAction ? 4 : 3;
 
                 return (
                   <article
@@ -4253,7 +4302,10 @@ export default function ShopGalleryPage() {
                         boxSizing: "border-box",
                         display: "grid",
                         gridTemplateColumns: isProductOpen
-                          ? `minmax(0, 1fr) ${diaryActionWidth * 3 + (isCompact ? 12 : 16)}px`
+                          ? `minmax(0, 1fr) ${
+                              diaryActionWidth * diaryOpenActionCount +
+                              (isCompact ? 6 : 8) * (diaryOpenActionCount - 1)
+                            }px`
                           : `minmax(0, 1fr) ${diaryActionWidth}px`,
                         gridTemplateRows: isProductOpen
                           ? "auto auto auto"
@@ -4357,7 +4409,7 @@ export default function ShopGalleryPage() {
                           gridRow: isProductOpen ? "3" : "1 / span 2",
                           display: "grid",
                           gridTemplateColumns: isProductOpen
-                            ? `repeat(3, ${diaryActionWidth}px)`
+                            ? `repeat(${diaryOpenActionCount}, ${diaryActionWidth}px)`
                             : `${diaryActionWidth}px`,
                           gap: isCompact ? 6 : 8,
                           width: "fit-content",
@@ -4435,6 +4487,39 @@ export default function ShopGalleryPage() {
                         >
                           🔗
                         </SecondaryButton>
+                        {showBlockPlacementAction ? (
+                          <StableCtaLink
+                            to={blockPlacementPath(product)}
+                            minWidth={0}
+                            stableHeight={diaryActionHeight}
+                            debugId={`shop-gallery.product.${productOpenId}.paid-placement`}
+                            aria-label={`Place ${displayTitle} on Network Spotlight`}
+                            title="Network Spotlight placement"
+                            style={{
+                              ...secondaryBtn(false),
+                              display: isProductOpen ? "inline-flex" : "none",
+                              width: diaryActionWidth,
+                              maxWidth: diaryActionWidth,
+                              minWidth: 0,
+                              minHeight: diaryActionHeight,
+                              padding: 0,
+                              borderRadius: 999,
+                              fontSize: isCompact ? 10 : 11,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              overflowWrap: "normal",
+                              overflowAnchor: "none",
+                              background:
+                                "linear-gradient(180deg, rgba(255,247,214,0.99) 0%, rgba(222,172,55,0.92) 100%)",
+                              borderColor: "rgba(177,132,29,0.36)",
+                              color: "#082643",
+                            }}
+                          >
+                            Ad
+                          </StableCtaLink>
+                        ) : null}
                         <SecondaryButton
                           onClick={() => {
                             contactOwnerAboutProduct(product);
