@@ -425,6 +425,115 @@ def test_product_repost_requires_paid_credit_and_creates_target_marketplace_spot
     assert "Subscription Spotlight credit" in second.json()["detail"]
 
 
+def test_product_repost_target_suggestions_return_public_community_codes(client, monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "pytest-marketplace-repost-targets-secret")
+    _ensure_marketplace_tables()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES
+                    (1, 'seller-targets@example.com', 'hashed', 'Seller Targets', 'user', 'GMFN-U-TARGETSELLER'),
+                    (2, 'other-targets@example.com', 'hashed', 'Other Targets', 'user', 'GMFN-U-TARGETOTHER'),
+                    (3, 'solar-targets@example.com', 'hashed', 'Solar Targets', 'user', 'GMFN-U-TARGETSOLAR')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, description, marketplace_name, marketplace_description, invite_code, community_code)
+                VALUES
+                    (1, 'Source Traders', 'Origin only', 'Source Marketplace', 'Origin rice sellers', 'SOURCE-TARGETS', 'GMFN-C-010001'),
+                    (2, 'Rice Traders', 'Food and bag supply community', 'Rice Marketplace', 'Rice bags and food trade', 'RICE-TARGETS', 'GMFN-C-010002'),
+                    (3, 'Solar Builders', 'Renewable installation community', 'Solar Marketplace', 'Panels and energy tools', 'SOLAR-TARGETS', 'GMFN-C-010003')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 2, 'member', 0),
+                    (3, 2, 1, 'member', 0),
+                    (4, 3, 3, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description,
+                    whatsapp_number, telegram_handle, is_active
+                ) VALUES
+                    (1, 1, 1, 'Seller Food Shop', 'Rice supplier', '07903165266', NULL, 1),
+                    (2, 2, 2, 'Target Food Shop', 'Rice and food', '07903165267', NULL, 1),
+                    (3, 3, 3, 'Solar Shop', 'Solar products', '07903165268', NULL, 1)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, video_url, visibility_mode, is_active
+                ) VALUES
+                    (1, 1, 1, 1, 'Fresh Rice', '[BLOCK:2] Bag of rice for traders', '25000', 'NGN', NULL, NULL, 'community_visible', 1),
+                    (2, 2, 2, 2, 'Rice Bags', 'Wholesale rice and food supply', '26000', 'NGN', NULL, NULL, 'community_visible', 1),
+                    (3, 3, 3, 3, 'Solar Panel', 'Energy panel', '50000', 'NGN', NULL, NULL, 'community_visible', 1)
+                """
+            )
+        )
+
+    token = create_access_token({"sub": "seller-targets@example.com"})
+    headers = {"Authorization": f"Bearer {token}"}
+
+    res = client.get("/marketplace/products/1/repost-targets?limit=4", headers=headers)
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["ok"] is True
+    assert body["origin_community_code"] == "GMFN-C-010001"
+    assert body["recommendation_basis"]["private_member_data_exposed"] is False
+    assert "rice" in body["recommendation_basis"]["product_terms"]
+
+    codes = [item["community_code"] for item in body["items"]]
+    assert "GMFN-C-010001" not in codes
+    assert codes[0] == "GMFN-C-010002"
+    assert body["items"][0]["marketplace_name"] == "Rice Marketplace"
+    assert "rice" in body["items"][0]["matched_terms"]
+    assert body["items"][0]["active_public_blocks"] == 1
+    assert "active_members" not in body["items"][0]
+    assert "active member" not in " ".join(body["items"][0]["reasons"]).lower()
+
+    with engine.begin() as conn:
+        conn.execute(
+            text("UPDATE marketplace_products SET visibility_mode = 'public' WHERE id = 1")
+        )
+    alias_res = client.get("/marketplace/products/1/repost-targets?limit=4", headers=headers)
+    assert alias_res.status_code == 200, alias_res.text
+
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE marketplace_products SET is_active = 0 WHERE id = 1"))
+    inactive_res = client.get("/marketplace/products/1/repost-targets?limit=4", headers=headers)
+    assert inactive_res.status_code == 400, inactive_res.text
+    assert "active public shop blocks" in inactive_res.json()["detail"]
+
+    non_owner_token = create_access_token({"sub": "other-targets@example.com"})
+    non_owner = client.get(
+        "/marketplace/products/1/repost-targets",
+        headers={"Authorization": f"Bearer {non_owner_token}"},
+    )
+    assert non_owner.status_code == 403, non_owner.text
+
+
 def test_public_shop_picture_stays_scoped_to_one_shop_in_shared_community(
     client,
     override_current_user_user,

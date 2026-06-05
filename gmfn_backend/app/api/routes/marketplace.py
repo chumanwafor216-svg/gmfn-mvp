@@ -261,6 +261,53 @@ def _resolve_repost_target_clan(db: Session, payload: Any) -> Clan:
     return clan
 
 
+_REPOST_TARGET_STOP_WORDS = {
+    "and",
+    "are",
+    "best",
+    "brand",
+    "community",
+    "delivery",
+    "fresh",
+    "from",
+    "general",
+    "good",
+    "item",
+    "market",
+    "marketplace",
+    "new",
+    "offer",
+    "product",
+    "products",
+    "shop",
+    "the",
+    "trusted",
+    "with",
+}
+
+
+def _repost_target_tokens(*values: Any) -> list[str]:
+    seen: set[str] = set()
+    tokens: list[str] = []
+    for value in values:
+        text = _public_product_display_text(value).lower()
+        for token in re.findall(r"[a-z0-9]{3,}", text):
+            if token in _REPOST_TARGET_STOP_WORDS:
+                continue
+            if token in seen:
+                continue
+            seen.add(token)
+            tokens.append(token)
+    return tokens[:12]
+
+
+def _match_repost_tokens(tokens: list[str], *values: Any) -> list[str]:
+    haystack = " ".join(_safe_str(value).lower() for value in values if value is not None)
+    if not haystack or not tokens:
+        return []
+    return [token for token in tokens if token in haystack]
+
+
 def _is_admin(user: Any) -> bool:
     return str(getattr(user, "role", "")).lower() == "admin"
 
@@ -2381,6 +2428,178 @@ def delete_marketplace_product(
         "item": snapshot,
         "removed_reposts": removed_reposts,
         "detail": "Product block removed.",
+    }
+
+
+@router.get("/products/{product_id}/repost-targets")
+def recommend_marketplace_repost_targets(
+    product_id: int,
+    limit: int = Query(default=6, ge=1, le=12),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    product = (
+        db.query(MarketplaceProduct)
+        .filter(MarketplaceProduct.id == int(product_id))
+        .first()
+    )
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    shop = (
+        db.query(MarketplaceShop)
+        .filter(MarketplaceShop.id == int(product.shop_id))
+        .first()
+    )
+    if not shop:
+        raise HTTPException(status_code=400, detail="Product shop is not ready.")
+
+    if not _shop_owner_can_manage(current_user=current_user, shop=shop):
+        raise HTTPException(
+            status_code=403,
+            detail="Only the shop owner can ask GSN for Network Spotlight target suggestions.",
+        )
+
+    if not bool(getattr(product, "is_active", True)):
+        raise HTTPException(
+            status_code=400,
+            detail="Only active public shop blocks can be suggested for Network Spotlight placement.",
+        )
+
+    if _resolve_visibility_mode(getattr(product, "visibility_mode", None)) != VISIBILITY_COMMUNITY:
+        raise HTTPException(
+            status_code=400,
+            detail="Only public shop blocks can be suggested for Network Spotlight placement.",
+        )
+
+    origin_clan_id = int(product.clan_id)
+    product_tokens = _repost_target_tokens(
+        getattr(product, "name", None),
+        getattr(product, "description", None),
+        getattr(shop, "name", None),
+        getattr(shop, "description", None),
+    )
+    current_time = _now_utc()
+
+    clans = (
+        db.query(Clan)
+        .filter(Clan.id != origin_clan_id)
+        .filter(Clan.status.in_(["active", "open", "approved"]))
+        .order_by(Clan.created_at.desc(), Clan.id.desc())
+        .limit(50)
+        .all()
+    )
+
+    suggestions: list[Dict[str, Any]] = []
+    for clan in clans:
+        clan_id = int(clan.id)
+        community_code = _clan_public_code(clan)
+        if not community_code:
+            continue
+
+        public_name = (
+            _safe_str(getattr(clan, "marketplace_name", None))
+            or _safe_str(getattr(clan, "name", None))
+            or f"Community {clan_id}"
+        )
+        public_description = (
+            _safe_str(getattr(clan, "marketplace_description", None))
+            or _safe_str(getattr(clan, "description", None))
+        )
+        active_products_query = (
+            db.query(MarketplaceProduct)
+            .filter(MarketplaceProduct.clan_id == clan_id)
+            .filter(MarketplaceProduct.is_active.is_(True))
+            .filter(MarketplaceProduct.visibility_mode.in_([VISIBILITY_COMMUNITY, "public", "community"]))
+        )
+        active_product_count = active_products_query.count()
+        active_products = (
+            active_products_query
+            .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+            .limit(8)
+            .all()
+        )
+        active_spotlight_count = _count_active_spotlights_for_clan(
+            db=db,
+            clan_id=clan_id,
+            now=current_time,
+        )
+        max_spotlights = _max_spotlights_for_clan(db=db, clan_id=clan_id)
+
+        product_text = " ".join(
+            f"{_safe_str(getattr(item, 'name', None))} {_safe_str(getattr(item, 'description', None))}"
+            for item in active_products
+        )
+        matched_terms = sorted(
+            set(
+                _match_repost_tokens(product_tokens, public_name, public_description)
+                + _match_repost_tokens(product_tokens, product_text)
+            )
+        )
+        score = 20
+        score += min(30, len(matched_terms) * 12)
+        score += min(20, active_product_count * 4)
+        if active_spotlight_count >= max_spotlights:
+            score -= 8
+        score = max(1, min(100, score))
+
+        reasons: list[str] = []
+        if matched_terms:
+            reasons.append("Matches: " + ", ".join(matched_terms[:4]))
+        if active_product_count:
+            reasons.append(f"{active_product_count} public shop block{'' if active_product_count == 1 else 's'} live")
+        if active_spotlight_count < max_spotlights:
+            reasons.append("Spotlight lane has room")
+        else:
+            reasons.append("Spotlight lane may queue")
+        if not reasons:
+            reasons.append("Open community route")
+
+        if score >= 70:
+            confidence = "strong"
+        elif score >= 45:
+            confidence = "good"
+        else:
+            confidence = "explore"
+
+        suggestions.append(
+            {
+                "community_id": clan_id,
+                "community_code": community_code,
+                "marketplace_name": public_name,
+                "public_name": public_name,
+                "matched_terms": matched_terms[:6],
+                "score": score,
+                "confidence": confidence,
+                "reasons": reasons[:4],
+                "active_public_blocks": active_product_count,
+                "community_signal": "public-shop-active" if active_product_count else "open-route",
+                "active_spotlights": active_spotlight_count,
+                "max_spotlights": max_spotlights,
+            }
+        )
+
+    suggestions.sort(
+        key=lambda item: (
+            int(item.get("score") or 0),
+            int(item.get("active_public_blocks") or 0),
+        ),
+        reverse=True,
+    )
+
+    return {
+        "ok": True,
+        "product": _product_out(db, product),
+        "origin_community_id": origin_clan_id,
+        "origin_community_code": _clan_public_code(
+            db.query(Clan).filter(Clan.id == origin_clan_id).first()
+        ),
+        "recommendation_basis": {
+            "product_terms": product_tokens,
+            "private_member_data_exposed": False,
+            "note": "Suggestions use public community identity, public marketplace activity, and the selected product wording.",
+        },
+        "items": suggestions[: int(limit)],
     }
 
 

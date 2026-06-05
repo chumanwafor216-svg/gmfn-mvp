@@ -14,10 +14,10 @@ const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
 const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");
 const findings = [];
-const expectedStableActionCount = 53;
+const expectedStableActionCount = 55;
 const expectedSourceBreakdown = {
   front: 15,
-  body: 38,
+  body: 40,
 };
 const expectedVisibleIntentActionCount = 12;
 const expectedMobileShellBreakdown = {
@@ -350,6 +350,11 @@ const expectedOrder = [
   exactDebugId("marketplace.public-shop.copy"),
   exactDebugId("marketplace.public-shop.email"),
   exactDebugId("marketplace.public-shop.open"),
+  exactDebugId("marketplace.network-repost.find-targets"),
+  dynamicDebugId(
+    "marketplace.network-repost.target.*.use",
+    /debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}/
+  ),
   exactDebugId("marketplace.network-repost.generate-payment-code"),
   exactDebugId("marketplace.network-repost.refresh-credits"),
   exactDebugId("marketplace.network-repost.place"),

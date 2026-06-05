@@ -1,3 +1,63 @@
+### Network Spotlight target recommendation engine (2026-06-05)
+
+- Routes/screens affected:
+  - Marketplace paid Network Spotlight placement panel:
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - frontend API helper:
+    `frontend/src/lib/api.ts`;
+  - backend marketplace route:
+    `gmfn_backend/app/api/routes/marketplace.py`;
+  - marketplace/button audits:
+    `frontend/tools/audit-marketplace-actions.mjs`,
+    `frontend/tools/audit-marketplace-button-inventory.mjs`, and
+    `frontend/tools/audit-button-stability.mjs`.
+- Product-owner request:
+  - outside Network Spotlight / repost should help the shop owner find target
+    community IDs instead of leaving the owner to guess;
+  - it must stay connected to the paid Spotlight rail and must preserve exact
+    product-block identity;
+  - button stability remains part of the feature, not a separate afterthought.
+- Backend truth added:
+  - added `GET /marketplace/products/{product_id}/repost-targets`;
+  - only the shop owner/admin can request suggestions;
+  - only active public/community-visible shop blocks can be suggested;
+  - the product's own origin community is excluded;
+  - suggestions return public community codes and marketplace names only;
+  - no exact target-community member counts or member names are exposed;
+  - scoring uses public shop-block signals, product/category term matches, and
+    active Spotlight lane availability.
+- Frontend repair:
+  - paid Network Spotlight placement now has a stable `Find Target IDs` action;
+  - suggestions show public target IDs with compact reasons;
+  - each suggestion has a stable `Use ID` action that fills the target
+    marketplace/community ID field;
+  - stale async suggestion responses are ignored if the selected block changes
+    before the response returns.
+- Button stability:
+  - `Find Target IDs` and `Use ID` are `StableButton` controls with fixed
+    runtime heights, not just fixed audit metadata;
+  - marketplace source-action inventory is now `55` actions:
+    `15` front/body-header actions and `40` inner body actions;
+  - whole-route mobile controls are now `102`.
+- Verification:
+  - `npm exec -- eslint src\pages\MarketplacePage.tsx src\lib\api.ts tools\audit-marketplace-actions.mjs tools\audit-button-stability.mjs tools\audit-marketplace-button-inventory.mjs`
+    passed;
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_product_repost_target_suggestions_return_public_community_codes --basetemp .pytest-basetemp-repost-targets`
+    passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:marketplace-button-inventory` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:tap-stability` passed;
+  - `npm run build` passed after the known Windows sandbox `spawn EPERM`
+    required approved build escalation for Vite/esbuild.
+- Remaining truth:
+  - this is a deterministic public-signal recommendation engine, not a full AI
+    market/demand recommender;
+  - it does not auto-place into suggested communities. The owner must choose a
+    target ID, then the existing paid Spotlight rail still enforces credit and
+    placement rules.
+
 ### Paid outside Network Spotlight rail connection (2026-06-05)
 
 - Routes/screens affected:
@@ -52,9 +112,9 @@
   - `npm run audit:tap-stability` passed.
 - Remaining truth:
   - this is the rail-connected paid outside Spotlight placement path;
-  - it does not yet implement a smart recommendation engine that suggests
-    target communities from product category/demand signals. That is a separate
-    product/backend pass.
+  - superseded by the later 2026-06-05 handoff note above: the first
+    deterministic public-signal target recommendation engine is now
+    implemented.
 
 ### Network Spotlight exact block click-through repair (2026-06-05)
 

@@ -3159,6 +3159,22 @@ export async function createMarketplaceRepost(payload: {
   );
 }
 
+export async function getMarketplaceRepostTargetSuggestions(
+  productId: number,
+  params?: {
+    limit?: number;
+  }
+): Promise<any> {
+  return httpJson(
+    `/marketplace/products/${encodeURIComponent(
+      String(productId)
+    )}/repost-targets${buildQuery({
+      limit: params?.limit ?? 6,
+    })}`,
+    "GET"
+  );
+}
+
 export async function createSpotlightPaymentInstruction(payload: {
   clan_id: number;
   shop_id: number;

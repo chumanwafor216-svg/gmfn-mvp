@@ -1268,6 +1268,12 @@ assertContains(
   "Marketplace paid Network Spotlight controls must keep stable fixed-height generate, refresh, and place buttons."
 );
 
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.network-repost\.find-targets"[\s\S]*?stableHeight=\{50\}[\s\S]*?height: 50[\s\S]*?minHeight: 50[\s\S]*?maxHeight: 50[\s\S]*?debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}[\s\S]*?stableHeight=\{46\}[\s\S]*?height: 46[\s\S]*?minHeight: 46[\s\S]*?maxHeight: 46/,
+  "Marketplace paid Network Spotlight target suggestion controls must keep stable fixed-height find and Use ID buttons in both StableButton props and runtime style."
+);
+
 assertNotContains(
   "src/pages/SubscriptionSpotlightPage.tsx",
   /(<button|<\/button>|<a\s|buttonGuardProps|actionTapGuardProps)/,

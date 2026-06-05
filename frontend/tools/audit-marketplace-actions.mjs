@@ -89,6 +89,12 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/api.ts",
+  /export async function getMarketplaceRepostTargetSuggestions[\s\S]*?\/marketplace\/products\/[\s\S]*?\/repost-targets/,
+  "Network Spotlight placement must use the backend target-suggestion route instead of guessing target community IDs in the page."
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /createSpotlightPaymentInstruction\(\{[\s\S]*?quantity_total: requiredCredits[\s\S]*?visibility_scope: "marketplace_repost"/,
   "Marketplace Network Spotlight placement must generate a payment code with the exact required paid-credit quantity and marketplace_repost scope."
@@ -98,6 +104,18 @@ assertContains(
   "src/pages/MarketplacePage.tsx",
   /id="marketplace-paid-network-placement"[\s\S]*?availableMarketplaceRepostCredits[\s\S]*?paid credit[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"/,
   "Marketplace Network Spotlight placement must visibly show paid credits and keep generate, refresh, and place controls in stable order."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /async function loadMarketplaceRepostTargetSuggestions[\s\S]*?getMarketplaceRepostTargetSuggestions\(productId/,
+  "Marketplace Network Spotlight target suggestions must be loaded through the named backend API helper."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-paid-network-placement"[\s\S]*?debugId="marketplace\.network-repost\.find-targets"[\s\S]*?debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}/,
+  "Marketplace Network Spotlight placement must keep backend target suggestions and Use ID buttons inside the paid placement panel."
 );
 
 {

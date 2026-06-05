@@ -29,6 +29,7 @@ import {
   createSpotlightPaymentInstruction,
   createClanInvite,
   createLoanRequest,
+  getMarketplaceRepostTargetSuggestions,
   getMarketplaceShopSpotlightStatus,
   getClanTrustScoreExplained,
   getClanInviteLink,
@@ -178,6 +179,21 @@ type SpotlightStatusRecord = {
   available_paid_credits?: number | string | null;
   active_paid_spotlights?: number | string | null;
   can_publish_paid_spotlight?: boolean | null;
+};
+
+type RepostTargetSuggestion = {
+  community_id?: number | string | null;
+  community_code?: string | null;
+  marketplace_name?: string | null;
+  public_name?: string | null;
+  score?: number | string | null;
+  confidence?: string | null;
+  reasons?: string[] | null;
+  matched_terms?: string[] | null;
+  active_public_blocks?: number | string | null;
+  community_signal?: string | null;
+  active_spotlights?: number | string | null;
+  max_spotlights?: number | string | null;
 };
 
 type LoanSupportItem = {
@@ -2595,6 +2611,15 @@ export default function MarketplacePage() {
   const [loadingRepostCredits, setLoadingRepostCredits] = useState(false);
   const [creatingRepostPaymentInstruction, setCreatingRepostPaymentInstruction] =
     useState(false);
+  const [repostTargetSuggestions, setRepostTargetSuggestions] = useState<
+    RepostTargetSuggestion[]
+  >([]);
+  const [loadingRepostTargetSuggestions, setLoadingRepostTargetSuggestions] =
+    useState(false);
+  const [repostTargetSuggestionError, setRepostTargetSuggestionError] =
+    useState("");
+  const selectedRepostProductIdRef = useRef<number | null>(null);
+  const repostTargetSuggestionRequestRef = useRef(0);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
     null
@@ -2788,6 +2813,69 @@ export default function MarketplacePage() {
       null
     );
   }, [repostProducts, selectedRepostProductId]);
+
+  useEffect(() => {
+    selectedRepostProductIdRef.current =
+      positiveNumber(selectedRepostProduct?.id) || null;
+    repostTargetSuggestionRequestRef.current += 1;
+    setRepostTargetSuggestions([]);
+    setRepostTargetSuggestionError("");
+    setLoadingRepostTargetSuggestions(false);
+  }, [selectedRepostProduct?.id]);
+
+  async function loadMarketplaceRepostTargetSuggestions(background = false) {
+    const productId = positiveNumber(selectedRepostProduct?.id);
+
+    if (!productId) {
+      setRepostTargetSuggestionError(
+        "Choose one public block before asking GSN for target community IDs."
+      );
+      showNotice("error", "Choose one public block before finding target IDs.");
+      return;
+    }
+
+    const requestId = repostTargetSuggestionRequestRef.current + 1;
+    repostTargetSuggestionRequestRef.current = requestId;
+
+    if (!background) setLoadingRepostTargetSuggestions(true);
+    setRepostTargetSuggestionError("");
+    try {
+      const res = await getMarketplaceRepostTargetSuggestions(productId, { limit: 6 });
+      const items = rowsOf<RepostTargetSuggestion>(res);
+      if (
+        requestId !== repostTargetSuggestionRequestRef.current ||
+        selectedRepostProductIdRef.current !== productId
+      ) {
+        return;
+      }
+      setRepostTargetSuggestions(items);
+      if (!background) {
+        showNotice(
+          items.length ? "success" : "error",
+          items.length
+            ? "GSN found target community IDs for this block."
+            : "No target community suggestions are ready yet. You can still enter a community ID manually."
+        );
+      }
+    } catch (err: any) {
+      const message =
+        safeStr(err?.message) ||
+        "GSN could not read target community suggestions right now.";
+      if (
+        requestId !== repostTargetSuggestionRequestRef.current ||
+        selectedRepostProductIdRef.current !== productId
+      ) {
+        return;
+      }
+      setRepostTargetSuggestions([]);
+      setRepostTargetSuggestionError(message);
+      if (!background) showNotice("error", message);
+    } finally {
+      if (!background && requestId === repostTargetSuggestionRequestRef.current) {
+        setLoadingRepostTargetSuggestions(false);
+      }
+    }
+  }
 
   const resolvedRepostTargetMarketplaceId = positiveNumber(repostTargetMarketplaceId);
   const resolvedRepostTargetCommunityInput = safeStr(repostTargetMarketplaceId);
@@ -5801,6 +5889,148 @@ export default function MarketplacePage() {
                       </span>
                     </div>
                   ) : null}
+                  <div
+                    style={{
+                      marginTop: 12,
+                      padding: 12,
+                      borderRadius: 18,
+                      border: "1px solid rgba(11, 45, 74, 0.12)",
+                      background: "rgba(234, 243, 255, 0.72)",
+                      display: "grid",
+                      gap: 10,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 10,
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 950, color: "#0B1F33" }}>
+                          Target help
+                        </div>
+                        <div style={{ ...helperText(), fontSize: 13 }}>
+                          Find public community IDs that fit this selected block.
+                        </div>
+                      </div>
+                      <StableButton
+                        type="button"
+                        debugId="marketplace.network-repost.find-targets"
+                        stableHeight={50}
+                        onClick={(event) => {
+                          runMarketplaceAction(event, () => {
+                            void loadMarketplaceRepostTargetSuggestions();
+                          });
+                        }}
+                        disabled={loadingRepostTargetSuggestions || !selectedRepostProduct}
+                        style={{
+                          ...marketplaceInlineActionStyle(
+                            "secondary",
+                            loadingRepostTargetSuggestions || !selectedRepostProduct,
+                            false
+                          ),
+                          height: 50,
+                          minHeight: 50,
+                          maxHeight: 50,
+                          minWidth: isCompact ? "100%" : 180,
+                          flex: "0 0 auto",
+                        }}
+                      >
+                        {loadingRepostTargetSuggestions ? "Finding..." : "Find Target IDs"}
+                      </StableButton>
+                    </div>
+                    {repostTargetSuggestionError ? (
+                      <div style={{ ...helperText(), fontSize: 13, color: "#8A1F1F" }}>
+                        {repostTargetSuggestionError}
+                      </div>
+                    ) : null}
+                    {repostTargetSuggestions.length ? (
+                      <div style={{ display: "grid", gap: 8 }}>
+                        {repostTargetSuggestions.slice(0, 3).map((item, index) => {
+                          const code = safeStr(item.community_code);
+                          const title = firstTruthy(
+                            item.marketplace_name,
+                            item.public_name,
+                            code
+                          );
+                          const reasons = Array.isArray(item.reasons)
+                            ? item.reasons.filter(Boolean).slice(0, 2)
+                            : [];
+                          const score = positiveNumber(item.score);
+                          return (
+                            <div
+                              key={`marketplace-repost-target-${code || index}`}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: isCompact
+                                  ? "1fr"
+                                  : "minmax(0, 1fr) 132px",
+                                gap: 8,
+                                alignItems: "center",
+                                padding: 10,
+                                borderRadius: 16,
+                                background: "#FFFFFF",
+                                border: "1px solid rgba(11, 45, 74, 0.1)",
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    fontWeight: 900,
+                                    color: "#0B1F33",
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {title}
+                                </div>
+                                <div style={{ ...helperText(), fontSize: 12 }}>
+                                  {code}
+                                  {score ? ` | fit ${score}%` : ""}
+                                </div>
+                                {reasons.length ? (
+                                  <div style={{ ...helperText(), fontSize: 12 }}>
+                                    {reasons.join(" | ")}
+                                  </div>
+                                ) : null}
+                              </div>
+                              <StableButton
+                                type="button"
+                                debugId={`marketplace.network-repost.target.${code || index}.use`}
+                                stableHeight={46}
+                                onClick={(event) => {
+                                  runMarketplaceAction(event, () => {
+                                    if (!code) return;
+                                    setRepostTargetMarketplaceId(code);
+                                    showNotice(
+                                      "success",
+                                      `${code} selected for Network Spotlight placement.`
+                                    );
+                                  });
+                                }}
+                                disabled={!code}
+                                style={{
+                                  ...marketplaceInlineActionStyle(
+                                    "primary",
+                                    !code,
+                                    isCompact
+                                  ),
+                                  height: 46,
+                                  minHeight: 46,
+                                  maxHeight: 46,
+                                }}
+                              >
+                                Use ID
+                              </StableButton>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
                   <div
                     style={{
                       marginTop: 12,
