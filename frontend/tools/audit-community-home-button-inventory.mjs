@@ -137,12 +137,12 @@ assertContains(
 );
 
 assertContains(
-  /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "spotlight-free"[\s\S]*?id: "spotlight-paid"[\s\S]*?id: "spotlight-vault"[\s\S]*?id: "spotlight-shop-setup"/,
-  "Community Home spotlight guided lane must keep the four spotlight-family inner choices."
+  /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "spotlight-free"[\s\S]*?id: "spotlight-paid"[\s\S]*?id: "spotlight-repost"[\s\S]*?id: "spotlight-vault"[\s\S]*?id: "spotlight-shop-setup"/,
+  "Community Home spotlight guided lane must keep the five spotlight-family inner choices."
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: "shop-control"[\s\S]*?id: "vault-control"[\s\S]*?id: "free-spotlight"[\s\S]*?id: "spotlight-subscription"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: "shop-control"[\s\S]*?id: "vault-control"[\s\S]*?id: "free-spotlight"[\s\S]*?id: "spotlight-subscription"[\s\S]*?id: "paid-repost"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact tool row manifest must stay traceable and ordered."
 );
 

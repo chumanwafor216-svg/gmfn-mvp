@@ -79,31 +79,31 @@ assertContains(
 assertContains(
   "src/lib/api.ts",
   /export async function createSpotlightPaymentInstruction[\s\S]*?\/payment-instructions\/spotlight[\s\S]*?quantity_total[\s\S]*?visibility_scope/,
-  "Network Spotlight placement must use a named frontend payment-instruction rail for paid Spotlight credits."
+  "Paid Repost must use a named frontend payment-instruction rail for paid Spotlight credits."
 );
 
 assertContains(
   "src/lib/api.ts",
   /export async function getMarketplaceShopSpotlightStatus[\s\S]*?\/marketplace\/shops\/[\s\S]*?\/spotlight-status/,
-  "Network Spotlight placement must read shop paid-credit status from the backend instead of inferring it from a failed repost."
+  "Paid Repost must read shop paid-credit status from the backend instead of inferring it from a failed repost."
 );
 
 assertContains(
   "src/lib/api.ts",
   /export async function getMarketplaceRepostTargetSuggestions[\s\S]*?\/marketplace\/products\/[\s\S]*?\/repost-targets/,
-  "Network Spotlight placement must use the backend target-suggestion route instead of guessing target community IDs in the page."
+  "Paid Repost must use the backend target-suggestion route instead of guessing target community IDs in the page."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /createSpotlightPaymentInstruction\(\{[\s\S]*?quantity_total: requiredCredits[\s\S]*?visibility_scope: "marketplace_repost"/,
-  "Marketplace Network Spotlight placement must generate a payment code with the exact required paid-credit quantity and marketplace_repost scope."
+  "Marketplace Paid Repost must generate a payment code with the exact required paid-credit quantity and marketplace_repost scope."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /id="marketplace-paid-network-placement"[\s\S]*?availableMarketplaceRepostCredits[\s\S]*?paid credit[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?debugId="marketplace\.network-repost\.refresh-credits"[\s\S]*?debugId="marketplace\.network-repost\.place"/,
-  "Marketplace Network Spotlight placement must visibly show paid credits and keep generate, refresh, and place controls in stable order."
+  "Marketplace Paid Repost must visibly show paid credits and keep generate, refresh, and place controls in stable order."
 );
 
 assertContains(
@@ -115,13 +115,13 @@ assertContains(
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /id="marketplace-paid-network-placement"[\s\S]*?debugId="marketplace\.network-repost\.find-targets"[\s\S]*?debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}/,
-  "Marketplace Network Spotlight placement must keep backend target suggestions and Use ID buttons inside the paid placement panel."
+  "Marketplace Paid Repost must keep backend target suggestions and Use ID buttons inside the paid placement panel."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
   /const routeRepostProductId = useMemo[\s\S]*?repost_product_id[\s\S]*?const routeRepostBlockNumber = useMemo[\s\S]*?block[\s\S]*?marketplace-paid-network-placement[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)/,
-  "Marketplace Network Spotlight placement must accept exact Shop Diaries product/block handoff instead of opening as a generic marketplace stop."
+  "Marketplace Paid Repost must accept exact Shop Diaries product/block handoff instead of opening as a generic marketplace stop."
 );
 
 {
@@ -138,7 +138,7 @@ assertContains(
       file: "src/pages/MarketplacePage.tsx",
       line: submitStart >= 0 ? text.slice(0, submitStart).split(/\r?\n/).length : 1,
       message:
-        "Marketplace Network Spotlight placement must check available paid credits before createMarketplaceRepost.",
+        "Marketplace Paid Repost must check available paid credits before createMarketplaceRepost.",
       text: "Expected availableMarketplaceRepostCredits guard before createMarketplaceRepost.",
     });
   }

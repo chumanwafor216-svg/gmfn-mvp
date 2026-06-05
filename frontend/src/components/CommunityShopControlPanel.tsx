@@ -110,6 +110,8 @@ function routeTarget(
   }).to as string;
 }
 
+const PAID_REPOST_HASH = "marketplace-paid-network-placement";
+
 function resolveImageSrc(raw: any): string {
   const value = safeStr(raw);
   if (!value) return "";
@@ -482,6 +484,12 @@ export default function CommunityShopControlPanel({
         "subscriptionSpotlight",
         selectedClanId,
         "community-shop-control.route.subscription-spotlight"
+      ),
+      paidRepost: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "community-shop-control.route.paid-repost",
+        { hash: PAID_REPOST_HASH }
       ),
       vaultControl: routeTarget(
         "vaultControl",
@@ -919,7 +927,7 @@ export default function CommunityShopControlPanel({
                   display: "grid",
                   gridTemplateColumns: isCompact
                     ? "1fr"
-                    : "repeat(4, minmax(0, 1fr))",
+                    : "repeat(5, minmax(0, 1fr))",
                   gap: 10,
                 }}
               >
@@ -949,6 +957,15 @@ export default function CommunityShopControlPanel({
                   style={communityShopActionStyle("secondary")}
                 >
                   Paid Spotlight
+                </SecondaryButton>
+                <SecondaryButton
+                  onClick={() => openPanelRoute(routes.paidRepost)}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="community-shop-control.shortcut.paid-repost"
+                  style={communityShopActionStyle("secondary")}
+                >
+                  Paid Repost
                 </SecondaryButton>
                 <SecondaryButton
                   onClick={() => openPanelRoute(routes.vaultControl)}

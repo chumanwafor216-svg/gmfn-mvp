@@ -1,3 +1,71 @@
+### Paid Repost community/shop handle relocation (2026-06-05)
+
+- Routes/screens affected:
+  - Community Home:
+    `frontend/src/pages/CommunityHomePage.tsx`;
+  - Community Shop Control:
+    `frontend/src/components/CommunityShopControlPanel.tsx`;
+  - Shop Control:
+    `frontend/src/pages/ShopControlPage.tsx`;
+  - Shop Diaries:
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - Marketplace paid placement composer:
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - button/link auditors:
+    `frontend/tools/audit-community-home-button-inventory.mjs`,
+    `frontend/tools/audit-community-shop-actions.mjs`,
+    `frontend/tools/audit-link-contracts.mjs`, and
+    `frontend/tools/audit-marketplace-actions.mjs`.
+- Product-owner request:
+  - keep the user-facing name as `Paid Repost` / `Repost`, not `Network
+    Spotlight placement`;
+  - move Repost handles into Community Home, Shop Control, and Shop Diaries
+    owner controls so it is not trapped as a generic Marketplace-only action;
+  - keep button stabilisation as part of the feature, not a later cleanup.
+- Frontend repair:
+  - Community Home now includes `Paid Repost` in the guided Spotlight choices
+    and compact owner tool row;
+  - Community Shop Control and Shop Control now expose `Paid Repost` alongside
+    paid/free Spotlight and Vault controls;
+  - Shop Diaries opened product controls now label the owner-only placement
+    action as `Repost`, with a widened fixed action slot so it does not squeeze
+    or jump;
+  - Marketplace composer copy now says `Paid Repost` while preserving exact
+    block/product handoff.
+- Backend truth:
+  - no backend rail was renamed or rebuilt in this slice;
+  - the system-level frontend handles still route to the existing paid
+    Spotlight rail at `#marketplace-paid-network-placement`;
+  - target community selection, payment instruction, credit checking, and final
+    placement remain owned by the existing Marketplace repost route.
+- Button stability:
+  - route hashes are centralised with `PAID_REPOST_HASH`;
+  - Shop Control shortcuts switched to responsive `auto-fit` columns so adding
+    Repost does not compress the row;
+  - Community Shop Control owner shortcuts now account for the new Repost
+    button in their grid;
+  - line auditors protect the new Community Home, Community Shop Control,
+    Marketplace, link, button, and tap contracts.
+- Verification:
+  - targeted eslint passed for changed frontend pages/components and auditors;
+  - `npm run audit:community-home-button-inventory` passed;
+  - `npm run audit:community-shop-actions` passed;
+  - `npm run audit:link-contracts` passed;
+  - `npm run audit:marketplace-actions` passed;
+  - `npm run audit:button-stability` passed;
+  - `npm run audit:marketplace-button-inventory` passed with `55` stable
+    Marketplace source actions and `102` whole-route mobile controls;
+  - `npm run audit:tap-stability` passed;
+  - `npm run audit:community-home-phone-buttons` passed;
+  - `npm run build` passed after the known Windows sandbox `spawn EPERM`
+    required approved build escalation for Vite/esbuild.
+- Remaining truth:
+  - this is a system-level frontend handle/route placement repair, not a
+    backend money-rail redesign;
+  - the next deeper backend work would be to rename or split the underlying
+    rail itself if the product wants `Paid Repost` to become a backend-native
+    contract rather than a user-facing name over the paid Spotlight rail.
+
 ### Shop Diaries exact paid placement handoff (2026-06-05)
 
 - Routes/screens affected:

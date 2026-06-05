@@ -244,6 +244,8 @@ function getClanName(clan: ClanItem | null | undefined): string {
   );
 }
 
+const PAID_REPOST_HASH = "marketplace-paid-network-placement";
+
 function routeTarget(
   intent: CtaIntent,
   communityId: number,
@@ -1121,6 +1123,12 @@ export default function CommunityHomePage() {
         selectedClanId,
         "community-home.route.subscription-spotlight"
       ),
+      paidRepost: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "community-home.route.paid-repost",
+        { hash: PAID_REPOST_HASH }
+      ),
       vaultControl: routeTarget(
         "vaultControl",
         selectedClanId,
@@ -1330,6 +1338,14 @@ export default function CommunityHomePage() {
         keywords: ["paid spotlight", "subscription spotlight", "priority spotlight"],
       },
       {
+        id: "spotlight-repost",
+        label: "Paid Repost",
+        detail:
+          "Send one public shop block into another community's Spotlight lane.",
+        technical: "Paid repost",
+        keywords: ["paid repost", "repost", "outside spotlight", "target community"],
+      },
+      {
         id: "spotlight-vault",
         label: "Vault",
         detail:
@@ -1530,6 +1546,65 @@ export default function CommunityHomePage() {
           continueLabel: "Open subscription spotlight",
           continueTone: "primary",
           payload: { nextStep: "open-paid-spotlight" },
+        };
+      }
+      case "spotlight-repost": {
+        if (!selectedClanId || !selectedClan) {
+          return {
+            title: "Choose the community before Repost",
+            detail:
+              "Repost starts from your shop, but GSN still needs the active community context before it can open the paid Repost composer.",
+            firstStep: "Choose your active community.",
+            continueLabel: "Choose community",
+            continueTone: "primary",
+            payload: { nextStep: "choose-community" },
+          };
+        }
+
+        const gmfnId = safeStr(memberGlobalId);
+        if (!gmfnId || gmfnId === "Awaiting issue") {
+          return {
+            title: "Your GSN ID is still loading",
+            detail:
+              "GSN needs your live member record before it can find your public shop blocks for Repost. Wait a moment, then try again.",
+            firstStep: "Wait for your GSN ID to load.",
+            continueLabel: "Choose something else",
+            continueTone: "soft",
+            payload: { nextStep: "cancel" },
+          };
+        }
+
+        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+          clan_id: selectedClanId,
+          header_clan_id: selectedClanId,
+        }).catch(() => null);
+        const resolvedShop =
+          (Array.isArray((shopRes as any)?.items)
+            ? (shopRes as any).items?.[0]
+            : null) ||
+          (shopRes as any)?.shop ||
+          shopRes;
+        const shopId = Number((resolvedShop as any)?.id || 0);
+
+        if (!shopId) {
+          return {
+            title: "Set up your shop before Repost",
+            detail: `Repost moves one public shop block from your shop into another community Spotlight lane. First prepare your shop in ${selectedClanName || "this community"}.`,
+            firstStep: "Open shop setup for this community.",
+            continueLabel: "Open shop setup",
+            continueTone: "primary",
+            payload: { nextStep: "prepare-shop-first" },
+          };
+        }
+
+        return {
+          title: "Paid Repost is ready",
+          detail:
+            "Choose one public shop block, enter the target community ID, and GSN will keep that block identity intact while it uses the paid Spotlight rail.",
+          firstStep: "Open the Repost composer.",
+          continueLabel: "Open Paid Repost",
+          continueTone: "primary",
+          payload: { nextStep: "open-paid-repost" },
         };
       }
       case "spotlight-vault": {
@@ -1999,6 +2074,25 @@ export default function CommunityHomePage() {
           break;
         }
         openCommunityRoute(event, routes.subscriptionSpotlight);
+        break;
+      case "spotlight-repost":
+        if (nextStep === "cancel") {
+          consumeCommunityButtonEvent(event);
+          break;
+        }
+        if (nextStep === "choose-community") {
+          openCommunityHomeSection(
+            event,
+            "community-home-community-list",
+            "communities"
+          );
+          break;
+        }
+        if (nextStep === "prepare-shop-first") {
+          openCommunityRoute(event, routes.shopSpotlight);
+          break;
+        }
+        openCommunityRoute(event, routes.paidRepost);
         break;
       case "spotlight-vault":
         if (nextStep === "cancel") {
@@ -2837,6 +2931,15 @@ export default function CommunityHomePage() {
                 "Control the paid priority spotlight lane",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
                 openCommunityRoute(event, routes.subscriptionSpotlight),
+            },
+            {
+              icon: "🔁",
+              id: "paid-repost",
+              title: "Paid Repost",
+              detail:
+                "Send one shop block into another community Spotlight",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openCommunityRoute(event, routes.paidRepost),
             },
             {
               icon: "🤝",

@@ -161,6 +161,8 @@ function routeTarget(
   }).to as string;
 }
 
+const PAID_REPOST_HASH = "marketplace-paid-network-placement";
+
 function shopControlLayerForTarget(targetId: string): ShopControlLayerKey {
   const normalized = safeStr(targetId).replace(/^#/, "").toLowerCase();
   if (normalized.includes("overview")) return "overview";
@@ -645,6 +647,12 @@ export default function ShopControlPage() {
         effectiveShopClanId,
         "shop-control.route.subscription-spotlight"
       ),
+      paidRepost: routeTarget(
+        "marketplace",
+        effectiveShopClanId,
+        "shop-control.route.paid-repost",
+        { hash: PAID_REPOST_HASH }
+      ),
       vaultControl: routeTarget(
         "vaultControl",
         effectiveShopClanId,
@@ -664,6 +672,7 @@ export default function ShopControlPage() {
     { label: "Shop gallery", icon: "\u{1F5BC}\uFE0F", to: routes.shopGallery },
     { label: "Free spotlight", icon: "\u2B50", to: routes.freeSpotlight },
     { label: "Subscription spotlight", icon: "\u{1F4B3}", to: routes.subscriptionSpotlight },
+    { label: "Paid Repost", icon: "\u{1F501}", to: routes.paidRepost },
     { label: "Vault", icon: "\u{1F510}", to: routes.vaultControl },
   ];
 
@@ -2616,7 +2625,7 @@ export default function ShopControlPage() {
                 display: "grid",
                 gridTemplateColumns: isCompact
                   ? "repeat(2, minmax(0, 1fr))"
-                  : "repeat(6, minmax(0, 1fr))",
+                  : "repeat(auto-fit, minmax(138px, 1fr))",
                 gap: 8,
               }}
               aria-label="Shop control shortcuts"

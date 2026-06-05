@@ -880,8 +880,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /createMarketplaceRepost,[\s\S]*?getMarketplaceProducts,[\s\S]*?Network Spotlight placement[\s\S]*?Target community ID[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?submitMarketplaceRepost/,
-  "Marketplace must own the in-network Network Spotlight placement composer with one public block and one target community ID."
+  /createMarketplaceRepost,[\s\S]*?getMarketplaceProducts,[\s\S]*?Paid Repost[\s\S]*?Target community ID[\s\S]*?debugId="marketplace\.network-repost\.place"[\s\S]*?submitMarketplaceRepost/,
+  "Marketplace must own the in-network Paid Repost composer with one public block and one target community ID."
 );
 
 assertContains(
@@ -934,7 +934,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /id="marketplace-paid-network-placement"[\s\S]*?Network Spotlight placement[\s\S]*?debugId="marketplace\.network-repost\.place"/,
+  /id="marketplace-paid-network-placement"[\s\S]*?Paid Repost[\s\S]*?debugId="marketplace\.network-repost\.place"/,
   "Public Shop signed-in paid repost navigation must land on the internal Marketplace placement card, not a public visitor action."
 );
 

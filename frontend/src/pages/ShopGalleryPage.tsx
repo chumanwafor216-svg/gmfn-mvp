@@ -4140,7 +4140,11 @@ export default function ShopGalleryPage() {
                   ? 38
                   : 42;
                 const diaryActionWidth = isProductOpen
-                  ? isCompact
+                  ? showBlockPlacementAction
+                    ? isCompact
+                      ? 54
+                      : 60
+                    : isCompact
                     ? 36
                     : 40
                   : isCompact
@@ -4493,8 +4497,8 @@ export default function ShopGalleryPage() {
                             minWidth={0}
                             stableHeight={diaryActionHeight}
                             debugId={`shop-gallery.product.${productOpenId}.paid-placement`}
-                            aria-label={`Place ${displayTitle} on Network Spotlight`}
-                            title="Network Spotlight placement"
+                            aria-label={`Repost ${displayTitle} into another community Spotlight`}
+                            title="Paid Repost"
                             style={{
                               ...secondaryBtn(false),
                               display: isProductOpen ? "inline-flex" : "none",
@@ -4504,7 +4508,7 @@ export default function ShopGalleryPage() {
                               minHeight: diaryActionHeight,
                               padding: 0,
                               borderRadius: 999,
-                              fontSize: isCompact ? 10 : 11,
+                              fontSize: isCompact ? 9.5 : 10.5,
                               lineHeight: 1,
                               whiteSpace: "nowrap",
                               overflow: "hidden",
@@ -4517,7 +4521,7 @@ export default function ShopGalleryPage() {
                               color: "#082643",
                             }}
                           >
-                            Ad
+                            Repost
                           </StableCtaLink>
                         ) : null}
                         <SecondaryButton

@@ -106,8 +106,14 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /id: "owner-actions"[\s\S]*?openCommunityRoute\(event, routes\.joinRequests\)[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openCommunityRoute\(event, routes\.vaultControl\)[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?id: "spotlight-subscription"[\s\S]*?openCommunityRoute\(event, routes\.subscriptionSpotlight\)[\s\S]*?id: "trusted-circle"[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /id: "owner-actions"[\s\S]*?openCommunityRoute\(event, routes\.joinRequests\)[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openCommunityRoute\(event, routes\.vaultControl\)[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?id: "spotlight-subscription"[\s\S]*?openCommunityRoute\(event, routes\.subscriptionSpotlight\)[\s\S]*?id: "paid-repost"[\s\S]*?openCommunityRoute\(event, routes\.paidRepost\)[\s\S]*?id: "trusted-circle"[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
+);
+
+assertContains(
+  "src/pages/CommunityHomePage.tsx",
+  /const PAID_REPOST_HASH = "marketplace-paid-network-placement";[\s\S]*?paidRepost:\s*routeTarget\(\s*"marketplace"[\s\S]*?PAID_REPOST_HASH[\s\S]*?case "spotlight-repost":[\s\S]*?openCommunityRoute\(event, routes\.paidRepost\)/,
+  "Community Home Paid Repost must route through the paid placement rail while remaining a spotlight-family handle."
 );
 
 assertContains(
@@ -142,8 +148,8 @@ assertContains(
 
 assertContains(
   "src/components/CommunityShopControlPanel.tsx",
-  /debugId="community-shop-control\.shortcut\.spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-spotlight"/,
-  "Community Shop Control shortcut buttons must keep separate Free and Paid Spotlight debug IDs."
+  /debugId="community-shop-control\.shortcut\.spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-repost"/,
+  "Community Shop Control shortcut buttons must keep separate Free Spotlight, Paid Spotlight, and Paid Repost debug IDs."
 );
 
 if (findings.length > 0) {

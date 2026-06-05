@@ -3642,7 +3642,7 @@ export default function MarketplacePage() {
       showNotice(
         "error",
         safeStr(err?.message) ||
-          "Network Spotlight placement could not complete. Check the target community ID and Subscription Spotlight credit."
+          "Paid Repost could not complete. Check the target community ID and Spotlight credit."
       );
     } finally {
       setPlacingMarketplaceRepost(false);
@@ -5850,11 +5850,11 @@ export default function MarketplacePage() {
                     scrollMarginTop: isCompact ? 84 : 104,
                   }}
                 >
-                  <div style={sectionLabel()}>Network Spotlight placement</div>
+                  <div style={sectionLabel()}>Paid Repost</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     Pick one public shop block, enter the target community ID,
-                    and place that exact block into the community Spotlight with
-                    Subscription Spotlight.
+                    and send that exact block into the community Spotlight with
+                    the paid Spotlight rail.
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(Boolean(selectedRepostProduct))}>
@@ -6070,7 +6070,7 @@ export default function MarketplacePage() {
                                     setRepostTargetMarketplaceId(code);
                                     showNotice(
                                       "success",
-                                      `${code} selected for Network Spotlight placement.`
+                                      `${code} selected for Paid Repost.`
                                     );
                                   });
                                 }}
@@ -6116,7 +6116,7 @@ export default function MarketplacePage() {
                           } before placing.`}
                     </div>
                     <div style={{ ...helperText(), fontSize: 13 }}>
-                      One Network Spotlight day uses one paid Spotlight credit.
+                      One Repost day uses one paid Spotlight credit.
                       {requiredMarketplaceRepostCredits} day{requiredMarketplaceRepostCredits === 1 ? "" : "s"} =
                       {" "}{formatRailMoney(requiredMarketplaceRepostAmount, "GBP")} with the current GSN bundle rail.
                     </div>
@@ -6128,7 +6128,7 @@ export default function MarketplacePage() {
                       </div>
                     ) : (
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        No payment code is open for this Network Spotlight placement yet.
+                        No payment code is open for this Paid Repost yet.
                       </div>
                     )}
                   </div>
