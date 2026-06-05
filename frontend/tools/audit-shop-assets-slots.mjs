@@ -39,8 +39,32 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /let nextProducts: ProductRecord\[\] = Array\.isArray\(shopRes\?\.products\)[\s\S]*?normalizeProductRecords\(shopRes\.products\)[\s\S]*?const publicShopProducts: ProductRecord\[\] = Array\.isArray\(publicShopRes\?\.products\)[\s\S]*?normalizeProductRecords\(publicShopRes\.products\)[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)/,
+  /const seedProducts = normalizeProductRecords\(props\.seedProducts \|\| \[\]\)[\s\S]*?let nextProducts: ProductRecord\[\] = mergeProductsById\([\s\S]*?seedProducts[\s\S]*?normalizeProductRecords\(shopRes\.products\)[\s\S]*?const publicShopProducts: ProductRecord\[\] = Array\.isArray\(publicShopRes\?\.products\)[\s\S]*?normalizeProductRecords\(publicShopRes\.products\)[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)/,
   "Shop Assets must merge authenticated shop products with the public shop products that visitors see."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /type ShopAssetsPageProps = \{[\s\S]*?seedShop\?: ShopRecord \| null;[\s\S]*?seedProducts\?: ProductRecord\[\] \| null;[\s\S]*?\}/,
+  "Embedded Shop Assets must accept the parent Shop Control shop/products as seed data."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /if \(!gmfnId\) \{[\s\S]*?setShop\(seedShop\);[\s\S]*?setProducts\(seedProducts\);[\s\S]*?return seedProducts;[\s\S]*?\}/,
+  "Shop Assets must not erase parent-seeded live blocks when the child identity lookup is unavailable."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /if \(!shopRes\?\.item && \(preferredClanId > 0 \|\| selectedClanId > 0\)\) \{[\s\S]*?getMarketplaceShopByGmfnId\(gmfnId\)/,
+  "Shop Control must retry the owner shop lookup without selected-clan scoping before declaring the gallery empty."
+);
+
+assertContains(
+  "src/pages/ShopControlPage.tsx",
+  /<ShopAssetsPage[\s\S]*?preferredGmfnId=\{firstTruthy\(shop\?\.owner_gmfn_id, shop\?\.gmfn_id, me\?\.gmfn_id\) \|\| null\}[\s\S]*?seedShop=\{shop\}[\s\S]*?seedProducts=\{products\}/,
+  "Shop Control must pass owner shop/products into the embedded Shop Assets gallery."
 );
 
 assertContains(

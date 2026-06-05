@@ -12,6 +12,7 @@ import {
 import ShopAssetsPage from "./ShopAssetsPage";
 import {
   createMarketplaceShop,
+  getPublicMarketplaceShopByGmfnId,
   getMe,
   getMarketplaceShopByGmfnId,
   getMyIdentityRisk,
@@ -133,6 +134,14 @@ type ContinuityReviewState = {
 type NoticeTone = "success" | "error" | "info";
 
 type SpotlightFeedbackState = { tone: NoticeTone; text: string } | null;
+
+const OWNER_PUBLIC_PRODUCT_VISIBILITY_MODES = new Set([
+  "community_visible",
+  "public",
+  "community",
+  "public_gallery",
+  "shop_gallery",
+]);
 type SpotlightFlowStep = "setup" | "upload" | "preview";
 type SpotlightMediaChoice = "image" | "video" | "both";
 type ShopControlLayerKey =
@@ -832,10 +841,22 @@ export default function ShopControlPage() {
         return;
       }
 
-      const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+      let shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
         clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
         header_clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
       }).catch(() => null);
+      if (!shopRes?.item && (preferredClanId > 0 || selectedClanId > 0)) {
+        shopRes = await getMarketplaceShopByGmfnId(gmfnId).catch(() => shopRes);
+      }
+      if (!shopRes?.item) {
+        const publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
+          product_limit: 200,
+          broadcast_limit: 20,
+        }).catch(() => null);
+        if (publicShopRes?.item) {
+          shopRes = publicShopRes;
+        }
+      }
 
       const shopItem = (shopRes?.item || null) as ShopRecord | null;
       const shopProducts = Array.isArray(shopRes?.products)
@@ -1025,7 +1046,9 @@ export default function ShopControlPage() {
     () =>
       products.filter(
         (item) =>
-          firstTruthy(item?.visibility_mode, "community_visible") === "community_visible" &&
+          OWNER_PUBLIC_PRODUCT_VISIBILITY_MODES.has(
+            firstTruthy(item?.visibility_mode, "community_visible").toLowerCase()
+          ) &&
           item?.is_active !== false
       ),
     [products]
@@ -2669,7 +2692,9 @@ export default function ShopControlPage() {
           <ShopAssetsPage
             embedded
             preferredClanId={effectiveShopClanId || selectedClanId || null}
-            preferredGmfnId={firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id) || null}
+            preferredGmfnId={firstTruthy(shop?.owner_gmfn_id, shop?.gmfn_id, me?.gmfn_id) || null}
+            seedShop={shop}
+            seedProducts={products}
           />
         </section>
       ) : null}

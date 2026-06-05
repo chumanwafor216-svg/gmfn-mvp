@@ -92,6 +92,8 @@ type ShopAssetsPageProps = {
   embedded?: boolean;
   preferredClanId?: number | null;
   preferredGmfnId?: string | null;
+  seedShop?: ShopRecord | null;
+  seedProducts?: ProductRecord[] | null;
 };
 
 const SHOP_ASSETS_UI_STORAGE_KEY = "gmfn.shopAssets.sections.v2";
@@ -807,11 +809,18 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
       const meRes = await getMe().catch(() => null);
       setMe(meRes || null);
 
-      const gmfnId = firstTruthy(props.preferredGmfnId, meRes?.gmfn_id);
+      const seedProducts = normalizeProductRecords(props.seedProducts || []);
+      const seedShop = (props.seedShop || null) as ShopRecord | null;
+      const gmfnId = firstTruthy(
+        props.preferredGmfnId,
+        seedShop?.owner_gmfn_id,
+        seedShop?.gmfn_id,
+        meRes?.gmfn_id
+      );
       if (!gmfnId) {
-        setShop(null);
-        setProducts([]);
-        return [];
+        setShop(seedShop);
+        setProducts(seedProducts);
+        return seedProducts;
       }
 
       let shopRes = await apiJson<any>(
@@ -823,10 +832,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         ).catch(() => null);
       }
 
-      let shopItem = (shopRes?.item || null) as ShopRecord | null;
-      let nextProducts: ProductRecord[] = Array.isArray(shopRes?.products)
-        ? normalizeProductRecords(shopRes.products)
-        : [];
+      let shopItem = (shopRes?.item || seedShop || null) as ShopRecord | null;
+      let nextProducts: ProductRecord[] = mergeProductsById(
+        seedProducts,
+        Array.isArray(shopRes?.products)
+          ? normalizeProductRecords(shopRes.products)
+          : []
+      );
 
       let publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
         clan_id: selectedClanId || undefined,
@@ -883,7 +895,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
     } finally {
       setLoading(false);
     }
-  }, [props.preferredGmfnId, selectedClanId]);
+  }, [props.preferredGmfnId, props.seedProducts, props.seedShop, selectedClanId]);
 
   useEffect(() => {
     void loadPage();

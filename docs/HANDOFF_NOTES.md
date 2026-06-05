@@ -35120,3 +35120,46 @@ GSN-branded invite composer and invite-entry continuity.
     `source_product_id` / `source_product_block` broadcast fields wherever they
     open a placement, otherwise the backend truth will be present but a page may
     still visually fall back to a general shop/spotlight view.
+
+### Owner Shop Control live-block parity repair (2026-06-05)
+
+- Route/screens affected:
+  - Owner Shop Control / `ShopControlPage`;
+  - embedded public gallery block tool / `ShopAssetsPage`;
+  - Public Shop live diary parity, where visitor view could show `5/12` blocks
+    while owner control still showed `0/12`.
+- Confirmed truth:
+  - this was not a browser/download issue. The newest deployment was loading
+    because the `Paid Repost` owner tool appeared in Shop Control;
+  - the broken part was frontend data handoff/context. `ShopControlPage` loaded
+    owner products into its own state, but the embedded `ShopAssetsPage` fetched
+    again and could lose the owner/clan context, causing the block grid to show
+    empty despite public shop truth.
+- Frontend change:
+  - `ShopControlPage` now retries the owner shop lookup without selected-clan
+    scoping before declaring the shop empty, and falls back to the public shop
+    endpoint when that is the available truth;
+  - `ShopControlPage` now passes `seedShop` and `seedProducts` into the embedded
+    `ShopAssetsPage`;
+  - `ShopAssetsPage` now accepts those seed props, uses them as first-class
+    product truth, and no longer erases live blocks when its own child identity
+    lookup is unavailable;
+  - owner-side public product counting now accepts the same public gallery
+    visibility modes as the public shop gallery (`community_visible`, `public`,
+    `community`, `public_gallery`, `shop_gallery`).
+- Guardrails:
+  - `frontend/tools/audit-shop-assets-slots.mjs` now verifies the parent-child
+    seed data bridge, the no-identity seed fallback, and the unscoped owner shop
+    lookup retry.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-assets-slots`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Passed `npm --prefix frontend run audit:community-shop-actions`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Root `npm run build` is invalid in this repo because there is no root
+    `package.json`.
+  - Frontend build passed with approved elevated build:
+    `npm --prefix frontend run build`.
