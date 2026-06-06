@@ -1238,25 +1238,14 @@ def list_marketplace_shops(
     }
 
 
-@router.get("/shops/by-gmfn/{gmfn_id}")
-def get_marketplace_shop_by_gmfn_id(
-    gmfn_id: str,
-    clan_id: Optional[int] = Query(default=None),
-    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+def _owner_public_shop_payload(
+    db: Session,
+    *,
+    owner: User,
+    requested_clan_id: int,
+    current_user: Optional[User] = None,
+    product_limit: int = 300,
 ) -> Dict[str, Any]:
-    requested_clan_id = _resolve_clan_id(
-        current_user=current_user,
-        db=db,
-        explicit_clan_id=clan_id,
-        header_clan_id=x_clan_id,
-    )
-
-    owner = _get_user_by_identity_key(db, identity_key=gmfn_id)
-    if not owner:
-        raise HTTPException(status_code=404, detail="Seller identity not found")
-
     shop = _get_public_shop_identity_by_owner(
         db,
         owner_user_id=int(owner.id),
@@ -1278,9 +1267,13 @@ def get_marketplace_shop_by_gmfn_id(
         raise HTTPException(status_code=404, detail="Shop not found")
 
     resolved_clan_id = int(requested_clan_id)
-    if (
-        int(owner.id) == int(current_user.id)
-        and not _shop_is_visible_in_clan(db, shop=shop, clan_id=resolved_clan_id)
+    owner_is_current_user = (
+        current_user is not None and int(owner.id) == int(current_user.id)
+    )
+    if owner_is_current_user and not _shop_is_visible_in_clan(
+        db,
+        shop=shop,
+        clan_id=resolved_clan_id,
     ):
         shop_clan_id = int(getattr(shop, "clan_id", 0) or 0)
         if shop_clan_id > 0:
@@ -1303,6 +1296,7 @@ def get_marketplace_shop_by_gmfn_id(
             )
         )
         .order_by(MarketplaceProduct.created_at.desc(), MarketplaceProduct.id.desc())
+        .limit(int(product_limit))
         .all()
     )
 
@@ -1310,9 +1304,63 @@ def get_marketplace_shop_by_gmfn_id(
         "ok": True,
         "item": _shop_out(db, shop),
         "products": [_product_out(db, p) for p in product_rows],
-        "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id,
+        "gmfn_id": _safe_str(getattr(owner, "gmfn_id", None)) or None,
         "clan_id": resolved_clan_id,
     }
+
+
+@router.get("/shops/me")
+def get_my_marketplace_shop(
+    clan_id: Optional[int] = Query(default=None),
+    product_limit: int = Query(default=300, ge=1, le=300),
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    requested_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    return _owner_public_shop_payload(
+        db,
+        owner=current_user,
+        requested_clan_id=requested_clan_id,
+        current_user=current_user,
+        product_limit=product_limit,
+    )
+
+
+@router.get("/shops/by-gmfn/{gmfn_id}")
+def get_marketplace_shop_by_gmfn_id(
+    gmfn_id: str,
+    clan_id: Optional[int] = Query(default=None),
+    x_clan_id: Optional[str] = Header(default=None, alias="X-Clan-Id"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    requested_clan_id = _resolve_clan_id(
+        current_user=current_user,
+        db=db,
+        explicit_clan_id=clan_id,
+        header_clan_id=x_clan_id,
+    )
+
+    owner = _get_user_by_identity_key(db, identity_key=gmfn_id)
+    if not owner:
+        raise HTTPException(status_code=404, detail="Seller identity not found")
+
+    payload = _owner_public_shop_payload(
+        db,
+        owner=owner,
+        requested_clan_id=requested_clan_id,
+        current_user=current_user,
+    )
+    payload["gmfn_id"] = _safe_str(getattr(owner, "gmfn_id", None)) or gmfn_id
+    return payload
+
 
 
 @router.get("/public/shop/{gmfn_id}")

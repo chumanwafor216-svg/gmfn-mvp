@@ -15,6 +15,7 @@ import {
   getPublicMarketplaceShopByGmfnId,
   getMe,
   getMarketplaceShopByGmfnId,
+  getMyMarketplaceShop,
   getMyIdentityRisk,
   getSelectedClanId,
   createVaultShopAccessLink,
@@ -832,29 +833,36 @@ export default function ShopControlPage() {
         ),
       });
 
-      const gmfnId = firstTruthy(meRes?.gmfn_id);
-      if (!gmfnId) {
-        setShop(null);
-        setProducts([]);
-        setSpotlights([]);
-        setVaultLinks([]);
-        return;
-      }
-
-      let shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+      let shopRes = await getMyMarketplaceShop({
         clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
         header_clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
+        product_limit: 300,
       }).catch(() => null);
       if (!shopRes?.item && (preferredClanId > 0 || selectedClanId > 0)) {
-        shopRes = await getMarketplaceShopByGmfnId(gmfnId).catch(() => shopRes);
+        shopRes = await getMyMarketplaceShop({
+          product_limit: 300,
+        }).catch(() => shopRes);
+      }
+
+      const gmfnId = firstTruthy(meRes?.gmfn_id);
+      if (!shopRes?.item && gmfnId) {
+        shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
+          clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
+          header_clan_id: preferredClanId > 0 ? preferredClanId : selectedClanId || undefined,
+        }).catch(() => shopRes);
+        if (!shopRes?.item && (preferredClanId > 0 || selectedClanId > 0)) {
+          shopRes = await getMarketplaceShopByGmfnId(gmfnId).catch(() => shopRes);
+        }
       }
       if (!shopRes?.item) {
-        const publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
-          product_limit: 200,
-          broadcast_limit: 20,
-        }).catch(() => null);
-        if (publicShopRes?.item) {
-          shopRes = publicShopRes;
+        if (gmfnId) {
+          const publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
+            product_limit: 200,
+            broadcast_limit: 20,
+          }).catch(() => null);
+          if (publicShopRes?.item) {
+            shopRes = publicShopRes;
+          }
         }
       }
 

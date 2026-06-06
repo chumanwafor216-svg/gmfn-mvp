@@ -2903,6 +2903,24 @@ export async function getMarketplaceShopByGmfnId(
   );
 }
 
+export async function getMyMarketplaceShop(params?: {
+  clan_id?: number | null;
+  header_clan_id?: number | null;
+  product_limit?: number;
+}): Promise<any> {
+  const options = buildMarketplaceReadOptions(params);
+
+  return httpJson(
+    `/marketplace/shops/me${buildQuery({
+      clan_id: params?.clan_id ?? undefined,
+      product_limit: params?.product_limit ?? 300,
+    })}`,
+    "GET",
+    undefined,
+    options
+  );
+}
+
 export async function getPublicMarketplaceShopByGmfnId(
   gmfnId: string,
   params?: {

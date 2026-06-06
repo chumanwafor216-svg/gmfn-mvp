@@ -17,6 +17,7 @@ import {
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   getMe,
+  getMyMarketplaceShop,
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
   safeCopy,
@@ -580,15 +581,26 @@ function isPublicGalleryProduct(item: ProductRecord | null | undefined): boolean
 
 function mergeProductsById(...groups: ProductRecord[][]): ProductRecord[] {
   const out: ProductRecord[] = [];
-  const seen = new Set<number>();
+  const seen = new Map<number, number>();
   const seenFallback = new Set<string>();
 
   groups.forEach((items) => {
     items.forEach((item) => {
       const id = Number(item?.id || 0);
       if (id > 0) {
-        if (seen.has(id)) return;
-        seen.add(id);
+        const existingIndex = seen.get(id);
+        if (existingIndex !== undefined) {
+          const existing = out[existingIndex] || {};
+          const enriched: ProductRecord = { ...existing };
+          Object.entries(item || {}).forEach(([key, value]) => {
+            if (value !== undefined && value !== null && value !== "") {
+              (enriched as any)[key] = value;
+            }
+          });
+          out[existingIndex] = enriched;
+          return;
+        }
+        seen.set(id, out.length);
       } else {
         const fallbackKey = [
           Number(item?.shop_id || 0),
@@ -817,19 +829,33 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
         seedShop?.gmfn_id,
         meRes?.gmfn_id
       );
-      if (!gmfnId) {
+
+      let shopRes = await getMyMarketplaceShop({
+        clan_id: selectedClanId || undefined,
+        header_clan_id: selectedClanId || undefined,
+        product_limit: 300,
+      }).catch(() => null);
+      if (!shopRes?.item && selectedClanId > 0) {
+        shopRes = await getMyMarketplaceShop({
+          product_limit: 300,
+        }).catch(() => shopRes);
+      }
+
+      if (!shopRes?.item && gmfnId) {
+        shopRes = await apiJson<any>(
+          `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}?clan_id=${selectedClanId || 0}`
+        ).catch(() => shopRes);
+        if (!shopRes?.item && selectedClanId > 0) {
+          shopRes = await apiJson<any>(
+            `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}`
+          ).catch(() => shopRes);
+        }
+      }
+
+      if (!shopRes?.item && !gmfnId) {
         setShop(seedShop);
         setProducts(seedProducts);
         return seedProducts;
-      }
-
-      let shopRes = await apiJson<any>(
-        `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}?clan_id=${selectedClanId || 0}`
-      ).catch(() => null);
-      if (!shopRes && selectedClanId > 0) {
-        shopRes = await apiJson<any>(
-          `/api/marketplace/shops/by-gmfn/${encodeURIComponent(gmfnId)}`
-        ).catch(() => null);
       }
 
       let shopItem = (shopRes?.item || seedShop || null) as ShopRecord | null;
@@ -839,14 +865,22 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           ? normalizeProductRecords(shopRes.products)
           : []
       );
+      const effectiveGmfnId = firstTruthy(
+        shopRes?.gmfn_id,
+        shopRes?.item?.owner_gmfn_id,
+        shopRes?.item?.gmfn_id,
+        gmfnId
+      );
 
-      let publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
-        clan_id: selectedClanId || undefined,
-        product_limit: 200,
-        broadcast_limit: 1,
-      }).catch(() => null);
-      if (!publicShopRes && selectedClanId > 0) {
-        publicShopRes = await getPublicMarketplaceShopByGmfnId(gmfnId, {
+      let publicShopRes = effectiveGmfnId
+        ? await getPublicMarketplaceShopByGmfnId(effectiveGmfnId, {
+            clan_id: selectedClanId || undefined,
+            product_limit: 200,
+            broadcast_limit: 1,
+          }).catch(() => null)
+        : null;
+      if (!publicShopRes && effectiveGmfnId && selectedClanId > 0) {
+        publicShopRes = await getPublicMarketplaceShopByGmfnId(effectiveGmfnId, {
           product_limit: 200,
           broadcast_limit: 1,
         }).catch(() => null);
@@ -2054,8 +2088,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   key={slotNumber}
                   kind="secondary"
                   onClick={() => setSelectedPublicSlot(slotNumber)}
+                  stableHeight={isCompact ? 126 : 118}
                   style={{
-                    minHeight: 104,
                     borderRadius: 18,
                     padding: 8,
                     border: isSelected
@@ -2070,6 +2104,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     color: "#0B1F33",
                     textAlign: "left",
                     display: "grid",
+                    gridTemplateRows: "18px 48px minmax(0, 1fr)",
                     gap: 6,
                   }}
                   debugId={`shop-assets.public-slot.${slotNumber}.select`}
@@ -2081,14 +2116,28 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       justifyContent: "space-between",
                       alignItems: "center",
                       gap: 6,
+                      minWidth: 0,
                     }}
                   >
-                    <span style={{ fontWeight: 950, fontSize: 13 }}>#{slotNumber}</span>
                     <span
                       style={{
-                        fontSize: 11,
+                        fontWeight: 950,
+                        fontSize: 12,
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      #{slotNumber}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 10,
                         fontWeight: 900,
                         color: item ? "#168447" : "#64748B",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        minWidth: 0,
                       }}
                     >
                       {item ? "Live" : "Empty"}
@@ -2269,6 +2318,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 style={{
                   marginTop: 14,
                   ...ownerActionGrid(isCompact),
+                  minHeight: isCompact ? 260 : 108,
                 }}
               >
                 {selectedPublicProduct ? (
@@ -2312,38 +2362,49 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                       Copy shop link
                     </SubtleButton>
 
-                    <StableCtaLink
-                      to={buildPaidRepostPath(
-                        selectedPublicProduct,
-                        selectedPublicSlot
-                      )}
-                      fullWidth
-                      stableHeight={isCompact ? 56 : 48}
-                      debugId={`shop-assets.public-slot.${selectedPublicSlot}.paid-repost`}
-                      aria-label={`Repost block ${selectedPublicSlot} into another community Spotlight`}
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        width: "100%",
-                        minHeight: isCompact ? 56 : 48,
-                        borderRadius: 999,
-                        padding: "0 14px",
-                        textDecoration: "none",
-                        fontSize: isCompact ? 15 : 14,
-                        fontWeight: 950,
-                        background:
-                          "linear-gradient(180deg, #123A63 0%, #0B2544 100%)",
-                        color: "#FFFFFF",
-                        border: "1px solid rgba(12, 44, 78, 0.22)",
-                        boxShadow:
-                          "0 12px 24px rgba(8, 30, 54, 0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
-                        whiteSpace: "nowrap",
-                        boxSizing: "border-box",
-                      }}
-                    >
-                      Repost
-                    </StableCtaLink>
+                    {Number(selectedPublicProduct.id || 0) > 0 ? (
+                      <StableCtaLink
+                        to={buildPaidRepostPath(
+                          selectedPublicProduct,
+                          selectedPublicSlot
+                        )}
+                        fullWidth
+                        stableHeight={isCompact ? 56 : 48}
+                        debugId={`shop-assets.public-slot.${selectedPublicSlot}.paid-repost`}
+                        aria-label={`Repost block ${selectedPublicSlot} into another community Spotlight`}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: "100%",
+                          minHeight: isCompact ? 56 : 48,
+                          borderRadius: 999,
+                          padding: "0 14px",
+                          textDecoration: "none",
+                          fontSize: isCompact ? 15 : 14,
+                          fontWeight: 950,
+                          background:
+                            "linear-gradient(180deg, #123A63 0%, #0B2544 100%)",
+                          color: "#FFFFFF",
+                          border: "1px solid rgba(12, 44, 78, 0.22)",
+                          boxShadow:
+                            "0 12px 24px rgba(8, 30, 54, 0.18), inset 0 1px 0 rgba(255,255,255,0.12)",
+                          whiteSpace: "nowrap",
+                          boxSizing: "border-box",
+                        }}
+                      >
+                        Repost
+                      </StableCtaLink>
+                    ) : (
+                      <SecondaryButton
+                        disabled
+                        fullWidth
+                        stableHeight={isCompact ? 56 : 48}
+                        debugId={`shop-assets.public-slot.${selectedPublicSlot}.paid-repost-unavailable`}
+                      >
+                        Repost unavailable
+                      </SecondaryButton>
+                    )}
                   </>
                 ) : (
                   <PrimaryButton

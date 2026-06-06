@@ -3748,6 +3748,7 @@ export default function MarketplacePage() {
     const openedFromShopBlock =
       hash === "marketplace-paid-network-placement" ||
       routeRepostSource === "shop-diaries" ||
+      routeRepostSource === "shop-control-gallery" ||
       Boolean(routeRepostProductId || routeRepostBlockNumber);
     if (!openedFromShopBlock) return;
 

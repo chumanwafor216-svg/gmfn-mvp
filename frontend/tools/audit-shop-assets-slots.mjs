@@ -39,7 +39,7 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /const seedProducts = normalizeProductRecords\(props\.seedProducts \|\| \[\]\)[\s\S]*?let nextProducts: ProductRecord\[\] = mergeProductsById\([\s\S]*?seedProducts[\s\S]*?normalizeProductRecords\(shopRes\.products\)[\s\S]*?const publicShopProducts: ProductRecord\[\] = Array\.isArray\(publicShopRes\?\.products\)[\s\S]*?normalizeProductRecords\(publicShopRes\.products\)[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)/,
+  /const seedProducts = normalizeProductRecords\(props\.seedProducts \|\| \[\]\)[\s\S]*?let shopRes = await getMyMarketplaceShop\([\s\S]*?let nextProducts: ProductRecord\[\] = mergeProductsById\([\s\S]*?seedProducts[\s\S]*?normalizeProductRecords\(shopRes\.products\)[\s\S]*?const publicShopProducts: ProductRecord\[\] = Array\.isArray\(publicShopRes\?\.products\)[\s\S]*?normalizeProductRecords\(publicShopRes\.products\)[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)/,
   "Shop Assets must merge authenticated shop products with the public shop products that visitors see."
 );
 
@@ -51,14 +51,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /if \(!gmfnId\) \{[\s\S]*?setShop\(seedShop\);[\s\S]*?setProducts\(seedProducts\);[\s\S]*?return seedProducts;[\s\S]*?\}/,
+  /if \(!shopRes\?\.item && !gmfnId\) \{[\s\S]*?setShop\(seedShop\);[\s\S]*?setProducts\(seedProducts\);[\s\S]*?return seedProducts;[\s\S]*?\}/,
   "Shop Assets must not erase parent-seeded live blocks when the child identity lookup is unavailable."
 );
 
 assertContains(
   "src/pages/ShopControlPage.tsx",
-  /if \(!shopRes\?\.item && \(preferredClanId > 0 \|\| selectedClanId > 0\)\) \{[\s\S]*?getMarketplaceShopByGmfnId\(gmfnId\)/,
-  "Shop Control must retry the owner shop lookup without selected-clan scoping before declaring the gallery empty."
+  /let shopRes = await getMyMarketplaceShop\([\s\S]*?if \(!shopRes\?\.item && \(preferredClanId > 0 \|\| selectedClanId > 0\)\) \{[\s\S]*?getMyMarketplaceShop\([\s\S]*?if \(!shopRes\?\.item && gmfnId\) \{[\s\S]*?getMarketplaceShopByGmfnId\(gmfnId/,
+  "Shop Control must ask the backend for the signed-in user's own shop before falling back to GMFN lookup."
 );
 
 assertContains(
@@ -75,8 +75,26 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
+  /stableHeight=\{isCompact \? 126 : 118\}[\s\S]*?gridTemplateRows: "18px 48px minmax\(0, 1fr\)"[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{slotNumber\}\.select`\}/,
+  "Shop Assets public block tiles must be fixed-height controls so slot labels and taps do not jump."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /function mergeProductsById\([\s\S]*?const seen = new Map<number, number>\(\);[\s\S]*?const existingIndex = seen\.get\(id\);[\s\S]*?out\[existingIndex\] = enriched;/,
+  "Shop Assets product merging must enrich duplicate backend/public rows instead of discarding later richer shop data."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
   /const selectedPublicProduct = publicGallerySlots\[selectedPublicSlot - 1\] \|\| null/,
   "Shop Assets selected block must come from the arranged 12-slot gallery."
+);
+
+assertContains(
+  "src/pages/ShopAssetsPage.tsx",
+  /minHeight: isCompact \? 260 : 108/,
+  "Shop Assets selected block action panel must reserve stable height so Open/Add/Repost controls cannot jump the shelf."
 );
 
 assertContains(
@@ -87,14 +105,20 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.edit`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.hide`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.copy-link`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.paid-repost`\}[\s\S]*?stableHeight=\{isCompact \? 56 : 48\}/,
-  "Shop Assets selected live block actions must remain traceable and fixed-height, including Paid Repost."
+  /debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.edit`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.hide`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.copy-link`\}[\s\S]*?Number\(selectedPublicProduct\.id \|\| 0\) > 0[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.paid-repost`\}[\s\S]*?debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.paid-repost-unavailable`\}/,
+  "Shop Assets selected live block actions must stay traceable, fixed-height, and must not route Paid Repost for an id-less block."
 );
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /debugId=\{`shop-assets\.public-slot\.\$\{selectedPublicSlot\}\.add`\}[\s\S]*?stableHeight=\{isCompact \? 56 : 48\}/,
   "Shop Assets selected empty block Add action must remain fixed-height and traceable."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /routeRepostSource === "shop-control-gallery"/,
+  "Marketplace must recognize paid Repost requests that originate from the Shop Control gallery."
 );
 
 if (findings.length > 0) {

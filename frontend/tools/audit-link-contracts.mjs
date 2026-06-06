@@ -387,8 +387,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopAssetsPage.tsx",
-  /getPublicMarketplaceShopByGmfnId[\s\S]*?PUBLIC_GALLERY_VISIBILITY_MODES[\s\S]*?"community_visible"[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?function mergeProductsById[\s\S]*?getPublicMarketplaceShopByGmfnId\(gmfnId,[\s\S]*?product_limit: 200[\s\S]*?mergeProductsById\(nextProducts, publicShopProducts\)[\s\S]*?products\.filter\(\(item\) => isPublicGalleryProduct\(item\)\)/,
-  "Embedded Shop Control must hydrate its 12 public blocks from the same public-shop truth and visibility aliases that visitors see."
+  /PUBLIC_GALLERY_VISIBILITY_MODES[\s\S]*?"community_visible"[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?function mergeProductsById[\s\S]*?let shopRes = await getMyMarketplaceShop\([\s\S]*?let nextProducts: ProductRecord\[\] = mergeProductsById\([\s\S]*?normalizeProductRecords\(shopRes\.products\)[\s\S]*?getPublicMarketplaceShopByGmfnId\(effectiveGmfnId,[\s\S]*?product_limit: 200[\s\S]*?nextProducts = mergeProductsById\(nextProducts, publicShopProducts\)[\s\S]*?products\.filter\(\(item\) => isPublicGalleryProduct\(item\)\)/,
+  "Embedded Shop Control must hydrate its 12 public blocks from the signed-in owner route plus the same public-shop truth and visibility aliases that visitors see."
 );
 
 assertContains(
@@ -712,8 +712,8 @@ assertContains(
 
 assertContains(
   "../gmfn_backend/app/api/routes/marketplace.py",
-  /def get_marketplace_shop_by_gmfn_id\([\s\S]*?active_owner_shops = \([\s\S]*?active_owner_shop_ids[\s\S]*?MarketplaceProduct\.shop_id\.in_\(active_owner_shop_ids\)[\s\S]*?MarketplaceProduct\.seller_user_id == int\(owner\.id\)[\s\S]*?MarketplaceProduct\.visibility_mode\.in_\([\s\S]*?VISIBILITY_COMMUNITY[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?"products": \[_product_out\(db, p\) for p in product_rows\]/,
-  "Authenticated shop lookup must return the same owner public-block product scope and visibility aliases that the public shop can display."
+  /def _owner_public_shop_payload\([\s\S]*?active_owner_shops = \([\s\S]*?active_owner_shop_ids[\s\S]*?MarketplaceProduct\.shop_id\.in_\(active_owner_shop_ids\)[\s\S]*?MarketplaceProduct\.seller_user_id == int\(owner\.id\)[\s\S]*?MarketplaceProduct\.visibility_mode\.in_\([\s\S]*?VISIBILITY_COMMUNITY[\s\S]*?"public"[\s\S]*?"community"[\s\S]*?"products": \[_product_out\(db, p\) for p in product_rows\][\s\S]*?@router\.get\("\/shops\/me"\)[\s\S]*?def get_my_marketplace_shop\([\s\S]*?_owner_public_shop_payload\(/,
+  "Authenticated shop lookup must use the shared owner public-block product scope and visibility aliases that the public shop can display."
 );
 
 assertNotContains(

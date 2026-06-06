@@ -1,3 +1,70 @@
+### Owner Shop Control live-block truth route fixed (2026-06-06)
+
+- Routes/screens affected:
+  - backend owner shop truth route:
+    `GET /marketplace/shops/me` in
+    `gmfn_backend/app/api/routes/marketplace.py`;
+  - Shop Control and embedded Shop Assets:
+    `frontend/src/pages/ShopControlPage.tsx`,
+    `frontend/src/pages/ShopAssetsPage.tsx`;
+  - Marketplace paid-Repost receiving route:
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - API helper and audits:
+    `frontend/src/lib/api.ts`,
+    `frontend/tools/audit-shop-assets-slots.mjs`,
+    `frontend/tools/audit-link-contracts.mjs`;
+  - backend proof:
+    `gmfn_backend/tests/test_marketplace_public_shop.py`.
+- Product-owner complaint:
+  - public Shop Diaries showed live media (`5 / 12`), but owner Shop Control
+    still showed `0 / 12` and empty blocks;
+  - Marketplace/Shop Control buttons were still considered jumpy and suspect;
+  - repair must be system-level, not only a page repaint.
+- Backend repair:
+  - added a shared `_owner_public_shop_payload(...)` helper that gathers the
+    signed-in owner’s active shops and active public/community-visible products
+    across the owner shop identity;
+  - `GET /marketplace/shops/me` now returns the signed-in owner’s shop face and
+    public block products directly from backend truth;
+  - `GET /marketplace/shops/by-gmfn/{gmfn_id}` now uses the same helper, so
+    authenticated GMFN lookup and owner lookup share the same product scope;
+  - vault/private products and inactive products are filtered out of owner
+    public gallery control, matching the visitor-facing public shop shelf.
+- Frontend repair:
+  - Shop Control now asks `/marketplace/shops/me` first, retries without stale
+    clan scope if needed, then only falls back to GMFN lookup;
+  - embedded Shop Assets receives `seedShop` and `seedProducts` from Shop
+    Control and no longer wipes those live blocks when child identity lookup is
+    unavailable;
+  - Shop Assets also asks `/marketplace/shops/me` first, then merges managed
+    products and public shop products without dropping richer duplicate rows;
+  - paid Repost from a selected block is available only when the selected block
+    has a real backend product id; id-less/empty rows show a disabled stable
+    control instead of navigating to a wrong Marketplace route;
+  - Marketplace now explicitly recognizes `source=shop-control-gallery`.
+- Button stability:
+  - public block tiles keep fixed heights and fixed internal grid rows;
+  - the selected block action panel reserves a stable height, so Add/Edit/Hide/
+    Copy/Repost controls cannot resize the shelf while loading or switching
+    between empty/live blocks;
+  - debug IDs remain traceable for selected-slot actions and slot buttons.
+- Verification passed:
+  - `npm run audit:shop-assets-slots`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:link-contracts`;
+  - targeted ESLint for Shop Control, Shop Assets, Marketplace, API helper, and
+    updated auditors;
+  - `python -m pytest -q gmfn_backend\tests\test_marketplace_public_shop.py::test_my_marketplace_shop_returns_owner_public_gallery_blocks --basetemp C:\tmp\gmfn-pytest-shop-me`;
+  - `npm run build` passed after the known Windows sandbox `esbuild spawn
+    EPERM` required approved outside-sandbox build execution.
+- Remaining truth:
+  - this repairs the `0 / 12` disconnect at the owner/public shop data-source
+    level and stabilizes the Shop Control block buttons;
+  - it does not prove the live Render build has received the commit until the
+    branch/main push and deploy workflow are verified.
+
 ### Owner Shop Control public gallery parity and Repost handle (2026-06-05)
 
 - Routes/screens affected:

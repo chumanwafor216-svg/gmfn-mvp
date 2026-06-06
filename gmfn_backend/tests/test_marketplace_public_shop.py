@@ -1211,6 +1211,145 @@ def test_shop_gallery_products_follow_owner_across_membership_communities(
     assert "Private Vault Product" not in public_names
 
 
+def test_my_marketplace_shop_returns_owner_public_gallery_blocks(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+
+    hidden_image_url = "/uploads/marketplace/images/my-shop-private.jpg"
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'pytest@example.com', 'hashed', 'Owner Control User', 'user', 'GMFN-U-MYSHOP'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES
+                    (1, 'Owner home', 'Owner Home Marketplace', 'MYSHOP1'),
+                    (2, 'Second home', 'Second Home Marketplace', 'MYSHOP2')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES
+                    (1, 1, 1, 'member', 0),
+                    (2, 2, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'OWNER CONTROL SHOP', 'Owner truth route', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_products (
+                    id, clan_id, shop_id, seller_user_id, title, description,
+                    price, currency, image_url, visibility_mode, is_active
+                ) VALUES
+                    (
+                        1, 1, 1, 1, 'Public Block One', '[BLOCK:1] Public block #1',
+                        '1000', 'NGN', '/uploads/marketplace/images/my-shop-public-1.jpg',
+                        'community_visible', 1
+                    ),
+                    (
+                        2, 1, 1, 1, 'Public Block Two', '[BLOCK:2] Public block #2',
+                        '2000', 'NGN', '/uploads/marketplace/images/my-shop-public-2.jpg',
+                        'community_visible', 1
+                    ),
+                    (
+                        3, 1, 1, 1, 'Public Block Three', '[BLOCK:3] Public block #3',
+                        '3000', 'NGN', '/uploads/marketplace/images/my-shop-public-3.jpg',
+                        'community_visible', 1
+                    ),
+                    (
+                        4, 1, 1, 1, 'Public Block Four', '[BLOCK:4] Public block #4',
+                        '4000', 'NGN', '/uploads/marketplace/images/my-shop-public-4.jpg',
+                        'community_visible', 1
+                    ),
+                    (
+                        5, 1, 1, 1, 'Public Block Five', '[BLOCK:5] Public block #5',
+                        '5000', 'NGN', '/uploads/marketplace/images/my-shop-public-5.jpg',
+                        'community_visible', 1
+                    ),
+                    (
+                        6, 1, 1, 1, 'Vault Item', '[BLOCK:6] Private block',
+                        '9000', 'NGN', :hidden_image_url, 'vault_private', 1
+                    ),
+                    (
+                        7, 1, 1, 1, 'Inactive Public Block', '[BLOCK:7] Inactive public block',
+                        '7000', 'NGN', '/uploads/marketplace/images/my-shop-inactive.jpg',
+                        'community_visible', 0
+                    )
+                """
+            ),
+            {
+                "hidden_image_url": hidden_image_url,
+            },
+        )
+
+    res = client.get("/marketplace/shops/me?clan_id=2")
+    assert res.status_code == 200, res.text
+    body = res.json()
+
+    assert body["ok"] is True
+    assert body["item"]["name"] == "OWNER CONTROL SHOP"
+    assert body["item"]["gmfn_id"] == "GMFN-U-MYSHOP"
+    assert body["clan_id"] == 2
+    names = [item["name"] for item in body["products"]]
+    assert set(names) == {
+        "Public Block One",
+        "Public Block Two",
+        "Public Block Three",
+        "Public Block Four",
+        "Public Block Five",
+    }
+    assert "Vault Item" not in names
+    assert "Inactive Public Block" not in names
+    slot_map = {
+        int(item["id"]): int(item["public_block_number"])
+        for item in body["products"]
+    }
+    assert slot_map == {1: 1, 2: 2, 3: 3, 4: 4, 5: 5}
+    assert all(
+        int(item["slot_number"]) == int(item["public_block_number"])
+        for item in body["products"]
+    )
+
+    public_res = client.get(
+        "/marketplace/public/shop/GMFN-U-MYSHOP?clan_id=2&product_limit=300"
+    )
+    assert public_res.status_code == 200, public_res.text
+    public_body = public_res.json()
+    public_slot_map = {
+        int(item["id"]): int(item["public_block_number"])
+        for item in public_body["products"]
+    }
+    assert public_slot_map == slot_map
+
+
 def test_shop_spotlight_publish_targets_only_the_shop_community(
     client,
     override_current_user_user,
