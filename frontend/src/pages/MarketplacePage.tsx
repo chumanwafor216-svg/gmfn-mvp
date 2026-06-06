@@ -40,6 +40,7 @@ import {
   getLoanSummary,
   getMarketplaceProducts,
   getMarketplaceShopByGmfnId,
+  getMyMarketplaceShop,
   getMarketplaceShops,
   getMe,
   getPoolMe,
@@ -938,6 +939,40 @@ function repostProductLabel(product: RepostProductOption | null): string {
   return product.description
     ? `${blockPrefix}${product.title} - ${product.description}`
     : `${blockPrefix}${product.title}`;
+}
+
+function uniqRepostProductOptions(items: RepostProductOption[]): RepostProductOption[] {
+  const seen = new Set<number>();
+  const result: RepostProductOption[] = [];
+
+  items.forEach((item) => {
+    if (!item?.id || seen.has(item.id)) return;
+    seen.add(item.id);
+    result.push(item);
+  });
+
+  return result.sort((a, b) => {
+    const aBlock = a.blockNumber || Number.MAX_SAFE_INTEGER;
+    const bBlock = b.blockNumber || Number.MAX_SAFE_INTEGER;
+    if (aBlock !== bBlock) return aBlock - bBlock;
+    return a.id - b.id;
+  });
+}
+
+function marketplaceFieldTouchProps(debugId: string) {
+  return {
+    "data-gmfn-action-root": "true",
+    "data-gmfn-debug-id": debugId,
+    onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+      event.stopPropagation();
+    },
+    onMouseDown: (event: React.MouseEvent<HTMLElement>) => {
+      event.stopPropagation();
+    },
+    onClick: (event: React.MouseEvent<HTMLElement>) => {
+      event.stopPropagation();
+    },
+  };
 }
 
 function communityIdentity(row: CommunityRow | null | undefined): string {
@@ -2539,6 +2574,10 @@ function inputStyle(): React.CSSProperties {
     color: "#0B1F33",
     outline: "none",
     boxSizing: "border-box",
+    pointerEvents: "auto",
+    touchAction: "manipulation",
+    position: "relative",
+    zIndex: 2,
   };
 }
 
@@ -2849,24 +2888,64 @@ export default function MarketplacePage() {
     let alive = true;
     setLoadingRepostProducts(true);
 
-    getMarketplaceProducts({
-      shop_id: shopId,
-      only_active: true,
-      include_reposted: false,
-      include_private_manage: true,
-      limit: 60,
-      header_clan_id: activeCommunityId || undefined,
-    })
-      .then((res) => {
+    const clanId = positiveNumber(activeCommunityId || publicShopRecord?.clan_id);
+    const enrichWithShop = (row: any) => ({
+      ...(row || {}),
+      shop_name: firstTruthy(
+        row?.shop_name,
+        row?.marketplace_shop_name,
+        row?.shop?.name,
+        publicShopRecord?.name
+      ),
+      owner_gmfn_id: firstTruthy(
+        row?.owner_gmfn_id,
+        row?.gmfn_id,
+        row?.shop?.owner_gmfn_id,
+        row?.shop?.gmfn_id,
+        publicShopOwnerId,
+        currentGmfnId
+      ),
+      whatsapp_number: firstTruthy(
+        row?.whatsapp_number,
+        row?.shop_whatsapp_number,
+        row?.owner_whatsapp_number,
+        row?.shop?.whatsapp_number,
+        publicShopRecord?.whatsapp_number
+      ),
+    });
+
+    Promise.all([
+      getMarketplaceProducts({
+        shop_id: shopId,
+        only_active: true,
+        include_reposted: false,
+        include_private_manage: true,
+        limit: 120,
+        header_clan_id: clanId || undefined,
+      }).catch(() => ({ items: [] })),
+      getMyMarketplaceShop({
+        clan_id: clanId || undefined,
+        header_clan_id: clanId || undefined,
+        product_limit: 300,
+      }).catch(() => null),
+    ])
+      .then(([productsRes, myShopRes]) => {
         if (!alive) return;
-        const options = rowsOf<any>(res)
-          .map(normalizeRepostProductOption)
-          .filter((item): item is RepostProductOption => {
-            return Boolean(
-              item &&
-                item.visibilityMode === "community_visible"
-            );
-          });
+        const directRows = rowsOf<any>(productsRes);
+        const ownerRows = Array.isArray((myShopRes as any)?.products)
+          ? ((myShopRes as any).products as any[])
+          : rowsOf<any>((myShopRes as any)?.products);
+        const options = uniqRepostProductOptions(
+          [...directRows, ...ownerRows]
+            .map(enrichWithShop)
+            .map(normalizeRepostProductOption)
+            .filter((item): item is RepostProductOption => {
+              return Boolean(
+                item &&
+                  item.visibilityMode === "community_visible"
+              );
+            })
+        );
         setRepostProducts(options);
         setSelectedRepostProductId((current) =>
           options.some((item) => item.id === current) ? current : options[0]?.id || 0
@@ -2883,7 +2962,15 @@ export default function MarketplacePage() {
     return () => {
       alive = false;
     };
-  }, [activeCommunityId, publicShopRecord?.id]);
+  }, [
+    activeCommunityId,
+    currentGmfnId,
+    publicShopOwnerId,
+    publicShopRecord?.clan_id,
+    publicShopRecord?.id,
+    publicShopRecord?.name,
+    publicShopRecord?.whatsapp_number,
+  ]);
 
   const selectedRepostProduct = useMemo(() => {
     return (
@@ -3394,10 +3481,18 @@ export default function MarketplacePage() {
               }).catch(() => ({ items: [] }))
             : Promise.resolve({ items: [] }),
           currentMemberGmfnId
-            ? getMarketplaceShopByGmfnId(currentMemberGmfnId, {
+            ? getMyMarketplaceShop({
                 clan_id: currentCommunityId || undefined,
                 header_clan_id: currentCommunityId || undefined,
-              }).catch(() => null)
+                product_limit: 300,
+              })
+                .catch(() =>
+                  getMarketplaceShopByGmfnId(currentMemberGmfnId, {
+                    clan_id: currentCommunityId || undefined,
+                    header_clan_id: currentCommunityId || undefined,
+                  })
+                )
+                .catch(() => null)
             : Promise.resolve(null),
           currentCommunityId
             ? getPoolMe("NGN", 20, { clan_id: currentCommunityId }).catch(
@@ -5935,9 +6030,18 @@ export default function MarketplacePage() {
 
                 <div
                   id="marketplace-paid-network-placement"
+                  data-gmfn-action-root="true"
+                  data-gmfn-debug-id="marketplace.network-repost.surface"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onClick={(event) => event.stopPropagation()}
                   style={{
                     ...innerCard("#F8FBFF"),
                     scrollMarginTop: isCompact ? 84 : 104,
+                    position: "relative",
+                    zIndex: 3,
+                    pointerEvents: "auto",
+                    isolation: "isolate",
                   }}
                 >
                   <div style={sectionLabel()}>Paid Repost</div>
@@ -6210,12 +6314,24 @@ export default function MarketplacePage() {
                     <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
                       <span style={{ fontSize: 12 }}>Public block</span>
                       <select
+                        {...marketplaceFieldTouchProps(
+                          "marketplace.network-repost.public-block-select"
+                        )}
                         value={String(selectedRepostProduct?.id || "")}
                         onChange={(event) =>
                           setSelectedRepostProductId(Number(event.target.value || 0))
                         }
-                        disabled={loadingRepostProducts || repostProducts.length === 0}
-                        style={inputStyle()}
+                        data-gmfn-control-state={
+                          loadingRepostProducts
+                            ? "loading"
+                            : repostProducts.length === 0
+                              ? "empty"
+                              : "ready"
+                        }
+                        style={{
+                          ...inputStyle(),
+                          opacity: loadingRepostProducts ? 0.78 : 1,
+                        }}
                       >
                         {repostProducts.length === 0 ? (
                           <option value="">
@@ -6235,6 +6351,9 @@ export default function MarketplacePage() {
                     <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
                       <span style={{ fontSize: 12 }}>Target community ID</span>
                       <input
+                        {...marketplaceFieldTouchProps(
+                          "marketplace.network-repost.target-community-input"
+                        )}
                         inputMode="text"
                         value={repostTargetMarketplaceId}
                         onChange={(event) =>
@@ -6247,6 +6366,9 @@ export default function MarketplacePage() {
                     <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
                       <span style={{ fontSize: 12 }}>Duration</span>
                       <select
+                        {...marketplaceFieldTouchProps(
+                          "marketplace.network-repost.duration-select"
+                        )}
                         value={repostDurationDays}
                         onChange={(event) => setRepostDurationDays(event.target.value)}
                         style={inputStyle()}

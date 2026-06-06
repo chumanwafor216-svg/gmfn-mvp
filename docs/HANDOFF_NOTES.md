@@ -1,3 +1,56 @@
+### Marketplace Paid Repost block reading and tap guards fixed (2026-06-06)
+
+- Routes/screens affected:
+  - Marketplace Paid Repost / Network Spotlight placement:
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - owner shop truth source reused from:
+    `/marketplace/shops/me`;
+  - impacted route surface:
+    `/app/marketplace#marketplace-paid-network-placement`.
+- Product-owner complaint:
+  - Paid Repost controls looked active but were still falling into the wrong
+    place, including Trust;
+  - open/select/collapse-style controls were not behaving reliably;
+  - the Paid Repost panel showed `No eligible public block` even though Shop
+    Control/Public Shop had live public blocks.
+- Confirmed code truth:
+  - the app route contracts did not intentionally send Paid Repost,
+    Subscription Spotlight, or Owner Shop Control to Trust;
+  - the Paid Repost panel was loading eligible blocks through a different shop
+    path than the Shop Control page, so it could legitimately become empty
+    while Shop Control showed blocks;
+  - the native Paid Repost `select`/`input` controls were not marked as action
+    roots and did not stop pointer/click propagation like `StableButton` does;
+  - a disabled native select created a dead touch surface when no products were
+    loaded, which made wrong-route/fall-through behavior harder to rule out.
+- Frontend repair:
+  - Marketplace now prefers `getMyMarketplaceShop(...)`, the same owner-truth
+    route used by Shop Control, before falling back to public GMFN lookup;
+  - Paid Repost eligible products now combine and dedupe direct product rows
+    plus `/marketplace/shops/me` products, then sort by public block number;
+  - repost product rows are enriched with shop name, owner GSN ID, and contact
+    fields from the owner shop record when the product endpoint omits them;
+  - the Paid Repost card and its native fields now carry
+    `data-gmfn-action-root`, debug IDs, pointer/mouse/click guards, and explicit
+    `pointerEvents`/`touchAction` styling;
+  - the public-block select no longer becomes a dead disabled surface; it shows
+    `loading`, `empty`, or `ready` state while remaining a contained touch
+    target.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:button-stability`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - targeted ESLint for `frontend/src/pages/MarketplacePage.tsx`;
+  - `npm --prefix frontend run build` passed after the known Windows sandbox
+    `esbuild spawn EPERM` required approved outside-sandbox execution.
+- Remaining truth:
+  - a separate subagent/line-auditor could not be spawned because the thread
+    limit was reached, so this button audit was performed locally;
+  - if the backend owner-shop route returns no public products for the signed-in
+    shop, Paid Repost will still correctly show no eligible blocks; that would
+    be backend/data truth, not a Trust-route button failure.
+
 ### Marketplace/Paid Repost bottom-rail tap stability fixed (2026-06-06)
 
 - Routes/screens affected:
