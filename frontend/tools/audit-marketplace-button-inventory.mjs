@@ -484,6 +484,11 @@ assertLayoutContains(
   "Marketplace mobile bottom navigator buttons must keep fixed 42px geometry and active pointer targets."
 );
 
+assertLayoutContains(
+  /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0[\s\S]*?\{showMobileBottomRail \?/,
+  "Marketplace mobile content must reserve the measured bottom rail height so paid Repost controls cannot sit under the Trust bottom-nav tap target."
+);
+
 if (findings.length > 0) {
   console.error("Marketplace button inventory audit failed:");
   for (const finding of findings) {

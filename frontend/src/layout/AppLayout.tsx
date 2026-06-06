@@ -938,10 +938,12 @@ function navItem(active = false, disabled = false): React.CSSProperties {
 function mainContent(
   isMobile: boolean,
   taskMode: boolean,
-  _bottomNavReservePx: number
+  bottomNavReservePx: number
 ): React.CSSProperties {
-  void _bottomNavReservePx;
-  const mobileBottomPadding = "calc(16px + env(safe-area-inset-bottom, 0px))";
+  const bottomRailReserve = Math.max(0, Math.ceil(bottomNavReservePx || 0));
+  const mobileBottomPadding = bottomRailReserve
+    ? `calc(${bottomRailReserve + 16}px + env(safe-area-inset-bottom, 0px))`
+    : "calc(16px + env(safe-area-inset-bottom, 0px))";
 
   return {
     minWidth: 0,
@@ -1761,6 +1763,9 @@ export default function AppLayout() {
     loansItems,
   ]);
 
+  const showMobileBottomRail =
+    isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname));
+
   return (
     <div style={isMobile ? mobileShell() : desktopShell()}>
       {!isMobile ? (
@@ -2099,14 +2104,18 @@ export default function AppLayout() {
       )}
 
       <main
-        style={mainContent(isMobile, !!taskMode, mobileBottomNavReservePx)}
+        style={mainContent(
+          isMobile,
+          !!taskMode,
+          showMobileBottomRail ? mobileBottomNavReservePx : 0
+        )}
       >
         <WorkspaceCompanionBridge />
         <WorkspaceSettingsBridge />
         <Outlet />
       </main>
 
-      {isMobile && (!taskMode || shouldKeepBottomRailInTaskMode(location.pathname)) ? (
+      {showMobileBottomRail ? (
         <nav
           ref={mobileBottomNavRef}
           data-gmfn-bottom-nav="true"

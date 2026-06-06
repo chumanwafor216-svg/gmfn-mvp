@@ -776,9 +776,9 @@ const marketplaceActionStabilitySource = readFileSync(
 const appShellChecks = [
   {
     label:
-      "Mobile app shell must keep the in-flow bottom rail from injecting dynamic page padding",
+      "Mobile app shell must reserve measured bottom-rail space only when the rail is visible",
     pattern:
-      /function mainContent\([\s\S]*?_bottomNavReservePx: number[\s\S]*?const mobileBottomPadding = "calc\(16px \+ env\(safe-area-inset-bottom, 0px\)\)"/,
+      /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?const bottomRailReserve = Math\.max\(0, Math\.ceil\(bottomNavReservePx \|\| 0\)\);[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0/,
   },
   {
     label:

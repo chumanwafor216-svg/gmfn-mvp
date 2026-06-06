@@ -113,9 +113,15 @@ assertContains(
   "AppLayout must use shared stable primitives for shell brand, desktop nav, mobile drawer, page actions, bottom nav, and logout controls."
 );
 
+assertContains(
+  "src/layout/AppLayout.tsx",
+  /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?const bottomRailReserve = Math\.max\(0, Math\.ceil\(bottomNavReservePx \|\| 0\)\);[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0[\s\S]*?\{showMobileBottomRail \?/,
+  "AppLayout must reserve the measured mobile bottom rail height for page content so lower Marketplace/Repost buttons cannot fall under the Trust bottom-nav hit area."
+);
+
 assertNotContains(
   "src/layout/AppLayout.tsx",
-  /(<button|<\/button>|<a\s|OriginLink|layoutTapGuardProps|handleDisabledNavClick|actionTapGuardProps|brandStableTapTarget|stopActionTap)/,
+  /(<button|<\/button>|<a\s|OriginLink|layoutTapGuardProps|handleDisabledNavClick|actionTapGuardProps|brandStableTapTarget|stopActionTap|void _bottomNavReservePx)/,
   "AppLayout must not keep raw button/link primitives or local tap/action guards."
 );
 

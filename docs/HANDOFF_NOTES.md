@@ -1,3 +1,55 @@
+### Marketplace/Paid Repost bottom-rail tap stability fixed (2026-06-06)
+
+- Routes/screens affected:
+  - authenticated app shell/mobile bottom rail:
+    `frontend/src/layout/AppLayout.tsx`;
+  - Marketplace/Paid Repost verification audits:
+    `frontend/tools/audit-button-stability.mjs`,
+    `frontend/tools/audit-mobile-tap-stability.mjs`,
+    `frontend/tools/audit-marketplace-button-inventory.mjs`.
+- Product-owner complaint:
+  - Paid Repost/Repost buttons could be tapped but behave as if the tap fell
+    into the wrong route, including bouncing to `Trust`;
+  - Marketplace buttons needed another root-to-inner stability audit before
+    more testing.
+- Confirmed code truth:
+  - Paid Repost controls were already using `StableButton`/`StableCtaLink`,
+    fixed action heights, `debugId`s, and route-local `runMarketplaceAction`;
+  - the shared `StableButton` primitive already guards pointer-down,
+    pointer-up, mouse-down, click, duplicate clicks, and disabled action roots;
+  - the app shell measured the mobile bottom nav height but `mainContent(...)`
+    ignored that reserve (`void _bottomNavReservePx`), leaving lower page
+    controls too close to the mobile rail hit zone.
+- Frontend repair:
+  - `mainContent(...)` now uses the measured bottom rail reserve and adds a
+    16px breathing gap to mobile page padding;
+  - `AppLayout` now computes `showMobileBottomRail` once and passes the reserve
+    only when the bottom rail is actually rendered;
+  - bottom rail rendering now uses that same `showMobileBottomRail` value,
+    keeping the visible rail and reserved hit area in sync.
+- Button stability/audit repair:
+  - button stability audit now fails if `AppLayout` ever returns to ignoring
+    the mobile bottom rail reserve;
+  - mobile tap audit now expects measured rail reserve instead of the older
+    unsafe "no dynamic padding" assumption;
+  - Marketplace button inventory audit now checks the app-shell reserve as part
+    of the whole Marketplace mobile button surface.
+- Verification passed:
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:link-contracts`;
+  - `npm run audit:marketplace-actions`;
+  - `npm run audit:marketplace-button-inventory`;
+  - targeted ESLint for `AppLayout.tsx` and updated auditors;
+  - `npm run build` passed after the known Windows sandbox `esbuild spawn
+    EPERM` required approved outside-sandbox build execution.
+- Remaining truth:
+  - a separate subagent/line-auditor could not be spawned because the thread
+    limit was reached, so this audit was performed locally;
+  - this fix addresses mobile shell hit-zone overlap risk and wrong-route taps;
+    it does not change Paid Repost money-rail/business logic.
+
 ### Paid Repost exact block receiver preview fixed (2026-06-06)
 
 - Routes/screens affected:
