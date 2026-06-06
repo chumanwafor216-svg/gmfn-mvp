@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gsn-pwa-shell-v3";
+const CACHE_VERSION = "gsn-pwa-shell-v4";
 const SHELL_ASSETS = [
   "/",
   "/cover",
@@ -45,7 +45,9 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() => caches.match("/cover").then((res) => res || caches.match("/"))),
+      fetch(request, { cache: "no-store" }).catch(() =>
+        caches.match("/cover").then((res) => res || caches.match("/"))
+      ),
     );
     return;
   }
@@ -59,17 +61,24 @@ self.addEventListener("fetch", (event) => {
     url.pathname.endsWith(".webmanifest")
   ) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) return cached;
-
-        return fetch(request).then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => {
-            cache.put(request, copy).catch(() => undefined);
-          });
-          return response;
+      fetch(request).then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_VERSION).then((cache) => {
+          cache.put(request, copy).catch(() => undefined);
         });
-      }),
+        return response;
+      }).catch(() =>
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
+          return fetch(request).then((response) => {
+            const copy = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => {
+              cache.put(request, copy).catch(() => undefined);
+            });
+            return response;
+          });
+        }),
+      ),
     );
   }
 });

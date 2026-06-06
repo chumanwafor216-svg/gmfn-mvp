@@ -35536,3 +35536,54 @@ GSN-branded invite composer and invite-entry continuity.
   - this fixes the Generate Payment Code tap path and not-ready explanation.
     It does not bypass real payment readiness: missing shop/community/block
     context still stops payment-code generation and explains why.
+
+### Paid Repost source context and PWA refresh repair (2026-06-06)
+
+- Route/screens affected:
+  - `/app/shop-gallery`;
+  - `/app/marketplace`;
+  - installed/PWA shortcut shell through `frontend/public/sw.js`.
+- Confirmed truth:
+  - the Shop Diaries Paid Repost handoff could identify the selected public
+    block in the UI, but it did not reliably carry the source shop id and
+    source community id into the payment-code handler;
+  - Marketplace payment generation was still falling back to the currently
+    loaded marketplace shop/community, so a selected block could appear ready
+    while the payment rail still lacked the backend context needed to create a
+    code;
+  - the shortcut refresh problem is service-worker cache related: the app shell
+    was cache-first for navigation/assets, so an installed shortcut could keep
+    showing an older build until the user opened a fresh link.
+- Frontend change:
+  - `ShopGalleryPage` now writes `shopId`, `originShopId`,
+    `originCommunityId`, and `ownerCommunityId` into the Paid Repost handoff;
+  - `MarketplacePage` now normalizes those source ids on selected repost
+    products and uses them for credit refresh and `Generate Payment Code`;
+  - Paid Repost copy was tightened again so it speaks directly to the user and
+    removes old explanatory filler from the private-link section;
+  - the service worker cache moved from `gsn-pwa-shell-v3` to
+    `gsn-pwa-shell-v4`, with navigation and static assets now network-first
+    with cache fallback.
+- Guardrails:
+  - `frontend/tools/audit-marketplace-actions.mjs` now requires Shop Diaries
+    handoff source ids and requires payment generation to use the selected
+    block's source shop/community ids before calling the paid Spotlight rail.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`
+    (`56` stable source actions, `15` front, `41` body; `103` whole-route
+    mobile controls).
+  - Passed targeted lint:
+    `npm exec eslint -- src/pages/MarketplacePage.tsx src/pages/ShopGalleryPage.tsx tools/audit-marketplace-actions.mjs --max-warnings=0`
+    from `frontend/`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated build passed: `npm run build` from `frontend/`.
+- Remaining truth:
+  - this should let the selected block generate a payment code once backend
+    payment readiness and ownership checks pass. It does not fake a paid
+    credit or bypass backend permission rules;
+  - the installed shortcut should now pull the latest Render build first, but a
+    phone may need one launch after this deployment for service-worker `v4` to
+    install and take control.

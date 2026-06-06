@@ -1813,6 +1813,7 @@ export default function ShopGalleryPage() {
 
     return {
       id: shop?.id,
+      clanId: shop?.clanId,
       gmfnId: effectiveGmfnId,
       shopName: effectiveShopName,
       ownerName: effectiveOwnerName,
@@ -2053,12 +2054,17 @@ export default function ShopGalleryPage() {
       currency: firstMeaningful(product.currency, "NGN"),
       imageUrl: firstMeaningful(product.imageUrl),
       videoUrl: firstMeaningful(product.videoUrl),
+      shopId: positiveNumber(effectiveShop?.id),
+      originShopId: positiveNumber(effectiveShop?.id),
       originShopName: firstMeaningful(
         product.originShopName,
         effectiveShop?.shopName
       ),
       sellerGmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
       whatsappNumber: firstMeaningful(effectiveShop?.whatsapp),
+      originCommunityId: positiveNumber(
+        product.originClanId || effectiveShop?.clanId || ownerSurfaceCommunityId
+      ),
       ownerCommunityId: ownerSurfaceCommunityId,
       publicShopUrl: absoluteShopLink,
     };

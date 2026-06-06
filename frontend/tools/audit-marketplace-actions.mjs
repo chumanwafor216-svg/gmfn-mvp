@@ -114,6 +114,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /type RepostProductOption[\s\S]*?originShopId: number[\s\S]*?originCommunityId: number[\s\S]*?async function createMarketplaceRepostPaymentInstruction\(\)[\s\S]*?selectedRepostProduct\?\.originShopId \|\| publicShopRecord\?\.id[\s\S]*?selectedRepostProduct\?\.originCommunityId[\s\S]*?createSpotlightPaymentInstruction\(\{/,
+  "Marketplace Paid Repost payment-code generation must use the selected block source shop/community IDs, not only the currently loaded marketplace shell."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId/,
   "Marketplace Paid Repost fields must carry data-cta-id as well as action-root markers so the phone tap guard can match the same control after reflow."
 );
@@ -162,8 +168,8 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /PAID_REPOST_HANDOFF_STORAGE_KEY[\s\S]*?function writePaidRepostHandoff\(product: ShopProduct\)[\s\S]*?source: "shop-diaries"[\s\S]*?window\.sessionStorage\.setItem[\s\S]*?function paidRepostHandoffHandler\(product: ShopProduct\)[\s\S]*?<StableCtaLink[\s\S]*?to=\{blockPlacementPath\(product\)\}[\s\S]*?onClick=\{paidRepostHandoffHandler\(product\)\}[\s\S]*?Repost/,
-  "Shop Diaries Repost must store the exact public block handoff before routing into Marketplace Paid Repost."
+  /PAID_REPOST_HANDOFF_STORAGE_KEY[\s\S]*?function writePaidRepostHandoff\(product: ShopProduct\)[\s\S]*?source: "shop-diaries"[\s\S]*?shopId: positiveNumber\(effectiveShop\?\.id\)[\s\S]*?originShopId: positiveNumber\(effectiveShop\?\.id\)[\s\S]*?originCommunityId: positiveNumber\([\s\S]*?ownerCommunityId: ownerSurfaceCommunityId[\s\S]*?window\.sessionStorage\.setItem[\s\S]*?function paidRepostHandoffHandler\(product: ShopProduct\)[\s\S]*?<StableCtaLink[\s\S]*?to=\{blockPlacementPath\(product\)\}[\s\S]*?onClick=\{paidRepostHandoffHandler\(product\)\}[\s\S]*?Repost/,
+  "Shop Diaries Repost must store the exact public block plus source shop/community handoff before routing into Marketplace Paid Repost."
 );
 
 {

@@ -156,6 +156,8 @@ type MarketplaceShop = {
 
 type RepostProductOption = {
   id: number;
+  originShopId: number;
+  originCommunityId: number;
   blockNumber: number;
   title: string;
   description: string;
@@ -183,9 +185,13 @@ type PaidRepostHandoff = {
   currency?: string;
   imageUrl?: string;
   videoUrl?: string;
+  shopId?: number;
+  ownerShopId?: number;
+  originShopId?: number;
   originShopName?: string;
   sellerGmfnId?: string;
   whatsappNumber?: string;
+  originCommunityId?: number;
   ownerCommunityId?: number;
   publicShopUrl?: string;
 };
@@ -889,6 +895,20 @@ function normalizeRepostProductOption(raw: any): RepostProductOption | null {
 
   return {
     id,
+    originShopId: positiveNumber(
+      firstDefined(src?.shop_id, src?.shopId, src?.origin_shop_id, src?.shop?.id)
+    ),
+    originCommunityId: positiveNumber(
+      firstDefined(
+        src?.clan_id,
+        src?.clanId,
+        src?.community_id,
+        src?.origin_clan_id,
+        src?.source_clan_id,
+        src?.shop?.clan_id,
+        src?.shop?.community_id
+      )
+    ),
     blockNumber: positiveNumber(
       firstDefined(
         src?.public_block_number,
@@ -961,6 +981,12 @@ function normalizePaidRepostHandoff(raw: PaidRepostHandoff | null): RepostProduc
 
   return {
     id: id || blockNumber,
+    originShopId: positiveNumber(
+      firstDefined(raw.shopId, raw.ownerShopId, raw.originShopId)
+    ),
+    originCommunityId: positiveNumber(
+      firstDefined(raw.originCommunityId, raw.ownerCommunityId)
+    ),
     blockNumber,
     title: firstTruthy(raw.title, `Public block ${blockNumber || id || "?"}`),
     description: stripPublicBlockMetadata(raw.description),
@@ -2948,10 +2974,19 @@ export default function MarketplacePage() {
     ? "Your GSN ID is not ready yet."
     : "Prepare your public shop link first so it is connected to an active shop before you send it.";
 
+  const sourceRepostShopId = positiveNumber(
+    routeRepostHandoffProduct?.originShopId || publicShopRecord?.id
+  );
+  const sourceRepostCommunityId = positiveNumber(
+    routeRepostHandoffProduct?.originCommunityId ||
+      publicShopRecord?.clan_id ||
+      activeCommunityId
+  );
+
   const loadMarketplaceRepostCredits = useCallback(
     async (background = false) => {
-      const shopId = positiveNumber(publicShopRecord?.id);
-      const clanId = positiveNumber(activeCommunityId || publicShopRecord?.clan_id);
+      const shopId = positiveNumber(sourceRepostShopId);
+      const clanId = positiveNumber(sourceRepostCommunityId);
 
       if (!shopId || !clanId) {
         setRepostSpotlightStatus(null);
@@ -2976,7 +3011,7 @@ export default function MarketplacePage() {
         if (!background) setLoadingRepostCredits(false);
       }
     },
-    [activeCommunityId, publicShopRecord?.clan_id, publicShopRecord?.id]
+    [sourceRepostCommunityId, sourceRepostShopId]
   );
 
   useEffect(() => {
@@ -2997,6 +3032,15 @@ export default function MarketplacePage() {
     const clanId = positiveNumber(activeCommunityId || publicShopRecord?.clan_id);
     const enrichWithShop = (row: any) => ({
       ...(row || {}),
+      shop_id: firstDefined(row?.shop_id, row?.shopId, row?.shop?.id, shopId),
+      clan_id: firstDefined(
+        row?.clan_id,
+        row?.clanId,
+        row?.community_id,
+        row?.shop?.clan_id,
+        row?.shop?.community_id,
+        clanId
+      ),
       shop_name: firstTruthy(
         row?.shop_name,
         row?.marketplace_shop_name,
@@ -3242,14 +3286,6 @@ export default function MarketplacePage() {
     !selectedRepostProduct ||
     !resolvedRepostTargetCommunityInput ||
     !canPlaceMarketplaceRepost;
-
-  const controlledMarketplaceLinkNote = useMemo(() => {
-    if (!selectedCommunity) {
-      return "Select a community first. Then manage Vault access and live links.";
-    }
-
-    return "Manage Vault access and controlled live links for this marketplace.";
-  }, [selectedCommunity]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -3792,8 +3828,14 @@ export default function MarketplacePage() {
   }
 
   async function createMarketplaceRepostPaymentInstruction() {
-    const shopId = positiveNumber(publicShopRecord?.id);
-    const clanId = positiveNumber(activeCommunityId || publicShopRecord?.clan_id);
+    const shopId = positiveNumber(
+      selectedRepostProduct?.originShopId || publicShopRecord?.id
+    );
+    const clanId = positiveNumber(
+      selectedRepostProduct?.originCommunityId ||
+        publicShopRecord?.clan_id ||
+        activeCommunityId
+    );
     const requiredCredits = requiredMarketplaceRepostCredits;
 
     if (loadingRepostProducts) {
@@ -6697,8 +6739,8 @@ export default function MarketplacePage() {
                   >
                     <div style={{ fontWeight: 900 }}>
                       {canPlaceMarketplaceRepost
-                        ? "Credit is ready for this duration."
-                        : `Generate or confirm ${missingMarketplaceRepostCredits} Spotlight credit${
+                        ? "Credit ready."
+                        : `Need ${missingMarketplaceRepostCredits} Spotlight credit${
                             missingMarketplaceRepostCredits === 1 ? "" : "s"
                           } before placing.`}
                     </div>
@@ -6714,7 +6756,7 @@ export default function MarketplacePage() {
                       </div>
                     ) : (
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        No payment code is open yet.
+                        Generate a code when the block and target are ready.
                       </div>
                     )}
                   </div>
@@ -6793,14 +6835,7 @@ export default function MarketplacePage() {
                 </div>
 
                 <div style={innerCard("#F8FBFF")}>
-                  <div style={sectionLabel()}>Private links</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    {controlledMarketplaceLinkNote}
-                  </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(false)}>Vault access is conditional</span>
-                    <span style={badge(false)}>Live links stay controlled</span>
-                  </div>
+                  <div style={sectionLabel()}>Owner controls</div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
                       debugId="marketplace.links.owner-shop-control"
