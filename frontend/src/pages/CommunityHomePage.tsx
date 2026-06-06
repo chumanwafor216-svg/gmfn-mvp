@@ -14,6 +14,7 @@ import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import { navigateWithOrigin } from "../lib/nav";
 import {
   getMarketplaceBroadcasts,
+  getMyMarketplaceShop,
   getMarketplaceShopByGmfnId,
   getMe,
   getPoolMeSummary,
@@ -1174,10 +1175,13 @@ export default function CommunityHomePage() {
     if (guide !== "spotlight") return;
 
     openGuidedSpotlightFamily();
+    params.delete("guide");
+    const remainingSearch = params.toString();
 
     navigate(
       {
         pathname: location.pathname,
+        search: remainingSearch ? `?${remainingSearch}` : "",
       },
       { replace: true }
     );
@@ -1365,6 +1369,24 @@ export default function CommunityHomePage() {
     []
   );
 
+  async function resolveCurrentOwnerShop(gmfnId: string) {
+    const params = {
+      clan_id: selectedClanId,
+      header_clan_id: selectedClanId,
+    };
+    const shopRes =
+      (await getMyMarketplaceShop(params).catch(() => null)) ||
+      (await getMarketplaceShopByGmfnId(gmfnId, params).catch(() => null));
+
+    return (
+      (Array.isArray((shopRes as any)?.items)
+        ? (shopRes as any).items?.[0]
+        : null) ||
+      (shopRes as any)?.shop ||
+      shopRes
+    );
+  }
+
   async function resolveCommunityNextAction(
     item: NextActionGuideItem
   ): Promise<NextActionGuideResolution | null> {
@@ -1516,16 +1538,7 @@ export default function CommunityHomePage() {
           };
         }
 
-        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
-          clan_id: selectedClanId,
-          header_clan_id: selectedClanId,
-        }).catch(() => null);
-        const resolvedShop =
-          (Array.isArray((shopRes as any)?.items)
-            ? (shopRes as any).items?.[0]
-            : null) ||
-          (shopRes as any)?.shop ||
-          shopRes;
+        const resolvedShop = await resolveCurrentOwnerShop(gmfnId);
         const shopId = Number((resolvedShop as any)?.id || 0);
 
         if (!shopId) {
@@ -1574,16 +1587,7 @@ export default function CommunityHomePage() {
           };
         }
 
-        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
-          clan_id: selectedClanId,
-          header_clan_id: selectedClanId,
-        }).catch(() => null);
-        const resolvedShop =
-          (Array.isArray((shopRes as any)?.items)
-            ? (shopRes as any).items?.[0]
-            : null) ||
-          (shopRes as any)?.shop ||
-          shopRes;
+        const resolvedShop = await resolveCurrentOwnerShop(gmfnId);
         const shopId = Number((resolvedShop as any)?.id || 0);
 
         if (!shopId) {
@@ -1633,16 +1637,7 @@ export default function CommunityHomePage() {
           };
         }
 
-        const shopRes = await getMarketplaceShopByGmfnId(gmfnId, {
-          clan_id: selectedClanId,
-          header_clan_id: selectedClanId,
-        }).catch(() => null);
-        const resolvedShop =
-          (Array.isArray((shopRes as any)?.items)
-            ? (shopRes as any).items?.[0]
-            : null) ||
-          (shopRes as any)?.shop ||
-          shopRes;
+        const resolvedShop = await resolveCurrentOwnerShop(gmfnId);
         const shopId = Number((resolvedShop as any)?.id || 0);
 
         if (!shopId) {
@@ -1920,6 +1915,16 @@ export default function CommunityHomePage() {
     targetId = ""
   ) {
     consumeCommunityButtonEvent(event);
+    if (!selectedClanId) {
+      showNotice("error", "Choose a community first, then open Shop Control.");
+      openCommunityHomeSection(
+        undefined,
+        "community-home-community-list",
+        "communities",
+        true
+      );
+      return;
+    }
     const hash =
       targetId === "community-shop-control-owner-shortcuts"
         ? routes.shopOwnerShortcuts
@@ -1980,6 +1985,25 @@ export default function CommunityHomePage() {
     to: string
   ) {
     consumeCommunityButtonEvent(event);
+    navigateWithOrigin(navigate, to, location);
+  }
+
+  function openSelectedCommunityRoute(
+    event: React.SyntheticEvent<HTMLElement> | undefined,
+    to: string,
+    fallbackMessage = "Choose a community first, then open this tool."
+  ) {
+    consumeCommunityButtonEvent(event);
+    if (!selectedClanId) {
+      showNotice("error", fallbackMessage);
+      openCommunityHomeSection(
+        undefined,
+        "community-home-community-list",
+        "communities",
+        true
+      );
+      return;
+    }
     navigateWithOrigin(navigate, to, location);
   }
 
@@ -2894,7 +2918,11 @@ export default function CommunityHomePage() {
               detail:
                 "Open owner-side tools and permissions",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, routes.joinRequests),
+                openSelectedCommunityRoute(
+                  event,
+                  routes.joinRequests,
+                  "Choose a community first, then review join requests."
+                ),
             },
             {
               icon: "🏪",
@@ -2912,7 +2940,11 @@ export default function CommunityHomePage() {
               detail:
                 "Paid private blocks, one link at a time",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, routes.vaultControl),
+                openSelectedCommunityRoute(
+                  event,
+                  routes.vaultControl,
+                  "Choose a community first, then open Vault."
+                ),
             },
             {
               icon: "🌟",
@@ -2921,7 +2953,11 @@ export default function CommunityHomePage() {
               detail:
                 "Publish the normal community spotlight lane",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, routes.freeSpotlight),
+                openSelectedCommunityRoute(
+                  event,
+                  routes.freeSpotlight,
+                  "Choose a community first, then open Free Spotlight."
+                ),
             },
             {
               icon: "💳",
@@ -2930,7 +2966,11 @@ export default function CommunityHomePage() {
               detail:
                 "Control the paid priority spotlight lane",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, routes.subscriptionSpotlight),
+                openSelectedCommunityRoute(
+                  event,
+                  routes.subscriptionSpotlight,
+                  "Choose a community first, then open Subscription Spotlight."
+                ),
             },
             {
               icon: "🔁",
@@ -2939,7 +2979,11 @@ export default function CommunityHomePage() {
               detail:
                 "Send one shop block into another community Spotlight",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, routes.paidRepost),
+                openSelectedCommunityRoute(
+                  event,
+                  routes.paidRepost,
+                  "Choose a community first, then open Paid Repost."
+                ),
             },
             {
               icon: "🤝",
@@ -2948,7 +2992,11 @@ export default function CommunityHomePage() {
               detail:
                 "Invite trusted real-life people",
               onClick: (event: React.SyntheticEvent<HTMLElement>) =>
-                openCommunityRoute(event, routes.buildFirstCircle),
+                openSelectedCommunityRoute(
+                  event,
+                  routes.buildFirstCircle,
+                  "Choose a community first, then grow your trusted circle."
+                ),
             },
             {
               icon: "📡",

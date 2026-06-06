@@ -15,6 +15,7 @@ const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
 const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");
 const findings = [];
 const expectedStableActionCount = 56;
+const expectedNativeFieldCount = 9;
 const expectedSourceBreakdown = {
   front: 15,
   body: 41,
@@ -130,6 +131,42 @@ while ((match = actionPattern.exec(source))) {
     block,
   });
 }
+
+const nativeFieldPattern = /<(input|select|textarea)\b[\s\S]*?(?:\/>|<\/(?:select|textarea)>)/g;
+const nativeFields = [];
+while ((match = nativeFieldPattern.exec(source))) {
+  const block = match[0];
+  nativeFields.push({
+    line: lineAt(match.index),
+    type: match[1],
+    block,
+  });
+}
+
+if (nativeFields.length !== expectedNativeFieldCount) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: `Marketplace native field inventory changed from ${expectedNativeFieldCount} to ${nativeFields.length}. Re-audit every input/select/textarea as a mobile tap surface before accepting this baseline.`,
+    text: nativeFields.map((field) => `${field.line}:${field.type}`).join(", "),
+  });
+}
+
+for (const field of nativeFields) {
+  if (!/\{\s*\.\.\.marketplaceFieldTouchProps\(\s*"[^"]+"\s*\)\s*\}/.test(field.block)) {
+    findings.push({
+      file: marketplaceFile,
+      line: field.line,
+      message: "Every Marketplace native input/select/textarea must use marketplaceFieldTouchProps because mobile field taps can leak into neighbouring route buttons.",
+      text: field.block.replace(/\s+/g, " ").slice(0, 220),
+    });
+  }
+}
+
+assertContains(
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: stopMarketplaceTap[\s\S]*?onPointerDown: stopMarketplaceTap[\s\S]*?onPointerUpCapture: stopMarketplaceTap[\s\S]*?onPointerUp: stopMarketplaceTap[\s\S]*?onMouseDownCapture: stopMarketplaceTap[\s\S]*?onMouseDown: stopMarketplaceTap[\s\S]*?onClickCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
+  "Marketplace native field tap roots must use stable action-root metadata and pointer/mouse/click guards without touch double-fire handlers."
+);
 
 if (actions.length !== expectedStableActionCount) {
   findings.push({

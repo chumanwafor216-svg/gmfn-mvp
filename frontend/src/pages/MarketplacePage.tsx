@@ -5426,6 +5426,7 @@ export default function MarketplacePage() {
                 }}
               >
                 <input
+                  {...marketplaceFieldTouchProps("marketplace.intent.query")}
                   value={intentQuery}
                   onChange={(event) => setIntentQuery(event.target.value)}
                   placeholder="Try: loan, deposit, withdraw, shop, invite..."
@@ -5801,6 +5802,7 @@ export default function MarketplacePage() {
                   >
                     <div style={sectionLabel()}>Personalize before sending</div>
                     <input
+                      {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
                       value={joinRecipientName}
                       onChange={(event) => setJoinRecipientName(event.target.value)}
                       placeholder="Receiver name, e.g. John"
@@ -5808,6 +5810,7 @@ export default function MarketplacePage() {
                       aria-label="Receiver name for join invitation"
                     />
                     <textarea
+                      {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
                       value={joinInviteNote}
                       onChange={(event) => setJoinInviteNote(event.target.value)}
                       placeholder="Short personal note (optional)"
@@ -7140,6 +7143,7 @@ export default function MarketplacePage() {
                 <div>
                   <div style={sectionLabel()}>Amount needed</div>
                   <input
+                    {...marketplaceFieldTouchProps("marketplace.support.amount")}
                     value={loanAmount}
                     onChange={(e) => setLoanAmount(e.target.value)}
                     disabled={supportProcessBusy}
@@ -7151,6 +7155,7 @@ export default function MarketplacePage() {
                 <div>
                   <div style={sectionLabel()}>How long do you want it?</div>
                   <input
+                    {...marketplaceFieldTouchProps("marketplace.support.duration-days")}
                     type="number"
                     min="1"
                     value={loanDurationDays}
@@ -7164,6 +7169,7 @@ export default function MarketplacePage() {
                 <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
                   <div style={sectionLabel()}>Purpose / note</div>
                   <textarea
+                    {...marketplaceFieldTouchProps("marketplace.support.purpose")}
                     value={loanPurpose}
                     onChange={(e) => setLoanPurpose(e.target.value)}
                     disabled={supportProcessBusy}

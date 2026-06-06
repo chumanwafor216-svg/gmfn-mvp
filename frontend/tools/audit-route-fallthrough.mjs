@@ -134,6 +134,18 @@ wholeFileFind(
 );
 
 wholeFileFind(
+  "src/layout/AppLayout.tsx",
+  /import \{ routeWithCommunity \} from "\.\.\/lib\/appRoutes";[\s\S]*?import \{ communityIdFromSearch \} from "\.\.\/lib\/communityRouteContext";[\s\S]*?function contextualizeAppNavTarget\(to: string, communityId: number\): string \{[\s\S]*?routeWithCommunity\(to, communityId\)[\s\S]*?const activeCommunityId = useMemo\([\s\S]*?communityIdFromSearch\(location\.search\)[\s\S]*?to=\{contextualizeAppNavTarget\(/,
+  "App shell navigation must carry the active community query into community-scoped routes instead of rendering raw app links."
+);
+
+lineForbid(
+  "src/layout/AppLayout.tsx",
+  /to=\{item\.to\}/,
+  "App shell links must use contextualizeAppNavTarget(item.to, activeCommunityId), not raw item.to."
+);
+
+wholeFileFind(
   "src/components/OriginLink.tsx",
   /import \{ rememberAppRouteRecovery \} from "\.\.\/lib\/nav";[\s\S]*?const linkDebugId[\s\S]*?origin-link\.app\.route[\s\S]*?onClick=\{\(event\) => \{[\s\S]*?guardLinkTap\(event, rest\.onClick\);[\s\S]*?if \(!event\.defaultPrevented\) \{[\s\S]*?rememberAppRouteRecovery\(nextTo, linkDebugId\);/,
   "Shared internal links must mark /app routes after blocked/default-prevented taps have been ruled out."
@@ -156,6 +168,27 @@ lineFind(
   /<Route path="\*" element=\{<RedirectUnknownRoute \/>\} \/>/,
   "The wildcard route must use RedirectUnknownRoute, not a direct Cover redirect."
 );
+
+[
+  "community-home",
+  "money",
+  "market",
+  "marketplace/demand-box",
+  "shop",
+  "my-shop",
+  "shop/me",
+  "open-shop/me",
+  "shop-gallery/me",
+  "trust-passport",
+  "trustslip",
+  "guide",
+].forEach((path) => {
+  lineForbid(
+    "src/App.tsx",
+    new RegExp(`path="${path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"\\s+element=\\{<Navigate`),
+    `Authenticated alias /app/${path} must use PreserveRedirect so query/hash context is not lost.`
+  );
+});
 
 [
   ["/trust-slip/verify", "APP_ROUTES.MERCHANT_VERIFY"],

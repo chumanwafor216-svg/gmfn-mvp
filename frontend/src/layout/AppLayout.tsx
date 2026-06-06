@@ -8,6 +8,8 @@ import {
 import { StableButton, StableCtaLink } from "../components/StableButton";
 import WorkspaceSettingsBridge from "../components/WorkspaceSettingsBridge";
 import WorkspaceCompanionBridge from "../components/WorkspaceCompanionBridge";
+import { routeWithCommunity } from "../lib/appRoutes";
+import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { publicShopPath } from "../lib/publicLinks";
 import { gmfnBrand } from "../styles/gmfnBrand";
 
@@ -38,6 +40,34 @@ type TaskModeMeta = {
   hint: string;
   actions: NavLinkItem[];
 };
+
+const COMMUNITY_CONTEXT_ROUTE_PREFIXES = [
+  "/app/community",
+  "/app/marketplace",
+  "/app/finance",
+  "/app/loans",
+  "/app/payment",
+  "/app/payment-rails",
+  "/app/payout-details",
+  "/app/shop-control",
+  "/app/shop/me",
+  "/app/trust",
+  "/app/trust-slip",
+  "/app/vault-control",
+  "/app/demand-box",
+];
+
+function shouldCarryCommunityContext(to: string): boolean {
+  const path = String(to || "").split(/[?#]/)[0];
+  return COMMUNITY_CONTEXT_ROUTE_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`)
+  );
+}
+
+function contextualizeAppNavTarget(to: string, communityId: number): string {
+  if (!communityId || !shouldCarryCommunityContext(to)) return to;
+  return routeWithCommunity(to, communityId);
+}
 
 function readRole(): string {
   try {
@@ -1292,6 +1322,10 @@ function bottomNavItem(active = false, disabled = false): React.CSSProperties {
 export default function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const activeCommunityId = useMemo(
+    () => communityIdFromSearch(location.search),
+    [location.search]
+  );
   const mobileBottomNavRef = useRef<HTMLElement | null>(null);
   const [mobileBottomNavReservePx, setMobileBottomNavReservePx] =
     useState<number>(MOBILE_BOTTOM_NAV_FALLBACK_RESERVE_PX);
@@ -1847,7 +1881,10 @@ export default function AppLayout() {
                         {group.items.map((item) => (
                           <StableCtaLink
                             key={`${group.key}-${item.label}-${item.to}`}
-                            to={item.to}
+                            to={contextualizeAppNavTarget(
+                              item.to,
+                              activeCommunityId
+                            )}
                             kind="soft"
                             disabled={!!item.disabled}
                             debugId={`app-layout.desktop-nav.${group.key}.${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
@@ -1981,7 +2018,10 @@ export default function AppLayout() {
                   {group.items.map((item) => (
                     <StableCtaLink
                       key={`${group.title}-${item.label}-${item.to}`}
-                      to={item.to}
+                      to={contextualizeAppNavTarget(
+                        item.to,
+                        activeCommunityId
+                      )}
                       kind="soft"
                       disabled={!!item.disabled}
                       onClick={() => closeDrawer()}
@@ -2077,7 +2117,7 @@ export default function AppLayout() {
               {pageActions.map((item) => (
                 <StableCtaLink
                   key={`page-action-${item.label}-${item.to}`}
-                  to={item.to}
+                  to={contextualizeAppNavTarget(item.to, activeCommunityId)}
                   kind="secondary"
                   disabled={!!item.disabled}
                   onClick={() => closeActions()}
@@ -2124,7 +2164,7 @@ export default function AppLayout() {
           {mobileBottomItems.map((item) => (
             <StableCtaLink
               key={`bottom-${item.label}-${item.to}`}
-              to={item.to}
+              to={contextualizeAppNavTarget(item.to, activeCommunityId)}
               kind="soft"
               disabled={!!item.disabled}
               data-gmfn-bottom-nav-item="true"

@@ -779,7 +779,7 @@ export default function App() {
         <Route path="new-community" element={<Navigate to="/create" replace />} />
 
         <Route path="community" element={<CommunityHomePage />} />
-        <Route path="community-home" element={<Navigate to={APP_ROUTES.COMMUNITY} replace />} />
+        <Route path="community-home" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
         <Route path="community-tools" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
         <Route path="community-tool" element={<PreserveRedirect to={APP_ROUTES.COMMUNITY} />} />
         <Route
@@ -810,7 +810,7 @@ export default function App() {
 
         <Route path="loans" element={<LoansPage />} />
         <Route path="loan-summary/:loanId" element={<LoanSummaryPage />} />
-        <Route path="money" element={<Navigate to={APP_ROUTES.LOANS} replace />} />
+        <Route path="money" element={<PreserveRedirect to={APP_ROUTES.LOANS} />} />
         <Route path="support" element={<PreserveRedirect to={APP_ROUTES.LOANS} />} />
         <Route path="support-path" element={<PreserveRedirect to={APP_ROUTES.LOANS} />} />
         <Route path="loan-support" element={<PreserveRedirect to={APP_ROUTES.LOANS} />} />
@@ -868,7 +868,7 @@ export default function App() {
         <Route path="earnings" element={<PreserveRedirect to="/app/guarantor-earnings" />} />
 
         <Route path="marketplace" element={<MarketplacePage />} />
-        <Route path="market" element={<Navigate to={APP_ROUTES.MARKETPLACE} replace />} />
+        <Route path="market" element={<PreserveRedirect to={APP_ROUTES.MARKETPLACE} />} />
         <Route
           path="open-marketplace"
           element={<PreserveRedirect to={APP_ROUTES.MARKETPLACE} />}
@@ -879,7 +879,7 @@ export default function App() {
         />
         <Route
           path="marketplace/demand-box"
-          element={<Navigate to={APP_ROUTES.DEMAND_BOX} replace />}
+          element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />}
         />
         <Route path="demand-box" element={<DemandBoxPage />} />
         <Route path="demands" element={<PreserveRedirect to={APP_ROUTES.DEMAND_BOX} />} />
@@ -933,23 +933,23 @@ export default function App() {
         <Route path="shop-assets" element={<ShopAssetsPage />} />
         <Route path="shop-assets-page" element={<PreserveRedirect to={APP_ROUTES.SHOP_ASSETS} />} />
         <Route path="shop-manager" element={<PreserveRedirect to="/app/shop-control" />} />
-        <Route path="shop" element={<Navigate to={APP_ROUTES.SHOP_ME} replace />} />
-        <Route path="my-shop" element={<Navigate to={APP_ROUTES.SHOP_ME} replace />} />
-        <Route path="shop/me" element={<Navigate to={APP_ROUTES.SHOP_ME} replace />} />
+        <Route path="shop" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
+        <Route path="my-shop" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
+        <Route path="shop/me" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
         <Route path="open-shop" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
-        <Route path="open-shop/me" element={<Navigate to={APP_ROUTES.SHOP_ME} replace />} />
+        <Route path="open-shop/me" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
         <Route path="open-shop/:gmfnId" element={<RedirectPublicShopAlias />} />
         <Route path="shop/:gmfnId" element={<RedirectPublicShopAlias />} />
         <Route path="shop-gallery" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
-        <Route path="shop-gallery/me" element={<Navigate to={APP_ROUTES.SHOP_ME} replace />} />
+        <Route path="shop-gallery/me" element={<PreserveRedirect to={APP_ROUTES.SHOP_ME} />} />
         <Route path="shop-gallery/:gmfnId" element={<RedirectPublicShopAlias />} />
 
         <Route path="trust" element={<TrustScorePage />} />
         <Route path="open-trust-reading" element={<OpenTrustPage />} />
-        <Route path="trust-passport" element={<Navigate to={APP_ROUTES.TRUST} replace />} />
+        <Route path="trust-passport" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
         <Route path="open-trust" element={<PreserveRedirect to={APP_ROUTES.TRUST} />} />
         <Route path="trust-slip" element={<TrustSlipPage />} />
-        <Route path="trustslip" element={<Navigate to={APP_ROUTES.TRUST_SLIP} replace />} />
+        <Route path="trustslip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
         <Route path="open-trust-slip" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
         <Route path="merchant-verify" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
         <Route path="verify-merchant" element={<PreserveRedirect to={APP_ROUTES.TRUST_SLIP} />} />
@@ -994,7 +994,7 @@ export default function App() {
           element={<PreserveRedirect to={APP_ROUTES.SETTINGS} />}
         />
         <Route path="member-guide" element={<PreserveRedirect to={APP_ROUTES.GUIDE} />} />
-        <Route path="guide" element={<Navigate to={APP_ROUTES.GUIDE} replace />} />
+        <Route path="guide" element={<PreserveRedirect to={APP_ROUTES.GUIDE} />} />
 
         <Route
           path="command-center"

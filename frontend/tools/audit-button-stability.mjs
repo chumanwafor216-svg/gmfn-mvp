@@ -62,7 +62,7 @@ assertContains(
 assertContains(
   "src/components/StableButton.tsx",
   /export function StableDisclosureSummary[\s\S]*?onPointerDownCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onMouseDownCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onClickCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onPointerUpCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);/,
-  "Stable disclosure summaries must guard capture-phase tap events so open/close controls stay local to their panel."
+  "Stable disclosure summaries must guard capture-phase pointer, mouse, and click events so open/close controls stay local to their panel."
 );
 
 assertContains(

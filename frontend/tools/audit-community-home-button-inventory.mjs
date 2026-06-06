@@ -137,6 +137,16 @@ assertContains(
 );
 
 assertContains(
+  /params\.delete\("guide"\);[\s\S]*?const remainingSearch = params\.toString\(\);[\s\S]*?search: remainingSearch \? `\?\$\{remainingSearch\}` : ""/,
+  "Community Home guide cleanup must remove only the guide query param and preserve selected community context."
+);
+
+assertContains(
+  /function openSelectedCommunityRoute\([\s\S]*?fallbackMessage = "Choose a community first[\s\S]*?if \(!selectedClanId\)[\s\S]*?showNotice\("error", fallbackMessage\)[\s\S]*?community-home-community-list[\s\S]*?navigateWithOrigin\(navigate, to, location\)/,
+  "Community Home community-sensitive rows must refuse to navigate without selected community context."
+);
+
+assertContains(
   /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "spotlight-free"[\s\S]*?id: "spotlight-paid"[\s\S]*?id: "spotlight-repost"[\s\S]*?id: "spotlight-vault"[\s\S]*?id: "spotlight-shop-setup"/,
   "Community Home spotlight guided lane must keep the five spotlight-family inner choices."
 );
@@ -145,6 +155,22 @@ assertContains(
   /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: "shop-control"[\s\S]*?id: "vault-control"[\s\S]*?id: "free-spotlight"[\s\S]*?id: "spotlight-subscription"[\s\S]*?id: "paid-repost"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact tool row manifest must stay traceable and ordered."
 );
+
+[
+  ["owner-actions", "joinRequests"],
+  ["vault-control", "vaultControl"],
+  ["free-spotlight", "freeSpotlight"],
+  ["spotlight-subscription", "subscriptionSpotlight"],
+  ["paid-repost", "paidRepost"],
+  ["trusted-circle", "buildFirstCircle"],
+].forEach(([id, route]) => {
+  assertContains(
+    new RegExp(
+      `id: "${id}"[\\s\\S]*?openSelectedCommunityRoute\\([\\s\\S]*?routes\\.${route}`
+    ),
+    `Community Home compact tool row ${id} must use the selected-community route guard.`
+  );
+});
 
 const rawActionPattern =
   /<(button|a|summary)\b|role="button"|data-gmfn-action-root|data-cta-id/g;

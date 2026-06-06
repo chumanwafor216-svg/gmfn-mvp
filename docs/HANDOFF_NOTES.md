@@ -35764,3 +35764,85 @@ GSN-branded invite composer and invite-entry continuity.
     needs phone confirmation after deploy because the original failure is
     device-touch behavior rather than a pure compile-time bug;
   - no backend payment rail logic was changed in this pass.
+
+### Comprehensive Marketplace and Community Home button lane audit (2026-06-06)
+
+- Trigger:
+  - product owner asked for lane/line auditors, full button counting, and
+    investigation of Marketplace + Community Home jumpy buttons that can fall
+    into Welcome, Trust, Notifications, or other unintended routes.
+- Lane auditors used:
+  - Rawls audited Marketplace buttons and fields.
+  - Linnaeus audited Community Home buttons.
+  - Wegener audited app route aliases, shell navigation, and stranded endpoint
+    risk.
+- Confirmed button inventory:
+  - Marketplace page-local source actions: `56`.
+    - `53` `StableButton` source actions.
+    - `3` `StableCtaLink` source actions.
+    - `15` front actions and `41` body actions.
+    - Whole mobile route including app shell: `103` controls.
+    - Native Marketplace fields: `9`.
+  - Community Home source actions: `14` `StableButton` source sites.
+    - Empty branch renders about `3` page-local buttons plus shell/guide.
+    - Normal branch renders about `18 + dynamic spotlight controls`.
+    - Guided spotlight branch renders about `7` page-local controls.
+- Confirmed truth:
+  - no hardcoded Marketplace button was found that intentionally routes to
+    Welcome;
+  - the strongest likely causes were context loss in route aliases and app
+    shell links, plus a small set of Marketplace native fields without local
+    tap-root guards;
+  - `StableButton.tsx` showed line-ending noise only in this pass, with no
+    functional diff staged from that file.
+- Frontend fixes:
+  - `frontend/src/App.tsx` now uses `PreserveRedirect` for app-to-app aliases
+    such as `community-home`, `money`, `market`, `marketplace/demand-box`,
+    `shop`, `my-shop`, `shop/me`, `open-shop/me`, `shop-gallery/me`,
+    `trust-passport`, `trustslip`, and `guide`, so search/hash context is not
+    silently dropped.
+  - `frontend/src/layout/AppLayout.tsx` now carries the active `community`
+    query through community-scoped shell navigation links, page actions,
+    drawer links, and bottom navigation.
+  - `frontend/src/pages/MarketplacePage.tsx` now guards the remaining native
+    Marketplace fields with `marketplaceFieldTouchProps`.
+  - `frontend/src/pages/CommunityHomePage.tsx` now preserves query params when
+    clearing `guide=spotlight`, prefers `getMyMarketplaceShop` for the current
+    owner shop before falling back to public lookup, and guards owner tool rows
+    when no selected community exists.
+- Guardrails strengthened:
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` now checks the
+    `56` Marketplace source-action count, the `9` native fields, and field tap
+    guards.
+  - `frontend/tools/audit-community-home-button-inventory.mjs` now checks
+    guide query preservation and selected-community guards.
+  - `frontend/tools/audit-route-fallthrough.mjs` now fails if key app aliases
+    go back to raw `<Navigate>` or if app shell links go back to raw
+    `to={item.to}` without community context.
+  - `frontend/tools/audit-button-stability.mjs` was aligned with the current
+    `pointer/mouse/click` guard contract and does not demand forbidden
+    `stopImmediatePropagation` touch hacks.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `git diff --check` with line-ending warnings only.
+  - Root `npm run build` is not available because the repository root has no
+    `package.json`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated build passed: `npm --prefix frontend run build`.
+- Remaining truth / next cleanup:
+  - route/action target normalization is still duplicated across `guidance.ts`,
+    `NotificationsPage.tsx`, and app route tables;
+  - payment-instruction wrappers outside Marketplace are still split across
+    Finance, Shop Control, Vault Control, and Subscription Spotlight;
+  - `createMarketplaceReview()` appears fake/dormant and
+    `getMarketplaceProductReposts()` is real backend but currently unused by
+    frontend;
+  - this pass improves the strongest code-level causes of jumpiness, but phone
+    confirmation is still required because the reported failure is device-touch
+    behavior.
