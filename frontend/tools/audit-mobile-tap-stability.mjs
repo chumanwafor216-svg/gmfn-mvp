@@ -282,6 +282,20 @@ if (
 }
 
 if (
+  !/function isMarketplaceAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("marketplace\."\)[\s\S]*?ctaId\.startsWith\("shop-gallery\."\)[\s\S]*?function coveredMarketplaceActionFromBottomNav\([\s\S]*?window\.location\.pathname\.startsWith\("\/app\/marketplace"\)[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?sawBottomNav && isMarketplaceAction\(root\)[\s\S]*?coveredMarketplaceActionFromBottomNav\([\s\S]*?bottom-nav-covered-marketplace-suppressed[\s\S]*?commitOriginalAction\(coveredMarketplaceRoot, "bottom-nav-covered-marketplace"/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must stop fixed bottom rail links from stealing Marketplace and Shop action controls underneath them",
+    text: "Expected Marketplace/Shop-under-bottom-nav suppression was not found.",
+  });
+}
+
+if (
   !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-suppressed[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
     mobileTapGuardSource
   )

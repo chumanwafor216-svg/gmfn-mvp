@@ -35434,3 +35434,59 @@ GSN-branded invite composer and invite-entry continuity.
     It does not implement a new multi-step wizard UI; target community id,
     target help, duration, payment-code generation, credit refresh, and final
     placement remain in the existing Paid Repost panel.
+
+### Marketplace Paid Repost tap-surface stabilization (2026-06-06)
+
+- Route/screens affected:
+  - `/app/marketplace`;
+  - Marketplace Paid Repost / Network Spotlight placement;
+  - Shop Gallery / Shop Assets / Shop Control action roots that can sit near
+    the fixed bottom navigation rail.
+- Confirmed truth:
+  - the exact block handoff was already repaired, but the mobile tap surface
+    could still feel sensitive because the fixed bottom navigation could win a
+    tap when it visually overlapped or sat over Marketplace controls;
+  - the repo forbids adding local `onTouchStart` / `onTouchEnd` handlers, so
+    the correct repair is the shared pointer/click tap guard, not extra touch
+    handlers on each button;
+  - the Paid Repost surface also had a local stacking layer (`zIndex` /
+    `isolation`) that could make visual position and hit testing drift on
+    mobile.
+- Frontend change:
+  - `mobileTapGuard` now recognizes Marketplace, marketplace-workspace,
+    shop-gallery, shop-assets, and shop-control action roots;
+  - on `/app/marketplace`, if a tap starts or ends on the fixed bottom rail but
+    a Marketplace/Shop action root is directly underneath that rail hit point,
+    the guard suppresses the rail click and commits the intended Marketplace
+    action instead;
+  - Marketplace Paid Repost fields now carry `data-cta-id` as well as
+    `data-gmfn-action-root` and debug ids, so the global guard can match the
+    same control after mobile reflow;
+  - the Paid Repost panel surface is now a named action root and no longer
+    creates its own `zIndex`/`isolation` stacking layer.
+- Guardrails:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now requires the
+    Marketplace-under-bottom-nav suppression path;
+  - `frontend/tools/audit-marketplace-actions.mjs` now requires Paid Repost
+    fields and surface to expose stable action ids and forbids local stacking
+    on the Paid Repost surface.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`
+    (`56` stable source actions, `15` front, `41` body; `103` whole-route
+    mobile controls).
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed targeted lint:
+    `npx eslint src/lib/mobileTapGuard.ts src/pages/MarketplacePage.tsx tools/audit-mobile-tap-stability.mjs tools/audit-marketplace-actions.mjs --max-warnings=0`
+    from `frontend/`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated build passed:
+    `npm --prefix frontend run build`.
+- Remaining truth:
+  - this repair targets button/tap misrouting caused by overlapping mobile hit
+    surfaces. If a deployed phone still lands on Welcome after a Marketplace
+    tap, the next suspect is auth/session redirect state rather than this Paid
+    Repost button stack.

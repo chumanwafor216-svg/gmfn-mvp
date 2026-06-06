@@ -108,6 +108,24 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId/,
+  "Marketplace Paid Repost fields must carry data-cta-id as well as action-root markers so the phone tap guard can match the same control after reflow."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-paid-network-placement"[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id="marketplace\.network-repost\.surface"[\s\S]*?scrollMarginTop: isCompact \? 84 : 104[\s\S]*?position: "relative"[\s\S]*?pointerEvents: "auto"/,
+  "Marketplace Paid Repost surface must be a named action root without a local z-index/isolation stacking layer."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-paid-network-placement"[\s\S]{0,520}(?:zIndex|isolation)\s*:/g,
+  "Marketplace Paid Repost surface must not create a local stacking layer that can drift mobile hit testing."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /async function loadMarketplaceRepostTargetSuggestions[\s\S]*?getMarketplaceRepostTargetSuggestions\(productId/,
   "Marketplace Network Spotlight target suggestions must be loaded through the named backend API helper."
 );

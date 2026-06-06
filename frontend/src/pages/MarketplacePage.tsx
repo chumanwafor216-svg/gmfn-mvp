@@ -1058,6 +1058,7 @@ function uniqRepostProductOptions(items: RepostProductOption[]): RepostProductOp
 function marketplaceFieldTouchProps(debugId: string) {
   return {
     "data-gmfn-action-root": "true",
+    "data-cta-id": debugId,
     "data-gmfn-debug-id": debugId,
     onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
       event.stopPropagation();
@@ -6145,6 +6146,7 @@ export default function MarketplacePage() {
                 <div
                   id="marketplace-paid-network-placement"
                   data-gmfn-action-root="true"
+                  data-cta-id="marketplace.network-repost.surface"
                   data-gmfn-debug-id="marketplace.network-repost.surface"
                   onPointerDown={(event) => event.stopPropagation()}
                   onMouseDown={(event) => event.stopPropagation()}
@@ -6153,9 +6155,7 @@ export default function MarketplacePage() {
                     ...innerCard("#F8FBFF"),
                     scrollMarginTop: isCompact ? 84 : 104,
                     position: "relative",
-                    zIndex: 3,
                     pointerEvents: "auto",
-                    isolation: "isolate",
                   }}
                 >
                   <div style={sectionLabel()}>Paid Repost</div>
