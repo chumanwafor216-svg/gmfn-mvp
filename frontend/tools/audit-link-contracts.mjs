@@ -135,7 +135,7 @@ assertContains(
 
 assertContains(
   "public/sw.js",
-  /const CACHE_VERSION = "gsn-pwa-shell-v3"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"/,
+  /const CACHE_VERSION = "gsn-pwa-shell-v\d+"[\s\S]*?if \(url\.pathname\.startsWith\("\/api"\)\) return;[\s\S]*?if \(url\.pathname\.startsWith\("\/uploads"\)\) return;[\s\S]*?request\.mode === "navigate"/,
   "The GSN service worker must support app-shell install without caching private API or uploaded user data."
 );
 
@@ -206,15 +206,21 @@ assertContains(
 );
 
 assertContains(
-  "src/lib/guidance.ts",
-  /"free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
-  "Guidance/notification aliases for spotlight must resolve to the real Shop Control spotlight targets, not legacy redirect aliases."
+  "src/lib/actionTargetRoutes.ts",
+  /"free-spotlight":\s*ACTION_TARGETS\.FREE_SPOTLIGHT[\s\S]*?"paid-spotlight":\s*ACTION_TARGETS\.SUBSCRIPTION_SPOTLIGHT/,
+  "Central guidance/notification aliases for spotlight must resolve to the real Shop Control spotlight targets, not legacy redirect aliases."
+);
+
+assertContains(
+  "src/lib/actionTargetRoutes.ts",
+  /"shop-control\/spotlight":\s*ACTION_TARGETS\.FREE_SPOTLIGHT[\s\S]*?"shop-control\/free-spotlight":\s*ACTION_TARGETS\.FREE_SPOTLIGHT[\s\S]*?"shop-control\/paid-spotlight":\s*ACTION_TARGETS\.SUBSCRIPTION_SPOTLIGHT/,
+  "Central action target routing must normalize stale deep shop-control spotlight aliases to real publisher targets before they can fall back."
 );
 
 assertContains(
   "src/lib/guidance.ts",
-  /"shop-control\/spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
-  "Guidance must normalize stale deep shop-control spotlight aliases to real publisher targets before they can fall back."
+  /normalizeActionTargetPath,[\s\S]*?splitActionTargetSuffix as splitPathSuffix,[\s\S]*?from "\.\/actionTargetRoutes"/,
+  "Guidance must use the shared action target normalizer instead of drifting into page-local redirect aliases."
 );
 
 assertContains(
@@ -225,14 +231,8 @@ assertContains(
 
 assertContains(
   "src/pages/NotificationsPage.tsx",
-  /"free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
-  "Notifications must resolve spotlight aliases to the real Shop Control spotlight targets, not legacy redirect aliases."
-);
-
-assertContains(
-  "src/pages/NotificationsPage.tsx",
-  /"shop-control\/spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/free-spotlight":\s*"\/app\/shop-control#shop-control-spotlight"[\s\S]*?"shop-control\/paid-spotlight":\s*"\/app\/shop-control\/subscription-spotlight"/,
-  "Notifications must normalize stale deep shop-control spotlight aliases to real publisher targets before they can fall back."
+  /normalizeActionTargetPath,[\s\S]*?splitActionTargetSuffix as splitPathSuffix,[\s\S]*?from "\.\.\/lib\/actionTargetRoutes"/,
+  "Notifications must use the shared action target normalizer instead of drifting into page-local redirect aliases."
 );
 
 assertNotContains(
@@ -285,7 +285,7 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\);[\s\S]*?break;[\s\S]*?id: "free-spotlight"[\s\S]*?onClick: \(event: React\.SyntheticEvent<HTMLElement>\) =>\s*openCommunityRoute\(event, routes\.freeSpotlight\)/,
+  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?break;[\s\S]*?id: "free-spotlight"[\s\S]*?onClick: \(event: React\.SyntheticEvent<HTMLElement>\) =>[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
   "Community Home Free Spotlight actions must route directly to the canonical Shop Control spotlight publisher instead of falling through to the local overview or public fallback."
 );
 

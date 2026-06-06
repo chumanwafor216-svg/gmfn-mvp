@@ -1,3 +1,63 @@
+### Community package usage and button-audit hardening (2026-06-06)
+
+- Trigger:
+  - product owner asked to continue packaging the remaining paid community
+    tools while keeping Marketplace and Community Home buttons under audit.
+  - The important product truth is that extra shop blocks and extra member
+    places are live entitlement consumers, while ROSCA and meeting packs should
+    be recorded honestly until their deterministic engines are built.
+- Backend changes:
+  - `POST /payment-instructions/community-package/use` now consumes one or
+    more active paid package units for a community package and records a
+    TrustEvent.
+  - `GET /payment-instructions/community-package/status` now reports package
+    state for the signed-in community/shop context, including active remaining
+    units, latest payment, consumer name, and whether the live engine is ready.
+  - Package consumer truth:
+    - `extra_shop_blocks` -> live `public_gallery_capacity`;
+    - `extra_members` -> live `community_member_capacity`;
+    - `rosca_cycle` -> record-only `rosca_usage_record`;
+    - `community_meeting_pack` -> record-only `meeting_usage_record`.
+  - ROSCA and meeting packs deliberately return `engine_ready: false` with
+    plain messages instead of pretending the full live engines exist.
+- Frontend changes:
+  - `ShopControlPage` now loads the package status for the current shop and
+    community.
+  - The Community Packages card shows compact package status chips and lets the
+    owner record a paid ROSCA or meeting unit when active credit exists.
+  - The copy now says the truth: shop blocks and member places activate after
+    bank match; ROSCA/meeting packs are recorded first until deterministic
+    execution is implemented.
+- Audit/tooling changes:
+  - `frontend/tools/audit-link-contracts.mjs` was updated to verify the current
+    shared `actionTargetRoutes.ts` alias source instead of stale page-local
+    Guidance/Notifications alias tables.
+  - The service-worker check now accepts the current `gsn-pwa-shell-vN` cache
+    version while still requiring that `/api` and `/uploads` are not cached.
+- Verification:
+  - Passed
+    `python -m pytest tests/test_community_package_usage.py tests/test_spotlight_subscription_pricing.py -q`
+    (`16 passed`, SQLAlchemy datetime deprecation warnings only).
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`
+    (`56 stable source actions`, `103 whole-route mobile controls total`).
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`
+    (`14 StableButton source actions` plus checked quick/tool rows).
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Sandboxed `npm run build` failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - ROSCA and meeting packs are package-credit records now, not full live
+    contribution/meeting engines.
+  - Button audits are green at source/route/tap-contract level, but the product
+    owner's phone still needs deployed touch testing because device browser
+    cache/PWA refresh can still show older bundles until the shortcut updates.
+  - A stale earlier command tried
+    `tests/test_community_package_payments.py`, but that file does not exist;
+    the valid package/payment coverage listed above passed.
+
 ### Public community verification controlled relay request added (2026-06-06)
 
 - Routes/screens affected:

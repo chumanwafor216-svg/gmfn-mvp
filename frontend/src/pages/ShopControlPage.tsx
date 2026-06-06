@@ -122,6 +122,24 @@ type ExpectedPaymentRecord = {
   meta?: any;
 };
 
+type CommunityPackageStatusItem = {
+  package_code?: string | null;
+  feature_code?: string | null;
+  title?: string | null;
+  unit_label?: string | null;
+  active_remaining?: number | null;
+  consumer?: string | null;
+  engine_ready?: boolean | null;
+  message?: string | null;
+  latest_payment?: ExpectedPaymentRecord | null;
+};
+
+type CommunityPackageStatus = {
+  clan_id?: number | null;
+  shop_id?: number | null;
+  packages?: CommunityPackageStatusItem[];
+};
+
 type TrustSlipFeatureSummary = {
   merchant_verify_active?: boolean | null;
   merchant_verify_subscription_required?: boolean | null;
@@ -583,12 +601,17 @@ export default function ShopControlPage() {
     useState<ShopControlLayerKey>("overview");
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
+  const [communityPackageStatus, setCommunityPackageStatus] =
+    useState<CommunityPackageStatus | null>(null);
   const [trustSlipFeature, setTrustSlipFeature] = useState<TrustSlipFeatureSummary | null>(
     null
   );
   const [creatingVaultInstruction, setCreatingVaultInstruction] = useState(false);
   const [creatingCommunityPackageCode, setCreatingCommunityPackageCode] =
     useState<string | null>(null);
+  const [usingCommunityPackageCode, setUsingCommunityPackageCode] = useState<string | null>(
+    null
+  );
   const [creatingVaultLink, setCreatingVaultLink] = useState(false);
   const [busyVaultLinkId, setBusyVaultLinkId] = useState<number | null>(null);
   const [busyVaultLinkAction, setBusyVaultLinkAction] = useState<"extend" | "revoke" | null>(
@@ -900,7 +923,17 @@ export default function ShopControlPage() {
         const expectedPaymentsPath =
           `/api/payment-instructions/my/expected?clan_id=${shopContextClanId || 0}&limit=100`;
 
-        const [broadcastsRes, vaultLinksRes, privateProductsRes, expectedRes, trustSlipRes] =
+        const packageStatusPath =
+          `/api/payment-instructions/community-package/status?clan_id=${shopContextClanId || 0}&shop_id=${shopItem.id}`;
+
+        const [
+          broadcastsRes,
+          vaultLinksRes,
+          privateProductsRes,
+          expectedRes,
+          trustSlipRes,
+          packageStatusRes,
+        ] =
           await Promise.all([
           apiJson<any>(
             `/api/marketplace/broadcasts?clan_id=${shopContextClanId || 0}&limit=20`
@@ -911,6 +944,7 @@ export default function ShopControlPage() {
           ).catch(() => ({ items: [] })),
           apiJson<any>(expectedPaymentsPath).catch(() => []),
           apiJson<any>("/api/trust-slips/me").catch(() => null),
+          apiJson<any>(packageStatusPath).catch(() => null),
         ]);
 
         const visibleSpotlights = Array.isArray(broadcastsRes?.items)
@@ -936,11 +970,15 @@ export default function ShopControlPage() {
               : []
         );
         setTrustSlipFeature((trustSlipRes || null) as TrustSlipFeatureSummary | null);
+        setCommunityPackageStatus(
+          (packageStatusRes || null) as CommunityPackageStatus | null
+        );
       } else {
         setSpotlights([]);
         setVaultLinks([]);
         setExpectedPayments([]);
         setTrustSlipFeature(null);
+        setCommunityPackageStatus(null);
       }
     } finally {
       if (!background) {
@@ -1171,6 +1209,40 @@ export default function ShopControlPage() {
       ) || null,
     [featurePayments]
   );
+
+  const communityPackageItems = useMemo(
+    () =>
+      Array.isArray(communityPackageStatus?.packages)
+        ? communityPackageStatus.packages
+        : [],
+    [communityPackageStatus]
+  );
+
+  const communityPackageByCode = useMemo(() => {
+    const map = new Map<string, CommunityPackageStatusItem>();
+    communityPackageItems.forEach((item) => {
+      const code = firstTruthy(item?.package_code);
+      if (code) map.set(code, item);
+    });
+    return map;
+  }, [communityPackageItems]);
+
+  const communityPackageStatusText = useMemo(() => {
+    const packageLabels: Array<[string, string]> = [
+      ["extra_shop_blocks", "Shop blocks"],
+      ["extra_members", "Member places"],
+      ["rosca_cycle", "ROSCA records"],
+      ["community_meeting_pack", "Meeting records"],
+    ];
+
+    return packageLabels.map(([code, label]) => {
+      const item = communityPackageByCode.get(code);
+      const remaining = safePositiveNumber(item?.active_remaining, 0);
+      const readyText = remaining > 0 ? `${remaining} ready` : "none ready";
+      const engineText = item?.engine_ready === false ? "record only" : "active";
+      return `${label}: ${readyText}${remaining > 0 ? `, ${engineText}` : ""}`;
+    });
+  }, [communityPackageByCode]);
 
   const activePaidSpotlights = useMemo(
     () =>
@@ -1582,6 +1654,41 @@ export default function ShopControlPage() {
       showNotice("error", safeStr(err?.message) || `${label} payment request could not be created.`);
     } finally {
       setCreatingCommunityPackageCode(null);
+    }
+  }
+
+  async function useCommunityPackageUnit(packageCode: string, label: string) {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    if (!clanId) {
+      showNotice("error", "Choose a community first.");
+      return;
+    }
+
+    setUsingCommunityPackageCode(packageCode);
+    try {
+      const result = await apiJson<any>("/api/payment-instructions/community-package/use", {
+        method: "POST",
+        body: JSON.stringify({
+          clan_id: clanId,
+          package_code: packageCode,
+          units: 1,
+          shop_id: shop?.id ? Number(shop.id) : undefined,
+          reference_key: `shop-control-${packageCode}`,
+        }),
+      });
+
+      await loadPage({ background: true });
+      showNotice(
+        "success",
+        firstTruthy(
+          result?.message,
+          `${label} unit recorded. Check the package status before continuing.`
+        )
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || `${label} unit could not be used.`);
+    } finally {
+      setUsingCommunityPackageCode(null);
     }
   }
 
@@ -3127,7 +3234,8 @@ export default function ShopControlPage() {
               Add capacity when the community needs more.
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-              Generate a payment reference for the exact package. GSN activates the package after the bank match.
+              Generate the exact package reference. Extra shop blocks and member places
+              activate after bank match. ROSCA and meeting packs are recorded here first.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(false)}>Rail: GBP 1 per unit</span>
@@ -3136,6 +3244,37 @@ export default function ShopControlPage() {
                   ? firstTruthy(latestCommunityPackagePayment.status, "Expected")
                   : "No request yet"}
               </span>
+            </div>
+            <div
+              style={{
+                marginTop: 12,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(2, minmax(0, 1fr))",
+                gap: 8,
+              }}
+            >
+              {communityPackageStatusText.map((text) => (
+                <div
+                  key={text}
+                  style={{
+                    minHeight: 38,
+                    borderRadius: 14,
+                    border: "1px solid rgba(13,95,168,0.11)",
+                    background: "linear-gradient(180deg, #FFFFFF 0%, #EEF7FF 100%)",
+                    color: "#1D4267",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "8px 10px",
+                    fontSize: 12,
+                    fontWeight: 900,
+                    boxSizing: "border-box",
+                  }}
+                >
+                  {text}
+                </div>
+              ))}
             </div>
             {latestCommunityPackagePayment ? (
               <div
@@ -3211,8 +3350,47 @@ export default function ShopControlPage() {
                 Meeting pack
               </SecondaryButton>
             </div>
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
+              <SecondaryButton
+                onClick={() => useCommunityPackageUnit("rosca_cycle", "ROSCA cycle")}
+                disabled={
+                  shopActionsLocked ||
+                  Boolean(usingCommunityPackageCode) ||
+                  safePositiveNumber(
+                    communityPackageByCode.get("rosca_cycle")?.active_remaining,
+                    0
+                  ) < 1
+                }
+                busy={usingCommunityPackageCode === "rosca_cycle"}
+                busyLabel="Recording..."
+                fullWidth
+                debugId="shop-control.package.use-rosca-cycle"
+              >
+                Use ROSCA unit
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() =>
+                  useCommunityPackageUnit("community_meeting_pack", "Meeting pack")
+                }
+                disabled={
+                  shopActionsLocked ||
+                  Boolean(usingCommunityPackageCode) ||
+                  safePositiveNumber(
+                    communityPackageByCode.get("community_meeting_pack")?.active_remaining,
+                    0
+                  ) < 1
+                }
+                busy={usingCommunityPackageCode === "community_meeting_pack"}
+                busyLabel="Recording..."
+                fullWidth
+                debugId="shop-control.package.use-meeting-pack"
+              >
+                Use meeting unit
+              </SecondaryButton>
+            </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-              This creates the payment instruction only. The contribution and payout cycle still needs its own deterministic ROSCA execution states.
+              Use records the paid unit. The full ROSCA contribution and payout engine
+              still needs deterministic execution states before live cycle handling.
             </div>
           </div>
         </div>

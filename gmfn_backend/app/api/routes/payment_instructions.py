@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import json
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Optional
@@ -25,7 +26,12 @@ from app.services.payment_instruction_service import (
     create_vault_subscription_instruction,
 )
 from app.services.expected_payments_service import list_expected_payments
+from app.services.feature_entitlements_service import (
+    consume_feature_units,
+    get_active_feature_quantity,
+)
 from app.services.settlement_config_service import get_settlement_config
+from app.services.trust_events_services import log_trust_event
 from app.services.vault_access_service import DEFAULT_LINK_EXPIRY_HOURS
 from app.services.vault_domain_service import (
     ensure_vault_blocks,
@@ -66,6 +72,16 @@ def _expected_payment_out(row: Any) -> Dict[str, Any]:
         "trust_event_id": row.trust_event_id,
         "created_at": _iso(row.created_at),
     }
+
+
+def _safe_meta_json(raw: Optional[str]) -> Dict[str, Any]:
+    if not raw:
+        return {}
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
 
 
 def _require_shop_owner(
@@ -125,6 +141,34 @@ def _require_clan_admin(
     return membership
 
 
+def _require_clan_member(
+    db: Session,
+    *,
+    clan_id: int,
+    current_user: User,
+) -> Optional[ClanMembership]:
+    is_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+
+    if membership:
+        return membership
+    if is_admin:
+        return None
+
+    raise HTTPException(
+        status_code=403,
+        detail="Only a community member can read this package status",
+    )
+
+
 class PoolInstructionIn(BaseModel):
     clan_id: int
     amount: Decimal = Field(..., gt=Decimal("0"))
@@ -168,6 +212,15 @@ class CommunityPackageInstructionIn(BaseModel):
     shop_id: Optional[int] = None
     amount: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
     currency: str = "GBP"
+
+
+class CommunityPackageUseIn(BaseModel):
+    clan_id: int
+    package_code: str = Field(..., min_length=3, max_length=64)
+    units: int = Field(default=1, ge=1, le=365)
+    shop_id: Optional[int] = None
+    reference_key: Optional[str] = Field(default=None, max_length=128)
+    note: Optional[str] = Field(default=None, max_length=500)
 
 
 @router.post("/pool")
@@ -313,6 +366,222 @@ def create_spotlight_payment_instruction(
     out["settlement"] = get_settlement_config()
     out["instruction_type"] = "spotlight_subscription"
     return out
+
+
+def _latest_package_payment(
+    db: Session,
+    *,
+    clan_id: int,
+    user_id: int,
+    package_code: str,
+) -> Optional[Dict[str, Any]]:
+    rows = list_expected_payments(
+        db,
+        clan_id=int(clan_id),
+        user_id=int(user_id),
+        expected_type="community_package_subscription",
+        limit=100,
+    )
+    for row in rows:
+        meta = _safe_meta_json(getattr(row, "meta_json", None))
+        if str(meta.get("package_code") or "").strip().lower() != package_code:
+            continue
+        out = _expected_payment_out(row)
+        out["package_code"] = package_code
+        out["feature_code"] = str(meta.get("feature_code") or "")
+        out["quantity_total"] = _safe_int(meta.get("quantity_total"), 0)
+        return out
+    return None
+
+
+def _package_scope(
+    *,
+    package_code: str,
+    shop_id: Optional[int],
+    clan_id: int,
+) -> Dict[str, Optional[int]]:
+    if package_code == "extra_shop_blocks":
+        return {
+            "shop_id": int(shop_id) if shop_id is not None else None,
+            "clan_id": int(clan_id),
+        }
+    return {"shop_id": None, "clan_id": int(clan_id)}
+
+
+def _package_engine_status(package_code: str) -> Dict[str, Any]:
+    if package_code == "extra_shop_blocks":
+        return {
+            "consumer": "public_gallery_capacity",
+            "engine_ready": True,
+            "message": "Extra public shop blocks are applied to this shop after payment is matched.",
+        }
+    if package_code == "extra_members":
+        return {
+            "consumer": "community_member_capacity",
+            "engine_ready": True,
+            "message": "Extra member places are applied to the community after payment is matched.",
+        }
+    if package_code == "rosca_cycle":
+        return {
+            "consumer": "rosca_usage_record",
+            "engine_ready": False,
+            "message": (
+                "ROSCA package units can be paid for and recorded now. "
+                "The full deterministic contribution and payout cycle is still the next engine to wire."
+            ),
+        }
+    if package_code == "community_meeting_pack":
+        return {
+            "consumer": "meeting_usage_record",
+            "engine_ready": False,
+            "message": (
+                "Meeting pack units can be paid for and recorded now. "
+                "The full meeting workspace and document relay engine is still the next engine to wire."
+            ),
+        }
+    return {"consumer": "unknown", "engine_ready": False, "message": "Package status is unknown."}
+
+
+@router.get("/community-package/status")
+def community_package_status(
+    clan_id: int = Query(..., ge=1),
+    shop_id: Optional[int] = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
+    if shop_id is not None:
+        shop = _require_shop_owner(db, shop_id=int(shop_id), current_user=current_user)
+        if shop.clan_id is not None and int(shop.clan_id) != int(clan_id):
+            raise HTTPException(
+                status_code=400,
+                detail="This shop does not belong to the selected community",
+            )
+
+    packages = []
+    for package_code, cfg in COMMUNITY_PACKAGE_CATALOG.items():
+        scope = _package_scope(
+            package_code=package_code,
+            shop_id=int(shop_id) if shop_id is not None else None,
+            clan_id=int(clan_id),
+        )
+        active_remaining = get_active_feature_quantity(
+            db,
+            owner_user_id=int(current_user.id),
+            feature_code=cfg["feature_code"],
+            shop_id=scope["shop_id"],
+            clan_id=scope["clan_id"],
+        )
+        packages.append(
+            {
+                "package_code": package_code,
+                "feature_code": cfg["feature_code"],
+                "title": cfg["title"],
+                "unit_label": cfg["unit_label"],
+                "active_remaining": int(active_remaining),
+                "latest_payment": _latest_package_payment(
+                    db,
+                    clan_id=int(clan_id),
+                    user_id=int(current_user.id),
+                    package_code=package_code,
+                ),
+                **_package_engine_status(package_code),
+            }
+        )
+
+    return {
+        "ok": True,
+        "clan_id": int(clan_id),
+        "shop_id": int(shop_id) if shop_id is not None else None,
+        "packages": packages,
+    }
+
+
+@router.post("/community-package/use")
+def use_community_package_unit(
+    payload: CommunityPackageUseIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    package_code = str(payload.package_code or "").strip().lower()
+    if package_code not in COMMUNITY_PACKAGE_CATALOG:
+        raise HTTPException(status_code=400, detail="Unsupported community package code")
+
+    package = COMMUNITY_PACKAGE_CATALOG[package_code]
+    if package_code == "extra_shop_blocks":
+        if payload.shop_id is None:
+            raise HTTPException(status_code=400, detail="Shop ID is required for extra shop blocks")
+        shop = _require_shop_owner(db, shop_id=int(payload.shop_id), current_user=current_user)
+        if shop.clan_id is not None and int(shop.clan_id) != int(payload.clan_id):
+            raise HTTPException(
+                status_code=400,
+                detail="This shop does not belong to the selected community",
+            )
+    else:
+        _require_clan_admin(db, clan_id=int(payload.clan_id), current_user=current_user)
+
+    scope = _package_scope(
+        package_code=package_code,
+        shop_id=int(payload.shop_id) if payload.shop_id is not None else None,
+        clan_id=int(payload.clan_id),
+    )
+    result = consume_feature_units(
+        db,
+        owner_user_id=int(current_user.id),
+        feature_code=package["feature_code"],
+        units=int(payload.units),
+        shop_id=scope["shop_id"],
+        clan_id=scope["clan_id"],
+        reference_key=payload.reference_key,
+        note=payload.note,
+        commit=False,
+    )
+    if not bool(result.get("ok")):
+        db.rollback()
+        raise HTTPException(
+            status_code=409,
+            detail="No active package credit is available for this action",
+        )
+
+    remaining_after = get_active_feature_quantity(
+        db,
+        owner_user_id=int(current_user.id),
+        feature_code=package["feature_code"],
+        shop_id=scope["shop_id"],
+        clan_id=scope["clan_id"],
+    )
+    engine_status = _package_engine_status(package_code)
+
+    log_trust_event(
+        db,
+        event_type=f"feature.{package_code}.used",
+        clan_id=int(payload.clan_id),
+        actor_user_id=int(current_user.id),
+        subject_user_id=int(current_user.id),
+        meta={
+            "reason": "community_package_unit_used",
+            "package_code": package_code,
+            "feature_code": package["feature_code"],
+            "units": int(payload.units),
+            "remaining_after": int(remaining_after),
+            "shop_id": int(payload.shop_id) if payload.shop_id is not None else None,
+            "reference_key": payload.reference_key,
+            "engine_ready": bool(engine_status["engine_ready"]),
+        },
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+
+    return {
+        "ok": True,
+        "package_code": package_code,
+        "feature_code": package["feature_code"],
+        "consumed": int(result.get("consumed") or 0),
+        "remaining_after": int(remaining_after),
+        "engine_status": engine_status,
+        "message": engine_status["message"],
+    }
 
 
 @router.post("/community-package")
