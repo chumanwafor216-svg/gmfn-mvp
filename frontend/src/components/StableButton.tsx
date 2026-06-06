@@ -149,9 +149,13 @@ export function StableButton({
   style,
   className,
   onClick,
+  onClickCapture,
   onPointerDown,
+  onPointerDownCapture,
   onPointerUp,
+  onPointerUpCapture,
   onMouseDown,
+  onMouseDownCapture,
   tabIndex,
   type = "button",
   ...rest
@@ -178,13 +182,29 @@ export function StableButton({
     () => composeTapGuard(onPointerDown),
     [onPointerDown]
   );
+  const guardedPointerDownCapture = useMemo(
+    () => composeTapGuard(onPointerDownCapture),
+    [onPointerDownCapture]
+  );
   const guardedPointerUp = useMemo(
     () => composeTapGuard(onPointerUp),
     [onPointerUp]
   );
+  const guardedPointerUpCapture = useMemo(
+    () => composeTapGuard(onPointerUpCapture),
+    [onPointerUpCapture]
+  );
   const guardedMouseDown = useMemo(
     () => composeTapGuard(onMouseDown),
     [onMouseDown]
+  );
+  const guardedMouseDownCapture = useMemo(
+    () => composeTapGuard(onMouseDownCapture),
+    [onMouseDownCapture]
+  );
+  const guardedClickCapture = useMemo(
+    () => composeTapGuard(onClickCapture),
+    [onClickCapture]
   );
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -227,9 +247,13 @@ export function StableButton({
       aria-busy={busy || localBusy || undefined}
       aria-disabled={locked || softDisabled || undefined}
       tabIndex={locked ? -1 : tabIndex}
+      onPointerDownCapture={guardedPointerDownCapture}
       onPointerDown={guardedPointerDown}
+      onPointerUpCapture={guardedPointerUpCapture}
       onPointerUp={guardedPointerUp}
+      onMouseDownCapture={guardedMouseDownCapture}
       onMouseDown={guardedMouseDown}
+      onClickCapture={guardedClickCapture}
       onClick={handleClick}
       style={resolvedStyle}
     >
@@ -251,9 +275,13 @@ export function StableCtaLink({
   style,
   className,
   onClick,
+  onClickCapture,
   onPointerDown,
+  onPointerDownCapture,
   onPointerUp,
+  onPointerUpCapture,
   onMouseDown,
+  onMouseDownCapture,
   tabIndex,
   ...rest
 }: StableLinkProps) {
@@ -277,13 +305,29 @@ export function StableCtaLink({
     () => composeTapGuard(onPointerDown),
     [onPointerDown]
   );
+  const guardedPointerDownCapture = useMemo(
+    () => composeTapGuard(onPointerDownCapture),
+    [onPointerDownCapture]
+  );
   const guardedPointerUp = useMemo(
     () => composeTapGuard(onPointerUp),
     [onPointerUp]
   );
+  const guardedPointerUpCapture = useMemo(
+    () => composeTapGuard(onPointerUpCapture),
+    [onPointerUpCapture]
+  );
   const guardedMouseDown = useMemo(
     () => composeTapGuard(onMouseDown),
     [onMouseDown]
+  );
+  const guardedMouseDownCapture = useMemo(
+    () => composeTapGuard(onMouseDownCapture),
+    [onMouseDownCapture]
+  );
+  const guardedClickCapture = useMemo(
+    () => composeTapGuard(onClickCapture),
+    [onClickCapture]
   );
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -312,9 +356,13 @@ export function StableCtaLink({
       aria-busy={busy || undefined}
       aria-disabled={locked || softDisabled || undefined}
       tabIndex={locked ? -1 : tabIndex}
+      onPointerDownCapture={guardedPointerDownCapture}
       onPointerDown={guardedPointerDown}
+      onPointerUpCapture={guardedPointerUpCapture}
       onPointerUp={guardedPointerUp}
+      onMouseDownCapture={guardedMouseDownCapture}
       onMouseDown={guardedMouseDown}
+      onClickCapture={guardedClickCapture}
       onClick={handleClick}
       style={resolvedStyle}
     >
@@ -378,9 +426,13 @@ export function StableDisclosureSummary({
   style,
   className,
   onPointerDown,
+  onPointerDownCapture,
   onPointerUp,
+  onPointerUpCapture,
   onMouseDown,
+  onMouseDownCapture,
   onClick,
+  onClickCapture,
   onKeyDown,
   ...rest
 }: StableDisclosureSummaryProps) {
@@ -398,17 +450,33 @@ export function StableDisclosureSummary({
       data-gmfn-action-root="true"
       data-cta-id={resolvedDebugId}
       className={stableActionClassName(className)}
+      onPointerDownCapture={(event) => {
+        stopTap(event);
+        onPointerDownCapture?.(event);
+      }}
       onPointerDown={(event) => {
         stopTap(event);
         onPointerDown?.(event);
+      }}
+      onMouseDownCapture={(event) => {
+        stopTap(event);
+        onMouseDownCapture?.(event);
       }}
       onMouseDown={(event) => {
         stopTap(event);
         onMouseDown?.(event);
       }}
+      onClickCapture={(event) => {
+        stopTap(event);
+        onClickCapture?.(event);
+      }}
       onClick={(event) => {
         stopTap(event);
         onClick?.(event);
+      }}
+      onPointerUpCapture={(event) => {
+        stopTap(event);
+        onPointerUpCapture?.(event);
       }}
       onPointerUp={(event) => {
         stopTap(event);

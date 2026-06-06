@@ -49,6 +49,24 @@ assertContains(
 
 assertContains(
   "src/components/StableButton.tsx",
+  /export function StableButton[\s\S]*?guardedPointerDownCapture[\s\S]*?guardedPointerUpCapture[\s\S]*?guardedMouseDownCapture[\s\S]*?guardedClickCapture[\s\S]*?onPointerDownCapture=\{guardedPointerDownCapture\}[\s\S]*?onPointerUpCapture=\{guardedPointerUpCapture\}[\s\S]*?onMouseDownCapture=\{guardedMouseDownCapture\}[\s\S]*?onClickCapture=\{guardedClickCapture\}/,
+  "StableButton must guard capture-phase pointer, mouse, and click events so mobile taps cannot leak into parent shells."
+);
+
+assertContains(
+  "src/components/StableButton.tsx",
+  /export function StableCtaLink[\s\S]*?guardedPointerDownCapture[\s\S]*?guardedPointerUpCapture[\s\S]*?guardedMouseDownCapture[\s\S]*?guardedClickCapture[\s\S]*?onPointerDownCapture=\{guardedPointerDownCapture\}[\s\S]*?onPointerUpCapture=\{guardedPointerUpCapture\}[\s\S]*?onMouseDownCapture=\{guardedMouseDownCapture\}[\s\S]*?onClickCapture=\{guardedClickCapture\}/,
+  "StableCtaLink must guard capture-phase pointer, mouse, and click events so route links cannot leak into nearby navigation."
+);
+
+assertContains(
+  "src/components/StableButton.tsx",
+  /export function StableDisclosureSummary[\s\S]*?onPointerDownCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onMouseDownCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onClickCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onPointerUpCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);/,
+  "Stable disclosure summaries must guard capture-phase tap events so open/close controls stay local to their panel."
+);
+
+assertContains(
+  "src/components/StableButton.tsx",
   /const stableMovementLock: React\.CSSProperties = \{[\s\S]*?transform: "none"[\s\S]*?transition: "none"[\s\S]*?overflowAnchor: "none"[\s\S]*?function stableStyle[\s\S]*?\.\.\.stableMovementLock,[\s\S]*?\.\.\.args\.style,[\s\S]*?\.\.\.stableMovementLock/,
   "Shared stable actions must reapply movement locks after caller styles without wrapping complex child layouts."
 );
@@ -165,6 +183,24 @@ assertContains(
   "src/pages/MarketplacePage.tsx",
   /debugId="marketplace\.network-repost\.place"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.network-repost\.subscription"[\s\S]*?stableHeight=\{58\}/,
   "Marketplace paid network repost controls must keep stable fixed-height buttons inside Marketplace, not Public Shop."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?onPointerDownCapture[\s\S]*?onPointerDown[\s\S]*?onPointerUpCapture[\s\S]*?onPointerUp[\s\S]*?onMouseDownCapture[\s\S]*?onMouseDown[\s\S]*?onClickCapture[\s\S]*?onClick/,
+  "Marketplace Paid Repost must wrap the surface and payment action row in capture-phase tap roots."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-paid-network-placement"[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.surface"\)\}/,
+  "Marketplace Paid Repost surface must use the shared Marketplace tap-root helper."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.payment-actions"\)\}/,
+  "Marketplace Paid Repost payment row must use the shared Marketplace tap-root helper."
 );
 
 assertContains(

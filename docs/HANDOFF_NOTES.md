@@ -35714,3 +35714,53 @@ GSN-branded invite composer and invite-entry continuity.
     yet create a live relay request record when the public visitor presses
     `Request confirmation`; that button currently explains the controlled
     confirmation route and availability.
+
+### Shared button capture guard and Paid Repost tap-root hardening (2026-06-06)
+
+- Route/screens affected:
+  - shared action primitives used across authenticated routes;
+  - `/app/marketplace`, especially `Paid Repost` /
+    `marketplace-paid-network-placement`;
+  - `/app/finance` benefits through the same shared `StableButton` /
+    `StableCtaLink` primitives.
+- Confirmed truth:
+  - Marketplace and Paid Repost actions already had bubble-phase guards, but
+    not target capture-phase guards. On phone, that leaves a window where a tap
+    can settle onto a parent shell or neighboring route control after reflow,
+    matching the reported fall-through into Trust, Notifications, or Action
+    Inbox.
+- Frontend change:
+  - `StableButton`, `StableCtaLink`, and `StableDisclosureSummary` now stop
+    propagation on pointer/mouse/click capture as well as bubble;
+  - `marketplaceFieldTouchProps` now marks Marketplace local action roots with
+    capture + bubble guards for pointer down, pointer up, mouse down, and click;
+  - Paid Repost surface and its payment action row now use that shared
+    Marketplace tap-root helper instead of one-off bubble-only handlers;
+  - Paid Repost helper copy was shortened so the page talks directly to the
+    user: pick block, target, duration, then generate payment code.
+- Guardrails:
+  - `frontend/tools/audit-button-stability.mjs` now fails if shared stable
+    primitives lose capture-phase guards or if Paid Repost stops using the
+    Marketplace tap-root helper;
+  - `frontend/tools/audit-marketplace-actions.mjs` now expects the Paid Repost
+    surface and payment row to use the shared tap-root helper.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`
+    (`56` stable source actions, `15` front, `41` body; `103` whole-route
+    mobile controls).
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm --prefix frontend run audit:action-response-protocol`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated build passed: `npm --prefix frontend run build`.
+- Remaining truth:
+  - this is the strongest shared tap-stability repair so far, but it still
+    needs phone confirmation after deploy because the original failure is
+    device-touch behavior rather than a pure compile-time bug;
+  - no backend payment rail logic was changed in this pass.

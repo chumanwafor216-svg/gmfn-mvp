@@ -108,7 +108,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /data-cta-id="marketplace\.network-repost\.payment-actions"[\s\S]*?onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?runMarketplaceAction\(event, \(\) => \{[\s\S]*?void createMarketplaceRepostPaymentInstruction\(\);[\s\S]*?disabled=\{\s*creatingRepostPaymentInstruction\s*\}/,
+  /\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.payment-actions"\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?runMarketplaceAction\(event, \(\) => \{[\s\S]*?void createMarketplaceRepostPaymentInstruction\(\);[\s\S]*?disabled=\{\s*creatingRepostPaymentInstruction\s*\}/,
   "Marketplace Paid Repost payment actions must be a named tap root, and Generate Payment Code must call the guarded payment-code handler instead of becoming a disabled/dead target."
 );
 
@@ -126,7 +126,7 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /id="marketplace-paid-network-placement"[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id="marketplace\.network-repost\.surface"[\s\S]*?scrollMarginTop: isCompact \? 84 : 104[\s\S]*?position: "relative"[\s\S]*?pointerEvents: "auto"/,
+  /id="marketplace-paid-network-placement"[\s\S]*?\{\.\.\.marketplaceFieldTouchProps\("marketplace\.network-repost\.surface"\)\}[\s\S]*?scrollMarginTop: isCompact \? 84 : 104[\s\S]*?position: "relative"[\s\S]*?pointerEvents: "auto"/,
   "Marketplace Paid Repost surface must be a named action root without a local z-index/isolation stacking layer."
 );
 

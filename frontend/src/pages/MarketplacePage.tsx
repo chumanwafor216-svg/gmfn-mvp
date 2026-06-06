@@ -1082,19 +1082,22 @@ function uniqRepostProductOptions(items: RepostProductOption[]): RepostProductOp
 }
 
 function marketplaceFieldTouchProps(debugId: string) {
+  const stopMarketplaceTap = (event: React.SyntheticEvent<HTMLElement>) => {
+    event.stopPropagation();
+  };
+
   return {
     "data-gmfn-action-root": "true",
     "data-cta-id": debugId,
     "data-gmfn-debug-id": debugId,
-    onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
-      event.stopPropagation();
-    },
-    onMouseDown: (event: React.MouseEvent<HTMLElement>) => {
-      event.stopPropagation();
-    },
-    onClick: (event: React.MouseEvent<HTMLElement>) => {
-      event.stopPropagation();
-    },
+    onPointerDownCapture: stopMarketplaceTap,
+    onPointerDown: stopMarketplaceTap,
+    onPointerUpCapture: stopMarketplaceTap,
+    onPointerUp: stopMarketplaceTap,
+    onMouseDownCapture: stopMarketplaceTap,
+    onMouseDown: stopMarketplaceTap,
+    onClickCapture: stopMarketplaceTap,
+    onClick: stopMarketplaceTap,
   };
 }
 
@@ -6195,12 +6198,7 @@ export default function MarketplacePage() {
 
                 <div
                   id="marketplace-paid-network-placement"
-                  data-gmfn-action-root="true"
-                  data-cta-id="marketplace.network-repost.surface"
-                  data-gmfn-debug-id="marketplace.network-repost.surface"
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onMouseDown={(event) => event.stopPropagation()}
-                  onClick={(event) => event.stopPropagation()}
+                  {...marketplaceFieldTouchProps("marketplace.network-repost.surface")}
                   style={{
                     ...innerCard("#F8FBFF"),
                     scrollMarginTop: isCompact ? 84 : 104,
@@ -6210,8 +6208,7 @@ export default function MarketplacePage() {
                 >
                   <div style={sectionLabel()}>Paid Repost</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Choose one block, choose a target community, then generate
-                    the payment code.
+                    Pick a block, target, duration, then generate the payment code.
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(Boolean(selectedRepostProduct))}>
@@ -6219,7 +6216,7 @@ export default function MarketplacePage() {
                         ? "Loading public blocks"
                         : selectedRepostProduct
                         ? "One block selected"
-                        : "No eligible public block"}
+                        : "No block ready"}
                     </span>
                     <span style={badge(Boolean(resolvedRepostTargetCommunityInput))}>
                       {resolvedRepostTargetCommunityInput
@@ -6756,17 +6753,12 @@ export default function MarketplacePage() {
                       </div>
                     ) : (
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        Generate a code when the block and target are ready.
+                        Generate when the block and target are ready.
                       </div>
                     )}
-                  </div>
+                </div>
                   <div
-                    data-gmfn-action-root="true"
-                    data-cta-id="marketplace.network-repost.payment-actions"
-                    data-gmfn-debug-id="marketplace.network-repost.payment-actions"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onMouseDown={(event) => event.stopPropagation()}
-                    onClick={(event) => event.stopPropagation()}
+                    {...marketplaceFieldTouchProps("marketplace.network-repost.payment-actions")}
                     style={marketplaceInlineActionsStyle(isCompact)}
                   >
                     <StableButton
