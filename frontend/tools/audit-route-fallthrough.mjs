@@ -241,6 +241,74 @@ lineForbid(
   "The wildcard route must not directly dump unknown paths into the Cover/Welcome funnel."
 );
 
+wholeFileFind(
+  "src/lib/actionTargetRoutes.ts",
+  /export const ACTION_TARGETS = \{[\s\S]*?NOTIFICATIONS: APP_ROUTES\.NOTIFICATIONS[\s\S]*?FREE_SPOTLIGHT: APP_ROUTES\.FREE_SPOTLIGHT[\s\S]*?SUBSCRIPTION_SPOTLIGHT: APP_ROUTES\.SUBSCRIPTION_SPOTLIGHT[\s\S]*?\} as const;/,
+  "Shared action-target routes must own notification, free spotlight, and subscription spotlight targets."
+);
+
+wholeFileFind(
+  "src/lib/actionTargetRoutes.ts",
+  /export const CTA_INTENT_ROUTES = \{[\s\S]*?marketplace: "MARKETPLACE"[\s\S]*?trust: "TRUST"[\s\S]*?notifications: "NOTIFICATIONS"[\s\S]*?welcome: "WELCOME"[\s\S]*?\} as const satisfies Record<string, keyof typeof APP_ROUTES>;/,
+  "Shared action-target routes must own CTA intent route keys."
+);
+
+[
+  ['"action-inbox"', "ACTION_TARGETS.NOTIFICATIONS"],
+  ["market", "ACTION_TARGETS.MARKETPLACE"],
+  ['"community-home"', "ACTION_TARGETS.COMMUNITY"],
+  ['"payment-rails"', "ACTION_TARGETS.PAYMENT_RAILS"],
+  ['"shop-control/paid-spotlight"', "ACTION_TARGETS.SUBSCRIPTION_SPOTLIGHT"],
+].forEach(([alias, target]) => {
+  lineFind(
+    "src/lib/actionTargetRoutes.ts",
+    new RegExp(`^\\s*${alias.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:\\s*${target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},?\\s*$`),
+    `Shared action-target alias ${alias} must normalize to ${target}.`
+  );
+});
+
+wholeFileFind(
+  "src/lib/actionTargetRoutes.ts",
+  /export function normalizeActionTargetPath\(value: unknown\): string \{[\s\S]*?EXACT_TARGET_ALIASES\[lowerPath\][\s\S]*?PUBLIC_ROUTE_PREFIXES[\s\S]*?isSafeRelativeAppPath\(lowerPath\)[\s\S]*?ACTION_TARGETS\.NOTIFICATIONS/,
+  "Shared action-target normalizer must be the single safe fallback for unknown or unsafe action paths."
+);
+
+wholeFileFind(
+  "src/lib/guidance.ts",
+  /import \{[\s\S]*?ACTION_TARGETS as GUIDANCE_TARGETS,[\s\S]*?normalizeActionTargetPath,[\s\S]*?splitActionTargetSuffix as splitPathSuffix,[\s\S]*?\} from "\.\/actionTargetRoutes";/,
+  "Guidance must import the shared action-target normalizer instead of keeping a local route table."
+);
+
+wholeFileFind(
+  "src/pages/NotificationsPage.tsx",
+  /import \{[\s\S]*?ACTION_TARGETS as NOTIFICATION_TARGETS,[\s\S]*?normalizeActionTargetPath,[\s\S]*?splitActionTargetSuffix as splitPathSuffix,[\s\S]*?\} from "\.\.\/lib\/actionTargetRoutes";/,
+  "Notifications must import the shared action-target normalizer instead of keeping a local route table."
+);
+
+wholeFileFind(
+  "src/lib/ctaTargets.ts",
+  /import \{ CTA_INTENT_ROUTES \} from "\.\/actionTargetRoutes";[\s\S]*?export type CtaIntent = keyof typeof CTA_INTENT_ROUTES;[\s\S]*?appRoute\(CTA_INTENT_ROUTES\[intent\], context\)/,
+  "CTA target resolution must use the shared CTA intent route table."
+);
+
+lineForbid(
+  "src/lib/guidance.ts",
+  /const EXACT_TARGET_ALIASES|const PUBLIC_ROUTE_PREFIXES|const SAFE_STATIC_APP_PATHS|function normalizeAppTargetPath|function normalizeActionTargetPath/,
+  "Guidance must not reintroduce a local action-target route table or normalizer."
+);
+
+lineForbid(
+  "src/pages/NotificationsPage.tsx",
+  /const EXACT_TARGET_ALIASES|const PUBLIC_ROUTE_PREFIXES|const SAFE_STATIC_APP_PATHS|function normalizeAppTargetPath|function normalizeActionTargetPath/,
+  "Notifications must not reintroduce a local action-target route table or normalizer."
+);
+
+lineForbid(
+  "src/lib/ctaTargets.ts",
+  /const INTENT_ROUTE|type CtaIntent =[\s\S]*?\|/,
+  "CTA targets must not reintroduce a local intent-route table."
+);
+
 if (findings.length > 0) {
   console.error("Route fallthrough audit failed:");
   for (const finding of findings) {

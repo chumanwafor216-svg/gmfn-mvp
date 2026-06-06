@@ -1,58 +1,9 @@
 import type { Location, NavigateFunction, NavigateOptions, To } from "react-router-dom";
 import { appRoute, type AppRouteContext } from "./appRoutes";
-import type { APP_ROUTES } from "./appRoutes";
+import { CTA_INTENT_ROUTES } from "./actionTargetRoutes";
 import { navigateWithOrigin } from "./nav";
 
-export type CtaIntent =
-  | "dashboard"
-  | "communityHome"
-  | "communityDetail"
-  | "communityJoinRequests"
-  | "clans"
-  | "marketplace"
-  | "shop"
-  | "shopAssets"
-  | "vaultControl"
-  | "freeSpotlight"
-  | "subscriptionSpotlight"
-  | "moneyIn"
-  | "moneyOut"
-  | "payoutDetails"
-  | "paymentRails"
-  | "finance"
-  | "demandBox"
-  | "trust"
-  | "openTrust"
-  | "cci"
-  | "cciReading"
-  | "trustSlip"
-  | "merchantVerify"
-  | "loans"
-  | "loanReadiness"
-  | "loanSuggestions"
-  | "loanWorkbench"
-  | "loanSummary"
-  | "repayment"
-  | "guarantorInbox"
-  | "communityConfirmationInbox"
-  | "guarantorEarnings"
-  | "notifications"
-  | "buildFirstCircle"
-  | "settings"
-  | "profile"
-  | "adminCommand"
-  | "systemOperations"
-  | "bankConsole"
-  | "incompleteLoans"
-  | "identityRisk"
-  | "trustAnalytics"
-  | "trustEvents"
-  | "trustGraph"
-  | "exposureAdmin"
-  | "revenueAllocation"
-  | "joinPending"
-  | "login"
-  | "welcome";
+export type CtaIntent = keyof typeof CTA_INTENT_ROUTES;
 
 export type CtaTargetContext = AppRouteContext & {
   enabled?: boolean;
@@ -70,58 +21,6 @@ export type CtaTarget = {
   debugId?: string;
 };
 
-const INTENT_ROUTE = {
-  dashboard: "DASHBOARD",
-  communityHome: "COMMUNITY",
-  communityDetail: "COMMUNITY_DETAIL",
-  communityJoinRequests: "COMMUNITY_JOIN_REQUESTS",
-  clans: "CLANS",
-  marketplace: "MARKETPLACE",
-  shop: "SHOP",
-  shopAssets: "SHOP_ASSETS",
-  vaultControl: "VAULT_CONTROL",
-  freeSpotlight: "FREE_SPOTLIGHT",
-  subscriptionSpotlight: "SUBSCRIPTION_SPOTLIGHT",
-  moneyIn: "MONEY_IN",
-  moneyOut: "MONEY_OUT",
-  payoutDetails: "PAYOUT_DETAILS",
-  paymentRails: "PAYMENT_RAILS",
-  finance: "FINANCE",
-  demandBox: "DEMAND_BOX",
-  trust: "TRUST",
-  openTrust: "OPEN_TRUST",
-  cci: "CCI",
-  cciReading: "CCI_READING",
-  trustSlip: "TRUST_SLIP",
-  merchantVerify: "MERCHANT_VERIFY",
-  loans: "LOANS",
-  loanReadiness: "LOAN_READINESS",
-  loanSuggestions: "LOAN_SUGGESTIONS",
-  loanWorkbench: "LOAN_WORKBENCH",
-  loanSummary: "LOAN_SUMMARY",
-  repayment: "REPAYMENT",
-  guarantorInbox: "GUARANTOR_INBOX",
-  communityConfirmationInbox: "COMMUNITY_CONFIRMATION_INBOX",
-  guarantorEarnings: "GUARANTOR_EARNINGS",
-  notifications: "NOTIFICATIONS",
-  buildFirstCircle: "BUILD_FIRST_CIRCLE",
-  settings: "SETTINGS",
-  profile: "PROFILE",
-  adminCommand: "ADMIN_COMMAND",
-  systemOperations: "SYSTEM_OPERATIONS",
-  bankConsole: "BANK_CONSOLE",
-  incompleteLoans: "INCOMPLETE_LOANS",
-  identityRisk: "IDENTITY_RISK",
-  trustAnalytics: "TRUST_ANALYTICS",
-  trustEvents: "TRUST_EVENTS",
-  trustGraph: "TRUST_GRAPH",
-  exposureAdmin: "EXPOSURE_ADMIN",
-  revenueAllocation: "REVENUE_ALLOCATION",
-  joinPending: "JOIN_PENDING",
-  login: "LOGIN",
-  welcome: "WELCOME",
-} as const satisfies Record<CtaIntent, keyof typeof APP_ROUTES>;
-
 export function resolveCtaTarget(
   intent: CtaIntent,
   context: CtaTargetContext = {}
@@ -130,8 +29,8 @@ export function resolveCtaTarget(
   const to =
     context.explicitTo ||
     (enabled
-      ? appRoute(INTENT_ROUTE[intent], context)
-      : context.fallbackTo || appRoute(INTENT_ROUTE[intent], context));
+      ? appRoute(CTA_INTENT_ROUTES[intent], context)
+      : context.fallbackTo || appRoute(CTA_INTENT_ROUTES[intent], context));
 
   return {
     intent,

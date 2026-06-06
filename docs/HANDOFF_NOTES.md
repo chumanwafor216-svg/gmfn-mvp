@@ -35846,3 +35846,59 @@ GSN-branded invite composer and invite-entry continuity.
   - this pass improves the strongest code-level causes of jumpiness, but phone
     confirmation is still required because the reported failure is device-touch
     behavior.
+
+### Shared action-target routing hardening (2026-06-06)
+
+- Trigger:
+  - follow-up from the full button lane audit found duplicated action-route
+    normalization in `guidance.ts` and `NotificationsPage.tsx`.
+  - This duplication was a real risk because one copy could learn a correct
+    target while another copy kept sending the same alias to Notifications,
+    Trust, or a fallback route.
+- Frontend fix:
+  - Added `frontend/src/lib/actionTargetRoutes.ts` as the single shared
+    action-target table and normalizer for guidance cards and notifications.
+  - Moved the CTA intent route-key map out of `frontend/src/lib/ctaTargets.ts`
+    into the same shared route module, so Marketplace and other CTA-driven
+    screens no longer keep a separate `INTENT_ROUTE` table.
+  - `frontend/src/lib/guidance.ts` now imports `ACTION_TARGETS`,
+    `normalizeActionTargetPath`, and `splitActionTargetSuffix` from the shared
+    normalizer instead of keeping its own local route table.
+  - `frontend/src/pages/NotificationsPage.tsx` now imports the same shared
+    normalizer instead of keeping a second local route table.
+  - `frontend/src/lib/ctaTargets.ts` now derives `CtaIntent` from
+    `CTA_INTENT_ROUTES` and resolves routes through that shared table.
+  - Shared aliases now explicitly include `action-inbox`, `market`,
+    `community-home`, `payment-rails`, `free-spotlight`,
+    `subscription-spotlight`, and `shop-control/paid-spotlight`.
+- Guardrails strengthened:
+  - `frontend/tools/audit-route-fallthrough.mjs` now fails if guidance or
+    notifications reintroduce local action-target route tables.
+  - The same audit now fails if `ctaTargets.ts` reintroduces a local
+    `INTENT_ROUTE` table.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` now verifies
+    Marketplace money intents against the shared CTA route table.
+  - The same audit also checks that key aliases point to the shared route
+    targets and that unknown unsafe action paths still fall back to
+    Notifications rather than the pre-auth Welcome/Cover flow.
+- Lane auditor note:
+  - Existing lane auditors were reused because the agent thread limit was full;
+    Rawls was asked to re-check Marketplace against this shared normalizer and
+    Linnaeus was asked to re-check Community Home route risks.
+- Verification:
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm --prefix frontend run audit:action-response-protocol`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated build passed: `npm --prefix frontend run build`.
+- Remaining truth:
+  - this removes one systemic route-table drift problem, but it does not prove
+    every phone tap is fixed until the deployed mobile surface is tested;
+  - `StableButton.tsx` still appears as line-ending noise in Git status, with
+    no functional diff from this pass.

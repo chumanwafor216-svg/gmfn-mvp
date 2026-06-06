@@ -9,10 +9,15 @@ const marketplaceFile = "src/pages/MarketplacePage.tsx";
 const appLayoutFile = "src/layout/AppLayout.tsx";
 const appRoutesFile = "src/lib/appRoutes.ts";
 const ctaTargetsFile = "src/lib/ctaTargets.ts";
+const actionTargetRoutesFile = "src/lib/actionTargetRoutes.ts";
 const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
 const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");
+const actionTargetRoutesSource = readFileSync(
+  join(frontendRoot, actionTargetRoutesFile),
+  "utf8"
+);
 const findings = [];
 const expectedStableActionCount = 56;
 const expectedNativeFieldCount = 9;
@@ -337,10 +342,17 @@ assertContains(
 );
 
 assertFileContains(
-  ctaTargetsFile,
-  ctaTargetsSource,
+  actionTargetRoutesFile,
+  actionTargetRoutesSource,
   /moneyIn:\s*"MONEY_IN"[\s\S]*?moneyOut:\s*"MONEY_OUT"[\s\S]*?finance:\s*"FINANCE"/,
   "CTA resolver must keep Marketplace money intents mapped to Money In, Money Out, and Finance route keys."
+);
+
+assertFileContains(
+  ctaTargetsFile,
+  ctaTargetsSource,
+  /import \{ CTA_INTENT_ROUTES \} from "\.\/actionTargetRoutes";[\s\S]*?appRoute\(CTA_INTENT_ROUTES\[intent\], context\)/,
+  "CTA resolver must read Marketplace money intents from the shared action-target route table."
 );
 
 assertFileContains(
