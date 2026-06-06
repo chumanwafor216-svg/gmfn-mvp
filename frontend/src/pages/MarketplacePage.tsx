@@ -14,7 +14,9 @@ import {
 } from "../lib/ctaTargets";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
 import {
+  publicApiUrl,
   publicFrontendUrl,
+  publicShopBlockUrl,
   publicShopPath,
   publicShopShareUrl,
   publicShopUrl,
@@ -156,6 +158,13 @@ type RepostProductOption = {
   blockNumber: number;
   title: string;
   description: string;
+  price: string;
+  currency: string;
+  imageUrl: string;
+  videoUrl: string;
+  originShopName: string;
+  sellerGmfnId: string;
+  whatsappNumber: string;
   visibilityMode: ShopVisibilityMode;
   remainingSlots: number;
   repostsUsed: number;
@@ -869,6 +878,41 @@ function normalizeRepostProductOption(raw: any): RepostProductOption | null {
     ),
     title,
     description,
+    price: firstTruthy(src?.price, src?.amount, src?.display_price),
+    currency: firstTruthy(src?.currency, src?.currency_code, "NGN"),
+    imageUrl: firstTruthy(
+      src?.image_url,
+      src?.imageUrl,
+      src?.thumbnail_url,
+      src?.poster_url,
+      src?.media?.image_url,
+      src?.media?.thumbnail_url
+    ),
+    videoUrl: firstTruthy(
+      src?.video_url,
+      src?.videoUrl,
+      src?.media?.video_url,
+      src?.media?.url
+    ),
+    originShopName: firstPublicIdentity(
+      src?.origin_shop_name,
+      src?.shop_name,
+      src?.shop?.name,
+      src?.marketplace_shop_name
+    ),
+    sellerGmfnId: firstTruthy(
+      src?.seller_gmfn_id,
+      src?.owner_gmfn_id,
+      src?.gmfn_id,
+      src?.shop?.owner_gmfn_id,
+      src?.shop?.gmfn_id
+    ),
+    whatsappNumber: firstTruthy(
+      src?.whatsapp_number,
+      src?.shop_whatsapp_number,
+      src?.owner_whatsapp_number,
+      src?.shop?.whatsapp_number
+    ),
     visibilityMode,
     remainingSlots: positiveNumber(
       firstDefined(
@@ -879,6 +923,13 @@ function normalizeRepostProductOption(raw: any): RepostProductOption | null {
     ),
     repostsUsed: positiveNumber(firstDefined(src?.reposts_used, src?.repostsUsed)),
   };
+}
+
+function resolveRepostAssetSrc(raw: any): string {
+  const text = safeStr(raw);
+  if (!text) return "";
+  if (/^(?:https?:|data:|blob:)/i.test(text)) return text;
+  return publicApiUrl(text);
 }
 
 function repostProductLabel(product: RepostProductOption | null): string {
@@ -2630,6 +2681,7 @@ export default function MarketplacePage() {
   const [repostTargetSuggestionError, setRepostTargetSuggestionError] =
     useState("");
   const selectedRepostProductIdRef = useRef<number | null>(null);
+  const routeRepostSelectionTokenRef = useRef("");
   const repostTargetSuggestionRequestRef = useRef(0);
   const [loans, setLoans] = useState<LoanSupportItem[]>([]);
   const [moneySurface, setMoneySurface] = useState<CommunityMoneySurface | null>(
@@ -2840,6 +2892,27 @@ export default function MarketplacePage() {
       null
     );
   }, [repostProducts, selectedRepostProductId]);
+
+  const selectedRepostProductVideoSrc = useMemo(() => {
+    return resolveRepostAssetSrc(selectedRepostProduct?.videoUrl);
+  }, [selectedRepostProduct?.videoUrl]);
+
+  const selectedRepostProductImageSrc = useMemo(() => {
+    return resolveRepostAssetSrc(selectedRepostProduct?.imageUrl);
+  }, [selectedRepostProduct?.imageUrl]);
+
+  const selectedRepostProductPublicLink = useMemo(() => {
+    if (!publicShopOwnerId || !selectedRepostProduct?.id) return "";
+    return publicShopBlockUrl({
+      gmfnId: publicShopOwnerId,
+      productId: selectedRepostProduct.id,
+      block: selectedRepostProduct.blockNumber || undefined,
+    });
+  }, [
+    publicShopOwnerId,
+    selectedRepostProduct?.blockNumber,
+    selectedRepostProduct?.id,
+  ]);
 
   useEffect(() => {
     selectedRepostProductIdRef.current =
@@ -3765,12 +3838,28 @@ export default function MarketplacePage() {
           )
         : null);
 
-    if (matchedProduct && selectedRepostProductId !== matchedProduct.id) {
-      setSelectedRepostProductId(matchedProduct.id);
+    if (matchedProduct) {
+      const routeToken = [
+        location.search,
+        location.hash,
+        matchedProduct.id,
+        matchedProduct.blockNumber,
+      ].join("|");
+      if (routeRepostSelectionTokenRef.current !== routeToken) {
+        routeRepostSelectionTokenRef.current = routeToken;
+        setSelectedRepostProductId(matchedProduct.id);
+        showNotice(
+          "success",
+          `Block #${matchedProduct.blockNumber || routeRepostBlockNumber || "?"} is loaded for Paid Repost.`
+        );
+      } else if (selectedRepostProductId !== matchedProduct.id) {
+        setSelectedRepostProductId(matchedProduct.id);
+      }
     }
 
     scrollToMarketplaceSection("marketplace-paid-network-placement");
   }, [
+    location.search,
     location.hash,
     repostProducts,
     routeRepostBlockNumber,
@@ -5877,6 +5966,237 @@ export default function MarketplacePage() {
                       {availableMarketplaceRepostCredits} paid credit{availableMarketplaceRepostCredits === 1 ? "" : "s"} available
                     </span>
                   </div>
+                  {selectedRepostProduct ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        minHeight: isCompact ? 292 : 190,
+                        padding: 12,
+                        borderRadius: 20,
+                        border: "1px solid rgba(11, 45, 74, 0.14)",
+                        background:
+                          "linear-gradient(135deg, rgba(7,23,44,0.96) 0%, rgba(13,54,88,0.92) 100%)",
+                        color: "#FFFFFF",
+                        display: "grid",
+                        gridTemplateColumns: isCompact
+                          ? "1fr"
+                          : "minmax(160px, 0.42fr) minmax(0, 1fr)",
+                        gap: 12,
+                        alignItems: "stretch",
+                        overflow: "hidden",
+                        overflowAnchor: "none",
+                        transition: "none",
+                      }}
+                    >
+                      <div
+                        style={{
+                          minHeight: isCompact ? 152 : 164,
+                          borderRadius: 18,
+                          overflow: "hidden",
+                          background:
+                            "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
+                          border: "1px solid rgba(255,255,255,0.18)",
+                          display: "grid",
+                          placeItems: "center",
+                        }}
+                      >
+                        {selectedRepostProductVideoSrc ? (
+                          <video
+                            src={selectedRepostProductVideoSrc}
+                            poster={selectedRepostProductImageSrc || undefined}
+                            muted
+                            playsInline
+                            controls
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              minHeight: isCompact ? 152 : 164,
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                          />
+                        ) : selectedRepostProductImageSrc ? (
+                          <img
+                            src={selectedRepostProductImageSrc}
+                            alt={selectedRepostProduct.title}
+                            style={{
+                              width: "100%",
+                              height: "100%",
+                              minHeight: isCompact ? 152 : 164,
+                              objectFit: "cover",
+                              display: "block",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              padding: 14,
+                              textAlign: "center",
+                              fontWeight: 950,
+                              color: "rgba(255,255,255,0.82)",
+                            }}
+                          >
+                            Block #{selectedRepostProduct.blockNumber || "?"}
+                          </div>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          minWidth: 0,
+                          display: "grid",
+                          gap: 9,
+                          alignContent: "center",
+                        }}
+                      >
+                        <div style={{ ...sectionLabel(), color: "#F2C766" }}>
+                          Selected public block
+                        </div>
+                        <div
+                          style={{
+                            fontSize: isCompact ? 22 : 26,
+                            lineHeight: 1.05,
+                            fontWeight: 950,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          Block #{selectedRepostProduct.blockNumber || "?"}:{" "}
+                          {selectedRepostProduct.title}
+                        </div>
+                        {selectedRepostProduct.description ? (
+                          <div
+                            style={{
+                              color: "rgba(255,255,255,0.78)",
+                              fontSize: 14,
+                              lineHeight: 1.45,
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {selectedRepostProduct.description}
+                          </div>
+                        ) : null}
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                          }}
+                        >
+                          {selectedRepostProduct.price ? (
+                            <span
+                              style={{
+                                ...badge(true),
+                                background: "rgba(242,199,102,0.16)",
+                                color: "#FFF4C7",
+                              }}
+                            >
+                              {selectedRepostProduct.price}{" "}
+                              {selectedRepostProduct.currency || "NGN"}
+                            </span>
+                          ) : null}
+                          <span
+                            style={{
+                              ...badge(true),
+                              background: "rgba(255,255,255,0.12)",
+                              color: "#FFFFFF",
+                            }}
+                          >
+                            Product ID {selectedRepostProduct.id}
+                          </span>
+                          <span
+                            style={{
+                              ...badge(true),
+                              background: "rgba(255,255,255,0.12)",
+                              color: "#FFFFFF",
+                            }}
+                          >
+                            Exact block handoff
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            color: "rgba(255,255,255,0.72)",
+                            fontSize: 13,
+                            lineHeight: 1.45,
+                            overflowWrap: "anywhere",
+                          }}
+                        >
+                          {selectedRepostProduct.originShopName
+                            ? `From ${selectedRepostProduct.originShopName}. `
+                            : ""}
+                          {selectedRepostProduct.sellerGmfnId
+                            ? `GSN ID ${displayGsnLabel(selectedRepostProduct.sellerGmfnId)}.`
+                            : "This block will carry its shop identity into the target Spotlight."}
+                        </div>
+                        <StableButton
+                          type="button"
+                          debugId="marketplace.network-repost.selected-block.copy-link"
+                          stableHeight={48}
+                          onClick={(event) => {
+                            runMarketplaceAction(event, () => {
+                              if (!selectedRepostProductPublicLink) {
+                                showNotice(
+                                  "error",
+                                  "This block link is not ready yet."
+                                );
+                                return;
+                              }
+                              void safeCopy(selectedRepostProductPublicLink).then(
+                                (copied) => {
+                                  showNotice(
+                                    copied ? "success" : "error",
+                                    copied
+                                      ? "Exact block link copied."
+                                      : "This block link could not be copied."
+                                  );
+                                }
+                              );
+                            });
+                          }}
+                          disabled={!selectedRepostProductPublicLink}
+                          style={{
+                            ...marketplaceInlineActionStyle(
+                              "soft",
+                              !selectedRepostProductPublicLink,
+                              isCompact
+                            ),
+                            height: 48,
+                            minHeight: 48,
+                            maxHeight: 48,
+                            maxWidth: isCompact ? "100%" : 220,
+                          }}
+                        >
+                          Copy exact block link
+                        </StableButton>
+                      </div>
+                    </div>
+                  ) : loadingRepostProducts &&
+                    (routeRepostProductId || routeRepostBlockNumber) ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        minHeight: 96,
+                        padding: 14,
+                        borderRadius: 18,
+                        border: "1px solid rgba(214, 170, 69, 0.28)",
+                        background: "rgba(214, 170, 69, 0.12)",
+                        color: "#0B1F33",
+                        display: "grid",
+                        alignContent: "center",
+                        gap: 6,
+                        overflowAnchor: "none",
+                        transition: "none",
+                      }}
+                    >
+                      <div style={{ fontWeight: 950 }}>
+                        Loading the selected shop block...
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        GSN is matching the block route to the owner shop record
+                        before you choose the target community.
+                      </div>
+                    </div>
+                  ) : null}
                   <div
                     style={{
                       display: "grid",

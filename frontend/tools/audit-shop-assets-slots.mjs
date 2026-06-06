@@ -121,6 +121,30 @@ assertContains(
   "Marketplace must recognize paid Repost requests that originate from the Shop Control gallery."
 );
 
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /type RepostProductOption = \{[\s\S]*?price: string;[\s\S]*?currency: string;[\s\S]*?imageUrl: string;[\s\S]*?videoUrl: string;[\s\S]*?originShopName: string;[\s\S]*?sellerGmfnId: string;/,
+  "Marketplace Paid Repost must preserve selected block media, price, shop, and seller identity details."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /function normalizeRepostProductOption\(raw: any\): RepostProductOption \| null \{[\s\S]*?price: firstTruthy\(src\?\.price[\s\S]*?currency: firstTruthy\(src\?\.currency[\s\S]*?imageUrl: firstTruthy\([\s\S]*?src\?\.image_url[\s\S]*?videoUrl: firstTruthy\([\s\S]*?src\?\.video_url[\s\S]*?originShopName: firstPublicIdentity\(/,
+  "Marketplace Paid Repost must normalize backend media and identity fields for the selected block preview."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /const routeRepostSelectionTokenRef = useRef\(""\);[\s\S]*?const routeToken = \[[\s\S]*?location\.search[\s\S]*?location\.hash[\s\S]*?matchedProduct\.id[\s\S]*?matchedProduct\.blockNumber[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)[\s\S]*?Block #\$\{matchedProduct\.blockNumber/,
+  "Marketplace Paid Repost route handoff must lock the exact incoming product/block and visibly acknowledge it."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /Selected public block[\s\S]*?Block #\{selectedRepostProduct\.blockNumber \|\| "\?"\}[\s\S]*?Product ID \{selectedRepostProduct\.id\}[\s\S]*?Exact block handoff[\s\S]*?debugId="marketplace\.network-repost\.selected-block\.copy-link"/,
+  "Marketplace Paid Repost must show a stable selected-block preview before target and payment controls."
+);
+
 if (findings.length > 0) {
   console.error("Shop Assets slot audit failed:");
   for (const finding of findings) {

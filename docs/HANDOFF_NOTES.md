@@ -1,3 +1,52 @@
+### Paid Repost exact block receiver preview fixed (2026-06-06)
+
+- Routes/screens affected:
+  - Marketplace paid Repost receiver:
+    `frontend/src/pages/MarketplacePage.tsx`;
+  - owner Shop Control / Shop Assets handoff remains:
+    `frontend/src/pages/ShopAssetsPage.tsx`;
+  - public Shop Diaries handoff remains:
+    `frontend/src/pages/ShopGalleryPage.tsx`;
+  - audits:
+    `frontend/tools/audit-shop-assets-slots.mjs`,
+    `frontend/tools/audit-marketplace-button-inventory.mjs`.
+- Product-owner complaint:
+  - clicking `Repost` from a selected Shop Gallery / Shop Control block opened
+    the Marketplace paid Repost panel but did not visibly fill the chosen block;
+  - the expected behavior is exact-block handoff: block number, product/media,
+    price/currency, source shop identity, then target community/duration/payment.
+- Frontend repair:
+  - Marketplace repost product normalization now keeps media, price/currency,
+    origin shop name, seller GSN ID, and contact fields when backend sends them;
+  - incoming `repost_product_id`, `block`, and `source` are now guarded by a
+    route-selection token so the selected product is deliberately applied and
+    acknowledged once the product list is loaded;
+  - the paid Repost panel now renders a stable `Selected public block` preview
+    before target/duration/payment controls, including image/video, title,
+    block number, product ID, price/currency, shop identity, and a copyable
+    exact public block link.
+- Button stability:
+  - added one intentional Marketplace stable action:
+    `marketplace.network-repost.selected-block.copy-link`;
+  - Marketplace stable action inventory baseline updated from `55` to `56`
+    source actions (`15` front, `41` body), with whole mobile route controls now
+    `103`.
+- Verification passed:
+  - `npm run audit:shop-assets-slots`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:link-contracts`;
+  - `npm run audit:marketplace-actions`;
+  - `npm run audit:marketplace-button-inventory`;
+  - targeted ESLint for `MarketplacePage.tsx` and updated auditors;
+  - `npm run build` passed after the known Windows sandbox `esbuild spawn
+    EPERM` required approved outside-sandbox build execution.
+- Remaining truth:
+  - this makes the frontend receiver visibly preserve the selected block;
+  - it does not add a new backend money rail, because the existing paid
+    Spotlight/Repost rail is still the backend route for placement/payment.
+
 ### Owner Shop Control live-block truth route fixed (2026-06-06)
 
 - Routes/screens affected:

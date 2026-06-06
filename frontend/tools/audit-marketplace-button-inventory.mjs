@@ -14,10 +14,10 @@ const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const appRoutesSource = readFileSync(join(frontendRoot, appRoutesFile), "utf8");
 const ctaTargetsSource = readFileSync(join(frontendRoot, ctaTargetsFile), "utf8");
 const findings = [];
-const expectedStableActionCount = 55;
+const expectedStableActionCount = 56;
 const expectedSourceBreakdown = {
   front: 15,
-  body: 40,
+  body: 41,
 };
 const expectedVisibleIntentActionCount = 12;
 const expectedMobileShellBreakdown = {
