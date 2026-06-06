@@ -35587,3 +35587,57 @@ GSN-branded invite composer and invite-entry continuity.
   - the installed shortcut should now pull the latest Render build first, but a
     phone may need one launch after this deployment for service-worker `v4` to
     install and take control.
+
+### Public community verification discretion repair (2026-06-06)
+
+- Route/screens affected:
+  - `/verify/community/:communityKey`;
+  - backend public verification endpoint
+    `GET /api/community-confirmations/verify/community/{community_key}`.
+- Confirmed truth:
+  - the old public verification response exposed too much public context for a
+    stranger-facing verification page, including active member count,
+    plain-language policy/detail text, description, and instant pulse state;
+  - hiding these only in the frontend would not be enough because a public API
+    caller could still read them.
+- Backend change:
+  - `public_community_verification` now returns a whitelist only:
+    community name, community id/code, status, public record state, controlled
+    member-confirmation state, relay availability, and the protected-by-design
+    list;
+  - removed public response fields for active member count, contact/sponsor
+    counts, description, plain-language policy text, and instant pulse.
+- Frontend change:
+  - `CommunityVerifyPage` was rebuilt around the approved public/protected
+    separation:
+    - show publicly: community name, community ID, public status, public
+      verification state, controlled request availability;
+    - keep protected: full member list, raw phone numbers, sponsor details,
+      internal disputes, private relay contacts, internal trust history;
+  - the page now has direct public actions only:
+    copy verification link, save PDF, request confirmation, and refresh public
+    record;
+  - the request-confirmation action explains the controlled relay state instead
+    of exposing direct private contact details.
+- Guardrails:
+  - `frontend/tools/audit-trust-actions.mjs` now fails if the public community
+    verification frontend or backend reintroduces protected fields such as
+    `active_member_count`, `plain_language`, `public_policy`,
+    `instant_pulse_available`, `phone_e164`, or sponsor/contact counts.
+- Verification:
+  - Passed backend tests:
+    `python -m pytest tests/test_community_confirmation_relay.py -q` from
+    `gmfn_backend/` (`11 passed`).
+  - Passed targeted lint:
+    `npm exec eslint -- src/pages/CommunityVerifyPage.tsx tools/audit-trust-actions.mjs --max-warnings=0`
+    from `frontend/`.
+  - Passed `npm --prefix frontend run audit:trust-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated build passed: `npm run build` from `frontend/`.
+- Remaining truth:
+  - this protects the public verification surface and API response. It does not
+    yet create a live relay request record when the public visitor presses
+    `Request confirmation`; that button currently explains the controlled
+    confirmation route and availability.

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
-import { PrimaryButton, SecondaryButton, StableDisclosureSummary } from "../components/StableButton";
+import { PrimaryButton, SecondaryButton } from "../components/StableButton";
 import {
   TrustPaperIcon,
   TrustPaperSecurityFooter,
@@ -15,11 +15,11 @@ type CommunityVerifyRecord = {
   community_id?: number | string | null;
   community_code?: string | null;
   status?: string | null;
-  description?: string | null;
-  active_member_count?: number | string | null;
   relay_available?: boolean | null;
-  instant_pulse_available?: boolean | null;
-  public_policy?: string | null;
+  relay_availability?: string | null;
+  public_record?: string | null;
+  member_confirmation?: string | null;
+  request_confirmation_available?: boolean | null;
   hidden_by_design?: string[] | null;
 };
 
@@ -40,11 +40,6 @@ function firstTruthy(...values: any[]): string {
   return "";
 }
 
-function asNumber(value: any): number {
-  const n = Number(value || 0);
-  return Number.isFinite(n) && n > 0 ? n : 0;
-}
-
 function labelize(value: any): string {
   const text = safeStr(value).replace(/[_-]+/g, " ");
   if (!text) return "Not shown";
@@ -58,11 +53,11 @@ function normalizeRecord(raw: any): CommunityVerifyRecord {
     community_id: src.community_id ?? src.id ?? null,
     community_code: firstTruthy(src.community_code),
     status: firstTruthy(src.status),
-    description: firstTruthy(src.description),
-    active_member_count: src.active_member_count ?? null,
     relay_available: Boolean(src.relay_available),
-    instant_pulse_available: Boolean(src.instant_pulse_available),
-    public_policy: firstTruthy(src.public_policy),
+    relay_availability: firstTruthy(src.relay_availability),
+    public_record: firstTruthy(src.public_record),
+    member_confirmation: firstTruthy(src.member_confirmation),
+    request_confirmation_available: Boolean(src.request_confirmation_available),
     hidden_by_design: Array.isArray(src.hidden_by_design) ? src.hidden_by_design : [],
   };
 }
@@ -199,7 +194,25 @@ export default function CommunityVerifyPage() {
   const status = safeStr(record?.status).toLowerCase() || "unknown";
   const active = status === "active";
   const relayAvailable = Boolean(record?.relay_available);
-  const instantAvailable = Boolean(record?.instant_pulse_available);
+  const relayAvailability = firstTruthy(
+    record?.relay_availability,
+    relayAvailable ? "Available" : "Not available"
+  );
+  const publicRecord = firstTruthy(record?.public_record, "Verified in GSN");
+  const memberConfirmation = firstTruthy(
+    record?.member_confirmation,
+    "By controlled request only"
+  );
+  const requestConfirmationAvailable = Boolean(record?.request_confirmation_available);
+
+  function requestConfirmation() {
+    setNotice({
+      tone: requestConfirmationAvailable ? "success" : "error",
+      text: requestConfirmationAvailable
+        ? "Confirmation stays controlled. Ask through the GSN relay; private contacts are not exposed."
+        : "Controlled confirmation is not available for this community yet.",
+    });
+  }
 
   return (
     <div
@@ -210,9 +223,9 @@ export default function CommunityVerifyPage() {
     >
       <div style={pageShell()}>
         <PageTopNav
-          sectionLabel="GSN verification"
-          title="Community Verify"
-          subtitle="Check whether this community exists in GSN and whether member confirmation can be requested safely."
+          sectionLabel="Public verification"
+          title="Community Verification"
+          subtitle="Public community record"
           homeTo="/"
           homeLabel="Home"
           backTo="/"
@@ -241,7 +254,7 @@ export default function CommunityVerifyPage() {
                     textTransform: "uppercase",
                   }}
                 >
-                  Public Community Record
+                  Public community record
                 </span>
                 <h1
                   style={{
@@ -253,11 +266,10 @@ export default function CommunityVerifyPage() {
                     letterSpacing: 0,
                   }}
                 >
-                  {loading ? "Checking community" : communityName}
+                  {loading ? "Checking community" : "Community Verification"}
                 </h1>
                 <p style={{ ...helperText(), maxWidth: 680 }}>
-                  This page verifies the community itself. It does not publish the member list,
-                  raw phone numbers, or private sponsor details.
+                  This page confirms the community exists in GSN. Private member details remain protected.
                 </p>
               </div>
               <div
@@ -317,104 +329,62 @@ export default function CommunityVerifyPage() {
               <>
                 <section
                   style={{
-                    ...sectionCard(active ? "#ECFDF3" : "#FFF7E6"),
+                    ...sectionCard("#F8FBFF"),
                     display: "grid",
-                    gridTemplateColumns: "minmax(0, 1fr) auto",
-                    gap: 16,
-                    alignItems: "center",
-                  }}
-                >
-                  <TrustPaperWatermark
-                    name={active ? "check" : "alert"}
-                    color={active ? "#2E9B62" : "#D6AA45"}
-                    size={150}
-                    opacity={0.08}
-                  />
-                  <div style={{ display: "grid", gap: 10 }}>
-                    <span style={badgeStyle(active ? "good" : "warn")}>
-                      <TrustPaperIcon name={active ? "check" : "alert"} size={18} />
-                      {labelize(status)}
-                    </span>
-                    <h2 style={{ ...sectionTitle(), fontSize: "clamp(25px, 6vw, 42px)" }}>
-                      {active ? "Community record is active" : "Community record needs caution"}
-                    </h2>
-                    <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
-                      {active
-                        ? "This community is visible in GSN. A reader may request member confirmation through the controlled relay when the policy allows it."
-                        : "This community is visible, but its current status is not active. Ask for more evidence before relying on it."}
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      width: 112,
-                      height: 112,
-                      borderRadius: 32,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "#FFFFFF",
-                      background: "linear-gradient(135deg,#0B63D1,#073E83)",
-                      boxShadow: "0 18px 34px rgba(6,24,39,0.16)",
-                    }}
-                  >
-                    <TrustPaperIcon name="community" size={62} strokeWidth={1.8} />
-                  </div>
-                </section>
-
-                <section
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
-                    gap: 12,
-                  }}
-                >
-                  <Stat label="Active members" value={asNumber(record.active_member_count)} icon="community" />
-                  <StatusTile
-                    label="Relay available"
-                    value={relayAvailable ? "Yes" : "No"}
-                    good={relayAvailable}
-                    icon="shield"
-                  />
-                  <StatusTile
-                    label="Instant pulse"
-                    value={instantAvailable ? "Yes" : "No"}
-                    good={instantAvailable}
-                    icon="refresh"
-                  />
-                </section>
-
-                <section
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
                     gap: 14,
                   }}
                 >
-                  <div style={sectionCard("#FFFFFF")}>
-                    <h2 style={sectionTitle()}>Community identity</h2>
-                    <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-                      <InfoRow label="Community name" value={communityName} />
-                      <InfoRow label="Community ID" value={firstTruthy(record.community_code, record.community_id)} />
-                      <InfoRow label="Status" value={labelize(record.status)} />
-                    </div>
+                  <TrustPaperWatermark
+                    name="shield"
+                    color="#0B63D1"
+                    size={190}
+                    opacity={0.08}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 14,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span style={badgeStyle(active ? "good" : "warn")}>
+                      <TrustPaperIcon name={active ? "check" : "alert"} size={18} />
+                      {active ? "Active" : labelize(status)}
+                    </span>
+                    <span style={badgeStyle(relayAvailable ? "good" : "warn")}>
+                      <TrustPaperIcon name="shield" size={18} />
+                      {relayAvailability}
+                    </span>
                   </div>
-                  <div style={sectionCard("#F8FBFF")}>
-                    <h2 style={sectionTitle()}>Public policy</h2>
-                    <p style={{ ...helperText(), color: "#1F3145", marginTop: 10 }}>
-                      {record.public_policy ||
-                        "Member confirmation is available only through GSN relay when enabled. Private contact details are not publicly exposed."}
-                    </p>
-                  </div>
+                  <h2 style={{ ...sectionTitle(), fontSize: "clamp(26px, 6vw, 44px)" }}>
+                    Verify this community before you rely on it.
+                  </h2>
+                  <p style={{ ...helperText(), color: "#1F3145", maxWidth: 720 }}>
+                    This page confirms the community exists in GSN. The private member list, phone
+                    numbers, sponsor details, and internal trust history are kept off this public page.
+                  </p>
                 </section>
 
-                <section style={sectionCard("#ECFDF3")}>
-                  <TrustPaperWatermark name="shield" color="#2E9B62" size={132} opacity={0.08} />
-                  <h2 style={sectionTitle()}>What this community page proves</h2>
-                  <ul style={{ ...helperText(), margin: "12px 0 0", paddingLeft: 20 }}>
-                    <li>The community has a visible GSN record.</li>
-                    <li>The community status can be checked publicly.</li>
-                    <li>Member confirmation can be routed through GSN when available.</li>
-                    <li>Private member contacts stay protected by default.</li>
-                  </ul>
+                <section
+                  style={{
+                    ...sectionCard("#FFFFFF"),
+                    padding: 0,
+                  }}
+                >
+                  <div style={{ display: "grid", gap: 0 }}>
+                    <InfoRow icon="community" label="Community name" value={communityName} />
+                    <InfoRow
+                      icon="document"
+                      label="Community ID"
+                      value={firstTruthy(record.community_code, record.community_id)}
+                    />
+                    <InfoRow icon="check" label="Status" value={labelize(record.status)} />
+                    <InfoRow icon="shield" label="Public record" value={publicRecord} />
+                    <InfoRow icon="community" label="Member confirmation" value={memberConfirmation} />
+                    <InfoRow icon="refresh" label="Relay availability" value={relayAvailability} />
+                  </div>
                 </section>
 
                 <section style={sectionCard("#FFFFFF")}>
@@ -427,46 +397,79 @@ export default function CommunityVerifyPage() {
                       marginTop: 14,
                     }}
                   >
-                    <PrimaryButton debugId="community-verify.refresh" stableHeight={64} onClick={() => void loadRecord()}>
-                      <TrustPaperIcon name="refresh" size={20} />
-                      Refresh record
-                    </PrimaryButton>
                     <SecondaryButton debugId="community-verify.copy-link" stableHeight={64} onClick={() => void copyLink()}>
                       <TrustPaperIcon name="copy" size={20} />
-                      Copy public link
+                      Copy verification link
                     </SecondaryButton>
                     <SecondaryButton debugId="community-verify.print" stableHeight={64} onClick={printPage}>
                       <TrustPaperIcon name="document" size={20} />
-                      Print / Save PDF
+                      Save PDF
                     </SecondaryButton>
+                    <PrimaryButton
+                      debugId="community-verify.request-confirmation"
+                      stableHeight={64}
+                      onClick={requestConfirmation}
+                    >
+                      <TrustPaperIcon name="shield" size={20} />
+                      Request confirmation
+                    </PrimaryButton>
                   </div>
                 </section>
 
-                <details style={sectionCard("#F8FBFF")}>
-                  <StableDisclosureSummary
-                    debugId="community-verify.protected-detail"
-                    stableHeight={52}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      fontWeight: 1000,
-                      color: "#07172C",
-                    }}
+                <section
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gap: 14,
+                  }}
+                >
+                  <VisibilityCard
+                    tone="show"
+                    title="Show publicly"
+                    items={[
+                      "Community name",
+                      "Community ID",
+                      "Public status",
+                      "Public verification state",
+                      "Controlled request availability",
+                    ]}
+                  />
+                  <VisibilityCard
+                    tone="protect"
+                    title="Keep protected"
+                    items={
+                      record.hidden_by_design?.length
+                        ? record.hidden_by_design.map(labelize)
+                        : [
+                            "Full member list",
+                            "Raw phone numbers",
+                            "Sponsor details",
+                            "Internal disputes",
+                            "Private relay contacts",
+                            "Internal trust history",
+                          ]
+                    }
+                  />
+                </section>
+
+                <section style={sectionCard("#061827")}>
+                  <TrustPaperWatermark name="shield" color="#D6AA45" size={150} opacity={0.09} />
+                  <h2 style={{ ...sectionTitle(), color: "#F2C766" }}>Program logic</h2>
+                  <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+                    <ProgramRule text="The public verification route returns whitelisted fields only." />
+                    <ProgramRule text="Protected fields stay server-side unless the viewer is authorized." />
+                    <ProgramRule text="Confirmation requests use controlled relay, not direct contact exposure." />
+                  </div>
+                  <SecondaryButton
+                    debugId="community-verify.refresh"
+                    stableHeight={56}
+                    onClick={() => void loadRecord()}
+                    style={{ marginTop: 16, color: "#FFFFFF", borderColor: "rgba(242,199,102,0.45)" }}
                   >
-                    <span>Protected information not shown publicly</span>
-                    <span style={badgeStyle("info")}>Open / close</span>
-                  </StableDisclosureSummary>
-                  <ul style={{ ...helperText(), margin: "14px 0 0", paddingLeft: 20 }}>
-                    {(record.hidden_by_design || []).map((item) => (
-                      <li key={item}>{labelize(item)}</li>
-                    ))}
-                    {(record.hidden_by_design || []).length === 0 ? (
-                      <li>Private member contact details are not shown on this page.</li>
-                    ) : null}
-                  </ul>
-                </details>
+                    <TrustPaperIcon name="refresh" size={19} />
+                    Refresh public record
+                  </SecondaryButton>
+                </section>
               </>
             ) : null}
           </div>
@@ -477,66 +480,112 @@ export default function CommunityVerifyPage() {
   );
 }
 
-function InfoRow({ label, value }: { label: React.ReactNode; value: React.ReactNode }) {
+function InfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentProps<typeof TrustPaperIcon>["name"];
+  label: React.ReactNode;
+  value: React.ReactNode;
+}) {
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(110px, 0.75fr) minmax(0, 1fr)",
+        gridTemplateColumns: "34px minmax(110px, 0.75fr) minmax(0, 1fr)",
         gap: 12,
         alignItems: "start",
-        borderBottom: "1px dashed rgba(8,35,58,0.12)",
-        paddingBottom: 9,
+        borderBottom: "1px solid rgba(8,35,58,0.1)",
+        padding: "13px 16px",
       }}
     >
+      <span
+        style={{
+          width: 28,
+          height: 28,
+          borderRadius: 999,
+          display: "grid",
+          placeItems: "center",
+          color: "#073E83",
+          background: "#EAF3FF",
+        }}
+      >
+        <TrustPaperIcon name={icon} size={17} />
+      </span>
       <span style={{ color: "#617085", fontWeight: 900, lineHeight: 1.28 }}>{label}</span>
       <strong style={{ color: "#07172C", fontWeight: 1000, lineHeight: 1.28 }}>{value}</strong>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  icon,
+function VisibilityCard({
+  tone,
+  title,
+  items,
 }: {
-  label: string;
-  value: number;
-  icon: React.ComponentProps<typeof TrustPaperIcon>["name"];
+  tone: "show" | "protect";
+  title: string;
+  items: string[];
 }) {
+  const show = tone === "show";
   return (
-    <div style={sectionCard("#F7FAFF")}>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "#073E83", fontWeight: 1000 }}>
-        <TrustPaperIcon name={icon} size={19} />
-        {label}
-      </span>
-      <strong style={{ display: "block", marginTop: 14, color: "#07172C", fontSize: 32, fontWeight: 1000, lineHeight: 1 }}>
-        {value}
-      </strong>
+    <div style={sectionCard(show ? "#ECFDF3" : "#FFF7E6")}>
+      <h2
+        style={{
+          margin: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 9,
+          color: show ? "#166534" : "#92400E",
+          fontSize: 18,
+          fontWeight: 1000,
+          textTransform: "uppercase",
+          letterSpacing: 0.8,
+        }}
+      >
+        <TrustPaperIcon name={show ? "check" : "lock"} size={20} />
+        {title}
+      </h2>
+      <div style={{ display: "grid", gap: 9, marginTop: 14 }}>
+        {items.map((item) => (
+          <span
+            key={item}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              color: "#1F3145",
+              fontWeight: 900,
+              lineHeight: 1.25,
+            }}
+          >
+            <TrustPaperIcon name={show ? "check" : "lock"} size={16} />
+            {item}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
-function StatusTile({
-  label,
-  value,
-  good,
-  icon,
-}: {
-  label: string;
-  value: string;
-  good: boolean;
-  icon: React.ComponentProps<typeof TrustPaperIcon>["name"];
-}) {
+function ProgramRule({ text }: { text: string }) {
   return (
-    <div style={sectionCard(good ? "#ECFDF3" : "#FFF7E6")}>
-      <span style={{ display: "inline-flex", alignItems: "center", gap: 8, color: good ? "#166534" : "#92400E", fontWeight: 1000 }}>
-        <TrustPaperIcon name={icon} size={19} />
-        {label}
+    <span
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 10,
+        color: "#FFFFFF",
+        fontSize: 14,
+        fontWeight: 850,
+        lineHeight: 1.35,
+      }}
+    >
+      <span style={{ color: "#F2C766", flex: "0 0 auto" }}>
+        <TrustPaperIcon name="check" size={17} />
       </span>
-      <strong style={{ display: "block", marginTop: 14, color: "#07172C", fontSize: 28, fontWeight: 1000, lineHeight: 1 }}>
-        {value}
-      </strong>
-    </div>
+      {text}
+    </span>
   );
 }

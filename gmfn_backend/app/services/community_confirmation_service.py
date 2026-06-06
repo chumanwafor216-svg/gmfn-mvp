@@ -3812,22 +3812,24 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         community_id=int(community.id),
         subject_user_id=None,
     )
+    relay_available = bool(summary.get("relay_available"))
+
     return {
         "community_name": community.name,
         "community_id": int(community.id),
         "community_code": community.community_code,
         "status": community.status,
-        "description": community.description,
-        "active_member_count": summary["active_member_count"],
-        "relay_available": summary["relay_available"],
-        "instant_pulse_available": summary["instant_pulse_available"],
-        "public_policy": summary.get("plain_language")
-        or "Member confirmation is available through GSN relay when enabled. Private contact details are not publicly exposed.",
-        "plain_language": summary.get("plain_language"),
+        "public_record": "Verified in GSN",
+        "member_confirmation": "By controlled request only",
+        "relay_available": relay_available,
+        "relay_availability": "Available" if relay_available else "Not available",
+        "request_confirmation_available": relay_available,
         "hidden_by_design": [
             "full member list",
             "raw member phone numbers",
-            "raw sponsor details",
-            "internal disputes by default",
+            "sponsor details",
+            "internal disputes",
+            "private relay contacts",
+            "internal trust history",
         ],
     }

@@ -494,6 +494,13 @@ def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: 
         assert data["community_id"] == 1
         assert data["community_name"] == "Test Clan"
         assert data["community_code"] == "GSN-C-000001"
+        assert data["public_record"] == "Verified in GSN"
+        assert data["member_confirmation"] == "By controlled request only"
+        assert "active_member_count" not in data
+        assert "contactable_reference_count" not in data
+        assert "sponsor_signal_count" not in data
+        assert "plain_language" not in data
+        assert "description" not in data
 
 
 def test_public_community_verify_accepts_trustslip_fallback_for_uncoded_clan(client: TestClient):
@@ -554,8 +561,10 @@ def test_public_community_verify_degrades_when_confirmation_schema_missing(
     assert data["community_id"] == 1
     assert data["community_name"] == "Test Clan"
     assert data["relay_available"] is False
-    assert data["instant_pulse_available"] is False
-    assert "live member confirmation is temporarily unavailable" in data["plain_language"]
+    assert data["relay_availability"] == "Not available"
+    assert data["request_confirmation_available"] is False
+    assert "plain_language" not in data
+    assert "active_member_count" not in data
     assert "community_confirmation_policies" not in response.text
     assert "SELECT" not in response.text
 

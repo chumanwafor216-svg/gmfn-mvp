@@ -78,6 +78,35 @@ function assertStableActionsHaveDebugIds(file) {
   }
 }
 
+function assertFunctionNotContains(file, functionName, forbiddenPattern, message) {
+  const text = read(file);
+  const startPattern = new RegExp(`def ${functionName}\\b`);
+  const startMatch = startPattern.exec(text);
+  if (!startMatch) {
+    findings.push({
+      file,
+      line: 1,
+      message,
+      text: `Function ${functionName} was not found.`,
+    });
+    return;
+  }
+  const rest = text.slice(startMatch.index + 1);
+  const nextFunction = /\ndef [A-Za-z0-9_]+\b/.exec(rest);
+  const body = text.slice(
+    startMatch.index,
+    nextFunction ? startMatch.index + 1 + nextFunction.index : text.length
+  );
+  if (forbiddenPattern.test(body)) {
+    findings.push({
+      file,
+      line: text.slice(0, startMatch.index).split(/\r?\n/).length,
+      message,
+      text: body.match(forbiddenPattern)?.[0] || "Forbidden pattern found.",
+    });
+  }
+}
+
 trustDomainFiles.forEach(assertStableActionsHaveDebugIds);
 
 for (const file of trustDomainFiles) {
@@ -254,6 +283,25 @@ assertContains(
   "src/pages/TrustSlipPage.tsx",
   /communityVerifyPath \? \([\s\S]*?to=\{communityVerifyPath\}[\s\S]*?kind="primary"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"[\s\S]*?\) : \([\s\S]*?Public community record is not ready yet[\s\S]*?debugId="trust-slip\.community-confirmation\.open-community-record"/,
   "TrustSlip page community record action must be visually highlighted when available and must explain itself when unavailable."
+);
+
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /Community Verification[\s\S]*?Community name[\s\S]*?Community ID[\s\S]*?Public record[\s\S]*?Member confirmation[\s\S]*?Relay availability[\s\S]*?Request confirmation[\s\S]*?Show publicly[\s\S]*?Keep protected/,
+  "CommunityVerifyPage must present a public whitelist record with protected details separated from visible fields."
+);
+
+assertNotContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /active_member_count|instant_pulse_available|public_policy|plain_language/,
+  "CommunityVerifyPage must not render private-ish community confirmation internals on the public verification page."
+);
+
+assertFunctionNotContains(
+  "../gmfn_backend/app/services/community_confirmation_service.py",
+  "public_community_verification",
+  /active_member_count|contactable_reference_count|instant_pulse_available|public_policy|plain_language|phone_e164|sponsor_signal_count/,
+  "public_community_verification must return only whitelisted public community fields."
 );
 
 assertContains(
