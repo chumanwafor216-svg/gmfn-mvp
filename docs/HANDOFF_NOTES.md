@@ -35965,3 +35965,46 @@ GSN-branded invite composer and invite-entry continuity.
     meeting pack usage;
   - until those consumers are wired, payment can grant the package entitlement
     but the business action is not fully executed end-to-end.
+
+### Extra shop block entitlement consumer (2026-06-06)
+
+- Trigger:
+  - product owner confirmed the package rail is useful only if a paid
+    `extra_shop_blocks` entitlement changes the real public gallery capacity.
+  - Previous truth: the payment package could grant an entitlement, but the
+    marketplace gallery still enforced the free 12-block cap.
+- Backend changes:
+  - `gmfn_backend/app/api/routes/marketplace.py` now resolves public shop
+    gallery capacity from active `extra_shop_block` entitlements scoped to the
+    shop, so admin-assisted package grants still expand the target shop.
+  - Public product create/update now enforce the dynamic cap instead of the
+    hardcoded 12.
+  - Public block markers now accept block numbers above 12, so paid blocks like
+    `[BLOCK:13]` are parsed and returned instead of being treated as unnumbered.
+  - Shop and product responses now expose:
+    - `shop_product_slots_free`;
+    - `shop_product_slots_extra`;
+    - `shop_product_slots_total`.
+- Frontend changes:
+  - `frontend/src/pages/ShopControlPage.tsx` reads the dynamic slot total and
+    shows owner shop control as `live blocks / paid-adjusted capacity`.
+  - Fallback remains 12 if backend capacity data is unavailable.
+- Verification:
+  - Passed targeted backend regression:
+    `python -m pytest gmfn_backend\tests\test_marketplace_public_shop.py -q -k extra_shop_block`
+    (`1 passed`).
+  - Full `test_marketplace_public_shop.py` still hits Windows pytest temp-folder
+    permission errors in this workspace; the application tests that run before
+    the temp errors pass.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`
+    (`56 stable source actions`, `103 whole-route mobile controls total`).
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated `npm --prefix frontend run build` passed.
+- Remaining truth:
+  - extra shop block is now connected to gallery capacity;
+  - extra member capacity, ROSCA cycle, and meeting pack still need their own
+    consuming business engines before they are end-to-end complete;
+  - the regression covers a shop-scoped entitlement owned by another user/admin,
+    proving capacity belongs to the target shop rather than only the payer.

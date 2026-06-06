@@ -1032,6 +1032,114 @@ def test_public_gallery_slot_limit_counts_legacy_public_visibility_aliases(
     assert "Maximum of 12 community-visible products" in create_res.json()["detail"]
 
 
+def test_public_gallery_extra_shop_block_entitlement_expands_slot_limit(
+    client,
+    override_current_user_user,
+):
+    _ensure_marketplace_tables()
+    now = datetime.now(timezone.utc)
+
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO users (
+                    id, email, hashed_password, display_name, role, gmfn_id
+                ) VALUES (
+                    1, 'seller@example.com', 'hashed', 'Block Owner', 'user', 'GMFN-U-BLOCKPLUS'
+                ), (
+                    2, 'admin@example.com', 'hashed', 'Package Admin', 'admin', 'GMFN-U-PACKAGEADMIN'
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clans (id, name, marketplace_name, invite_code)
+                VALUES (1, 'Homeland ISA', 'Homeland ISA Marketplace', 'BLOCKPLUS1')
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO clan_memberships (id, clan_id, user_id, role, personal_pool_balance)
+                VALUES (1, 1, 1, 'member', 0)
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO marketplace_shops (
+                    id, clan_id, owner_user_id, shop_name, description, is_active
+                ) VALUES (
+                    1, 1, 1, 'Block Plus Shop', 'Extra slot test', 1
+                )
+                """
+            )
+        )
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    id, owner_user_id, clan_id, shop_id, feature_code, plan_code,
+                    quantity_total, quantity_used, status, starts_at, expires_at,
+                    payment_reference
+                ) VALUES (
+                    1, 2, 1, 1, 'extra_shop_block', 'extra_shop_blocks',
+                    3, 0, 'active', :starts_at, :expires_at,
+                    'GMFN-EXTRA-BLOCKS'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(minutes=1),
+                "expires_at": now + timedelta(days=365),
+            },
+        )
+        for slot in range(1, 13):
+            conn.execute(
+                text(
+                    """
+                    INSERT INTO marketplace_products (
+                        id, clan_id, shop_id, seller_user_id, title, description,
+                        price, currency, image_url, visibility_mode, is_active
+                    ) VALUES (
+                        :id, 1, 1, 1, :title, :description,
+                        '1000', 'NGN', '/uploads/marketplace/images/alias.jpg', 'public', 1
+                    )
+                    """
+                ),
+                {
+                    "id": slot,
+                    "title": f"Alias public block {slot}",
+                    "description": f"[BLOCK:{slot}] Alias public block",
+                },
+            )
+
+    create_res = client.post(
+        "/marketplace/products",
+        json={
+            "clan_id": 1,
+            "shop_id": 1,
+            "name": "Thirteenth block",
+            "description": "[BLOCK:13] Paid extra slot",
+            "price": "2000",
+            "currency": "NGN",
+            "image_url": "/uploads/marketplace/images/new.jpg",
+            "visibility_mode": "community_visible",
+        },
+    )
+    assert create_res.status_code == 200, create_res.text
+    item = create_res.json()["item"]
+    assert item["public_block_number"] == 13
+    assert item["shop_product_slots_free"] == 12
+    assert item["shop_product_slots_extra"] == 3
+    assert item["shop_product_slots_total"] == 15
+
+
 def test_public_shop_face_hides_missing_media_links(client, monkeypatch, tmp_path):
     monkeypatch.setenv("GMFN_UPLOADS_DIR", str(tmp_path))
     _ensure_marketplace_tables()

@@ -55,6 +55,9 @@ type ShopRecord = {
   marketplace_name?: string | null;
   is_active?: boolean;
   created_at?: string | null;
+  shop_product_slots_free?: number | null;
+  shop_product_slots_extra?: number | null;
+  shop_product_slots_total?: number | null;
 };
 
 type ProductRecord = {
@@ -69,6 +72,9 @@ type ProductRecord = {
   visibility_mode?: string | null;
   is_active?: boolean;
   created_at?: string | null;
+  shop_product_slots_free?: number | null;
+  shop_product_slots_extra?: number | null;
+  shop_product_slots_total?: number | null;
 };
 
 type BroadcastRecord = {
@@ -156,6 +162,12 @@ type ShopControlLayerKey =
 
 function safeStr(value: unknown): string {
   return String(value ?? "").trim();
+}
+
+function safePositiveNumber(value: unknown, fallback = 0): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return parsed;
 }
 
 function routeTarget(
@@ -1063,6 +1075,16 @@ export default function ShopControlPage() {
       ),
     [products]
   );
+
+  const publicProductSlotsTotal = useMemo(() => {
+    const fromShop = safePositiveNumber(shop?.shop_product_slots_total, 0);
+    if (fromShop > 0) return fromShop;
+
+    const fromProducts = products
+      .map((item) => safePositiveNumber(item?.shop_product_slots_total, 0))
+      .filter((value) => value > 0);
+    return Math.max(12, ...fromProducts);
+  }, [products, shop]);
 
   const vaultProducts = useMemo(
     () =>
@@ -3302,7 +3324,7 @@ export default function ShopControlPage() {
                 fontWeight: 900,
               }}
             >
-              {publicProducts.length} / 12
+              {publicProducts.length} / {publicProductSlotsTotal}
             </div>
           </div>
 

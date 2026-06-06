@@ -17,6 +17,7 @@ from app.db.database import get_db
 from app.db.models import (
     Clan,
     ClanMembership,
+    FeatureEntitlement,
     MarketplaceBroadcast,
     MarketplaceProduct,
     MarketplaceProductRepost,
@@ -55,6 +56,7 @@ SPOTLIGHT_PAID = "paid"
 
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
+FEATURE_EXTRA_SHOP_BLOCK = "extra_shop_block"
 
 # Temporary pilot override requested during live testing.
 # Product owner extended this on 2026-05-10 for one week so testers can publish
@@ -113,18 +115,18 @@ def _public_product_display_text(value: Any) -> str:
     if not text:
         return ""
 
-    text = re.sub(r"^\[BLOCK:\d{1,2}\]\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"^\[BLOCK:\d+\]\s*", "", text, flags=re.IGNORECASE)
     text = re.sub(r"^\[LABEL:.+?\]\s*", "", text, flags=re.IGNORECASE)
     return text.strip()
 
 
 def _public_product_block_number(value: Any) -> Optional[int]:
-    match = re.match(r"^\[BLOCK:(\d{1,2})\]\s*", _safe_str(value), flags=re.IGNORECASE)
+    match = re.match(r"^\[BLOCK:(\d+)\]\s*", _safe_str(value), flags=re.IGNORECASE)
     if not match:
         return None
 
     block_number = _safe_int(match.group(1), 0)
-    if block_number < 1 or block_number > FREE_COMMUNITY_PRODUCT_SLOTS:
+    if block_number < 1:
         return None
 
     return block_number
@@ -806,6 +808,59 @@ def _count_active_products_for_shop(
     return q.count()
 
 
+def _shop_public_product_slots_total(
+    db: Session,
+    *,
+    shop: Optional[MarketplaceShop],
+) -> int:
+    if shop is None:
+        return FREE_COMMUNITY_PRODUCT_SLOTS
+
+    now = _now_utc()
+    shop_scoped_extra_slots = (
+        db.query(
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            FeatureEntitlement.quantity_total > FeatureEntitlement.quantity_used,
+                            FeatureEntitlement.quantity_total - FeatureEntitlement.quantity_used,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            )
+        )
+        .filter(
+            FeatureEntitlement.shop_id == int(shop.id),
+            FeatureEntitlement.feature_code == FEATURE_EXTRA_SHOP_BLOCK,
+            FeatureEntitlement.status == "active",
+            FeatureEntitlement.revoked_at.is_(None),
+            FeatureEntitlement.starts_at <= now,
+            (FeatureEntitlement.expires_at.is_(None) | (FeatureEntitlement.expires_at >= now)),
+        )
+        .scalar()
+    )
+    if int(shop_scoped_extra_slots or 0) > 0:
+        return FREE_COMMUNITY_PRODUCT_SLOTS + int(shop_scoped_extra_slots or 0)
+
+    extra_slots = get_active_feature_quantity(
+        db,
+        owner_user_id=int(shop.owner_user_id),
+        feature_code=FEATURE_EXTRA_SHOP_BLOCK,
+        shop_id=int(shop.id),
+    )
+    return FREE_COMMUNITY_PRODUCT_SLOTS + max(0, int(extra_slots or 0))
+
+
+def _public_product_capacity_detail(limit: int) -> str:
+    return (
+        f"Maximum of {int(limit)} community-visible products allowed per shop. "
+        "Buy extra shop blocks from Shop Control to add more."
+    )
+
+
 class MarketplaceShopCreateIn(BaseModel):
     clan_id: Optional[int] = None
     name: str = Field(min_length=2, max_length=120)
@@ -905,6 +960,7 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
     )
 
     image_url = _get_shop_image_value(shop)
+    public_slots_total = _shop_public_product_slots_total(db, shop=shop)
 
     return {
         "id": int(shop.id),
@@ -933,6 +989,9 @@ def _shop_out(db: Session, shop: MarketplaceShop) -> Dict[str, Any]:
         "community_name": clan_name,
         "is_active": bool(shop.is_active),
         "created_at": shop.created_at.isoformat() if shop.created_at else None,
+        "shop_product_slots_free": FREE_COMMUNITY_PRODUCT_SLOTS,
+        "shop_product_slots_extra": max(0, public_slots_total - FREE_COMMUNITY_PRODUCT_SLOTS),
+        "shop_product_slots_total": public_slots_total,
     }
 
 
@@ -945,6 +1004,7 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
     seller = db.query(User).filter(User.id == int(product.seller_user_id)).first()
     repost_count = _get_repost_count(db, product_id=int(product.id))
     remaining_slots = _remaining_distribution_slots(db, product_id=int(product.id))
+    public_slots_total = _shop_public_product_slots_total(db, shop=shop)
     visibility_mode = _safe_str(
         getattr(product, "visibility_mode", None),
         VISIBILITY_COMMUNITY,
@@ -998,7 +1058,9 @@ def _product_out(db: Session, product: MarketplaceProduct) -> Dict[str, Any]:
         "distribution_slots_reserved_for_origin_spotlight": ORIGIN_SPOTLIGHT_RESERVED_SLOTS,
         "reposts_used": repost_count,
         "distribution_slots_remaining": remaining_slots,
-        "shop_product_slots_total": FREE_COMMUNITY_PRODUCT_SLOTS,
+        "shop_product_slots_free": FREE_COMMUNITY_PRODUCT_SLOTS,
+        "shop_product_slots_extra": max(0, public_slots_total - FREE_COMMUNITY_PRODUCT_SLOTS),
+        "shop_product_slots_total": public_slots_total,
     }
 
 
@@ -2002,15 +2064,16 @@ def create_marketplace_product(
     visibility_mode = _resolve_visibility_mode(payload.visibility_mode)
 
     if visibility_mode == VISIBILITY_COMMUNITY:
+        public_product_slots_total = _shop_public_product_slots_total(db, shop=shop)
         active_product_count = _count_active_products_for_shop(
             db,
             shop_id=int(shop.id),
             visibility_mode=VISIBILITY_COMMUNITY,
         )
-        if active_product_count >= FREE_COMMUNITY_PRODUCT_SLOTS:
+        if active_product_count >= public_product_slots_total:
             raise HTTPException(
                 status_code=400,
-                detail=f"Maximum of {FREE_COMMUNITY_PRODUCT_SLOTS} community-visible products allowed per shop",
+                detail=_public_product_capacity_detail(public_product_slots_total),
             )
     else:
         sync_legacy_entitlements_to_blocks(
@@ -2106,7 +2169,7 @@ def create_marketplace_product(
                 db,
                 product_id=int(product.id),
             ),
-            "shop_product_slots_total": FREE_COMMUNITY_PRODUCT_SLOTS,
+            "shop_product_slots_total": _shop_public_product_slots_total(db, shop=shop),
             "reason": "marketplace_product_created",
         },
         commit=False,
@@ -2238,16 +2301,22 @@ def update_marketplace_product(
     target_active = False if soft_remove_requested else True if restore_requested else current_active
 
     if target_active and target_visibility == VISIBILITY_COMMUNITY:
+        target_shop = (
+            db.query(MarketplaceShop)
+            .filter(MarketplaceShop.id == int(target_shop_id))
+            .first()
+        )
+        public_product_slots_total = _shop_public_product_slots_total(db, shop=target_shop)
         active_product_count = _count_active_products_for_shop(
             db,
             shop_id=int(target_shop_id),
             visibility_mode=VISIBILITY_COMMUNITY,
             exclude_product_id=int(product.id),
         )
-        if active_product_count >= FREE_COMMUNITY_PRODUCT_SLOTS:
+        if active_product_count >= public_product_slots_total:
             raise HTTPException(
                 status_code=400,
-                detail=f"Maximum of {FREE_COMMUNITY_PRODUCT_SLOTS} community-visible products allowed per shop",
+                detail=_public_product_capacity_detail(public_product_slots_total),
             )
     elif target_active:
         sync_legacy_entitlements_to_blocks(
