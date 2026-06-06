@@ -35902,3 +35902,66 @@ GSN-branded invite composer and invite-entry continuity.
     every phone tap is fixed until the deployed mobile surface is tested;
   - `StableButton.tsx` still appears as line-ending noise in Git status, with
     no functional diff from this pass.
+
+### Community package payment rail (2026-06-06)
+
+- Trigger:
+  - product owner wants the remaining community growth packages prepared before
+    final pilot testing:
+    - extra public shop blocks beyond the free shelf;
+    - extra community member capacity for larger groups;
+    - ROSCA / rotating contribution cycle package;
+    - community meeting pack.
+  - The requested commercial model is intentionally the same simple rail as
+    paid Spotlight/Repost for now: one unit/day-style credit is GBP 1, and six
+    units use the existing GBP 5 bundle rule.
+- Backend changes:
+  - `gmfn_backend/app/services/payment_instruction_service.py` now exposes a
+    shared `COMMUNITY_PACKAGE_CATALOG` and creates
+    `community_package_subscription` expected payments.
+  - Supported package codes:
+    - `extra_shop_blocks`;
+    - `extra_members`;
+    - `rosca_cycle`;
+    - `community_meeting_pack`.
+  - `gmfn_backend/app/api/routes/payment_instructions.py` now has
+    `POST /payment-instructions/community-package`.
+  - The endpoint requires the right owner/admin context:
+    - shop packages must belong to the current user's shop;
+    - community packages require community admin/owner access.
+  - `gmfn_backend/app/services/bank_application_service.py` now grants the
+    matching `FeatureEntitlement` when a `community_package_subscription`
+    expected payment is confirmed.
+- Frontend changes:
+  - `frontend/src/lib/api.ts` now has
+    `createCommunityPackagePaymentInstruction()`.
+  - `frontend/src/pages/ShopControlPage.tsx` now has a stable
+    "Community packages" section under owner shop control paid tools, with
+    buttons for:
+    - Extra shop block;
+    - Extra member place;
+    - ROSCA cycle;
+    - Meeting pack.
+  - The section shows the latest package payment reference/status when one is
+    open.
+- Guardrail / verification:
+  - Passed
+    `python -m pytest gmfn_backend\tests\test_spotlight_subscription_pricing.py -q`
+    (`13 passed`).
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated `npm --prefix frontend run build` passed.
+- Unabated truth:
+  - this is the paid entitlement/package activation rail, not the full
+    deterministic ROSCA engine yet;
+  - the backend still needs the actual ROSCA cycle state machine:
+    setup, member slots, contribution schedule, locked active cycle,
+    payment confirmations, payout turn, support/guarantee route, and completion;
+  - the backend also still needs enforcement/consumption for:
+    extra shop block entitlement;
+    extra member capacity entitlement;
+    meeting pack usage;
+  - until those consumers are wired, payment can grant the package entitlement
+    but the business action is not fully executed end-to-end.

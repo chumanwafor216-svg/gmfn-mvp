@@ -575,6 +575,8 @@ export default function ShopControlPage() {
     null
   );
   const [creatingVaultInstruction, setCreatingVaultInstruction] = useState(false);
+  const [creatingCommunityPackageCode, setCreatingCommunityPackageCode] =
+    useState<string | null>(null);
   const [creatingVaultLink, setCreatingVaultLink] = useState(false);
   const [busyVaultLinkId, setBusyVaultLinkId] = useState<number | null>(null);
   const [busyVaultLinkAction, setBusyVaultLinkAction] = useState<"extend" | "revoke" | null>(
@@ -1105,9 +1107,12 @@ export default function ShopControlPage() {
 
   const featurePayments = useMemo(() => {
     return expectedPayments.filter((item) =>
-      ["vault_subscription", "merchant_verify_subscription", "spotlight_subscription"].includes(
-        firstTruthy(item?.expected_type).toLowerCase()
-      )
+      [
+        "vault_subscription",
+        "merchant_verify_subscription",
+        "spotlight_subscription",
+        "community_package_subscription",
+      ].includes(firstTruthy(item?.expected_type).toLowerCase())
     );
   }, [expectedPayments]);
 
@@ -1132,6 +1137,15 @@ export default function ShopControlPage() {
     () =>
       featurePayments.find(
         (item) => firstTruthy(item?.expected_type).toLowerCase() === "spotlight_subscription"
+      ) || null,
+    [featurePayments]
+  );
+
+  const latestCommunityPackagePayment = useMemo(
+    () =>
+      featurePayments.find(
+        (item) =>
+          firstTruthy(item?.expected_type).toLowerCase() === "community_package_subscription"
       ) || null,
     [featurePayments]
   );
@@ -1500,6 +1514,52 @@ export default function ShopControlPage() {
       );
     } finally {
       setCreatingMerchantVerifyInstruction(false);
+    }
+  }
+
+  async function createCommunityPackageInstruction(
+    packageCode: string,
+    label: string,
+    options: { needsShop?: boolean; quantityTotal?: number } = {}
+  ) {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    if (!clanId) {
+      showNotice("error", "Choose a community first.");
+      return;
+    }
+    if (options.needsShop && !shop?.id) {
+      showNotice("error", "Shop record is not available.");
+      return;
+    }
+
+    setCreatingCommunityPackageCode(packageCode);
+    try {
+      const result = await apiJson<any>("/api/payment-instructions/community-package", {
+        method: "POST",
+        body: JSON.stringify({
+          clan_id: clanId,
+          package_code: packageCode,
+          quantity_total: options.quantityTotal || 1,
+          shop_id: options.needsShop ? Number(shop?.id) : undefined,
+          currency: "GBP",
+        }),
+      });
+
+      await loadPage();
+      const copied = await copyText(
+        firstTruthy(result?.reference_display, result?.reference),
+        `${label} payment reference copied.`
+      );
+      showNotice(
+        copied ? "success" : "error",
+        copied
+          ? `${label} payment request created. Reference copied.`
+          : `${label} payment request created, but clipboard copy was blocked. Copy the reference shown here.`
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || `${label} payment request could not be created.`);
+    } finally {
+      setCreatingCommunityPackageCode(null);
     }
   }
 
@@ -2722,7 +2782,9 @@ export default function ShopControlPage() {
           style={{
             marginTop: 14,
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "repeat(auto-fit, minmax(230px, 1fr))",
             gap: 12,
           }}
         >
@@ -3031,6 +3093,104 @@ export default function ShopControlPage() {
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
               {spotlightProofText}
+            </div>
+          </div>
+
+          <div
+            id="shop-control-community-packages"
+            style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 58%, #FFF8DE 100%)")}
+          >
+            <div style={sectionLabel()}>Community packages</div>
+            <div style={{ marginTop: 10, color: "#0B1F33", fontSize: 20, fontWeight: 950 }}>
+              Add capacity when the community needs more.
+            </div>
+            <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+              Generate a payment reference for the exact package. GSN activates the package after the bank match.
+            </div>
+            <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <span style={badge(false)}>Rail: GBP 1 per unit</span>
+              <span style={badge(Boolean(latestCommunityPackagePayment))}>
+                {latestCommunityPackagePayment
+                  ? firstTruthy(latestCommunityPackagePayment.status, "Expected")
+                  : "No request yet"}
+              </span>
+            </div>
+            {latestCommunityPackagePayment ? (
+              <div
+                style={{
+                  marginTop: 12,
+                  ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                  border: "1px solid rgba(13,95,168,0.10)",
+                }}
+              >
+                <div style={sectionLabel()}>Latest package reference</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontSize: 16, fontWeight: 950 }}>
+                  {firstTruthy(latestCommunityPackagePayment.reference_display, "Awaiting reference")}
+                </div>
+                <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                  {safeStr(latestCommunityPackagePayment.confirmed_at)
+                    ? `Confirmed ${safeDateTime(latestCommunityPackagePayment.confirmed_at)}`
+                    : firstTruthy(latestCommunityPackagePayment.status, "Expected")}
+                </div>
+              </div>
+            ) : null}
+            <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
+              <PrimaryButton
+                onClick={() =>
+                  createCommunityPackageInstruction("extra_shop_blocks", "Extra shop block", {
+                    needsShop: true,
+                  })
+                }
+                disabled={shopActionsLocked || Boolean(creatingCommunityPackageCode)}
+                busy={creatingCommunityPackageCode === "extra_shop_blocks"}
+                busyLabel="Preparing..."
+                fullWidth
+                debugId="shop-control.package.extra-shop-block"
+              >
+                Extra shop block
+              </PrimaryButton>
+              <SecondaryButton
+                onClick={() =>
+                  createCommunityPackageInstruction("extra_members", "Extra member place")
+                }
+                disabled={shopActionsLocked || Boolean(creatingCommunityPackageCode)}
+                busy={creatingCommunityPackageCode === "extra_members"}
+                busyLabel="Preparing..."
+                fullWidth
+                debugId="shop-control.package.extra-members"
+              >
+                Extra member place
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() =>
+                  createCommunityPackageInstruction("rosca_cycle", "ROSCA cycle")
+                }
+                disabled={shopActionsLocked || Boolean(creatingCommunityPackageCode)}
+                busy={creatingCommunityPackageCode === "rosca_cycle"}
+                busyLabel="Preparing..."
+                fullWidth
+                debugId="shop-control.package.rosca-cycle"
+              >
+                ROSCA cycle
+              </SecondaryButton>
+              <SecondaryButton
+                onClick={() =>
+                  createCommunityPackageInstruction(
+                    "community_meeting_pack",
+                    "Community meeting pack"
+                  )
+                }
+                disabled={shopActionsLocked || Boolean(creatingCommunityPackageCode)}
+                busy={creatingCommunityPackageCode === "community_meeting_pack"}
+                busyLabel="Preparing..."
+                fullWidth
+                debugId="shop-control.package.meeting-pack"
+              >
+                Meeting pack
+              </SecondaryButton>
+            </div>
+            <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
+              This creates the payment instruction only. The contribution and payout cycle still needs its own deterministic ROSCA execution states.
             </div>
           </div>
         </div>

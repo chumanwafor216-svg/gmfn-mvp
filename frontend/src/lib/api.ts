@@ -3226,6 +3226,24 @@ export async function createSpotlightPaymentInstruction(payload: {
   });
 }
 
+export async function createCommunityPackagePaymentInstruction(payload: {
+  clan_id: number;
+  package_code: string;
+  quantity_total?: number;
+  shop_id?: number | null;
+  amount?: string | number | null;
+  currency?: string;
+}): Promise<any> {
+  return httpJson("/payment-instructions/community-package", "POST", {
+    clan_id: payload.clan_id,
+    package_code: payload.package_code,
+    quantity_total: payload.quantity_total ?? 1,
+    shop_id: payload.shop_id ?? undefined,
+    amount: payload.amount ?? undefined,
+    currency: payload.currency || "GBP",
+  });
+}
+
 export async function listMyPaymentInstructionExpectedPayments(payload: {
   clan_id: number;
   expected_type?: string;

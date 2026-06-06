@@ -22,12 +22,53 @@ VAULT_SLOT_DURATION_DAYS = 30
 FEATURE_VAULT_SLOT = "vault_slot"
 FEATURE_MERCHANT_VERIFY = "merchant_verify"
 FEATURE_SPOTLIGHT_PRIORITY = "spotlight_priority"
+FEATURE_EXTRA_SHOP_BLOCK = "extra_shop_block"
+FEATURE_COMMUNITY_MEMBER_CAPACITY = "community_member_capacity"
+FEATURE_ROSCA_CYCLE = "rosca_cycle"
+FEATURE_COMMUNITY_MEETING_PACK = "community_meeting_pack"
 
 PLAN_VAULT_SLOT_1_PERIOD = "vault_slot_1_30d"
 PLAN_VAULT_SLOT_6_PERIOD = "vault_slot_6_30d"
 PLAN_MERCHANT_VERIFY_YEAR = "merchant_verify_year"
 PLAN_SPOTLIGHT_PRIORITY_YEAR = "spotlight_priority_year"
 PLAN_SPOTLIGHT_CREDIT_PACK = "spotlight_credit_pack"
+PLAN_EXTRA_SHOP_BLOCK_PACK = "extra_shop_block_pack"
+PLAN_COMMUNITY_MEMBER_CAPACITY_PACK = "community_member_capacity_pack"
+PLAN_ROSCA_CYCLE_PACK = "rosca_cycle_pack"
+PLAN_COMMUNITY_MEETING_PACK = "community_meeting_pack"
+
+COMMUNITY_PACKAGE_EXPECTED_TYPE = "community_package_subscription"
+
+COMMUNITY_PACKAGE_CATALOG: Dict[str, Dict[str, str]] = {
+    "extra_shop_blocks": {
+        "feature_code": FEATURE_EXTRA_SHOP_BLOCK,
+        "plan_code": PLAN_EXTRA_SHOP_BLOCK_PACK,
+        "title": "Extra public shop blocks",
+        "unit_label": "public shop block",
+        "payment_context": "extra_public_shop_blocks",
+    },
+    "extra_members": {
+        "feature_code": FEATURE_COMMUNITY_MEMBER_CAPACITY,
+        "plan_code": PLAN_COMMUNITY_MEMBER_CAPACITY_PACK,
+        "title": "Extra community membership strength",
+        "unit_label": "extra member place",
+        "payment_context": "extra_community_members",
+    },
+    "rosca_cycle": {
+        "feature_code": FEATURE_ROSCA_CYCLE,
+        "plan_code": PLAN_ROSCA_CYCLE_PACK,
+        "title": "ROSCA contribution cycle",
+        "unit_label": "cycle unit",
+        "payment_context": "rosca_contribution_cycle",
+    },
+    "community_meeting_pack": {
+        "feature_code": FEATURE_COMMUNITY_MEETING_PACK,
+        "plan_code": PLAN_COMMUNITY_MEETING_PACK,
+        "title": "Large community meeting pack",
+        "unit_label": "meeting pack unit",
+        "payment_context": "large_community_meeting_pack",
+    },
+}
 
 
 def _now_utc() -> datetime:
@@ -97,6 +138,15 @@ def calc_spotlight_subscription_amount(quantity_total: int) -> Decimal:
     )
 
 
+def calc_community_package_amount(quantity_total: int) -> Decimal:
+    """
+    Pilot package pricing follows the paid Spotlight rail:
+    - 1 package unit = 1.00 GBP
+    - every full 6-unit bundle = 5.00 GBP
+    """
+    return calc_spotlight_subscription_amount(quantity_total)
+
+
 def build_vault_subscription_reference(
     *,
     owner_user_id: int,
@@ -134,6 +184,34 @@ def build_spotlight_subscription_reference(
     return (
         f"GMFN-SPOT-U{int(owner_user_id)}-S{int(shop_id)}-Q{qty}-"
         f"{str(cycle_code).strip().upper()}-{_timestamp_code()}-{_unique_suffix()}"
+    )
+
+
+def build_community_package_reference(
+    *,
+    owner_user_id: int,
+    clan_id: int,
+    package_code: str,
+    quantity_total: int = 1,
+    shop_id: Optional[int] = None,
+    cycle_code: str = ANNUAL_BILLING_CYCLE,
+) -> str:
+    qty = _positive_int(quantity_total, name="quantity_total")
+    package_slug = (
+        str(package_code or "")
+        .strip()
+        .upper()
+        .replace("_", "-")
+        .replace(" ", "-")
+    )
+    if not package_slug:
+        raise ValueError("package_code is required")
+
+    shop_part = f"-S{int(shop_id)}" if shop_id is not None else ""
+    return (
+        f"GMFN-PACK-{package_slug}-U{int(owner_user_id)}-C{int(clan_id)}"
+        f"{shop_part}-Q{qty}-{str(cycle_code).strip().upper()}-"
+        f"{_timestamp_code()}-{_unique_suffix()}"
     )
 
 
@@ -482,6 +560,70 @@ def create_spotlight_subscription_instruction(
             extra={
                 "visibility_scope": str(visibility_scope).strip().lower()
                 or "direct_communities",
+            },
+        ),
+    )
+
+
+def create_community_package_instruction(
+    db: Session,
+    *,
+    clan_id: int,
+    owner_user_id: int,
+    package_code: str,
+    quantity_total: int = 1,
+    shop_id: Optional[int] = None,
+    amount: Optional[Decimal] = None,
+    currency: str = "GBP",
+    billing_cycle: str = ANNUAL_BILLING_CYCLE,
+    due_at: Optional[datetime] = None,
+) -> Dict[str, Any]:
+    package_key = str(package_code or "").strip().lower()
+    package = COMMUNITY_PACKAGE_CATALOG.get(package_key)
+    if not package:
+        raise ValueError("Unsupported community package code")
+
+    qty = _positive_int(quantity_total, name="quantity_total")
+    if qty > 365:
+        raise ValueError("Community package quantity currently supports 1 to 365 units only.")
+
+    resolved_amount = calc_community_package_amount(qty)
+    if amount is not None and _d(amount) != resolved_amount:
+        raise ValueError("amount does not match community package pricing for this quantity")
+
+    reference_display = build_community_package_reference(
+        owner_user_id=int(owner_user_id),
+        clan_id=int(clan_id),
+        package_code=package_key,
+        quantity_total=qty,
+        shop_id=int(shop_id) if shop_id is not None else None,
+        cycle_code=billing_cycle,
+    )
+
+    return create_feature_subscription_instruction(
+        db,
+        clan_id=int(clan_id),
+        user_id=int(owner_user_id),
+        expected_type=COMMUNITY_PACKAGE_EXPECTED_TYPE,
+        amount=resolved_amount,
+        currency=currency,
+        reference_display=reference_display,
+        due_at=due_at or _default_due_at(),
+        meta=_feature_subscription_meta(
+            feature_code=package["feature_code"],
+            plan_code=package["plan_code"],
+            owner_user_id=int(owner_user_id),
+            shop_id=int(shop_id) if shop_id is not None else None,
+            quantity_total=qty,
+            billing_cycle=billing_cycle,
+            extra={
+                "clan_id": int(clan_id),
+                "package_code": package_key,
+                "package_title": package["title"],
+                "unit_label": package["unit_label"],
+                "payment_context": package["payment_context"],
+                "payment_beneficiary_scope": "platform",
+                "pricing_model": "spotlight_bundle_rail",
             },
         ),
     )

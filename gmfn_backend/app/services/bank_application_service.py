@@ -353,6 +353,7 @@ def _apply_feature_subscription(
     - vault_subscription
     - merchant_verify_subscription
     - spotlight_subscription
+    - community_package_subscription
     """
     if (exp.status or "").lower() != "confirmed":
         return {
@@ -481,6 +482,10 @@ def _apply_feature_subscription(
         "vault_slot": "feature.vault_subscription.activated",
         "merchant_verify": "feature.merchant_verify_subscription.activated",
         "spotlight_priority": "feature.spotlight_subscription.activated",
+        "extra_shop_block": "feature.extra_shop_blocks.activated",
+        "community_member_capacity": "feature.community_member_capacity.activated",
+        "rosca_cycle": "feature.rosca_cycle.activated",
+        "community_meeting_pack": "feature.community_meeting_pack.activated",
     }
 
     log_trust_event(
@@ -559,6 +564,7 @@ def apply_expected_payment_match(
         "vault_subscription",
         "merchant_verify_subscription",
         "spotlight_subscription",
+        "community_package_subscription",
     }:
         return _apply_feature_subscription(db, be=be, exp=exp)
 

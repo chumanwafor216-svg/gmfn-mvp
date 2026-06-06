@@ -10,13 +10,16 @@ from sqlalchemy.orm import Session
 
 from app.core.auth import get_current_user
 from app.db.database import get_db
-from app.db.models import MarketplaceShop, User
+from app.db.models import ClanMembership, MarketplaceShop, User
 from app.services.payment_instruction_service import (
+    COMMUNITY_PACKAGE_CATALOG,
     PAYMENT_DUE_WINDOW_DAYS,
     VAULT_DEFAULT_BILLING_CYCLE,
     VAULT_SLOT_DURATION_DAYS,
+    calc_community_package_amount,
     create_loan_repayment_instruction,
     create_pool_deposit_instruction,
+    create_community_package_instruction,
     create_merchant_verify_instruction,
     create_spotlight_subscription_instruction,
     create_vault_subscription_instruction,
@@ -88,6 +91,40 @@ def _require_shop_owner(
     return shop
 
 
+def _require_clan_admin(
+    db: Session,
+    *,
+    clan_id: int,
+    current_user: User,
+) -> ClanMembership:
+    is_admin = str(getattr(current_user, "role", "") or "").lower() == "admin"
+    membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.user_id == int(current_user.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+
+    if is_admin:
+        if membership:
+            return membership
+        return ClanMembership(
+            clan_id=int(clan_id),
+            user_id=int(current_user.id),
+            role="admin",
+        )
+
+    if not membership or str(getattr(membership, "role", "") or "").lower() != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Only a community admin can create this package payment instruction",
+        )
+    return membership
+
+
 class PoolInstructionIn(BaseModel):
     clan_id: int
     amount: Decimal = Field(..., gt=Decimal("0"))
@@ -122,6 +159,15 @@ class SpotlightInstructionIn(BaseModel):
     quantity_total: int = Field(default=1, ge=1, le=365)
     currency: str = "GBP"
     visibility_scope: str = "direct_communities"
+
+
+class CommunityPackageInstructionIn(BaseModel):
+    clan_id: int
+    package_code: str = Field(..., min_length=3, max_length=64)
+    quantity_total: int = Field(default=1, ge=1, le=365)
+    shop_id: Optional[int] = None
+    amount: Optional[Decimal] = Field(default=None, gt=Decimal("0"))
+    currency: str = "GBP"
 
 
 @router.post("/pool")
@@ -269,6 +315,58 @@ def create_spotlight_payment_instruction(
     return out
 
 
+@router.post("/community-package")
+def create_community_package_payment_instruction(
+    payload: CommunityPackageInstructionIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> Dict[str, Any]:
+    package_code = str(payload.package_code or "").strip().lower()
+    if package_code not in COMMUNITY_PACKAGE_CATALOG:
+        raise HTTPException(status_code=400, detail="Unsupported community package code")
+
+    package = COMMUNITY_PACKAGE_CATALOG[package_code]
+    package_needs_shop = package_code in {"extra_shop_blocks"}
+
+    if package_needs_shop or payload.shop_id is not None:
+        shop = _require_shop_owner(
+            db,
+            shop_id=int(payload.shop_id or 0),
+            current_user=current_user,
+        )
+        if shop.clan_id is not None and int(shop.clan_id) != int(payload.clan_id):
+            raise HTTPException(
+                status_code=400,
+                detail="This shop does not belong to the selected community",
+            )
+    else:
+        _require_clan_admin(
+            db,
+            clan_id=int(payload.clan_id),
+            current_user=current_user,
+        )
+
+    try:
+        out = create_community_package_instruction(
+            db,
+            clan_id=int(payload.clan_id),
+            owner_user_id=int(current_user.id),
+            shop_id=int(payload.shop_id) if payload.shop_id is not None else None,
+            package_code=package_code,
+            quantity_total=int(payload.quantity_total),
+            amount=payload.amount,
+            currency=payload.currency,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    out["settlement"] = get_settlement_config()
+    out["instruction_type"] = "community_package_subscription"
+    out["package_code"] = package_code
+    out["package_title"] = package["title"]
+    return out
+
+
 @router.get("/my/expected")
 def my_expected_payments(
     clan_id: int = Query(..., ge=1),
@@ -304,6 +402,7 @@ def my_instruction_config(
             "vault_subscription",
             "merchant_verify_subscription",
             "spotlight_subscription",
+            "community_package_subscription",
         ],
         "vault_supported_quantities": [1, 2, 3, 4, 5, 6],
         "vault_config": {
@@ -329,5 +428,26 @@ def my_instruction_config(
             "payment_method": "bank_transfer",
             "payment_beneficiary_scope": "platform",
             "billing_cycle": "annual",
+        },
+        "community_package_config": {
+            "max_units": 365,
+            "unit_price_gbp": "1.00",
+            "bundle_unit_count": 6,
+            "bundle_price_gbp": "5.00",
+            "payment_instruction_expiry_days": PAYMENT_DUE_WINDOW_DAYS,
+            "payment_method": "bank_transfer",
+            "payment_beneficiary_scope": "platform",
+            "billing_cycle": "annual",
+            "packages": [
+                {
+                    "package_code": code,
+                    "feature_code": cfg["feature_code"],
+                    "title": cfg["title"],
+                    "unit_label": cfg["unit_label"],
+                    "one_unit_amount_gbp": str(calc_community_package_amount(1)),
+                    "six_unit_bundle_amount_gbp": str(calc_community_package_amount(6)),
+                }
+                for code, cfg in COMMUNITY_PACKAGE_CATALOG.items()
+            ],
         },
     }
