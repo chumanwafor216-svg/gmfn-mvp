@@ -120,8 +120,14 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const routeRepostProductId = useMemo[\s\S]*?repost_product_id[\s\S]*?const routeRepostBlockNumber = useMemo[\s\S]*?block[\s\S]*?marketplace-paid-network-placement[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)/,
-  "Marketplace Paid Repost must accept exact Shop Diaries product/block handoff instead of opening as a generic marketplace stop."
+  /PAID_REPOST_HANDOFF_STORAGE_KEY[\s\S]*?readPaidRepostHandoff[\s\S]*?routeRepostHandoffProduct[\s\S]*?visibleRepostProducts[\s\S]*?marketplace-paid-network-placement[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?visibleRepostProducts\.find[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)/,
+  "Marketplace Paid Repost must accept exact Shop Diaries product/block handoff, keep it visible as a fallback selected block, and avoid opening as a generic marketplace stop."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /PAID_REPOST_HANDOFF_STORAGE_KEY[\s\S]*?function writePaidRepostHandoff\(product: ShopProduct\)[\s\S]*?source: "shop-diaries"[\s\S]*?window\.sessionStorage\.setItem[\s\S]*?function paidRepostHandoffHandler\(product: ShopProduct\)[\s\S]*?<StableCtaLink[\s\S]*?to=\{blockPlacementPath\(product\)\}[\s\S]*?onClick=\{paidRepostHandoffHandler\(product\)\}[\s\S]*?Repost/,
+  "Shop Diaries Repost must store the exact public block handoff before routing into Marketplace Paid Repost."
 );
 
 {

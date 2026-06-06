@@ -35384,3 +35384,53 @@ GSN-branded invite composer and invite-entry continuity.
     `package.json`.
   - Frontend build passed with approved elevated build:
     `npm --prefix frontend run build`.
+
+### Shop Diaries to Paid Repost exact-block handoff repair (2026-06-06)
+
+- Route/screens affected:
+  - Public Shop / Shop Diaries item actions;
+  - Marketplace / Paid Repost / Network Spotlight placement panel.
+- Confirmed truth:
+  - the previous Paid Repost repair improved owner product loading and button
+    guards, but the Shop Diaries `Repost` action still only sent query
+    parameters;
+  - if Marketplace could not immediately re-match that product from its own
+    product list, the user landed on the Paid Repost panel with `No public block
+    is ready`, no selected media preview, and no clear confirmation that the
+    tapped block was received.
+- Frontend change:
+  - `ShopGalleryPage` now stores a self-contained paid-repost handoff in
+    `sessionStorage` before routing from a Shop Diaries `Repost` button. The
+    handoff includes product id, block number, title, description, price,
+    currency, media urls, shop name, seller GSN id, WhatsApp, community id, and
+    public shop url;
+  - `MarketplacePage` now reads that handoff and folds it into the visible
+    Paid Repost product list as a fallback exact selected block. Backend-loaded
+    product truth still wins when available;
+  - the Paid Repost panel now shows the selected block preview immediately when
+    the handoff is present, including media, title, block number, price, shop,
+    and GSN id;
+  - if a route carries a product/block id but neither backend data nor handoff
+    can show the selected block, the panel now explains that the handoff failed
+    instead of silently showing a generic empty state.
+- Guardrails:
+  - `frontend/tools/audit-marketplace-actions.mjs` now requires Shop Diaries to
+    write the exact handoff and Marketplace to consume it;
+  - `frontend/tools/audit-link-contracts.mjs` now requires the Paid Repost route
+    to preserve a fallback exact-block preview, not just a query-parameter
+    match.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:shop-assets-slots`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed targeted lint:
+    `npx eslint src/pages/ShopGalleryPage.tsx src/pages/MarketplacePage.tsx --max-warnings=0`.
+  - Frontend build passed with approved elevated build: `npm run build` from
+    `frontend/`.
+- Remaining truth:
+  - this fixes the exact selected-block communication and first-step preview.
+    It does not implement a new multi-step wizard UI; target community id,
+    target help, duration, payment-code generation, credit refresh, and final
+    placement remain in the existing Paid Repost panel.

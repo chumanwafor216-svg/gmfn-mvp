@@ -886,8 +886,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /const routeRepostProductId = useMemo[\s\S]*?query\.get\("repost_product_id"\)[\s\S]*?const routeRepostBlockNumber = useMemo[\s\S]*?query\.get\("block"\)[\s\S]*?const routeRepostSource = useMemo[\s\S]*?query\.get\("source"\)[\s\S]*?hash === "marketplace-paid-network-placement"[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?repostProducts\.find\(\(product\) => product\.id === routeRepostProductId\)[\s\S]*?product\.blockNumber === routeRepostBlockNumber[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)[\s\S]*?scrollToMarketplaceSection\("marketplace-paid-network-placement"\)/,
-  "Marketplace must consume Shop Diaries product/block handoff and open the paid Network Spotlight composer with the exact block selected."
+  /const routeRepostProductId = useMemo[\s\S]*?query\.get\("repost_product_id"\)[\s\S]*?const routeRepostBlockNumber = useMemo[\s\S]*?query\.get\("block"\)[\s\S]*?const routeRepostSource = useMemo[\s\S]*?query\.get\("source"\)[\s\S]*?readPaidRepostHandoff[\s\S]*?visibleRepostProducts[\s\S]*?hash === "marketplace-paid-network-placement"[\s\S]*?routeRepostSource === "shop-diaries"[\s\S]*?visibleRepostProducts\.find\(\(product\) => product\.id === routeRepostProductId\)[\s\S]*?product\.blockNumber === routeRepostBlockNumber[\s\S]*?setSelectedRepostProductId\(matchedProduct\.id\)[\s\S]*?scrollToMarketplaceSection\("marketplace-paid-network-placement"\)/,
+  "Marketplace must consume Shop Diaries product/block handoff, preserve an exact fallback preview, and open the paid Network Spotlight composer with the exact block selected."
 );
 
 assertNotContains(

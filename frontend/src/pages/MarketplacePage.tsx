@@ -171,6 +171,27 @@ type RepostProductOption = {
   repostsUsed: number;
 };
 
+type PaidRepostHandoff = {
+  version?: number;
+  source?: string;
+  createdAt?: string;
+  productId?: number;
+  blockNumber?: number;
+  title?: string;
+  description?: string;
+  priceText?: string;
+  currency?: string;
+  imageUrl?: string;
+  videoUrl?: string;
+  originShopName?: string;
+  sellerGmfnId?: string;
+  whatsappNumber?: string;
+  ownerCommunityId?: number;
+  publicShopUrl?: string;
+};
+
+const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
+
 type ExpectedPaymentRecord = {
   id?: number | string | null;
   expected_type?: string | null;
@@ -926,6 +947,72 @@ function normalizeRepostProductOption(raw: any): RepostProductOption | null {
   };
 }
 
+function normalizePaidRepostHandoff(raw: PaidRepostHandoff | null): RepostProductOption | null {
+  if (!raw) return null;
+  const id = positiveNumber(raw.productId);
+  const blockNumber = positiveNumber(raw.blockNumber);
+  if (!id && !blockNumber) return null;
+
+  const priceText = firstTruthy(raw.priceText);
+  const currency = firstTruthy(raw.currency, "NGN");
+  const price = priceText
+    ? priceText.replace(new RegExp(`\\s+${currency}$`, "i"), "").trim()
+    : "";
+
+  return {
+    id: id || blockNumber,
+    blockNumber,
+    title: firstTruthy(raw.title, `Public block ${blockNumber || id || "?"}`),
+    description: stripPublicBlockMetadata(raw.description),
+    price,
+    currency,
+    imageUrl: firstTruthy(raw.imageUrl),
+    videoUrl: firstTruthy(raw.videoUrl),
+    originShopName: firstPublicIdentity(raw.originShopName),
+    sellerGmfnId: firstTruthy(raw.sellerGmfnId),
+    whatsappNumber: firstTruthy(raw.whatsappNumber),
+    visibilityMode: "community_visible",
+    remainingSlots: 0,
+    repostsUsed: 0,
+  };
+}
+
+function readPaidRepostHandoff(
+  routeProductId: number,
+  routeBlockNumber: number,
+  routeSource: string
+): RepostProductOption | null {
+  if (typeof window === "undefined") return null;
+  if (
+    routeSource &&
+    routeSource !== "shop-diaries" &&
+    routeSource !== "shop-control-gallery"
+  ) {
+    return null;
+  }
+
+  try {
+    const text = window.sessionStorage.getItem(PAID_REPOST_HANDOFF_STORAGE_KEY);
+    if (!text) return null;
+    const raw = JSON.parse(text) as PaidRepostHandoff;
+    const handoffProductId = positiveNumber(raw.productId);
+    const handoffBlockNumber = positiveNumber(raw.blockNumber);
+    if (routeProductId && handoffProductId && routeProductId !== handoffProductId) {
+      return null;
+    }
+    if (
+      routeBlockNumber &&
+      handoffBlockNumber &&
+      routeBlockNumber !== handoffBlockNumber
+    ) {
+      return null;
+    }
+    return normalizePaidRepostHandoff(raw);
+  } catch {
+    return null;
+  }
+}
+
 function resolveRepostAssetSrc(raw: any): string {
   const text = safeStr(raw);
   if (!text) return "";
@@ -939,6 +1026,15 @@ function repostProductLabel(product: RepostProductOption | null): string {
   return product.description
     ? `${blockPrefix}${product.title} - ${product.description}`
     : `${blockPrefix}${product.title}`;
+}
+
+function repostProductPriceLabel(product: RepostProductOption | null): string {
+  if (!product?.price) return "";
+  const price = safeStr(product.price);
+  const currency = safeStr(product.currency || "NGN");
+  if (!currency) return price;
+  if (new RegExp(`(?:^|\\s)${currency}$`, "i").test(price)) return price;
+  return `${price} ${currency}`;
 }
 
 function uniqRepostProductOptions(items: RepostProductOption[]): RepostProductOption[] {
@@ -2785,6 +2881,15 @@ export default function MarketplacePage() {
     const query = new URLSearchParams(location.search);
     return safeStr(query.get("source")).toLowerCase();
   }, [location.search]);
+  const routeRepostHandoffProduct = useMemo(
+    () =>
+      readPaidRepostHandoff(
+        routeRepostProductId,
+        routeRepostBlockNumber,
+        routeRepostSource
+      ),
+    [routeRepostBlockNumber, routeRepostProductId, routeRepostSource]
+  );
   const selectedClanId = routeSelectedClanId || Number(getSelectedClanId() || 0);
   const currentGmfnId = safeStr(me?.gmfn_id || "");
   const publicShopOwnerId = firstTruthy(
@@ -2972,13 +3077,22 @@ export default function MarketplacePage() {
     publicShopRecord?.whatsapp_number,
   ]);
 
+  const visibleRepostProducts = useMemo(() => {
+    return uniqRepostProductOptions(
+      [
+        ...repostProducts,
+        routeRepostHandoffProduct,
+      ].filter((item): item is RepostProductOption => Boolean(item))
+    );
+  }, [repostProducts, routeRepostHandoffProduct]);
+
   const selectedRepostProduct = useMemo(() => {
     return (
-      repostProducts.find((product) => product.id === selectedRepostProductId) ||
-      repostProducts[0] ||
+      visibleRepostProducts.find((product) => product.id === selectedRepostProductId) ||
+      visibleRepostProducts[0] ||
       null
     );
-  }, [repostProducts, selectedRepostProductId]);
+  }, [visibleRepostProducts, selectedRepostProductId]);
 
   const selectedRepostProductVideoSrc = useMemo(() => {
     return resolveRepostAssetSrc(selectedRepostProduct?.videoUrl);
@@ -3925,10 +4039,10 @@ export default function MarketplacePage() {
 
     const matchedProduct =
       (routeRepostProductId
-        ? repostProducts.find((product) => product.id === routeRepostProductId)
+        ? visibleRepostProducts.find((product) => product.id === routeRepostProductId)
         : null) ||
       (routeRepostBlockNumber
-        ? repostProducts.find(
+        ? visibleRepostProducts.find(
             (product) => product.blockNumber === routeRepostBlockNumber
           )
         : null);
@@ -3956,12 +4070,12 @@ export default function MarketplacePage() {
   }, [
     location.search,
     location.hash,
-    repostProducts,
     routeRepostBlockNumber,
     routeRepostProductId,
     routeRepostSource,
     scrollToMarketplaceSection,
     selectedRepostProductId,
+    visibleRepostProducts,
   ]);
 
   const memberName = useMemo(() => {
@@ -6186,7 +6300,7 @@ export default function MarketplacePage() {
                             alignItems: "center",
                           }}
                         >
-                          {selectedRepostProduct.price ? (
+                          {repostProductPriceLabel(selectedRepostProduct) ? (
                             <span
                               style={{
                                 ...badge(true),
@@ -6194,8 +6308,7 @@ export default function MarketplacePage() {
                                 color: "#FFF4C7",
                               }}
                             >
-                              {selectedRepostProduct.price}{" "}
-                              {selectedRepostProduct.currency || "NGN"}
+                              {repostProductPriceLabel(selectedRepostProduct)}
                             </span>
                           ) : null}
                           <span
@@ -6300,6 +6413,33 @@ export default function MarketplacePage() {
                         before you choose the target community.
                       </div>
                     </div>
+                  ) : routeRepostProductId || routeRepostBlockNumber ? (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        minHeight: 108,
+                        padding: 14,
+                        borderRadius: 18,
+                        border: "1px solid rgba(139, 25, 25, 0.2)",
+                        background: "rgba(255, 239, 239, 0.92)",
+                        color: "#3B1420",
+                        display: "grid",
+                        alignContent: "center",
+                        gap: 6,
+                        overflowAnchor: "none",
+                        transition: "none",
+                      }}
+                    >
+                      <div style={{ fontWeight: 950 }}>
+                        GSN received the Repost route, but the selected public
+                        block was not returned yet.
+                      </div>
+                      <div style={{ ...helperText(), fontSize: 13, color: "#6B2630" }}>
+                        Go back to Shop Diaries and tap Repost on that block
+                        again, or refresh the shop record. The first step must
+                        show the exact block before a target community is chosen.
+                      </div>
+                    </div>
                   ) : null}
                   <div
                     style={{
@@ -6324,7 +6464,7 @@ export default function MarketplacePage() {
                         data-gmfn-control-state={
                           loadingRepostProducts
                             ? "loading"
-                            : repostProducts.length === 0
+                            : visibleRepostProducts.length === 0
                               ? "empty"
                               : "ready"
                         }
@@ -6333,14 +6473,14 @@ export default function MarketplacePage() {
                           opacity: loadingRepostProducts ? 0.78 : 1,
                         }}
                       >
-                        {repostProducts.length === 0 ? (
+                        {visibleRepostProducts.length === 0 ? (
                           <option value="">
                             {loadingRepostProducts
                               ? "Loading public blocks..."
                               : "No public block is ready"}
                           </option>
                         ) : (
-                          repostProducts.map((product) => (
+                          visibleRepostProducts.map((product) => (
                             <option key={`marketplace-repost-product-${product.id}`} value={product.id}>
                               {repostProductLabel(product)}
                             </option>

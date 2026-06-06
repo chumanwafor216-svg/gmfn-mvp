@@ -89,6 +89,7 @@ type ShopBroadcast = {
 type NoticeTone = "success" | "error";
 
 const GALLERY_SLOTS_TOTAL = 12;
+const PAID_REPOST_HANDOFF_STORAGE_KEY = "gmfn_paid_repost_handoff_v1";
 const PLACEHOLDER_TEXTS = new Set([
   "string",
   "null",
@@ -114,6 +115,14 @@ function firstMeaningful(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function stripPublicBlockMetadata(description: any): string {
+  return safeStr(description)
+    .replace(/\[BLOCK:\s*\d+\]/gi, "")
+    .replace(/\[LABEL:\s*[^\]]+\]/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 function isPublicIdentityFallback(value: any): boolean {
@@ -2023,6 +2032,49 @@ export default function ShopGalleryPage() {
       `${APP_ROUTES.MARKETPLACE}?${params.toString()}#marketplace-paid-network-placement`,
       ownerSurfaceCommunityId
     );
+  }
+
+  function writePaidRepostHandoff(product: ShopProduct) {
+    if (typeof window === "undefined") return;
+
+    const productId = positiveNumber(product.id);
+    const blockNumber = positiveNumber(product.slotNumber);
+    if (!productId && !blockNumber) return;
+
+    const payload = {
+      version: 1,
+      source: "shop-diaries",
+      createdAt: new Date().toISOString(),
+      productId,
+      blockNumber,
+      title: firstMeaningful(product.name, `Block #${blockNumber || "?"}`),
+      description: stripPublicBlockMetadata(product.description),
+      priceText: firstMeaningful(product.priceText),
+      currency: firstMeaningful(product.currency, "NGN"),
+      imageUrl: firstMeaningful(product.imageUrl),
+      videoUrl: firstMeaningful(product.videoUrl),
+      originShopName: firstMeaningful(
+        product.originShopName,
+        effectiveShop?.shopName
+      ),
+      sellerGmfnId: firstMeaningful(effectiveShop?.gmfnId, gmfnId),
+      whatsappNumber: firstMeaningful(effectiveShop?.whatsapp),
+      ownerCommunityId: ownerSurfaceCommunityId,
+      publicShopUrl: absoluteShopLink,
+    };
+
+    try {
+      window.sessionStorage.setItem(
+        PAID_REPOST_HANDOFF_STORAGE_KEY,
+        JSON.stringify(payload)
+      );
+    } catch {
+      // If storage is unavailable, the URL query still carries product/block ids.
+    }
+  }
+
+  function paidRepostHandoffHandler(product: ShopProduct) {
+    return () => writePaidRepostHandoff(product);
   }
   const memberSurfaceLinks = useMemo(
     () => [
@@ -4494,6 +4546,7 @@ export default function ShopGalleryPage() {
                         {showBlockPlacementAction ? (
                           <StableCtaLink
                             to={blockPlacementPath(product)}
+                            onClick={paidRepostHandoffHandler(product)}
                             minWidth={0}
                             stableHeight={diaryActionHeight}
                             debugId={`shop-gallery.product.${productOpenId}.paid-placement`}
