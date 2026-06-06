@@ -35636,6 +35636,14 @@ GSN-branded invite composer and invite-entry continuity.
   - Passed `npm --prefix frontend run audit:tap-stability`.
   - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
     approved elevated build passed: `npm run build` from `frontend/`.
+- Publish/deploy:
+  - committed on `main` as
+    `ff2eb8b Protect public community verification details`;
+  - pushed to `origin/main`;
+  - GitHub Actions `Trigger Render Deploy` run `27063127938` completed
+    successfully for commit `ff2eb8b3921ff057a58c6c08241327b290fc34b6`;
+  - the workflow completed both `Trigger frontend deploy hook` and
+    `Trigger API deploy hook` successfully.
 - Remaining truth:
   - this protects the public verification surface and API response. It does not
     yet create a live relay request record when the public visitor presses
