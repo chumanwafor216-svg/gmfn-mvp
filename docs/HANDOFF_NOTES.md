@@ -36073,3 +36073,42 @@ GSN-branded invite composer and invite-entry continuity.
   - the Community Home guard repair reduces one real route-fall risk, but the
     phone still needs deployed tap testing because the user's jumpy-button
     reports are device-touch behavior, not only source-code structure.
+
+### Render tracked-branch correction after package work (2026-06-06)
+
+- Trigger:
+  - product owner shared the Render dashboard for the frontend static site:
+    - service: `gmfn-frontend`;
+    - service id: `srv-d7h4oe9f9bms739lhh9g`;
+    - connected branch: `feature/vault-shops`;
+    - live commit shown: `342fd30 Fix paid repost payment context`.
+  - This proved the previous assumption "push `main` and Render sees it" was
+    incomplete for the active frontend static site.
+- Corrective action:
+  - Confirmed remote branch state:
+    - `origin/main` was `7002f5b`;
+    - `origin/feature/vault-shops` was still `342fd30`.
+  - Confirmed `342fd30` was an ancestor of `7002f5b`, so the update was a
+    clean fast-forward.
+  - Pushed `main` to `feature/vault-shops`, making both remote branches point
+    to `7002f5b`.
+- Live checks:
+  - `GET https://gmfn-api.onrender.com/health` returned
+    `{"ok":true,"dev_mode":false}`.
+  - `GET https://gmfn-frontend.onrender.com/cover` returned `200`.
+  - `GET https://gmfn-frontend.onrender.com/` returned `200`.
+  - After the branch fast-forward, the live frontend HTML reported
+    `last-modified: Sat, 06 Jun 2026 20:46:33 UTC`, which is after the branch
+    update.
+- Unabated truth:
+  - Render is active.
+  - The frontend static site is now pointed at a branch that contains
+    `7002f5b`, but the Render dashboard remains the strongest proof of the
+    exact live commit; recheck it after build completion.
+  - The GitHub `Trigger Render Deploy` workflow only runs on `main`, so pushes
+    to `feature/vault-shops` rely on Render auto-deploy/manual deploy unless
+    the workflow is changed or manually dispatched.
+  - Backend latest deployment is not proven by the frontend dashboard. Because
+    `7002f5b` includes a backend migration and route changes, the backend Render
+    service should also be checked in its dashboard or manually deployed if it
+    is not auto-deploying the same branch.
