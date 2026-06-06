@@ -36008,3 +36008,68 @@ GSN-branded invite composer and invite-entry continuity.
     consuming business engines before they are end-to-end complete;
   - the regression covers a shop-scoped entitlement owned by another user/admin,
     proving capacity belongs to the target shop rather than only the payer.
+
+### Extra member capacity entitlement consumer (2026-06-06)
+
+- Trigger:
+  - product owner asked to continue the community growth package work after the
+    extra shop block entitlement was connected to real gallery capacity.
+  - The next truth gap was extra community member capacity: package payments
+    could grant an entitlement, but the community membership routes still had
+    no capacity rule to consume it.
+- Backend changes:
+  - Added the missing Alembic migration for `feature_entitlements` and
+    `feature_usage_events`. The SQLAlchemy models and services already existed,
+    but the schema was not in the migration chain; that was a real deployment
+    gap.
+  - `gmfn_backend/app/services/feature_entitlements_service.py` now exposes
+    `get_active_feature_quantity_for_scope()` so routes can read active
+    remaining package capacity for a shop or community.
+  - `gmfn_backend/app/api/routes/clans.py` now treats 15 active community
+    members as the included capacity and adds active
+    `community_member_capacity` entitlement quantity to that limit.
+  - Capacity is enforced before:
+    - direct community join;
+    - admin/member add;
+    - join request approval.
+  - When capacity is full, the backend returns `409` with
+    `code: community_member_capacity_full` and a plain message telling the user
+    to add an extra member place before continuing.
+  - `GET /clans/{clan_id}/members` now includes:
+    - `member_capacity_included`;
+    - `member_capacity_extra`;
+    - `member_capacity_total`;
+    - `member_capacity_used`;
+    - `member_capacity_remaining`.
+- Frontend / button lane changes:
+  - `frontend/src/pages/CommunityHomePage.tsx` now routes more owner spotlight
+    and support actions through `openSelectedCommunityRoute(...)` instead of
+    direct route opens, so missing community context is explained instead of
+    letting a button fall into a wrong page.
+  - `frontend/tools/audit-community-shop-actions.mjs` was updated to the
+    current guarded route contract; the old audit was stale and still expected
+    earlier direct `openCommunityRoute(...)` calls.
+- Verification:
+  - Passed `python -m pytest gmfn_backend\tests\test_clan_members.py -q`
+    (`6 passed`).
+  - Passed `python -m pytest gmfn_backend\tests\test_join_requests.py -q`
+    (`46 passed`).
+  - Passed
+    `python -m pytest gmfn_backend\tests\test_marketplace_public_shop.py -q -k extra_shop_block`
+    (`1 passed`, other tests deselected).
+  - Passed `npm --prefix frontend run audit:community-shop-actions`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:route-fallthrough`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated `npm --prefix frontend run build` passed.
+- Unabated truth:
+  - extra member capacity is now a real backend-enforced entitlement consumer;
+  - ROSCA cycle and community meeting pack are still paid package/entitlement
+    rails only, not full deterministic business engines yet;
+  - the Community Home guard repair reduces one real route-fall risk, but the
+    phone still needs deployed tap testing because the user's jumpy-button
+    reports are device-touch behavior, not only source-code structure.

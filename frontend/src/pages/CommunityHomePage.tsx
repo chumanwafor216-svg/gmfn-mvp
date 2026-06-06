@@ -2070,7 +2070,11 @@ export default function CommunityHomePage() {
           break;
         }
         if (nextStep === "open-free-publisher") {
-          openCommunityRoute(event, routes.freeSpotlight);
+          openSelectedCommunityRoute(
+            event,
+            routes.freeSpotlight,
+            "Choose a community first, then open Free Spotlight."
+          );
           break;
         }
         openCommunityHomeSection(
@@ -2094,10 +2098,18 @@ export default function CommunityHomePage() {
           break;
         }
         if (nextStep === "prepare-shop-first") {
-          openCommunityRoute(event, routes.shopSpotlight);
+          openSelectedCommunityRoute(
+            event,
+            routes.shopSpotlight,
+            "Choose a community first, then prepare your shop spotlight."
+          );
           break;
         }
-        openCommunityRoute(event, routes.subscriptionSpotlight);
+        openSelectedCommunityRoute(
+          event,
+          routes.subscriptionSpotlight,
+          "Choose a community first, then open Subscription Spotlight."
+        );
         break;
       case "spotlight-repost":
         if (nextStep === "cancel") {
@@ -2113,10 +2125,18 @@ export default function CommunityHomePage() {
           break;
         }
         if (nextStep === "prepare-shop-first") {
-          openCommunityRoute(event, routes.shopSpotlight);
+          openSelectedCommunityRoute(
+            event,
+            routes.shopSpotlight,
+            "Choose a community first, then prepare your shop spotlight."
+          );
           break;
         }
-        openCommunityRoute(event, routes.paidRepost);
+        openSelectedCommunityRoute(
+          event,
+          routes.paidRepost,
+          "Choose a community first, then open Paid Repost."
+        );
         break;
       case "spotlight-vault":
         if (nextStep === "cancel") {
@@ -2132,10 +2152,18 @@ export default function CommunityHomePage() {
           break;
         }
         if (nextStep === "prepare-shop-first") {
-          openCommunityRoute(event, routes.shopSpotlight);
+          openSelectedCommunityRoute(
+            event,
+            routes.shopSpotlight,
+            "Choose a community first, then prepare your shop."
+          );
           break;
         }
-        openCommunityRoute(event, routes.vaultControl);
+        openSelectedCommunityRoute(
+          event,
+          routes.vaultControl,
+          "Choose a community first, then open Vault."
+        );
         break;
       case "spotlight-shop-setup":
         if (nextStep === "choose-community") {
@@ -2146,7 +2174,11 @@ export default function CommunityHomePage() {
           );
           break;
         }
-        openCommunityRoute(event, routes.shopSpotlight);
+        openSelectedCommunityRoute(
+          event,
+          routes.shopSpotlight,
+          "Choose a community first, then open Shop Control."
+        );
         break;
       case "finance":
         openCommunityRoute(event, routes.finance);
@@ -2160,7 +2192,11 @@ export default function CommunityHomePage() {
           );
           break;
         }
-        openCommunityRoute(event, routes.loans);
+        openSelectedCommunityRoute(
+          event,
+          routes.loans,
+          "Choose a community first, then open Loans and Support."
+        );
         break;
       case "trust":
         openCommunityRoute(event, routes.trust);
@@ -3338,7 +3374,13 @@ export default function CommunityHomePage() {
                 <StableButton
                   type="button"
                   debugId="community-home.spotlight-status.open-free"
-                  onClick={(event) => openCommunityRoute(event, routes.freeSpotlight)}
+                  onClick={(event) =>
+                    openSelectedCommunityRoute(
+                      event,
+                      routes.freeSpotlight,
+                      "Choose a community first, then open Free Spotlight."
+                    )
+                  }
                   style={communityActionStyle("primary")}
                 >
                   Open Free Spotlight

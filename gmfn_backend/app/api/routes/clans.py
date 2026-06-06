@@ -37,16 +37,69 @@ from app.services.invites_service import (
     create_clan_invite,
 )
 from app.services.global_identity_service import ensure_user_gmfn_id
+from app.services.feature_entitlements_service import get_active_feature_quantity_for_scope
 from app.services.trust_events_services import log_trust_event
 
 router = APIRouter(prefix="/clans", tags=["clans"])
 
 JOIN_APPROVAL_RATIO = Decimal("0.40")
 DEFAULT_SHAREABLE_JOIN_INVITE_MAX_USES = 100
+FREE_COMMUNITY_MEMBER_CAPACITY = 15
+FEATURE_COMMUNITY_MEMBER_CAPACITY = "community_member_capacity"
 JOIN_INVITATION_NOT_FOUND = (
     "This invitation link is no longer valid or was not copied fully. "
     "Ask the person who invited you to send a fresh GSN invite link."
 )
+
+
+def _active_clan_member_count(db: Session, *, clan_id: int) -> int:
+    return (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .count()
+    )
+
+
+def _community_member_capacity_snapshot(db: Session, *, clan_id: int) -> dict[str, int]:
+    used = _active_clan_member_count(db, clan_id=int(clan_id))
+    extra = get_active_feature_quantity_for_scope(
+        db,
+        feature_code=FEATURE_COMMUNITY_MEMBER_CAPACITY,
+        clan_id=int(clan_id),
+    )
+    included = FREE_COMMUNITY_MEMBER_CAPACITY
+    total = included + extra
+    return {
+        "included": included,
+        "extra": extra,
+        "total": total,
+        "used": used,
+        "remaining": max(0, total - used),
+    }
+
+
+def _assert_community_member_capacity_available(
+    db: Session,
+    *,
+    clan_id: int,
+) -> dict[str, int]:
+    capacity = _community_member_capacity_snapshot(db, clan_id=int(clan_id))
+    if capacity["used"] >= capacity["total"]:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "community_member_capacity_full",
+                "message": (
+                    "This community has reached its current member capacity. "
+                    "Add an extra member place before approving or adding another member."
+                ),
+                "member_capacity": capacity,
+            },
+        )
+    return capacity
 
 
 @router.post(
@@ -1227,6 +1280,18 @@ def _approve_join_request(
         else None
     )
 
+    active_membership = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan.id),
+            ClanMembership.user_id == int(applicant.id),
+            ClanMembership.left_at.is_(None),
+        )
+        .first()
+    )
+    if active_membership is None:
+        _assert_community_member_capacity_available(db, clan_id=int(clan.id))
+
     membership = ensure_membership(db=db, clan=clan, user=applicant, role="user")
 
     existing_identity = (
@@ -1533,6 +1598,8 @@ def join_clan(
             "identity_reused": True,
             "membership": _member_row(db, exists),
         }
+
+    _assert_community_member_capacity_available(db, clan_id=int(clan_id))
 
     m = ClanMembership(
         clan_id=clan_id,
@@ -2789,7 +2856,17 @@ def list_members(
     ]
 
     items = [_member_row(db, m) for m in members]
-    return {"items": items, "total": len(items), "community_code": _community_code(clan_id)}
+    capacity = _community_member_capacity_snapshot(db, clan_id=int(clan_id))
+    return {
+        "items": items,
+        "total": len(items),
+        "community_code": _community_code(clan_id),
+        "member_capacity_included": capacity["included"],
+        "member_capacity_extra": capacity["extra"],
+        "member_capacity_total": capacity["total"],
+        "member_capacity_used": capacity["used"],
+        "member_capacity_remaining": capacity["remaining"],
+    }
 
 
 @router.post("/{clan_id}/members", status_code=201, response_model=dict[str, Any])
@@ -2821,6 +2898,8 @@ def add_member(
     )
     if exists:
         raise HTTPException(status_code=409, detail="User already in clan")
+
+    _assert_community_member_capacity_available(db, clan_id=int(clan_id))
 
     role = payload.role if payload.role in ("user", "admin") else "user"
 

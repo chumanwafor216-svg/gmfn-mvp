@@ -118,6 +118,39 @@ def get_active_feature_quantity(
     return total
 
 
+def get_active_feature_quantity_for_scope(
+    db: Session,
+    *,
+    feature_code: str,
+    shop_id: Optional[int] = None,
+    clan_id: Optional[int] = None,
+) -> int:
+    q = db.query(FeatureEntitlement).filter(
+        FeatureEntitlement.feature_code == _safe_str(feature_code),
+    )
+
+    if shop_id is not None:
+        q = q.filter(FeatureEntitlement.shop_id == int(shop_id))
+
+    if clan_id is not None:
+        q = q.filter(FeatureEntitlement.clan_id == int(clan_id))
+
+    rows = q.order_by(
+        FeatureEntitlement.expires_at.asc(),
+        FeatureEntitlement.id.asc(),
+    ).all()
+
+    now = _now_utc()
+    total = 0
+    for row in rows:
+        if not _is_active_row(row, now=now):
+            continue
+        quantity_total = _safe_int(getattr(row, "quantity_total", None), 0)
+        quantity_used = _safe_int(getattr(row, "quantity_used", None), 0)
+        total += max(0, quantity_total - quantity_used)
+    return total
+
+
 def has_active_feature(
     db: Session,
     *,

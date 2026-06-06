@@ -94,8 +94,8 @@ for (const file of signedInCommunityShopFiles) {
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\);[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?debugId="community-home\.spotlight-status\.open-free"/,
-  "Community Home Free Spotlight actions must keep routing to the canonical Shop Control spotlight publisher."
+  /freeSpotlight:\s*routeTarget\(\s*"freeSpotlight"[\s\S]*?case "spotlight-free":[\s\S]*?if \(nextStep === "open-free-publisher"\) \{[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: "free-spotlight"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?debugId="community-home\.spotlight-status\.open-free"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight/,
+  "Community Home Free Spotlight actions must keep guarded routing to the canonical Shop Control spotlight publisher."
 );
 
 assertContains(
@@ -106,13 +106,13 @@ assertContains(
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /id: "owner-actions"[\s\S]*?openCommunityRoute\(event, routes\.joinRequests\)[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openCommunityRoute\(event, routes\.vaultControl\)[\s\S]*?id: "free-spotlight"[\s\S]*?openCommunityRoute\(event, routes\.freeSpotlight\)[\s\S]*?id: "spotlight-subscription"[\s\S]*?openCommunityRoute\(event, routes\.subscriptionSpotlight\)[\s\S]*?id: "paid-repost"[\s\S]*?openCommunityRoute\(event, routes\.paidRepost\)[\s\S]*?id: "trusted-circle"[\s\S]*?openCommunityRoute\(event, routes\.buildFirstCircle\)[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /id: "owner-actions"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.joinRequests[\s\S]*?id: "shop-control"[\s\S]*?openCommunityShopControl\(event\)[\s\S]*?id: "vault-control"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.vaultControl[\s\S]*?id: "free-spotlight"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.freeSpotlight[\s\S]*?id: "spotlight-subscription"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.subscriptionSpotlight[\s\S]*?id: "paid-repost"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost[\s\S]*?id: "trusted-circle"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.buildFirstCircle[\s\S]*?id: "spotlight-status"[\s\S]*?openCommunityHomeSection\([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact owner/tool rows must remain traceable and route to the deeper owner surfaces."
 );
 
 assertContains(
   "src/pages/CommunityHomePage.tsx",
-  /const PAID_REPOST_HASH = "marketplace-paid-network-placement";[\s\S]*?paidRepost:\s*routeTarget\(\s*"marketplace"[\s\S]*?PAID_REPOST_HASH[\s\S]*?case "spotlight-repost":[\s\S]*?openCommunityRoute\(event, routes\.paidRepost\)/,
+  /const PAID_REPOST_HASH = "marketplace-paid-network-placement";[\s\S]*?paidRepost:\s*routeTarget\(\s*"marketplace"[\s\S]*?PAID_REPOST_HASH[\s\S]*?case "spotlight-repost":[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.paidRepost/,
   "Community Home Paid Repost must route through the paid placement rail while remaining a spotlight-family handle."
 );
 
