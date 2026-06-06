@@ -1,3 +1,68 @@
+### Public community verification controlled relay request added (2026-06-06)
+
+- Routes/screens affected:
+  - public community verification:
+    `/verify/community/:communityKey`;
+  - backend public verification endpoint:
+    `GET /verify/community/{community_key}`;
+  - new controlled request endpoint:
+    `POST /verify/community/{community_key}/confirmation-request`;
+  - community confirmation inbox notification target:
+    `/app/community-confirmations?community_id=...&verification_request=1`.
+- Product-owner complaint:
+  - the public Community Verification page correctly hid private details, but
+    `Request confirmation` was still only a page-local message;
+  - verification should be system-level, not a decorative button that pretends
+    a controlled relay exists.
+- Confirmed code truth:
+  - `community_confirmation_requests` is subject/member-specific and requires a
+    `subject_user_id`, so forcing a community-only verification request into
+    that table would corrupt the backend meaning;
+  - the honest controlled community-only request record is a notification to
+    responsible community recipients plus a TrustEvent audit trail;
+  - public response payloads must still expose only whitelisted community fields
+    and must never return raw member contacts;
+  - when the community confirmation schema is unavailable, the public record
+    must degrade honestly and must not advertise relay availability.
+- Backend repair:
+  - added shared public-community lookup logic;
+  - added
+    `request_public_community_verification_confirmation(...)` in
+    `gmfn_backend/app/services/community_confirmation_service.py`;
+  - the service now creates
+    `community_verification.request_confirmation` notifications for community
+    owner/admin/fallback recipients;
+  - the service records
+    `community_verification.confirmation_requested` as a TrustEvent with
+    `private_contacts_exposed: false`;
+  - added the public-safe route in
+    `gmfn_backend/app/api/routes/community_confirmations.py`.
+- Frontend repair:
+  - added
+    `requestPublicCommunityVerificationConfirmation(...)` to
+    `frontend/src/lib/api.ts`;
+  - wired `CommunityVerifyPage` `Request confirmation` to the backend route;
+  - button now holds a stable busy/disabled state and reports success/failure
+    on the same page instead of bouncing to another surface.
+- Audit/test repair:
+  - added backend coverage proving the request creates controlled notifications
+    and TrustEvent audit data without returning private contact fields;
+  - updated `frontend/tools/audit-trust-actions.mjs` so this route cannot fall
+    back into a page-only placeholder.
+- Verification passed:
+  - `python -m pytest tests/test_community_confirmation_relay.py -q`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:button-stability`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm --prefix frontend run build` passed after the known Windows sandbox
+    `esbuild spawn EPERM` required approved outside-sandbox execution.
+- Remaining truth:
+  - a subagent/line-auditor could not be spawned because the thread limit was
+    reached, so this audit was performed locally;
+  - this does not create a subject/member TrustSlip confirmation request. It
+    creates the correct public-community controlled relay request until the
+    product owner explicitly adds a separate community-only request table.
+
 ### Marketplace Paid Repost block reading and tap guards fixed (2026-06-06)
 
 - Routes/screens affected:

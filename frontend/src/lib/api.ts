@@ -1906,6 +1906,21 @@ export async function getPublicCommunityVerification(
   );
 }
 
+export async function requestPublicCommunityVerificationConfirmation(
+  communityKey: string | number,
+  payload: {
+    requester_external_label?: string | null;
+  } = {}
+): Promise<any> {
+  return httpJson(
+    `/verify/community/${encodeURIComponent(String(communityKey))}/confirmation-request`,
+    "POST",
+    {
+      requester_external_label: payload.requester_external_label || undefined,
+    }
+  );
+}
+
 export async function getCommunityConfirmationInbox(): Promise<any> {
   return httpJson("/community-confirmations/inbox", "GET");
 }

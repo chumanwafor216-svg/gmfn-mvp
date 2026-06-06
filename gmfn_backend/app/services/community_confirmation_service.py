@@ -3787,7 +3787,7 @@ def _community_verify_lookup_parts(community_key: str) -> tuple[str, list[str], 
     return normalized_key, candidates, lookup_id
 
 
-def public_community_verification(db: Session, *, community_key: str) -> Dict[str, Any]:
+def _find_public_community(db: Session, *, community_key: str) -> Clan:
     key = str(community_key or "").strip()
     normalized_key, code_candidates, lookup_id = _community_verify_lookup_parts(key)
     query = db.query(Clan)
@@ -3806,13 +3806,59 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         community = query.filter(func.upper(Clan.name) == normalized_key).first()
     if not community:
         raise ValueError("Community not found")
+    return community
 
+
+def _community_confirmation_relay_recipient_ids(
+    db: Session,
+    *,
+    community: Clan,
+) -> list[int]:
+    recipients: list[int] = []
+
+    def add_recipient(user_id: Any) -> None:
+        try:
+            normalized_id = int(user_id)
+        except (TypeError, ValueError):
+            normalized_id = 0
+        if normalized_id > 0 and normalized_id not in recipients:
+            recipients.append(normalized_id)
+
+    add_recipient(getattr(community, "created_by_user_id", None))
+
+    owner_roles = {"admin", "owner", "founder", "creator"}
+    owner_memberships = (
+        db.query(ClanMembership)
+        .filter(ClanMembership.clan_id == int(community.id))
+        .filter(ClanMembership.left_at.is_(None))
+        .all()
+    )
+    for membership in owner_memberships:
+        role = str(getattr(membership, "role", "") or "").strip().lower()
+        if role in owner_roles:
+            add_recipient(getattr(membership, "user_id", None))
+
+    if not recipients:
+        for membership in owner_memberships:
+            add_recipient(getattr(membership, "user_id", None))
+            if recipients:
+                break
+
+    return recipients
+
+
+def public_community_verification(db: Session, *, community_key: str) -> Dict[str, Any]:
+    community = _find_public_community(db, community_key=community_key)
     summary = build_community_confirmation_summary(
         db,
         community_id=int(community.id),
         subject_user_id=None,
     )
-    relay_available = bool(summary.get("relay_available"))
+    recipient_ids = _community_confirmation_relay_recipient_ids(db, community=community)
+    schema_degraded = "temporarily unavailable" in str(
+        summary.get("plain_language") or ""
+    ).lower()
+    relay_available = bool(summary.get("relay_available") or (recipient_ids and not schema_degraded))
 
     return {
         "community_name": community.name,
@@ -3832,4 +3878,102 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
             "private relay contacts",
             "internal trust history",
         ],
+    }
+
+
+def request_public_community_verification_confirmation(
+    db: Session,
+    *,
+    community_key: str,
+    requester_user_id: Optional[int] = None,
+    requester_external_label: Optional[str] = None,
+) -> Dict[str, Any]:
+    community = _find_public_community(db, community_key=community_key)
+    try:
+        ensure_default_confirmation_contacts(
+            db,
+            community_id=int(community.id),
+            subject_user_id=None,
+        )
+        build_community_confirmation_summary(
+            db,
+            community_id=int(community.id),
+            subject_user_id=None,
+        )
+    except OperationalError as exc:
+        if not _is_missing_confirmation_schema_error(exc):
+            raise
+        db.rollback()
+
+    recipient_ids = _community_confirmation_relay_recipient_ids(db, community=community)
+    if not recipient_ids:
+        raise ValueError("No controlled relay recipient is ready for this community yet")
+
+    label = str(requester_external_label or "").strip()[:120]
+    message = (
+        f"A public viewer requested controlled confirmation for {community.name}. "
+        "Respond from the community confirmation inbox. Private member contacts stay protected."
+    )
+    if label:
+        message = f"{label} requested controlled confirmation for {community.name}. " + (
+            "Respond from the community confirmation inbox. Private member contacts stay protected."
+        )
+
+    notification_count = 0
+    action_url = (
+        f"/app/community-confirmations?community_id={int(community.id)}"
+        "&verification_request=1"
+    )
+    for recipient_id in recipient_ids:
+        create_notification(
+            db,
+            user_id=int(recipient_id),
+            kind="community_verification.request_confirmation",
+            title="Community verification request",
+            message=message,
+            action_url=action_url,
+            action_label="Review request",
+            commit=False,
+            refresh=False,
+        )
+        notification_count += 1
+
+    audit_actor_id = int(requester_user_id or recipient_ids[0])
+    log_trust_event(
+        db,
+        event_type="community_verification.confirmation_requested",
+        clan_id=int(community.id),
+        actor_user_id=audit_actor_id,
+        subject_user_id=int(recipient_ids[0]),
+        meta=build_trust_meta(
+            reason="public_community_verification_confirmation_requested",
+            trust_delta="0.00",
+            system=requester_user_id is None,
+            extra={
+                "community_id": int(community.id),
+                "community_code": getattr(community, "community_code", None),
+                "community_name": getattr(community, "name", None),
+                "request_channel": "controlled_relay",
+                "recipient_notification_count": notification_count,
+                "private_contacts_exposed": False,
+                "requester_external_label_present": bool(label),
+            },
+        ),
+        commit=False,
+        refresh=False,
+    )
+    db.commit()
+
+    return {
+        "ok": True,
+        "community_name": community.name,
+        "community_id": int(community.id),
+        "community_code": community.community_code,
+        "status": "requested",
+        "request_channel": "controlled_relay",
+        "recipient_notification_count": notification_count,
+        "private_contacts_exposed": False,
+        "message": (
+            "Request sent through GSN controlled relay. Private member contacts were not exposed."
+        ),
     }

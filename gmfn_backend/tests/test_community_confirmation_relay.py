@@ -496,6 +496,7 @@ def test_public_community_verify_accepts_gsn_gmfn_and_trustslip_aliases(client: 
         assert data["community_code"] == "GSN-C-000001"
         assert data["public_record"] == "Verified in GSN"
         assert data["member_confirmation"] == "By controlled request only"
+        assert data["request_confirmation_available"] is True
         assert "active_member_count" not in data
         assert "contactable_reference_count" not in data
         assert "sponsor_signal_count" not in data
@@ -567,6 +568,53 @@ def test_public_community_verify_degrades_when_confirmation_schema_missing(
     assert "active_member_count" not in data
     assert "community_confirmation_policies" not in response.text
     assert "SELECT" not in response.text
+
+
+def test_public_community_verify_confirmation_request_uses_controlled_relay(
+    client: TestClient,
+):
+    _seed_relay_fixture()
+
+    response = client.post(
+        "/verify/community/GSN-C-000001/confirmation-request",
+        json={"requester_external_label": "Public visitor"},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    payload_text = json.dumps(data)
+    assert data["community_id"] == 1
+    assert data["status"] == "requested"
+    assert data["request_channel"] == "controlled_relay"
+    assert data["recipient_notification_count"] >= 1
+    assert data["private_contacts_exposed"] is False
+    assert "phone_e164" not in payload_text
+    assert "raw member phone" not in payload_text.lower()
+
+    with SessionLocal() as db:
+        notifications = (
+            db.query(Notification)
+            .filter(Notification.kind == "community_verification.request_confirmation")
+            .all()
+        )
+        assert len(notifications) >= 1
+        notification_text = " ".join(
+            f"{row.title} {row.message} {row.action_url}" for row in notifications
+        )
+        assert "community-confirmations" in notification_text
+        assert "private member contacts stay protected" in notification_text.lower()
+        assert "phone_e164" not in notification_text
+
+        events = (
+            db.query(TrustEvent)
+            .filter(TrustEvent.event_type == "community_verification.confirmation_requested")
+            .all()
+        )
+        assert len(events) >= 1
+        meta = json.loads(events[-1].meta_json or "{}")
+        assert meta["community_id"] == 1
+        assert meta["request_channel"] == "controlled_relay"
+        assert meta["private_contacts_exposed"] is False
+        assert meta["recipient_notification_count"] >= 1
 
 
 def test_expired_community_confirmation_records_trust_event(client: TestClient, monkeypatch):

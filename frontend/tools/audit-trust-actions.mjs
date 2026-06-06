@@ -291,6 +291,30 @@ assertContains(
   "CommunityVerifyPage must present a public whitelist record with protected details separated from visible fields."
 );
 
+assertContains(
+  "src/pages/CommunityVerifyPage.tsx",
+  /requestPublicCommunityVerificationConfirmation[\s\S]*?requestingConfirmation[\s\S]*?debugId="community-verify\.request-confirmation"/,
+  "CommunityVerifyPage Request confirmation button must call the controlled relay endpoint and hold a stable busy state."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /requestPublicCommunityVerificationConfirmation[\s\S]*?\/verify\/community\/\$\{encodeURIComponent\(String\(communityKey\)\)\}\/confirmation-request/,
+  "CommunityVerifyPage request confirmation must call the controlled public verification relay endpoint."
+);
+
+assertContains(
+  "../gmfn_backend/app/api/routes/community_confirmations.py",
+  /@router\.post\("\/verify\/community\/\{community_key\}\/confirmation-request"\)[\s\S]*?create_public_community_verification_confirmation_request/,
+  "Public community verification confirmation requests must have a backend route, not a page-local placeholder."
+);
+
+assertContains(
+  "../gmfn_backend/app/services/community_confirmation_service.py",
+  /def request_public_community_verification_confirmation[\s\S]*?community_verification\.request_confirmation[\s\S]*?community_verification\.confirmation_requested[\s\S]*?private_contacts_exposed/,
+  "Public community verification confirmation must create a controlled notification and TrustEvent without exposing private contacts."
+);
+
 assertNotContains(
   "src/pages/CommunityVerifyPage.tsx",
   /active_member_count|instant_pulse_available|public_policy|plain_language/,

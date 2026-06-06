@@ -28,6 +28,7 @@ from app.services.community_confirmation_service import (
     public_community_verification,
     public_confirmation_outcome,
     record_confirmation_decision,
+    request_public_community_verification_confirmation as create_public_community_verification_confirmation_request,
     scan_confirmation_review_sla_events,
     submit_confirmation_response,
     update_confirmation_decision_status,
@@ -88,6 +89,10 @@ class CommunityConfirmationRequestIn(BaseModel):
     reason_type: str = Field(default="merchant_trust_check", max_length=48)
     risk_level: str = Field(default="low", max_length=24)
     mode: str = Field(default="relay", max_length=24)
+
+
+class PublicCommunityVerificationRequestIn(BaseModel):
+    requester_external_label: Optional[str] = Field(default=None, max_length=120)
 
 
 class CommunityConfirmationResponseIn(BaseModel):
@@ -620,5 +625,33 @@ def verify_public_community(
     _throttle_public(request, "community_verify_public", max_requests=80)
     try:
         return public_community_verification(db, community_key=community_key)
+    except Exception as exc:
+        raise _service_error(exc) from exc
+
+
+@router.post("/verify/community/{community_key}/confirmation-request")
+def request_public_community_verification_confirmation(
+    community_key: str,
+    payload: PublicCommunityVerificationRequestIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(_optional_current_user),
+) -> Dict[str, Any]:
+    _throttle_public(
+        request,
+        "community_verify_confirmation_request",
+        max_requests=20,
+    )
+    try:
+        return create_public_community_verification_confirmation_request(
+            db,
+            community_key=community_key,
+            requester_user_id=(
+                int(getattr(current_user, "id"))
+                if current_user is not None and getattr(current_user, "id", None)
+                else None
+            ),
+            requester_external_label=payload.requester_external_label,
+        )
     except Exception as exc:
         raise _service_error(exc) from exc

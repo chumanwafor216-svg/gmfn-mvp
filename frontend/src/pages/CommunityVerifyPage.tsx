@@ -7,7 +7,11 @@ import {
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
 } from "../components/TrustPaperMarks";
-import { getPublicCommunityVerification, safeCopy } from "../lib/api";
+import {
+  getPublicCommunityVerification,
+  requestPublicCommunityVerificationConfirmation,
+  safeCopy,
+} from "../lib/api";
 import { publicFrontendUrl } from "../lib/publicLinks";
 
 type CommunityVerifyRecord = {
@@ -143,6 +147,7 @@ export default function CommunityVerifyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [requestingConfirmation, setRequestingConfirmation] = useState(false);
   const keyText = safeStr(communityKey);
   const publicLink = useMemo(
     () => publicFrontendUrl(`/verify/community/${encodeURIComponent(keyText)}`),
@@ -205,13 +210,45 @@ export default function CommunityVerifyPage() {
   );
   const requestConfirmationAvailable = Boolean(record?.request_confirmation_available);
 
-  function requestConfirmation() {
-    setNotice({
-      tone: requestConfirmationAvailable ? "success" : "error",
-      text: requestConfirmationAvailable
-        ? "Confirmation stays controlled. Ask through the GSN relay; private contacts are not exposed."
-        : "Controlled confirmation is not available for this community yet.",
-    });
+  async function requestConfirmation() {
+    if (!requestConfirmationAvailable) {
+      setNotice({
+        tone: "error",
+        text: "Controlled confirmation is not available for this community yet.",
+      });
+      return;
+    }
+
+    const requestKey = firstTruthy(record?.community_code, record?.community_id, keyText);
+    if (!requestKey) {
+      setNotice({
+        tone: "error",
+        text: "Community ID is missing. Refresh this public record first.",
+      });
+      return;
+    }
+
+    setRequestingConfirmation(true);
+    try {
+      const result = await requestPublicCommunityVerificationConfirmation(requestKey, {
+        requester_external_label: "Public verification viewer",
+      });
+      setNotice({
+        tone: "success",
+        text:
+          firstTruthy(result?.message) ||
+          "Request sent through GSN controlled relay. Private member contacts were not exposed.",
+      });
+    } catch (err: any) {
+      setNotice({
+        tone: "error",
+        text:
+          err?.message ||
+          "Request could not be sent through the controlled relay. Try again from this page.",
+      });
+    } finally {
+      setRequestingConfirmation(false);
+    }
   }
 
   return (
@@ -408,7 +445,10 @@ export default function CommunityVerifyPage() {
                     <PrimaryButton
                       debugId="community-verify.request-confirmation"
                       stableHeight={64}
-                      onClick={requestConfirmation}
+                      busy={requestingConfirmation}
+                      busyLabel="Sending request"
+                      disabled={!requestConfirmationAvailable || requestingConfirmation}
+                      onClick={() => void requestConfirmation()}
                     >
                       <TrustPaperIcon name="shield" size={20} />
                       Request confirmation
