@@ -35490,3 +35490,49 @@ GSN-branded invite composer and invite-entry continuity.
     surfaces. If a deployed phone still lands on Welcome after a Marketplace
     tap, the next suspect is auth/session redirect state rather than this Paid
     Repost button stack.
+
+### Marketplace Paid Repost payment-code button audit (2026-06-06)
+
+- Route/screens affected:
+  - `/app/marketplace`;
+  - Marketplace Paid Repost / Network Spotlight placement.
+- Confirmed truth:
+  - `Generate Payment Code` already called the payment-instruction handler, not
+    an Action Inbox route, but it became a native-disabled/dead target whenever
+    the selected public block was missing;
+  - on mobile, a dead or suppressed target can feel like it has bounced into a
+    neighbouring route, so the button must remain tappable enough to explain
+    why payment-code generation is not ready.
+- Frontend change:
+  - `createMarketplaceRepostPaymentInstruction` now gives a direct loading
+    response when public blocks are still loading;
+  - `Generate Payment Code` is only hard-disabled while it is already
+    generating. Missing block/shop/community context is handled by the guarded
+    function, including the existing red notice:
+    `Shop and community context must be ready before GSN can generate this
+    payment code.`;
+  - the Paid Repost payment action row is now its own named action root:
+    `marketplace.network-repost.payment-actions`;
+  - exposed Paid Repost and private-link copy was shortened so the page speaks
+    directly to the user.
+- Guardrails:
+  - `frontend/tools/audit-marketplace-actions.mjs` now requires the payment
+    action root, requires `Generate Payment Code` to call
+    `createMarketplaceRepostPaymentInstruction`, forbids Action Inbox routing
+    inside Paid Repost, and rejects the old explanatory filler copy.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`
+    (`56` stable source actions, `15` front, `41` body; `103` whole-route
+    mobile controls).
+  - Passed targeted lint:
+    `npm exec eslint -- src/pages/MarketplacePage.tsx tools/audit-marketplace-actions.mjs tools/audit-mobile-tap-stability.mjs --max-warnings=0`
+    from `frontend/`.
+  - Sandboxed frontend build failed with Windows `esbuild` spawn `EPERM`;
+    approved elevated build passed: `npm run build` from `frontend/`.
+- Remaining truth:
+  - this fixes the Generate Payment Code tap path and not-ready explanation.
+    It does not bypass real payment readiness: missing shop/community/block
+    context still stops payment-code generation and explains why.

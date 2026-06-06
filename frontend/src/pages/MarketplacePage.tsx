@@ -3245,10 +3245,10 @@ export default function MarketplacePage() {
 
   const controlledMarketplaceLinkNote = useMemo(() => {
     if (!selectedCommunity) {
-      return "Select a community first. This marketplace issues private and controlled outward links only after the community and shop context are known.";
+      return "Select a community first. Then manage Vault access and live links.";
     }
 
-    return "Private Vault access and other controlled outward links belong to this marketplace, but they are issued as approved live links instead of one permanent public URL.";
+    return "Manage Vault access and controlled live links for this marketplace.";
   }, [selectedCommunity]);
 
   useEffect(() => {
@@ -3795,6 +3795,14 @@ export default function MarketplacePage() {
     const shopId = positiveNumber(publicShopRecord?.id);
     const clanId = positiveNumber(activeCommunityId || publicShopRecord?.clan_id);
     const requiredCredits = requiredMarketplaceRepostCredits;
+
+    if (loadingRepostProducts) {
+      showNotice(
+        "error",
+        "Public blocks are still loading. Wait a moment, then generate the payment code."
+      );
+      return;
+    }
 
     if (!shopId || !clanId) {
       showNotice(
@@ -6160,9 +6168,8 @@ export default function MarketplacePage() {
                 >
                   <div style={sectionLabel()}>Paid Repost</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Pick one public shop block, enter the target community ID,
-                    and send that exact block into the community Spotlight with
-                    the paid Spotlight rail.
+                    Choose one block, choose a target community, then generate
+                    the payment code.
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(Boolean(selectedRepostProduct))}>
@@ -6406,11 +6413,11 @@ export default function MarketplacePage() {
                       }}
                     >
                       <div style={{ fontWeight: 950 }}>
-                        Loading the selected shop block...
+                        Loading the selected block...
                       </div>
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        GSN is matching the block route to the owner shop record
-                        before you choose the target community.
+                        Wait for this block before choosing the target
+                        community.
                       </div>
                     </div>
                   ) : routeRepostProductId || routeRepostBlockNumber ? (
@@ -6431,13 +6438,10 @@ export default function MarketplacePage() {
                       }}
                     >
                       <div style={{ fontWeight: 950 }}>
-                        GSN received the Repost route, but the selected public
-                        block was not returned yet.
+                        This block did not load yet.
                       </div>
                       <div style={{ ...helperText(), fontSize: 13, color: "#6B2630" }}>
-                        Go back to Shop Diaries and tap Repost on that block
-                        again, or refresh the shop record. The first step must
-                        show the exact block before a target community is chosen.
+                        Return to Shop Diaries and tap Repost again.
                       </div>
                     </div>
                   ) : null}
@@ -6560,7 +6564,7 @@ export default function MarketplacePage() {
                           Target help
                         </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
-                          Find public community IDs that fit this selected block.
+                          Find communities that fit this block.
                         </div>
                       </div>
                       <StableButton
@@ -6693,15 +6697,14 @@ export default function MarketplacePage() {
                   >
                     <div style={{ fontWeight: 900 }}>
                       {canPlaceMarketplaceRepost
-                        ? "Payment credit is ready for this duration."
-                        : `Generate or confirm ${missingMarketplaceRepostCredits} more paid Spotlight credit${
+                        ? "Credit is ready for this duration."
+                        : `Generate or confirm ${missingMarketplaceRepostCredits} Spotlight credit${
                             missingMarketplaceRepostCredits === 1 ? "" : "s"
                           } before placing.`}
                     </div>
                     <div style={{ ...helperText(), fontSize: 13 }}>
-                      One Repost day uses one paid Spotlight credit.
                       {requiredMarketplaceRepostCredits} day{requiredMarketplaceRepostCredits === 1 ? "" : "s"} =
-                      {" "}{formatRailMoney(requiredMarketplaceRepostAmount, "GBP")} with the current GSN bundle rail.
+                      {" "}{formatRailMoney(requiredMarketplaceRepostAmount, "GBP")}.
                     </div>
                     {latestRepostPaymentReference ? (
                       <div style={{ ...helperText(), fontSize: 13 }}>
@@ -6711,11 +6714,19 @@ export default function MarketplacePage() {
                       </div>
                     ) : (
                       <div style={{ ...helperText(), fontSize: 13 }}>
-                        No payment code is open for this Paid Repost yet.
+                        No payment code is open yet.
                       </div>
                     )}
                   </div>
-                  <div style={marketplaceInlineActionsStyle(isCompact)}>
+                  <div
+                    data-gmfn-action-root="true"
+                    data-cta-id="marketplace.network-repost.payment-actions"
+                    data-gmfn-debug-id="marketplace.network-repost.payment-actions"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onMouseDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                    style={marketplaceInlineActionsStyle(isCompact)}
+                  >
                     <StableButton
                       type="button"
                       debugId="marketplace.network-repost.generate-payment-code"
@@ -6725,16 +6736,10 @@ export default function MarketplacePage() {
                           void createMarketplaceRepostPaymentInstruction();
                         });
                       }}
-                      disabled={
-                        creatingRepostPaymentInstruction ||
-                        loadingRepostProducts ||
-                        !selectedRepostProduct
-                      }
+                      disabled={creatingRepostPaymentInstruction}
                       style={marketplaceInlineActionStyle(
                         "secondary",
-                        creatingRepostPaymentInstruction ||
-                          loadingRepostProducts ||
-                          !selectedRepostProduct,
+                        creatingRepostPaymentInstruction,
                         isCompact
                       )}
                     >
@@ -6788,13 +6793,13 @@ export default function MarketplacePage() {
                 </div>
 
                 <div style={innerCard("#F8FBFF")}>
-                  <div style={sectionLabel()}>Private and controlled outward links</div>
+                  <div style={sectionLabel()}>Private links</div>
                   <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
                     {controlledMarketplaceLinkNote}
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(false)}>Private Vault access is conditional</span>
-                    <span style={badge(false)}>Vault-style access stays controlled</span>
+                    <span style={badge(false)}>Vault access is conditional</span>
+                    <span style={badge(false)}>Live links stay controlled</span>
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton

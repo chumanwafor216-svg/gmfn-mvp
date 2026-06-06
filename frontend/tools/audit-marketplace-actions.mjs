@@ -108,6 +108,12 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
+  /data-cta-id="marketplace\.network-repost\.payment-actions"[\s\S]*?onPointerDown=\{\(event\) => event\.stopPropagation\(\)\}[\s\S]*?debugId="marketplace\.network-repost\.generate-payment-code"[\s\S]*?runMarketplaceAction\(event, \(\) => \{[\s\S]*?void createMarketplaceRepostPaymentInstruction\(\);[\s\S]*?disabled=\{\s*creatingRepostPaymentInstruction\s*\}/,
+  "Marketplace Paid Repost payment actions must be a named tap root, and Generate Payment Code must call the guarded payment-code handler instead of becoming a disabled/dead target."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
   /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId/,
   "Marketplace Paid Repost fields must carry data-cta-id as well as action-root markers so the phone tap guard can match the same control after reflow."
 );
@@ -116,6 +122,18 @@ assertContains(
   "src/pages/MarketplacePage.tsx",
   /id="marketplace-paid-network-placement"[\s\S]*?data-gmfn-action-root="true"[\s\S]*?data-cta-id="marketplace\.network-repost\.surface"[\s\S]*?scrollMarginTop: isCompact \? 84 : 104[\s\S]*?position: "relative"[\s\S]*?pointerEvents: "auto"/,
   "Marketplace Paid Repost surface must be a named action root without a local z-index/isolation stacking layer."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /id="marketplace-paid-network-placement"[\s\S]*?(?:APP_ROUTES\.NOTIFICATIONS|action-inbox|Action Inbox|Open Action Inbox)/g,
+  "Marketplace Paid Repost controls must not route to Action Inbox; not-ready controls must explain in place."
+);
+
+assertNotContains(
+  "src/pages/MarketplacePage.tsx",
+  /Pick one public shop block|paid Spotlight rail|One Repost day uses one paid Spotlight credit|No payment code is open for this Paid Repost yet|Private and controlled outward links|one permanent public URL/g,
+  "Marketplace Paid Repost page copy must stay direct and user-facing, without old explanatory filler."
 );
 
 assertNotContains(
