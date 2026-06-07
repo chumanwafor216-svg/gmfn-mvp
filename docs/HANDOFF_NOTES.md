@@ -37639,3 +37639,46 @@ GSN-branded invite composer and invite-entry continuity.
     `sessionStorage.gmfn_mobile_tap_trace` immediately after a failed tap; the
     trace should now show either a replayed original action or the exact
     mismatched roots.
+
+### System mobile orphan-click tightening (2026-06-07)
+
+- Trigger:
+  - product owner reported the route/tap issue improved but still only landed
+    correctly about one in four attempts; Dashboard `Open Focus Commitments`
+    remained an example of a tap sometimes falling to the wrong route.
+- Unabated truth:
+  - The previous guard fix still had one soft spot: when the active pointer tap
+    was lost but `lastPointerContext` still knew the original action, the guard
+    only traced `click-orphan-mismatch-observed` / `click-after-cancel-observed`
+    and then allowed the wrong click to continue.
+  - For pilot testers, observing the wrong click is not enough; it still opens
+    the wrong place.
+- Fix:
+  - `frontend/src/lib/mobileTapGuard.ts` now suppresses tap-sized orphan
+    wrong-root clicks and replays the original touched action through
+    `commitOriginalAction(...)`.
+  - It only does this for tap-sized movement: normal orphan mismatch within
+    `moved <= 40`, and cancelled orphan mismatch within `moved <= 18`, so a
+    real scroll is not treated as a tap.
+  - Public Shop trusted visitor actions are still preserved, but only after the
+    orphan wrong-root check has had a chance to stop a misplaced final click.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now rejects a return to
+    "observe only" orphan mismatch behavior.
+- Verification:
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint src/lib/mobileTapGuard.ts tools/audit-mobile-tap-stability.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Remaining risk:
+  - This is a stronger system-level correction, but it still needs real phone
+    testing after Render serves the new shell. If a wrong route survives this,
+    the next proof should inspect `sessionStorage.gmfn_mobile_tap_trace` for
+    `click-orphan-mismatch-no-commit` or a route change that bypasses the tap
+    guard entirely.

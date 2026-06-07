@@ -310,7 +310,7 @@ if (
 }
 
 if (
-  !/function isTrustedPublicShopAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("shop-gallery\."\)[\s\S]*?shop-gallery\.member-nav\.[\s\S]*?\.paid-placement[\s\S]*?function preserveTrustedPublicShopClick\([\s\S]*?public-shop-trusted-click-preserved[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?preserveTrustedPublicShopClick\(endRoot, "click-before-suppression"/.test(
+  !/function isTrustedPublicShopAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("shop-gallery\."\)[\s\S]*?shop-gallery\.member-nav\.[\s\S]*?\.paid-placement[\s\S]*?function preserveTrustedPublicShopClick\([\s\S]*?public-shop-trusted-click-preserved[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?preserveTrustedPublicShopClick\(endRoot, "click-after-orphan-check"/.test(
     mobileTapGuardSource
   )
 ) {
@@ -320,12 +320,12 @@ if (
     label:
       "Public Shop visitor actions must keep the original trusted mobile click for share, WhatsApp, copy, verify, and media controls",
     text:
-      "Expected public shop trusted-click preservation before mobile tap-guard suppression was not found.",
+      "Expected public shop trusted-click preservation after orphan wrong-root suppression was not found.",
   });
 }
 
 if (
-  !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-observed[\s\S]*?click-orphan-mismatch-observed[\s\S]*?lastPointerContext = null;/.test(
+  !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-suppressed[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?commitOriginalAction\(intendedRoot, reason[\s\S]*?click-orphan-mismatch-no-commit/.test(
     mobileTapGuardSource
   )
 ) {
@@ -333,13 +333,13 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Global mobile tap guard must observe orphan clicks after pointer cancel/loss without swallowing real mobile browser actions",
-    text: "Expected pointer-context orphan/cancel click observation was not found.",
+      "Global mobile tap guard must suppress orphan wrong-root clicks after pointer cancel/loss and replay the original tapped action",
+    text: "Expected pointer-context orphan/cancel suppression with original-action replay was not found.",
   });
 }
 
 if (
-  !/const recentPointer = elapsedSinceStart <= 900;[\s\S]*?const wrongRoot = endRoot && !sameRoot;[\s\S]*?if \(\(recentPointer && \(wrongRoot \|\| unsafeGeometry\)\) \|\| recentCancel\)[\s\S]*?click-after-cancel-observed[\s\S]*?click-orphan-mismatch-observed[\s\S]*?lastPointerContext = null;/.test(
+  !/const recentPointer = elapsedSinceStart <= 900;[\s\S]*?const wrongRoot = endRoot && !sameRoot;[\s\S]*?const wrongOrShifted = wrongRoot \|\| unsafeGeometry;[\s\S]*?const movedLikeTap = moved <= 40;[\s\S]*?const cancelledTap = recentCancel && moved <= 18;[\s\S]*?if \([\s\S]*?recentPointer && wrongOrShifted && movedLikeTap[\s\S]*?cancelledTap && wrongOrShifted[\s\S]*?click-after-cancel-suppressed[\s\S]*?click-orphan-geometry-shift-suppressed[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?commitOriginalAction\(intendedRoot, reason/.test(
     mobileTapGuardSource
   )
 ) {
@@ -347,9 +347,9 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Orphan mobile clicks must be traced without synthetic recommit so native share, WhatsApp, audio, and file inputs keep user activation",
+      "Orphan mobile clicks must not be allowed to navigate a wrong action after a valid tap-sized movement",
     text:
-      "Expected orphan wrong-root observation without synthetic recommit was not found.",
+      "Expected orphan wrong-root suppression and original-action replay was not found.",
   });
 }
 
