@@ -1,3 +1,33 @@
+### Render-connected branch mirror added to deploy workflow (2026-06-07)
+
+- Trigger:
+  - product owner asked whether the Render branch mismatch could be fixed at a
+    system level after the live frontend stayed stale despite `main` deploy
+    hooks being accepted.
+- Confirmed production deployment truth:
+  - `main` is the documented deploy branch;
+  - the active `gmfn-frontend` Render service had previously been confirmed in
+    the Render dashboard as connected to `feature/vault-shops`;
+  - a deploy hook can be accepted while the live frontend remains stale if the
+    connected branch does not contain the pushed `main` commit.
+- System-level repo fix:
+  - `.github/workflows/render-deploy.yml` now grants `contents: write` and
+    mirrors the checked-out `main` commit to `feature/vault-shops` before
+    triggering the frontend deploy hook;
+  - this makes future `main` pushes update the currently connected Render
+    frontend branch automatically.
+- Documentation:
+  - `docs/DEPLOYMENT_RENDER.md` now records the bridge and the cleaner final
+    target: change the Render frontend service to track `main`, then remove the
+    mirror step and restore read-only workflow contents permission.
+- Unabated truth:
+  - this is a repo-level system guardrail, not a direct Render dashboard branch
+    change;
+  - it solves the repeat failure for future `main` pushes while Render remains
+    connected to `feature/vault-shops`;
+  - the cleanest long-term fix is still changing the Render service branch to
+    `main` in the Render dashboard or through a Render API credential.
+
 ### Route/button stability audit completed (2026-06-07)
 
 - Trigger:
