@@ -3839,6 +3839,33 @@ export default function ShopGalleryPage() {
                 >
                   Explore Spotlight →
                 </PrimaryButton>
+                {publicShopSpotlightActive ? (
+                  <SecondaryButton
+                    onClick={contactSpotlightOwnerByWhatsApp}
+                    minWidth="auto"
+                    stableHeight={isCompact ? 34 : 44}
+                    debugId="shop-gallery.spotlight.whatsapp"
+                    style={{
+                      marginTop: isCompact ? 8 : 10,
+                      borderRadius: 999,
+                      minHeight: isCompact ? 34 : 44,
+                      width: "fit-content",
+                      maxWidth: "100%",
+                      padding: isCompact ? "7px 10px" : "10px 16px",
+                      fontSize: isCompact ? 11.2 : 14,
+                      whiteSpace: "nowrap",
+                      background:
+                        "linear-gradient(180deg, #28D267 0%, #16A34A 100%)",
+                      border: "1px solid rgba(22,163,74,0.38)",
+                      color: "#FFFFFF",
+                      boxShadow:
+                        "0 10px 18px rgba(22,163,74,0.20), inset 0 1px 0 rgba(255,255,255,0.36)",
+                      transition: "none",
+                    }}
+                  >
+                    WhatsApp
+                  </SecondaryButton>
+                ) : null}
               </div>
               <div
                 style={{
@@ -3919,39 +3946,6 @@ export default function ShopGalleryPage() {
                     🛍️
                   </div>
                 )}
-                {publicShopSpotlightActive ? (
-                  <SecondaryButton
-                    onClick={contactSpotlightOwnerByWhatsApp}
-                    minWidth="auto"
-                    stableHeight={isCompact ? 32 : 38}
-                    debugId="shop-gallery.spotlight.whatsapp"
-                    data-media-control="true"
-                    aria-label="Contact this Spotlight owner on WhatsApp"
-                    style={{
-                      position: "absolute",
-                      left: isCompact ? 7 : 10,
-                      bottom: isCompact ? 7 : 10,
-                      zIndex: 5,
-                      borderRadius: 999,
-                      minWidth: isCompact ? 76 : 92,
-                      width: "auto",
-                      minHeight: isCompact ? 32 : 38,
-                      padding: isCompact ? "7px 10px" : "9px 12px",
-                      fontSize: isCompact ? 10.4 : 12,
-                      lineHeight: 1,
-                      whiteSpace: "nowrap",
-                      background:
-                        "linear-gradient(180deg, #28D267 0%, #16A34A 100%)",
-                      border: "1px solid rgba(22,163,74,0.44)",
-                      color: "#FFFFFF",
-                      boxShadow:
-                        "0 10px 18px rgba(2,12,27,0.24), inset 0 1px 0 rgba(255,255,255,0.36)",
-                      transition: "none",
-                    }}
-                  >
-                    WhatsApp
-                  </SecondaryButton>
-                ) : null}
               </div>
             </div>
           </section>

@@ -1,3 +1,24 @@
+### Spotlight button placement cleanup (2026-06-07)
+
+- Trigger:
+  - product owner confirmed the Public Shop Spotlight WhatsApp button now works
+    but reported it was covering too much of the media preview;
+  - product owner also confirmed Dashboard already has the deeper Open Shop /
+    Marketplace options in the Spotlight details area, so the newly added
+    always-visible row under the live media was redundant.
+- Fix:
+  - Public Shop Spotlight WhatsApp was moved from an overlay on the media frame
+    back into the Spotlight information/action column under `Explore
+    Spotlight`, while preserving the current `miniSpotlightView.sourceShopWhatsApp`
+    contact logic;
+  - Dashboard live Spotlight keeps the media-attached WhatsApp action, but the
+    separate `Open Shop` / `Marketplace` row under the media screen was removed;
+  - `audit:dashboard-actions` now forbids those redundant Dashboard live
+    Spotlight buttons from returning.
+- Unabated truth:
+  - this is a placement cleanup only; it does not change Spotlight source
+    selection, community context, or WhatsApp number resolution.
+
 ### Spotlight media contact and Marketplace community handoff tightened (2026-06-07)
 
 - Trigger:

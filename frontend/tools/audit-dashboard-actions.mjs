@@ -134,8 +134,6 @@ assertDashboardSliceStaysInert(
   "dashboard.spotlight.restore",
   "dashboard.spotlight.restore.empty-card",
   "dashboard.spotlight.whatsapp",
-  "dashboard.spotlight.open-marketplace",
-  "dashboard.spotlight.open-shop",
   "dashboard.spotlight.guide.toggle",
   "dashboard.demand.toggle",
   "dashboard.demand.primary",
@@ -158,8 +156,13 @@ assertContains(
 );
 
 assertContains(
-  /source_shop_whatsapp_number[\s\S]*?function openSpotlightWhatsApp\(event\?: React\.SyntheticEvent<HTMLElement>\)[\s\S]*?buildWhatsAppChatUrl[\s\S]*?debugId="dashboard\.spotlight\.whatsapp"[\s\S]*?debugId="dashboard\.spotlight\.open-shop"[\s\S]*?debugId="dashboard\.spotlight\.open-marketplace"/,
-  "Dashboard live Spotlight must expose visible media-attached WhatsApp, Shop, and Marketplace actions."
+  /source_shop_whatsapp_number[\s\S]*?function openSpotlightWhatsApp\(event\?: React\.SyntheticEvent<HTMLElement>\)[\s\S]*?buildWhatsAppChatUrl[\s\S]*?debugId="dashboard\.spotlight\.whatsapp"/,
+  "Dashboard live Spotlight must expose the media-attached WhatsApp action tied to the current source shop."
+);
+
+assertNotContains(
+  /debugId="dashboard\.spotlight\.open-shop"|debugId="dashboard\.spotlight\.open-marketplace"/,
+  "Dashboard live Spotlight must not render the redundant Open Shop / Marketplace button row under the media screen."
 );
 
 assertContains(

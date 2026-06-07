@@ -8961,42 +8961,6 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div
-                style={{
-                  marginTop: isPhone ? 10 : 12,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: isPhone ? 8 : 10,
-                  alignItems: "stretch",
-                  overflowAnchor: "none",
-                  transition: "none",
-                }}
-              >
-                <StableButton
-                  debugId="dashboard.spotlight.open-shop"
-                  type="button"
-                  onClick={openSpotlightShop}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardFillButton(
-                    secondaryBtn(false),
-                    dashboardPhoneButton
-                  )}
-                >
-                  Open Shop
-                </StableButton>
-                <StableButton
-                  debugId="dashboard.spotlight.open-marketplace"
-                  type="button"
-                  onClick={openSpotlightMarketplace}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardFillButton(
-                    secondaryBtn(false),
-                    dashboardPhoneButton
-                  )}
-                >
-                  Marketplace
-                </StableButton>
-              </div>
-              <div
                 onPointerDown={consumeDashboardPointerEvent}
                 style={{
                   marginTop: isPhone ? 14 : 10,
