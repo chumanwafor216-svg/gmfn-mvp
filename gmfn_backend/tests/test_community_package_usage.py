@@ -121,6 +121,46 @@ def test_community_package_status_reports_meeting_engine_ready(
     assert meeting["engine_ready"] is True
 
 
+def test_rosca_package_instruction_is_sixty_pounds_yearly(
+    client, override_current_user, seed_clan_admin_membership
+):
+    res = client.post(
+        "/payment-instructions/community-package",
+        json={
+            "clan_id": 1,
+            "package_code": "rosca_cycle",
+            "quantity_total": 1,
+            "currency": "GBP",
+        },
+    )
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["amount"] == "60.00"
+    assert body["currency"] == "GBP"
+    assert body["package_code"] == "rosca_cycle"
+    assert body["meta"]["billing_cycle"] == "annual"
+    assert body["meta"]["pricing_model"] == "annual_service"
+
+
+def test_rosca_package_instruction_rejects_old_one_pound_amount(
+    client, override_current_user, seed_clan_admin_membership
+):
+    res = client.post(
+        "/payment-instructions/community-package",
+        json={
+            "clan_id": 1,
+            "package_code": "rosca_cycle",
+            "quantity_total": 1,
+            "amount": "1.00",
+            "currency": "GBP",
+        },
+    )
+
+    assert res.status_code == 400
+    assert "amount does not match" in res.json()["detail"]
+
+
 def test_community_package_use_rejects_rosca_now_that_engine_consumes_credit(
     client, override_current_user, seed_clan_admin_membership
 ):

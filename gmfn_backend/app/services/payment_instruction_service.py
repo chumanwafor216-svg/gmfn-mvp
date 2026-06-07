@@ -57,9 +57,12 @@ COMMUNITY_PACKAGE_CATALOG: Dict[str, Dict[str, str]] = {
     "rosca_cycle": {
         "feature_code": FEATURE_ROSCA_CYCLE,
         "plan_code": PLAN_ROSCA_CYCLE_PACK,
-        "title": "ROSCA contribution cycle",
-        "unit_label": "cycle unit",
+        "title": "ROSCA yearly service",
+        "unit_label": "annual ROSCA service",
         "payment_context": "rosca_contribution_cycle",
+        "pricing_model": "annual_service",
+        "annual_amount_gbp": "60.00",
+        "max_quantity": "1",
     },
     "community_meeting_pack": {
         "feature_code": FEATURE_COMMUNITY_MEETING_PACK,
@@ -145,6 +148,24 @@ def calc_community_package_amount(quantity_total: int) -> Decimal:
     - every full 6-unit bundle = 5.00 GBP
     """
     return calc_spotlight_subscription_amount(quantity_total)
+
+
+def calc_community_package_amount_for_code(
+    package_code: str,
+    quantity_total: int,
+) -> Decimal:
+    package_key = str(package_code or "").strip().lower()
+    qty = _positive_int(quantity_total, name="quantity_total")
+    package = COMMUNITY_PACKAGE_CATALOG.get(package_key)
+    if not package:
+        raise ValueError("Unsupported community package code")
+
+    if package_key == "rosca_cycle":
+        if qty != 1:
+            raise ValueError("ROSCA is a £60 yearly service and supports one annual service unit per instruction.")
+        return Decimal(str(package.get("annual_amount_gbp") or "60.00"))
+
+    return calc_community_package_amount(qty)
 
 
 def build_vault_subscription_reference(
@@ -584,10 +605,13 @@ def create_community_package_instruction(
         raise ValueError("Unsupported community package code")
 
     qty = _positive_int(quantity_total, name="quantity_total")
-    if qty > 365:
-        raise ValueError("Community package quantity currently supports 1 to 365 units only.")
+    max_quantity = int(str(package.get("max_quantity") or "365"))
+    if qty > max_quantity:
+        raise ValueError(
+            f"{package['title']} quantity currently supports 1 to {max_quantity} units only."
+        )
 
-    resolved_amount = calc_community_package_amount(qty)
+    resolved_amount = calc_community_package_amount_for_code(package_key, qty)
     if amount is not None and _d(amount) != resolved_amount:
         raise ValueError("amount does not match community package pricing for this quantity")
 
@@ -623,7 +647,7 @@ def create_community_package_instruction(
                 "unit_label": package["unit_label"],
                 "payment_context": package["payment_context"],
                 "payment_beneficiary_scope": "platform",
-                "pricing_model": "spotlight_bundle_rail",
+                "pricing_model": package.get("pricing_model") or "spotlight_bundle_rail",
             },
         ),
     )

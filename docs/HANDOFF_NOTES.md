@@ -1,3 +1,35 @@
+### ROSCA package pricing corrected to GBP 60 yearly (2026-06-07)
+
+- Trigger:
+  - product owner clarified that the ROSCA package is a paid service at GBP
+    60 yearly.
+- Backend changes:
+  - `COMMUNITY_PACKAGE_CATALOG["rosca_cycle"]` now describes ROSCA as a
+    yearly service with `pricing_model: annual_service` and
+    `annual_amount_gbp: 60.00`;
+  - `create_community_package_instruction(...)` now prices `rosca_cycle` via
+    package-specific pricing instead of the old GBP 1 community-package unit
+    rail;
+  - ROSCA payment instruction creation rejects an old/incorrect GBP 1 override;
+  - `/payment-instructions/my` package config now reports ROSCA one-unit price
+    as `60.00` and no six-unit bundle.
+- Frontend changes:
+  - `ShopControlPage` Community Packages copy now shows `ROSCA: GBP 60 yearly`
+    and separates it from the remaining `Other package units: GBP 1` rail;
+  - the package request button now reads `ROSCA yearly`.
+- Verification passed:
+  - `python -m pytest tests/test_community_package_usage.py tests/test_spotlight_subscription_pricing.py tests/test_rosca_engine.py -q`
+    (`29 passed`, SQLite datetime deprecation warnings only);
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`;
+  - sandboxed `npm run build` failed with the known Windows `esbuild spawn
+    EPERM`, then approved outside-sandbox `npm run build` from `frontend/`
+    passed.
+- Unabated truth:
+  - this corrects the price and payment instruction truth only;
+  - the current ROSCA engine still consumes one active ROSCA entitlement when a
+    cycle is started. If ROSCA should become unlimited access while the yearly
+    service is active, that requires a separate backend semantics change.
+
 ### Community meeting pack evidence engine added (2026-06-07)
 
 - Trigger:

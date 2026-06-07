@@ -18,6 +18,7 @@ from app.services.payment_instruction_service import (
     VAULT_DEFAULT_BILLING_CYCLE,
     VAULT_SLOT_DURATION_DAYS,
     calc_community_package_amount,
+    calc_community_package_amount_for_code,
     create_loan_repayment_instruction,
     create_pool_deposit_instruction,
     create_community_package_instruction,
@@ -725,8 +726,13 @@ def my_instruction_config(
                     "feature_code": cfg["feature_code"],
                     "title": cfg["title"],
                     "unit_label": cfg["unit_label"],
-                    "one_unit_amount_gbp": str(calc_community_package_amount(1)),
-                    "six_unit_bundle_amount_gbp": str(calc_community_package_amount(6)),
+                    "pricing_model": cfg.get("pricing_model") or "spotlight_bundle_rail",
+                    "one_unit_amount_gbp": str(
+                        calc_community_package_amount_for_code(code, 1)
+                    ),
+                    "six_unit_bundle_amount_gbp": None
+                    if str(cfg.get("max_quantity") or "") == "1"
+                    else str(calc_community_package_amount(6)),
                 }
                 for code, cfg in COMMUNITY_PACKAGE_CATALOG.items()
             ],

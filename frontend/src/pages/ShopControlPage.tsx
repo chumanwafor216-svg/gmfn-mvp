@@ -3477,7 +3477,8 @@ export default function ShopControlPage() {
               packs create reminder and summary evidence for TrustEvents.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <span style={badge(false)}>Rail: GBP 1 per unit</span>
+              <span style={badge(false)}>ROSCA: GBP 60 yearly</span>
+              <span style={badge(false)}>Other package units: GBP 1</span>
               <span style={badge(Boolean(latestCommunityPackagePayment))}>
                 {latestCommunityPackagePayment
                   ? firstTruthy(latestCommunityPackagePayment.status, "Expected")
@@ -3571,7 +3572,7 @@ export default function ShopControlPage() {
                 fullWidth
                 debugId="shop-control.package.rosca-cycle"
               >
-                ROSCA cycle
+                ROSCA yearly
               </SecondaryButton>
               <SecondaryButton
                 onClick={() =>

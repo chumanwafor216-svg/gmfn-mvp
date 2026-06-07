@@ -9,6 +9,7 @@ from app.services.payment_instruction_service import (
     COMMUNITY_PACKAGE_CATALOG,
     build_community_package_reference,
     calc_community_package_amount,
+    calc_community_package_amount_for_code,
     calc_spotlight_subscription_amount as calc_instruction_spotlight_amount,
 )
 
@@ -49,10 +50,22 @@ def test_community_package_pricing_uses_paid_spotlight_bundle_rail(quantity, amo
     assert calc_community_package_amount(quantity) == amount
 
 
+def test_rosca_package_pricing_is_annual_sixty_pounds():
+    assert calc_community_package_amount_for_code("rosca_cycle", 1) == Decimal("60.00")
+    with pytest.raises(ValueError):
+        calc_community_package_amount_for_code("rosca_cycle", 2)
+
+
+def test_other_community_packages_keep_bundle_rail():
+    assert calc_community_package_amount_for_code("community_meeting_pack", 6) == Decimal("5.00")
+
+
 def test_community_package_catalog_contains_owner_package_features():
     assert COMMUNITY_PACKAGE_CATALOG["extra_shop_blocks"]["feature_code"] == "extra_shop_block"
     assert COMMUNITY_PACKAGE_CATALOG["extra_members"]["feature_code"] == "community_member_capacity"
     assert COMMUNITY_PACKAGE_CATALOG["rosca_cycle"]["feature_code"] == "rosca_cycle"
+    assert COMMUNITY_PACKAGE_CATALOG["rosca_cycle"]["pricing_model"] == "annual_service"
+    assert COMMUNITY_PACKAGE_CATALOG["rosca_cycle"]["annual_amount_gbp"] == "60.00"
     assert COMMUNITY_PACKAGE_CATALOG["community_meeting_pack"]["feature_code"] == "community_meeting_pack"
 
 
