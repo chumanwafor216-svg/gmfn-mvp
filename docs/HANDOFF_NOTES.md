@@ -37553,3 +37553,48 @@ GSN-branded invite composer and invite-entry continuity.
     deploys this commit, the next investigation should inspect actual
     `sessionStorage.gmfn_mobile_tap_trace` and page-specific scroll/state
     changes during a failing tap.
+
+### Notifications button stability baseline (2026-06-07)
+
+- Trigger:
+  - product owner said "next" after the runtime mobile tap correction and the
+    page-by-page button inventory passes.
+- Scope:
+  - `/app/notifications`
+  - `frontend/src/pages/NotificationsPage.tsx`
+  - shared authenticated mobile shell around Notifications in
+    `frontend/src/layout/AppLayout.tsx`
+- Notifications count:
+  - `NotificationsPage` now audits at 17 stable source action templates:
+    3 `PrimaryButton`, 2 `SecondaryButton`, 1 `StableButton`,
+    5 `StableCtaLink`, and 6 `SubtleButton`.
+  - The page has 0 native fields.
+  - The audited `BUCKET_ORDER` produces 4 fixed-height bucket-row buttons.
+  - Dynamic selected-notice rows remain data-dependent; the audit locks the
+    three action families each selected row can render: primary action, open
+    page, and mark as read.
+  - `/app/notifications` is a normal authenticated route, so mobile shell
+    contributes 41 controls: 2 top controls, 25 drawer controls, 7 Tools-panel
+    controls, and 7 bottom-nav controls.
+  - Whole-route mobile fixed action baseline is therefore 61 action families
+    (17 page source templates + 3 extra rendered bucket rows + 41 shell
+    controls), plus dynamic notice-row actions when a bucket is open.
+- System guard changes:
+  - Added `frontend/tools/audit-notifications-button-inventory.mjs`.
+  - Added `npm --prefix frontend run audit:notifications-button-inventory`.
+  - The audit locks Notifications action counts, debug namespace/order,
+    fixed `stableHeight` usage, no raw action roots, fixed bucket row geometry,
+    selected-notice action families, one-column phone action rows, and the
+    authenticated mobile shell/page tools around the page.
+- Verification:
+  - Passed `npm --prefix frontend run audit:notifications-button-inventory`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+- Unabated truth:
+  - This pass adds a route-level guardrail and confirms Notifications is using
+    stable shared button primitives. It does not change live Notifications
+    rendering and should not be sold as the runtime fix for jumpiness; the live
+    tap correction remains the shared `mobileTapGuard` narrowing.
