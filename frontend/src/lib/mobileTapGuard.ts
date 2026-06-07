@@ -217,6 +217,35 @@ function isDashboardAction(root: Element | null): boolean {
   );
 }
 
+function isTrustedPublicShopAction(root: Element | null): boolean {
+  const ctaId = root?.getAttribute("data-cta-id") || "";
+
+  if (!ctaId.startsWith("shop-gallery.")) return false;
+  if (ctaId.startsWith("shop-gallery.member-nav.")) return false;
+  if (ctaId.includes(".paid-placement")) return false;
+
+  return !isDisabledAction(root);
+}
+
+function preserveTrustedPublicShopClick(
+  root: Element | null,
+  reason: string,
+  detail: Record<string, unknown>
+): boolean {
+  if (!isTrustedPublicShopAction(root)) return false;
+
+  traceTap("public-shop-trusted-click-preserved", {
+    action: labelForAction(root),
+    reason,
+    ...detail,
+  });
+  clearActiveTap();
+  lastPointerContext = null;
+  lastAcceptedActionClickAt = nowMs();
+  lastAcceptedActionRoot = root;
+  return true;
+}
+
 function coveredDashboardActionFromBottomNav(
   event: PointerEvent | MouseEvent,
   topRoot = actionRootFromEvent(event)
@@ -393,6 +422,19 @@ function handlePointerUp(event: PointerEvent): void {
   );
 
   if (moved <= 40 && (!sameActionRoot(activeTap.root, endRoot) || unsafeGeometry)) {
+    if (
+      endRoot &&
+      sameActionRoot(activeTap.root, endRoot) &&
+      preserveTrustedPublicShopClick(endRoot, "pointerup-preserved", {
+        started: activeTap.rootLabel,
+        ended: labelForAction(endRoot),
+        moved: Math.round(moved),
+        shifted: unsafeGeometry,
+      })
+    ) {
+      return;
+    }
+
     activeTap.suppressNextClick = true;
     traceTap(unsafeGeometry ? "pointerup-geometry-shift" : "pointerup-mismatch", {
       started: activeTap.rootLabel,
@@ -467,6 +509,16 @@ function handleClick(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
     clearActiveTap();
+    return;
+  }
+
+  if (
+    endRoot &&
+    preserveTrustedPublicShopClick(endRoot, "click-before-suppression", {
+      hasActiveTap: Boolean(activeTap),
+      sinceLastAccepted: Math.round(currentTime - lastAcceptedActionClickAt),
+    })
+  ) {
     return;
   }
 

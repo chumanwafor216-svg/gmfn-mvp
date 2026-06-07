@@ -1,3 +1,44 @@
+### Public Shop visitor actions preserve real mobile taps (2026-06-07)
+
+- Trigger:
+  - product owner reported the Public Shop page still felt frozen for visitors:
+    WhatsApp/link/share-style buttons appeared but did not reliably respond.
+- Confirmed product rule:
+  - ordinary Public Shop visitors must not see the signed-in member navigator or
+    repost/paid placement controls;
+  - visitor-facing Public Shop actions such as Share, Verify, WhatsApp/contact,
+    spotlight open, vault request/copy, and product share/contact should remain
+    usable.
+- Likely root cause addressed:
+  - the global mobile tap guard could suppress a real phone click and replay it
+    with `element.click()` after pointer-cancel, geometry shift, or settle-window
+    handling;
+  - replayed synthetic clicks are not trusted browser gestures, so mobile
+    browser actions such as WhatsApp `window.open`, native share, and clipboard
+    copy can behave as if the button is frozen.
+- Fix:
+  - `frontend/src/lib/mobileTapGuard.ts` now preserves the original trusted
+    mobile click for `shop-gallery.*` visitor actions before suppression/replay;
+  - signed-in member-nav and paid-placement/repost actions are excluded from the
+    visitor preservation path;
+  - `audit:tap-stability` now enforces this Public Shop trusted-click contract.
+- Verification passed:
+  - `npm run audit:tap-stability`;
+  - `npm run audit:link-contracts`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:marketplace-button-lines`;
+  - `npm run audit:marketplace-button-inventory`;
+  - `npm run audit:route-fallthrough`;
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts
+    tools/audit-mobile-tap-stability.mjs`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `esbuild spawn
+    EPERM`, then approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this is the most plausible system-level cause for public visitor actions
+    feeling dead without the buttons being absent from source;
+  - it still needs live phone verification after Render updates, especially
+    Share, Verify, WhatsApp, vault request, and product contact/share.
+
 ### PWA shortcut real-app launch correction (2026-06-07)
 
 - Trigger:

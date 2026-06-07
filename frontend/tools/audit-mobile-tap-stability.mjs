@@ -297,6 +297,21 @@ if (
 }
 
 if (
+  !/function isTrustedPublicShopAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("shop-gallery\."\)[\s\S]*?shop-gallery\.member-nav\.[\s\S]*?\.paid-placement[\s\S]*?function preserveTrustedPublicShopClick\([\s\S]*?public-shop-trusted-click-preserved[\s\S]*?function handlePointerUp\(event: PointerEvent\): void \{[\s\S]*?preserveTrustedPublicShopClick\(endRoot, "pointerup-preserved"[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?preserveTrustedPublicShopClick\(endRoot, "click-before-suppression"/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Public Shop visitor actions must keep the original trusted mobile click for share, WhatsApp, copy, verify, and media controls",
+    text:
+      "Expected public shop trusted-click preservation before mobile tap-guard suppression was not found.",
+  });
+}
+
+if (
   !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-suppressed[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
     mobileTapGuardSource
   )
