@@ -163,6 +163,74 @@ def test_rosca_cycle_creation_requires_paid_credit(
     assert "No active ROSCA package credit" in res.json()["detail"]
 
 
+def test_rosca_default_payout_order_prioritizes_highest_trust_score(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_credit()
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE users SET trust_score = 40 WHERE id = 1"))
+        conn.execute(text("UPDATE users SET trust_score = 92 WHERE id = 2"))
+
+    res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Trust ordered circle",
+            "contribution_amount": "25.00",
+            "currency": "GBP",
+        },
+    )
+
+    assert res.status_code == 200
+    cycle = res.json()["cycle"]
+    assert cycle["member_user_ids"] == [1, 2]
+    assert cycle["payout_order_user_ids"] == [2, 1]
+    assert cycle["rounds"][0]["payout_user_id"] == 2
+
+    first_meta = cycle["rounds"][0]["contributions"][0]["meta"]
+    assert first_meta["payout_order_policy"]["payout_order_strategy"] == (
+        "trust_score_desc_membership_order_tiebreak"
+    )
+    assert first_meta["payout_order_policy"]["trust_scores_by_user_id"] == {
+        "1": 40,
+        "2": 92,
+    }
+
+
+def test_rosca_explicit_payout_order_overrides_trust_score_priority(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_credit()
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE users SET trust_score = 40 WHERE id = 1"))
+        conn.execute(text("UPDATE users SET trust_score = 92 WHERE id = 2"))
+
+    res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Manual order circle",
+            "contribution_amount": "25.00",
+            "currency": "GBP",
+            "payout_order_user_ids": [1, 2],
+        },
+    )
+
+    assert res.status_code == 200
+    cycle = res.json()["cycle"]
+    assert cycle["payout_order_user_ids"] == [1, 2]
+    assert cycle["rounds"][0]["payout_user_id"] == 1
+
+    first_meta = cycle["rounds"][0]["contributions"][0]["meta"]
+    assert first_meta["payout_order_policy"]["payout_order_strategy"] == (
+        "explicit_admin_order"
+    )
+
+
 def test_rosca_payout_requires_confirmed_round_then_records_payout(
     client,
     override_current_user,

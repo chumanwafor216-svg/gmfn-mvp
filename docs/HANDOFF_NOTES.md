@@ -1,3 +1,26 @@
+### ROSCA default payout order now prioritizes trust score (2026-06-07)
+
+- Trigger:
+  - product owner clarified that trust score should be the most important
+    criterion for who receives the first ROSCA payout, because higher trust
+    reduces fear of disappointment.
+- Backend behavior change:
+  - when `POST /rosca/cycles` does not provide `payout_order_user_ids`, the
+    engine now sorts active members by stored `users.trust_score` descending;
+  - membership order remains the deterministic tie-breaker;
+  - if `payout_order_user_ids` is supplied, the explicit admin/community order
+    still wins after validation that every member appears exactly once;
+  - each generated expected-payment meta now records `payout_order_policy`,
+    including the strategy and trust scores used, so the order is auditable.
+- Product truth:
+  - default first payout now goes to the highest-trust participant, not merely
+    the earliest membership row;
+  - this is still not a full fairness/governance module. There is no member
+    vote, hardship priority, random draw, or appeal workflow yet.
+- Verification passed:
+  - `python -m pytest tests/test_rosca_engine.py tests/test_community_package_usage.py tests/test_spotlight_subscription_pricing.py -q`
+    (`23 passed`, SQLite datetime deprecation warnings only).
+
 ### ROSCA connected to Focus Commitments and Notifications (2026-06-07)
 
 - Trigger:

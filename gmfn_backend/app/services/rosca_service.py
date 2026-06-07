@@ -9,7 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional
 from sqlalchemy.orm import Session
 
 from app.db.bank_models import ExpectedPayment
-from app.db.models import ClanMembership, PoolEvent, TrustEvent
+from app.db.models import ClanMembership, PoolEvent, TrustEvent, User
 from app.db.notification_models import Notification
 from app.services.expected_payments_service import create_expected_payment
 from app.services.feature_entitlements_service import consume_feature_units
@@ -214,6 +214,48 @@ def _validate_payout_order(
     if set(order) != set(member_user_ids) or len(order) != len(member_user_ids):
         raise ValueError("Payout order must include each ROSCA member exactly once")
     return order
+
+
+def _trust_score_for_user(user: Optional[User]) -> int:
+    if user is None:
+        return 50
+    return _safe_int(getattr(user, "trust_score", None), 50)
+
+
+def _trust_ranked_payout_order(
+    db: Session,
+    *,
+    member_user_ids: List[int],
+) -> tuple[List[int], Dict[str, Any]]:
+    users = (
+        db.query(User)
+        .filter(User.id.in_([int(user_id) for user_id in member_user_ids]))
+        .all()
+    )
+    user_by_id = {int(row.id): row for row in users}
+    membership_index = {
+        int(user_id): index for index, user_id in enumerate(member_user_ids)
+    }
+    trust_scores = {
+        int(user_id): _trust_score_for_user(user_by_id.get(int(user_id)))
+        for user_id in member_user_ids
+    }
+    ranked = sorted(
+        [int(user_id) for user_id in member_user_ids],
+        key=lambda user_id: (
+            -trust_scores.get(int(user_id), 50),
+            membership_index.get(int(user_id), 999999),
+            int(user_id),
+        ),
+    )
+    return ranked, {
+        "payout_order_strategy": "trust_score_desc_membership_order_tiebreak",
+        "trust_scores_by_user_id": {
+            str(user_id): int(trust_scores.get(int(user_id), 50))
+            for user_id in member_user_ids
+        },
+        "tie_breaker": "clan_membership_id_asc",
+    }
 
 
 def _expected_payment_out(row: ExpectedPayment) -> Dict[str, Any]:
@@ -598,10 +640,21 @@ def create_rosca_cycle(
         clan_id=int(clan_id),
         member_user_ids=member_user_ids,
     )
-    payout_order = _validate_payout_order(
-        member_user_ids=members,
-        payout_order_user_ids=payout_order_user_ids,
-    )
+    if payout_order_user_ids is None:
+        payout_order, payout_order_policy = _trust_ranked_payout_order(
+            db,
+            member_user_ids=members,
+        )
+    else:
+        payout_order = _validate_payout_order(
+            member_user_ids=members,
+            payout_order_user_ids=payout_order_user_ids,
+        )
+        payout_order_policy = {
+            "payout_order_strategy": "explicit_admin_order",
+            "trust_scores_by_user_id": {},
+            "tie_breaker": None,
+        }
 
     token = _cycle_token()
     cycle_id = _cycle_id(clan_id=int(clan_id), token=token)
@@ -679,6 +732,7 @@ def create_rosca_cycle(
                     "created_at": starts.isoformat(),
                     "member_user_ids": members,
                     "payout_order_user_ids": payout_order,
+                    "payout_order_policy": payout_order_policy,
                     "contributor_user_id": int(contributor_user_id),
                     "payout_user_id": int(payout_user_id),
                     "contribution_amount": str(amount),
@@ -708,6 +762,7 @@ def create_rosca_cycle(
             "title": cleaned_title,
             "member_user_ids": members,
             "payout_order_user_ids": payout_order,
+            "payout_order_policy": payout_order_policy,
             "contribution_amount": str(amount),
             "payout_amount": str(payout_amount),
             "currency": ccy,
