@@ -1,3 +1,45 @@
+### Community Home visible-communities tap fall-through fixed (2026-06-07)
+
+- Trigger:
+  - product owner tested Community Home major buttons repeatedly on phone and
+    reported that the top visible-communities row landed on Finance every time,
+    while several other rows intermittently landed on Welcome, Finance, or
+    Notifications.
+- Confirmed source facts:
+  - the visible-communities summary row was a plain `div` styled with
+    `communityToolRowStyle()`, so it looked and occupied space like a compact
+    action row but was not a protected `StableButton`;
+  - Finance Summary was the next real stable action under that row, matching the
+    product owner's repeated "visible communities -> Finance" result;
+  - no other raw `div` still uses `communityToolRowStyle()` after this pass.
+- Fix:
+  - converted the visible-communities summary into
+    `debugId="community-home.summary.visible-communities"`;
+  - the row now uses the same route-local `StableButton` protection and opens
+    `community-home-community-list` with the communities panel expanded;
+  - `audit:community-home-button-inventory` and
+    `audit:community-home-phone-buttons` now reject plain `div` elements using
+    compact button geometry.
+- Verification passed:
+  - `npm --prefix frontend run audit:community-home-button-inventory`;
+  - `npm --prefix frontend run audit:community-home-phone-buttons`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm --prefix frontend run audit:button-stability`;
+  - `npm --prefix frontend run audit:global-action-debugids`;
+  - `npm --prefix frontend run audit:global-raw-action-elements`;
+  - `npm exec -- eslint src/pages/CommunityHomePage.tsx
+    tools/audit-community-home-button-inventory.mjs
+    tools/audit-community-home-phone-buttons.mjs`;
+  - `git diff --check`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `spawn EPERM`,
+    then approved elevated `npm run build` passed.
+- Unabated truth:
+  - this explains and fixes the consistent visible-communities-to-Finance
+    mislanding;
+  - it does not by itself prove every intermittent Welcome-page landing is gone,
+    because those may come from remaining stale installed-shell behavior,
+    session/auth guard reloads, or another still-hidden tap surface.
+
 ### ROSCA moved into Marketplace as a first-class community desk (2026-06-07)
 
 - Trigger:

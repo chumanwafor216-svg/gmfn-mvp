@@ -88,6 +88,11 @@ assertContains(
 );
 
 assertContains(
+  /debugId="community-home\.summary\.visible-communities"[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-community-list"[\s\S]*?"communities"[\s\S]*?style=\{communityToolRowStyle\(\)\}/,
+  "Community Home visible-communities summary must be a protected StableButton using compact row geometry."
+);
+
+assertContains(
   /item\.id === "vault-control"[\s\S]*?\? 9[\s\S]*?: item\.id === "rosca"[\s\S]*?\? 8\.5[\s\S]*?: 22[\s\S]*?item\.id === "vault-control" \|\| item\.id === "rosca"[\s\S]*?\? 950[\s\S]*?: 800/,
   "Community Home ROSCA row must keep a compact fixed icon text treatment instead of overflowing the icon slot."
 );
@@ -110,6 +115,11 @@ assertNotContains(
 assertNotContains(
   /display: "none"/g,
   "Community Home must not keep hidden route-local UI remnants in the page source."
+);
+
+assertNotContains(
+  /<div\s+style=\{communityToolRowStyle\(\)\}/g,
+  "Community Home must not use plain divs with compact button geometry; button-looking rows must be protected StableButton actions."
 );
 
 assertNotContains(

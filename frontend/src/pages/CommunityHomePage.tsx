@@ -2560,7 +2560,21 @@ export default function CommunityHomePage() {
             </div>
 
               <div style={{ marginTop: isCompact ? 10 : 14, display: "grid", gap: 9 }}>
-                <div style={communityToolRowStyle()}>
+                <StableButton
+                  type="button"
+                  debugId="community-home.summary.visible-communities"
+                  aria-expanded={!collapsed.communities}
+                  aria-controls="community-home-communities-panel"
+                  onClick={(event) =>
+                    openCommunityHomeSection(
+                      event,
+                      "community-home-community-list",
+                      "communities",
+                      true
+                    )
+                  }
+                  style={communityToolRowStyle()}
+                >
                   <span style={communityActionIcon(true)}>ID</span>
                   <span style={{ minWidth: 0 }}>
                     <span
@@ -2587,7 +2601,10 @@ export default function CommunityHomePage() {
                       Choose one community below, then do local work inside its Marketplace.
                     </span>
                   </span>
-                </div>
+                  <span aria-hidden="true" style={{ color: "#0B2D4A", fontSize: 24 }}>
+                    {">"}
+                  </span>
+                </StableButton>
 
                 <StableButton
                   type="button"

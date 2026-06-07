@@ -10,7 +10,7 @@ const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
 const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
-const expectedStableButtonTemplateCount = 14;
+const expectedStableButtonTemplateCount = 15;
 const expectedNativeFieldCount = 0;
 const expectedNextActionGuideItemCount = 11;
 const expectedFrontQuickActionCount = 5;
@@ -153,6 +153,7 @@ for (const action of actions) {
 
 const frontToInnerOrder = [
   { label: "empty state", pattern: /^community-home\.empty\./ },
+  { label: "visible communities summary", pattern: /^community-home\.summary\.visible-communities/ },
   { label: "finance summary", pattern: /^community-home\.finance-summary\./ },
   { label: "trust summary", pattern: /^community-home\.trust-summary\./ },
   { label: "front next actions", pattern: /^community-home\.next-action\./ },
@@ -265,6 +266,22 @@ assertContains(
   /function openSelectedCommunityRoute\([\s\S]*?fallbackMessage = "Choose a community first[\s\S]*?if \(!selectedClanId\)[\s\S]*?showNotice\("error", fallbackMessage\)[\s\S]*?community-home-community-list[\s\S]*?navigateWithOrigin\(navigate, to, location\)/,
   "Community Home community-sensitive rows must refuse to navigate without selected community context."
 );
+
+assertContains(
+  /debugId="community-home\.summary\.visible-communities"[\s\S]*?aria-expanded=\{!collapsed\.communities\}[\s\S]*?aria-controls="community-home-communities-panel"[\s\S]*?openCommunityHomeSection\([\s\S]*?"community-home-community-list"[\s\S]*?"communities"/,
+  "Community Home visible-communities summary must be a real stable action that opens the community list, not a button-looking inert row."
+);
+
+if (/<div\s+style=\{communityToolRowStyle\(\)\}/.test(source)) {
+  const index = source.search(/<div\s+style=\{communityToolRowStyle\(\)\}/);
+  findings.push({
+    file: communityFile,
+    line: lineAt(index),
+    message:
+      "Community Home must not use plain divs with compact button geometry; convert them to StableButton or make them visibly inert.",
+    text: source.slice(index, index + 180).replace(/\s+/g, " "),
+  });
+}
 
 assertContains(
   /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "spotlight-free"[\s\S]*?id: "spotlight-paid"[\s\S]*?id: "spotlight-repost"[\s\S]*?id: "spotlight-vault"[\s\S]*?id: "spotlight-shop-setup"/,
