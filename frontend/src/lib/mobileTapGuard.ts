@@ -209,6 +209,11 @@ function isBottomNavAction(root: Element | null): boolean {
   return Boolean(root.closest(BOTTOM_NAV_SELECTOR));
 }
 
+function isAppShellAction(root: Element | null): boolean {
+  const ctaId = root?.getAttribute("data-cta-id") || "";
+  return ctaId.startsWith("app-layout.");
+}
+
 function isDashboardAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
   return (
@@ -480,6 +485,21 @@ function handleClick(event: MouseEvent): void {
         action: labelForAction(lastAcceptedActionRoot),
         input: labelForAction(endRoot),
       });
+    } else if (
+      isAppShellAction(endRoot) &&
+      lastAcceptedActionRoot &&
+      !isAppShellAction(lastAcceptedActionRoot) &&
+      !sameActionRoot(lastAcceptedActionRoot, endRoot)
+    ) {
+      traceTap("click-settle-shell-suppressed", {
+        previous: labelForAction(lastAcceptedActionRoot),
+        ended: labelForAction(endRoot),
+        sinceLastAccepted: Math.round(currentTime - lastAcceptedActionClickAt),
+      });
+      event.preventDefault();
+      event.stopPropagation();
+      clearActiveTap();
+      return;
     } else {
       traceTap("click-settle-observed", {
         ended: labelForAction(endRoot),

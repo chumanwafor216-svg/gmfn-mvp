@@ -226,7 +226,7 @@ if (
 }
 
 if (
-  !/function isDisabledAction\(root: Element \| null\): boolean[\s\S]*?aria-disabled[\s\S]*?function handlePointerUp\(event: PointerEvent\): void[\s\S]*?pointerup-geometry-shift[\s\S]*?suppressNextClick: true[\s\S]*?function handleClick\(event: MouseEvent\): void[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?insideSettleWindow[\s\S]*?click-settle-observed[\s\S]*?activeTap\.suppressNextClick[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?commitOriginalAction\(intendedRoot, reason/.test(
+  !/function isDisabledAction\(root: Element \| null\): boolean[\s\S]*?aria-disabled[\s\S]*?function handlePointerUp\(event: PointerEvent\): void[\s\S]*?pointerup-geometry-shift[\s\S]*?suppressNextClick: true[\s\S]*?function handleClick\(event: MouseEvent\): void[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?insideSettleWindow[\s\S]*?click-settle-shell-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?click-settle-observed[\s\S]*?activeTap\.suppressNextClick[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?commitOriginalAction\(intendedRoot, reason/.test(
     mobileTapGuardSource
   )
 ) {
@@ -236,7 +236,22 @@ if (
     label:
       "Global mobile tap guard must trace unstable tap geometry and replay the originally touched action when a phone click lands on the wrong root",
     text:
-      "Expected pointer-up suppression marking, disabled-action suppression, settle-window observation, and original-action replay were not found.",
+      "Expected pointer-up suppression marking, disabled-action suppression, settle-window shell suppression, settle-window observation, and original-action replay were not found.",
+  });
+}
+
+if (
+  !/function isAppShellAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("app-layout\."\)[\s\S]*?isAppShellAction\(endRoot\)[\s\S]*?!isAppShellAction\(lastAcceptedActionRoot\)[\s\S]*?!sameActionRoot\(lastAcceptedActionRoot, endRoot\)[\s\S]*?click-settle-shell-suppressed/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must suppress phantom app-shell navigation immediately after a page action is accepted",
+    text:
+      "Expected app-layout settle-window suppression was not found.",
   });
 }
 

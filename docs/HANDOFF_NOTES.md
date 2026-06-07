@@ -37803,3 +37803,45 @@ GSN-branded invite composer and invite-entry continuity.
     width and action geometry. Future work may change behavior intentionally,
     but must not reintroduce horizontal overflow without updating the audit on
     purpose.
+
+### Mobile shell phantom-click suppression after Community Home reports (2026-06-07)
+
+- Trigger:
+  - product owner reported Community Home still sends some taps to unrelated
+    shell destinations, especially Welcome/My GSN, Notifications, and Finance,
+    while other taps land correctly.
+- Unabated truth:
+  - The Community Home source-level button audits passing was not enough.
+    Wrong landings to Finance/Notifications point to shell navigation winning
+    a tap, not to the intended Community Home tool route itself.
+- Fix:
+  - `frontend/src/lib/mobileTapGuard.ts` now detects app-shell actions by
+    `data-cta-id` prefix `app-layout.`.
+  - If a page action has just been accepted and, inside the guard's short
+    settle window, a different app-shell action receives a click, the guard
+    suppresses it and traces `click-settle-shell-suppressed`.
+  - This does not rewrite Community Home routes. It prevents phantom immediate
+    shell navigation after a page action was already accepted.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now cages the app-shell
+    settle-window suppression.
+- Verification so far:
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:dashboard-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint src/lib/mobileTapGuard.ts tools/audit-mobile-tap-stability.mjs`
+    from the `frontend` directory.
+  - Passed `git diff --check`.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Remaining risk:
+  - This matches the reported symptom better than another local row/button
+    change, but real phone testing after Render is still required. If a wrong
+    route remains, pull `sessionStorage.gmfn_mobile_tap_trace`; the new event
+    to look for is `click-settle-shell-suppressed`, or any remaining shell
+    navigation that occurs without this trace.
