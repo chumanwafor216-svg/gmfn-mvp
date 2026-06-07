@@ -7,6 +7,9 @@ type MarketplaceLandingTraceDetail = {
   attempt?: number;
   top?: number;
   offset?: number;
+  delta?: number;
+  corrected?: boolean;
+  settled?: boolean;
   viewportHeight?: number;
 };
 
@@ -73,6 +76,50 @@ export function scrollElementToMarketplaceLanding(
   window.scrollTo({
     top,
     behavior: "auto",
+  });
+
+  window.requestAnimationFrame(() => {
+    const delta = Math.round(target.getBoundingClientRect().top - offset);
+    const settled = Math.abs(delta) <= 18;
+
+    if (!settled) {
+      const correctedTop = Math.max(0, Math.round(window.scrollY + delta));
+      window.scrollTo({
+        top: correctedTop,
+        behavior: "auto",
+      });
+      traceMarketplaceLanding({
+        ...detail,
+        reason: `${detail.reason}-corrected`,
+        top: correctedTop,
+        offset,
+        delta,
+        corrected: true,
+        settled: Math.abs(
+          Math.round(target.getBoundingClientRect().top - offset)
+        ) <= 18,
+        viewportHeight:
+          window.visualViewport?.height ||
+          window.innerHeight ||
+          document.documentElement.clientHeight ||
+          0,
+      });
+    } else {
+      traceMarketplaceLanding({
+        ...detail,
+        reason: `${detail.reason}-settled`,
+        top,
+        offset,
+        delta,
+        corrected: false,
+        settled: true,
+        viewportHeight:
+          window.visualViewport?.height ||
+          window.innerHeight ||
+          document.documentElement.clientHeight ||
+          0,
+      });
+    }
   });
 
   traceMarketplaceLanding({

@@ -1,3 +1,45 @@
+### Marketplace section landing settle hardening (2026-06-07)
+
+- Trigger:
+  - product owner reported Marketplace buttons still sometimes land in the
+    wrong place, with only about one in three attempts feeling right.
+- Likely cause addressed:
+  - not a simple missing route or dead button; the intermittent pattern points
+    to mobile viewport/layout timing after a section opens.
+- Fix:
+  - `scrollElementToMarketplaceLanding()` now verifies the target position on
+    the next animation frame and performs a corrective scroll if the section is
+    more than 18px away from the expected landing offset;
+  - Marketplace section opens now queue a pending section id, wait through a
+    double `requestAnimationFrame`, then retry landing through 3.2 seconds so
+    React commit, mobile address bar movement, and late content layout have
+    time to settle;
+  - collapsing a section clears any pending landing target so old retries do
+    not pull the user back after they close a section;
+  - `audit:marketplace-actions` now enforces the shared next-frame correction,
+    pending-section landing queue, post-commit reschedule, and long-tail retry
+    window.
+- Verification passed:
+  - `npm run audit:marketplace-button-lines`
+    (`56 stable actions`, `9 native fields`, `10 busy-only disabled actions`);
+  - `npm run audit:marketplace-actions`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:marketplace-button-inventory`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:link-contracts`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx
+    src/lib/marketplaceActionStability.ts
+    tools/audit-marketplace-actions.mjs`;
+  - sandboxed `npm run build` failed with Windows/Vite `esbuild spawn EPERM`,
+    then approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this tightens the system-level scroll/landing contract, not just one
+    visible button;
+  - it still needs physical phone tap QA on `/app/marketplace` after deploy,
+    especially the Money, Records/Links, Members, Support, and Paid Repost
+    section launchers.
+
 ### Marketplace line-level button audit and dead-button fixes (2026-06-07)
 
 - Trigger:

@@ -266,14 +266,14 @@ assertContains(
 
 assertContains(
   "src/lib/marketplaceActionStability.ts",
-  /MARKETPLACE_LANDING_TRACE_KEY[\s\S]*?marketplaceLandingOffsetPx[\s\S]*?visualViewport[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?window\.scrollTo[\s\S]*?marketplaceSectionStyle/,
-  "Marketplace front/workspace pages must share one phone-safe landing helper instead of route-local scroll guesses."
+  /MARKETPLACE_LANDING_TRACE_KEY[\s\S]*?marketplaceLandingOffsetPx[\s\S]*?visualViewport[\s\S]*?scrollElementToMarketplaceLanding[\s\S]*?window\.scrollTo[\s\S]*?window\.requestAnimationFrame[\s\S]*?const delta = Math\.round\(target\.getBoundingClientRect\(\)\.top - offset\)[\s\S]*?Math\.abs\(delta\) <= 18[\s\S]*?correctedTop[\s\S]*?reason: `\$\{detail\.reason\}-corrected`[\s\S]*?marketplaceSectionStyle/,
+  "Marketplace front/workspace pages must share one phone-safe landing helper with next-frame correction instead of route-local scroll guesses."
 );
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?\[80, 180, 360, 720, 1200, 1800\]\.forEach[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?id="marketplace-money-routes"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-owned-links"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-members-shops"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-loans-support"[\s\S]*?marketplaceSectionStyle\(\)/,
-  "Marketplace front page section buttons must mark opened sections as touched and land through the shared phone-safe section helper."
+  /scrollElementToMarketplaceLanding[\s\S]*?traceMarketplaceLanding[\s\S]*?pendingMarketplaceSectionRef[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?requestAnimationFrame\(\(\) => \{[\s\S]*?\[80, 180, 360, 720, 1200, 1800\]\.forEach[\s\S]*?\[2400, 3200\]\.forEach[\s\S]*?useEffect\(\(\) => \{[\s\S]*?pendingMarketplaceSectionRef\.current[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId\)[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?id="marketplace-money-routes"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-owned-links"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-members-shops"[\s\S]*?marketplaceSectionStyle\(\)[\s\S]*?id="marketplace-loans-support"[\s\S]*?marketplaceSectionStyle\(\)/,
+  "Marketplace front page section buttons must mark opened sections as touched, re-land after React commit, and use the shared phone-safe section helper."
 );
 
 assertContains(

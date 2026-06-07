@@ -2884,6 +2884,7 @@ export default function MarketplacePage() {
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollTimeoutRefs = useRef<number[]>([]);
+  const pendingMarketplaceSectionRef = useRef("");
   const withdrawalHandoffAppliedRef = useRef("");
   const publicShopPrepareInFlightRef = useRef(false);
 
@@ -3339,6 +3340,9 @@ export default function MarketplacePage() {
     toggleSection(key);
     if (willOpen) {
       scheduleMarketplaceSectionScroll(MARKETPLACE_SECTION_ANCHORS[key]);
+    } else {
+      pendingMarketplaceSectionRef.current = "";
+      cancelMarketplaceSectionScroll();
     }
   }
 
@@ -3474,10 +3478,13 @@ export default function MarketplacePage() {
     function scheduleMarketplaceSectionScroll(sectionId: string) {
       if (typeof window === "undefined") return;
       cancelMarketplaceSectionScroll();
+      pendingMarketplaceSectionRef.current = sectionId;
 
       scrollFrameRef.current = window.requestAnimationFrame(() => {
-        scrollFrameRef.current = null;
-        scrollToMarketplaceSection(sectionId);
+        scrollFrameRef.current = window.requestAnimationFrame(() => {
+          scrollFrameRef.current = null;
+          scrollToMarketplaceSection(sectionId);
+        });
       });
 
       [80, 180, 360, 720, 1200, 1800].forEach((delay, index) => {
@@ -3486,9 +3493,25 @@ export default function MarketplacePage() {
         }, delay);
         scrollTimeoutRefs.current.push(timeoutId);
       });
+
+      [2400, 3200].forEach((delay, index) => {
+        const timeoutId = window.setTimeout(() => {
+          scrollToMarketplaceSection(sectionId, index + 7);
+          if (index === 1 && pendingMarketplaceSectionRef.current === sectionId) {
+            pendingMarketplaceSectionRef.current = "";
+          }
+        }, delay);
+        scrollTimeoutRefs.current.push(timeoutId);
+      });
     },
     [cancelMarketplaceSectionScroll, scrollToMarketplaceSection]
   );
+
+  useEffect(() => {
+    const sectionId = pendingMarketplaceSectionRef.current;
+    if (!sectionId) return;
+    scheduleMarketplaceSectionScroll(sectionId);
+  }, [sectionsOpen, scheduleMarketplaceSectionScroll]);
 
   function openMarketplaceIntent(
     event: React.SyntheticEvent<HTMLElement> | undefined,
