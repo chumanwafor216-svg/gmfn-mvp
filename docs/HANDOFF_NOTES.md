@@ -1,3 +1,43 @@
+### Installed phone shortcut freshness guard (2026-06-07)
+
+- Trigger:
+  - product owner reported the phone-screen GSN shortcut does not update as
+    soon as Render serves a new frontend bundle; they often have to reopen the
+    original WhatsApp link before the phone shows the new app.
+- Confirmed source facts:
+  - service-worker registration already called `registration.update()` on page
+    load and reloaded on `controllerchange`;
+  - that was not enough for an already-installed phone shortcut because the old
+    app shell can stay alive until the browser checks for a changed worker or a
+    fresh navigation happens.
+- Fix:
+  - service-worker cache version bumped to `gsn-pwa-shell-v8` for this deploy;
+  - service worker now accepts a `GSN_SKIP_WAITING` message so the app can
+    nudge a waiting worker into activation;
+  - installed/standalone GSN now checks the latest deployed `/index.html` with
+    `cache: "no-store"` on pageshow, focus, visible-state return, worker
+    updatefound, and a 5-minute foreground interval;
+  - if the latest deployed asset signature differs from the currently loaded
+    app shell, GSN clears old shell caches and reloads once for that signature;
+  - `audit:link-contracts` now guards the installed-shortcut freshness check.
+- Dirty-worktree cleanup:
+  - `frontend/src/lib/guidance.ts` and
+    `frontend/src/pages/NotificationsPage.tsx` had no content diff; they were
+    line-ending/stat noise only and were not included in this fix.
+- Verification passed:
+  - `npm run audit:link-contracts`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:button-stability`;
+  - `npm exec -- eslint src/lib/pwaInstall.ts tools/audit-link-contracts.mjs`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `spawn EPERM`,
+    then approved elevated `npm run build` passed.
+- Unabated truth:
+  - this cannot force an update while a phone is completely offline or while the
+    browser refuses all background work;
+  - it should make the installed shortcut refresh itself when the user opens it
+    or returns to it after Render has served a newer frontend bundle, without
+    needing the old WhatsApp link.
+
 ### Public Shop visual polish and white diary framing (2026-06-07)
 
 - Trigger:

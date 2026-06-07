@@ -1,4 +1,4 @@
-const CACHE_VERSION = "gsn-pwa-shell-v7";
+const CACHE_VERSION = "gsn-pwa-shell-v8";
 const SHELL_ASSETS = [
   "/",
   "/cover",
@@ -32,6 +32,12 @@ self.addEventListener("activate", (event) => {
       )
       .then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "GSN_SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("fetch", (event) => {

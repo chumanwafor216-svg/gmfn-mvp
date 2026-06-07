@@ -153,8 +153,14 @@ assertContains(
 
 assertContains(
   "src/lib/pwaInstall.ts",
-  /navigator\.serviceWorker[\s\S]*?\.register\("\/sw\.js"\)[\s\S]*?registration\.update\(\)/,
+  /navigator\.serviceWorker[\s\S]*?\.register\("\/sw\.js"\)[\s\S]*?registerInstalledShellFreshnessChecks\(registration\)[\s\S]*?registration\.update\(\)/,
   "The GSN service worker registration must ask the browser to check for a fresh installed-shell update."
+);
+
+assertContains(
+  "src/lib/pwaInstall.ts",
+  /function checkForFreshInstalledShell\(\)[\s\S]*?isGsnStandaloneDisplay\(\)[\s\S]*?fetch\(`\/\?gsn_shell_check=\$\{Date\.now\(\)\}`,[\s\S]*?cache: "no-store"[\s\S]*?shellSignatureFromHtml[\s\S]*?reloadForFreshShell/,
+  "Installed GSN shortcuts must compare the running app shell against the latest deployed index and refresh when Render serves a new bundle."
 );
 
 assertContains(
