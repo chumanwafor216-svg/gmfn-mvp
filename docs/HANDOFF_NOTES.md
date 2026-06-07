@@ -1,3 +1,49 @@
+### Community Home app-shell tap rescue added (2026-06-07)
+
+- Trigger:
+  - product owner retested Community Home after the visible-communities fix and
+    still saw major rows intermittently land on app-shell destinations:
+    Demand Box, Finance, Shop Control, Public Shop, Notifications, Trust, and
+    Welcome;
+  - product owner observed that aiming at a tiny arrow or using a hold-release
+    rhythm sometimes worked, while tapping the broad row surface often landed
+    elsewhere.
+- Confirmed source facts:
+  - those wrong destinations are all mobile app-shell navigation/tool actions
+    from `AppLayout`, not Community Home row targets;
+  - Dashboard already had a special tap-guard rescue for bottom-nav hit-test
+    stealing, but Community Home did not;
+  - drawer/tools overlays used pointer-event locking, but they did not expose
+    explicit open/closed overlay state to the shared tap guard.
+- Fix:
+  - AppLayout now marks the mobile drawer/tools panels with
+    `data-gmfn-mobile-overlay-open`;
+  - `mobileTapGuard` now has a `/app/community`-only rescue path:
+    if an app-shell action wins the phone hit-test while no drawer/tools overlay
+    is open, but a `community-home.*` action sits underneath the same tap point,
+    the guard suppresses the shell action and commits the Community Home action;
+  - `audit:tap-stability` now guards the Community Home app-shell rescue and
+    the AppLayout overlay state markers.
+- Verification passed:
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm --prefix frontend run audit:button-stability`;
+  - `npm --prefix frontend run audit:global-action-debugids`;
+  - `npm --prefix frontend run audit:global-raw-action-elements`;
+  - `npm --prefix frontend run audit:community-home-button-inventory`;
+  - `npm --prefix frontend run audit:community-home-phone-buttons`;
+  - `npm exec -- eslint src/layout/AppLayout.tsx src/lib/mobileTapGuard.ts
+    tools/audit-mobile-tap-stability.mjs src/pages/CommunityHomePage.tsx
+    tools/audit-community-home-button-inventory.mjs
+    tools/audit-community-home-phone-buttons.mjs`;
+  - `git diff --check`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `spawn EPERM`,
+    then approved elevated `npm run build` passed.
+- Unabated truth:
+  - buttons do not train over time; the hold-release trick likely changed which
+    layer won the browser hit-test;
+  - this is still a source-level inference until the product owner retests the
+    deployed bundle on the pilot phone.
+
 ### Community Home visible-communities tap fall-through fixed (2026-06-07)
 
 - Trigger:

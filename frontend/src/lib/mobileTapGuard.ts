@@ -12,6 +12,8 @@ const ACTION_ROOT_SELECTOR = [
 
 const BOTTOM_NAV_SELECTOR =
   '[data-gmfn-bottom-nav="true"], [data-gmfn-bottom-nav-item="true"]';
+const OPEN_MOBILE_OVERLAY_SELECTOR =
+  '[data-gmfn-mobile-overlay-open="true"]';
 const ACTIVE_ACTION_CLASS = "gmfn-action-press-lock";
 
 type ActionRect = {
@@ -214,12 +216,21 @@ function isAppShellAction(root: Element | null): boolean {
   return ctaId.startsWith("app-layout.");
 }
 
+function isInsideOpenMobileOverlay(root: Element | null): boolean {
+  return Boolean(root?.closest(OPEN_MOBILE_OVERLAY_SELECTOR));
+}
+
 function isDashboardAction(root: Element | null): boolean {
   const ctaId = root?.getAttribute("data-cta-id") || "";
   return (
     ctaId.startsWith("dashboard.") ||
     ctaId.startsWith("picture-frame-tools.")
   );
+}
+
+function isCommunityHomeAction(root: Element | null): boolean {
+  const ctaId = root?.getAttribute("data-cta-id") || "";
+  return ctaId.startsWith("community-home.");
 }
 
 function isTrustedPublicShopAction(root: Element | null): boolean {
@@ -275,6 +286,39 @@ function coveredDashboardActionFromBottomNav(
     }
 
     if (sawBottomNav && isDashboardAction(root)) {
+      return root;
+    }
+  }
+
+  return null;
+}
+
+function coveredCommunityHomeActionFromAppShell(
+  event: PointerEvent | MouseEvent,
+  topRoot = actionRootFromEvent(event)
+): Element | null {
+  if (typeof document === "undefined" || typeof window === "undefined") return null;
+  if (window.location.pathname !== "/app/community") return null;
+  if (!isAppShellAction(topRoot)) return null;
+  if (isInsideOpenMobileOverlay(topRoot)) return null;
+
+  const stack = document.elementsFromPoint(event.clientX, event.clientY);
+  let sawShellAction = false;
+
+  for (const item of stack) {
+    if (!(item instanceof Element)) continue;
+
+    const root = actionRootFromTarget(item);
+    if (!root) continue;
+
+    if (isAppShellAction(root)) {
+      if (!isInsideOpenMobileOverlay(root)) {
+        sawShellAction = true;
+      }
+      continue;
+    }
+
+    if (sawShellAction && isCommunityHomeAction(root) && !isDisabledAction(root)) {
       return root;
     }
   }
@@ -358,7 +402,11 @@ function clearIfStale(): void {
 function handlePointerDown(event: PointerEvent): void {
   const initialRoot = actionRootFromEvent(event);
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, initialRoot);
-  const root = coveredDashboardRoot || initialRoot;
+  const coveredCommunityHomeRoot = coveredCommunityHomeActionFromAppShell(
+    event,
+    initialRoot
+  );
+  const root = coveredDashboardRoot || coveredCommunityHomeRoot || initialRoot;
   if (!root) {
     clearActiveTap();
     lastPointerContext = null;
@@ -387,6 +435,13 @@ function handlePointerDown(event: PointerEvent): void {
   if (coveredDashboardRoot) {
     traceTap("bottom-nav-covered-dashboard-start", {
       intended: labelForAction(coveredDashboardRoot),
+      coveredBy: labelForAction(actionRootFromEvent(event)),
+    });
+  }
+
+  if (coveredCommunityHomeRoot) {
+    traceTap("app-shell-covered-community-home-start", {
+      intended: labelForAction(coveredCommunityHomeRoot),
       coveredBy: labelForAction(actionRootFromEvent(event)),
     });
   }
@@ -440,6 +495,10 @@ function handleClick(event: MouseEvent): void {
   const endRoot = actionRootFromEvent(event);
   const currentTime = nowMs();
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, endRoot);
+  const coveredCommunityHomeRoot = coveredCommunityHomeActionFromAppShell(
+    event,
+    endRoot
+  );
 
   if (
     redispatchingRoot &&
@@ -463,6 +522,23 @@ function handleClick(event: MouseEvent): void {
     commitOriginalAction(coveredDashboardRoot, "bottom-nav-covered-dashboard", {
       ended: labelForAction(endRoot),
     });
+    return;
+  }
+
+  if (coveredCommunityHomeRoot && endRoot) {
+    traceTap("app-shell-covered-community-home-suppressed", {
+      intended: labelForAction(coveredCommunityHomeRoot),
+      ended: labelForAction(endRoot),
+    });
+    event.preventDefault();
+    event.stopPropagation();
+    commitOriginalAction(
+      coveredCommunityHomeRoot,
+      "app-shell-covered-community-home",
+      {
+        ended: labelForAction(endRoot),
+      }
+    );
     return;
   }
 

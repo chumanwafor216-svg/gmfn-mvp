@@ -1955,7 +1955,12 @@ export default function AppLayout() {
             onClick={closeDrawer}
           />
 
-          <aside style={drawerPanel(isDrawerOpen)} aria-hidden={!isDrawerOpen}>
+          <aside
+            style={drawerPanel(isDrawerOpen)}
+            aria-hidden={!isDrawerOpen}
+            data-gmfn-mobile-overlay="drawer"
+            data-gmfn-mobile-overlay-open={isDrawerOpen ? "true" : "false"}
+          >
             <div style={drawerHeader()}>
               <div>
                 <div style={brandEyebrow()}>GSN</div>
@@ -2063,6 +2068,8 @@ export default function AppLayout() {
                 isActionsOpen ? "auto" : "none",
             }}
             aria-hidden={!isActionsOpen}
+            data-gmfn-mobile-overlay="tools"
+            data-gmfn-mobile-overlay-open={isActionsOpen ? "true" : "false"}
           >
             <div
               style={{

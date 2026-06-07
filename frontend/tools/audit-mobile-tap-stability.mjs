@@ -116,6 +116,8 @@ const originLinkPath = join(sourceRoot, "components", "OriginLink.tsx");
 const originLinkSource = readFileSync(originLinkPath, "utf8");
 const mobileTapGuardPath = join(sourceRoot, "lib", "mobileTapGuard.ts");
 const mobileTapGuardSource = readFileSync(mobileTapGuardPath, "utf8");
+const appLayoutPath = join(sourceRoot, "layout", "AppLayout.tsx");
+const appLayoutSource = readFileSync(appLayoutPath, "utf8");
 const mainPath = join(sourceRoot, "main.tsx");
 const mainSource = readFileSync(mainPath, "utf8");
 const brandPath = join(sourceRoot, "styles", "gmfnBrand.ts");
@@ -270,7 +272,7 @@ if (
 }
 
 if (
-  !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const coveredDashboardRoot = coveredDashboardActionFromBottomNav\(event, initialRoot\);[\s\S]*?const root = coveredDashboardRoot \|\| initialRoot;/.test(
+  !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const coveredDashboardRoot = coveredDashboardActionFromBottomNav\(event, initialRoot\);[\s\S]*?const coveredCommunityHomeRoot = coveredCommunityHomeActionFromAppShell\([\s\S]*?const root = coveredDashboardRoot \|\| coveredCommunityHomeRoot \|\| initialRoot;/.test(
     mobileTapGuardSource
   )
 ) {
@@ -306,6 +308,36 @@ if (
     label:
       "Global mobile tap guard must stop fixed bottom rail links from stealing dashboard controls underneath them",
     text: "Expected dashboard/frame-tools-under-bottom-nav suppression was not found.",
+  });
+}
+
+if (
+  !/const OPEN_MOBILE_OVERLAY_SELECTOR[\s\S]*?data-gmfn-mobile-overlay-open="true"[\s\S]*?function isInsideOpenMobileOverlay\(root: Element \| null\): boolean[\s\S]*?function isCommunityHomeAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("community-home\."\)[\s\S]*?function coveredCommunityHomeActionFromAppShell\([\s\S]*?window\.location\.pathname !== "\/app\/community"[\s\S]*?!isAppShellAction\(topRoot\)[\s\S]*?isInsideOpenMobileOverlay\(topRoot\)[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?app-shell-covered-community-home-suppressed[\s\S]*?commitOriginalAction\([\s\S]*?coveredCommunityHomeRoot,[\s\S]*?"app-shell-covered-community-home"/.test(
+    mobileTapGuardSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Global mobile tap guard must rescue Community Home actions when a closed app-shell control steals the phone hit-test",
+    text:
+      "Expected /app/community app-shell-covered community action rescue was not found.",
+  });
+}
+
+if (
+  !/data-gmfn-mobile-overlay="drawer"[\s\S]*?data-gmfn-mobile-overlay-open=\{isDrawerOpen \? "true" : "false"\}[\s\S]*?data-gmfn-mobile-overlay="tools"[\s\S]*?data-gmfn-mobile-overlay-open=\{isActionsOpen \? "true" : "false"\}/.test(
+    appLayoutSource
+  )
+) {
+  findings.push({
+    file: relative(frontendRoot, appLayoutPath),
+    line: 1,
+    label:
+      "Mobile app shell overlays must expose open/closed state for the tap guard",
+    text:
+      "Expected drawer/tools data-gmfn-mobile-overlay-open markers were not found.",
   });
 }
 
@@ -818,8 +850,6 @@ const pictureFrameSystemChecks = [
   },
 ];
 
-const appLayoutPath = join(sourceRoot, "layout", "AppLayout.tsx");
-const appLayoutSource = readFileSync(appLayoutPath, "utf8");
 const gmfnBrandPath = join(sourceRoot, "styles", "gmfnBrand.ts");
 const gmfnBrandSource = readFileSync(gmfnBrandPath, "utf8");
 const marketplaceActionStabilityPath = join(
