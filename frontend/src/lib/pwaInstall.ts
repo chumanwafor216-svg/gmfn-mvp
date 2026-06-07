@@ -91,8 +91,13 @@ export function registerGsnServiceWorker(): void {
   if (!("serviceWorker" in navigator)) return;
 
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {
-      // Install support is helpful, but it must never block the app.
-    });
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => {
+        void registration.update().catch(() => undefined);
+      })
+      .catch(() => {
+        // Install support is helpful, but it must never block the app.
+      });
   });
 }

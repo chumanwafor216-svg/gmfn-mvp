@@ -152,6 +152,12 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/pwaInstall.ts",
+  /navigator\.serviceWorker[\s\S]*?\.register\("\/sw\.js"\)[\s\S]*?registration\.update\(\)/,
+  "The GSN service worker registration must ask the browser to check for a fresh installed-shell update."
+);
+
+assertContains(
   "src/components/GsnInstallPrompt.tsx",
   /promptGsnInstall[\s\S]*?open this page in Safari first[\s\S]*?Add to Home Screen[\s\S]*?Add to Home screen or Install app[\s\S]*?Show iPhone screen steps[\s\S]*?Add GSN to phone screen[\s\S]*?Show 3 phone steps[\s\S]*?\/gsn-app-icon\.svg/,
   "The GSN install prompt must offer one simple setup action plus truthful Android and iPhone manual phone instructions."
@@ -167,6 +173,12 @@ assertContains(
   "src/pages/WelcomePage.tsx",
   /import GsnInstallPrompt[\s\S]*?import \{ getAccessToken \}[\s\S]*?import \{ APP_ROUTES \}[\s\S]*?isSignedIn[\s\S]*?<GsnInstallPrompt[\s\S]*?surface="welcome"[\s\S]*?Continue to my GSN/,
   "Welcome must expose the GSN phone-screen install prompt and a signed-in continue action for users arriving from public links."
+);
+
+assertContains(
+  "src/pages/CoverPage.tsx",
+  /import \{ getAccessToken \}[\s\S]*?import \{ APP_ROUTES \}[\s\S]*?source[\s\S]*?pwa[\s\S]*?signedInPwaLaunch[\s\S]*?lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD[\s\S]*?Continue to my GSN/,
+  "The installed PWA cover launch must show signed-in users a direct Continue to my GSN action instead of making the shortcut feel frozen."
 );
 
 assertContains(

@@ -1,3 +1,47 @@
+### PWA shortcut front-door recovery hardening (2026-06-07)
+
+- Trigger:
+  - product owner reported the phone-screen shortcut opens but feels frozen or
+    not like the real app; most buttons appear unresponsive; Public Shop
+    shortcuts and media/audio affordances seemed missing.
+- Confirmed source facts:
+  - the installed app manifest still starts at `/cover?source=pwa`, per
+    `docs/SCREEN_SPECS.md`;
+  - the PWA/front-door exception intentionally keeps Cover/Welcome public even
+    when a token exists;
+  - `ShopGalleryPage` still renders `OwnerOnlySurfaceNav` above the first public
+    shop block and still passes audio unlock controls to `SpotlightMediaFrame`,
+    so the missing shortcut/media controls are more consistent with stale
+    installed shell/session state than with source deletion.
+- Fix:
+  - `CoverPage` now treats a signed-in `/cover?source=pwa` launch as a real app
+    entry: the primary button says `Continue to my GSN` and opens the last
+    authenticated app route or Dashboard;
+  - service-worker cache version moved to `gsn-pwa-shell-v5` so installed
+    shortcuts get a fresh cache boundary;
+  - service-worker registration now asks the browser to check for an updated
+    `/sw.js` after registration;
+  - `audit:link-contracts` now locks the cover-level signed-in PWA continue
+    behavior and the service-worker update check.
+- Verification passed:
+  - `npm run audit:link-contracts`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:marketplace-button-lines`;
+  - `npm exec -- eslint src/pages/CoverPage.tsx src/lib/pwaInstall.ts
+    tools/audit-link-contracts.mjs`;
+  - sandboxed `npm run build` failed with Windows/Vite `esbuild spawn EPERM`,
+    then approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this does not prove every reported Public Shop media issue is fixed; it
+    fixes the strongest confirmed system cause: a stale/ambiguous installed
+    shortcut front door;
+  - after deploy, the installed phone icon may need one open/close cycle for
+    the new `v5` service worker to take control. If Public Shop shortcuts remain
+    missing while signed in on the canonical `gmfn-frontend.onrender.com` host,
+    the next target is owner-session detection on `OwnerOnlySurfaceNav`.
+
 ### Marketplace section landing settle hardening (2026-06-07)
 
 - Trigger:
