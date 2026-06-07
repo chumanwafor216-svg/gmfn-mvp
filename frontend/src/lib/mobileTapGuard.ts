@@ -217,17 +217,6 @@ function isDashboardAction(root: Element | null): boolean {
   );
 }
 
-function isMarketplaceAction(root: Element | null): boolean {
-  const ctaId = root?.getAttribute("data-cta-id") || "";
-  return (
-    ctaId.startsWith("marketplace.") ||
-    ctaId.startsWith("marketplace-workspace.") ||
-    ctaId.startsWith("shop-gallery.") ||
-    ctaId.startsWith("shop-assets.") ||
-    ctaId.startsWith("shop-control.")
-  );
-}
-
 function coveredDashboardActionFromBottomNav(
   event: PointerEvent | MouseEvent,
   topRoot = actionRootFromEvent(event)
@@ -252,36 +241,6 @@ function coveredDashboardActionFromBottomNav(
     }
 
     if (sawBottomNav && isDashboardAction(root)) {
-      return root;
-    }
-  }
-
-  return null;
-}
-
-function coveredMarketplaceActionFromBottomNav(
-  event: PointerEvent | MouseEvent,
-  topRoot = actionRootFromEvent(event)
-): Element | null {
-  if (typeof document === "undefined" || typeof window === "undefined") return null;
-  if (!window.location.pathname.startsWith("/app/marketplace")) return null;
-  if (!isBottomNavAction(topRoot)) return null;
-
-  const stack = document.elementsFromPoint(event.clientX, event.clientY);
-  let sawBottomNav = false;
-
-  for (const item of stack) {
-    if (!(item instanceof Element)) continue;
-
-    const root = actionRootFromTarget(item);
-    if (!root) continue;
-
-    if (isBottomNavAction(root)) {
-      sawBottomNav = true;
-      continue;
-    }
-
-    if (sawBottomNav && isMarketplaceAction(root)) {
       return root;
     }
   }
@@ -365,11 +324,7 @@ function clearIfStale(): void {
 function handlePointerDown(event: PointerEvent): void {
   const initialRoot = actionRootFromEvent(event);
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, initialRoot);
-  const coveredMarketplaceRoot = coveredMarketplaceActionFromBottomNav(
-    event,
-    initialRoot
-  );
-  const root = coveredDashboardRoot || coveredMarketplaceRoot || initialRoot;
+  const root = coveredDashboardRoot || initialRoot;
   if (!root) {
     clearActiveTap();
     lastPointerContext = null;
@@ -408,12 +363,6 @@ function handlePointerDown(event: PointerEvent): void {
     });
   }
 
-  if (coveredMarketplaceRoot) {
-    traceTap("bottom-nav-covered-marketplace-start", {
-      intended: labelForAction(coveredMarketplaceRoot),
-      coveredBy: labelForAction(actionRootFromEvent(event)),
-    });
-  }
 }
 
 function handlePointerCancel(event: PointerEvent): void {
@@ -462,10 +411,6 @@ function handleClick(event: MouseEvent): void {
   const endRoot = actionRootFromEvent(event);
   const currentTime = nowMs();
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, endRoot);
-  const coveredMarketplaceRoot = coveredMarketplaceActionFromBottomNav(
-    event,
-    endRoot
-  );
 
   if (
     redispatchingRoot &&
@@ -487,19 +432,6 @@ function handleClick(event: MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
     commitOriginalAction(coveredDashboardRoot, "bottom-nav-covered-dashboard", {
-      ended: labelForAction(endRoot),
-    });
-    return;
-  }
-
-  if (coveredMarketplaceRoot && endRoot) {
-    traceTap("bottom-nav-covered-marketplace-suppressed", {
-      intended: labelForAction(coveredMarketplaceRoot),
-      ended: labelForAction(endRoot),
-    });
-    event.preventDefault();
-    event.stopPropagation();
-    commitOriginalAction(coveredMarketplaceRoot, "bottom-nav-covered-marketplace", {
       ended: labelForAction(endRoot),
     });
     return;

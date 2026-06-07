@@ -1,3 +1,42 @@
+### Marketplace bottom-nav tap replay removed (2026-06-07)
+
+- Trigger:
+  - product owner reported Marketplace buttons were quietly landing astray.
+- Confirmed root cause:
+  - `frontend/src/lib/mobileTapGuard.ts` had Marketplace-specific
+    bottom-nav-cover logic that could suppress a visible bottom navigation tap
+    and replay the hidden Marketplace/Shop action underneath it;
+  - this made it possible for a user to tap the shell navigation and be routed
+    by an underlying Marketplace control instead;
+  - the existing `audit:tap-stability` contract was stale and enforced this
+    bad Marketplace replay behavior.
+- Fix:
+  - removed the Marketplace/Shop-under-bottom-nav redispatch path from the
+    global mobile tap guard;
+  - Marketplace taps now follow the visible action root: if the bottom nav is
+    on top, the bottom nav wins;
+  - kept the existing Dashboard bottom-nav cover guard unchanged because this
+    report was Marketplace-specific and the Dashboard/Market Wisdom area is
+    frozen unless explicitly reopened.
+- Audit update:
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now fails if the legacy
+    Marketplace bottom-nav replay code returns.
+- Verification passed:
+  - `npm run audit:tap-stability`;
+  - `npm run audit:marketplace-button-inventory`
+    (`56 stable source actions`, `103 whole-route mobile controls total`);
+  - `npm run audit:marketplace-actions`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:link-contracts`;
+  - sandboxed `npm run build` failed with Windows/Vite `esbuild spawn EPERM`,
+    then approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this removes one proven invisible misroute risk;
+  - it does not replace physical mobile QA on a real phone, so pilot testing
+    should still tap the Marketplace bottom nav and the final visible
+    Marketplace controls near the bottom of the page after deployment.
+
 ### Render deploy workflow restored to main-only after branch correction (2026-06-07)
 
 - Trigger:

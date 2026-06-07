@@ -282,7 +282,7 @@ if (
 }
 
 if (
-  !/function isMarketplaceAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("marketplace\."\)[\s\S]*?ctaId\.startsWith\("shop-gallery\."\)[\s\S]*?function coveredMarketplaceActionFromBottomNav\([\s\S]*?window\.location\.pathname\.startsWith\("\/app\/marketplace"\)[\s\S]*?document\.elementsFromPoint\(event\.clientX, event\.clientY\)[\s\S]*?sawBottomNav && isMarketplaceAction\(root\)[\s\S]*?coveredMarketplaceActionFromBottomNav\([\s\S]*?bottom-nav-covered-marketplace-suppressed[\s\S]*?commitOriginalAction\(coveredMarketplaceRoot, "bottom-nav-covered-marketplace"/.test(
+  /coveredMarketplaceActionFromBottomNav|bottom-nav-covered-marketplace|commitOriginalAction\(coveredMarketplaceRoot/.test(
     mobileTapGuardSource
   )
 ) {
@@ -290,8 +290,9 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Global mobile tap guard must stop fixed bottom rail links from stealing Marketplace and Shop action controls underneath them",
-    text: "Expected Marketplace/Shop-under-bottom-nav suppression was not found.",
+      "Global mobile tap guard must let Marketplace bottom navigation taps land on the visible bottom navigation item",
+    text:
+      "Found legacy Marketplace-under-bottom-nav redispatch logic. This can make a visible bottom-nav tap replay a hidden Marketplace/Shop action underneath it.",
   });
 }
 
