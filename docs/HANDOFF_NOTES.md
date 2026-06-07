@@ -37450,3 +37450,61 @@ GSN-branded invite composer and invite-entry continuity.
     actions would be broader visual churn and could clip long labels. The
     better next proof step is runtime phone-width testing if this page still
     feels jumpy in hand.
+
+### Vault Control button stability baseline (2026-06-07)
+
+- Trigger:
+  - product owner said "next" after the Shop Control page-by-page
+    jumpy-button pass.
+- Vault Control count:
+  - `VaultControlPage` source now audits at 18 stable page action families:
+    5 `PrimaryButton`, 8 `SecondaryButton`, 2 `SubtleButton`, 3
+    `StableButton`, and 0 `StableCtaLink`.
+  - The page has 8 native fields. Two are audited file-input action roots for
+    private block media upload: `vault-control.editor.image-file` and
+    `vault-control.editor.video-file`.
+  - The remaining 6 native fields are ordinary editor fields for pasted image
+    link, pasted video link, private offer name, price, currency, and short
+    description.
+  - The page has 2 `SpotlightMediaFrame` invocation families: selected private
+    block playback and editor preview playback. Those rely on the shared
+    `spotlight-media-frame.toggle-audio` audio action template when video is
+    present.
+  - `/app/vault-control` is in AppLayout focused-task mode. On mobile it has
+    no bottom rail; the shell contributes 14 controls: 2 top controls, 6
+    drawer controls, and 6 Tools-panel controls.
+  - Whole-route mobile Vault Control baseline is therefore 35 action families
+    (18 page stable action families + 2 file-input action roots + 1 shared
+    media-audio action template + 14 focused shell controls), plus the 6
+    ordinary native fields.
+- System guard changes:
+  - Added `frontend/tools/audit-vault-control-button-inventory.mjs`.
+  - Added `npm --prefix frontend run audit:vault-control-button-inventory`.
+  - The audit locks Vault Control action counts, debug namespace/order,
+    no-raw-button/no-raw-anchor behavior, file-upload action IDs, payment slot
+    and private block slot action families, selected-block and private-link
+    controls, media frame usage, and the focused-task mobile shell around the
+    page.
+  - The audit also checks the shared `StableButton` anti-jump/tap behavior and
+    the shared `SpotlightMediaFrame` fixed-height audio unlock control.
+- Verification:
+  - Passed `npm --prefix frontend run audit:vault-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-shop-actions`.
+  - Passed `npm --prefix frontend run audit:shop-assets-slots`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint tools/audit-vault-control-button-inventory.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Unabated truth:
+  - This pass tightened Vault Control's line audit and mobile shell inventory.
+    It did not visually restyle the Vault page.
+  - The visible runtime button count varies because panels can open/close,
+    payment state changes which controls render, slot maps expand one source
+    family into 6 visible choices, editor state can appear, and video media can
+    add the shared audio unlock action.
