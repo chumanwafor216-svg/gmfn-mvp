@@ -72,9 +72,9 @@ while ((match = actionPattern.exec(dashboardSource))) {
 const requiredDashboardPatterns = [
   {
     pattern:
-      /function consumeDashboardPointerEvent\([\s\S]*?event\?\.preventDefault\(\);[\s\S]*?stopDashboardPointerEvent\(event\);/,
+      /function consumeDashboardPointerEvent\([\s\S]*?\{\s*stopDashboardPointerEvent\(event\);\s*\}/,
     message:
-      "Dashboard must keep a route-local pointer guard that blocks shifted phone taps before click handling.",
+      "Dashboard must keep a route-local pointer guard that stops bubbling without cancelling the browser pointer/click path.",
   },
   {
     pattern:

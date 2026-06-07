@@ -39,6 +39,7 @@ import {
   type MarketWisdomPair,
 } from "../lib/marketWisdom";
 import { publicShopPath, publicShopSharePath } from "../lib/publicLinks";
+import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import {
   buildDashboardNextRouteCopy,
   buildDashboardTrustAttentionCore,
@@ -76,6 +77,7 @@ type SpotlightItem = {
   image?: string | null;
   video_url?: string | null;
   source_shop_name?: string | null;
+  source_shop_whatsapp_number?: string | null;
   source_clan_name?: string | null;
   source_clan_id?: number | string | null;
   source_marketplace_id?: number | string | null;
@@ -299,7 +301,7 @@ type RoscaFocusObligation = {
   writes_commitment_trust_event?: boolean;
 };
 
-const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v7";
+const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v8";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v2";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
@@ -1188,6 +1190,14 @@ function normalizeSpotlightItem(raw: any): SpotlightItem | null {
     video_url: safeStr(source.video_url || source.videoUrl) || null,
     source_shop_name:
       safeStr(source.source_shop_name || source.sourceShopName) || null,
+    source_shop_whatsapp_number:
+      safeStr(
+        source.source_shop_whatsapp_number ||
+          source.sourceShopWhatsAppNumber ||
+          source.source_shop_whatsapp ||
+          source.shop_whatsapp_number ||
+          source.whatsapp_number
+      ) || null,
     source_clan_name:
       safeStr(source.source_clan_name || source.sourceClanName) || null,
     source_clan_id: sourceClanId ?? null,
@@ -5223,7 +5233,6 @@ export default function DashboardPage() {
   function consumeDashboardPointerEvent(
     event?: React.SyntheticEvent<HTMLElement>
   ) {
-    event?.preventDefault();
     stopDashboardPointerEvent(event);
   }
 
@@ -5329,6 +5338,33 @@ export default function DashboardPage() {
     if (!spotlightGmfnId) return;
 
     navigateWithOrigin(navigate, spotlightShopTo(activeSpotlight), location);
+  }
+
+  function openSpotlightWhatsApp(event?: React.SyntheticEvent<HTMLElement>) {
+    consumeDashboardButtonEvent(event);
+    if (Date.now() < dashboardTapLockUntilRef.current) return;
+    const spotlightTitle = safeStr(
+      activeSpotlight?.title ||
+        activeSpotlight?.message ||
+        "this GSN Spotlight"
+    );
+    const spotlightShop = safeStr(
+      activeSpotlight?.source_shop_name ||
+        activeSpotlight?.author_name ||
+        "this GSN shop"
+    );
+    const message = `Hello, I found ${spotlightShop} on GSN Spotlight. I am asking about: ${spotlightTitle}.`;
+    const chatUrl = buildWhatsAppChatUrl(
+      activeSpotlight?.source_shop_whatsapp_number,
+      message
+    );
+
+    if (chatUrl && typeof window !== "undefined") {
+      window.open(chatUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    openSpotlightShop(event);
   }
 
   function openSpotlightMarketplace(
@@ -5867,7 +5903,7 @@ export default function DashboardPage() {
       ? "#FCD34D"
       : "#93C5FD";
 
-  const showSpotlight = !uiState.spotlightMinimized;
+  const showSpotlight = Boolean(activeSpotlight) || !uiState.spotlightMinimized;
   const showLegacySpotlightDock = Boolean(
     (globalThis as any).__GSN_LEGACY_SPOTLIGHT_DOCK
   );
@@ -8879,58 +8915,69 @@ export default function DashboardPage() {
                     {spotlightExpiryStatus.detail}
                   </div>
 
-                  <div
-                    style={{
-                      ...helperText(),
-                      ...dashboardPhoneHelper,
-                      maxWidth: 860,
-                    }}
-                  >
-                    Dashboard now keeps spotlight as a quick summary. Open the
-                    marketplace or shop for the fuller seller and media context.
-                  </div>
-
-                  <div style={{ ...dashboardActionGrid(isCompact ? 128 : 152) }}>
-                    <StableButton
-                      debugId="dashboard.spotlight.open-marketplace"
-                      type="button"
-                      onClick={openSpotlightMarketplace}
-                      onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(
-                        secondaryBtn(false),
-                        dashboardPhoneButton
-                      )}
-                    >
-                      Open your Marketplace
-                    </StableButton>
-                    {safeStr(activeSpotlight.author_gmfn_id || "") ? (
-                      <StableButton
-                        debugId="dashboard.spotlight.open-shop"
-                        type="button"
-                        onClick={openSpotlightShop}
-                        onPointerDown={consumeDashboardPointerEvent}
-                        style={dashboardFillButton(
-                          secondaryBtn(false),
-                          dashboardPhoneButton
-                        )}
-                      >
-                        Open your Shop
-                      </StableButton>
-                    ) : null}
-                    <StableButton
-                      debugId="dashboard.spotlight.minimize"
-                      type="button"
-                      onClick={minimizeSpotlight}
-                      onPointerDown={consumeDashboardPointerEvent}
-                      style={dashboardFillButton(
-                        subtleBtn(false),
-                        dashboardPhoneButton
-                      )}
-                    >
-                      Minimize
-                    </StableButton>
-                  </div>
                 </div>
+              </div>
+              <div
+                style={{
+                  marginTop: isPhone ? 10 : 12,
+                  display: "grid",
+                  gridTemplateColumns: isPhone
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(3, minmax(0, 1fr))",
+                  gap: isPhone ? 8 : 10,
+                  alignItems: "stretch",
+                  overflowAnchor: "none",
+                  transition: "none",
+                }}
+              >
+                <StableButton
+                  debugId="dashboard.spotlight.whatsapp"
+                  type="button"
+                  onClick={openSpotlightWhatsApp}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={dashboardFillButton(
+                    {
+                      ...primaryBtn(false),
+                      minHeight: isPhone ? 46 : 44,
+                      borderRadius: isPhone ? 15 : 16,
+                      background:
+                        "linear-gradient(180deg, #28D267 0%, #16A34A 100%)",
+                      border: "1px solid rgba(22,163,74,0.38)",
+                      color: "#FFFFFF",
+                      boxShadow:
+                        "0 10px 18px rgba(22,163,74,0.20), inset 0 1px 0 rgba(255,255,255,0.34)",
+                      fontWeight: 950,
+                      whiteSpace: "nowrap",
+                    },
+                    dashboardPhoneButton
+                  )}
+                >
+                  WhatsApp
+                </StableButton>
+                <StableButton
+                  debugId="dashboard.spotlight.open-shop"
+                  type="button"
+                  onClick={openSpotlightShop}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={dashboardFillButton(
+                    secondaryBtn(false),
+                    dashboardPhoneButton
+                  )}
+                >
+                  Open Shop
+                </StableButton>
+                <StableButton
+                  debugId="dashboard.spotlight.open-marketplace"
+                  type="button"
+                  onClick={openSpotlightMarketplace}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  style={dashboardFillButton(
+                    secondaryBtn(false),
+                    dashboardPhoneButton
+                  )}
+                >
+                  Marketplace
+                </StableButton>
               </div>
               <div
                 onPointerDown={consumeDashboardPointerEvent}

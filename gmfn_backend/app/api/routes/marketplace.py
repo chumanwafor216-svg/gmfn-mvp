@@ -1185,6 +1185,11 @@ def _broadcast_out(db: Session, item: MarketplaceBroadcast) -> Dict[str, Any]:
         "created_at": item.created_at.isoformat() if item.created_at else None,
         "author_name": author_name,
         "source_shop_name": shop_display_name,
+        "source_shop_whatsapp_number": (
+            _safe_str(getattr(canonical_shop, "whatsapp_number", None)) or None
+            if canonical_shop
+            else None
+        ),
         "source_clan_name": clan_display_name,
         "source_product_id": int(repost_product.id) if repost_product is not None else None,
         "source_product_block": repost_block_number,

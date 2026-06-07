@@ -171,6 +171,7 @@ def test_public_shop_face_returns_saved_products_and_spotlight(client, monkeypat
     assert body["products"][0]["image_url_available"] is True
     assert body["primary_broadcast"]["message"] == "Spotlight update"
     assert body["primary_broadcast"]["image_url"] == spotlight_image_url
+    assert body["primary_broadcast"]["source_shop_whatsapp_number"] == "07903165266"
     assert len(body["broadcasts"]) == 1
 
     gsn_alias = client.get("/marketplace/public/shop/GSN-U-TESTSHOP")

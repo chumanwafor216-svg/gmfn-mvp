@@ -25,6 +25,7 @@ import {
   publicShopShareUrl,
   publicShopUrl,
 } from "../lib/publicLinks";
+import { buildWhatsAppChatUrl } from "../lib/whatsappLinks";
 import { getCachedShopProductMedia } from "../lib/shopProductMediaCache";
 import { ownerSurfaceIdentityMatches } from "../lib/ownerSurfaceIdentity";
 import { APP_ROUTES, routeWithCommunity } from "../lib/appRoutes";
@@ -73,6 +74,7 @@ type ShopBroadcast = {
   videoUrl: string;
   message: string;
   sourceShopName: string;
+  sourceShopWhatsApp: string;
   sourceClanName: string;
   sourceClanId?: number;
   trustBand: string;
@@ -155,39 +157,6 @@ function publicShopName(...values: any[]): string {
 
 function publicShopCategory(...values: any[]): string {
   return firstMeaningful(...values) || "General merchandise";
-}
-
-function normalizeWhatsAppRecipient(value: any): string {
-  const raw = cleanText(value);
-  if (!raw) return "";
-
-  const compact = raw.replace(/[^\d+]/g, "");
-  if (!compact) return "";
-
-  if (compact.startsWith("+")) {
-    return compact.slice(1).replace(/\D/g, "");
-  }
-
-  if (compact.startsWith("00")) {
-    return compact.slice(2).replace(/\D/g, "");
-  }
-
-  const digits = compact.replace(/\D/g, "");
-  if (/^07\d{9}$/.test(digits)) {
-    return `44${digits.slice(1)}`;
-  }
-
-  if (/^7\d{9}$/.test(digits)) {
-    return `44${digits}`;
-  }
-
-  return digits;
-}
-
-function buildWhatsAppChatUrl(recipient: any, message: string): string {
-  const phone = normalizeWhatsAppRecipient(recipient);
-  if (!phone) return "";
-  return `https://wa.me/${phone}?text=${encodeURIComponent(cleanText(message))}`;
 }
 
 function buildPhoneCallUrl(value: any): string {
@@ -846,6 +815,13 @@ function normalizeBroadcast(raw: any): ShopBroadcast | null {
     videoUrl: resolveImageSrc(src?.video_url || src?.videoUrl),
     message: firstMeaningful(src?.message, src?.content, src?.text),
     sourceShopName: firstMeaningful(src?.source_shop_name, src?.sourceShopName),
+    sourceShopWhatsApp: firstMeaningful(
+      src?.source_shop_whatsapp_number,
+      src?.sourceShopWhatsAppNumber,
+      src?.source_shop_whatsapp,
+      src?.shop_whatsapp_number,
+      src?.whatsapp_number
+    ),
     sourceClanName: firstMeaningful(src?.source_clan_name, src?.sourceClanName),
     sourceClanId:
       positiveNumber(src?.source_clan_id || src?.sourceClanId || src?.clan_id || src?.clanId) ||
@@ -1923,6 +1899,7 @@ export default function ShopGalleryPage() {
         tagLabel: "",
         communityName: firstMeaningful(effectiveShop?.communityName),
         trustBand: "Community spotlight",
+        sourceShopWhatsApp: "",
         createdAt: "",
         createdLabel: "",
         imageUrl: "",
@@ -1971,6 +1948,7 @@ export default function ShopGalleryPage() {
       tagLabel: messageParts.tagLabel,
       communityName: firstMeaningful(miniSpotlight?.sourceClanName, effectiveShop?.communityName),
       trustBand: firstMeaningful(miniSpotlight?.trustBand, "Trusted visibility"),
+      sourceShopWhatsApp: firstMeaningful(miniSpotlight?.sourceShopWhatsApp),
       createdAt: firstMeaningful(miniSpotlight?.createdAt),
       createdLabel: miniSpotlight?.createdAt ? formatWhen(miniSpotlight.createdAt) : "",
       imageUrl: firstMeaningful(miniSpotlight?.imageUrl),
@@ -2555,6 +2533,40 @@ export default function ShopGalleryPage() {
     }
 
     revealGalleryTarget(PUBLIC_SHOP_DIARIES_ANCHOR);
+  }
+
+  function contactSpotlightOwnerByWhatsApp() {
+    const spotlightTitle = firstMeaningful(
+      miniSpotlightView.detail,
+      miniSpotlight?.message,
+      "this Spotlight"
+    );
+    const spotlightShop = firstMeaningful(
+      miniSpotlightView.title,
+      miniSpotlight?.sourceShopName,
+      "this GSN shop"
+    );
+    const message = `Hello, I found ${spotlightShop} on GSN Spotlight. I am asking about: ${spotlightTitle}.`;
+    const chatUrl = buildWhatsAppChatUrl(
+      miniSpotlightView.sourceShopWhatsApp,
+      message
+    );
+
+    if (chatUrl && typeof window !== "undefined") {
+      const opened = window.open(chatUrl, "_blank", "noopener,noreferrer");
+      setNotice({
+        tone: opened ? "success" : "error",
+        text: opened
+          ? "WhatsApp opened for this Spotlight owner."
+          : "WhatsApp could not open. Open the Spotlight shop and use the main contact button.",
+      });
+      return;
+    }
+
+    setNotice({
+      tone: "error",
+      text: "This Spotlight does not expose a WhatsApp number yet. Open the shop to use the public contact options.",
+    });
   }
 
   return (
@@ -3827,6 +3839,33 @@ export default function ShopGalleryPage() {
                 >
                   Explore Spotlight →
                 </PrimaryButton>
+                {publicShopSpotlightActive ? (
+                <SecondaryButton
+                  onClick={contactSpotlightOwnerByWhatsApp}
+                  minWidth="auto"
+                  stableHeight={isCompact ? 34 : 44}
+                  debugId="shop-gallery.spotlight.whatsapp"
+                  style={{
+                    marginTop: isCompact ? 8 : 10,
+                    borderRadius: 999,
+                    minHeight: isCompact ? 34 : 44,
+                    width: "fit-content",
+                    maxWidth: "100%",
+                    padding: isCompact ? "7px 10px" : "10px 16px",
+                    fontSize: isCompact ? 11.2 : 14,
+                    whiteSpace: "nowrap",
+                    background:
+                      "linear-gradient(180deg, #28D267 0%, #16A34A 100%)",
+                    border: "1px solid rgba(22,163,74,0.38)",
+                    color: "#FFFFFF",
+                    boxShadow:
+                      "0 10px 18px rgba(22,163,74,0.20), inset 0 1px 0 rgba(255,255,255,0.36)",
+                    transition: "none",
+                  }}
+                >
+                  WhatsApp
+                </SecondaryButton>
+              ) : null}
               </div>
               <div
                 style={{

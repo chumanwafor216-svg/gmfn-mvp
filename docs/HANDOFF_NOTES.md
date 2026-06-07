@@ -1,3 +1,58 @@
+### Dashboard/Public Shop Spotlight media and contact recovery (2026-06-07)
+
+- Trigger:
+  - product owner showed Dashboard still rendering a Spotlight information/task
+    card instead of the live Spotlight media screen, and asked for WhatsApp
+    contact to be attached to each rotating Spotlight media item;
+  - product owner also reported Dashboard buttons had started feeling jumpy.
+- Confirmed source facts:
+  - Dashboard had `activeSpotlight` media candidates, but the visible Spotlight
+    controls were partly hidden in a `display: none` legacy/debug area;
+  - Dashboard still allowed a saved `spotlightMinimized` state to keep the live
+    Spotlight out of the main media screen path;
+  - backend broadcast output did not expose the source shop WhatsApp number, so
+    Public Shop/Dashboard could not reliably attach contact to the advert
+    owner when the rotating Spotlight belonged to another shop;
+  - Dashboard route-local pointer handling called `preventDefault()` on
+    pointerdown even though the shared stable button layer already handles tap
+    stability.
+- Fix:
+  - backend `_broadcast_out(...)` now includes
+    `source_shop_whatsapp_number` from the canonical source shop;
+  - Dashboard normalizes the field, always shows the live Spotlight billboard
+    when `activeSpotlight` exists, bumps UI storage to
+    `gmfn.dashboard.ui.v8`, and exposes visible WhatsApp / Open Shop /
+    Marketplace buttons directly under the media screen;
+  - Public Shop normalizes `sourceShopWhatsApp` and shows a
+    `shop-gallery.spotlight.whatsapp` button attached to the rotating Spotlight
+    source shop;
+  - shared `frontend/src/lib/whatsappLinks.ts` centralizes WhatsApp recipient
+    normalization and chat URL building;
+  - Dashboard pointer guard now stops bubbling without cancelling the browser's
+    normal pointer/click path.
+- Verification passed:
+  - `npm run audit:dashboard-actions`;
+  - `npm run audit:dashboard-phone-buttons`;
+  - `npm run audit:community-shop-actions`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:link-contracts`;
+  - `npm exec -- eslint src/pages/DashboardPage.tsx
+    src/pages/ShopGalleryPage.tsx src/lib/whatsappLinks.ts
+    tools/audit-dashboard-actions.mjs
+    tools/audit-dashboard-phone-buttons.mjs
+    tools/audit-community-shop-actions.mjs`;
+  - `python -m pytest gmfn_backend\tests\test_marketplace_public_shop.py -q`
+    passed when run elevated with a repo-local `--basetemp`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `spawn EPERM`,
+    then approved elevated `npm run build` passed.
+- Unabated truth:
+  - this fixes source-level Dashboard billboard visibility and per-Spotlight
+    WhatsApp contact plumbing;
+  - physical phone testing is still needed after Render serves the new bundle,
+    especially Dashboard Spotlight media, Dashboard WhatsApp, Public Shop
+    Spotlight WhatsApp, and tap steadiness.
+
 ### Dashboard Spotlight screen restore guard (2026-06-07)
 
 - Trigger:
