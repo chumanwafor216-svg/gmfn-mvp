@@ -37682,3 +37682,29 @@ GSN-branded invite composer and invite-entry continuity.
     the next proof should inspect `sessionStorage.gmfn_mobile_tap_trace` for
     `click-orphan-mismatch-no-commit` or a route change that bypasses the tap
     guard entirely.
+
+### Dashboard stability cage (2026-06-07)
+
+- Trigger:
+  - product owner reported Dashboard is now "fairly OK" and asked whether to
+    freeze or cage it so later work elsewhere cannot disturb the buttons.
+- Decision:
+  - Do not freeze the entire Dashboard page forever; that would block necessary
+    product work.
+  - Treat Dashboard as a caged stable surface: button route targets, action
+    counts, mobile shell controls, action geometry, and the tested Focus
+    Commitments route must not change casually.
+- Guardrail added:
+  - `frontend/tools/audit-dashboard-button-inventory.mjs` now explicitly locks
+    `dashboard.market-wisdom.open-focus-commitments` to
+    `${DASHBOARD_TARGETS.DASHBOARD}#focus-commitments`.
+  - The audit also requires the `#focus-commitments` landing section to remain
+    on Dashboard.
+  - `docs/FREEZE_POLICY.md` now records the Dashboard route/button cage and
+    the shared `mobileTapGuard` cage.
+- Practical meaning:
+  - Future changes may continue on Marketplace, Community, Shop, ROSCA, etc.,
+    but they should not edit Dashboard routes/button geometry unless the owner
+    explicitly asks and the Dashboard stability audit is updated intentionally.
+  - Any system-level tap change must pass both Dashboard button inventory and
+    mobile tap stability audits before pilot publishing.

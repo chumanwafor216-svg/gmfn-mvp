@@ -75,6 +75,8 @@ Examples:
 
 Current explicit frozen paths:
 - `frontend/src/pages/DashboardPage.tsx` dashboard Market Wisdom presentation and interaction model only; other dashboard edits still require normal impact review.
+- `frontend/src/pages/DashboardPage.tsx` Dashboard button-route and mobile action geometry contracts are caged by `frontend/tools/audit-dashboard-button-inventory.mjs`; do not change Dashboard button targets, action counts, Focus Commitments routing, mobile shell controls, or action geometry without an intentional Dashboard stability audit update.
+- `frontend/src/lib/mobileTapGuard.ts` mobile tap routing contract is caged by `frontend/tools/audit-mobile-tap-stability.mjs`; do not relax wrong-root suppression, orphan-click suppression, or original-action replay without a real phone regression reason.
 - [ADD EXACT PATHS HERE]
 - [ADD EXACT PATHS HERE]
 

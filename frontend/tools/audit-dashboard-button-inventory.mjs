@@ -167,6 +167,17 @@ assertContains(
   "Dashboard hidden most-used-apps source controls remain counted. Re-audit before exposing, removing, or moving this section."
 );
 
+assertContains(
+  /debugId="dashboard\.market-wisdom\.open-focus-commitments"[\s\S]*?onClick=\{\(event\) =>[\s\S]*?openDashboardRoute\([\s\S]*?event,[\s\S]*?`\$\{DASHBOARD_TARGETS\.DASHBOARD\}#focus-commitments`[\s\S]*?\)[\s\S]*?\}[\s\S]*?Open Focus Commitments/,
+  "Dashboard Focus Commitments action must stay caged to /app/dashboard#focus-commitments.",
+  "The tested Dashboard Focus Commitments button must not route to Welcome, Inflow, or any non-dashboard target."
+);
+
+assertContains(
+  /id="focus-commitments"[\s\S]*?Your Focus Commitments/,
+  "Dashboard must keep the #focus-commitments landing section that the caged Focus Commitment action targets."
+);
+
 const frontToInnerOrder = [
   { label: "attention popup", pattern: /^dashboard\.attention-popup\./ },
   { label: "attention reminder", pattern: /^dashboard\.attention-reminder\./ },
