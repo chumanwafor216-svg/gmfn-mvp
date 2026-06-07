@@ -1,3 +1,48 @@
+### Marketplace line-level button audit and dead-button fixes (2026-06-07)
+
+- Trigger:
+  - product owner said some Marketplace buttons were still not okay and asked
+    for line auditors as system-level work.
+- System-level audit added:
+  - added `npm run audit:marketplace-button-lines`;
+  - new auditor inventories every Marketplace `StableButton`,
+    `StableCtaLink`, and native input/select/textarea by source line;
+  - it fails on missing `debugId`, missing handler/target, raw interactive
+    elements, blank link targets, missing native field tap guards, and
+    state/permission `disabled={...}` expressions that would create quiet dead
+    buttons;
+  - only true busy duplicate-submit locks are allowed to stay disabled.
+- Real Marketplace fixes made:
+  - `marketplace.network-repost.selected-block.copy-link` is now a tappable
+    explainer when the exact block link is not ready;
+  - `marketplace.network-repost.find-targets` is now a tappable explainer when
+    no public block is selected or target search is already running;
+  - `marketplace.network-repost.target.*.use` explains when a suggested target
+    ID is missing instead of silently doing nothing;
+  - `marketplace.network-repost.place` now reaches `submitMarketplaceRepost()`
+    so missing block, target, credits, loading, or placing state is explained;
+  - `marketplace.support.send-guarantor-requests` now explains exactly why it
+    is blocked instead of being visually present but dead.
+- Verification passed:
+  - `npm run audit:marketplace-button-lines`
+    (`56 stable actions`, `9 native fields`, `10 busy-only disabled actions`);
+  - `npm run audit:marketplace-button-inventory`;
+  - `npm run audit:marketplace-actions`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:link-contracts`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx
+    tools/audit-marketplace-button-lines.mjs
+    tools/audit-mobile-tap-stability.mjs`;
+  - sandboxed `npm run build` failed with Windows/Vite `esbuild spawn EPERM`,
+    then approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this is a stronger source-line/system contract than the earlier aggregate
+    count audit;
+  - it still is not a physical real-phone tap pass, so pilot QA should tap the
+    repaired Paid Repost and guarantor request controls on the deployed site.
+
 ### Marketplace bottom-nav tap replay removed (2026-06-07)
 
 - Trigger:

@@ -564,9 +564,9 @@ const marketplaceActionSystemChecks = [
   },
   {
     label:
-      "Marketplace guarantor request button must use one shared blocked flag",
+      "Marketplace guarantor request button must use one shared blocked flag while blocked taps still explain in place",
     pattern:
-      /const guarantorRequestsBlocked =[\s\S]*?disabled=\{guarantorRequestsBlocked\}[\s\S]*?stableHeight=\{58\}[\s\S]*?marketplaceInlineActionStyle\([\s\S]*?guarantorRequestsBlocked/,
+      /const guarantorRequestsBlocked =[\s\S]*?function showGuarantorRequestBlockedNotice\(\)[\s\S]*?showNotice\([\s\S]*?debugId="marketplace\.support\.send-guarantor-requests"[\s\S]*?if \(guarantorRequestsBlocked\) \{[\s\S]*?showGuarantorRequestBlockedNotice\(\);[\s\S]*?stableHeight=\{58\}[\s\S]*?marketplaceInlineActionStyle\([\s\S]*?guarantorRequestsBlocked/,
   },
   {
     label:

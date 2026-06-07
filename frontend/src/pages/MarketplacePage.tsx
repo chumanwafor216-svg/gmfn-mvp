@@ -3905,7 +3905,19 @@ export default function MarketplacePage() {
     const targetMarketplaceId = resolvedRepostTargetMarketplaceId;
     const durationDays = resolvedRepostDurationDays;
 
-    if (loadingRepostProducts || placingMarketplaceRepost) {
+    if (loadingRepostProducts) {
+      showNotice(
+        "error",
+        "Public blocks are still loading. Wait a moment, then place the block."
+      );
+      return;
+    }
+
+    if (placingMarketplaceRepost) {
+      showNotice(
+        "error",
+        "GSN is already placing this block into Network Spotlight."
+      );
       return;
     }
 
@@ -4779,6 +4791,44 @@ export default function MarketplacePage() {
     visibleSelectedSupporters.length < requiredGuarantorCount ||
     !supportDraftStillOpen ||
     loanStatusLower === "approved";
+
+  function showGuarantorRequestBlockedNotice() {
+    if (sendingGuarantorRequests) {
+      showNotice("error", "GSN is already sending these guarantor requests.");
+      return;
+    }
+
+    if (requiredGuarantorCount <= 0) {
+      showNotice(
+        "error",
+        "Start or refresh the support draft first so GSN can show how many guarantors are needed."
+      );
+      return;
+    }
+
+    if (visibleSelectedSupporters.length < requiredGuarantorCount) {
+      showNotice(
+        "error",
+        `Choose ${requiredGuarantorCount} guarantor${
+          requiredGuarantorCount === 1 ? "" : "s"
+        } before sending requests.`
+      );
+      return;
+    }
+
+    if (!supportDraftStillOpen || loanStatusLower === "approved") {
+      showNotice(
+        "error",
+        "This support draft is no longer open for guarantor requests."
+      );
+      return;
+    }
+
+    showNotice(
+      "error",
+      "This guarantor request step is not ready yet. Check the draft status first."
+    );
+  }
 
   if (loading) {
     return (
@@ -6419,7 +6469,6 @@ export default function MarketplacePage() {
                               );
                             });
                           }}
-                          disabled={!selectedRepostProductPublicLink}
                           style={{
                             ...marketplaceInlineActionStyle(
                               "soft",
@@ -6615,10 +6664,16 @@ export default function MarketplacePage() {
                         stableHeight={50}
                         onClick={(event) => {
                           runMarketplaceAction(event, () => {
+                            if (loadingRepostTargetSuggestions) {
+                              showNotice(
+                                "error",
+                                "GSN is already finding target IDs for this block."
+                              );
+                              return;
+                            }
                             void loadMarketplaceRepostTargetSuggestions();
                           });
                         }}
-                        disabled={loadingRepostTargetSuggestions || !selectedRepostProduct}
                         style={{
                           ...marketplaceInlineActionStyle(
                             "secondary",
@@ -6695,7 +6750,13 @@ export default function MarketplacePage() {
                                 stableHeight={46}
                                 onClick={(event) => {
                                   runMarketplaceAction(event, () => {
-                                    if (!code) return;
+                                    if (!code) {
+                                      showNotice(
+                                        "error",
+                                        "This target community ID is not ready yet."
+                                      );
+                                      return;
+                                    }
                                     setRepostTargetMarketplaceId(code);
                                     showNotice(
                                       "success",
@@ -6703,7 +6764,6 @@ export default function MarketplacePage() {
                                     );
                                   });
                                 }}
-                                disabled={!code}
                                 style={{
                                   ...marketplaceInlineActionStyle(
                                     "primary",
@@ -6809,7 +6869,6 @@ export default function MarketplacePage() {
                           void submitMarketplaceRepost();
                         });
                       }}
-                      disabled={marketplaceRepostLocked}
                       style={marketplaceInlineActionStyle(
                         "primary",
                         marketplaceRepostLocked,
@@ -7506,11 +7565,13 @@ export default function MarketplacePage() {
                           type="button"
                           onClick={(event) => {
                             runMarketplaceAction(event, () => {
-                              if (guarantorRequestsBlocked) return;
+                              if (guarantorRequestsBlocked) {
+                                showGuarantorRequestBlockedNotice();
+                                return;
+                              }
                               void handleSendGuarantorRequests();
                             });
                           }}
-                          disabled={guarantorRequestsBlocked}
                           stableHeight={58}
                           style={marketplaceInlineActionStyle(
                             "primary",
