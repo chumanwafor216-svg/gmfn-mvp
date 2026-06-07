@@ -46,6 +46,47 @@ def _seed_rosca_entitlement() -> None:
         )
 
 
+def _seed_meeting_entitlement() -> None:
+    now = datetime.now(timezone.utc)
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                INSERT INTO feature_entitlements (
+                    owner_user_id,
+                    clan_id,
+                    shop_id,
+                    feature_code,
+                    plan_code,
+                    quantity_total,
+                    quantity_used,
+                    status,
+                    starts_at,
+                    expires_at,
+                    payment_reference
+                )
+                VALUES (
+                    1,
+                    1,
+                    NULL,
+                    'community_meeting_pack',
+                    'community_meeting_pack',
+                    1,
+                    0,
+                    'active',
+                    :starts_at,
+                    :expires_at,
+                    'TEST-MEETING-REF'
+                )
+                """
+            ),
+            {
+                "starts_at": now - timedelta(days=1),
+                "expires_at": now + timedelta(days=365),
+            },
+        )
+
+
 def test_community_package_status_reports_active_rosca_units(
     client, override_current_user, seed_clan_admin_membership
 ):
@@ -61,6 +102,23 @@ def test_community_package_status_reports_active_rosca_units(
     assert rosca["active_remaining"] == 2
     assert rosca["consumer"] == "rosca_cycle_engine"
     assert rosca["engine_ready"] is True
+
+
+def test_community_package_status_reports_meeting_engine_ready(
+    client, override_current_user, seed_clan_admin_membership
+):
+    _seed_meeting_entitlement()
+
+    res = client.get("/payment-instructions/community-package/status?clan_id=1")
+
+    assert res.status_code == 200
+    body = res.json()
+    meeting = next(
+        item for item in body["packages"] if item["package_code"] == "community_meeting_pack"
+    )
+    assert meeting["active_remaining"] == 1
+    assert meeting["consumer"] == "community_meeting_evidence_engine"
+    assert meeting["engine_ready"] is True
 
 
 def test_community_package_use_rejects_rosca_now_that_engine_consumes_credit(
@@ -83,12 +141,26 @@ def test_community_package_use_rejects_rosca_now_that_engine_consumes_credit(
     assert "ROSCA cycle engine" in res.json()["detail"]
 
 
+def test_community_package_use_rejects_meeting_pack_now_that_engine_consumes_credit(
+    client, override_current_user, seed_clan_admin_membership
+):
+    _seed_meeting_entitlement()
+
+    res = client.post(
+        "/payment-instructions/community-package/use",
+        json={"clan_id": 1, "package_code": "community_meeting_pack", "units": 1},
+    )
+
+    assert res.status_code == 400
+    assert "Community Meeting engine" in res.json()["detail"]
+
+
 def test_community_package_use_requires_active_credit(
     client, override_current_user, seed_clan_admin_membership
 ):
     res = client.post(
         "/payment-instructions/community-package/use",
-        json={"clan_id": 1, "package_code": "community_meeting_pack", "units": 1},
+        json={"clan_id": 1, "package_code": "extra_members", "units": 1},
     )
 
     assert res.status_code == 409

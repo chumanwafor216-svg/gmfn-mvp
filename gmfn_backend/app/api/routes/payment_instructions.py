@@ -433,11 +433,12 @@ def _package_engine_status(package_code: str) -> Dict[str, Any]:
         }
     if package_code == "community_meeting_pack":
         return {
-            "consumer": "meeting_usage_record",
-            "engine_ready": False,
+            "consumer": "community_meeting_evidence_engine",
+            "engine_ready": True,
             "message": (
-                "Meeting pack units can be paid for and recorded now. "
-                "The full meeting workspace and document relay engine is still the next engine to wire."
+                "Meeting pack units now create GSN reminder evidence, WhatsApp share text, "
+                "member notifications, and later summary TrustEvents. WhatsApp still carries "
+                "the conversation outside GSN."
             ),
         }
     return {"consumer": "unknown", "engine_ready": False, "message": "Package status is unknown."}
@@ -511,6 +512,11 @@ def use_community_package_unit(
         raise HTTPException(
             status_code=400,
             detail="Use the ROSCA cycle engine to consume ROSCA package credit",
+        )
+    if package_code == "community_meeting_pack":
+        raise HTTPException(
+            status_code=400,
+            detail="Use the Community Meeting engine to consume meeting pack credit",
         )
 
     package = COMMUNITY_PACKAGE_CATALOG[package_code]

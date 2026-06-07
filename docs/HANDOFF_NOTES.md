@@ -1,3 +1,61 @@
+### Community meeting pack evidence engine added (2026-06-07)
+
+- Trigger:
+  - product owner decided meeting reminders and summaries should be added for
+    TrustEvent evidence, while WhatsApp should stay linked out instead of GSN
+    rebuilding chat/calendar behavior.
+- Routes/screens affected:
+  - backend meeting engine:
+    `GET /community-meetings?clan_id=...`,
+    `POST /community-meetings/reminders`,
+    `POST /community-meetings/{meeting_id}/summary`;
+  - package truth:
+    `GET /payment-instructions/community-package/status`,
+    `POST /payment-instructions/community-package/use`;
+  - owner Shop Control paid tools:
+    `/app/shop-control#shop-control-community-packages`.
+- Backend changes:
+  - added `gmfn_backend/app/services/community_meeting_service.py`;
+  - added `gmfn_backend/app/api/routes/community_meetings.py` and registered it
+    in `gmfn_backend/app/api/router.py`;
+  - creating a meeting reminder now consumes one active
+    `community_meeting_pack` entitlement, writes
+    `community.meeting.reminder_created`, creates member notifications, and
+    returns WhatsApp share text/link;
+  - recording a summary writes `community.meeting.summary_recorded` against the
+    same meeting id and deliberately does not consume another paid unit;
+  - meeting data is stored in TrustEvent meta for pilot reversibility. No schema
+    migration was added.
+- Package truth changes:
+  - `community_meeting_pack` status now reports `consumer:
+    community_meeting_evidence_engine` and `engine_ready: true`;
+  - the old generic `/community-package/use` route now rejects
+    `community_meeting_pack`, so a paid meeting unit cannot be burned without
+    reminder evidence.
+- Frontend changes:
+  - `ShopControlPage` now loads `/api/community-meetings` beside ROSCA cycles;
+  - Community Packages now includes a compact Meeting Pack Engine card with:
+    meeting title, date/time, WhatsApp number, purpose, `Create reminder`,
+    `Share WhatsApp`, latest meeting status, summary, decisions, attendance
+    count, and `Record summary`;
+  - WhatsApp is a linked-out share channel. GSN records the reminder/summary
+    evidence but does not claim to host the conversation.
+- Verification passed:
+  - `python -m pytest tests/test_community_meetings.py tests/test_community_package_usage.py tests/test_rosca_engine.py tests/test_spotlight_subscription_pricing.py -q`
+    (`28 passed`, SQLite datetime deprecation warnings only);
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`;
+  - sandboxed `npm run build` failed with the known Windows `esbuild spawn
+    EPERM`, then approved outside-sandbox `npm run build` from `frontend/`
+    passed.
+- Unabated truth:
+  - this is a real reminder/summary evidence engine, not a full meeting
+    workspace, calendar, attendance-verification, file relay, or WhatsApp
+    replacement;
+  - meeting attendance count is admin-entered pilot evidence, not independently
+    verified attendance;
+  - `frontend/src/components/StableButton.tsx` remains a pre-existing unrelated
+    worktree modification with no content diff and was not edited by this pass.
+
 ### ROSCA default payout order now prioritizes trust score (2026-06-07)
 
 - Trigger:

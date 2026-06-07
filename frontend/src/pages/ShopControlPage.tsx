@@ -167,6 +167,24 @@ type RoscaCycleSummary = {
   rounds?: RoscaRoundSummary[];
 };
 
+type CommunityMeetingRecord = {
+  meeting_id?: string | null;
+  title?: string | null;
+  purpose?: string | null;
+  scheduled_at?: string | null;
+  summary?: string | null;
+  decisions?: string | null;
+  attendance_count?: number | null;
+  attendee_user_ids?: number[] | null;
+  whatsapp_share_text?: string | null;
+  whatsapp_share_url?: string | null;
+  action_url?: string | null;
+  status?: string | null;
+  reminder_event_id?: number | null;
+  summary_event_id?: number | null;
+  created_at?: string | null;
+};
+
 type TrustSlipFeatureSummary = {
   merchant_verify_active?: boolean | null;
   merchant_verify_subscription_required?: boolean | null;
@@ -631,6 +649,9 @@ export default function ShopControlPage() {
   const [communityPackageStatus, setCommunityPackageStatus] =
     useState<CommunityPackageStatus | null>(null);
   const [roscaCycles, setRoscaCycles] = useState<RoscaCycleSummary[]>([]);
+  const [communityMeetings, setCommunityMeetings] = useState<CommunityMeetingRecord[]>(
+    []
+  );
   const [roscaTitle, setRoscaTitle] = useState("Community ROSCA cycle");
   const [roscaContributionAmount, setRoscaContributionAmount] = useState("25.00");
   const [roscaCurrency, setRoscaCurrency] = useState("GBP");
@@ -645,9 +666,15 @@ export default function ShopControlPage() {
   const [creatingVaultInstruction, setCreatingVaultInstruction] = useState(false);
   const [creatingCommunityPackageCode, setCreatingCommunityPackageCode] =
     useState<string | null>(null);
-  const [usingCommunityPackageCode, setUsingCommunityPackageCode] = useState<string | null>(
-    null
-  );
+  const [meetingTitle, setMeetingTitle] = useState("Community meeting");
+  const [meetingPurpose, setMeetingPurpose] = useState("");
+  const [meetingScheduledAt, setMeetingScheduledAt] = useState("");
+  const [meetingWhatsappNumber, setMeetingWhatsappNumber] = useState("");
+  const [creatingMeetingReminder, setCreatingMeetingReminder] = useState(false);
+  const [meetingSummary, setMeetingSummary] = useState("");
+  const [meetingDecisions, setMeetingDecisions] = useState("");
+  const [meetingAttendanceCount, setMeetingAttendanceCount] = useState("");
+  const [recordingMeetingSummary, setRecordingMeetingSummary] = useState(false);
   const [creatingVaultLink, setCreatingVaultLink] = useState(false);
   const [busyVaultLinkId, setBusyVaultLinkId] = useState<number | null>(null);
   const [busyVaultLinkAction, setBusyVaultLinkAction] = useState<"extend" | "revoke" | null>(
@@ -954,6 +981,9 @@ export default function ShopControlPage() {
       setWhatsApp(firstTruthy(shopItem?.whatsapp_number));
       setTelegramHandle(firstTruthy(shopItem?.telegram_handle));
       setImageUrlInput(firstTruthy(shopItem?.image_url));
+      setMeetingWhatsappNumber((current) =>
+        safeStr(current) ? current : firstTruthy(shopItem?.whatsapp_number)
+      );
 
       if (shopItem?.id) {
         const expectedPaymentsPath =
@@ -962,6 +992,8 @@ export default function ShopControlPage() {
         const packageStatusPath =
           `/api/payment-instructions/community-package/status?clan_id=${shopContextClanId || 0}&shop_id=${shopItem.id}`;
         const roscaCyclesPath = `/api/rosca/cycles?clan_id=${shopContextClanId || 0}`;
+        const communityMeetingsPath =
+          `/api/community-meetings?clan_id=${shopContextClanId || 0}&limit=20`;
 
         const [
           broadcastsRes,
@@ -971,6 +1003,7 @@ export default function ShopControlPage() {
           trustSlipRes,
           packageStatusRes,
           roscaCyclesRes,
+          communityMeetingsRes,
         ] =
           await Promise.all([
           apiJson<any>(
@@ -984,6 +1017,7 @@ export default function ShopControlPage() {
           apiJson<any>("/api/trust-slips/me").catch(() => null),
           apiJson<any>(packageStatusPath).catch(() => null),
           apiJson<any>(roscaCyclesPath).catch(() => null),
+          apiJson<any>(communityMeetingsPath).catch(() => null),
         ]);
 
         const visibleSpotlights = Array.isArray(broadcastsRes?.items)
@@ -1017,6 +1051,11 @@ export default function ShopControlPage() {
             ? (roscaCyclesRes.cycles as RoscaCycleSummary[])
             : []
         );
+        setCommunityMeetings(
+          Array.isArray(communityMeetingsRes?.meetings)
+            ? (communityMeetingsRes.meetings as CommunityMeetingRecord[])
+            : []
+        );
       } else {
         setSpotlights([]);
         setVaultLinks([]);
@@ -1024,6 +1063,7 @@ export default function ShopControlPage() {
         setTrustSlipFeature(null);
         setCommunityPackageStatus(null);
         setRoscaCycles([]);
+        setCommunityMeetings([]);
       }
     } finally {
       if (!background) {
@@ -1303,6 +1343,11 @@ export default function ShopControlPage() {
       null
     );
   }, [latestRoscaCycle]);
+
+  const latestCommunityMeeting = useMemo(() => {
+    if (!communityMeetings.length) return null;
+    return communityMeetings[0] || null;
+  }, [communityMeetings]);
 
   const activePaidSpotlights = useMemo(
     () =>
@@ -1794,38 +1839,94 @@ export default function ShopControlPage() {
     }
   }
 
-  async function recordCommunityPackageUnit(packageCode: string, label: string) {
+  async function createMeetingReminder() {
     const clanId = Number(shop?.clan_id || selectedClanId || 0);
     if (!clanId) {
       showNotice("error", "Choose a community first.");
       return;
     }
+    if (!safeStr(meetingTitle)) {
+      showNotice("error", "Add a short meeting title first.");
+      return;
+    }
 
-    setUsingCommunityPackageCode(packageCode);
+    setCreatingMeetingReminder(true);
     try {
-      const result = await apiJson<any>("/api/payment-instructions/community-package/use", {
+      const result = await apiJson<any>("/api/community-meetings/reminders", {
         method: "POST",
         body: JSON.stringify({
           clan_id: clanId,
-          package_code: packageCode,
-          units: 1,
-          shop_id: shop?.id ? Number(shop.id) : undefined,
-          reference_key: `shop-control-${packageCode}`,
+          title: safeStr(meetingTitle) || "Community meeting",
+          purpose: safeStr(meetingPurpose) || undefined,
+          scheduled_at: safeStr(meetingScheduledAt) || undefined,
+          whatsapp_number: safeStr(meetingWhatsappNumber) || undefined,
+          note: "Created from Shop Control community packages.",
         }),
       });
 
+      await loadPage({ background: true });
+      const whatsappUrl = firstTruthy(result?.meeting?.whatsapp_share_url);
+      showNotice(
+        "success",
+        firstTruthy(
+          result?.message,
+          whatsappUrl
+            ? "Meeting reminder recorded. WhatsApp share is ready."
+            : "Meeting reminder recorded as TrustEvent evidence."
+        )
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "Meeting reminder could not be recorded.");
+    } finally {
+      setCreatingMeetingReminder(false);
+    }
+  }
+
+  async function recordMeetingSummary() {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    const meetingId = firstTruthy(latestCommunityMeeting?.meeting_id);
+    if (!clanId || !meetingId) {
+      showNotice("error", "Create a meeting reminder before adding the summary.");
+      return;
+    }
+    if (!safeStr(meetingSummary)) {
+      showNotice("error", "Add the meeting summary first.");
+      return;
+    }
+
+    const attendance = Number(meetingAttendanceCount || 0);
+    setRecordingMeetingSummary(true);
+    try {
+      const result = await apiJson<any>(
+        `/api/community-meetings/${encodeURIComponent(meetingId)}/summary`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            clan_id: clanId,
+            summary: safeStr(meetingSummary),
+            decisions: safeStr(meetingDecisions) || undefined,
+            attendance_count:
+              Number.isFinite(attendance) && attendance >= 0 ? Math.floor(attendance) : undefined,
+            note: "Recorded from Shop Control community packages.",
+          }),
+        }
+      );
+
+      setMeetingSummary("");
+      setMeetingDecisions("");
+      setMeetingAttendanceCount("");
       await loadPage({ background: true });
       showNotice(
         "success",
         firstTruthy(
           result?.message,
-          `${label} unit recorded. Check the package status before continuing.`
+          "Meeting summary recorded as TrustEvent evidence."
         )
       );
     } catch (err: any) {
-      showNotice("error", safeStr(err?.message) || `${label} unit could not be used.`);
+      showNotice("error", safeStr(err?.message) || "Meeting summary could not be recorded.");
     } finally {
-      setUsingCommunityPackageCode(null);
+      setRecordingMeetingSummary(false);
     }
   }
 
@@ -3372,7 +3473,8 @@ export default function ShopControlPage() {
             </div>
             <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
               Generate the exact package reference. Extra shop blocks and member places
-              activate after bank match. ROSCA and meeting packs are recorded here first.
+              activate after bank match. ROSCA starts contribution cycles, while meeting
+              packs create reminder and summary evidence for TrustEvents.
             </div>
             <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
               <span style={badge(false)}>Rail: GBP 1 per unit</span>
@@ -3615,31 +3717,194 @@ export default function ShopControlPage() {
                 )}
               </div>
             </div>
-            <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
-              <SecondaryButton
-                onClick={() =>
-                  recordCommunityPackageUnit("community_meeting_pack", "Meeting pack")
-                }
-                disabled={
-                  shopActionsLocked ||
-                  Boolean(usingCommunityPackageCode) ||
-                  safePositiveNumber(
-                    communityPackageByCode.get("community_meeting_pack")?.active_remaining,
-                    0
-                  ) < 1
-                }
-                busy={usingCommunityPackageCode === "community_meeting_pack"}
-                busyLabel="Recording..."
-                fullWidth
-                debugId="shop-control.package.use-meeting-pack"
+            <div
+              style={{
+                marginTop: 12,
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                border: "1px solid rgba(13,95,168,0.10)",
+              }}
+            >
+              <div style={sectionLabel()}>Meeting pack engine</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                Create the reminder record in GSN, share the meeting text through
+                WhatsApp, then return here to record the summary as TrustEvent evidence.
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1.1fr 0.9fr",
+                  gap: 10,
+                }}
               >
-                Use meeting unit
-              </SecondaryButton>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Meeting title
+                  </div>
+                  <input
+                    value={meetingTitle}
+                    onChange={(event) => setMeetingTitle(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    placeholder="Community meeting"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Date and time
+                  </div>
+                  <input
+                    value={meetingScheduledAt}
+                    onChange={(event) => setMeetingScheduledAt(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    type="datetime-local"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    WhatsApp number
+                  </div>
+                  <input
+                    value={meetingWhatsappNumber}
+                    onChange={(event) => setMeetingWhatsappNumber(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    placeholder="+44..."
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Purpose
+                  </div>
+                  <input
+                    value={meetingPurpose}
+                    onChange={(event) => setMeetingPurpose(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    placeholder="What members should decide"
+                  />
+                </label>
+              </div>
+              <div style={{ marginTop: 12, ...controlGrid(isCompact, 178) }}>
+                <PrimaryButton
+                  onClick={createMeetingReminder}
+                  disabled={
+                    shopActionsLocked ||
+                    creatingMeetingReminder ||
+                    safePositiveNumber(
+                      communityPackageByCode.get("community_meeting_pack")
+                        ?.active_remaining,
+                      0
+                    ) < 1
+                  }
+                  busy={creatingMeetingReminder}
+                  busyLabel="Recording..."
+                  fullWidth
+                  debugId="shop-control.meeting.create-reminder"
+                >
+                  Create reminder
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={() => {
+                    const shareUrl = firstTruthy(latestCommunityMeeting?.whatsapp_share_url);
+                    if (!shareUrl) {
+                      showNotice(
+                        "info",
+                        "Create a meeting reminder first, then WhatsApp share will be ready."
+                      );
+                      return;
+                    }
+                    window.location.href = shareUrl;
+                  }}
+                  disabled={!firstTruthy(latestCommunityMeeting?.whatsapp_share_url)}
+                  fullWidth
+                  debugId="shop-control.meeting.share-whatsapp"
+                >
+                  Share WhatsApp
+                </SecondaryButton>
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
+                {latestCommunityMeeting ? (
+                  <>
+                    Latest meeting: {firstTruthy(latestCommunityMeeting.title, "Community meeting")} -{" "}
+                    {firstTruthy(latestCommunityMeeting.status, "reminder_created").replace(/_/g, " ")}
+                    {safeStr(latestCommunityMeeting.scheduled_at)
+                      ? ` - ${safeDateTime(latestCommunityMeeting.scheduled_at)}`
+                      : ""}
+                  </>
+                ) : (
+                  "One meeting pack unit creates one reminder evidence thread. The summary later uses the same thread and does not consume another unit."
+                )}
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                  gap: 10,
+                }}
+              >
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Summary
+                  </div>
+                  <textarea
+                    value={meetingSummary}
+                    onChange={(event) => setMeetingSummary(event.target.value)}
+                    style={{ ...textAreaStyle(), marginTop: 6 }}
+                    placeholder="What was agreed or confirmed"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Decisions
+                  </div>
+                  <textarea
+                    value={meetingDecisions}
+                    onChange={(event) => setMeetingDecisions(event.target.value)}
+                    style={{ ...textAreaStyle(), marginTop: 6 }}
+                    placeholder="Next steps, owners, or deadlines"
+                  />
+                </label>
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "0.55fr 1fr",
+                  gap: 10,
+                  alignItems: "end",
+                }}
+              >
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Attendance count
+                  </div>
+                  <input
+                    value={meetingAttendanceCount}
+                    onChange={(event) => setMeetingAttendanceCount(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    inputMode="numeric"
+                    placeholder="0"
+                  />
+                </label>
+                <SecondaryButton
+                  onClick={recordMeetingSummary}
+                  disabled={
+                    shopActionsLocked ||
+                    recordingMeetingSummary ||
+                    !firstTruthy(latestCommunityMeeting?.meeting_id)
+                  }
+                  busy={recordingMeetingSummary}
+                  busyLabel="Recording..."
+                  fullWidth
+                  debugId="shop-control.meeting.record-summary"
+                >
+                  Record summary
+                </SecondaryButton>
+              </div>
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-              Meeting packs are still record-only. ROSCA now creates contribution
-              references and records payout completion, but real external money movement
-              remains outside this button.
+              ROSCA and meeting packs now create GSN evidence. ROSCA still does not
+              execute external payouts, and WhatsApp remains the outside conversation
+              channel for meetings.
             </div>
           </div>
         </div>
