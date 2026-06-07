@@ -294,6 +294,22 @@ function matchesRoutePrefix(path: string, prefixes: readonly string[]): boolean 
   );
 }
 
+function normalizePublicRouteTarget(raw: string): string {
+  try {
+    const parsed = new URL(raw);
+    const normalizedPath = cleanTarget(parsed.pathname).replace(/^\/+/, "");
+    const lowerPath = normalizedPath.toLowerCase();
+
+    if (matchesRoutePrefix(lowerPath, PUBLIC_ROUTE_PREFIXES)) {
+      return `/${normalizedPath}${parsed.search}${parsed.hash}`;
+    }
+  } catch {
+    return "";
+  }
+
+  return "";
+}
+
 function mergeAliasTarget(target: string, suffix: string): string {
   if (!suffix) return target;
 
@@ -356,6 +372,8 @@ export function normalizeActionTargetPath(value: unknown): string {
   if (!raw) return ACTION_TARGETS.NOTIFICATIONS;
 
   if (/^(https?:|mailto:|tel:)/i.test(raw)) {
+    const publicRouteTarget = normalizePublicRouteTarget(raw);
+    if (publicRouteTarget) return publicRouteTarget;
     return raw;
   }
 

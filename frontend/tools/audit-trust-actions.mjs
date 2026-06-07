@@ -256,15 +256,9 @@ assertContains(
 );
 
 assertContains(
-  "src/pages/NotificationsPage.tsx",
-  /PUBLIC_ROUTE_PREFIXES = \[[\s\S]*?"community-confirmations"[\s\S]*?\]/,
-  "Notifications must allow community confirmation public result links to open their public paper instead of being forced back into the app shell."
-);
-
-assertContains(
-  "src/lib/guidance.ts",
-  /PUBLIC_ROUTE_PREFIXES = \[[\s\S]*?"community-confirmations"[\s\S]*?\]/,
-  "Guidance notification targets must allow community confirmation public result links to open their public paper."
+  "src/lib/actionTargetRoutes.ts",
+  /PUBLIC_ROUTE_PREFIXES = \[[\s\S]*?"community-confirmations"[\s\S]*?\][\s\S]*?function normalizePublicRouteTarget[\s\S]*?matchesRoutePrefix\(lowerPath, PUBLIC_ROUTE_PREFIXES\)[\s\S]*?return `\/\$\{normalizedPath\}\$\{parsed\.search\}\$\{parsed\.hash\}`[\s\S]*?export function normalizeActionTargetPath/,
+  "Shared action-target normalization must allow community confirmation public result links to open their public paper instead of being forced back into the app shell."
 );
 
 assertContains(

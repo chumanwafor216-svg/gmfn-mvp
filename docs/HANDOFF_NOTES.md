@@ -1,3 +1,59 @@
+### Route/button stability audit completed (2026-06-07)
+
+- Trigger:
+  - product owner asked to audit lines/buttons for route stability, button
+    placement, broken shell risk, and jumpy/inactive behavior.
+- Confirmed button inventory:
+  - Dashboard: 54 `StableButton`, 1 `StableDisclosureSummary`, 2
+    `PictureFrameToolsControl`, 63 effective action roots;
+  - Marketplace: 56 stable source actions, 47 mobile app-shell controls, 103
+    whole-route mobile controls total;
+  - Community Home: 14 `StableButton` source actions;
+  - Finance: 9 stable source actions, 15 expected rendered action roots;
+  - Trust Passport: 8 stable source actions, 9 expected rendered action roots.
+- Fixes made:
+  - `frontend/src/lib/actionTargetRoutes.ts` now normalizes absolute
+    `https://.../community-confirmations/...` action URLs back into local
+    public routes, so notification/guidance actions open the public result
+    paper instead of trying to behave like an app-shell route;
+  - `gmfn_backend/app/services/community_confirmation_service.py` now exposes
+    public community verification from whitelisted public fields only, while
+    using an explicit `confirmation_schema_available` flag so degraded schemas
+    do not falsely show the controlled relay as available;
+  - `frontend/tools/audit-dashboard-button-inventory.mjs` was intentionally
+    updated for the existing ROSCA Focus `Open Money In` action;
+  - `frontend/tools/audit-trust-actions.mjs` now checks the shared route
+    normalizer instead of requiring local route tables in Notifications and
+    Guidance.
+- Verification passed:
+  - button/route/action audits:
+    `audit:button-stability`, `audit:tap-stability`,
+    `audit:route-fallthrough`, `audit:global-action-debugids`,
+    `audit:global-raw-action-elements`, `audit:dashboard-button-inventory`,
+    `audit:marketplace-button-inventory`,
+    `audit:community-home-button-inventory`,
+    `audit:finance-button-inventory`,
+    `audit:trust-passport-button-inventory`, `audit:dashboard-actions`,
+    `audit:action-response-protocol`, `audit:action-surfaces`,
+    `audit:marketplace-actions`, `audit:community-shop-actions`,
+    `audit:dashboard-phone-buttons`, `audit:community-home-phone-buttons`,
+    `audit:finance-actions`, `audit:loans-actions`,
+    `audit:member-entry-actions`, `audit:entry-auth`,
+    `audit:link-contracts`, `audit:trust-actions`;
+  - `npm exec -- eslint src/lib/actionTargetRoutes.ts
+    src/pages/NotificationsPage.tsx src/lib/guidance.ts`;
+  - `python -m pytest tests/test_community_confirmation_relay.py -q`
+    (`12 passed`);
+  - sandboxed `npm run build` failed with the known Windows `esbuild spawn
+    EPERM`, then approved outside-sandbox `npm run build` from `frontend/`
+    passed.
+- Unabated truth:
+  - this is a static and contract-audit pass, not a full manual visual QA pass
+    in every viewport;
+  - the dashboard Market Wisdom frozen area was not edited;
+  - `frontend/src/components/StableButton.tsx` remains a pre-existing
+    unrelated worktree marker and was not staged by this work.
+
 ### ROSCA yearly service now unlocks unlimited cycle starts while active (2026-06-07)
 
 - Trigger:

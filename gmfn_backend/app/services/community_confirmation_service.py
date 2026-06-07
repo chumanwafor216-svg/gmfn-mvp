@@ -625,6 +625,7 @@ def build_community_confirmation_summary(
         return {
             "community_status": "not_found",
             "relay_available": False,
+            "confirmation_schema_available": False,
             "plain_language": "This community could not be found for confirmation.",
         }
 
@@ -653,6 +654,7 @@ def build_community_confirmation_summary(
         relay_available = bool(policy.relay_enabled and contactable > 0)
         instant_pulse_available = bool(policy.instant_pulse_enabled and contactable > 0)
         request_action = "request_community_confirmation" if relay_available else None
+        confirmation_schema_available = True
         plain_language = (
             "This person belongs to a real GSN community. If a higher-risk decision needs "
             "stronger assurance, GSN can ask eligible community members to respond now. "
@@ -671,6 +673,7 @@ def build_community_confirmation_summary(
         relay_available = False
         instant_pulse_available = False
         request_action = None
+        confirmation_schema_available = False
         plain_language = (
             "This community is visible in GSN, but live member confirmation is temporarily "
             "unavailable on this server. The community record can still be checked, and "
@@ -696,6 +699,7 @@ def build_community_confirmation_summary(
             else None
         ),
         "relay_available": relay_available,
+        "confirmation_schema_available": confirmation_schema_available,
         "instant_pulse_available": instant_pulse_available,
         "request_action": request_action,
         "plain_language": plain_language,
@@ -3855,10 +3859,8 @@ def public_community_verification(db: Session, *, community_key: str) -> Dict[st
         subject_user_id=None,
     )
     recipient_ids = _community_confirmation_relay_recipient_ids(db, community=community)
-    schema_degraded = "temporarily unavailable" in str(
-        summary.get("plain_language") or ""
-    ).lower()
-    relay_available = bool(summary.get("relay_available") or (recipient_ids and not schema_degraded))
+    confirmation_ready = bool(summary.get("confirmation_schema_available", True))
+    relay_available = bool(confirmation_ready and (summary.get("relay_available") or recipient_ids))
 
     return {
         "community_name": community.name,
