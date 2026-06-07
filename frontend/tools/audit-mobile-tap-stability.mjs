@@ -226,7 +226,7 @@ if (
 }
 
 if (
-  !/function isDisabledAction\(root: Element \| null\): boolean[\s\S]*?aria-disabled[\s\S]*?function handlePointerUp\(event: PointerEvent\): void[\s\S]*?pointerup-geometry-shift[\s\S]*?clearActiveTap\(\);[\s\S]*?function handleClick\(event: MouseEvent\): void[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?insideSettleWindow[\s\S]*?click-settle-observed[\s\S]*?activeTap\.suppressNextClick[\s\S]*?lastAcceptedActionClickAt = currentTime/.test(
+  !/function isDisabledAction\(root: Element \| null\): boolean[\s\S]*?aria-disabled[\s\S]*?function handlePointerUp\(event: PointerEvent\): void[\s\S]*?pointerup-geometry-shift[\s\S]*?suppressNextClick: true[\s\S]*?function handleClick\(event: MouseEvent\): void[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?insideSettleWindow[\s\S]*?click-settle-observed[\s\S]*?activeTap\.suppressNextClick[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);[\s\S]*?commitOriginalAction\(intendedRoot, reason/.test(
     mobileTapGuardSource
   )
 ) {
@@ -234,8 +234,9 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Global mobile tap guard must trace unstable tap geometry while preserving real browser clicks, and suppress only disabled action clicks",
-    text: "Expected pointer-up tracing, disabled-action suppression, and settle-window observation were not found.",
+      "Global mobile tap guard must trace unstable tap geometry and replay the originally touched action when a phone click lands on the wrong root",
+    text:
+      "Expected pointer-up suppression marking, disabled-action suppression, settle-window observation, and original-action replay were not found.",
   });
 }
 
@@ -254,7 +255,7 @@ if (
 }
 
 if (
-  !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const coveredDashboardRoot = coveredDashboardActionFromBottomNav\(event, initialRoot\);[\s\S]*?const root = coveredDashboardRoot;/.test(
+  !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const coveredDashboardRoot = coveredDashboardActionFromBottomNav\(event, initialRoot\);[\s\S]*?const root = coveredDashboardRoot \|\| initialRoot;/.test(
     mobileTapGuardSource
   )
 ) {
@@ -262,9 +263,9 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Mobile tap guard must require a strict action-root match while tracking only dashboard bottom-nav overlap starts",
+      "Mobile tap guard must require a strict action-root match while tracking ordinary action starts without pointer capture",
     text:
-      "Expected strict action-root matching and bottom-nav-only pointer-down tracking were not found.",
+      "Expected strict action-root matching and ordinary pointer-down tracking were not found.",
   });
 }
 

@@ -353,7 +353,7 @@ function clearIfStale(): void {
 function handlePointerDown(event: PointerEvent): void {
   const initialRoot = actionRootFromEvent(event);
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, initialRoot);
-  const root = coveredDashboardRoot;
+  const root = coveredDashboardRoot || initialRoot;
   if (!root) {
     clearActiveTap();
     lastPointerContext = null;
@@ -422,8 +422,10 @@ function handlePointerUp(event: PointerEvent): void {
       moved: Math.round(moved),
       shifted: unsafeGeometry,
     });
-    clearActiveTap();
-    lastPointerContext = null;
+    activeTap = {
+      ...activeTap,
+      suppressNextClick: true,
+    };
   }
 }
 
@@ -565,6 +567,29 @@ function handleClick(event: MouseEvent): void {
       elapsed: Math.round(elapsed),
       shifted: unsafeGeometry,
     });
+    event.preventDefault();
+    event.stopPropagation();
+
+    const intendedRoot = activeTap.root;
+    const intendedLabel = activeTap.rootLabel;
+    const committed = !isDisabledAction(intendedRoot)
+      ? commitOriginalAction(intendedRoot, reason, {
+          ended: labelForAction(endRoot),
+          moved: Math.round(moved),
+          elapsed: Math.round(elapsed),
+          shifted: unsafeGeometry,
+        })
+      : false;
+
+    if (!committed) {
+      traceTap("click-mismatch-no-commit", {
+        intended: intendedLabel,
+        ended: labelForAction(endRoot),
+      });
+      clearActiveTap();
+      lastPointerContext = null;
+    }
+    return;
   }
 
   if (endRoot) {

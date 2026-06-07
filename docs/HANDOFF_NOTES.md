@@ -37598,3 +37598,44 @@ GSN-branded invite composer and invite-entry continuity.
     stable shared button primitives. It does not change live Notifications
     rendering and should not be sold as the runtime fix for jumpiness; the live
     tap correction remains the shared `mobileTapGuard` narrowing.
+
+### System mobile wrong-route tap correction (2026-06-07)
+
+- Trigger:
+  - product owner reported that the phone screen felt overly sensitive and
+    that random buttons could land in the wrong place; concrete example:
+    Dashboard `Open Focus Commitments` sometimes landed on the public Welcome
+    route instead of staying on `/app/dashboard#focus-commitments`.
+- Unabated truth:
+  - The page inventory audits were not enough for this class of bug.
+  - The previous runtime correction removed global `setPointerCapture`, which
+    was necessary, but it also narrowed `mobileTapGuard` so ordinary action
+    roots were no longer tracked from pointer-down to click.
+  - That made the guard observe orphan/wrong-root clicks but not stop them.
+    On mobile, a tiny layout shift or overlay hit-test mistake could therefore
+    still let the browser accept the wrong final click target.
+- Fix:
+  - `frontend/src/lib/mobileTapGuard.ts` now tracks ordinary action roots again
+    with `const root = coveredDashboardRoot || initialRoot`, but still does
+    not call `setPointerCapture`.
+  - Pointer-up mismatches or unsafe geometry now mark
+    `activeTap.suppressNextClick = true` instead of clearing the active tap too
+    early.
+  - The following click is prevented/stopped and replayed on the original
+    touched action root through `commitOriginalAction(...)`.
+  - If the original action cannot be replayed, the guard clears safely and
+    traces `click-mismatch-no-commit`.
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now enforces this contract:
+    ordinary action tracking, no global pointer capture, mismatch suppression,
+    and original-action replay.
+- Verification:
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+- Remaining risk:
+  - This is the system-level correction that matches the symptom best. If a
+    phone still lands on the wrong route after this deploy, capture
+    `sessionStorage.gmfn_mobile_tap_trace` immediately after a failed tap; the
+    trace should now show either a replayed original action or the exact
+    mismatched roots.
