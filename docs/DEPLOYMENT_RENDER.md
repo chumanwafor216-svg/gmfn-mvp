@@ -95,13 +95,12 @@ GitHub repository secrets:
   - optional for frontend-only changes, required when backend or `render.yaml`
     changes should trigger the API directly
 
-The active `gmfn-frontend` Render service has previously been observed tracking
-`feature/vault-shops` instead of `main`. Until the Render dashboard is corrected
-to track `main`, the workflow mirrors the checked-out `main` commit to
-`feature/vault-shops` before triggering the frontend deploy hook. This keeps
-pilot deploys current without storing Render credentials in the repo. If Render
-is later changed to track `main`, remove that mirror step and restore the
-workflow to read-only contents permission.
+The active `gmfn-frontend` Render service should track `main`. A temporary
+workflow mirror to `feature/vault-shops` was used during pilot recovery when
+Render was still connected to that older branch, but it has been removed after
+the product owner confirmed the Render service was changed to `main`. Keep the
+workflow on read-only contents permission unless a future deployment recovery
+explicitly requires a branch write.
 
 If `RENDER_FRONTEND_DEPLOY_HOOK_URL` is not set, the workflow falls back to the
 Render API when `RENDER_API_KEY` is configured. If neither credential is set,

@@ -16,7 +16,7 @@ on:
           - "true"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: render-deploy-main
@@ -37,13 +37,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
-
-      - name: Mirror main to Render-connected frontend branch
-        if: ${{ github.ref_name == 'main' }}
-        run: |
-          render_frontend_branch="feature/vault-shops"
-          echo "Mirroring ${GITHUB_SHA} to ${render_frontend_branch} for the current gmfn-frontend Render connection."
-          git push origin "HEAD:${render_frontend_branch}"
 
       - name: Trigger frontend deploy hook
         if: ${{ env.RENDER_FRONTEND_DEPLOY_HOOK_URL != '' }}
