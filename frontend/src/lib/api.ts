@@ -3265,6 +3265,19 @@ export async function listMyPaymentInstructionExpectedPayments(payload: {
   );
 }
 
+export async function getMyRoscaObligations(payload?: {
+  clan_id?: number | null;
+  limit?: number;
+}): Promise<any> {
+  return httpJson(
+    `/rosca/obligations/me${buildQuery({
+      clan_id: payload?.clan_id ?? undefined,
+      limit: payload?.limit ?? 20,
+    })}`,
+    "GET"
+  );
+}
+
 export async function getMarketplaceShopSpotlightStatus(shopId: number): Promise<any> {
   return httpJson(
     `/marketplace/shops/${encodeURIComponent(String(shopId))}/spotlight-status`,

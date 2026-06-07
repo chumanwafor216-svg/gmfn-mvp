@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.db.bank_models import ExpectedPayment
 from app.db.models import ClanMembership, PoolEvent, TrustEvent
+from app.db.notification_models import Notification
 from app.services.expected_payments_service import create_expected_payment
 from app.services.feature_entitlements_service import consume_feature_units
+from app.services.notification_service import create_notification
 from app.services.payment_instruction_service import FEATURE_ROSCA_CYCLE
 from app.services.trust_events_services import log_trust_event
 
@@ -20,6 +22,7 @@ ROSCA_ENGINE_VERSION = "rosca_cycle_engine_v1"
 ROSCA_SOURCE = "rosca.cycle"
 ROSCA_EVENT_STARTED = "rosca.cycle.started"
 ROSCA_EVENT_PAYOUT_RECORDED = "rosca.round.payout_recorded"
+ROSCA_ACTIVE_OBLIGATION_STATUSES = {"expected", "partial", "defaulted", "expired"}
 
 
 def _now_utc() -> datetime:
@@ -59,6 +62,14 @@ def _iso(value: Optional[datetime]) -> Optional[str]:
     return value.isoformat() if value else None
 
 
+def _to_utc(value: Optional[datetime]) -> Optional[datetime]:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 def _cycle_token() -> str:
     return f"{_now_utc().strftime('%Y%m%d%H%M%S')}{secrets.token_hex(2).upper()}"
 
@@ -88,6 +99,74 @@ def _active_member_ids(db: Session, *, clan_id: int) -> List[int]:
         .all()
     )
     return [int(row.user_id) for row in rows]
+
+
+def _admin_member_ids(db: Session, *, clan_id: int) -> List[int]:
+    rows = (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.clan_id == int(clan_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .order_by(ClanMembership.id.asc())
+        .all()
+    )
+    out: List[int] = []
+    for row in rows:
+        if str(getattr(row, "role", "") or "").lower() == "admin":
+            out.append(int(row.user_id))
+    return list(dict.fromkeys(out))
+
+
+def _notify_once(
+    db: Session,
+    *,
+    user_id: int,
+    kind: str,
+    title: str,
+    message: str,
+    action_url: Optional[str] = None,
+    action_label: Optional[str] = None,
+) -> bool:
+    existing = (
+        db.query(Notification)
+        .filter(Notification.user_id == int(user_id))
+        .filter(Notification.kind == str(kind))
+        .filter(Notification.action_url == action_url)
+        .first()
+    )
+    if existing:
+        return False
+    create_notification(
+        db,
+        user_id=int(user_id),
+        kind=str(kind),
+        title=title,
+        message=message,
+        action_url=action_url,
+        action_label=action_label,
+        commit=False,
+        refresh=False,
+    )
+    return True
+
+
+def _dashboard_focus_url(*, cycle_id: str, round_number: Optional[int] = None) -> str:
+    suffix = f"&round={int(round_number)}" if round_number else ""
+    return f"/app/dashboard?rosca_cycle={cycle_id}{suffix}#focus-commitments"
+
+
+def _money_in_url(*, clan_id: int, expected_payment_id: Optional[int] = None) -> str:
+    suffix = f"&expected_payment_id={int(expected_payment_id)}" if expected_payment_id else ""
+    return f"/app/payment/pool?clan_id={int(clan_id)}{suffix}"
+
+
+def _shop_control_url(*, clan_id: int, cycle_id: str, round_number: int) -> str:
+    return (
+        f"/app/shop-control?clan_id={int(clan_id)}"
+        f"&rosca_cycle={cycle_id}&round={int(round_number)}"
+        "#shop-control-community-packages"
+    )
 
 
 def _validate_member_set(
@@ -325,6 +404,176 @@ def get_rosca_cycle(
     return cycles[0] if cycles else None
 
 
+def _obligation_status(row: ExpectedPayment) -> str:
+    status = str(getattr(row, "status", "") or "").lower()
+    due_at = _to_utc(getattr(row, "due_at", None))
+    if status == "partial":
+        return "partial"
+    if due_at and due_at < _now_utc():
+        return "behind"
+    if due_at and due_at <= _now_utc() + timedelta(days=7):
+        return "watch"
+    return "on_track"
+
+
+def _rosca_obligation_out(row: ExpectedPayment) -> Dict[str, Any]:
+    meta = _safe_meta(getattr(row, "meta_json", None))
+    status_group = _obligation_status(row)
+    round_number = _safe_int(meta.get("round_number"), 0)
+    cycle_id = str(meta.get("rosca_cycle_id") or "")
+    title = str(meta.get("rosca_cycle_title") or "ROSCA cycle").strip()
+    remaining = _d(getattr(row, "remaining_amount", None))
+    amount = _d(getattr(row, "amount", None))
+    due_at = _to_utc(getattr(row, "due_at", None))
+
+    if status_group == "behind":
+        simple_status = "This contribution is overdue and should be handled first."
+    elif status_group == "partial":
+        simple_status = "Part of this contribution has been matched; the balance is still due."
+    elif status_group == "watch":
+        simple_status = "This contribution is due soon."
+    else:
+        simple_status = "This contribution is scheduled and still open."
+
+    return {
+        "id": int(row.id),
+        "kind": "rosca_contribution",
+        "source": ROSCA_SOURCE,
+        "clan_id": int(row.clan_id),
+        "user_id": int(row.user_id),
+        "cycle_id": cycle_id,
+        "cycle_title": title,
+        "round_number": round_number,
+        "total_rounds": _safe_int(meta.get("total_rounds"), 0),
+        "payout_user_id": _safe_int(meta.get("payout_user_id"), 0),
+        "amount": str(amount),
+        "currency": str(row.currency),
+        "paid_amount": str(_d(getattr(row, "paid_amount", None))),
+        "remaining_amount": str(remaining),
+        "due_at": _iso(due_at),
+        "reference_display": str(row.reference_display),
+        "status": str(row.status),
+        "status_group": status_group,
+        "action_url": _money_in_url(
+            clan_id=int(row.clan_id),
+            expected_payment_id=int(row.id),
+        ),
+        "action_label": "Open Money In",
+        "trust_event_source": "expected_payment",
+        "writes_commitment_trust_event": False,
+        "plain_language": simple_status,
+    }
+
+
+def list_my_rosca_obligations(
+    db: Session,
+    *,
+    user_id: int,
+    clan_id: Optional[int] = None,
+    limit: int = 50,
+) -> List[Dict[str, Any]]:
+    query = (
+        db.query(ExpectedPayment)
+        .filter(ExpectedPayment.user_id == int(user_id))
+        .filter(ExpectedPayment.expected_type == "contribution")
+        .filter(ExpectedPayment.status.in_(sorted(ROSCA_ACTIVE_OBLIGATION_STATUSES)))
+        .order_by(ExpectedPayment.due_at.asc(), ExpectedPayment.id.asc())
+    )
+    if clan_id:
+        query = query.filter(ExpectedPayment.clan_id == int(clan_id))
+    query = query.limit(max(1, min(int(limit or 50), 100)))
+
+    obligations: List[Dict[str, Any]] = []
+    for row in query.all():
+        meta = _safe_meta(getattr(row, "meta_json", None))
+        if meta.get("source") != ROSCA_SOURCE:
+            continue
+        obligations.append(_rosca_obligation_out(row))
+    return obligations
+
+
+def notify_rosca_contribution_confirmed(
+    db: Session,
+    *,
+    exp: ExpectedPayment,
+) -> Dict[str, Any]:
+    meta = _safe_meta(getattr(exp, "meta_json", None))
+    if meta.get("source") != ROSCA_SOURCE:
+        return {"ok": True, "created": 0, "reason": "not_rosca"}
+
+    cycle_id = str(meta.get("rosca_cycle_id") or "")
+    round_number = _safe_int(meta.get("round_number"), 0)
+    if not cycle_id or round_number <= 0:
+        return {"ok": True, "created": 0, "reason": "missing_cycle_or_round"}
+
+    created = 0
+    title = str(meta.get("rosca_cycle_title") or "ROSCA cycle").strip()
+    created += int(
+        _notify_once(
+            db,
+            user_id=int(exp.user_id),
+            kind="rosca.contribution_confirmed",
+            title="ROSCA contribution confirmed",
+            message=(
+                f"Your {title} contribution for round {round_number} has been "
+                "matched from Money In. Focus now treats this item as handled."
+            ),
+            action_url=_dashboard_focus_url(
+                cycle_id=cycle_id,
+                round_number=round_number,
+            ),
+            action_label="Open Focus",
+        )
+    )
+
+    round_rows = _rosca_expected_rows(
+        db,
+        clan_id=int(exp.clan_id),
+        cycle_id=cycle_id,
+        limit=5000,
+    )
+    current_round_rows: List[ExpectedPayment] = []
+    for row in round_rows:
+        row_meta = _safe_meta(getattr(row, "meta_json", None))
+        if _safe_int(row_meta.get("round_number"), 0) == round_number:
+            current_round_rows.append(row)
+
+    all_confirmed = bool(current_round_rows) and all(
+        str(row.status).lower() == "confirmed" for row in current_round_rows
+    )
+    payout_recorded = (cycle_id, round_number) in _payout_events(
+        db,
+        clan_id=int(exp.clan_id),
+        cycle_id=cycle_id,
+    )
+    if all_confirmed and not payout_recorded:
+        payout_user_id = _safe_int(meta.get("payout_user_id"), 0)
+        recipients = _admin_member_ids(db, clan_id=int(exp.clan_id))
+        if payout_user_id > 0:
+            recipients.append(payout_user_id)
+        for recipient_user_id in dict.fromkeys(recipients):
+            created += int(
+                _notify_once(
+                    db,
+                    user_id=int(recipient_user_id),
+                    kind="rosca.round_ready",
+                    title="ROSCA payout ready",
+                    message=(
+                        f"All {title} contributions for round {round_number} are "
+                        "confirmed. The community can now record the payout."
+                    ),
+                    action_url=_shop_control_url(
+                        clan_id=int(exp.clan_id),
+                        cycle_id=cycle_id,
+                        round_number=round_number,
+                    ),
+                    action_label="Record payout",
+                )
+            )
+
+    return {"ok": True, "created": created}
+
+
 def create_rosca_cycle(
     db: Session,
     *,
@@ -472,6 +721,20 @@ def create_rosca_cycle(
         refresh=False,
     )
 
+    for member_user_id in members:
+        _notify_once(
+            db,
+            user_id=int(member_user_id),
+            kind="rosca.cycle_started",
+            title="ROSCA cycle started",
+            message=(
+                f"{cleaned_title} has started. Your {ccy} {amount} "
+                "contribution references are now visible in Focus and Money In."
+            ),
+            action_url=_dashboard_focus_url(cycle_id=cycle_id),
+            action_label="Open Focus",
+        )
+
     db.commit()
     return get_rosca_cycle(db, clan_id=int(clan_id), cycle_id=cycle_id) or {
         "cycle_id": cycle_id,
@@ -532,8 +795,26 @@ def record_rosca_payout(
             "external_money_moved_by_gsn": False,
         },
         dedupe_key=f"rosca:payout:{cycle_id}:round:{int(round_number)}",
-        commit=True,
+        commit=False,
         refresh=False,
     )
+
+    _notify_once(
+        db,
+        user_id=int(payout_user_id),
+        kind="rosca.payout_recorded",
+        title="ROSCA payout recorded",
+        message=(
+            f"Round {int(round_number)} payout for {cycle.get('title') or 'ROSCA cycle'} "
+            "has been recorded as completed. GSN recorded the evidence but did not move external money."
+        ),
+        action_url=_dashboard_focus_url(
+            cycle_id=str(cycle_id),
+            round_number=int(round_number),
+        ),
+        action_label="Open Focus",
+    )
+
+    db.commit()
 
     return get_rosca_cycle(db, clan_id=int(clan_id), cycle_id=str(cycle_id)) or cycle

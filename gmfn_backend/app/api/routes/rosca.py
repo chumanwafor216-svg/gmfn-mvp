@@ -14,6 +14,7 @@ from app.db.models import ClanMembership, User
 from app.services.rosca_service import (
     create_rosca_cycle,
     get_rosca_cycle,
+    list_my_rosca_obligations,
     list_rosca_cycles,
     record_rosca_payout,
 )
@@ -98,6 +99,30 @@ def list_cycles(
         "clan_id": int(clan_id),
         "engine_ready": True,
         "cycles": cycles,
+    }
+
+
+@router.get("/obligations/me")
+def list_my_obligations(
+    clan_id: Optional[int] = Query(default=None, ge=1),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    if clan_id:
+        _require_clan_member(db, clan_id=int(clan_id), current_user=current_user)
+
+    obligations = list_my_rosca_obligations(
+        db,
+        user_id=int(current_user.id),
+        clan_id=int(clan_id) if clan_id else None,
+        limit=int(limit),
+    )
+    return {
+        "ok": True,
+        "engine_ready": True,
+        "clan_id": int(clan_id) if clan_id else None,
+        "obligations": obligations,
     }
 
 

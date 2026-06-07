@@ -13,6 +13,7 @@ import {
   getMarketplaceBroadcasts,
   getMe,
   getMyNotifications,
+  getMyRoscaObligations,
   getMyTrustSlip,
   getPublicMarketplaceShopByGmfnId,
   getSelectedClanId,
@@ -274,6 +275,28 @@ type FocusCommitmentSummary = {
   completedCount: number;
   nextReviewLabel: string;
   disciplineLine: string;
+};
+
+type RoscaFocusObligation = {
+  id: number;
+  kind?: string;
+  source?: string;
+  clan_id?: number;
+  cycle_id?: string;
+  cycle_title?: string;
+  round_number?: number;
+  total_rounds?: number;
+  amount?: string;
+  currency?: string;
+  remaining_amount?: string;
+  due_at?: string | null;
+  reference_display?: string;
+  status?: string;
+  status_group?: "on_track" | "watch" | "behind" | "partial" | string;
+  action_url?: string;
+  action_label?: string;
+  plain_language?: string;
+  writes_commitment_trust_event?: boolean;
 };
 
 const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v6";
@@ -3044,6 +3067,11 @@ export default function DashboardPage() {
   const [focusProgressDrafts, setFocusProgressDrafts] = useState<
     Record<string, string>
   >({});
+  const [roscaObligations, setRoscaObligations] = useState<
+    RoscaFocusObligation[]
+  >([]);
+  const [roscaObligationsLoading, setRoscaObligationsLoading] =
+    useState<boolean>(false);
   const [attentionState, setAttentionState] = useState(() =>
     normalizeDashboardAttentionStoredState(
       readLocalJSON(
@@ -3402,6 +3430,55 @@ export default function DashboardPage() {
     let alive = true;
     let refreshTimer: number | null = null;
 
+    async function refreshRoscaObligations() {
+      if (!alive) return;
+      setRoscaObligationsLoading(true);
+
+      try {
+        const res = await getMyRoscaObligations({
+          clan_id: selectedClanId || undefined,
+          limit: 12,
+        }).catch(() => ({ obligations: [] }));
+
+        if (!alive) return;
+
+        const rows = Array.isArray((res as any)?.obligations)
+          ? ((res as any).obligations as RoscaFocusObligation[])
+          : [];
+        setRoscaObligations(rows);
+      } finally {
+        if (alive) setRoscaObligationsLoading(false);
+      }
+    }
+
+    refreshRoscaObligations();
+
+    if (typeof window !== "undefined") {
+      const handleVisibilityRefresh = () => {
+        if (document.visibilityState === "visible") refreshRoscaObligations();
+      };
+
+      window.addEventListener("focus", refreshRoscaObligations);
+      document.addEventListener("visibilitychange", handleVisibilityRefresh);
+      refreshTimer = window.setInterval(refreshRoscaObligations, 60000);
+
+      return () => {
+        alive = false;
+        window.removeEventListener("focus", refreshRoscaObligations);
+        document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+        if (refreshTimer) window.clearInterval(refreshTimer);
+      };
+    }
+
+    return () => {
+      alive = false;
+    };
+  }, [selectedClanId]);
+
+  useEffect(() => {
+    let alive = true;
+    let refreshTimer: number | null = null;
+
     async function refreshNotices() {
       if (!alive) return;
 
@@ -3679,6 +3756,23 @@ export default function DashboardPage() {
     () => summarizeFocusCommitments(focusCommitments, focusEvents),
     [focusCommitments, focusEvents]
   );
+  const roscaFocusSummary = useMemo(() => {
+    const active = roscaObligations.filter((item) => {
+      const status = safeStr(item.status).toLowerCase();
+      return status !== "confirmed" && status !== "cancelled";
+    });
+
+    return {
+      active,
+      onTrackCount: active.filter((item) => item.status_group === "on_track")
+        .length,
+      watchCount: active.filter(
+        (item) => item.status_group === "watch" || item.status_group === "partial"
+      ).length,
+      behindCount: active.filter((item) => item.status_group === "behind")
+        .length,
+    };
+  }, [roscaObligations]);
 
   const dashboardNoticeSummary = useMemo<DashboardNoticeSummary>(() => {
     const items: DashboardNoticeItem[] = [];
@@ -4834,6 +4928,13 @@ export default function DashboardPage() {
         .length,
     [focusCommitments]
   );
+  const activeRoscaObligationCount = roscaFocusSummary.active.length;
+  const combinedFocusOnTrackCount =
+    focusSummary.onTrackCount + roscaFocusSummary.onTrackCount;
+  const combinedFocusWatchCount =
+    focusSummary.watchCount + roscaFocusSummary.watchCount;
+  const combinedFocusBehindCount =
+    focusSummary.behindCount + roscaFocusSummary.behindCount;
 
   const userOperationalClass = useMemo(
     () =>
@@ -11059,10 +11160,8 @@ export default function DashboardPage() {
                   Your Focus Commitments
                 </span>
                 <span style={dashboardAccordionSummaryStyle}>
-                  {activeFocusCount > 0
-                    ? `${activeFocusCount} active commitment${
-                        activeFocusCount === 1 ? "" : "s"
-                      } visible.`
+                  {activeFocusCount > 0 || activeRoscaObligationCount > 0
+                    ? `${activeFocusCount} personal, ${activeRoscaObligationCount} ROSCA linked.`
                     : "No active commitment yet."}
                 </span>
               </span>
@@ -11070,29 +11169,29 @@ export default function DashboardPage() {
               <span
                 style={{
                   ...dashboardAccordionStatusStyle(
-                    focusSummary.behindCount > 0
+                    combinedFocusBehindCount > 0
                       ? "rgba(254,242,242,0.92)"
-                      : focusSummary.watchCount > 0
+                      : combinedFocusWatchCount > 0
                       ? "rgba(255,251,235,0.94)"
                       : "rgba(240,253,244,0.92)",
-                    focusSummary.behindCount > 0
+                    combinedFocusBehindCount > 0
                       ? "#991B1B"
-                      : focusSummary.watchCount > 0
+                      : combinedFocusWatchCount > 0
                       ? "#92400E"
                       : "#166534",
-                    focusSummary.behindCount > 0
+                    combinedFocusBehindCount > 0
                       ? "1px solid rgba(239,68,68,0.16)"
-                      : focusSummary.watchCount > 0
+                      : combinedFocusWatchCount > 0
                       ? "1px solid rgba(245,158,11,0.16)"
                       : "1px solid rgba(34,197,94,0.16)"
                   ),
                   display: isPhone ? "none" : "inline-flex",
                 }}
               >
-                {focusSummary.behindCount > 0
-                  ? `Behind ${focusSummary.behindCount}`
-                  : focusSummary.watchCount > 0
-                  ? `Watch ${focusSummary.watchCount}`
+                {combinedFocusBehindCount > 0
+                  ? `Behind ${combinedFocusBehindCount}`
+                  : combinedFocusWatchCount > 0
+                  ? `Watch ${combinedFocusWatchCount}`
                   : "Steady"}
               </span>
 
@@ -11184,7 +11283,7 @@ export default function DashboardPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {focusSummary.onTrackCount}
+                    {combinedFocusOnTrackCount}
                   </div>
                 </div>
 
@@ -11207,7 +11306,7 @@ export default function DashboardPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {focusSummary.watchCount}
+                    {combinedFocusWatchCount}
                   </div>
                 </div>
 
@@ -11230,7 +11329,7 @@ export default function DashboardPage() {
                       lineHeight: 1,
                     }}
                   >
-                    {focusSummary.behindCount}
+                    {combinedFocusBehindCount}
                   </div>
                 </div>
               </div>
@@ -11241,6 +11340,171 @@ export default function DashboardPage() {
                 {focusSummary.disciplineLine}
               </div>
             ) : null}
+
+            <div
+              style={{
+                marginTop: isPhone ? 10 : 14,
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(214,170,69,0.18)",
+                display: "grid",
+                gap: isPhone ? 9 : 10,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <DashboardSectionLabel label="ROSCA linked responsibilities" />
+                  <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                    These come from ROSCA Money In records. Focus shows them here
+                    but does not create commitment TrustEvents.
+                  </div>
+                </div>
+                <span style={badge(true)}>
+                  {roscaObligationsLoading
+                    ? "Checking"
+                    : `${activeRoscaObligationCount} open`}
+                </span>
+              </div>
+
+              {roscaFocusSummary.active.length > 0 ? (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {roscaFocusSummary.active.slice(0, 4).map((item) => {
+                    const statusKey = safeStr(item.status_group).toLowerCase();
+                    const statusTone =
+                      statusKey === "behind"
+                        ? {
+                            label: "Behind",
+                            bg: "#FFF5F5",
+                            text: "#991B1B",
+                            border: "1px solid rgba(239,68,68,0.16)",
+                          }
+                        : statusKey === "watch" || statusKey === "partial"
+                        ? {
+                            label: statusKey === "partial" ? "Partial" : "Watch",
+                            bg: "#FFFBEF",
+                            text: "#92400E",
+                            border: "1px solid rgba(245,158,11,0.16)",
+                          }
+                        : {
+                            label: "On track",
+                            bg: "#F3FBF5",
+                            text: "#166534",
+                            border: "1px solid rgba(34,197,94,0.16)",
+                          };
+                    const amountLine = `${safeStr(item.currency) || "GBP"} ${
+                      safeStr(item.remaining_amount || item.amount) || "0.00"
+                    }`;
+                    const target = normalizeActionTargetPath(
+                      item.action_url || DASHBOARD_TARGETS.MONEY_IN
+                    );
+
+                    return (
+                      <div
+                        key={`rosca-focus-${item.id}`}
+                        style={{
+                          ...statTile(statusTone.bg, statusTone.border),
+                          display: "grid",
+                          gridTemplateColumns: isCompact
+                            ? "1fr"
+                            : "minmax(0, 1fr) auto",
+                          gap: isPhone ? 8 : 10,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div
+                            style={{
+                              color: "#0B1F33",
+                              fontWeight: 900,
+                              fontSize: isPhone ? 14 : 15,
+                              lineHeight: 1.3,
+                              overflowWrap: "anywhere",
+                            }}
+                          >
+                            {safeStr(item.cycle_title) || "ROSCA cycle"} - Round{" "}
+                            {Number(item.round_number || 0) || "?"}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 6,
+                              display: "flex",
+                              gap: 7,
+                              flexWrap: "wrap",
+                              alignItems: "center",
+                            }}
+                          >
+                            <span
+                              style={{
+                                ...badge(false),
+                                background: statusTone.bg,
+                                color: statusTone.text,
+                              }}
+                            >
+                              {statusTone.label}
+                            </span>
+                            <span style={badge(false)}>{amountLine}</span>
+                            {safeStr(item.due_at) ? (
+                              <span style={badge(false)}>
+                                Due {formatDateLabel(item.due_at || "")}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div
+                            style={{
+                              marginTop: 7,
+                              ...helperText(),
+                              fontSize: 12,
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            {safeStr(item.plain_language) ||
+                              "Open Money In to handle this ROSCA contribution."}
+                          </div>
+                          {safeStr(item.reference_display) ? (
+                            <div
+                              style={{
+                                marginTop: 6,
+                                ...helperText(),
+                                fontSize: 11,
+                                overflowWrap: "anywhere",
+                              }}
+                            >
+                              Ref: {safeStr(item.reference_display)}
+                            </div>
+                          ) : null}
+                        </div>
+
+                        <StableButton
+                          debugId={`dashboard.focus.rosca.open.${item.id}`}
+                          type="button"
+                          onClick={(event) => openDashboardRoute(event, target)}
+                          onPointerDown={consumeDashboardPointerEvent}
+                          style={focusCommitmentButton({
+                            minHeight: isPhone ? 42 : 40,
+                            padding: isPhone ? "8px 10px" : "8px 12px",
+                          })}
+                        >
+                          {safeStr(item.action_label) || "Open Money In"}
+                        </StableButton>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ ...helperText(), fontSize: 13 }}>
+                  {roscaObligationsLoading
+                    ? "Checking open ROSCA responsibilities."
+                    : "No open ROSCA responsibility right now."}
+                </div>
+              )}
+            </div>
 
             {focusComposerOpen ? (
               <div

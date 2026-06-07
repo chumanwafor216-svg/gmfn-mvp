@@ -203,6 +203,10 @@ def _apply_pool_contribution(
         refresh=False,
     )
 
+    from app.services.rosca_service import notify_rosca_contribution_confirmed
+
+    notify_rosca_contribution_confirmed(db, exp=exp)
+
     db.commit()
     db.refresh(pe)
     db.refresh(exp)

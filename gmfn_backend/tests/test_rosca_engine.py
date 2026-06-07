@@ -2,7 +2,9 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import text
 
-from app.db.database import engine
+from app.db.database import Base as BankBase
+from app.db.database import SessionLocal, engine
+from app.services.reconciliation_service import create_bank_event, reconcile_batch
 
 
 def _seed_rosca_credit(quantity: int = 1) -> None:
@@ -135,6 +137,13 @@ def test_rosca_cycle_creation_consumes_credit_and_creates_contribution_schedule(
     assert pool_count == 4
     assert started_event is not None
 
+    obligations_res = client.get("/rosca/obligations/me?clan_id=1")
+    assert obligations_res.status_code == 200
+    obligations = obligations_res.json()["obligations"]
+    assert len(obligations) == 2
+    assert obligations[0]["source"] == "rosca.cycle"
+    assert obligations[0]["writes_commitment_trust_event"] is False
+
 
 def test_rosca_cycle_creation_requires_paid_credit(
     client,
@@ -218,3 +227,122 @@ def test_rosca_payout_requires_confirmed_round_then_records_payout(
 
     assert event is not None
     assert '"external_money_moved_by_gsn": false' in event.meta_json
+
+
+def test_rosca_notifications_are_created_without_commitment_trust_events(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_credit()
+
+    res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Notification circle",
+            "contribution_amount": "15.00",
+            "currency": "GBP",
+        },
+    )
+    assert res.status_code == 200
+
+    with engine.begin() as conn:
+        cycle_notifications = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM notifications
+                WHERE kind = 'rosca.cycle_started'
+                """
+            )
+        ).scalar_one()
+        commitment_events = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type LIKE 'commitment.%'
+                """
+            )
+        ).scalar_one()
+
+    assert cycle_notifications == 2
+    assert commitment_events == 0
+
+
+def test_rosca_reconciliation_creates_contribution_and_round_ready_notifications(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_credit()
+
+    create_res = client.post(
+        "/rosca/cycles",
+        json={
+            "clan_id": 1,
+            "title": "Bank matched circle",
+            "contribution_amount": "10.00",
+            "currency": "GBP",
+        },
+    )
+    assert create_res.status_code == 200
+    cycle = create_res.json()["cycle"]
+    round_one_refs = [
+        row["reference_display"]
+        for row in cycle["rounds"][0]["contributions"]
+    ]
+
+    BankBase.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        for index, reference in enumerate(round_one_refs, start=1):
+            create_bank_event(
+                db,
+                clan_id=1,
+                source_type="statement_csv",
+                source_id=f"rosca-file-{index}",
+                direction="credit",
+                amount="10.00",
+                currency="GBP",
+                reference_raw=reference,
+                description_raw="rosca contribution",
+                bank_txn_id=f"ROSCA-TXN-{index}",
+            )
+
+        stats = reconcile_batch(db, clan_id=1, limit=50)
+        assert stats["confirmed"] >= 2
+    finally:
+        db.close()
+
+    with engine.begin() as conn:
+        confirmed_notifications = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM notifications
+                WHERE kind = 'rosca.contribution_confirmed'
+                """
+            )
+        ).scalar_one()
+        ready_notification = conn.execute(
+            text(
+                """
+                SELECT user_id, action_url
+                FROM notifications
+                WHERE kind = 'rosca.round_ready'
+                """
+            )
+        ).first()
+
+    assert confirmed_notifications == 2
+    assert ready_notification is not None
+    assert ready_notification.user_id == 1
+    assert "rosca_cycle=" in ready_notification.action_url
+
+    obligations_res = client.get("/rosca/obligations/me?clan_id=1")
+    assert obligations_res.status_code == 200
+    obligations = obligations_res.json()["obligations"]
+    assert len(obligations) == 1
+    assert obligations[0]["round_number"] == 2

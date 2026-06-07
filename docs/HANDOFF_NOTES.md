@@ -1,3 +1,64 @@
+### ROSCA connected to Focus Commitments and Notifications (2026-06-07)
+
+- Trigger:
+  - product owner asked whether ROSCA needed to connect to Focus Commitment or
+    Notifications, then decided to get both done while keeping existing
+    TrustEvent truth intact.
+- Routes/screens affected:
+  - backend ROSCA obligations:
+    `GET /rosca/obligations/me?clan_id=...&limit=...`;
+  - ROSCA cycle lifecycle:
+    `POST /rosca/cycles`,
+    bank reconciliation of ROSCA `ExpectedPayment` contribution rows,
+    `POST /rosca/cycles/{cycle_id}/rounds/{round_number}/payout`;
+  - member Dashboard Focus section:
+    `/app/dashboard#focus-commitments`;
+  - Notifications:
+    `/app/notifications`.
+- Backend changes:
+  - `gmfn_backend/app/services/rosca_service.py` now emits idempotent
+    notifications for:
+    - `rosca.cycle_started`;
+    - `rosca.contribution_confirmed`;
+    - `rosca.round_ready`;
+    - `rosca.payout_recorded`;
+  - `gmfn_backend/app/services/bank_application_service.py` calls the ROSCA
+    confirmation notifier when a reconciled ROSCA contribution confirms its
+    linked pool deposit;
+  - `GET /rosca/obligations/me` returns current-user open ROSCA contribution
+    obligations derived from existing `expected_payments`, including amount,
+    due date, round number, reference, status group, Money In action URL, and
+    `writes_commitment_trust_event: false`.
+- Frontend changes:
+  - `frontend/src/lib/api.ts` added `getMyRoscaObligations(...)`;
+  - `frontend/src/pages/DashboardPage.tsx` Focus Commitments now shows a compact
+    "ROSCA linked responsibilities" block with backend obligation rows and a
+    direct `Open Money In` action;
+  - Focus metrics include ROSCA pressure counts, but the "Max 2 active" rule
+    remains personal-commitment-only;
+  - Dashboard copy explicitly states ROSCA rows come from Money In records and
+    do not create commitment TrustEvents.
+- TrustEvent boundary:
+  - no new `commitment.*` TrustEvents are created for ROSCA obligations;
+  - ROSCA evidence remains under existing ROSCA/payment events:
+    `rosca.cycle.started`, `pool.deposit.confirmed.auto`, and
+    `rosca.round.payout_recorded`.
+- Verification passed:
+  - `python -m pytest tests/test_rosca_engine.py tests/test_community_package_usage.py tests/test_spotlight_subscription_pricing.py -q`
+    (`21 passed`, SQLite datetime deprecation warnings only);
+  - `npm exec -- eslint src/pages/DashboardPage.tsx src/lib/api.ts`;
+  - sandboxed `npm run build` failed with the known Windows `esbuild spawn
+    EPERM`, then approved outside-sandbox `npm run build` from `frontend/`
+    passed.
+- Unabated truth:
+  - this connects ROSCA visibility and action prompts; it still does not move
+    external payout money;
+  - the dashboard display is not a substitute for reconciliation. A ROSCA
+    obligation disappears from Focus only when the underlying expected payment
+    is no longer open;
+  - `frontend/src/components/StableButton.tsx` remains a pre-existing unrelated
+    worktree modification and was not edited by this pass.
+
 ### ROSCA deterministic cycle engine added (2026-06-07)
 
 - Trigger:
