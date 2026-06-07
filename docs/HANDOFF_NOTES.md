@@ -37393,3 +37393,60 @@ GSN-branded invite composer and invite-entry continuity.
     passing. Because the product shelf is dynamic and media-dependent, the next
     hard proof for remaining phone complaints should be runtime phone-width
     screenshot/tap testing against real public shop URLs.
+
+### Shop Control button stability baseline (2026-06-07)
+
+- Trigger:
+  - product owner said "next" after the Public Shop / Shop Gallery
+    page-by-page jumpy-button pass.
+- Shop Control count:
+  - `ShopControlPage` source now audits at 39 stable action templates:
+    11 `PrimaryButton`, 18 `SecondaryButton`, 2 `SubtleButton`, 3
+    `StableButton`, and 5 `StableCtaLink`.
+  - The page has 24 native fields. Two of those are audited file-input action
+    roots for Spotlight image/video upload:
+    `shop-control.spotlight.image-file` and
+    `shop-control.spotlight.video-file`.
+  - The remaining 22 native fields are ordinary form inputs/textareas for shop
+    details, spotlight copy, ROSCA, meeting reminders, meeting summaries, and
+    duplicate details editing.
+  - `/app/shop-control` is in AppLayout focused-task mode. On mobile it has no
+    bottom rail; the shell contributes 12 controls: 2 top controls, 5 drawer
+    controls, and 5 Tools-panel controls.
+  - Whole-route mobile Shop Control baseline is therefore 53 action roots
+    (39 page stable actions + 2 file-input action roots + 12 focused shell
+    controls), plus the 22 ordinary native fields.
+- System guard changes:
+  - Added `frontend/tools/audit-shop-control-button-inventory.mjs`.
+  - Added `npm --prefix frontend run audit:shop-control-button-inventory`.
+  - The audit locks Shop Control action counts, debug namespace/order,
+    no-raw-button/no-raw-anchor behavior, file-upload action IDs, hero shortcut
+    order, ROSCA package-to-cycle controls, meeting reminder/WhatsApp/summary
+    controls, and the focused-task mobile shell around the page.
+  - The audit also checks the shared `StableButton` system-level tap behavior
+    that Shop Control relies on: debounce, action-root IDs, guarded pointer
+    handling, and movement-lock styling.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-shop-actions`.
+  - Passed `npm --prefix frontend run audit:shop-assets-slots`.
+  - Passed `npm --prefix frontend run audit:spotlight-controls`.
+  - Passed `npm --prefix frontend run audit:spotlight-quota`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint tools/audit-shop-control-button-inventory.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Unabated truth:
+  - This pass tightened Shop Control's system-level line audit and mobile shell
+    inventory. It did not restyle or visually polish Shop Control.
+  - The shared stable-button system already carries the main anti-jump/tap
+    protections; adding page-local fixed heights to all 39 Shop Control
+    actions would be broader visual churn and could clip long labels. The
+    better next proof step is runtime phone-width testing if this page still
+    feels jumpy in hand.
