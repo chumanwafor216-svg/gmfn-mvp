@@ -140,6 +140,33 @@ type CommunityPackageStatus = {
   packages?: CommunityPackageStatusItem[];
 };
 
+type RoscaRoundSummary = {
+  round_number?: number | null;
+  payout_user_id?: number | null;
+  payout_amount?: string | null;
+  due_at?: string | null;
+  expected_count?: number | null;
+  confirmed_count?: number | null;
+  ready_for_payout?: boolean | null;
+  payout_recorded?: boolean | null;
+  status?: string | null;
+};
+
+type RoscaCycleSummary = {
+  cycle_id?: string | null;
+  title?: string | null;
+  status?: string | null;
+  currency?: string | null;
+  contribution_amount?: string | null;
+  total_rounds?: number | null;
+  total_expected_contributions?: number | null;
+  total_confirmed_contributions?: number | null;
+  total_recorded_payouts?: number | null;
+  member_user_ids?: number[] | null;
+  payout_order_user_ids?: number[] | null;
+  rounds?: RoscaRoundSummary[];
+};
+
 type TrustSlipFeatureSummary = {
   merchant_verify_active?: boolean | null;
   merchant_verify_subscription_required?: boolean | null;
@@ -603,6 +630,15 @@ export default function ShopControlPage() {
   const [expectedPayments, setExpectedPayments] = useState<ExpectedPaymentRecord[]>([]);
   const [communityPackageStatus, setCommunityPackageStatus] =
     useState<CommunityPackageStatus | null>(null);
+  const [roscaCycles, setRoscaCycles] = useState<RoscaCycleSummary[]>([]);
+  const [roscaTitle, setRoscaTitle] = useState("Community ROSCA cycle");
+  const [roscaContributionAmount, setRoscaContributionAmount] = useState("25.00");
+  const [roscaCurrency, setRoscaCurrency] = useState("GBP");
+  const [roscaIntervalDays, setRoscaIntervalDays] = useState("30");
+  const [startingRoscaCycle, setStartingRoscaCycle] = useState(false);
+  const [recordingRoscaPayoutKey, setRecordingRoscaPayoutKey] = useState<string | null>(
+    null
+  );
   const [trustSlipFeature, setTrustSlipFeature] = useState<TrustSlipFeatureSummary | null>(
     null
   );
@@ -925,6 +961,7 @@ export default function ShopControlPage() {
 
         const packageStatusPath =
           `/api/payment-instructions/community-package/status?clan_id=${shopContextClanId || 0}&shop_id=${shopItem.id}`;
+        const roscaCyclesPath = `/api/rosca/cycles?clan_id=${shopContextClanId || 0}`;
 
         const [
           broadcastsRes,
@@ -933,6 +970,7 @@ export default function ShopControlPage() {
           expectedRes,
           trustSlipRes,
           packageStatusRes,
+          roscaCyclesRes,
         ] =
           await Promise.all([
           apiJson<any>(
@@ -945,6 +983,7 @@ export default function ShopControlPage() {
           apiJson<any>(expectedPaymentsPath).catch(() => []),
           apiJson<any>("/api/trust-slips/me").catch(() => null),
           apiJson<any>(packageStatusPath).catch(() => null),
+          apiJson<any>(roscaCyclesPath).catch(() => null),
         ]);
 
         const visibleSpotlights = Array.isArray(broadcastsRes?.items)
@@ -973,12 +1012,18 @@ export default function ShopControlPage() {
         setCommunityPackageStatus(
           (packageStatusRes || null) as CommunityPackageStatus | null
         );
+        setRoscaCycles(
+          Array.isArray(roscaCyclesRes?.cycles)
+            ? (roscaCyclesRes.cycles as RoscaCycleSummary[])
+            : []
+        );
       } else {
         setSpotlights([]);
         setVaultLinks([]);
         setExpectedPayments([]);
         setTrustSlipFeature(null);
         setCommunityPackageStatus(null);
+        setRoscaCycles([]);
       }
     } finally {
       if (!background) {
@@ -1231,7 +1276,7 @@ export default function ShopControlPage() {
     const packageLabels: Array<[string, string]> = [
       ["extra_shop_blocks", "Shop blocks"],
       ["extra_members", "Member places"],
-      ["rosca_cycle", "ROSCA records"],
+      ["rosca_cycle", "ROSCA cycles"],
       ["community_meeting_pack", "Meeting records"],
     ];
 
@@ -1243,6 +1288,21 @@ export default function ShopControlPage() {
       return `${label}: ${readyText}${remaining > 0 ? `, ${engineText}` : ""}`;
     });
   }, [communityPackageByCode]);
+
+  const latestRoscaCycle = useMemo(() => {
+    if (!roscaCycles.length) return null;
+    return roscaCycles[roscaCycles.length - 1] || null;
+  }, [roscaCycles]);
+
+  const nextRoscaPayoutRound = useMemo(() => {
+    const rounds = Array.isArray(latestRoscaCycle?.rounds)
+      ? latestRoscaCycle.rounds
+      : [];
+    return (
+      rounds.find((round) => round?.ready_for_payout && !round?.payout_recorded) ||
+      null
+    );
+  }, [latestRoscaCycle]);
 
   const activePaidSpotlights = useMemo(
     () =>
@@ -1657,7 +1717,84 @@ export default function ShopControlPage() {
     }
   }
 
-  async function useCommunityPackageUnit(packageCode: string, label: string) {
+  async function startRoscaCycle() {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    const amount = Number(roscaContributionAmount || 0);
+    const interval = Number(roscaIntervalDays || 30);
+    if (!clanId) {
+      showNotice("error", "Choose a community first.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showNotice("error", "Enter a ROSCA contribution amount above zero.");
+      return;
+    }
+
+    setStartingRoscaCycle(true);
+    try {
+      const result = await apiJson<any>("/api/rosca/cycles", {
+        method: "POST",
+        body: JSON.stringify({
+          clan_id: clanId,
+          title: safeStr(roscaTitle) || "Community ROSCA cycle",
+          contribution_amount: amount.toFixed(2),
+          currency: safeStr(roscaCurrency).toUpperCase() || "GBP",
+          interval_days: Number.isFinite(interval) && interval > 0 ? Math.floor(interval) : 30,
+          note: "Started from Shop Control community packages.",
+        }),
+      });
+
+      await loadPage({ background: true });
+      showNotice(
+        "success",
+        firstTruthy(
+          result?.message,
+          "ROSCA cycle started. Member contribution references are ready."
+        )
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "ROSCA cycle could not be started.");
+    } finally {
+      setStartingRoscaCycle(false);
+    }
+  }
+
+  async function recordRoscaPayout(cycleId: string, roundNumber: number) {
+    const clanId = Number(shop?.clan_id || selectedClanId || 0);
+    if (!clanId || !cycleId || !roundNumber) {
+      showNotice("error", "ROSCA payout status is not ready yet.");
+      return;
+    }
+
+    const busyKey = `${cycleId}:${roundNumber}`;
+    setRecordingRoscaPayoutKey(busyKey);
+    try {
+      const result = await apiJson<any>(
+        `/api/rosca/cycles/${encodeURIComponent(cycleId)}/rounds/${roundNumber}/payout?clan_id=${clanId}`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            note: "Recorded from Shop Control after confirmed contributions.",
+          }),
+        }
+      );
+
+      await loadPage({ background: true });
+      showNotice(
+        "success",
+        firstTruthy(
+          result?.message,
+          "ROSCA payout recorded. GSN did not execute an external payout."
+        )
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "ROSCA payout could not be recorded.");
+    } finally {
+      setRecordingRoscaPayoutKey(null);
+    }
+  }
+
+  async function recordCommunityPackageUnit(packageCode: string, label: string) {
     const clanId = Number(shop?.clan_id || selectedClanId || 0);
     if (!clanId) {
       showNotice("error", "Choose a community first.");
@@ -3350,27 +3487,138 @@ export default function ShopControlPage() {
                 Meeting pack
               </SecondaryButton>
             </div>
+            <div
+              style={{
+                marginTop: 12,
+                ...innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)"),
+                border: "1px solid rgba(13,95,168,0.10)",
+              }}
+            >
+              <div style={sectionLabel()}>ROSCA engine</div>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "1.2fr 0.8fr 0.7fr 0.7fr",
+                  gap: 10,
+                  alignItems: "end",
+                }}
+              >
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Cycle name
+                  </div>
+                  <input
+                    value={roscaTitle}
+                    onChange={(event) => setRoscaTitle(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    placeholder="Community ROSCA cycle"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Contribution
+                  </div>
+                  <input
+                    value={roscaContributionAmount}
+                    onChange={(event) => setRoscaContributionAmount(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    inputMode="decimal"
+                    placeholder="25.00"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Currency
+                  </div>
+                  <input
+                    value={roscaCurrency}
+                    onChange={(event) => setRoscaCurrency(event.target.value.toUpperCase())}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    maxLength={8}
+                    placeholder="GBP"
+                  />
+                </label>
+                <label style={{ display: "block" }}>
+                  <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                    Days
+                  </div>
+                  <input
+                    value={roscaIntervalDays}
+                    onChange={(event) => setRoscaIntervalDays(event.target.value)}
+                    style={{ ...inputStyle(), marginTop: 6 }}
+                    inputMode="numeric"
+                    placeholder="30"
+                  />
+                </label>
+              </div>
+              <div style={{ marginTop: 12, ...controlGrid(isCompact, 178) }}>
+                <PrimaryButton
+                  onClick={startRoscaCycle}
+                  disabled={
+                    shopActionsLocked ||
+                    startingRoscaCycle ||
+                    safePositiveNumber(
+                      communityPackageByCode.get("rosca_cycle")?.active_remaining,
+                      0
+                    ) < 1
+                  }
+                  busy={startingRoscaCycle}
+                  busyLabel="Starting..."
+                  fullWidth
+                  debugId="shop-control.rosca.start-cycle"
+                >
+                  Start ROSCA cycle
+                </PrimaryButton>
+                <SecondaryButton
+                  onClick={() =>
+                    nextRoscaPayoutRound && latestRoscaCycle?.cycle_id
+                      ? recordRoscaPayout(
+                          String(latestRoscaCycle.cycle_id),
+                          Number(nextRoscaPayoutRound.round_number || 0)
+                        )
+                      : showNotice(
+                          "info",
+                          "No ROSCA round is ready for payout recording yet."
+                        )
+                  }
+                  disabled={
+                    shopActionsLocked ||
+                    !nextRoscaPayoutRound ||
+                    !latestRoscaCycle?.cycle_id ||
+                    Boolean(recordingRoscaPayoutKey)
+                  }
+                  busy={
+                    Boolean(nextRoscaPayoutRound) &&
+                    recordingRoscaPayoutKey ===
+                      `${latestRoscaCycle?.cycle_id}:${nextRoscaPayoutRound?.round_number}`
+                  }
+                  busyLabel="Recording..."
+                  fullWidth
+                  debugId="shop-control.rosca.record-payout"
+                >
+                  Record payout
+                </SecondaryButton>
+              </div>
+              <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
+                {latestRoscaCycle ? (
+                  <>
+                    Latest cycle: {firstTruthy(latestRoscaCycle.title, "ROSCA cycle")} -{" "}
+                    {safePositiveNumber(latestRoscaCycle.total_confirmed_contributions, 0)} /{" "}
+                    {safePositiveNumber(latestRoscaCycle.total_expected_contributions, 0)}{" "}
+                    contributions confirmed -{" "}
+                    {safePositiveNumber(latestRoscaCycle.total_recorded_payouts, 0)} /{" "}
+                    {safePositiveNumber(latestRoscaCycle.total_rounds, 0)} payouts recorded.
+                  </>
+                ) : (
+                  "Starting a cycle creates member Money In references and round payout readiness. It does not move external money by itself."
+                )}
+              </div>
+            </div>
             <div style={{ marginTop: 12, ...controlGrid(isCompact, 168) }}>
               <SecondaryButton
-                onClick={() => useCommunityPackageUnit("rosca_cycle", "ROSCA cycle")}
-                disabled={
-                  shopActionsLocked ||
-                  Boolean(usingCommunityPackageCode) ||
-                  safePositiveNumber(
-                    communityPackageByCode.get("rosca_cycle")?.active_remaining,
-                    0
-                  ) < 1
-                }
-                busy={usingCommunityPackageCode === "rosca_cycle"}
-                busyLabel="Recording..."
-                fullWidth
-                debugId="shop-control.package.use-rosca-cycle"
-              >
-                Use ROSCA unit
-              </SecondaryButton>
-              <SecondaryButton
                 onClick={() =>
-                  useCommunityPackageUnit("community_meeting_pack", "Meeting pack")
+                  recordCommunityPackageUnit("community_meeting_pack", "Meeting pack")
                 }
                 disabled={
                   shopActionsLocked ||
@@ -3389,8 +3637,9 @@ export default function ShopControlPage() {
               </SecondaryButton>
             </div>
             <div style={{ marginTop: 10, ...helperText(), fontSize: 12 }}>
-              Use records the paid unit. The full ROSCA contribution and payout engine
-              still needs deterministic execution states before live cycle handling.
+              Meeting packs are still record-only. ROSCA now creates contribution
+              references and records payout completion, but real external money movement
+              remains outside this button.
             </div>
           </div>
         </div>

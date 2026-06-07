@@ -1,3 +1,69 @@
+### ROSCA deterministic cycle engine added (2026-06-07)
+
+- Trigger:
+  - product owner asked to finish ROSCA after confirming the previous state was
+    only paid package credit recording.
+- Routes/screens affected:
+  - backend ROSCA engine:
+    `GET /rosca/cycles?clan_id=...`,
+    `GET /rosca/cycles/{cycle_id}?clan_id=...`,
+    `POST /rosca/cycles`,
+    `POST /rosca/cycles/{cycle_id}/rounds/{round_number}/payout?clan_id=...`;
+  - community package status:
+    `GET /payment-instructions/community-package/status`;
+  - old generic package-use route:
+    `POST /payment-instructions/community-package/use`;
+  - owner Shop Control paid tools:
+    `/app/shop-control`.
+- Backend changes:
+  - added `gmfn_backend/app/services/rosca_service.py`;
+  - added `gmfn_backend/app/api/routes/rosca.py` and registered it in
+    `gmfn_backend/app/api/router.py`;
+  - ROSCA cycle creation now consumes one active `rosca_cycle` entitlement;
+  - the engine creates one deterministic `ExpectedPayment` contribution per
+    member per round, using existing `expected_payments` with
+    `expected_type='contribution'` and `meta_json.source='rosca.cycle'`;
+  - each contribution is tied to a pending `PoolEvent` so normal bank
+    reconciliation can confirm contribution Money In;
+  - cycle status is derived from existing expected-payment rows and
+    TrustEvents, without adding migrations or new tables;
+  - round payout recording is blocked until every contribution in the round is
+    confirmed;
+  - payout recording writes `rosca.round.payout_recorded` with
+    `external_money_moved_by_gsn: false`, because GSN still does not execute
+    external payouts in this pilot build.
+- Package truth changes:
+  - `rosca_cycle` package status now reports `consumer:
+    rosca_cycle_engine` and `engine_ready: true`;
+  - the old generic `/community-package/use` route now rejects `rosca_cycle`
+    and tells callers to use the ROSCA engine, preventing a paid unit from
+    being spent on a non-cycle placeholder;
+  - `community_meeting_pack` remains record-only.
+- Frontend changes:
+  - `ShopControlPage` now loads `/api/rosca/cycles` for the selected community;
+  - the Community Packages card shows compact ROSCA engine controls:
+    cycle name, contribution amount, currency, interval days, `Start ROSCA
+    cycle`, latest cycle status, and `Record payout` only when a round is ready;
+  - old `Use ROSCA unit` copy/action was removed from the UI;
+  - user-facing copy now says ROSCA creates contribution references and records
+    payout completion, but does not move external money.
+- Verification passed:
+  - `python -m pytest tests/test_rosca_engine.py tests/test_community_package_usage.py tests/test_spotlight_subscription_pricing.py -q`
+    (`19 passed`, SQLite datetime deprecation warnings only);
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`;
+  - sandboxed `npm --prefix frontend run build` failed with the known Windows
+    `esbuild spawn EPERM`, then approved outside-sandbox `npm run build` from
+    `frontend/` passed.
+- Unabated truth:
+  - ROSCA is no longer merely package-credit record-only;
+  - this is still not a real payout executor or banking rail. It creates and
+    tracks contribution obligations, lets reconciliation confirm them, derives
+    payout readiness, and records payout completion as evidence;
+  - no database migration was added, deliberately, to keep the change reversible
+    and avoid schema risk during pilot testing;
+  - `frontend/src/components/StableButton.tsx` was already modified in the
+    worktree and was not touched by this ROSCA pass.
+
 ### Community package usage and button-audit hardening (2026-06-06)
 
 - Trigger:

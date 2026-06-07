@@ -423,11 +423,12 @@ def _package_engine_status(package_code: str) -> Dict[str, Any]:
         }
     if package_code == "rosca_cycle":
         return {
-            "consumer": "rosca_usage_record",
-            "engine_ready": False,
+            "consumer": "rosca_cycle_engine",
+            "engine_ready": True,
             "message": (
-                "ROSCA package units can be paid for and recorded now. "
-                "The full deterministic contribution and payout cycle is still the next engine to wire."
+                "ROSCA package units can now start deterministic contribution cycles. "
+                "The engine creates member Money In expectations, tracks confirmed contributions, "
+                "and records payout completion without claiming external money movement."
             ),
         }
     if package_code == "community_meeting_pack":
@@ -506,6 +507,11 @@ def use_community_package_unit(
     package_code = str(payload.package_code or "").strip().lower()
     if package_code not in COMMUNITY_PACKAGE_CATALOG:
         raise HTTPException(status_code=400, detail="Unsupported community package code")
+    if package_code == "rosca_cycle":
+        raise HTTPException(
+            status_code=400,
+            detail="Use the ROSCA cycle engine to consume ROSCA package credit",
+        )
 
     package = COMMUNITY_PACKAGE_CATALOG[package_code]
     if package_code == "extra_shop_blocks":
