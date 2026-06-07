@@ -37339,3 +37339,57 @@ GSN-branded invite composer and invite-entry continuity.
     phone still feels jumpy, the next proof step should be runtime phone-width
     screenshot/tap testing or reducing density in the exact section that
     visibly jumps.
+
+### Public Shop / Shop Gallery button stability baseline (2026-06-07)
+
+- Trigger:
+  - product owner approved moving the page-by-page jumpy-button pass to Public
+    Shop / Shop Gallery after Marketplace, Community Home, and Dashboard.
+- Public Shop count:
+  - `ShopGalleryPage` source now audits at 23 page stable action templates:
+    8 `PrimaryButton`, 12 `SecondaryButton`, and 3 `StableCtaLink`.
+  - The page has 0 native fields.
+  - The signed-in-only Public Shop shortcut strip contributes 5 route links:
+    Dashboard, Community Home, Marketplace, Paid Repost, and My Shop. It remains
+    hidden from ordinary public visitors through `OwnerOnlySurfaceNav`.
+  - The public phone-screen install prompt contributes 1 setup action on this
+    route.
+  - Public Shop uses 2 `SpotlightMediaFrame` invocation families: the compact
+    Spotlight media frame and the per-product Shop Diaries media frame.
+  - `SpotlightMediaFrame` contributes 1 shared audio action template,
+    `spotlight-media-frame.toggle-audio`; it can render once per video frame,
+    so runtime visible count depends on active video media, not a single static
+    DOM count.
+  - Whole-route source/action-family baseline is therefore 30 action template
+    families, plus 0 native fields.
+- System guard changes:
+  - Added `frontend/tools/audit-shop-gallery-button-inventory.mjs`.
+  - Added `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - The audit locks Public Shop action order and namespaces, signed-in shortcut
+    routes, install-prompt action, media/audio action family, single-tap diary
+    open behavior, product action dock behavior, and polished white Spotlight /
+    Shop Diaries / diary-card framing.
+  - The audit intentionally records dynamic product/media controls as action
+    families rather than pretending every public shop state has the same final
+    visible button count.
+- Verification:
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-shop-actions`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint tools/audit-shop-gallery-button-inventory.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm --prefix frontend run
+    build` passed.
+- Unabated truth:
+  - This pass tightened Public Shop / Shop Gallery inventory and action-family
+    guardrails; it did not perform a fresh visual redesign of the page.
+  - Static source-level movement, tap, link, and visitor-action guardrails are
+    passing. Because the product shelf is dynamic and media-dependent, the next
+    hard proof for remaining phone complaints should be runtime phone-width
+    screenshot/tap testing against real public shop URLs.

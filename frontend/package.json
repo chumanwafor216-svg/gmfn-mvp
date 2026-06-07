@@ -21,6 +21,7 @@
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",
     "audit:community-shop-actions": "node tools/audit-community-shop-actions.mjs",
+    "audit:shop-gallery-button-inventory": "node tools/audit-shop-gallery-button-inventory.mjs",
     "audit:shop-assets-slots": "node tools/audit-shop-assets-slots.mjs",
     "audit:community-home-button-inventory": "node tools/audit-community-home-button-inventory.mjs",
     "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",
