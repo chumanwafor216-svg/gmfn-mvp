@@ -74,11 +74,11 @@ Rules:
 - The app may request browser-supported install only after the user taps the
   install action.
 - Do not claim GSN can silently place itself on the phone screen.
-- The installed phone icon should open the public front door at `/cover?source=pwa`.
-  Cover and Welcome must remain free to view even when a member still has a
-  valid session.
-- Signed-in users on the PWA front door should see a clear `Continue to my GSN`
-  action instead of being automatically redirected to Dashboard.
+- The installed phone icon should open the authenticated app entry at
+  `/app/dashboard?source=pwa`. If no valid session exists, the normal auth guard
+  sends the user to Sign In.
+- Cover and Welcome must remain free to view for ordinary public browsing, but
+  they must not trap signed-in PWA users away from the real app shell.
 - The prompt must not show competing install buttons. Use one clear button:
   try the native install prompt when available, otherwise open three short
   manual steps.

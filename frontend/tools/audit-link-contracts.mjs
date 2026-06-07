@@ -129,8 +129,8 @@ assertContains(
 
 assertContains(
   "public/manifest.json",
-  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/cover\?source=pwa"[\s\S]*?"display": "standalone"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
-  "The PWA manifest must keep the GSN home-screen identity, app start URL, standalone display mode, and standard phone icons."
+  /"name": "GSN"[\s\S]*?"short_name": "GSN"[\s\S]*?"description": "Open Global Support Network from this phone\."[\s\S]*?"start_url": "\/app\/dashboard\?source=pwa"[\s\S]*?"display": "standalone"[\s\S]*?"src": "\/gsn-app-icon-192\.png"[\s\S]*?"src": "\/gsn-app-icon-512\.png"[\s\S]*?"src": "\/gsn-app-icon\.svg"/,
+  "The PWA manifest must keep the GSN home-screen identity, authenticated app start URL, standalone display mode, and standard phone icons."
 );
 
 assertContains(
@@ -176,9 +176,9 @@ assertContains(
 );
 
 assertContains(
-  "src/pages/CoverPage.tsx",
-  /import \{ getAccessToken \}[\s\S]*?import \{ APP_ROUTES \}[\s\S]*?source[\s\S]*?pwa[\s\S]*?signedInPwaLaunch[\s\S]*?lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD[\s\S]*?Continue to my GSN/,
-  "The installed PWA cover launch must show signed-in users a direct Continue to my GSN action instead of making the shortcut feel frozen."
+  "src/App.tsx",
+  /function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?if \(token\)[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}/,
+  "Signed-in PWA users must not be trapped on the public front door; they should enter the real app shell."
 );
 
 assertContains(
@@ -459,8 +459,8 @@ assertContains(
 
 assertContains(
   "src/App.tsx",
-  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const isPwaFrontDoor[\s\S]*?location\.pathname === "\/cover"[\s\S]*?location\.pathname === "\/welcome"[\s\S]*?get\("source"\)[\s\S]*?"pwa"[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token && !isPwaFrontDoor\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
-  "Authenticated sessions that reach normal Cover/Welcome must recover to the app route, while PWA launches to Cover/Welcome must remain on the public front door until the user chooses to continue."
+  /import \{[\s\S]*?peekPublishRecoveryTarget,[\s\S]*?publishRecoveryTarget,[\s\S]*?\} from "\.\/lib\/publishRecovery";[\s\S]*?const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";[\s\S]*?function RememberAuthenticatedAppRoute\(\)[\s\S]*?rememberAuthenticatedAppPath\(currentRoutePath\(location\)\)[\s\S]*?function PublicEntryGuard\(props: \{ children: React\.ReactNode \}\)[\s\S]*?const token = getAccessToken\(\);[\s\S]*?const publishTarget = token[\s\S]*?\? publishRecoveryTarget\(\)[\s\S]*?: peekPublishRecoveryTarget\(\);[\s\S]*?if \(token\)[\s\S]*?<Navigate[\s\S]*?to=\{publishTarget \|\| lastAuthenticatedAppPath\(\) \|\| APP_ROUTES\.DASHBOARD\}[\s\S]*?if \(publishTarget\)[\s\S]*?next\.set\("next", publishTarget\);[\s\S]*?to=\{`\/login\?\$\{next\.toString\(\)\}`\}[\s\S]*?from: routeStateFromTarget\(publishTarget\)[\s\S]*?<RememberAuthenticatedAppRoute \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<CoverPage \/>[\s\S]*?<PublicEntryGuard>[\s\S]*?<WelcomePage \/>/,
+  "Authenticated sessions that reach Cover/Welcome must recover to the app route; the installed PWA icon must not keep signed-in users on a public front door."
 );
 
 assertContains(

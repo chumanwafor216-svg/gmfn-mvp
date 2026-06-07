@@ -1,46 +1,44 @@
-### PWA shortcut front-door recovery hardening (2026-06-07)
+### PWA shortcut real-app launch correction (2026-06-07)
 
 - Trigger:
-  - product owner reported the phone-screen shortcut opens but feels frozen or
-    not like the real app; most buttons appear unresponsive; Public Shop
-    shortcuts and media/audio affordances seemed missing.
+  - product owner confirmed the phone-screen shortcut was still opening a stiff
+    public-shop visitor view, not the real signed-in app shell;
+  - screenshot showed the Public Shop signed-in shortcut strip missing above
+    the first public shop block, proving the phone was seeing visitor/sessionless
+    behavior.
 - Confirmed source facts:
-  - the installed app manifest still starts at `/cover?source=pwa`, per
-    `docs/SCREEN_SPECS.md`;
-  - the PWA/front-door exception intentionally keeps Cover/Welcome public even
-    when a token exists;
-  - `ShopGalleryPage` still renders `OwnerOnlySurfaceNav` above the first public
-    shop block and still passes audio unlock controls to `SpotlightMediaFrame`,
-    so the missing shortcut/media controls are more consistent with stale
-    installed shell/session state than with source deletion.
+  - `ShopGalleryPage` still renders `OwnerOnlySurfaceNav` above the first shop
+    block and still passes audio unlock controls to `SpotlightMediaFrame`;
+  - therefore the reported missing shortcuts/media controls were not deleted
+    from source; the installed shortcut route/session model was wrong for the
+    owner's intended phone use.
 - Fix:
-  - `CoverPage` now treats a signed-in `/cover?source=pwa` launch as a real app
-    entry: the primary button says `Continue to my GSN` and opens the last
-    authenticated app route or Dashboard;
-  - service-worker cache version moved to `gsn-pwa-shell-v5` so installed
-    shortcuts get a fresh cache boundary;
-  - service-worker registration now asks the browser to check for an updated
-    `/sw.js` after registration;
-  - `audit:link-contracts` now locks the cover-level signed-in PWA continue
-    behavior and the service-worker update check.
+  - manifest `start_url` now opens `/app/dashboard?source=pwa` instead of the
+    public cover front door;
+  - `PublicEntryGuard` no longer keeps signed-in PWA users on Cover/Welcome;
+    signed-in users recover to the last app route, publish target, or Dashboard;
+  - removed the previous CoverPage-specific PWA continue workaround because the
+    app guard is now responsible for real app entry;
+  - service-worker cache version moved to `gsn-pwa-shell-v6`;
+  - `docs/SCREEN_SPECS.md`, `audit:link-contracts`, and
+    `audit:route-fallthrough` now enforce the real-app PWA launch contract.
 - Verification passed:
   - `npm run audit:link-contracts`;
-  - `npm run audit:tap-stability`;
   - `npm run audit:route-fallthrough`;
+  - `npm run audit:tap-stability`;
   - `npm run audit:button-stability`;
   - `npm run audit:marketplace-button-lines`;
-  - `npm exec -- eslint src/pages/CoverPage.tsx src/lib/pwaInstall.ts
-    tools/audit-link-contracts.mjs`;
+  - `npm exec -- eslint src/App.tsx src/pages/CoverPage.tsx
+    tools/audit-link-contracts.mjs tools/audit-route-fallthrough.mjs`;
   - sandboxed `npm run build` failed with Windows/Vite `esbuild spawn EPERM`,
     then approved elevated `npm run build` from `frontend/` passed.
 - Unabated truth:
-  - this does not prove every reported Public Shop media issue is fixed; it
-    fixes the strongest confirmed system cause: a stale/ambiguous installed
-    shortcut front door;
-  - after deploy, the installed phone icon may need one open/close cycle for
-    the new `v5` service worker to take control. If Public Shop shortcuts remain
-    missing while signed in on the canonical `gmfn-frontend.onrender.com` host,
-    the next target is owner-session detection on `OwnerOnlySurfaceNav`.
+  - this is a behavior change from the earlier documented public-front-door PWA
+    design, made because owner phone use needs the installed icon to behave like
+    the real app;
+  - after deploy, the old home-screen icon may still be bound to old metadata
+    until the phone refreshes or the owner removes and re-adds the icon from
+    `https://gmfn-frontend.onrender.com/app/dashboard?source=pwa`.
 
 ### Marketplace section landing settle hardening (2026-06-07)
 

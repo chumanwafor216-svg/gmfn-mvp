@@ -319,16 +319,12 @@ function PublicEntryGuard(props: { children: React.ReactNode }) {
     return <PublicSessionReset />;
   }
 
-  const isPwaFrontDoor =
-    (location.pathname === "/cover" || location.pathname === "/welcome") &&
-    String(new URLSearchParams(location.search).get("source") || "").toLowerCase() ===
-      "pwa";
   const token = getAccessToken();
   const publishTarget = token
     ? publishRecoveryTarget()
     : peekPublishRecoveryTarget();
 
-  if (token && !isPwaFrontDoor) {
+  if (token) {
     return (
       <Navigate
         to={publishTarget || lastAuthenticatedAppPath() || APP_ROUTES.DASHBOARD}

@@ -2,8 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { PrimaryButton, SecondaryButton } from "../components/StableButton";
-import { getAccessToken } from "../lib/api";
-import { APP_ROUTES } from "../lib/appRoutes";
 
 
 
@@ -12,7 +10,6 @@ const ENTRY_MODE_KEY = "gmfn_entry_mode";
 const ENTRY_INVITE_CODE_KEY = "gmfn_entry_invite_code";
 
 const ENTRY_CREATE_CODE_KEY = "gmfn_entry_create_code";
-const LAST_AUTHENTICATED_APP_PATH_KEY = "gmfn_last_authenticated_app_path";
 
 
 
@@ -386,29 +383,6 @@ function nextRouteForMode(mode: EntryMode): string {
   void mode;
   return "/welcome";
 
-}
-
-function isPwaFrontDoor(search: string): boolean {
-  try {
-    const value = String(new URLSearchParams(search).get("source") || "")
-      .trim()
-      .toLowerCase();
-    return value === "pwa";
-  } catch {
-    return false;
-  }
-}
-
-function lastAuthenticatedAppPath(): string {
-  try {
-    if (typeof window === "undefined") return "";
-    const value = String(
-      window.sessionStorage.getItem(LAST_AUTHENTICATED_APP_PATH_KEY) || ""
-    ).trim();
-    return value.startsWith("/app/") || value === "/app" ? value : "";
-  } catch {
-    return "";
-  }
 }
 
 
@@ -1423,9 +1397,6 @@ export default function CoverPage() {
   const location = useLocation();
 
   const [busy, setBusy] = useState(false);
-  const signedInPwaLaunch = Boolean(
-    isPwaFrontDoor(location.search) && getAccessToken()
-  );
 
 
 
@@ -1463,17 +1434,6 @@ export default function CoverPage() {
     if (busy) return;
 
     setBusy(true);
-
-    if (signedInPwaLaunch) {
-      navigate(lastAuthenticatedAppPath() || APP_ROUTES.DASHBOARD, {
-        replace: false,
-        state:
-          location.state && typeof location.state === "object"
-            ? { ...(location.state as Record<string, unknown>) }
-            : undefined,
-      });
-      return;
-    }
 
 
 
@@ -1555,13 +1515,13 @@ export default function CoverPage() {
               <PrimaryButton
                 onClick={goNext}
                 busy={busy}
-                busyLabel={signedInPwaLaunch ? "Opening GSN..." : "Continuing..."}
+                busyLabel="Continuing..."
                 minWidth={236}
                 stableHeight={58}
                 debugId="cover.continue"
                 style={buttonStyle(busy)}
               >
-                {signedInPwaLaunch ? "Continue to my GSN" : "Continue"}
+                Continue
               </PrimaryButton>
 
               <SecondaryButton
