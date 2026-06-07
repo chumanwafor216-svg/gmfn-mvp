@@ -37508,3 +37508,48 @@ GSN-branded invite composer and invite-entry continuity.
     payment state changes which controls render, slot maps expand one source
     family into 6 visible choices, editor state can appear, and video media can
     add the shared audio unlock action.
+
+### Runtime mobile tap correction (2026-06-07)
+
+- Trigger:
+  - product owner reported that buttons still felt jumpy and worse than
+    before, across the app, after the page-by-page inventory audits.
+- Unabated truth:
+  - The recent page inventory commits only added audit scripts/docs and did not
+    change live button rendering.
+  - The real shared risk was older global mobile tap-guard behavior:
+    `mobileTapGuard` was tracking ordinary action roots and calling
+    `setPointerCapture` for normal buttons. Even when it did not usually
+    prevent clicks, global pointer capture can make phone taps feel dead,
+    delayed, or jumpy when layout changes after touch.
+- Fix:
+  - Narrowed `frontend/src/lib/mobileTapGuard.ts` so `handlePointerDown` only
+    tracks the dashboard bottom-nav overlap case returned by
+    `coveredDashboardActionFromBottomNav`.
+  - Removed global `root.setPointerCapture?.(event.pointerId)` from ordinary
+    action roots.
+  - Updated `frontend/tools/audit-mobile-tap-stability.mjs` so future audits
+    reject `setPointerCapture` inside `mobileTapGuard` and require the
+    bottom-nav-only pointer-down tracking contract.
+- Verification:
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:shop-gallery-button-inventory`.
+  - Passed `npm --prefix frontend run audit:shop-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:vault-control-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm exec -- eslint tools/audit-mobile-tap-stability.mjs` from the
+    `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Remaining risk:
+  - This is the most plausible shared runtime correction, but it is not a
+    substitute for real phone testing. If the phone still jumps after Render
+    deploys this commit, the next investigation should inspect actual
+    `sessionStorage.gmfn_mobile_tap_trace` and page-specific scroll/state
+    changes during a failing tap.

@@ -254,7 +254,7 @@ if (
 }
 
 if (
-  !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?root\.setPointerCapture\?\.\(event\.pointerId\)/.test(
+  !/function sameActionRoot\(startedAt: Element, endedAt: Element \| null\): boolean \{[\s\S]*?startedAt === endedAt[\s\S]*?startedId[\s\S]*?endedId[\s\S]*?startedId === endedId[\s\S]*?function handlePointerDown\(event: PointerEvent\): void \{[\s\S]*?const coveredDashboardRoot = coveredDashboardActionFromBottomNav\(event, initialRoot\);[\s\S]*?const root = coveredDashboardRoot;/.test(
     mobileTapGuardSource
   )
 ) {
@@ -262,8 +262,20 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Global mobile tap guard must require a strict action-root match and capture the pointer stream when possible",
-    text: "Expected strict action-root matching and pointer capture were not found.",
+      "Mobile tap guard must require a strict action-root match while tracking only dashboard bottom-nav overlap starts",
+    text:
+      "Expected strict action-root matching and bottom-nav-only pointer-down tracking were not found.",
+  });
+}
+
+if (/setPointerCapture\?\.\(event\.pointerId\)/.test(mobileTapGuardSource)) {
+  findings.push({
+    file: relative(frontendRoot, mobileTapGuardPath),
+    line: 1,
+    label:
+      "Mobile tap guard must not globally capture pointer streams for ordinary app buttons",
+    text:
+      "Found setPointerCapture in mobileTapGuard. Global pointer capture made normal buttons feel dead or jumpy on phone.",
   });
 }
 

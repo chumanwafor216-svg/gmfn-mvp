@@ -353,7 +353,7 @@ function clearIfStale(): void {
 function handlePointerDown(event: PointerEvent): void {
   const initialRoot = actionRootFromEvent(event);
   const coveredDashboardRoot = coveredDashboardActionFromBottomNav(event, initialRoot);
-  const root = coveredDashboardRoot || initialRoot;
+  const root = coveredDashboardRoot;
   if (!root) {
     clearActiveTap();
     lastPointerContext = null;
@@ -378,12 +378,6 @@ function handlePointerDown(event: PointerEvent): void {
   };
   lastPointerContext = context;
   markActiveAction(root);
-
-  try {
-    root.setPointerCapture?.(event.pointerId);
-  } catch {
-    // Pointer capture is a best-effort stability hint; unsupported browsers still use the click guard.
-  }
 
   if (coveredDashboardRoot) {
     traceTap("bottom-nav-covered-dashboard-start", {
