@@ -11,6 +11,7 @@ export type BeforeInstallPromptEvent = Event & {
 const installListeners = new Set<() => void>();
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let supportRegistered = false;
+let serviceWorkerControllerReloading = false;
 let installedThisSession = false;
 
 function notifyInstallListeners(): void {
@@ -89,6 +90,12 @@ export async function promptGsnInstall(): Promise<BeforeInstallPromptChoice | nu
 export function registerGsnServiceWorker(): void {
   if (typeof window === "undefined") return;
   if (!("serviceWorker" in navigator)) return;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (serviceWorkerControllerReloading) return;
+    serviceWorkerControllerReloading = true;
+    window.location.reload();
+  });
 
   window.addEventListener("load", () => {
     navigator.serviceWorker

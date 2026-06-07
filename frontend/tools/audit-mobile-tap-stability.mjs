@@ -226,7 +226,7 @@ if (
 }
 
 if (
-  !/function isDisabledAction\(root: Element \| null\): boolean[\s\S]*?aria-disabled[\s\S]*?function handlePointerUp\(event: PointerEvent\): void[\s\S]*?suppressNextClick = true[\s\S]*?event\.preventDefault\(\);[\s\S]*?function handleClick\(event: MouseEvent\): void[\s\S]*?insideSettleWindow[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?activeTap\.suppressNextClick[\s\S]*?lastAcceptedActionClickAt = currentTime/.test(
+  !/function isDisabledAction\(root: Element \| null\): boolean[\s\S]*?aria-disabled[\s\S]*?function handlePointerUp\(event: PointerEvent\): void[\s\S]*?pointerup-geometry-shift[\s\S]*?clearActiveTap\(\);[\s\S]*?function handleClick\(event: MouseEvent\): void[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?insideSettleWindow[\s\S]*?click-settle-observed[\s\S]*?activeTap\.suppressNextClick[\s\S]*?lastAcceptedActionClickAt = currentTime/.test(
     mobileTapGuardSource
   )
 ) {
@@ -234,8 +234,8 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Global mobile tap guard must suppress mismatched pointer-up/click pairs, disabled action clicks, and rapid ghost clicks",
-    text: "Expected pointer-up suppression, disabled-action checks, and settle-window checks were not found.",
+      "Global mobile tap guard must trace unstable tap geometry while preserving real browser clicks, and suppress only disabled action clicks",
+    text: "Expected pointer-up tracing, disabled-action suppression, and settle-window observation were not found.",
   });
 }
 
@@ -297,7 +297,7 @@ if (
 }
 
 if (
-  !/function isTrustedPublicShopAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("shop-gallery\."\)[\s\S]*?shop-gallery\.member-nav\.[\s\S]*?\.paid-placement[\s\S]*?function preserveTrustedPublicShopClick\([\s\S]*?public-shop-trusted-click-preserved[\s\S]*?function handlePointerUp\(event: PointerEvent\): void \{[\s\S]*?preserveTrustedPublicShopClick\(endRoot, "pointerup-preserved"[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?preserveTrustedPublicShopClick\(endRoot, "click-before-suppression"/.test(
+  !/function isTrustedPublicShopAction\(root: Element \| null\): boolean \{[\s\S]*?ctaId\.startsWith\("shop-gallery\."\)[\s\S]*?shop-gallery\.member-nav\.[\s\S]*?\.paid-placement[\s\S]*?function preserveTrustedPublicShopClick\([\s\S]*?public-shop-trusted-click-preserved[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?isDisabledAction\(endRoot\)[\s\S]*?preserveTrustedPublicShopClick\(endRoot, "click-before-suppression"/.test(
     mobileTapGuardSource
   )
 ) {
@@ -312,7 +312,7 @@ if (
 }
 
 if (
-  !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-suppressed[\s\S]*?click-orphan-mismatch-suppressed[\s\S]*?event\.preventDefault\(\);[\s\S]*?event\.stopPropagation\(\);/.test(
+  !/type PointerContext = \{[\s\S]*?let lastPointerContext: PointerContext \| null = null;[\s\S]*?function handlePointerCancel\(event: PointerEvent\): void \{[\s\S]*?cancelledAt: nowMs\(\)[\s\S]*?function handleClick\(event: MouseEvent\): void \{[\s\S]*?if \(!activeTap && endRoot && lastPointerContext\) \{[\s\S]*?click-after-cancel-observed[\s\S]*?click-orphan-mismatch-observed[\s\S]*?lastPointerContext = null;/.test(
     mobileTapGuardSource
   )
 ) {
@@ -320,13 +320,13 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Global mobile tap guard must suppress orphan clicks after pointer cancel/loss so a late phone click cannot land on a different action",
-    text: "Expected pointer-context orphan/cancel click suppression was not found.",
+      "Global mobile tap guard must observe orphan clicks after pointer cancel/loss without swallowing real mobile browser actions",
+    text: "Expected pointer-context orphan/cancel click observation was not found.",
   });
 }
 
 if (
-  !/const recentPointer = elapsedSinceStart <= 900;[\s\S]*?const canCommitOriginalPointer = recentPointer && moved <= 40;[\s\S]*?const wrongRoot = endRoot && !sameRoot;[\s\S]*?if \(\(recentPointer && \(wrongRoot \|\| unsafeGeometry\)\) \|\| recentCancel\)[\s\S]*?if \(!recentCancel && \(canCommitOriginalPointer \|\| unsafeGeometry\)\)/.test(
+  !/const recentPointer = elapsedSinceStart <= 900;[\s\S]*?const wrongRoot = endRoot && !sameRoot;[\s\S]*?if \(\(recentPointer && \(wrongRoot \|\| unsafeGeometry\)\) \|\| recentCancel\)[\s\S]*?click-after-cancel-observed[\s\S]*?click-orphan-mismatch-observed[\s\S]*?lastPointerContext = null;/.test(
     mobileTapGuardSource
   )
 ) {
@@ -334,9 +334,9 @@ if (
     file: relative(frontendRoot, mobileTapGuardPath),
     line: 1,
     label:
-      "Orphan mobile clicks must suppress any recent wrong-root target but only recommit deliberate original taps",
+      "Orphan mobile clicks must be traced without synthetic recommit so native share, WhatsApp, audio, and file inputs keep user activation",
     text:
-      "Expected strict orphan wrong-root suppression with separate original-action commit threshold was not found.",
+      "Expected orphan wrong-root observation without synthetic recommit was not found.",
   });
 }
 

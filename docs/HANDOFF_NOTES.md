@@ -1,3 +1,56 @@
+### Mobile tap guard no longer swallows ordinary Public Shop / Spotlight actions (2026-06-07)
+
+- Trigger:
+  - product owner re-tested after `45fed75` and reported Public Shop visitor
+    actions still felt half-dead: Share, Verify, WhatsApp, vault copy/request,
+    and media sound still required repeated taps or did not work;
+  - product owner also reported the Community Home Free Spotlight / upload path
+    was affected, proving the issue was not isolated to Public Shop handlers.
+- Unabated truth about the previous fix:
+  - preserving `shop-gallery.*` trusted clicks was too narrow;
+  - it was also placed after the global settle-window suppression, so quick
+    follow-up visitor actions could still be swallowed before preservation ran.
+- Deeper root cause addressed:
+  - `frontend/src/lib/mobileTapGuard.ts` had become too aggressive: it could
+    `preventDefault()`, stop propagation, and replay ordinary user clicks with
+    synthetic `element.click()` after pointer cancel, geometry shift, or rapid
+    settle-window timing;
+  - this breaks browser-user-activation-sensitive actions such as WhatsApp
+    `window.open`, native Share, clipboard copy, video sound unlock, and file
+    picker/upload flows.
+- Fix:
+  - the mobile tap guard now traces suspicious pointer/click geometry instead
+    of cancelling/replaying ordinary app actions;
+  - disabled controls and the specific Dashboard bottom-nav-cover protection
+    remain guarded;
+  - Public Shop visitor actions are preserved before settle-window observation;
+  - `audit:tap-stability` now enforces observation-without-synthetic-recommit
+    for orphan/cancel clicks.
+- PWA freshness fix:
+  - service-worker cache version moved to `gsn-pwa-shell-v7`;
+  - `registerGsnServiceWorker()` now reloads once on `controllerchange`, so an
+    installed phone-screen app can take the new app shell instead of continuing
+    to run stale JavaScript silently.
+- Verification passed:
+  - `npm run audit:tap-stability`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:link-contracts`;
+  - `npm run audit:community-home-phone-buttons`;
+  - `npm run audit:spotlight-controls`;
+  - `npm run audit:community-shop-actions`;
+  - `npm run audit:marketplace-button-lines`;
+  - `npm run audit:route-fallthrough`;
+  - `npm exec -- eslint src/lib/mobileTapGuard.ts src/lib/pwaInstall.ts
+    tools/audit-mobile-tap-stability.mjs`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `esbuild spawn
+    EPERM`, then approved elevated `npm run build` from `frontend/` passed.
+- Remaining truth:
+  - this is a system-level fix for the actual class of failure the phone is
+    showing;
+  - it still needs physical phone verification after Render serves the new
+    bundle and `sw.js` v7, especially Public Shop Share, Verify, WhatsApp,
+    vault copy/request, media sound unlock, and Community Home Free Spotlight.
+
 ### Public Shop visitor actions preserve real mobile taps (2026-06-07)
 
 - Trigger:

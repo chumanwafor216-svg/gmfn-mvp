@@ -422,28 +422,14 @@ function handlePointerUp(event: PointerEvent): void {
   );
 
   if (moved <= 40 && (!sameActionRoot(activeTap.root, endRoot) || unsafeGeometry)) {
-    if (
-      endRoot &&
-      sameActionRoot(activeTap.root, endRoot) &&
-      preserveTrustedPublicShopClick(endRoot, "pointerup-preserved", {
-        started: activeTap.rootLabel,
-        ended: labelForAction(endRoot),
-        moved: Math.round(moved),
-        shifted: unsafeGeometry,
-      })
-    ) {
-      return;
-    }
-
-    activeTap.suppressNextClick = true;
     traceTap(unsafeGeometry ? "pointerup-geometry-shift" : "pointerup-mismatch", {
       started: activeTap.rootLabel,
       ended: labelForAction(endRoot),
       moved: Math.round(moved),
       shifted: unsafeGeometry,
     });
-    event.preventDefault();
-    event.stopPropagation();
+    clearActiveTap();
+    lastPointerContext = null;
   }
 }
 
@@ -479,29 +465,6 @@ function handleClick(event: MouseEvent): void {
     return;
   }
 
-  const insideSettleWindow =
-    endRoot && !activeTap && currentTime - lastAcceptedActionClickAt < 520;
-
-  if (insideSettleWindow) {
-    if (isAssociatedFileInputClick(lastAcceptedActionRoot, endRoot)) {
-      traceTap("click-file-input-associated-accepted", {
-        action: labelForAction(lastAcceptedActionRoot),
-        input: labelForAction(endRoot),
-      });
-      lastAcceptedActionClickAt = currentTime;
-      return;
-    }
-
-    traceTap("click-settle-suppressed", {
-      ended: labelForAction(endRoot),
-      sinceLastAccepted: Math.round(currentTime - lastAcceptedActionClickAt),
-    });
-    event.preventDefault();
-    event.stopPropagation();
-    clearActiveTap();
-    return;
-  }
-
   if (isDisabledAction(endRoot)) {
     traceTap("click-disabled-suppressed", {
       ended: labelForAction(endRoot),
@@ -512,6 +475,9 @@ function handleClick(event: MouseEvent): void {
     return;
   }
 
+  const insideSettleWindow =
+    endRoot && !activeTap && currentTime - lastAcceptedActionClickAt < 520;
+
   if (
     endRoot &&
     preserveTrustedPublicShopClick(endRoot, "click-before-suppression", {
@@ -520,6 +486,20 @@ function handleClick(event: MouseEvent): void {
     })
   ) {
     return;
+  }
+
+  if (insideSettleWindow) {
+    if (isAssociatedFileInputClick(lastAcceptedActionRoot, endRoot)) {
+      traceTap("click-file-input-associated-accepted", {
+        action: labelForAction(lastAcceptedActionRoot),
+        input: labelForAction(endRoot),
+      });
+    } else {
+      traceTap("click-settle-observed", {
+        ended: labelForAction(endRoot),
+        sinceLastAccepted: Math.round(currentTime - lastAcceptedActionClickAt),
+      });
+    }
   }
 
   if (!activeTap && endRoot && lastPointerContext) {
@@ -540,40 +520,33 @@ function handleClick(event: MouseEvent): void {
       event.clientY
     );
     const recentPointer = elapsedSinceStart <= 900;
-    const canCommitOriginalPointer = recentPointer && moved <= 40;
     const recentCancel = elapsedSinceCancel <= 700;
 
     const wrongRoot = endRoot && !sameRoot;
 
     if ((recentPointer && (wrongRoot || unsafeGeometry)) || recentCancel) {
-      traceTap(recentCancel ? "click-after-cancel-suppressed" : "click-orphan-mismatch-suppressed", {
+      traceTap(recentCancel ? "click-after-cancel-observed" : "click-orphan-mismatch-observed", {
         started: lastPointerContext.rootLabel,
         ended: labelForAction(endRoot),
         moved: Math.round(moved),
         elapsed: Math.round(elapsedSinceStart),
         shifted: unsafeGeometry,
       });
-      event.preventDefault();
-      event.stopPropagation();
-      if (!recentCancel && (canCommitOriginalPointer || unsafeGeometry)) {
-        commitOriginalAction(lastPointerContext.root, "orphan-pointer-original", {
-          ended: labelForAction(endRoot),
-          moved: Math.round(moved),
-          elapsed: Math.round(elapsedSinceStart),
-          shifted: unsafeGeometry,
-        });
-      }
       lastPointerContext = null;
-      return;
     }
   }
 
-  if (!activeTap) return;
+  if (!activeTap) {
+    if (endRoot) {
+      lastAcceptedActionClickAt = currentTime;
+      lastAcceptedActionRoot = endRoot;
+    }
+    return;
+  }
 
   const elapsed = currentTime - activeTap.startedAt;
   const moved = Math.hypot(event.clientX - activeTap.x, event.clientY - activeTap.y);
   const recentTap = elapsed <= 900;
-  const canCommitOriginalTap = recentTap && moved <= 40;
   const currentRect = rectForAction(activeTap.root);
   const unsafeGeometry = geometryBecameUnsafe(
     activeTap.rect,
@@ -598,18 +571,9 @@ function handleClick(event: MouseEvent): void {
       elapsed: Math.round(elapsed),
       shifted: unsafeGeometry,
     });
-    event.preventDefault();
-    event.stopPropagation();
-    if (!isDisabledAction(activeTap.root) && (canCommitOriginalTap || unsafeGeometry)) {
-      commitOriginalAction(activeTap.root, reason, {
-        ended: labelForAction(endRoot),
-        moved: Math.round(moved),
-        elapsed: Math.round(elapsed),
-        shifted: unsafeGeometry,
-      });
-      return;
-    }
-  } else if (endRoot) {
+  }
+
+  if (endRoot) {
     lastAcceptedActionClickAt = currentTime;
     lastAcceptedActionRoot = endRoot;
     traceTap("click-accepted", {
