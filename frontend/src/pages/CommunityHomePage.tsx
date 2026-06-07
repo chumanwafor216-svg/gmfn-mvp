@@ -246,6 +246,7 @@ function getClanName(clan: ClanItem | null | undefined): string {
 }
 
 const PAID_REPOST_HASH = "marketplace-paid-network-placement";
+const ROSCA_MARKETPLACE_HASH = "marketplace-rosca";
 
 function routeTarget(
   intent: CtaIntent,
@@ -1129,6 +1130,12 @@ export default function CommunityHomePage() {
         selectedClanId,
         "community-home.route.paid-repost",
         { hash: PAID_REPOST_HASH }
+      ),
+      rosca: routeTarget(
+        "marketplace",
+        selectedClanId,
+        "community-home.route.rosca",
+        { hash: ROSCA_MARKETPLACE_HASH }
       ),
       vaultControl: routeTarget(
         "vaultControl",
@@ -3019,6 +3026,19 @@ export default function CommunityHomePage() {
                   event,
                   routes.paidRepost,
                   "Choose a community first, then open Paid Repost."
+                ),
+            },
+            {
+              icon: "ROSCA",
+              id: "rosca",
+              title: "ROSCA",
+              detail:
+                "Open contribution cycles for this community marketplace",
+              onClick: (event: React.SyntheticEvent<HTMLElement>) =>
+                openSelectedCommunityRoute(
+                  event,
+                  routes.rosca,
+                  "Choose a community first, then open ROSCA in Marketplace."
                 ),
             },
             {

@@ -95,9 +95,33 @@ assertContains(
 );
 
 assertContains(
+  "src/lib/api.ts",
+  /export async function getCommunityPackageStatus[\s\S]*?\/payment-instructions\/community-package\/status[\s\S]*?export async function getRoscaCycles[\s\S]*?\/rosca\/cycles[\s\S]*?export async function createRoscaCycle[\s\S]*?\/rosca\/cycles[\s\S]*?export async function recordRoscaCyclePayout[\s\S]*?\/rosca\/cycles\/\$\{encodeURIComponent/,
+  "Marketplace ROSCA must use named API helpers for package status, cycle listing, cycle creation, and payout recording."
+);
+
+assertContains(
   "src/pages/MarketplacePage.tsx",
   /createSpotlightPaymentInstruction\(\{[\s\S]*?quantity_total: requiredCredits[\s\S]*?visibility_scope: "marketplace_repost"/,
   "Marketplace Paid Repost must generate a payment code with the exact required paid-credit quantity and marketplace_repost scope."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /type SectionState = \{[\s\S]*?rosca: boolean[\s\S]*?MARKETPLACE_SECTION_ANCHORS[\s\S]*?rosca: "marketplace-rosca"[\s\S]*?if \(hash !== "marketplace-rosca"\) return;[\s\S]*?focusedMarketplaceSectionState\("rosca"\)[\s\S]*?scrollToMarketplaceSection\("marketplace-rosca"\)/,
+  "Marketplace ROSCA must be a first-class section with its own stable hash landing."
+);
+
+assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /debugId="marketplace\.tile\.rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?debugId="marketplace\.row\.rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"/,
+  "Marketplace ROSCA must keep a visible tile, operating-lane row, section anchor, and stable yearly/start/payout controls."
+);
+
+assertContains(
+  "../gmfn_backend/app/services/rosca_service.py",
+  /def _rosca_marketplace_url[\s\S]*?\/app\/marketplace\?clan_id=\{int\(clan_id\)\}[\s\S]*?#marketplace-rosca[\s\S]*?action_url=_rosca_marketplace_url/,
+  "ROSCA backend notifications must land users in the Marketplace ROSCA desk, not the old Shop Control package block."
 );
 
 assertContains(

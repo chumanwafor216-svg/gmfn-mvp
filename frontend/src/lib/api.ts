@@ -3244,6 +3244,21 @@ export async function createCommunityPackagePaymentInstruction(payload: {
   });
 }
 
+export async function getCommunityPackageStatus(payload: {
+  clan_id: number;
+  shop_id?: number | null;
+}): Promise<any> {
+  return httpJson(
+    `/payment-instructions/community-package/status${buildQuery({
+      clan_id: payload.clan_id,
+      shop_id: payload.shop_id ?? undefined,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: payload.clan_id }
+  );
+}
+
 export async function listMyPaymentInstructionExpectedPayments(payload: {
   clan_id: number;
   expected_type?: string;
@@ -3275,6 +3290,66 @@ export async function getMyRoscaObligations(payload?: {
       limit: payload?.limit ?? 20,
     })}`,
     "GET"
+  );
+}
+
+export async function getRoscaCycles(payload: {
+  clan_id: number;
+}): Promise<any> {
+  return httpJson(
+    `/rosca/cycles${buildQuery({
+      clan_id: payload.clan_id,
+    })}`,
+    "GET",
+    undefined,
+    { header_clan_id: payload.clan_id }
+  );
+}
+
+export async function createRoscaCycle(payload: {
+  clan_id: number;
+  title?: string | null;
+  contribution_amount: string | number;
+  currency?: string | null;
+  interval_days?: number | null;
+  member_user_ids?: number[] | null;
+  payout_order_user_ids?: number[] | null;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson(
+    "/rosca/cycles",
+    "POST",
+    {
+      clan_id: payload.clan_id,
+      title: payload.title || "Community ROSCA cycle",
+      contribution_amount: payload.contribution_amount,
+      currency: payload.currency || "GBP",
+      interval_days: payload.interval_days ?? 30,
+      member_user_ids: payload.member_user_ids ?? undefined,
+      payout_order_user_ids: payload.payout_order_user_ids ?? undefined,
+      note: payload.note ?? undefined,
+    },
+    { header_clan_id: payload.clan_id }
+  );
+}
+
+export async function recordRoscaCyclePayout(payload: {
+  clan_id: number;
+  cycle_id: string;
+  round_number: number;
+  note?: string | null;
+}): Promise<any> {
+  return httpJson(
+    `/rosca/cycles/${encodeURIComponent(
+      payload.cycle_id
+    )}/rounds/${encodeURIComponent(String(payload.round_number))}/payout${buildQuery({
+      clan_id: payload.clan_id,
+    })}`,
+    "POST",
+    {
+      note: payload.note ?? undefined,
+    },
+    { header_clan_id: payload.clan_id }
   );
 }
 

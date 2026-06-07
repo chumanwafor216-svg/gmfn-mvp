@@ -1,3 +1,58 @@
+### ROSCA moved into Marketplace as a first-class community desk (2026-06-07)
+
+- Trigger:
+  - product owner could not find ROSCA and clarified the architecture: ROSCA is
+    a paid community-marketplace service, not something that should be hidden
+    under Shop Control;
+  - Community Home should show a clear ROSCA launcher, but the working surface
+    should live in the selected community Marketplace because ROSCA participants
+    are members of that same community.
+- Confirmed source facts:
+  - ROSCA backend endpoints already existed for cycle listing, cycle creation,
+    obligations, and payout recording;
+  - the visible frontend engine existed only inside Shop Control community
+    packages, so the feature was technically built but not placed where people
+    would naturally look for it;
+  - backend ROSCA payout-ready notifications still routed to
+    `/app/shop-control#shop-control-community-packages`.
+- Fix:
+  - Community Home now has its own compact `ROSCA` tool row that routes to the
+    selected Marketplace with `#marketplace-rosca`;
+  - Marketplace now has a visible ROSCA tile, a ROSCA operating-lane row, and a
+    first-class `marketplace-rosca` section;
+  - Marketplace ROSCA reads the yearly service/package status and existing
+    cycles from the backend, creates the GBP 60 yearly payment request, starts
+    ROSCA cycles through the existing engine, and records ready payouts through
+    the existing payout endpoint;
+  - missing states stay tappable and explain what to do instead of becoming dead
+    buttons;
+  - backend ROSCA payout-ready notification URLs now land in
+    `/app/marketplace#marketplace-rosca`;
+  - `audit:community-shop-actions`, `audit:marketplace-actions`, and
+    `audit:marketplace-button-lines` now guard the new placement.
+- Verification passed:
+  - `npm run audit:community-shop-actions`;
+  - `npm run audit:marketplace-actions`;
+  - `npm run audit:marketplace-button-lines`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:link-contracts`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx
+    src/pages/CommunityHomePage.tsx src/lib/api.ts
+    tools/audit-community-shop-actions.mjs tools/audit-marketplace-actions.mjs
+    tools/audit-marketplace-button-lines.mjs`;
+  - `python -m pytest gmfn_backend\tests\test_community_package_usage.py -q`;
+  - `python -m pytest gmfn_backend\tests\test_rosca_engine.py -q`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `spawn EPERM`,
+    then approved elevated `npm run build` passed.
+- Unabated truth:
+  - this fixes discoverability and routing without deleting the old Shop Control
+    package area, so Shop Control remains a fallback while Marketplace becomes
+    the proper main ROSCA desk;
+  - physical phone testing after Render deploy is still needed to confirm the
+    tile, operating row, Community Home launcher, and notification landing feel
+    right on the pilot device.
+
 ### Installed phone shortcut freshness guard (2026-06-07)
 
 - Trigger:

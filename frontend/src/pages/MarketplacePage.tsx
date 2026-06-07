@@ -27,11 +27,14 @@ import { StableButton, StableCtaLink } from "../components/StableButton";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
+  createCommunityPackagePaymentInstruction,
   createMarketplaceRepost,
   createMarketplaceShop,
+  createRoscaCycle,
   createSpotlightPaymentInstruction,
   createClanInvite,
   createLoanRequest,
+  getCommunityPackageStatus,
   getMarketplaceRepostTargetSuggestions,
   getMarketplaceShopSpotlightStatus,
   getClanTrustScoreExplained,
@@ -45,8 +48,10 @@ import {
   getMarketplaceShops,
   getMe,
   getPoolMe,
+  getRoscaCycles,
   getSelectedClanId,
   listMyPaymentInstructionExpectedPayments,
+  recordRoscaCyclePayout,
   setSelectedClanId,
   listClanMembers,
   listMyClans,
@@ -220,6 +225,44 @@ type SpotlightStatusRecord = {
   can_publish_paid_spotlight?: boolean | null;
 };
 
+type CommunityPackageStatusItem = {
+  package_code?: string | null;
+  feature_code?: string | null;
+  title?: string | null;
+  unit_label?: string | null;
+  active_remaining?: number | string | null;
+  engine_ready?: boolean | null;
+  message?: string | null;
+  latest_payment?: ExpectedPaymentRecord | null;
+};
+
+type RoscaRoundSummary = {
+  round_number?: number | null;
+  payout_user_id?: number | null;
+  payout_amount?: string | null;
+  due_at?: string | null;
+  expected_count?: number | null;
+  confirmed_count?: number | null;
+  ready_for_payout?: boolean | null;
+  payout_recorded?: boolean | null;
+  status?: string | null;
+};
+
+type RoscaCycleSummary = {
+  cycle_id?: string | null;
+  title?: string | null;
+  status?: string | null;
+  currency?: string | null;
+  contribution_amount?: string | null;
+  total_rounds?: number | null;
+  total_expected_contributions?: number | null;
+  total_confirmed_contributions?: number | null;
+  total_recorded_payouts?: number | null;
+  member_user_ids?: number[] | null;
+  payout_order_user_ids?: number[] | null;
+  rounds?: RoscaRoundSummary[];
+};
+
 type RepostTargetSuggestion = {
   community_id?: number | string | null;
   community_code?: string | null;
@@ -274,6 +317,7 @@ type NoticeTone = "success" | "error";
 
 type SectionState = {
   money: boolean;
+  rosca: boolean;
   tools: boolean;
   members: boolean;
   support: boolean;
@@ -299,6 +343,7 @@ type PersistedWithdrawalTask = {
 
 const DEFAULT_SECTION_STATE: SectionState = {
   money: false,
+  rosca: false,
   tools: false,
   members: false,
   support: false,
@@ -306,6 +351,7 @@ const DEFAULT_SECTION_STATE: SectionState = {
 
 const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
   money: "marketplace-money-routes",
+  rosca: "marketplace-rosca",
   tools: "marketplace-owned-links",
   members: "marketplace-members-shops",
   support: "marketplace-loans-support",
@@ -315,6 +361,7 @@ function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
   if (key === "support") {
     return {
       money: false,
+      rosca: false,
       tools: false,
       members: true,
       support: true,
@@ -323,6 +370,7 @@ function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
 
   return {
     money: key === "money",
+    rosca: key === "rosca",
     tools: key === "tools",
     members: key === "members",
     support: false,
@@ -352,6 +400,7 @@ function normalizeMarketplaceSectionState(
 ): SectionState {
   if (!state) return DEFAULT_SECTION_STATE;
   if (state.support) return focusedMarketplaceSectionState("support");
+  if (state.rosca) return focusedMarketplaceSectionState("rosca");
   if (state.members) return focusedMarketplaceSectionState("members");
   if (state.tools) return focusedMarketplaceSectionState("tools");
   if (state.money) return focusedMarketplaceSectionState("money");
@@ -388,6 +437,15 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     intent: "finance",
     tone: "secondary",
     keywords: ["finance", "balance", "pool", "record", "account", "money"],
+  },
+  {
+    id: "rosca",
+    label: "Open ROSCA",
+    detail: "Start or check this community contribution cycle.",
+    technical: "ROSCA",
+    to: "#marketplace-rosca",
+    tone: "secondary",
+    keywords: ["rosca", "cycle", "ajo", "susu", "contribution", "rotation"],
   },
   {
     id: "support",
@@ -2498,6 +2556,7 @@ type MarketplaceGlyphName =
   | "chart"
   | "chevron"
   | "chevronUp"
+  | "cycle"
   | "demand"
   | "eye"
   | "heart"
@@ -2565,6 +2624,17 @@ function MarketplaceGlyph({
       break;
     case "chevronUp":
       glyph = <path d="M5.5 14.5 12 8l6.5 6.5" />;
+      break;
+    case "cycle":
+      glyph = (
+        <>
+          <path d="M7.2 7.1A7 7 0 0 1 18.5 9" />
+          <path d="M18.5 5.5V9h-3.5" />
+          <path d="M16.8 16.9A7 7 0 0 1 5.5 15" />
+          <path d="M5.5 18.5V15H9" />
+          <circle cx="12" cy="12" r="2.4" />
+        </>
+      );
       break;
     case "demand":
       glyph = (
@@ -2846,6 +2916,18 @@ export default function MarketplacePage() {
     useState(false);
   const [repostTargetSuggestionError, setRepostTargetSuggestionError] =
     useState("");
+  const [communityPackageItems, setCommunityPackageItems] = useState<
+    CommunityPackageStatusItem[]
+  >([]);
+  const [roscaCycles, setRoscaCycles] = useState<RoscaCycleSummary[]>([]);
+  const [roscaTitle, setRoscaTitle] = useState("Community ROSCA cycle");
+  const [roscaContributionAmount, setRoscaContributionAmount] = useState("25.00");
+  const [roscaCurrency, setRoscaCurrency] = useState("GBP");
+  const [roscaIntervalDays, setRoscaIntervalDays] = useState("30");
+  const [creatingRoscaPackage, setCreatingRoscaPackage] = useState(false);
+  const [startingRoscaCycle, setStartingRoscaCycle] = useState(false);
+  const [recordingRoscaPayoutKey, setRecordingRoscaPayoutKey] =
+    useState<string | null>(null);
   const selectedRepostProductIdRef = useRef<number | null>(null);
   const routeRepostSelectionTokenRef = useRef("");
   const repostTargetSuggestionRequestRef = useRef(0);
@@ -2882,6 +2964,7 @@ export default function MarketplacePage() {
   const [intentQuery, setIntentQuery] = useState("");
   const [intentGuideOpen, setIntentGuideOpen] = useState(false);
 
+  const roscaSectionRef = useRef<HTMLElement | null>(null);
   const supportSectionRef = useRef<HTMLElement | null>(null);
   const scrollFrameRef = useRef<number | null>(null);
   const scrollTimeoutRefs = useRef<number[]>([]);
@@ -3446,7 +3529,11 @@ export default function MarketplacePage() {
 
     const target =
       document.getElementById(id) ||
-      (id === "marketplace-loans-support" ? supportSectionRef.current : null);
+      (id === "marketplace-rosca"
+        ? roscaSectionRef.current
+        : id === "marketplace-loans-support"
+          ? supportSectionRef.current
+          : null);
     if (target) {
       scrollElementToMarketplaceLanding(target as HTMLElement, {
         surface: "marketplace",
@@ -3533,6 +3620,14 @@ export default function MarketplacePage() {
       setSectionsOpen(focusedMarketplaceSectionState("support"));
       clearStaleMarketplaceHash("marketplace-loans-support");
       scheduleMarketplaceSectionScroll("marketplace-loans-support");
+      return;
+    }
+
+    if (item.id === "rosca") {
+      setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "rosca"));
+      setSectionsOpen(focusedMarketplaceSectionState("rosca"));
+      clearStaleMarketplaceHash("marketplace-rosca");
+      scheduleMarketplaceSectionScroll("marketplace-rosca");
       return;
     }
 
@@ -3646,6 +3741,8 @@ export default function MarketplacePage() {
         inviteRes,
         loansRes,
         trustRes,
+        packageStatusRes,
+        roscaCyclesRes,
       ] =
         await Promise.all([
           currentCommunityId
@@ -3689,6 +3786,16 @@ export default function MarketplacePage() {
                 limit: 8,
               }).catch(() => null)
             : Promise.resolve(null),
+          currentCommunityId
+            ? getCommunityPackageStatus({
+                clan_id: currentCommunityId,
+              }).catch(() => null)
+            : Promise.resolve(null),
+          currentCommunityId
+            ? getRoscaCycles({
+                clan_id: currentCommunityId,
+              }).catch(() => null)
+            : Promise.resolve(null),
         ]);
 
             const memberRows = rowsOf<ClanMember>(membersRes);
@@ -3717,6 +3824,16 @@ export default function MarketplacePage() {
       setMarketplaceTrust(trustRes || null);
       setInviteLink(getInviteUrl(inviteRes));
       setLoans(filteredLoans);
+      setCommunityPackageItems(
+        Array.isArray(packageStatusRes?.packages)
+          ? (packageStatusRes.packages as CommunityPackageStatusItem[])
+          : []
+      );
+      setRoscaCycles(
+        Array.isArray(roscaCyclesRes?.cycles)
+          ? (roscaCyclesRes.cycles as RoscaCycleSummary[])
+          : []
+      );
     } finally {
       setLoading(false);
     }
@@ -4107,6 +4224,16 @@ export default function MarketplacePage() {
 
   useEffect(() => {
     const hash = safeStr(location.hash).replace(/^#/, "");
+    if (hash !== "marketplace-rosca") return;
+
+    setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "rosca"));
+    setSectionsOpen(focusedMarketplaceSectionState("rosca"));
+
+    scrollToMarketplaceSection("marketplace-rosca");
+  }, [location.hash, scrollToMarketplaceSection]);
+
+  useEffect(() => {
+    const hash = safeStr(location.hash).replace(/^#/, "");
     if (hash !== "marketplace-owned-links") return;
 
     setSectionsTouched((prev) => touchedMarketplaceSectionState(prev, "tools"));
@@ -4406,6 +4533,37 @@ export default function MarketplacePage() {
     marketplaceTrust?.negatives,
     "0"
   );
+  const communityPackageByCode = useMemo(() => {
+    const map = new Map<string, CommunityPackageStatusItem>();
+    communityPackageItems.forEach((item) => {
+      const code = firstTruthy(item?.package_code);
+      if (code) map.set(code, item);
+    });
+    return map;
+  }, [communityPackageItems]);
+  const roscaPackage = communityPackageByCode.get("rosca_cycle") || null;
+  const roscaYearlyActive =
+    positiveNumber(roscaPackage?.active_remaining) > 0;
+  const latestRoscaCycle = useMemo(() => {
+    if (!roscaCycles.length) return null;
+    return roscaCycles[roscaCycles.length - 1] || null;
+  }, [roscaCycles]);
+  const nextRoscaPayoutRound = useMemo(() => {
+    const rounds = Array.isArray(latestRoscaCycle?.rounds)
+      ? latestRoscaCycle.rounds
+      : [];
+    return (
+      rounds.find((round) => round?.ready_for_payout && !round?.payout_recorded) ||
+      null
+    );
+  }, [latestRoscaCycle]);
+  const roscaMetricLabel = latestRoscaCycle
+    ? `${positiveNumber(latestRoscaCycle.total_confirmed_contributions)} / ${positiveNumber(
+        latestRoscaCycle.total_expected_contributions
+      )} confirmed`
+    : roscaYearlyActive
+      ? "Yearly active"
+      : "GBP 60 yearly";
 
   function openMarketplaceSection(
     event: React.SyntheticEvent<HTMLElement> | undefined,
@@ -4417,6 +4575,119 @@ export default function MarketplacePage() {
     setSectionsOpen(focusedMarketplaceSectionState(key));
     clearStaleMarketplaceHash(sectionId);
     scheduleMarketplaceSectionScroll(sectionId);
+  }
+
+  async function createRoscaYearlyInstruction() {
+    if (!activeCommunityId) {
+      showNotice("error", "Select a community first.");
+      return;
+    }
+    if (creatingRoscaPackage) {
+      showNotice("error", "ROSCA yearly payment request is already running.");
+      return;
+    }
+
+    setCreatingRoscaPackage(true);
+    try {
+      const result = await createCommunityPackagePaymentInstruction({
+        clan_id: activeCommunityId,
+        package_code: "rosca_cycle",
+        quantity_total: 1,
+        currency: "GBP",
+      });
+
+      await loadPage();
+      const reference = firstTruthy(result?.reference_display, result?.reference);
+      if (reference) {
+        await safeCopy(reference);
+      }
+      showNotice(
+        "success",
+        reference
+          ? "ROSCA yearly payment request created. Reference copied."
+          : "ROSCA yearly payment request created. Copy the reference from the payment record."
+      );
+    } catch (err: any) {
+      showNotice(
+        "error",
+        safeStr(err?.message) || "ROSCA yearly payment request could not be created."
+      );
+    } finally {
+      setCreatingRoscaPackage(false);
+    }
+  }
+
+  async function startMarketplaceRoscaCycle() {
+    const amount = Number(roscaContributionAmount || 0);
+    const interval = Number(roscaIntervalDays || 30);
+    if (!activeCommunityId) {
+      showNotice("error", "Select a community first.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      showNotice("error", "Enter a ROSCA contribution amount above zero.");
+      return;
+    }
+
+    setStartingRoscaCycle(true);
+    try {
+      const result = await createRoscaCycle({
+        clan_id: activeCommunityId,
+        title: safeStr(roscaTitle) || "Community ROSCA cycle",
+        contribution_amount: amount.toFixed(2),
+        currency: safeStr(roscaCurrency).toUpperCase() || "GBP",
+        interval_days:
+          Number.isFinite(interval) && interval > 0 ? Math.floor(interval) : 30,
+        note: "Started from Marketplace ROSCA desk.",
+      });
+
+      await loadPage();
+      showNotice(
+        "success",
+        firstTruthy(
+          result?.message,
+          "ROSCA cycle started. Member contribution references are ready."
+        )
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "ROSCA cycle could not be started.");
+    } finally {
+      setStartingRoscaCycle(false);
+    }
+  }
+
+  async function recordMarketplaceRoscaPayout(
+    cycleId: string,
+    roundNumber: number
+  ) {
+    if (!activeCommunityId || !cycleId || !roundNumber) {
+      showNotice("error", "ROSCA payout status is not ready yet.");
+      return;
+    }
+
+    const busyKey = `${cycleId}:${roundNumber}`;
+    setRecordingRoscaPayoutKey(busyKey);
+    try {
+      const result = await recordRoscaCyclePayout({
+        clan_id: activeCommunityId,
+        cycle_id: cycleId,
+        round_number: roundNumber,
+        note: "Recorded from Marketplace after confirmed contributions.",
+      });
+
+      await loadPage();
+      showNotice(
+        "success",
+        firstTruthy(
+          result?.message,
+          "ROSCA payout recorded. GSN did not execute an external payout."
+        )
+      );
+    } catch (err: any) {
+      showNotice("error", safeStr(err?.message) || "ROSCA payout could not be recorded.");
+    } finally {
+      setRecordingRoscaPayoutKey(null);
+    }
   }
 
   async function handleCreateInviteLink() {
@@ -5062,7 +5333,7 @@ export default function MarketplacePage() {
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
-                : "repeat(4, minmax(0, 1fr))",
+                : "repeat(5, minmax(0, 1fr))",
               gap: isCompact ? 8 : 12,
             }}
           >
@@ -5092,6 +5363,35 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsTileHelperStyle(isCompact)}>
                 Dues, Money In, Money Out
+              </span>
+            </StableButton>
+
+            <StableButton
+              type="button"
+              debugId="marketplace.tile.rosca"
+              aria-label="Open ROSCA contribution cycles for this marketplace"
+              onClick={(event) =>
+                openMarketplaceSection(event, "rosca", "marketplace-rosca")
+              }
+              style={marketplaceOsTileStyle(isCompact)}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsIconStyle(
+                  "linear-gradient(180deg, #B8871E 0%, #513A0B 100%)",
+                  isCompact
+                )}
+              >
+                <MarketplaceGlyph name="cycle" size={isCompact ? 28 : 32} />
+              </span>
+              <span style={marketplaceOsTileTitleStyle(isCompact)}>
+                ROSCA
+              </span>
+              <span style={marketplaceOsTileMetricStyle("#9A6509", isCompact)}>
+                {roscaMetricLabel}
+              </span>
+              <span style={marketplaceOsTileHelperStyle(isCompact)}>
+                Community contribution cycle
               </span>
             </StableButton>
 
@@ -5307,6 +5607,37 @@ export default function MarketplacePage() {
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
                   Payment rails, bank transfers, and settlement setup.
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
+              </span>
+            </StableButton>
+
+            <StableButton
+              type="button"
+              debugId="marketplace.row.rosca"
+              aria-label="Open ROSCA contribution cycles for this marketplace"
+              onClick={(event) =>
+                openMarketplaceSection(event, "rosca", "marketplace-rosca")
+              }
+              style={marketplaceOsRowStyle(isCompact)}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceOsRowIconStyle(
+                  "linear-gradient(180deg, #C9952F 0%, #6D470B 100%)",
+                  isCompact
+                )}
+              >
+                <MarketplaceGlyph name="cycle" size={isCompact ? 22 : 24} />
+              </span>
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  ROSCA
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Start contribution rotation for members in this community.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -5767,6 +6098,323 @@ export default function MarketplacePage() {
             </div>
           </div>
         ) : null}
+      </section>
+      ) : null}
+
+      {sectionsOpen.rosca ? (
+      <section
+        id="marketplace-rosca"
+        ref={roscaSectionRef}
+        style={{
+          ...pageCard("#FFFFFF"),
+          ...marketplaceSectionStyle(),
+          order: 9,
+          padding: isCompact ? 14 : 18,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #C9952F 0%, #6D470B 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="cycle" size={26} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#08233A",
+                  fontSize: isCompact ? 20 : 24,
+                  fontWeight: 950,
+                  lineHeight: 1.08,
+                  overflowWrap: "break-word",
+                }}
+              >
+                ROSCA
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#5E6F82",
+                  fontSize: isCompact ? 14 : 16,
+                  fontWeight: 750,
+                  lineHeight: 1.25,
+                }}
+              >
+                Contribution cycles for this marketplace only
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <span style={badge(roscaYearlyActive)}>
+              {roscaYearlyActive ? "Yearly active" : "GBP 60 yearly"}
+            </span>
+            <StableButton
+              debugId="marketplace.rosca.toggle"
+              type="button"
+              onClick={(event) => toggleSectionFromButton(event, "rosca")}
+              style={marketplaceActionStyle("soft")}
+            >
+              {sectionsOpen.rosca ? "Collapse" : "Open"}
+            </StableButton>
+          </div>
+        </div>
+
+        <ExplainToggle
+          label="What ROSCA does"
+          what="ROSCA starts a contribution rotation for active members inside this selected community marketplace."
+          why="The engine creates Money In expectations, tracks confirmed contributions, and records payout completion. It does not move external money by itself."
+          next="Activate the yearly service first, then start a cycle when the member group is ready."
+          tone="light"
+          style={{ marginTop: 12 }}
+        />
+
+        <div
+          style={{
+            marginTop: 16,
+            display: "grid",
+            gridTemplateColumns: isCompact
+              ? "1fr"
+              : "minmax(0, 1.05fr) minmax(300px, 0.95fr)",
+            gap: 16,
+            alignItems: "start",
+          }}
+        >
+          <div style={innerCard("#FCFEFF")}>
+            <div style={sectionLabel()}>Start cycle</div>
+            <div style={{ marginTop: 8, ...helperText() }}>
+              The default payout order is ranked by member trust score, because
+              higher-trust members reduce fear of disappointment at the start of
+              the cycle.
+            </div>
+
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "1.2fr 0.8fr 0.6fr 0.6fr",
+                gap: 10,
+                alignItems: "end",
+              }}
+            >
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Cycle name
+                </div>
+                <input
+                  {...marketplaceFieldTouchProps("marketplace.rosca.title")}
+                  value={roscaTitle}
+                  onChange={(event) => setRoscaTitle(event.target.value)}
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                  placeholder="Community ROSCA cycle"
+                />
+              </label>
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Contribution
+                </div>
+                <input
+                  {...marketplaceFieldTouchProps("marketplace.rosca.contribution")}
+                  value={roscaContributionAmount}
+                  onChange={(event) => setRoscaContributionAmount(event.target.value)}
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                  inputMode="decimal"
+                  placeholder="25.00"
+                />
+              </label>
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Currency
+                </div>
+                <input
+                  {...marketplaceFieldTouchProps("marketplace.rosca.currency")}
+                  value={roscaCurrency}
+                  onChange={(event) => setRoscaCurrency(event.target.value.toUpperCase())}
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                  maxLength={8}
+                  placeholder="GBP"
+                />
+              </label>
+              <label style={{ display: "block" }}>
+                <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                  Days
+                </div>
+                <input
+                  {...marketplaceFieldTouchProps("marketplace.rosca.interval-days")}
+                  value={roscaIntervalDays}
+                  onChange={(event) => setRoscaIntervalDays(event.target.value)}
+                  style={{ ...inputStyle(), marginTop: 6 }}
+                  inputMode="numeric"
+                  placeholder="30"
+                />
+              </label>
+            </div>
+
+            <div
+              {...marketplaceFieldTouchProps("marketplace.rosca.actions")}
+              style={{
+                ...marketplaceInlineActionsStyle(isCompact),
+                marginTop: 14,
+              }}
+            >
+              <StableButton
+                debugId="marketplace.rosca.activate-yearly"
+                type="button"
+                onClick={(event) => {
+                  runMarketplaceAction(event, () => {
+                    if (creatingRoscaPackage) return;
+                    void createRoscaYearlyInstruction();
+                  });
+                }}
+                stableHeight={58}
+                style={marketplaceInlineActionStyle(
+                  "secondary",
+                  creatingRoscaPackage,
+                  isCompact
+                )}
+              >
+                {creatingRoscaPackage ? "Creating..." : "Activate GBP 60 yearly"}
+              </StableButton>
+              <StableButton
+                debugId="marketplace.rosca.start-cycle"
+                type="button"
+                onClick={(event) => {
+                  runMarketplaceAction(event, () => {
+                    if (startingRoscaCycle) return;
+                    if (!roscaYearlyActive) {
+                      showNotice(
+                        "error",
+                        "Activate the GBP 60 yearly ROSCA service before starting a cycle."
+                      );
+                      return;
+                    }
+                    void startMarketplaceRoscaCycle();
+                  });
+                }}
+                stableHeight={58}
+                style={marketplaceInlineActionStyle(
+                  "primary",
+                  startingRoscaCycle || !roscaYearlyActive,
+                  isCompact
+                )}
+              >
+                {startingRoscaCycle ? "Starting..." : "Start ROSCA Cycle"}
+              </StableButton>
+              <StableButton
+                debugId="marketplace.rosca.record-payout"
+                type="button"
+                onClick={(event) => {
+                  runMarketplaceAction(event, () => {
+                    if (recordingRoscaPayoutKey) return;
+                    if (nextRoscaPayoutRound && latestRoscaCycle?.cycle_id) {
+                      void recordMarketplaceRoscaPayout(
+                        String(latestRoscaCycle.cycle_id),
+                        Number(nextRoscaPayoutRound.round_number || 0)
+                      );
+                      return;
+                    }
+                    showNotice(
+                      "error",
+                      "No ROSCA round is ready for payout recording yet."
+                    );
+                  });
+                }}
+                stableHeight={58}
+                style={marketplaceInlineActionStyle(
+                  "soft",
+                  !nextRoscaPayoutRound ||
+                    !latestRoscaCycle?.cycle_id ||
+                    Boolean(recordingRoscaPayoutKey),
+                  isCompact
+                )}
+              >
+                {recordingRoscaPayoutKey ? "Recording..." : "Record payout"}
+              </StableButton>
+            </div>
+          </div>
+
+          <div style={innerCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)")}>
+            <div style={sectionLabel()}>Cycle status</div>
+            <div
+              style={{
+                marginTop: 10,
+                display: "grid",
+                gap: 9,
+              }}
+            >
+              {[
+                ["Service", roscaYearlyActive ? "Yearly service active" : "Inactive"],
+                ["Members", `${members.length} visible in this marketplace`],
+                [
+                  "Latest cycle",
+                  latestRoscaCycle
+                    ? firstTruthy(latestRoscaCycle.title, "ROSCA cycle")
+                    : "No cycle started yet",
+                ],
+                [
+                  "Contributions",
+                  latestRoscaCycle
+                    ? `${positiveNumber(
+                        latestRoscaCycle.total_confirmed_contributions
+                      )} / ${positiveNumber(
+                        latestRoscaCycle.total_expected_contributions
+                      )} confirmed`
+                    : "Waiting for first cycle",
+                ],
+                [
+                  "Payouts",
+                  latestRoscaCycle
+                    ? `${positiveNumber(
+                        latestRoscaCycle.total_recorded_payouts
+                      )} / ${positiveNumber(latestRoscaCycle.total_rounds)} recorded`
+                    : "Waiting for first cycle",
+                ],
+              ].map(([label, value]) => (
+                <div key={label} style={marketplaceProfileStatStyle()}>
+                  <div style={sectionLabel()}>{label}</div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#0B1F33",
+                      fontWeight: 950,
+                      fontSize: 15,
+                      lineHeight: 1.25,
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ marginTop: 12, ...helperText(), fontSize: 12 }}>
+              {roscaPackage?.message ||
+                "ROSCA is tied to this selected community marketplace. Members must already belong to the community before they can be included in the cycle."}
+            </div>
+          </div>
+        </div>
       </section>
       ) : null}
 

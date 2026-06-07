@@ -161,11 +161,11 @@ def _money_in_url(*, clan_id: int, expected_payment_id: Optional[int] = None) ->
     return f"/app/payment/pool?clan_id={int(clan_id)}{suffix}"
 
 
-def _shop_control_url(*, clan_id: int, cycle_id: str, round_number: int) -> str:
+def _rosca_marketplace_url(*, clan_id: int, cycle_id: str, round_number: int) -> str:
     return (
-        f"/app/shop-control?clan_id={int(clan_id)}"
+        f"/app/marketplace?clan_id={int(clan_id)}"
         f"&rosca_cycle={cycle_id}&round={int(round_number)}"
-        "#shop-control-community-packages"
+        "#marketplace-rosca"
     )
 
 
@@ -604,7 +604,7 @@ def notify_rosca_contribution_confirmed(
                         f"All {title} contributions for round {round_number} are "
                         "confirmed. The community can now record the payout."
                     ),
-                    action_url=_shop_control_url(
+                    action_url=_rosca_marketplace_url(
                         clan_id=int(exp.clan_id),
                         cycle_id=cycle_id,
                         round_number=round_number,
