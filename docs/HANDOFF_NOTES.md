@@ -37287,3 +37287,55 @@ GSN-branded invite composer and invite-entry continuity.
     still feels jumpy, the next hard evidence should come from runtime
     phone-width tap/screenshot testing or from reducing density in the exact
     section that visibly jumps.
+
+### Dashboard button stability baseline (2026-06-07)
+
+- Trigger:
+  - product owner said "next" after the Marketplace and Community Home
+    page-by-page jumpy-button passes.
+- Dashboard count:
+  - Dashboard source now audits at 52 `StableButton` source templates, 1
+    `StableDisclosureSummary`, 2 `PictureFrameToolsControl` components, and 9
+    native fields.
+  - The 2 picture-frame controls each count as 1 toggle plus 3 rail actions
+    (`Upload`, `Change`, `Remove`), so the Dashboard page baseline is 61
+    effective action roots.
+  - Mobile AppLayout shell around `/app/dashboard` contributes 42 normal-member
+    controls: 2 top controls, 25 drawer controls, 8 tools controls, and 7
+    bottom navigation controls. Admin/member-role state can add admin controls
+    to the shell.
+  - Whole normal-member mobile Dashboard baseline is therefore 103 effective
+    action controls, plus the 9 native fields.
+  - The hidden `most-used-apps` source section remains counted because its
+    dynamic `dashboard.most-used-app.${app.key}` button template is still in
+    the source with `display: "none"`.
+- System guard changes:
+  - `frontend/tools/audit-dashboard-button-inventory.mjs` was updated to the
+    current Dashboard source baseline after the stale 54-button expectation
+    failed against the actual 52 `StableButton` templates.
+  - The audit now also counts native fields, guards the hidden most-used-apps
+    source controls, verifies both picture-frame tool rails, and verifies the
+    mobile AppLayout shell counts and fixed geometry around Dashboard.
+  - The Dashboard Market Wisdom presentation and interaction model was not
+    restyled or structurally changed because it is frozen.
+- Verification:
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:dashboard-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:dashboard-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint tools/audit-dashboard-button-inventory.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm --prefix frontend run
+    build` passed.
+- Unabated truth:
+  - This pass tightened the Dashboard audit baseline; it did not polish or
+    restyle the live Dashboard UI.
+  - Static source-level movement, tap, and link guardrails are passing. If the
+    phone still feels jumpy, the next proof step should be runtime phone-width
+    screenshot/tap testing or reducing density in the exact section that
+    visibly jumps.
