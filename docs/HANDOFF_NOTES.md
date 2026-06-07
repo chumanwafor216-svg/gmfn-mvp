@@ -1,3 +1,28 @@
+### Dashboard Spotlight screen restore guard (2026-06-07)
+
+- Trigger:
+  - product owner reported the Spotlight screen on Dashboard was no longer
+    there after the Public Shop/Spotlight context fixes.
+- Confirmed source facts:
+  - Dashboard still contained the Spotlight render block;
+  - Dashboard persisted UI state in `gmfn.dashboard.ui.v6`, including
+    `spotlightMinimized`;
+  - when minimized, the collapsed Dashboard action routed to Spotlight tasks
+    instead of restoring the actual Dashboard Spotlight screen, so a phone with
+    stale minimized state could make the screen feel gone.
+- Fix:
+  - bumped Dashboard UI storage to `gmfn.dashboard.ui.v7` so old minimized
+    phone state resets to the full Spotlight screen;
+  - added `restoreSpotlight(...)` and replaced the collapsed Spotlight actions
+    with direct `Show Spotlight screen` buttons;
+  - `audit:dashboard-actions` now enforces the restore action and storage
+    version.
+- Unabated truth:
+  - this does not change the Dashboard Spotlight feed query or community
+    visibility rules;
+  - it addresses the Dashboard screen disappearing because of local persisted
+    collapsed UI state.
+
 ### Spotlight public-shop community context preserved in handoff links (2026-06-07)
 
 - Trigger:

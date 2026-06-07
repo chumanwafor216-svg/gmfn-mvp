@@ -131,6 +131,8 @@ assertDashboardSliceStaysInert(
   "dashboard.trust-detail.toggle",
   "dashboard.trust-action.trust-slip",
   "dashboard.apps.toggle",
+  "dashboard.spotlight.restore",
+  "dashboard.spotlight.restore.empty-card",
   "dashboard.spotlight.open-marketplace",
   "dashboard.spotlight.open-shop",
   "dashboard.spotlight.guide.toggle",
@@ -148,6 +150,11 @@ assertDashboardSliceStaysInert(
     `Dashboard must keep stable action debug id ${debugId}.`
   );
 });
+
+assertContains(
+  /const DASHBOARD_UI_STORAGE_KEY = "gmfn\.dashboard\.ui\.v7";[\s\S]*?function restoreSpotlight\(event\?: React\.SyntheticEvent<HTMLElement>\)[\s\S]*?updateUiState\(\{ spotlightMinimized: false \}\)[\s\S]*?debugId="dashboard\.spotlight\.restore"[\s\S]*?Show Spotlight screen[\s\S]*?debugId="dashboard\.spotlight\.restore\.empty-card"[\s\S]*?Show Spotlight screen/,
+  "Dashboard Spotlight must reset old minimized UI state and provide a direct Show Spotlight screen restore action."
+);
 
 assertContains(
   /debugId=\{`dashboard\.passport-signal\.\$\{item\.label\.toLowerCase\(\)\}`\}/,

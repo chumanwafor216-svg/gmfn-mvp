@@ -299,7 +299,7 @@ type RoscaFocusObligation = {
   writes_commitment_trust_event?: boolean;
 };
 
-const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v6";
+const DASHBOARD_UI_STORAGE_KEY = "gmfn.dashboard.ui.v7";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 const DASHBOARD_ATTENTION_STORAGE_KEY = "gmfn.dashboard.attention.v2";
 const DASHBOARD_FOCUS_COMMITMENTS_STORAGE_KEY =
@@ -5308,6 +5308,12 @@ export default function DashboardPage() {
     );
   }
 
+  function restoreSpotlight(event?: React.SyntheticEvent<HTMLElement>) {
+    runDashboardUiMutation(event, () =>
+      updateUiState({ spotlightMinimized: false })
+    );
+  }
+
   function toggleSpotlightGuide(event?: React.SyntheticEvent<HTMLElement>) {
     runDashboardUiMutation(event, () => setSpotlightGuideOpen((open) => !open));
   }
@@ -8491,13 +8497,13 @@ export default function DashboardPage() {
 
             {!showSpotlight ? (
               <StableButton
-                debugId="dashboard.spotlight.open-tasks.collapsed"
+                debugId="dashboard.spotlight.restore"
                 type="button"
-                onClick={openDashboardSpotlightGuide}
+                onClick={restoreSpotlight}
                 onPointerDown={consumeDashboardPointerEvent}
                 style={dashboardStableActionFrame(secondaryBtn(false))}
               >
-                Open your Spotlight tasks
+                Show Spotlight screen
               </StableButton>
             ) : null}
           </div>
@@ -8576,13 +8582,13 @@ export default function DashboardPage() {
                 }}
               >
                 <StableButton
-                  debugId="dashboard.spotlight.open-tasks.empty-card"
+                  debugId="dashboard.spotlight.restore.empty-card"
                   type="button"
-                  onClick={openDashboardSpotlightGuide}
+                  onClick={restoreSpotlight}
                   onPointerDown={consumeDashboardPointerEvent}
                   style={dashboardStableActionFrame(primaryBtn(false))}
                 >
-                  Open your Spotlight tasks
+                  Show Spotlight screen
                 </StableButton>
               </div>
             </div>
