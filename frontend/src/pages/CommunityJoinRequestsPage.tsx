@@ -88,21 +88,27 @@ type VoteResponse = {
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
+    width: "100%",
+    maxWidth: "100%",
     margin: "0 -20px -30px",
     padding: "0 20px 34px",
     background:
       "radial-gradient(circle at 82% 6%, rgba(53,111,181,0.22) 0%, rgba(53,111,181,0) 32%), radial-gradient(circle at 4% 38%, rgba(64,112,169,0.16) 0%, rgba(64,112,169,0) 28%), linear-gradient(180deg, #031222 0%, #061B2D 36%, #08233A 100%)",
     boxSizing: "border-box",
+    overflowX: "hidden",
   };
 }
 
 function contentRail(): React.CSSProperties {
   return {
     width: "100%",
-    maxWidth: 980,
+    maxWidth: "min(980px, 100%)",
+    minWidth: 0,
     margin: "0 auto",
     display: "grid",
     gap: 16,
+    boxSizing: "border-box",
+    overflowX: "hidden",
   };
 }
 
@@ -110,6 +116,9 @@ function darkPanel(padding = 18): React.CSSProperties {
   return {
     position: "relative",
     overflow: "hidden",
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
     borderRadius: 22,
     border: "1px solid rgba(123,161,204,0.30)",
     background:
@@ -123,6 +132,10 @@ function darkPanel(padding = 18): React.CSSProperties {
 
 function whitePanel(padding = 18): React.CSSProperties {
   return {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    overflow: "hidden",
     borderRadius: 18,
     border: "1px solid rgba(11,31,51,0.08)",
     background: "#FFFFFF",
@@ -164,6 +177,7 @@ function reviewerBadge(canPilotApprove = false): React.CSSProperties {
 
 function requestFactTile(): React.CSSProperties {
   return {
+    minWidth: 0,
     border: "1px solid rgba(11,31,51,0.08)",
     borderRadius: 0,
     padding: "10px 12px",
@@ -195,12 +209,15 @@ function requestFactValue(): React.CSSProperties {
 function navActionStyle(kind: "light" | "blue" = "light"): React.CSSProperties {
   const blue = kind === "blue";
   return {
+    width: "100%",
+    minWidth: 0,
+    flexShrink: 1,
     minHeight: 58,
     height: 58,
     maxHeight: 58,
     borderRadius: 14,
-    padding: "0 14px",
-    fontSize: 16,
+    padding: "0 10px",
+    fontSize: 14,
     fontWeight: 1000,
     background: blue
       ? "linear-gradient(180deg, #2278F2 0%, #0D57C7 100%)"
@@ -216,6 +233,9 @@ function navActionStyle(kind: "light" | "blue" = "light"): React.CSSProperties {
 function decisionButtonStyle(kind: "approve" | "reject"): React.CSSProperties {
   const approve = kind === "approve";
   return {
+    width: "100%",
+    minWidth: 0,
+    flexShrink: 1,
     minHeight: 58,
     height: 58,
     maxHeight: 58,
@@ -232,6 +252,7 @@ function decisionButtonStyle(kind: "approve" | "reject"): React.CSSProperties {
 
 function statTile(color: string): React.CSSProperties {
   return {
+    minWidth: 0,
     minHeight: 98,
     borderRadius: 16,
     border: "1px solid rgba(11,31,51,0.08)",
@@ -243,6 +264,7 @@ function statTile(color: string): React.CSSProperties {
     gap: 9,
     color,
     boxSizing: "border-box",
+    overflow: "hidden",
   };
 }
 
@@ -264,6 +286,8 @@ function statusPill(status: string): React.CSSProperties {
         : "1px solid rgba(214,170,69,0.22)",
     color: approved ? "#2E7D32" : rejected ? "#B91C1C" : "#8A5A08",
     fontWeight: 1000,
+    maxWidth: "100%",
+    whiteSpace: "normal",
   };
 }
 
@@ -498,7 +522,7 @@ export default function CommunityJoinRequestsPage() {
           style={{
             ...darkPanel(isCompact ? 18 : 26),
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr 128px" : "minmax(0, 1fr) 220px",
+            gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) 220px",
             gap: isCompact ? 10 : 18,
             alignItems: "center",
           }}
@@ -509,9 +533,10 @@ export default function CommunityJoinRequestsPage() {
               style={{
                 margin: "12px 0 0",
                 color: "#FFFFFF",
-                fontSize: isCompact ? 31 : 40,
+                fontSize: isCompact ? 28 : 40,
                 lineHeight: 1.06,
                 fontWeight: 1000,
+                overflowWrap: "break-word",
               }}
             >
               Review Join Requests
@@ -530,7 +555,7 @@ export default function CommunityJoinRequestsPage() {
           <div
             aria-hidden="true"
             style={{
-              display: "grid",
+              display: isCompact ? "none" : "grid",
               placeItems: "center",
               minHeight: isCompact ? 118 : 172,
               color: "#D6AA45",
@@ -553,7 +578,7 @@ export default function CommunityJoinRequestsPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "minmax(0, 1fr) 120px" : "minmax(0, 1fr) 190px",
+              gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) 190px",
               gap: 14,
               alignItems: "center",
             }}
@@ -563,10 +588,11 @@ export default function CommunityJoinRequestsPage() {
               <div
                 style={{
                   marginTop: 10,
-                  fontSize: isCompact ? 30 : 40,
+                  fontSize: isCompact ? 27 : 40,
                   fontWeight: 1000,
                   color: "#FFFFFF",
                   lineHeight: 1.08,
+                  overflowWrap: "break-word",
                 }}
               >
                 {selectedCommunityName}
@@ -590,7 +616,7 @@ export default function CommunityJoinRequestsPage() {
             <div
               aria-hidden="true"
               style={{
-                display: "grid",
+                display: isCompact ? "none" : "grid",
                 placeItems: "center",
                 color: "#F2C766",
                 fontSize: isCompact ? 74 : 112,
@@ -605,17 +631,17 @@ export default function CommunityJoinRequestsPage() {
             align="stretch"
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "repeat(3, minmax(0, 1fr))"
-                : "repeat(3, minmax(0, 1fr))",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: 12,
               minHeight: 0,
+              width: "100%",
             }}
           >
             <SecondaryButton
               type="button"
               onClick={goBack}
               stableHeight={58}
+              fullWidth
               debugId={communityHomeCta.debugId}
               style={navActionStyle("light")}
             >
@@ -626,6 +652,7 @@ export default function CommunityJoinRequestsPage() {
               to={ctaPath(marketplaceCta)}
               kind="secondary"
               stableHeight={58}
+              fullWidth
               debugId={marketplaceCta.debugId}
               style={navActionStyle("light")}
             >
@@ -639,6 +666,7 @@ export default function CommunityJoinRequestsPage() {
               busy={loading}
               busyLabel="Refreshing..."
               stableHeight={58}
+              fullWidth
               debugId="community-join-requests.refresh"
               style={navActionStyle("blue")}
             >
@@ -676,8 +704,12 @@ export default function CommunityJoinRequestsPage() {
         <section
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gridTemplateColumns: isCompact
+              ? "repeat(2, minmax(0, 1fr))"
+              : "repeat(4, minmax(0, 1fr))",
             gap: isCompact ? 10 : 14,
+            width: "100%",
+            minWidth: 0,
           }}
         >
           {[
@@ -715,6 +747,8 @@ export default function CommunityJoinRequestsPage() {
               lineHeight: 1.55,
               fontSize: 14,
               fontWeight: 650,
+              maxWidth: "100%",
+              overflowWrap: "break-word",
             }}
           >
             Some communities need more than one approval. Check 👥 Active members and ✅ Required approvals on each request.
@@ -802,12 +836,22 @@ export default function CommunityJoinRequestsPage() {
             </pre>
           </div>
 
-          <CardActionRow style={{ marginTop: 14 }}>
+          <CardActionRow
+            align="stretch"
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 12,
+              minHeight: 0,
+            }}
+          >
             <PrimaryButton
               type="button"
               disabled={!safeStr(activationPack.activation_message || "")}
               onClick={() => copyText(safeStr(activationPack.activation_message || ""))}
               debugId="community-join-requests.copy-activation-message"
+              fullWidth
             >
               📋 Copy Activation Message
             </PrimaryButton>
@@ -817,6 +861,7 @@ export default function CommunityJoinRequestsPage() {
               disabled={!safeStr(activationPack.activation_link || "")}
               onClick={() => copyText(safeStr(activationPack.activation_link || ""))}
               debugId="community-join-requests.copy-activation-link"
+              fullWidth
             >
               🔗 Copy Activation Link
             </SecondaryButton>
@@ -828,6 +873,7 @@ export default function CommunityJoinRequestsPage() {
                 target={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "_blank" : undefined}
                 rel={isExternalUrl(safeStr(activationPack.activation_link || "")) ? "noopener noreferrer" : undefined}
                 debugId="community-join-requests.open-activation"
+                fullWidth
               >
                 🚀 Open Activation Page
               </StableCtaLink>
@@ -864,15 +910,24 @@ export default function CommunityJoinRequestsPage() {
             <article key={item.id} style={whitePanel(isCompact ? 16 : 20)}>
               <div
                 style={{
-                  display: "flex",
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "minmax(0, 1fr)" : "minmax(0, 1fr) auto",
                   alignItems: "start",
-                  justifyContent: "space-between",
                   gap: 12,
                   marginBottom: 8,
+                  width: "100%",
+                  minWidth: 0,
                 }}
               >
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: isCompact ? 27 : 32, fontWeight: 1000, color: "#0B1F33" }}>
+                  <div
+                    style={{
+                      fontSize: isCompact ? 26 : 32,
+                      fontWeight: 1000,
+                      color: "#0B1F33",
+                      overflowWrap: "break-word",
+                    }}
+                  >
                     Request #{item.id}
                   </div>
                   <div style={{ marginTop: 4, fontSize: 13, lineHeight: 1.45, color: "#334155", fontWeight: 700 }}>
@@ -901,7 +956,7 @@ export default function CommunityJoinRequestsPage() {
                     marginTop: 12,
                     display: "grid",
                     gridTemplateColumns: isCompact
-                      ? "repeat(2, minmax(0, 1fr))"
+                      ? "minmax(0, 1fr)"
                       : "repeat(3, minmax(0, 1fr))",
                     gap: 0,
                     overflow: "hidden",
@@ -998,9 +1053,10 @@ export default function CommunityJoinRequestsPage() {
                       display: "grid",
                       gridTemplateColumns: reviewerCanPilotApprove
                         ? isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))"
-                        : "repeat(2, minmax(0, 1fr))",
+                        : isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
                       gap: 12,
                       minHeight: 0,
+                      width: "100%",
                     }}
                   >
                     <PrimaryButton
@@ -1012,6 +1068,7 @@ export default function CommunityJoinRequestsPage() {
                       stableHeight={58}
                       debugId="community-join-requests.approve"
                       style={decisionButtonStyle("approve")}
+                      fullWidth
                     >
                       ✅ Approve
                     </PrimaryButton>
@@ -1025,6 +1082,7 @@ export default function CommunityJoinRequestsPage() {
                       stableHeight={58}
                       debugId="community-join-requests.reject"
                       style={decisionButtonStyle("reject")}
+                      fullWidth
                     >
                       ❌ Reject
                     </SecondaryButton>
@@ -1039,6 +1097,7 @@ export default function CommunityJoinRequestsPage() {
                         stableHeight={58}
                         debugId="community-join-requests.pilot-approve"
                         style={decisionButtonStyle("reject")}
+                        fullWidth
                       >
                         ⚡ Approve now
                       </SecondaryButton>

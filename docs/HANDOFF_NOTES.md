@@ -37752,3 +37752,54 @@ GSN-branded invite composer and invite-entry continuity.
     action counts, mobile shell controls, and row/icon geometry should now be
     treated as stable unless the owner explicitly requests a Community Home
     change and the audits are intentionally updated.
+
+### Join Requests mobile layout cage (2026-06-07)
+
+- Trigger:
+  - product owner attached phone screenshots showing the Join Requests focused
+    task page clipped from top to bottom: hero panels too wide, selected
+    community artwork reserving phone width, Home/Market/Refresh actions
+    clipped, stats flowing as one horizontal row, Approval Rule text cut off,
+    status badges clipped, and request facts forcing a two-column phone grid.
+- Unabated truth:
+  - This is not a page that "settles" by waiting. Only Render/PWA/browser cache
+    can lag after deploy. Once the fresh bundle is loaded, remaining clipping is
+    a code/layout issue.
+- Fix:
+  - `frontend/src/pages/CommunityJoinRequestsPage.tsx` now keeps the route
+    shell and content rail inside `maxWidth: 100%` with route-local horizontal
+    overflow clipping.
+  - Decorative hero/community icons no longer reserve a second grid column on
+    compact phones.
+  - Home, Market, and Refresh now fill stable equal grid cells with compact
+    button text.
+  - Stats collapse to a 2x2 compact grid instead of forcing four cards across
+    the phone.
+  - Approval Rule copy wraps inside the card.
+  - Request headers stack status pills under the title on compact phones.
+  - Request fact tiles collapse to one column on compact phones.
+  - Decision/action rows collapse to one column on compact phones where needed.
+  - `frontend/tools/audit-community-join-requests-layout.mjs` plus
+    `npm --prefix frontend run audit:community-join-requests-layout` now cage
+    these phone-safe layout rules.
+- Verification so far:
+  - Passed `npm --prefix frontend run audit:community-join-requests-layout`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:dashboard-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx tools/audit-community-join-requests-layout.mjs`
+    from the `frontend` directory.
+  - Passed `git diff --check`.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Practical meaning:
+  - Join Requests is now treated like a route-local caged surface for mobile
+    width and action geometry. Future work may change behavior intentionally,
+    but must not reintroduce horizontal overflow without updating the audit on
+    purpose.
