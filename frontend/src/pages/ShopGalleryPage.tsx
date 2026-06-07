@@ -1947,16 +1947,17 @@ export default function ShopGalleryPage() {
     const spotlightProductBlock =
       positiveNumber(miniSpotlight?.sourceProductBlock) ||
       positiveNumber(miniSpotlight?.sourceProductSlotNumber);
+    const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
     const shopTo = spotlightShopGmfnId
-      ? spotlightProductId || spotlightProductBlock
+      ? spotlightProductId || spotlightProductBlock || spotlightClanId
         ? publicShopSharePath({
             gmfnId: spotlightShopGmfnId,
+            clanId: spotlightClanId || undefined,
             productId: spotlightProductId || undefined,
             block: spotlightProductBlock || undefined,
           })
         : publicShopPath(spotlightShopGmfnId)
       : "";
-    const spotlightClanId = positiveNumber(miniSpotlight?.sourceClanId);
     const communityTo = spotlightClanId
       ? `/verify/community/${encodeURIComponent(String(spotlightClanId))}`
       : "";

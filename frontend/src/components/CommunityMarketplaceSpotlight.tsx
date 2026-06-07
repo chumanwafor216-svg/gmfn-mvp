@@ -143,14 +143,16 @@ function spotlightShopPath(item: MarketplaceFeedItem | null): string {
   const gmfnId = String(item?.author_gmfn_id || "").trim();
   if (!gmfnId) return "";
 
+  const clanId = positiveNumber(item?.source_clan_id || item?.clan_id);
   const productId = positiveNumber(item?.source_product_id);
   const block =
     positiveNumber(item?.source_product_block) ||
     positiveNumber(item?.source_product_slot_number);
 
-  return productId || block
+  return productId || block || clanId
     ? publicShopSharePath({
         gmfnId,
+        clanId: clanId || undefined,
         productId: productId || undefined,
         block: block || undefined,
       })

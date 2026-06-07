@@ -567,14 +567,14 @@ assertContains(
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopBlockPath[\s\S]*?const query = new URLSearchParams\(\);[\s\S]*?query\.set\("product_id", productId\);[\s\S]*?query\.set\("block", String\(Math\.trunc\(blockNumber\)\)\);[\s\S]*?shop-block-\$\{Math\.trunc\(blockNumber\)\}[\s\S]*?product-\$\{productId\}[\s\S]*?PUBLIC_SHOP_DIARIES_ANCHOR[\s\S]*?return `\$\{path\}\$\{productQuery\}#\$\{encodeURIComponent\(anchor\)\}`;/,
-  "Product/block shares must preserve product_id, block query context, and block anchors so shared item links open inside Shop Diaries."
+  /export function publicShopBlockPath[\s\S]*?const query = new URLSearchParams\(\);[\s\S]*?query\.set\("clan_id", clanId\);[\s\S]*?query\.set\("product_id", productId\);[\s\S]*?query\.set\("block", String\(Math\.trunc\(blockNumber\)\)\);[\s\S]*?shop-block-\$\{Math\.trunc\(blockNumber\)\}[\s\S]*?product-\$\{productId\}[\s\S]*?PUBLIC_SHOP_DIARIES_ANCHOR[\s\S]*?return `\$\{path\}\$\{productQuery\}#\$\{encodeURIComponent\(anchor\)\}`;/,
+  "Product/block shares must preserve explicit clan_id, product_id, block query context, and block anchors so shared item links open inside the right Shop Diaries community context."
 );
 
 assertContains(
   "src/lib/publicLinks.ts",
-  /export function publicShopSharePath\(params:[\s\S]*?const productId = cleanText\(params\.productId\);[\s\S]*?const hasBlock = Number\.isFinite\(blockNumber\) && blockNumber > 0;[\s\S]*?if \(productId \|\| hasBlock\) \{[\s\S]*?return publicShopBlockPath\(params\);[\s\S]*?return publicShopPath\(params\.gmfnId\);[\s\S]*?export function publicShopShareUrl\(params:[\s\S]*?return path \? shareablePublicFrontendUrl\(path\) : "";/,
-  "Ordinary public shop sharing must use the canonical shop root, while exact product/block shares preserve product and block context."
+  /export function publicShopSharePath\(params:[\s\S]*?const productId = cleanText\(params\.productId\);[\s\S]*?const clanId = cleanText\(params\.clanId\);[\s\S]*?const hasBlock = Number\.isFinite\(blockNumber\) && blockNumber > 0;[\s\S]*?if \(productId \|\| hasBlock \|\| clanId\) \{[\s\S]*?return publicShopBlockPath\(params\);[\s\S]*?return publicShopPath\(params\.gmfnId\);[\s\S]*?export function publicShopShareUrl\(params:[\s\S]*?return path \? shareablePublicFrontendUrl\(path\) : "";/,
+  "Ordinary public shop sharing must use the canonical shop root, while explicit community/product/block shares preserve Spotlight context."
 );
 
 assertContains(
@@ -952,14 +952,14 @@ assertContains(
 
 assertContains(
   "src/components/CommunityMarketplaceSpotlight.tsx",
-  /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?function spotlightShopPath\(item: MarketplaceFeedItem \| null\): string \{[\s\S]*?positiveNumber\(item\?\.source_product_id\)[\s\S]*?positiveNumber\(item\?\.source_product_block\)[\s\S]*?positiveNumber\(item\?\.source_product_slot_number\)[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?publicShopPath\(gmfnId\)/,
-  "Community Marketplace Spotlight must preserve backend source product/block truth and deep-link network placements to the exact public shop block."
+  /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?function spotlightShopPath\(item: MarketplaceFeedItem \| null\): string \{[\s\S]*?const clanId = positiveNumber\(item\?\.source_clan_id \|\| item\?\.clan_id\);[\s\S]*?positiveNumber\(item\?\.source_product_id\)[\s\S]*?positiveNumber\(item\?\.source_product_block\)[\s\S]*?positiveNumber\(item\?\.source_product_slot_number\)[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?clanId: clanId \|\| undefined,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?publicShopPath\(gmfnId\)/,
+  "Community Marketplace Spotlight must preserve backend source community/product/block truth and deep-link network placements to the exact public shop community/block."
 );
 
 assertContains(
   "src/pages/DashboardPage.tsx",
-  /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?source_product_id:[\s\S]*?source\.source_product_id \?\? source\.sourceProductId \?\? null,[\s\S]*?source_product_block:[\s\S]*?source\.source_product_block \?\? source\.sourceProductBlock \?\? null,[\s\S]*?source_product_slot_number:[\s\S]*?source\.source_product_slot_number \?\? source\.sourceProductSlotNumber \?\? null,[\s\S]*?function spotlightShopTo\(item: SpotlightItem \| null\): string \{[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?navigateWithOrigin\(navigate, spotlightShopTo\(activeSpotlight\), location\)/,
-  "Dashboard Spotlight must keep source product/block fields and open paid outside spotlight placements at the exact public shop block."
+  /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?source_product_id:[\s\S]*?source\.source_product_id \?\? source\.sourceProductId \?\? null,[\s\S]*?source_product_block:[\s\S]*?source\.source_product_block \?\? source\.sourceProductBlock \?\? null,[\s\S]*?source_product_slot_number:[\s\S]*?source\.source_product_slot_number \?\? source\.sourceProductSlotNumber \?\? null,[\s\S]*?function spotlightShopTo\(item: SpotlightItem \| null\): string \{[\s\S]*?const clanId = positiveNumber\(item\?\.source_clan_id \|\| item\?\.clan_id\);[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?clanId: clanId \|\| undefined,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?navigateWithOrigin\(navigate, spotlightShopTo\(activeSpotlight\), location\)/,
+  "Dashboard Spotlight must keep source community/product/block fields and open paid outside spotlight placements at the exact public shop community/block."
 );
 
 assertContains(
@@ -970,8 +970,14 @@ assertContains(
 
 assertContains(
   "src/pages/ShopGalleryPage.tsx",
-  /import \{[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?src\?\.source_product_id \|\| src\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?src\?\.source_product_block \|\| src\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?src\?\.source_product_slot_number \|\| src\?\.sourceProductSlotNumber[\s\S]*?const spotlightProductId = positiveNumber\(miniSpotlight\?\.sourceProductId\);[\s\S]*?const spotlightProductBlock =[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductBlock\) \|\|[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductSlotNumber\);[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: spotlightShopGmfnId,[\s\S]*?productId: spotlightProductId \|\| undefined,[\s\S]*?block: spotlightProductBlock \|\| undefined,[\s\S]*?\}\)[\s\S]*?function openSpotlightPreview\(\)[\s\S]*?hasExactSpotlightBlock[\s\S]*?miniSpotlightView\.shopTo[\s\S]*?window\.location\.href = miniSpotlightView\.shopTo/,
-  "Public Shop Spotlight must preserve broadcast source product/block truth and navigate exact sourced placements to the exact public shop block."
+  /import \{[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?sourceProductId\?: number;[\s\S]*?sourceProductBlock\?: number;[\s\S]*?sourceProductSlotNumber\?: number;[\s\S]*?sourceProductId:[\s\S]*?src\?\.source_product_id \|\| src\?\.sourceProductId[\s\S]*?sourceProductBlock:[\s\S]*?src\?\.source_product_block \|\| src\?\.sourceProductBlock[\s\S]*?sourceProductSlotNumber:[\s\S]*?src\?\.source_product_slot_number \|\| src\?\.sourceProductSlotNumber[\s\S]*?const spotlightProductId = positiveNumber\(miniSpotlight\?\.sourceProductId\);[\s\S]*?const spotlightProductBlock =[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductBlock\) \|\|[\s\S]*?positiveNumber\(miniSpotlight\?\.sourceProductSlotNumber\);[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: spotlightShopGmfnId,[\s\S]*?clanId: spotlightClanId \|\| undefined,[\s\S]*?productId: spotlightProductId \|\| undefined,[\s\S]*?block: spotlightProductBlock \|\| undefined,[\s\S]*?\}\)[\s\S]*?function openSpotlightPreview\(\)[\s\S]*?hasExactSpotlightBlock[\s\S]*?miniSpotlightView\.shopTo[\s\S]*?window\.location\.href = miniSpotlightView\.shopTo/,
+  "Public Shop Spotlight must preserve broadcast source community/product/block truth and navigate exact sourced placements to the exact public shop community/block."
+);
+
+assertContains(
+  "src/lib/publicLinks.ts",
+  /export function publicShopSharePath\(params: \{[\s\S]*?clanId\?: string \| number \| null;[\s\S]*?const clanId = cleanText\(params\.clanId\);[\s\S]*?if \(productId \|\| hasBlock \|\| clanId\) \{[\s\S]*?return publicShopBlockPath\(params\);/,
+  "Public Shop share paths must support explicit community context for Spotlight handoffs while leaving ordinary root links clean when no clanId is passed."
 );
 
 assertContains(

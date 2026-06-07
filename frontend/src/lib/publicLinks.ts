@@ -257,14 +257,19 @@ export function publicShopBlockPath(params: {
   gmfnId: string;
   productId?: string | number | null;
   block?: string | number | null;
+  clanId?: string | number | null;
 }): string {
   const path = publicShopPath(params.gmfnId);
   if (!path) return "";
 
   const productId = cleanText(params.productId);
+  const clanId = cleanText(params.clanId);
   const blockNumber = Number(params.block || 0);
   const hasBlock = Number.isFinite(blockNumber) && blockNumber > 0;
   const query = new URLSearchParams();
+  if (clanId) {
+    query.set("clan_id", clanId);
+  }
   if (productId) {
     query.set("product_id", productId);
   }
@@ -285,6 +290,7 @@ export function publicShopBlockUrl(params: {
   gmfnId: string;
   productId?: string | number | null;
   block?: string | number | null;
+  clanId?: string | number | null;
 }): string {
   const path = publicShopBlockPath(params);
   return path ? shareablePublicFrontendUrl(path) : "";
@@ -316,12 +322,14 @@ export function publicShopSharePath(params: {
   gmfnId: string;
   productId?: string | number | null;
   block?: string | number | null;
+  clanId?: string | number | null;
 }): string {
   const productId = cleanText(params.productId);
+  const clanId = cleanText(params.clanId);
   const blockNumber = Number(params.block || 0);
   const hasBlock = Number.isFinite(blockNumber) && blockNumber > 0;
 
-  if (productId || hasBlock) {
+  if (productId || hasBlock || clanId) {
     return publicShopBlockPath(params);
   }
 
@@ -332,6 +340,7 @@ export function publicShopShareUrl(params: {
   gmfnId: string;
   productId?: string | number | null;
   block?: string | number | null;
+  clanId?: string | number | null;
 }): string {
   const path = publicShopSharePath(params);
   return path ? shareablePublicFrontendUrl(path) : "";

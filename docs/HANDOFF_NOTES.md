@@ -1,3 +1,51 @@
+### Spotlight public-shop community context preserved in handoff links (2026-06-07)
+
+- Trigger:
+  - product owner confirmed Public Shop buttons were now behaving better, but
+    reported a new Spotlight visibility gap: the publisher could see the live
+    Spotlight, but other members in the same community did not appear to receive
+    it on their Public Shop reflection surfaces.
+- Clarified product rule:
+  - Community Home Owner Spotlight Status remains personal/current-member
+    scoped: it shows only the Spotlight that signed-in user published;
+  - Dashboard and Public Shop are community/public reflection surfaces: a live
+    Spotlight published in a community should be visible through that
+    community's Dashboard/Public Shop context for members of that community.
+- Confirmed source/live facts:
+  - live backend public-shop API for `GMFN-U-63655DE6` returned one active
+    broadcast in `clan_id: 8` / `Homeland isa Marketplace`, with video
+    `/uploads/marketplace/videos/20260607101609_1829dbd2fa15b59c.mp4`;
+  - backend Public Shop already supports `?clan_id=...` and will reflect that
+    community's broadcasts if the shop owner is an active member of that clan;
+  - frontend Spotlight handoff links from Dashboard, Community Marketplace
+    Spotlight, and Public Shop mini-Spotlight were opening `/shop/{GSN_ID}`
+    without the broadcast source `clan_id`, so a member whose saved shop record
+    belonged to another/default community could fall back to that saved shop
+    community and miss the live Spotlight from the selected community.
+- Fix:
+  - `publicShopSharePath` / `publicShopBlockPath` now accept an explicit
+    optional `clanId` and encode it as `clan_id` only when a caller passes it;
+  - ordinary public shop root sharing remains clean `/shop/{GSN_ID}` with no
+    community/query hint;
+  - Dashboard Spotlight shop handoffs, Community Marketplace Spotlight shop
+    handoffs, and Public Shop mini-Spotlight shop handoffs now carry the source
+    broadcast community id into the Public Shop URL.
+- Verification passed:
+  - `npm run audit:link-contracts`;
+  - `npm run audit:community-shop-actions`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:spotlight-controls`;
+  - `npm exec -- eslint src/lib/publicLinks.ts src/pages/DashboardPage.tsx
+    src/components/CommunityMarketplaceSpotlight.tsx
+    src/pages/ShopGalleryPage.tsx tools/audit-link-contracts.mjs`.
+- Unabated truth:
+  - this does not change Community Home's personal owner Spotlight status;
+  - it fixes the missing community context on Spotlight-to-Public-Shop handoff
+    links, but ordinary manually typed/root public shop URLs still have no way
+    to infer a visitor's intended community when a member belongs to multiple
+    communities.
+
 ### Public Shop single-tap blocks and shared button capture trap fixed (2026-06-07)
 
 - Trigger:
