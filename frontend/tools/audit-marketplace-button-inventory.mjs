@@ -19,13 +19,13 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 56;
-const expectedNativeFieldCount = 9;
+const expectedStableActionCount = 62;
+const expectedNativeFieldCount = 13;
 const expectedSourceBreakdown = {
-  front: 15,
-  body: 41,
+  front: 17,
+  body: 45,
 };
-const expectedVisibleIntentActionCount = 12;
+const expectedVisibleIntentActionCount = 13;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 30,
@@ -250,6 +250,11 @@ assertContains(
 );
 
 assertContains(
+  /debugId="marketplace\.tile\.rosca"[\s\S]{0,300}aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]{0,320}openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]{0,520}ROSCA[\s\S]{0,260}Community contribution cycle/,
+  "Marketplace ROSCA tile must open the ROSCA section only and stay visible as its own Marketplace emblem."
+);
+
+assertContains(
   /debugId="marketplace\.tile\.support"[\s\S]{0,300}aria-label="Open Support Requests, guarantors and loans"[\s\S]{0,320}openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)/,
   "Marketplace Support Requests tile must open the support section only."
 );
@@ -265,13 +270,18 @@ assertContains(
 );
 
 assertContains(
+  /debugId="marketplace\.row\.rosca"[\s\S]{0,300}aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]{0,300}openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)/,
+  "Marketplace ROSCA operating row must open the ROSCA section only."
+);
+
+assertContains(
   /id="marketplace-money-routes"[\s\S]*?Marketplace Finance[\s\S]*?Finance overview[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Community Account[\s\S]*?Money In route[\s\S]*?Personal Payout[\s\S]*?Money Out route/,
   "Marketplace money route detail must keep the compact Marketplace Finance reference-card structure."
 );
 
 const moneySection = sectionBetween(
   /id="marketplace-money-routes"/,
-  /id="marketplace-owned-links"/
+  /id="marketplace-rosca"/
 );
 
 if (!moneySection) {
@@ -307,6 +317,48 @@ if (!moneySection) {
       line: lineAt(source.indexOf(moneySection)),
       message: "Marketplace money detail section must not contain Trust Passport, TrustSlip, CCI, or identity route wording/calls.",
       text: "Money detail should remain Money In, Money Out, and Finance only.",
+    });
+  }
+}
+
+const roscaSection = sectionBetween(
+  /id="marketplace-rosca"/,
+  /id="marketplace-owned-links"/
+);
+
+if (!roscaSection) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace ROSCA section was not found for scoped button auditing.",
+    text: "Expected id=\"marketplace-rosca\" before id=\"marketplace-owned-links\".",
+  });
+} else {
+  const roscaActionIds = [
+    ...roscaSection.matchAll(/debugId="(marketplace\.rosca\.[^"]+)"/g),
+  ].map((item) => item[1]);
+  const expectedRoscaActionIds = [
+    "marketplace.rosca.toggle",
+    "marketplace.rosca.activate-yearly",
+    "marketplace.rosca.start-cycle",
+    "marketplace.rosca.record-payout",
+  ];
+
+  if (roscaActionIds.join("|") !== expectedRoscaActionIds.join("|")) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(roscaSection)),
+      message: "Marketplace ROSCA section must expose only the audited ROSCA actions in the audited order.",
+      text: `found=${roscaActionIds.join(", ") || "none"}`,
+    });
+  }
+
+  if (!/Activate the GBP 60 yearly ROSCA service before starting a cycle/.test(roscaSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(roscaSection)),
+      message: "Marketplace ROSCA Start button must stay tappable and explain inactive yearly service instead of becoming a dead disabled button.",
+      text: "Expected inactive yearly service explainer was not found.",
     });
   }
 }
@@ -366,11 +418,13 @@ const expectedOrder = [
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
   exactDebugId("marketplace.tile.money"),
+  exactDebugId("marketplace.tile.rosca"),
   exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.tile.members"),
   exactDebugId("marketplace.tile.trust"),
   exactDebugId("marketplace.row.money"),
   exactDebugId("marketplace.row.payment-rails"),
+  exactDebugId("marketplace.row.rosca"),
   exactDebugId("marketplace.row.loan-process"),
   exactDebugId("marketplace.row.member-ledger"),
   exactDebugId("marketplace.row.demand-box"),
@@ -385,6 +439,10 @@ const expectedOrder = [
   exactDebugId("marketplace.money.money-in"),
   exactDebugId("marketplace.money.money-out"),
   exactDebugId("marketplace.money.finance"),
+  exactDebugId("marketplace.rosca.toggle"),
+  exactDebugId("marketplace.rosca.activate-yearly"),
+  exactDebugId("marketplace.rosca.start-cycle"),
+  exactDebugId("marketplace.rosca.record-payout"),
   exactDebugId("marketplace.links.toggle"),
   exactDebugId("marketplace.links.join.copy"),
   exactDebugId("marketplace.links.join.refresh"),
@@ -464,7 +522,7 @@ for (const expected of expectedOrder) {
 }
 
 assertContains(
-  /const MARKETPLACE_INTENT_ITEMS:[\s\S]*?id: "money-in"[\s\S]*?id: "money-out"[\s\S]*?id: "finance"[\s\S]*?id: "support"[\s\S]*?id: "shop"[\s\S]*?id: "invite"[\s\S]*?id: "trust"[\s\S]*?id: "identity"[\s\S]*?id: "trustslip"[\s\S]*?id: "demand"[\s\S]*?id: "community"[\s\S]*?id: "messages"/,
+  /const MARKETPLACE_INTENT_ITEMS:[\s\S]*?id: "money-in"[\s\S]*?id: "money-out"[\s\S]*?id: "finance"[\s\S]*?id: "rosca"[\s\S]*?id: "support"[\s\S]*?id: "shop"[\s\S]*?id: "invite"[\s\S]*?id: "trust"[\s\S]*?id: "identity"[\s\S]*?id: "trustslip"[\s\S]*?id: "demand"[\s\S]*?id: "community"[\s\S]*?id: "messages"/,
   "Marketplace intent guide must keep the full inner action manifest in stable order."
 );
 
@@ -474,8 +532,8 @@ assertNotContains(
 );
 
 assertContains(
-  /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?money: "marketplace-money-routes"[\s\S]*?tools: "marketplace-owned-links"[\s\S]*?members: "marketplace-members-shops"[\s\S]*?support: "marketplace-loans-support"/,
-  "Marketplace section anchors must stay aligned to money, links, members, and support sections."
+  /const MARKETPLACE_SECTION_ANCHORS:[\s\S]*?money: "marketplace-money-routes"[\s\S]*?rosca: "marketplace-rosca"[\s\S]*?tools: "marketplace-owned-links"[\s\S]*?members: "marketplace-members-shops"[\s\S]*?support: "marketplace-loans-support"/,
+  "Marketplace section anchors must stay aligned to money, ROSCA, links, members, and support sections."
 );
 
 assertContains(

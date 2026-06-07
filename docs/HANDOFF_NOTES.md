@@ -37188,3 +37188,50 @@ GSN-branded invite composer and invite-entry continuity.
     `7002f5b` includes a backend migration and route changes, the backend Render
     service should also be checked in its dashboard or manually deployed if it
     is not auto-deploying the same branch.
+
+### Marketplace button stability baseline (2026-06-07)
+
+- Trigger:
+  - product owner asked to tackle jumpy buttons page by page, starting by
+    counting the full page controls, including inner page actions and
+    navigation/shell controls.
+- Marketplace count:
+  - Marketplace page source now audits at 62 stable actions and 13 native
+    fields.
+  - Mobile AppLayout shell around `/app/marketplace` contributes 47 controls:
+    2 top controls, 30 drawer controls, 8 tools controls, and 7 bottom
+    navigation controls.
+  - Whole mobile Marketplace route baseline is therefore 109 action controls,
+    plus the 13 native fields.
+- System guard changes:
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` was updated to the
+    current Marketplace structure after ROSCA moved into Marketplace.
+  - The audit now treats ROSCA as its own Marketplace emblem/row/section:
+    `marketplace.tile.rosca`, `marketplace.row.rosca`, and the
+    `marketplace-rosca` section actions are all counted and order-guarded.
+  - The money-section audit now stops before the ROSCA section, so ROSCA trust
+    wording cannot create false positives against the Money In / Money Out
+    wording rules.
+  - The ROSCA Start button remains audited as tappable with an inactive-service
+    explanation instead of becoming a dead disabled button.
+- Verification:
+  - Passed `npm --prefix frontend run audit:marketplace-button-inventory`.
+  - Passed `npm --prefix frontend run audit:marketplace-button-lines`.
+  - Passed `npm --prefix frontend run audit:marketplace-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint tools/audit-marketplace-button-inventory.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm --prefix frontend run
+    build` passed.
+- Unabated truth:
+  - This pass tightened the Marketplace audit baseline; it did not restyle the
+    live Marketplace UI.
+  - Source-level geometry and tap guardrails are passing, so if the phone still
+    feels jumpy, the next proof step should be runtime phone-width
+    screenshot/tap testing or reducing density in the specific section that
+    feels unstable.
