@@ -1025,7 +1025,7 @@ function arrangeProductsByPublicBlock(items: ShopProduct[]): ShopProduct[] {
 }
 
 const SHOP_GALLERY_INNER_SURFACE =
-  "radial-gradient(circle at 0% 0%, rgba(11,99,209,0.075) 0%, transparent 32%), radial-gradient(circle at 100% 0%, rgba(212,175,55,0.045) 0%, transparent 28%), linear-gradient(180deg, rgba(255,255,255,0.965) 0%, rgba(238,247,253,0.945) 100%)";
+  "radial-gradient(circle at 8% 0%, rgba(47,128,237,0.105) 0%, transparent 34%), radial-gradient(circle at 100% 6%, rgba(246,196,83,0.075) 0%, transparent 30%), linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%)";
 
 function innerCard(bg = "#FFFFFF"): React.CSSProperties {
   return {
@@ -1042,8 +1042,9 @@ function sectionLabel(): React.CSSProperties {
     fontSize: 12,
     color: "#5D7389",
     fontWeight: 900,
-    letterSpacing: 0.35,
+    letterSpacing: 0,
     textTransform: "uppercase",
+    textShadow: "0 1px 0 rgba(255,255,255,0.82)",
   };
 }
 
@@ -1074,6 +1075,24 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 900,
     whiteSpace: "normal",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.74)",
+  };
+}
+
+function glossyIconBadge(size: number, fontSize: number): React.CSSProperties {
+  return {
+    display: "grid",
+    placeItems: "center",
+    width: size,
+    height: size,
+    borderRadius: "50%",
+    background:
+      "radial-gradient(circle at 34% 22%, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.68) 42%, rgba(234,243,255,0.96) 100%)",
+    color: "#0B4A7A",
+    boxShadow:
+      "0 10px 22px rgba(8,38,67,0.14), inset 0 1px 0 rgba(255,255,255,0.95), inset 0 -8px 18px rgba(13,95,168,0.08)",
+    fontSize,
+    border: "1px solid rgba(13,95,168,0.10)",
+    lineHeight: 1,
   };
 }
 
@@ -2703,15 +2722,16 @@ export default function ShopGalleryPage() {
               <h1
                 style={{
                   margin: 0,
-                  color: "#F6D77A",
-                  fontFamily: "Georgia, 'Times New Roman', serif",
-                  fontSize: isCompact ? 26 : 46,
-                  lineHeight: 0.96,
+                  color: "#F9D86D",
+                  fontFamily:
+                    "'Inter', 'Segoe UI', 'Arial Black', Arial, sans-serif",
+                  fontSize: isCompact ? 26 : 44,
+                  lineHeight: 1,
                   fontWeight: 950,
                   textTransform: "uppercase",
                   letterSpacing: 0,
                   textShadow:
-                    "0 2px 0 rgba(255,255,255,0.10), 0 12px 30px rgba(0,0,0,0.40)",
+                    "0 1px 0 rgba(255,255,255,0.20), 0 3px 0 rgba(4,18,34,0.42), 0 18px 30px rgba(0,0,0,0.38)",
                   overflow: "hidden",
                   textOverflow: "ellipsis",
                   display: "-webkit-box",
@@ -2731,12 +2751,14 @@ export default function ShopGalleryPage() {
                   minHeight: isCompact ? 28 : 34,
                   padding: isCompact ? "5px 9px" : "7px 12px",
                   borderRadius: 999,
-                  border: "1px solid rgba(255,255,255,0.24)",
-                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.28)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%)",
                   color: "rgba(255,255,255,0.88)",
                   fontSize: isCompact ? 11 : 13,
                   fontWeight: 850,
                   overflow: "hidden",
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.18)",
                 }}
               >
                 <span aria-hidden="true">🏷️</span>
@@ -2755,8 +2777,9 @@ export default function ShopGalleryPage() {
                   display: "grid",
                   gap: 0,
                   borderRadius: isCompact ? 15 : 18,
-                  border: "1px solid rgba(255,232,160,0.26)",
-                  background: "rgba(3,20,36,0.34)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  background:
+                    "linear-gradient(180deg, rgba(255,255,255,0.095) 0%, rgba(3,20,36,0.26) 100%)",
                   overflow: "hidden",
                   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.10)",
                 }}
@@ -2791,6 +2814,8 @@ export default function ShopGalleryPage() {
                         background: "rgba(246,215,122,0.15)",
                         color: "#F6D77A",
                         fontSize: isCompact ? 13 : 16,
+                        boxShadow:
+                          "0 8px 18px rgba(2,12,27,0.18), inset 0 1px 0 rgba(255,255,255,0.14)",
                       }}
                     >
                       {row.icon}
@@ -2942,10 +2967,11 @@ export default function ShopGalleryPage() {
             gap: 0,
             borderRadius: isCompact ? 16 : 18,
             overflow: "hidden",
-            border: "1px solid rgba(255,255,255,0.88)",
-            background: "linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%)",
+            border: "1px solid rgba(255,255,255,0.94)",
+            background:
+              "linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%)",
             boxShadow:
-              "0 18px 36px rgba(8,38,67,0.13), inset 0 1px 0 rgba(255,255,255,0.90)",
+              "0 22px 44px rgba(8,38,67,0.15), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
           }}
         >
           {[
@@ -2975,17 +3001,10 @@ export default function ShopGalleryPage() {
               <>
                 <div
                   style={{
-                    width: isCompact ? 28 : 50,
-                    height: isCompact ? 28 : 50,
-                    borderRadius: "50%",
-                    display: "grid",
-                    placeItems: "center",
-                    background: "linear-gradient(180deg, #EEF6FF 0%, #FFFFFF 100%)",
-                    color: "#0B4A7A",
-                    boxShadow:
-                      "0 8px 18px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.85)",
-                    fontSize: isCompact ? 16 : 21,
-                    border: "1px solid rgba(13,95,168,0.10)",
+                    ...glossyIconBadge(
+                      isCompact ? 28 : 50,
+                      isCompact ? 16 : 21
+                    ),
                   }}
                 >
                   {item.mark}
@@ -3762,11 +3781,11 @@ export default function ShopGalleryPage() {
               overflow: "hidden",
               borderRadius: isCompact ? 20 : 26,
               padding: isCompact ? 14 : 22,
-              border: "1px solid rgba(246,215,122,0.68)",
+              border: "1px solid rgba(255,255,255,0.92)",
               background:
-                "radial-gradient(circle at 88% 8%, rgba(246,196,83,0.34) 0%, transparent 34%), linear-gradient(135deg, #FFF9E9 0%, #FFFFFF 58%, #EFF6FF 100%)",
+                "radial-gradient(circle at 86% 10%, rgba(47,128,237,0.15) 0%, transparent 34%), radial-gradient(circle at 8% 0%, rgba(246,196,83,0.10) 0%, transparent 30%), linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%)",
               boxShadow:
-                "0 22px 48px rgba(8,38,67,0.12), inset 0 1px 0 rgba(255,255,255,0.90)",
+                "0 24px 52px rgba(8,38,67,0.14), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
             }}
           >
             <div
@@ -3778,7 +3797,7 @@ export default function ShopGalleryPage() {
               }}
             >
               <div>
-                <div style={{ ...sectionLabel(), color: "#A36F08" }}>
+                <div style={{ ...sectionLabel(), color: "#0B63D1" }}>
                   Spotlight
                 </div>
                 <div
@@ -3811,7 +3830,7 @@ export default function ShopGalleryPage() {
                   <div
                     style={{
                       marginTop: isCompact ? 7 : 10,
-                      color: "#A36F08",
+                      color: "#0B63D1",
                       fontSize: isCompact ? 10.2 : 12,
                       fontWeight: 900,
                       lineHeight: 1.35,
@@ -3874,9 +3893,10 @@ export default function ShopGalleryPage() {
                   overflow: "hidden",
                   position: "relative",
                   background:
-                    "radial-gradient(circle at 40% 24%, rgba(255,255,255,0.92) 0%, rgba(246,196,83,0.28) 42%, rgba(11,74,122,0.16) 100%)",
-                  border: "1px solid rgba(214,170,69,0.24)",
-                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.75)",
+                    "radial-gradient(circle at 38% 18%, rgba(255,255,255,0.96) 0%, rgba(234,243,255,0.72) 46%, rgba(11,99,209,0.15) 100%)",
+                  border: "1px solid rgba(255,255,255,0.94)",
+                  boxShadow:
+                    "0 16px 30px rgba(8,38,67,0.13), inset 0 1px 0 rgba(255,255,255,0.82)",
                 }}
               >
                 {miniSpotlightView.imageUrl || miniSpotlightView.videoUrl ? (
@@ -4061,11 +4081,11 @@ export default function ShopGalleryPage() {
           style={{
             borderRadius: isCompact ? 24 : 28,
             padding: isCompact ? 9 : 18,
-            border: "1px solid rgba(13,95,168,0.18)",
+            border: "1px solid rgba(255,255,255,0.92)",
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(239,247,253,0.96) 100%)",
+              "radial-gradient(circle at 6% 0%, rgba(47,128,237,0.12) 0%, transparent 34%), linear-gradient(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%)",
             boxShadow:
-              "0 24px 52px rgba(8,38,67,0.10), inset 0 1px 0 rgba(255,255,255,0.86)",
+              "0 26px 56px rgba(8,38,67,0.13), 0 0 0 1px rgba(13,95,168,0.08), inset 0 1px 0 rgba(255,255,255,0.96)",
             scrollMarginTop: 12,
           }}
         >
@@ -4080,7 +4100,19 @@ export default function ShopGalleryPage() {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={{ ...sectionLabel(), color: "#0B1F33" }}>Shop Diaries</div>
+              <div
+                style={{
+                  ...sectionLabel(),
+                  color: "#07172C",
+                  fontSize: isCompact ? 15 : 17,
+                  fontWeight: 950,
+                  textTransform: "uppercase",
+                  textShadow:
+                    "0 1px 0 rgba(255,255,255,0.94), 0 10px 18px rgba(8,38,67,0.10)",
+                }}
+              >
+                Shop Diaries
+              </div>
               <div
                 style={{
                   marginTop: 4,
@@ -4276,11 +4308,12 @@ export default function ShopGalleryPage() {
                     style={{
                       position: "relative",
                       borderRadius: isCompact ? 18 : 20,
-                      border: "2px solid rgba(8,31,51,0.62)",
-                      background: "#FFFFFF",
+                      border: "1px solid rgba(255,255,255,0.92)",
+                      background:
+                        "linear-gradient(135deg, #FFFFFF 0%, #F8FBFF 100%)",
                       overflow: "hidden",
                       boxShadow:
-                        "0 16px 30px rgba(8,38,67,0.18), 0 0 0 1px rgba(255,232,160,0.20), inset 0 1px 0 rgba(255,255,255,0.92)",
+                        "0 20px 34px rgba(8,38,67,0.17), 0 0 0 1px rgba(13,95,168,0.10), 0 0 0 4px rgba(255,255,255,0.42), inset 0 1px 0 rgba(255,255,255,0.96)",
                       width: "100%",
                       maxWidth: "100%",
                       boxSizing: "border-box",
@@ -4420,8 +4453,8 @@ export default function ShopGalleryPage() {
                         alignContent: "end",
                         background:
                           isProductOpen
-                            ? "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, #FFFFFF 100%)"
-                            : "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, #FFFFFF 100%)",
+                            ? "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,251,255,0.98) 100%)"
+                            : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(247,251,255,0.96) 100%)",
                         borderTop: "1px solid rgba(13,95,168,0.14)",
                         maxHeight: isProductOpen
                           ? diaryOpenDockHeight
@@ -4451,6 +4484,8 @@ export default function ShopGalleryPage() {
                           WebkitLineClamp: isProductOpen ? 1 : isCompact ? 1 : 2,
                           WebkitBoxOrient: "vertical" as any,
                           overflow: "hidden",
+                          textShadow:
+                            "0 1px 0 rgba(255,255,255,0.88), 0 9px 16px rgba(8,38,67,0.10)",
                         }}
                       >
                         {displayTitle}

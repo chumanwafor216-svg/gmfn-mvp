@@ -1,3 +1,50 @@
+### Public Shop visual polish and white diary framing (2026-06-07)
+
+- Trigger:
+  - product owner confirmed the Spotlight / WhatsApp / shop handoff behavior was
+    closer, then asked whether the connections were system-level and requested
+    a stronger Public Shop polish pass;
+  - specific visual complaint: Shop Diaries and visible Public Shop surfaces
+    still looked too brown/heavy/hand-written and not polished enough on modern
+    phones.
+- Confirmed source facts:
+  - the prior Spotlight / WhatsApp / Marketplace handoffs are source-level:
+    backend exposes the rotating source shop WhatsApp field, the frontend uses
+    shared WhatsApp link building, and Dashboard/Public Shop/Marketplace route
+    consumers carry the community/shop context;
+  - this pass is visual/route-local only and does not change Spotlight
+    selection, community visibility, WhatsApp resolution, auth, backend, or
+    route contracts.
+- Fix:
+  - Public Shop shared inner surfaces now use a brighter pearl/white/soft-blue
+    frame with restrained gold light;
+  - signboard title typography moved from the old serif look to a stronger
+    modern sans treatment with richer shadowing;
+  - status-strip marks now use a reusable glossy icon badge treatment;
+  - Spotlight and Shop Diaries sections now use polished white brand framing
+    instead of cream/brown-heavy framing;
+  - individual Shop Diary cards now use white product-frame borders, subtle
+    blue rim light, stronger depth, and cleaner dock/title shadowing;
+  - `audit:community-shop-actions` now guards the white Spotlight/Diary
+    framing and forbids the old heavy dark diary border / cream-brown
+    Spotlight frame from returning.
+- Verification passed:
+  - `npm run audit:community-shop-actions`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:spotlight-controls`;
+  - `npm run audit:link-contracts`;
+  - `npm exec -- eslint src/pages/ShopGalleryPage.tsx
+    tools/audit-community-shop-actions.mjs`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `spawn EPERM`,
+    then approved elevated `npm run build` passed.
+- Unabated truth:
+  - this makes the Public Shop look more premium, but it is not a full redesign
+    or a custom visual asset replacement pass;
+  - the app still uses the existing emoji/icon content in several places, now
+    with more polished framing, because replacing the icon language everywhere
+    would be a broader design-system task.
+
 ### Spotlight button placement cleanup (2026-06-07)
 
 - Trigger:

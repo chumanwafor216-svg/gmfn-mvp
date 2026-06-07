@@ -177,6 +177,30 @@ assertContains(
   "Public Shop live Spotlight must attach WhatsApp contact to the rotating source shop, not only the current page shop."
 );
 
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /className="public-shop-section public-shop-spotlight"[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)/,
+  "Public Shop Spotlight must keep polished white brand framing instead of cream/brown framing."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /id=\{PUBLIC_SHOP_DIARIES_ANCHOR\}[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?linear-gradient\(135deg, #FFFFFF 0%, #F7FBFF 56%, #EEF6FF 100%\)[\s\S]*?Shop Diaries/,
+  "Public Shop Diaries section must keep polished white brand framing."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /className="shop-diary-card"[\s\S]*?border: "1px solid rgba\(255,255,255,0\.92\)"[\s\S]*?0 0 0 4px rgba\(255,255,255,0\.42\)/,
+  "Public Shop diary cards must keep white product-frame borders instead of heavy dark outlines."
+);
+
+assertNotContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /border: "2px solid rgba\(8,31,51,0\.62\)"|linear-gradient\(135deg, #FFF9E9 0%, #FFFFFF 58%, #EFF6FF 100%\)/,
+  "Public Shop polish must not regress to heavy dark diary borders or cream/brown Spotlight framing."
+);
+
 if (findings.length > 0) {
   console.error("Community / Shop action audit failed:");
   for (const finding of findings) {
