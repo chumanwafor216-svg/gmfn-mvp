@@ -37235,3 +37235,55 @@ GSN-branded invite composer and invite-entry continuity.
     feels jumpy, the next proof step should be runtime phone-width
     screenshot/tap testing or reducing density in the specific section that
     feels unstable.
+
+### Community Home button stability baseline (2026-06-07)
+
+- Trigger:
+  - product owner approved moving the page-by-page jumpy-button pass from
+    Marketplace to Community Home.
+- Community Home count:
+  - Community Home source now audits at 14 `StableButton` source templates and
+    0 native fields.
+  - The page also guards 11 `NextActionGuide` items, 5 front quick-action
+    buttons, 5 spotlight-guided buttons, and 9 compact tool rows.
+  - Expanded route-local action-template baseline is 30. This is a template
+    count, not a claim that every alternate state is visible at the same time;
+    spotlight focus mode and normal Community Home are alternate views.
+  - Mobile AppLayout shell around `/app/community` contributes 41 normal member
+    controls: 2 top controls, 25 drawer controls, 7 tools controls, and 7
+    bottom navigation controls. Admin/member-role state can add admin controls
+    to the shell.
+  - Whole normal-member mobile Community Home baseline is therefore 71 action
+    templates, plus 0 native fields.
+- System guard changes:
+  - `frontend/tools/audit-community-home-button-inventory.mjs` now prints and
+    enforces the Community Home route-local count, inner guide/item counts, and
+    mobile shell count.
+  - The compact tool row order now explicitly includes ROSCA between Paid
+    Repost and Grow Your Trusted Circle.
+  - The audit now guards the Community Home ROSCA row as a selected-community
+    route into `/app/marketplace#marketplace-rosca`.
+  - The audit now checks fixed geometry for quick actions, 72px compact tool
+    rows, 44px top/tool-shell buttons, 42px drawer/bottom-nav buttons, and the
+    measured bottom-rail reserve.
+- Verification:
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:community-shop-actions`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:link-contracts`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint tools/audit-community-home-button-inventory.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm --prefix frontend run
+    build` passed.
+- Unabated truth:
+  - This pass tightened the Community Home audit baseline; it did not restyle
+    the live Community Home UI.
+  - Static source-level movement and tap guardrails are passing. If the phone
+    still feels jumpy, the next hard evidence should come from runtime
+    phone-width tap/screenshot testing or from reducing density in the exact
+    section that visibly jumps.

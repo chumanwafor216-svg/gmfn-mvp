@@ -6,8 +6,28 @@ import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const communityFile = "src/pages/CommunityHomePage.tsx";
+const appLayoutFile = "src/layout/AppLayout.tsx";
 const source = readFileSync(join(frontendRoot, communityFile), "utf8");
+const appLayoutSource = readFileSync(join(frontendRoot, appLayoutFile), "utf8");
 const findings = [];
+const expectedStableButtonTemplateCount = 14;
+const expectedNativeFieldCount = 0;
+const expectedNextActionGuideItemCount = 11;
+const expectedFrontQuickActionCount = 5;
+const expectedSpotlightGuidedActionCount = 5;
+const expectedCompactToolRowCount = 9;
+const expectedExpandedRouteLocalActionTemplates = 30;
+const expectedMobileShellBreakdown = {
+  top: 2,
+  drawer: 25,
+  pageTools: 7,
+  bottom: 7,
+};
+const expectedMobileShellActionCount = Object.values(
+  expectedMobileShellBreakdown
+).reduce((sum, count) => sum + count, 0);
+const expectedWholeMobileRouteActionTemplates =
+  expectedExpandedRouteLocalActionTemplates + expectedMobileShellActionCount;
 
 function lineAt(index) {
   return source.slice(0, index).split(/\r?\n/).length;
@@ -32,6 +52,35 @@ function assertContains(pattern, message, text = "Expected pattern was not found
   });
 }
 
+function assertLayoutContains(
+  pattern,
+  message,
+  text = "Expected Community Home app-shell pattern was not found."
+) {
+  if (pattern.test(appLayoutSource)) return;
+  findings.push({
+    file: appLayoutFile,
+    line: 1,
+    message,
+    text,
+  });
+}
+
+function countIdsInBlock(pattern, label) {
+  const block = source.match(pattern)?.[0] || "";
+  if (!block) {
+    findings.push({
+      file: communityFile,
+      line: 1,
+      message: `Community Home ${label} block was not found for button counting.`,
+      text: pattern.toString(),
+    });
+    return 0;
+  }
+
+  return (block.match(/\bid: "/g) || []).length;
+}
+
 const actionPattern = /<StableButton\b[\s\S]*?(?:\/>|<\/StableButton>)/g;
 const actions = [];
 let match;
@@ -45,12 +94,30 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedStableButtonCount = 14;
-if (actions.length !== expectedStableButtonCount) {
+const nativeFieldPattern = /<(input|select|textarea)\b[\s\S]*?(?:\/>|<\/(?:select|textarea)>)/g;
+const nativeFields = [];
+while ((match = nativeFieldPattern.exec(source))) {
+  nativeFields.push({
+    line: lineAt(match.index),
+    type: match[1],
+    block: match[0],
+  });
+}
+
+if (nativeFields.length !== expectedNativeFieldCount) {
   findings.push({
     file: communityFile,
     line: 1,
-    message: `Community Home StableButton inventory changed from ${expectedStableButtonCount} to ${actions.length}. Re-audit the new/removed button on phone before accepting this baseline.`,
+    message: `Community Home native field inventory changed from ${expectedNativeFieldCount} to ${nativeFields.length}. Re-audit every input/select/textarea as a mobile tap surface before accepting this baseline.`,
+    text: nativeFields.map((field) => `${field.line}:${field.type}`).join(", "),
+  });
+}
+
+if (actions.length !== expectedStableButtonTemplateCount) {
+  findings.push({
+    file: communityFile,
+    line: 1,
+    message: `Community Home StableButton template inventory changed from ${expectedStableButtonTemplateCount} to ${actions.length}. Re-audit the new/removed button on phone before accepting this baseline.`,
     text: `StableButton count: ${actions.length}`,
   });
 }
@@ -121,6 +188,59 @@ for (const section of frontToInnerOrder) {
   previousSection = { label: section.label, line: firstAction.line };
 }
 
+const nextActionGuideItemCount = countIdsInBlock(
+  /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?\n {2}\);/,
+  "NextActionGuide item manifest"
+);
+const frontQuickActionCount = countIdsInBlock(
+  /\{\[\s*\{[\s\S]*?id: "choose-community"[\s\S]*?\]\.map\(\(item, index\) => \(/,
+  "front quick-action grid"
+);
+const spotlightGuidedActionCount = countIdsInBlock(
+  /const spotlightHandleItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?\n {2}\);/,
+  "spotlight guided action manifest"
+);
+const compactToolRowCount = countIdsInBlock(
+  /id: "owner-actions"[\s\S]*?\]\.map\(\(item, index\) => \(/,
+  "compact tool row manifest"
+);
+
+if (nextActionGuideItemCount !== expectedNextActionGuideItemCount) {
+  findings.push({
+    file: communityFile,
+    line: 1,
+    message: `Community Home NextActionGuide item count changed from ${expectedNextActionGuideItemCount} to ${nextActionGuideItemCount}. Re-audit the inner guide buttons before accepting this baseline.`,
+    text: `NextActionGuide items: ${nextActionGuideItemCount}`,
+  });
+}
+
+if (frontQuickActionCount !== expectedFrontQuickActionCount) {
+  findings.push({
+    file: communityFile,
+    line: 1,
+    message: `Community Home front quick-action button count changed from ${expectedFrontQuickActionCount} to ${frontQuickActionCount}.`,
+    text: `Front quick actions: ${frontQuickActionCount}`,
+  });
+}
+
+if (spotlightGuidedActionCount !== expectedSpotlightGuidedActionCount) {
+  findings.push({
+    file: communityFile,
+    line: 1,
+    message: `Community Home spotlight guided action count changed from ${expectedSpotlightGuidedActionCount} to ${spotlightGuidedActionCount}.`,
+    text: `Spotlight guided actions: ${spotlightGuidedActionCount}`,
+  });
+}
+
+if (compactToolRowCount !== expectedCompactToolRowCount) {
+  findings.push({
+    file: communityFile,
+    line: 1,
+    message: `Community Home compact tool row count changed from ${expectedCompactToolRowCount} to ${compactToolRowCount}.`,
+    text: `Compact tool rows: ${compactToolRowCount}`,
+  });
+}
+
 assertContains(
   /const communityNextActionItems = useMemo<NextActionGuideItem\[]>\([\s\S]*?id: "choose-community"[\s\S]*?id: "marketplace"[\s\S]*?id: "create-community"[\s\S]*?id: "join-community"[\s\S]*?id: "circle"[\s\S]*?id: "shop-control"[\s\S]*?id: "spotlight"[\s\S]*?id: "finance"[\s\S]*?id: "support"[\s\S]*?id: "trust"[\s\S]*?id: "notifications"/,
   "Community Home next-action guide must keep the full inner action manifest."
@@ -152,7 +272,7 @@ assertContains(
 );
 
 assertContains(
-  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: "shop-control"[\s\S]*?id: "vault-control"[\s\S]*?id: "free-spotlight"[\s\S]*?id: "spotlight-subscription"[\s\S]*?id: "paid-repost"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
+  /\{\[\s*\{[\s\S]*?id: "owner-actions"[\s\S]*?id: "shop-control"[\s\S]*?id: "vault-control"[\s\S]*?id: "free-spotlight"[\s\S]*?id: "spotlight-subscription"[\s\S]*?id: "paid-repost"[\s\S]*?id: "rosca"[\s\S]*?id: "trusted-circle"[\s\S]*?id: "spotlight-status"[\s\S]*?\]\.map\(\(item, index\) => \([\s\S]*?debugId=\{`community-home\.tool\.\$\{item\.id\}`\}/,
   "Community Home compact tool row manifest must stay traceable and ordered."
 );
 
@@ -162,6 +282,7 @@ assertContains(
   ["free-spotlight", "freeSpotlight"],
   ["spotlight-subscription", "subscriptionSpotlight"],
   ["paid-repost", "paidRepost"],
+  ["rosca", "rosca"],
   ["trusted-circle", "buildFirstCircle"],
 ].forEach(([id, route]) => {
   assertContains(
@@ -171,6 +292,71 @@ assertContains(
     `Community Home compact tool row ${id} must use the selected-community route guard.`
   );
 });
+
+assertContains(
+  /const ROSCA_MARKETPLACE_HASH = "marketplace-rosca";[\s\S]*?rosca:\s*routeTarget\([\s\S]*?"marketplace"[\s\S]*?ROSCA_MARKETPLACE_HASH[\s\S]*?id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca/,
+  "Community Home ROSCA row must route into the Marketplace ROSCA section through the selected-community route guard."
+);
+
+assertContains(
+  /function communityQuickActionButton\([\s\S]*?height: isCompact \? 96 : 100[\s\S]*?minHeight: isCompact \? 96 : 100[\s\S]*?maxHeight: isCompact \? 96 : 100[\s\S]*?overflow: "hidden"/,
+  "Community Home front quick-action buttons must keep fixed phone geometry."
+);
+
+assertContains(
+  /function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?height: 72,[\s\S]*?minHeight: 72,[\s\S]*?maxHeight: 72[\s\S]*?pointerEvents: "auto"[\s\S]*?transition: "none"/,
+  "Community Home compact tool rows must keep fixed 72px phone geometry and no transition-driven movement."
+);
+
+assertLayoutContains(
+  /if \(pathname\.startsWith\("\/app\/community"\)\) \{[\s\S]*?return uniqueNavItems\(\[[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?makeShopControlItem\(\)[\s\S]*?Demand Box[\s\S]*?Finance[\s\S]*?Notifications[\s\S]*?\]\);/,
+  "Community Home page tools must keep the five route-local navigator actions: Public Shop, Shop Control, Demand Box, Finance, and Notifications."
+);
+
+assertLayoutContains(
+  /debugId="app-layout\.mobile\.open-navigation"[\s\S]*?debugId="app-layout\.mobile\.open-tools"/,
+  "Community Home mobile route surface must count the two fixed top navigator buttons: Menu and Tools."
+);
+
+assertLayoutContains(
+  /debugId="app-layout\.mobile\.close-navigation"[\s\S]*?mobileDrawerGroups\.map[\s\S]*?debugId=\{`app-layout\.drawer\.\$\{group\.title\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.drawer\.logout"/,
+  "Community Home mobile drawer must count close, grouped route links, and logout as part of the outer navigator surface."
+);
+
+assertLayoutContains(
+  /debugId="app-layout\.mobile\.close-tools"[\s\S]*?pageActions\.map[\s\S]*?debugId=\{`app-layout\.page-action\.\$\{item\.label\.toLowerCase\(\)[\s\S]*?debugId="app-layout\.page-action\.logout"/,
+  "Community Home mobile Tools panel must count close, five page actions, and logout as part of the outer navigator surface."
+);
+
+assertLayoutContains(
+  /const mobileBottomItems = useMemo<NavLinkItem\[\]>\(\(\) => \{[\s\S]*?makeDashboardItem\(\)[\s\S]*?label: "Community"[\s\S]*?makeMarketplaceItem\(\)[\s\S]*?makeShopGalleryItem\(myShopGalleryTo, myShopGalleryDisabled\)[\s\S]*?makeFinanceItem\(\)[\s\S]*?makeLoansItem\("Loans"\)[\s\S]*?label: "Trust"[\s\S]*?debugId=\{`app-layout\.bottom-nav\.\$\{item\.label\.toLowerCase\(\)/,
+  "Community Home mobile bottom rail must count the seven normal route buttons: Dashboard, Community, Marketplace, Public Shop, Finance, Loans, and Trust."
+);
+
+assertLayoutContains(
+  /function mobileIconButton\(\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function MobileTopIcon/,
+  "Community Home mobile top Menu and Tools buttons must keep fixed 44px geometry."
+);
+
+assertLayoutContains(
+  /function drawerLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"/,
+  "Community Home mobile drawer buttons must keep fixed 42px geometry."
+);
+
+assertLayoutContains(
+  /function actionsLink\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 44,[\s\S]*?minHeight: 44,[\s\S]*?maxHeight: 44[\s\S]*?pointerEvents: "auto"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
+  "Community Home mobile Tools panel buttons must keep fixed 44px geometry."
+);
+
+assertLayoutContains(
+  /function bottomNavItem\(active = false, disabled = false\): React\.CSSProperties[\s\S]*?height: 42,[\s\S]*?minHeight: 42,[\s\S]*?maxHeight: 42[\s\S]*?pointerEvents: "auto"[\s\S]*?opacity: disabled \? 0\.7 : 1/,
+  "Community Home mobile bottom navigator buttons must keep fixed 42px geometry and active pointer targets."
+);
+
+assertLayoutContains(
+  /function mainContent\([\s\S]*?bottomNavReservePx: number[\s\S]*?bottomRailReserve \+ 16[\s\S]*?const showMobileBottomRail =[\s\S]*?showMobileBottomRail \? mobileBottomNavReservePx : 0[\s\S]*?\{showMobileBottomRail \?/,
+  "Community Home mobile content must reserve the measured bottom rail height so page controls cannot sit under the bottom-nav tap targets."
+);
 
 const rawActionPattern =
   /<(button|a|summary)\b|role="button"|data-gmfn-action-root|data-cta-id/g;
@@ -194,5 +380,12 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Community Home button inventory audit passed: ${actions.length} StableButton source actions, plus checked front quick actions, guided actions, and compact tool rows.`
+  `Community Home button inventory audit passed: ${actions.length} StableButton source templates, ` +
+    `${nativeFields.length} native fields, ${nextActionGuideItemCount} NextActionGuide items, ` +
+    `${frontQuickActionCount} front quick buttons, ${spotlightGuidedActionCount} spotlight guided buttons, ` +
+    `${compactToolRowCount} compact tool rows, ${expectedExpandedRouteLocalActionTemplates} expanded route-local action templates, ` +
+    `${expectedMobileShellActionCount} mobile app-shell controls ` +
+    `(${expectedMobileShellBreakdown.top} top, ${expectedMobileShellBreakdown.drawer} drawer, ` +
+    `${expectedMobileShellBreakdown.pageTools} tools, ${expectedMobileShellBreakdown.bottom} bottom), ` +
+    `${expectedWholeMobileRouteActionTemplates} whole-route mobile action templates total.`
 );
