@@ -19,6 +19,7 @@ const communityShopFiles = [
   "src/pages/CreateEntryPage.tsx",
   "src/pages/SubscriptionSpotlightPage.tsx",
   "src/pages/VaultControlPage.tsx",
+  "src/pages/ShopGalleryPage.tsx",
   "src/pages/ShopPage.tsx",
   "src/pages/ShopAssetsPage.tsx",
   "src/pages/ShopAccessPage.tsx",
@@ -150,6 +151,24 @@ assertContains(
   "src/components/CommunityShopControlPanel.tsx",
   /debugId="community-shop-control\.shortcut\.spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-spotlight"[\s\S]*?debugId="community-shop-control\.shortcut\.paid-repost"/,
   "Community Shop Control shortcut buttons must keep separate Free Spotlight, Paid Spotlight, and Paid Repost debug IDs."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /onClick=\{\(event\) => \{[\s\S]*?if \(isInteractiveCardTarget\(event\.target\)\) return;[\s\S]*?if \(!isProductOpen\) \{[\s\S]*?setOpenProductId\(productOpenId\);[\s\S]*?return;[\s\S]*?\}[\s\S]*?setOpenProductId\(null\);[\s\S]*?\}\}[\s\S]*?onDoubleClick=\{\(event\) => \{/,
+  "Public Shop diary blocks must open on a single tap of the card body, with double-click left only as a fallback."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /function isInteractiveCardTarget\(target: EventTarget \| null\): boolean \{[\s\S]*?data-media-control='true'[\s\S]*?\}/,
+  "Public Shop media controls must count as interactive card targets so sound/video taps do not close the diary block."
+);
+
+assertContains(
+  "src/pages/ShopGalleryPage.tsx",
+  /debugId="shop-gallery\.share-shop"[\s\S]*?debugId="shop-gallery\.verify-shop\.toggle"[\s\S]*?debugId="shop-gallery\.owner-contact\.choose"[\s\S]*?debugId="shop-gallery\.open-spotlight-preview"[\s\S]*?debugId="shop-gallery\.ask-vault-access"[\s\S]*?debugId="shop-gallery\.copy-vault-shop-link"/,
+  "Public Shop visitor actions must keep traceable Share, Verify, WhatsApp, Explore, Vault request, and Vault copy controls."
 );
 
 if (findings.length > 0) {

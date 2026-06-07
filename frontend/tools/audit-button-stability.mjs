@@ -49,20 +49,20 @@ assertContains(
 
 assertContains(
   "src/components/StableButton.tsx",
-  /export function StableButton[\s\S]*?guardedPointerDownCapture[\s\S]*?guardedPointerUpCapture[\s\S]*?guardedMouseDownCapture[\s\S]*?guardedClickCapture[\s\S]*?onPointerDownCapture=\{guardedPointerDownCapture\}[\s\S]*?onPointerUpCapture=\{guardedPointerUpCapture\}[\s\S]*?onMouseDownCapture=\{guardedMouseDownCapture\}[\s\S]*?onClickCapture=\{guardedClickCapture\}/,
-  "StableButton must guard capture-phase pointer, mouse, and click events so mobile taps cannot leak into parent shells."
+  /function composeOptionalCaptureGuard[\s\S]*?return handler \? composeTapGuard\(handler\) : undefined;[\s\S]*?export function StableButton[\s\S]*?guardedPointerDownCapture[\s\S]*?composeOptionalCaptureGuard\(onPointerDownCapture\)[\s\S]*?guardedClickCapture[\s\S]*?composeOptionalCaptureGuard\(onClickCapture\)[\s\S]*?onPointerDownCapture=\{guardedPointerDownCapture\}[\s\S]*?onClickCapture=\{guardedClickCapture\}/,
+  "StableButton must not install default capture-phase tap traps; capture guards are allowed only when a caller explicitly supplies a capture handler."
 );
 
 assertContains(
   "src/components/StableButton.tsx",
-  /export function StableCtaLink[\s\S]*?guardedPointerDownCapture[\s\S]*?guardedPointerUpCapture[\s\S]*?guardedMouseDownCapture[\s\S]*?guardedClickCapture[\s\S]*?onPointerDownCapture=\{guardedPointerDownCapture\}[\s\S]*?onPointerUpCapture=\{guardedPointerUpCapture\}[\s\S]*?onMouseDownCapture=\{guardedMouseDownCapture\}[\s\S]*?onClickCapture=\{guardedClickCapture\}/,
-  "StableCtaLink must guard capture-phase pointer, mouse, and click events so route links cannot leak into nearby navigation."
+  /export function StableCtaLink[\s\S]*?guardedPointerDownCapture[\s\S]*?composeOptionalCaptureGuard\(onPointerDownCapture\)[\s\S]*?guardedClickCapture[\s\S]*?composeOptionalCaptureGuard\(onClickCapture\)[\s\S]*?onPointerDownCapture=\{guardedPointerDownCapture\}[\s\S]*?onClickCapture=\{guardedClickCapture\}/,
+  "StableCtaLink must not install default capture-phase tap traps; route links should keep browser-default activation unless a caller explicitly supplies a capture handler."
 );
 
 assertContains(
   "src/components/StableButton.tsx",
-  /export function StableDisclosureSummary[\s\S]*?onPointerDownCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onMouseDownCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onClickCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);[\s\S]*?onPointerUpCapture=\{\(event\) => \{[\s\S]*?stopTap\(event\);/,
-  "Stable disclosure summaries must guard capture-phase pointer, mouse, and click events so open/close controls stay local to their panel."
+  /export function StableDisclosureSummary[\s\S]*?onPointerDownCapture=\{\s*onPointerDownCapture\s*\?[\s\S]*?stopTap\(event\);[\s\S]*?: undefined[\s\S]*?onClickCapture=\{\s*onClickCapture\s*\?[\s\S]*?stopTap\(event\);[\s\S]*?: undefined[\s\S]*?onPointerUpCapture=\{\s*onPointerUpCapture\s*\?/,
+  "Stable disclosure summaries must not install default capture-phase tap traps; capture guards are allowed only for explicit caller handlers."
 );
 
 assertContains(

@@ -334,7 +334,7 @@ function isPublicShopBlockHash(value: string): boolean {
 function isInteractiveCardTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
   return Boolean(
-    target.closest("button,a,input,select,textarea,[role='button']")
+    target.closest("button,a,input,select,textarea,[role='button'],[data-media-control='true']")
   );
 }
 
@@ -4220,8 +4220,11 @@ export default function ShopGalleryPage() {
                     id={publicShopBlockAnchorId(product)}
                     aria-expanded={isProductOpen}
                     onClick={(event) => {
-                      if (!isProductOpen) return;
                       if (isInteractiveCardTarget(event.target)) return;
+                      if (!isProductOpen) {
+                        setOpenProductId(productOpenId);
+                        return;
+                      }
                       setOpenProductId(null);
                     }}
                     onDoubleClick={(event) => {

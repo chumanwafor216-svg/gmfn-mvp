@@ -132,6 +132,12 @@ function composeTapGuard<E extends React.SyntheticEvent<HTMLElement>>(
   };
 }
 
+function composeOptionalCaptureGuard<E extends React.SyntheticEvent<HTMLElement>>(
+  handler?: (event: E) => void
+) {
+  return handler ? composeTapGuard(handler) : undefined;
+}
+
 function isPromiseLike(value: unknown): value is Promise<unknown> {
   return Boolean(value && typeof (value as Promise<unknown>).then === "function");
 }
@@ -183,7 +189,7 @@ export function StableButton({
     [onPointerDown]
   );
   const guardedPointerDownCapture = useMemo(
-    () => composeTapGuard(onPointerDownCapture),
+    () => composeOptionalCaptureGuard(onPointerDownCapture),
     [onPointerDownCapture]
   );
   const guardedPointerUp = useMemo(
@@ -191,7 +197,7 @@ export function StableButton({
     [onPointerUp]
   );
   const guardedPointerUpCapture = useMemo(
-    () => composeTapGuard(onPointerUpCapture),
+    () => composeOptionalCaptureGuard(onPointerUpCapture),
     [onPointerUpCapture]
   );
   const guardedMouseDown = useMemo(
@@ -199,11 +205,11 @@ export function StableButton({
     [onMouseDown]
   );
   const guardedMouseDownCapture = useMemo(
-    () => composeTapGuard(onMouseDownCapture),
+    () => composeOptionalCaptureGuard(onMouseDownCapture),
     [onMouseDownCapture]
   );
   const guardedClickCapture = useMemo(
-    () => composeTapGuard(onClickCapture),
+    () => composeOptionalCaptureGuard(onClickCapture),
     [onClickCapture]
   );
 
@@ -306,7 +312,7 @@ export function StableCtaLink({
     [onPointerDown]
   );
   const guardedPointerDownCapture = useMemo(
-    () => composeTapGuard(onPointerDownCapture),
+    () => composeOptionalCaptureGuard(onPointerDownCapture),
     [onPointerDownCapture]
   );
   const guardedPointerUp = useMemo(
@@ -314,7 +320,7 @@ export function StableCtaLink({
     [onPointerUp]
   );
   const guardedPointerUpCapture = useMemo(
-    () => composeTapGuard(onPointerUpCapture),
+    () => composeOptionalCaptureGuard(onPointerUpCapture),
     [onPointerUpCapture]
   );
   const guardedMouseDown = useMemo(
@@ -322,11 +328,11 @@ export function StableCtaLink({
     [onMouseDown]
   );
   const guardedMouseDownCapture = useMemo(
-    () => composeTapGuard(onMouseDownCapture),
+    () => composeOptionalCaptureGuard(onMouseDownCapture),
     [onMouseDownCapture]
   );
   const guardedClickCapture = useMemo(
-    () => composeTapGuard(onClickCapture),
+    () => composeOptionalCaptureGuard(onClickCapture),
     [onClickCapture]
   );
 
@@ -450,34 +456,50 @@ export function StableDisclosureSummary({
       data-gmfn-action-root="true"
       data-cta-id={resolvedDebugId}
       className={stableActionClassName(className)}
-      onPointerDownCapture={(event) => {
-        stopTap(event);
-        onPointerDownCapture?.(event);
-      }}
+      onPointerDownCapture={
+        onPointerDownCapture
+          ? (event) => {
+              stopTap(event);
+              onPointerDownCapture(event);
+            }
+          : undefined
+      }
       onPointerDown={(event) => {
         stopTap(event);
         onPointerDown?.(event);
       }}
-      onMouseDownCapture={(event) => {
-        stopTap(event);
-        onMouseDownCapture?.(event);
-      }}
+      onMouseDownCapture={
+        onMouseDownCapture
+          ? (event) => {
+              stopTap(event);
+              onMouseDownCapture(event);
+            }
+          : undefined
+      }
       onMouseDown={(event) => {
         stopTap(event);
         onMouseDown?.(event);
       }}
-      onClickCapture={(event) => {
-        stopTap(event);
-        onClickCapture?.(event);
-      }}
+      onClickCapture={
+        onClickCapture
+          ? (event) => {
+              stopTap(event);
+              onClickCapture(event);
+            }
+          : undefined
+      }
       onClick={(event) => {
         stopTap(event);
         onClick?.(event);
       }}
-      onPointerUpCapture={(event) => {
-        stopTap(event);
-        onPointerUpCapture?.(event);
-      }}
+      onPointerUpCapture={
+        onPointerUpCapture
+          ? (event) => {
+              stopTap(event);
+              onPointerUpCapture(event);
+            }
+          : undefined
+      }
       onPointerUp={(event) => {
         stopTap(event);
         onPointerUp?.(event);

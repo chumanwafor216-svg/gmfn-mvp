@@ -1,3 +1,54 @@
+### Public Shop single-tap blocks and shared button capture trap fixed (2026-06-07)
+
+- Trigger:
+  - product owner re-tested and reported Public Shop still did not behave like
+    before: tapping a public block/eye did not open the block on first tap, but
+    double-tap sometimes opened it; Share, Verify, WhatsApp, Explore, Vault
+    copy/request, and media audio still felt dead.
+- Confirmed source facts:
+  - closed Public Shop diary cards only opened from the small eye button or the
+    card `onDoubleClick`; the card `onClick` did nothing while closed;
+  - shared `StableButton` / `StableCtaLink` installed capture-phase stop
+    handlers even when no caller supplied capture handlers, a recent change
+    from `9af2daa` that could trap mobile browser activation before ordinary
+    button/link handling;
+  - open-card media controls were not counted as interactive card targets, so
+    tapping video controls could also toggle the diary card.
+- Fix:
+  - closed Public Shop diary cards now open on a single tap of the card body;
+  - double-click remains only as a fallback path;
+  - media/video controls with `data-media-control="true"` are treated as
+    interactive targets so sound/video taps do not close the card;
+  - shared stable buttons/links/disclosure summaries no longer install default
+    capture-phase tap traps; capture guards run only when a caller explicitly
+    provides a capture handler.
+- Audit updates:
+  - `audit:button-stability` now enforces optional, caller-driven capture guards
+    instead of default capture traps;
+  - `audit:community-shop-actions` now enforces Public Shop single-tap card open,
+    media-control protection, and the visitor Share/Verify/WhatsApp/Explore/
+    Vault action debug IDs.
+- Verification passed:
+  - `npm run audit:button-stability`;
+  - `npm run audit:community-shop-actions`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:spotlight-controls`;
+  - `npm run audit:link-contracts`;
+  - `npm run audit:route-fallthrough`;
+  - `npm run audit:marketplace-button-lines`;
+  - `npm run audit:community-home-phone-buttons`;
+  - `npm exec -- eslint src/components/StableButton.tsx
+    src/pages/ShopGalleryPage.tsx tools/audit-button-stability.mjs
+    tools/audit-community-shop-actions.mjs`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `esbuild spawn
+    EPERM`, then approved elevated `npm run build` from `frontend/` passed.
+- Unabated truth:
+  - this identifies two concrete source-level regressions that match the
+    product owner's phone symptoms better than the earlier tap-guard-only fixes;
+  - it still requires physical phone verification after deploy, especially
+    first-tap block open, sound unlock, Share, Verify, WhatsApp, Explore, Vault
+    copy/request, and product Share/Contact.
+
 ### Mobile tap guard no longer swallows ordinary Public Shop / Spotlight actions (2026-06-07)
 
 - Trigger:
