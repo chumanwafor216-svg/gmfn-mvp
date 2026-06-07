@@ -7,7 +7,7 @@ from app.db.database import SessionLocal, engine
 from app.services.reconciliation_service import create_bank_event, reconcile_batch
 
 
-def _seed_rosca_credit(quantity: int = 1) -> None:
+def _seed_rosca_yearly_service(quantity: int = 1) -> None:
     now = datetime.now(timezone.utc)
     with engine.begin() as conn:
         conn.execute(
@@ -49,12 +49,12 @@ def _seed_rosca_credit(quantity: int = 1) -> None:
         )
 
 
-def test_rosca_cycle_creation_consumes_credit_and_creates_contribution_schedule(
+def test_rosca_cycle_creation_uses_yearly_service_without_consuming_entitlement(
     client,
     override_current_user,
     seed_user2_member_membership,
 ):
-    _seed_rosca_credit()
+    _seed_rosca_yearly_service()
 
     res = client.post(
         "/rosca/cycles",
@@ -129,10 +129,8 @@ def test_rosca_cycle_creation_consumes_credit_and_creates_contribution_schedule(
         ).first()
 
     assert entitlement is not None
-    assert entitlement.quantity_used == 1
-    assert usage is not None
-    assert usage.units_used == 1
-    assert usage.reference_key == cycle["cycle_id"]
+    assert entitlement.quantity_used == 0
+    assert usage is None
     assert expected_count == 4
     assert pool_count == 4
     assert started_event is not None
@@ -145,7 +143,62 @@ def test_rosca_cycle_creation_consumes_credit_and_creates_contribution_schedule(
     assert obligations[0]["writes_commitment_trust_event"] is False
 
 
-def test_rosca_cycle_creation_requires_paid_credit(
+def test_rosca_yearly_service_allows_multiple_cycles_without_consuming_entitlement(
+    client,
+    override_current_user,
+    seed_user2_member_membership,
+):
+    _seed_rosca_yearly_service()
+
+    for title in ["June contribution circle", "July contribution circle"]:
+        res = client.post(
+            "/rosca/cycles",
+            json={
+                "clan_id": 1,
+                "title": title,
+                "contribution_amount": "25.00",
+                "currency": "GBP",
+                "interval_days": 14,
+            },
+        )
+        assert res.status_code == 200
+
+    with engine.begin() as conn:
+        entitlement = conn.execute(
+            text(
+                """
+                SELECT quantity_used
+                FROM feature_entitlements
+                WHERE payment_reference = 'TEST-ROSCA-ENGINE-REF'
+                """
+            )
+        ).first()
+        cycle_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM trust_events
+                WHERE event_type = 'rosca.cycle.started'
+                """
+            )
+        ).scalar_one()
+        usage_count = conn.execute(
+            text(
+                """
+                SELECT COUNT(*)
+                FROM feature_usage_events
+                WHERE feature_code = 'rosca_cycle'
+                """
+            )
+        ).scalar_one()
+
+    assert entitlement is not None
+    assert entitlement.quantity_used == 0
+    assert cycle_count == 2
+    assert usage_count == 0
+
+
+def test_rosca_cycle_creation_requires_paid_yearly_service(
     client,
     override_current_user,
     seed_user2_member_membership,
@@ -160,7 +213,7 @@ def test_rosca_cycle_creation_requires_paid_credit(
     )
 
     assert res.status_code == 400
-    assert "No active ROSCA package credit" in res.json()["detail"]
+    assert "No active ROSCA yearly service" in res.json()["detail"]
 
 
 def test_rosca_default_payout_order_prioritizes_highest_trust_score(
@@ -168,7 +221,7 @@ def test_rosca_default_payout_order_prioritizes_highest_trust_score(
     override_current_user,
     seed_user2_member_membership,
 ):
-    _seed_rosca_credit()
+    _seed_rosca_yearly_service()
     with engine.begin() as conn:
         conn.execute(text("UPDATE users SET trust_score = 40 WHERE id = 1"))
         conn.execute(text("UPDATE users SET trust_score = 92 WHERE id = 2"))
@@ -204,7 +257,7 @@ def test_rosca_explicit_payout_order_overrides_trust_score_priority(
     override_current_user,
     seed_user2_member_membership,
 ):
-    _seed_rosca_credit()
+    _seed_rosca_yearly_service()
     with engine.begin() as conn:
         conn.execute(text("UPDATE users SET trust_score = 40 WHERE id = 1"))
         conn.execute(text("UPDATE users SET trust_score = 92 WHERE id = 2"))
@@ -236,7 +289,7 @@ def test_rosca_payout_requires_confirmed_round_then_records_payout(
     override_current_user,
     seed_user2_member_membership,
 ):
-    _seed_rosca_credit()
+    _seed_rosca_yearly_service()
 
     create_res = client.post(
         "/rosca/cycles",
@@ -302,7 +355,7 @@ def test_rosca_notifications_are_created_without_commitment_trust_events(
     override_current_user,
     seed_user2_member_membership,
 ):
-    _seed_rosca_credit()
+    _seed_rosca_yearly_service()
 
     res = client.post(
         "/rosca/cycles",
@@ -344,7 +397,7 @@ def test_rosca_reconciliation_creates_contribution_and_round_ready_notifications
     override_current_user,
     seed_user2_member_membership,
 ):
-    _seed_rosca_credit()
+    _seed_rosca_yearly_service()
 
     create_res = client.post(
         "/rosca/cycles",

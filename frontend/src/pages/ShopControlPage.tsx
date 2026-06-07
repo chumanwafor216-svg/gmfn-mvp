@@ -1316,13 +1316,16 @@ export default function ShopControlPage() {
     const packageLabels: Array<[string, string]> = [
       ["extra_shop_blocks", "Shop blocks"],
       ["extra_members", "Member places"],
-      ["rosca_cycle", "ROSCA cycles"],
+      ["rosca_cycle", "ROSCA yearly"],
       ["community_meeting_pack", "Meeting records"],
     ];
 
     return packageLabels.map(([code, label]) => {
       const item = communityPackageByCode.get(code);
       const remaining = safePositiveNumber(item?.active_remaining, 0);
+      if (code === "rosca_cycle") {
+        return `${label}: ${remaining > 0 ? "yearly service active" : "yearly service inactive"}`;
+      }
       const readyText = remaining > 0 ? `${remaining} ready` : "none ready";
       const engineText = item?.engine_ready === false ? "record only" : "active";
       return `${label}: ${readyText}${remaining > 0 ? `, ${engineText}` : ""}`;
@@ -3714,7 +3717,7 @@ export default function ShopControlPage() {
                     {safePositiveNumber(latestRoscaCycle.total_rounds, 0)} payouts recorded.
                   </>
                 ) : (
-                  "Starting a cycle creates member Money In references and round payout readiness. It does not move external money by itself."
+                  "The active yearly ROSCA service can start contribution cycles without spending down credits. It does not move external money by itself."
                 )}
               </div>
             </div>

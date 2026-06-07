@@ -30,7 +30,7 @@ def _seed_rosca_entitlement() -> None:
                     NULL,
                     'rosca_cycle',
                     'rosca_cycle_pack',
-                    2,
+                    1,
                     0,
                     'active',
                     :starts_at,
@@ -87,7 +87,7 @@ def _seed_meeting_entitlement() -> None:
         )
 
 
-def test_community_package_status_reports_active_rosca_units(
+def test_community_package_status_reports_active_rosca_yearly_service(
     client, override_current_user, seed_clan_admin_membership
 ):
     _seed_rosca_entitlement()
@@ -99,9 +99,10 @@ def test_community_package_status_reports_active_rosca_units(
     rosca = next(
         item for item in body["packages"] if item["package_code"] == "rosca_cycle"
     )
-    assert rosca["active_remaining"] == 2
+    assert rosca["active_remaining"] == 1
     assert rosca["consumer"] == "rosca_cycle_engine"
     assert rosca["engine_ready"] is True
+    assert "yearly service" in rosca["message"]
 
 
 def test_community_package_status_reports_meeting_engine_ready(
@@ -161,7 +162,7 @@ def test_rosca_package_instruction_rejects_old_one_pound_amount(
     assert "amount does not match" in res.json()["detail"]
 
 
-def test_community_package_use_rejects_rosca_now_that_engine_consumes_credit(
+def test_community_package_use_rejects_rosca_now_that_yearly_service_engine_controls_access(
     client, override_current_user, seed_clan_admin_membership
 ):
     _seed_rosca_entitlement()

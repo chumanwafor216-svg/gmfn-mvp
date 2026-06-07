@@ -12,7 +12,7 @@ from app.db.bank_models import ExpectedPayment
 from app.db.models import ClanMembership, PoolEvent, TrustEvent, User
 from app.db.notification_models import Notification
 from app.services.expected_payments_service import create_expected_payment
-from app.services.feature_entitlements_service import consume_feature_units
+from app.services.feature_entitlements_service import get_active_feature_quantity
 from app.services.notification_service import create_notification
 from app.services.payment_instruction_service import FEATURE_ROSCA_CYCLE
 from app.services.trust_events_services import log_trust_event
@@ -665,19 +665,15 @@ def create_rosca_cycle(
     payout_amount = amount * Decimal(len(members))
     cleaned_title = (title or "ROSCA cycle").strip()[:120] or "ROSCA cycle"
 
-    consume_result = consume_feature_units(
+    active_service_quantity = get_active_feature_quantity(
         db,
         owner_user_id=int(created_by_user_id),
         feature_code=FEATURE_ROSCA_CYCLE,
-        units=1,
+        shop_id=None,
         clan_id=int(clan_id),
-        reference_key=cycle_id,
-        note=note or f"ROSCA cycle started: {cleaned_title}",
-        commit=False,
     )
-    if not bool(consume_result.get("ok")):
-        db.rollback()
-        raise ValueError("No active ROSCA package credit is available")
+    if int(active_service_quantity) <= 0:
+        raise ValueError("No active ROSCA yearly service is available")
 
     expected_ids: List[int] = []
     pool_event_ids: List[int] = []
@@ -741,6 +737,9 @@ def create_rosca_cycle(
                     "interval_days": days,
                     "pool_event_id": int(pool_event.id),
                     "package_feature_code": FEATURE_ROSCA_CYCLE,
+                    "package_pricing_model": "annual_service",
+                    "service_access_active": True,
+                    "service_units_consumed": 0,
                     "note": note,
                 },
                 commit=False,
@@ -769,7 +768,11 @@ def create_rosca_cycle(
             "total_rounds": len(payout_order),
             "expected_payment_count": len(expected_ids),
             "pool_event_count": len(pool_event_ids),
-            "feature_consumed": consume_result,
+            "package_feature_code": FEATURE_ROSCA_CYCLE,
+            "package_pricing_model": "annual_service",
+            "service_access_active": True,
+            "service_units_consumed": 0,
+            "active_service_quantity": int(active_service_quantity),
         },
         dedupe_key=f"rosca:start:{cycle_id}",
         commit=False,

@@ -427,7 +427,7 @@ def _package_engine_status(package_code: str) -> Dict[str, Any]:
             "consumer": "rosca_cycle_engine",
             "engine_ready": True,
             "message": (
-                "ROSCA package units can now start deterministic contribution cycles. "
+                "An active ROSCA yearly service can start deterministic contribution cycles without spending down credits. "
                 "The engine creates member Money In expectations, tracks confirmed contributions, "
                 "and records payout completion without claiming external money movement."
             ),

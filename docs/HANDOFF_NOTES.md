@@ -1,3 +1,40 @@
+### ROSCA yearly service now unlocks unlimited cycle starts while active (2026-06-07)
+
+- Trigger:
+  - product owner approved changing ROSCA from a per-cycle credit into a GBP 60
+    yearly service unlock.
+- Backend behavior change:
+  - `POST /rosca/cycles` now checks for an active `rosca_cycle` yearly service
+    entitlement with remaining active quantity;
+  - starting a ROSCA cycle no longer calls `consume_feature_units(...)`, no
+    longer increments `feature_entitlements.quantity_used`, and no longer
+    writes a `feature_usage_events` row;
+  - the same active yearly service can start multiple ROSCA cycles while it is
+    valid;
+  - `rosca.cycle.started` TrustEvent meta and expected-payment meta now record
+    `package_pricing_model: annual_service`, `service_access_active: true`,
+    and `service_units_consumed: 0`;
+  - if no active yearly service exists, cycle creation fails with
+    `No active ROSCA yearly service is available`.
+- Frontend changes:
+  - Shop Control package status now says `ROSCA yearly: yearly service active`
+    or inactive instead of presenting ROSCA as a numbered ready-credit;
+  - ROSCA helper copy now says the active yearly service can start contribution
+    cycles without spending down credits.
+- Verification passed:
+  - `python -m pytest tests/test_rosca_engine.py tests/test_community_package_usage.py tests/test_spotlight_subscription_pricing.py -q`
+    (`30 passed`, SQLite datetime deprecation warnings only);
+  - `npm exec -- eslint src/pages/ShopControlPage.tsx`.
+- Unabated truth:
+  - this makes ROSCA unlimited for cycle starts only while the yearly service is
+    active;
+  - it does not remove admin-only creation, member validation, contribution
+    reconciliation, payout readiness checks, or the boundary that GSN records
+    payout evidence but does not execute external payouts;
+  - there is still no hard max-active-cycle guard. If pilot use shows clutter
+    or abuse risk, the next sensible guardrail is a small active-cycle cap
+    rather than returning to per-cycle billing.
+
 ### ROSCA package pricing corrected to GBP 60 yearly (2026-06-07)
 
 - Trigger:
