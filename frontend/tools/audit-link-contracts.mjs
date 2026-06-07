@@ -951,6 +951,12 @@ assertContains(
 );
 
 assertContains(
+  "src/pages/MarketplacePage.tsx",
+  /import \{[\s\S]*?publicShopPath,[\s\S]*?publicShopSharePath,[\s\S]*?\} from "\.\.\/lib\/publicLinks";[\s\S]*?const memberRows = useMemo\(\(\) => \{[\s\S]*?shopTo:[\s\S]*?shop && gmfn[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId: gmfn,[\s\S]*?clanId: activeCommunityId \|\| undefined,[\s\S]*?\}\)[\s\S]*?\}, \[activeCommunityId, members, shops\]\);/,
+  "Marketplace member Open shop handoffs must carry the active marketplace/community context so Public Shop reflects that community's live Spotlight."
+);
+
+assertContains(
   "src/components/CommunityMarketplaceSpotlight.tsx",
   /import \{ publicShopPath, publicShopSharePath \} from "\.\.\/lib\/publicLinks";[\s\S]*?source_product_id\?: number \| string \| null;[\s\S]*?source_product_block\?: number \| string \| null;[\s\S]*?source_product_slot_number\?: number \| string \| null;[\s\S]*?function spotlightShopPath\(item: MarketplaceFeedItem \| null\): string \{[\s\S]*?const clanId = positiveNumber\(item\?\.source_clan_id \|\| item\?\.clan_id\);[\s\S]*?positiveNumber\(item\?\.source_product_id\)[\s\S]*?positiveNumber\(item\?\.source_product_block\)[\s\S]*?positiveNumber\(item\?\.source_product_slot_number\)[\s\S]*?publicShopSharePath\(\{[\s\S]*?gmfnId,[\s\S]*?clanId: clanId \|\| undefined,[\s\S]*?productId: productId \|\| undefined,[\s\S]*?block: block \|\| undefined,[\s\S]*?\}\)[\s\S]*?publicShopPath\(gmfnId\)/,
   "Community Marketplace Spotlight must preserve backend source community/product/block truth and deep-link network placements to the exact public shop community/block."

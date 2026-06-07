@@ -8693,7 +8693,20 @@ export default function DashboardPage() {
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
                   showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="Sound on"
+                  audioUnlockLabel="🔊"
+                  audioUnlockOffLabel="🔇"
+                  audioUnlockErrorLabel="▶"
+                  audioUnlockStyle={{
+                    top: isPhone ? 14 : 16,
+                    right: isPhone ? 14 : 16,
+                    minWidth: isPhone ? 40 : 44,
+                    width: isPhone ? 40 : 44,
+                    minHeight: isPhone ? 40 : 44,
+                    padding: 0,
+                    borderRadius: 999,
+                    fontSize: isPhone ? 18 : 20,
+                    boxShadow: "0 12px 22px rgba(2,12,27,0.30)",
+                  }}
                   maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
                     <div
@@ -8723,6 +8736,36 @@ export default function DashboardPage() {
                       "linear-gradient(180deg, rgba(6,19,34,0.16) 0%, rgba(6,19,34,0.08) 38%, rgba(6,19,34,0.72) 100%)",
                   }}
                 />
+                <StableButton
+                  debugId="dashboard.spotlight.whatsapp"
+                  type="button"
+                  onClick={openSpotlightWhatsApp}
+                  onPointerDown={consumeDashboardPointerEvent}
+                  stableHeight={isPhone ? 40 : 42}
+                  style={{
+                    position: "absolute",
+                    right: isPhone ? 16 : 18,
+                    bottom: isPhone ? 16 : 18,
+                    zIndex: 5,
+                    minWidth: isPhone ? 94 : 108,
+                    width: "auto",
+                    minHeight: isPhone ? 40 : 42,
+                    padding: isPhone ? "8px 12px" : "9px 14px",
+                    borderRadius: 999,
+                    background:
+                      "linear-gradient(180deg, #28D267 0%, #16A34A 100%)",
+                    border: "1px solid rgba(22,163,74,0.42)",
+                    color: "#FFFFFF",
+                    boxShadow:
+                      "0 12px 24px rgba(2,12,27,0.26), inset 0 1px 0 rgba(255,255,255,0.34)",
+                    fontSize: isPhone ? 12.2 : 13,
+                    fontWeight: 950,
+                    whiteSpace: "nowrap",
+                    pointerEvents: "auto",
+                  }}
+                >
+                  WhatsApp
+                </StableButton>
                 <div
                   style={{
                     position: "absolute",
@@ -8766,7 +8809,7 @@ export default function DashboardPage() {
                   style={{
                     position: "absolute",
                     left: isPhone ? 18 : 22,
-                    right: isPhone ? 18 : 22,
+                    right: isPhone ? 122 : 146,
                     bottom: isPhone ? 17 : 20,
                     display: "grid",
                     gap: 4,
@@ -8921,39 +8964,13 @@ export default function DashboardPage() {
                 style={{
                   marginTop: isPhone ? 10 : 12,
                   display: "grid",
-                  gridTemplateColumns: isPhone
-                    ? "repeat(2, minmax(0, 1fr))"
-                    : "repeat(3, minmax(0, 1fr))",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                   gap: isPhone ? 8 : 10,
                   alignItems: "stretch",
                   overflowAnchor: "none",
                   transition: "none",
                 }}
               >
-                <StableButton
-                  debugId="dashboard.spotlight.whatsapp"
-                  type="button"
-                  onClick={openSpotlightWhatsApp}
-                  onPointerDown={consumeDashboardPointerEvent}
-                  style={dashboardFillButton(
-                    {
-                      ...primaryBtn(false),
-                      minHeight: isPhone ? 46 : 44,
-                      borderRadius: isPhone ? 15 : 16,
-                      background:
-                        "linear-gradient(180deg, #28D267 0%, #16A34A 100%)",
-                      border: "1px solid rgba(22,163,74,0.38)",
-                      color: "#FFFFFF",
-                      boxShadow:
-                        "0 10px 18px rgba(22,163,74,0.20), inset 0 1px 0 rgba(255,255,255,0.34)",
-                      fontWeight: 950,
-                      whiteSpace: "nowrap",
-                    },
-                    dashboardPhoneButton
-                  )}
-                >
-                  WhatsApp
-                </StableButton>
                 <StableButton
                   debugId="dashboard.spotlight.open-shop"
                   type="button"
@@ -9179,7 +9196,20 @@ export default function DashboardPage() {
                   mutedVideo={Boolean(spotlightVideoCandidate)}
                   loopVideo={Boolean(spotlightVideoCandidate)}
                   showAudioUnlock={Boolean(spotlightVideoCandidate)}
-                  audioUnlockLabel="Sound on"
+                  audioUnlockLabel="🔊"
+                  audioUnlockOffLabel="🔇"
+                  audioUnlockErrorLabel="▶"
+                  audioUnlockStyle={{
+                    top: isPhone ? 14 : 16,
+                    right: isPhone ? 14 : 16,
+                    minWidth: isPhone ? 40 : 44,
+                    width: isPhone ? 40 : 44,
+                    minHeight: isPhone ? 40 : 44,
+                    padding: 0,
+                    borderRadius: 999,
+                    fontSize: isPhone ? 18 : 20,
+                    boxShadow: "0 12px 22px rgba(2,12,27,0.30)",
+                  }}
                   maxVideoSeconds={SPOTLIGHT_PILOT_MAX_VIDEO_SECONDS}
                   fallback={
                     <div

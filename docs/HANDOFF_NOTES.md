@@ -1,3 +1,53 @@
+### Spotlight media contact and Marketplace community handoff tightened (2026-06-07)
+
+- Trigger:
+  - product owner showed Public Shop and Dashboard screenshots where the live
+    Spotlight media had no clearly attached WhatsApp action for the currently
+    airing advert;
+  - Dashboard still showed a large `Sound on` pill over the video;
+  - Marketplace member-row `Open shop` links still opened some members' Public
+    Shop pages without the active community Spotlight context.
+- Confirmed source facts:
+  - Dashboard still passed `audioUnlockLabel="Sound on"` in two media paths;
+  - Public Shop had source-shop WhatsApp plumbing, but its Spotlight WhatsApp
+    button sat in the text stack rather than on the active media frame;
+  - Marketplace member rows built `shopTo` with clean `publicShopPath(gmfn)`,
+    so an in-community member handoff could lose the selected marketplace/clan
+    id and fall back to that shop's default public context.
+- Fix:
+  - Dashboard live Spotlight media now uses compact speaker/play icons instead
+    of the text `Sound on` pill;
+  - Dashboard WhatsApp is now overlaid on the live Spotlight media and still
+    uses `activeSpotlight.source_shop_whatsapp_number`, so the contact follows
+    the currently selected/rotating Spotlight item;
+  - Public Shop Spotlight WhatsApp now sits on the Spotlight media frame itself
+    and uses `miniSpotlightView.sourceShopWhatsApp`, so it follows the current
+    mini-Spotlight source shop;
+  - Marketplace member-row `Open shop` handoffs now use
+    `publicShopSharePath({ gmfnId, clanId: activeCommunityId })`, while
+    ordinary public shop sharing remains a clean `/shop/{GSN_ID}` root link;
+  - `audit:link-contracts` now guards the Marketplace member-row community
+    context handoff.
+- Verification passed:
+  - `npm run audit:dashboard-actions`;
+  - `npm run audit:community-shop-actions`;
+  - `npm run audit:link-contracts`;
+  - `npm run audit:marketplace-button-lines`;
+  - `npm run audit:button-stability`;
+  - `npm run audit:tap-stability`;
+  - `npm run audit:spotlight-controls`;
+  - `npm exec -- eslint src/pages/DashboardPage.tsx
+    src/pages/ShopGalleryPage.tsx src/pages/MarketplacePage.tsx
+    tools/audit-link-contracts.mjs`;
+  - sandboxed `npm run build` failed with the known Windows/Vite `spawn EPERM`,
+    then approved elevated `npm run build` passed.
+- Unabated truth:
+  - this fixes source-level contact placement and the Marketplace member-row
+    community handoff that can explain only some shops reflecting the live
+    community Spotlight;
+  - it does not prove Render is serving the new frontend bundle until the live
+    deploy is verified after push.
+
 ### Dashboard/Public Shop Spotlight media and contact recovery (2026-06-07)
 
 - Trigger:

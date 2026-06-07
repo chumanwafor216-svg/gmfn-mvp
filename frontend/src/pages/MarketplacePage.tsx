@@ -18,6 +18,7 @@ import {
   publicFrontendUrl,
   publicShopBlockUrl,
   publicShopPath,
+  publicShopSharePath,
   publicShopShareUrl,
   publicShopUrl,
 } from "../lib/publicLinks";
@@ -4327,14 +4328,17 @@ export default function MarketplacePage() {
           : "Shop not visible yet",
         shopTo:
           shop && gmfn
-            ? publicShopPath(gmfn)
+            ? publicShopSharePath({
+                gmfnId: gmfn,
+                clanId: activeCommunityId || undefined,
+              })
             : "",
       };
     });
 
     rows.sort((a, b) => a.name.localeCompare(b.name));
     return rows;
-  }, [members, shops]);
+  }, [activeCommunityId, members, shops]);
 
   const activeLoanCount = useMemo(() => {
     return loans.filter((item) => {
