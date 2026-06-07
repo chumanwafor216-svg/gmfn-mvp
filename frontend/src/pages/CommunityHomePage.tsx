@@ -742,6 +742,9 @@ function communityActionIcon(primary = false): React.CSSProperties {
     color: "#135A94",
     fontSize: 20,
     lineHeight: 1,
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    textOverflow: "ellipsis",
     boxShadow: primary
       ? "inset 0 1px 0 rgba(255,255,255,0.08)"
       : "0 8px 16px rgba(13,95,168,0.08)",
@@ -3102,8 +3105,16 @@ export default function CommunityHomePage() {
                       ? "1px solid rgba(243,208,106,0.30)"
                       : "1px solid rgba(13,95,168,0.10)",
                   color: item.id === "vault-control" ? "#F3D06A" : "#135A94",
-                  fontSize: item.id === "vault-control" ? 9 : 22,
-                  fontWeight: item.id === "vault-control" ? 950 : 800,
+                  fontSize:
+                    item.id === "vault-control"
+                      ? 9
+                      : item.id === "rosca"
+                        ? 8.5
+                        : 22,
+                  fontWeight:
+                    item.id === "vault-control" || item.id === "rosca"
+                      ? 950
+                      : 800,
                   letterSpacing: item.id === "vault-control" ? 0.7 : 0,
                 }}
               >

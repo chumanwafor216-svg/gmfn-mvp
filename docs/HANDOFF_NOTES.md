@@ -37708,3 +37708,47 @@ GSN-branded invite composer and invite-entry continuity.
     explicitly asks and the Dashboard stability audit is updated intentionally.
   - Any system-level tap change must pass both Dashboard button inventory and
     mobile tap stability audits before pilot publishing.
+
+### Community Home stability cage and ROSCA row alignment (2026-06-07)
+
+- Trigger:
+  - product owner asked to extend the Dashboard-style cage to Community Home
+    and attached a phone screenshot showing the ROSCA compact tool row with
+    the `ROSCA` icon text bleeding left outside its icon slot.
+- Unabated truth:
+  - The Community Home page was mostly structurally fine and already routed
+    ROSCA into Marketplace through the selected-community guard.
+  - The visible defect was local geometry: the ROSCA row used `icon: "ROSCA"`
+    but the icon slot was styled like a 40px emoji circle, so the word could
+    overflow and visually implicate the nearby button hit area.
+- Fix:
+  - `frontend/src/pages/CommunityHomePage.tsx` now clips/centers compact row
+    icon content with `overflow: hidden`, `whiteSpace: "nowrap"`, and
+    `textOverflow: "ellipsis"`.
+  - The ROSCA row now uses a compact fixed text treatment at `8.5px` and
+    weight `950`, matching the text-icon nature of Vault without spilling
+    outside the icon circle.
+  - `frontend/tools/audit-community-home-button-inventory.mjs` now explicitly
+    cages ROSCA wording and selected-community Marketplace routing.
+  - `frontend/tools/audit-community-home-phone-buttons.mjs` now cages compact
+    row icon clipping and ROSCA's small fixed icon text treatment.
+  - `docs/FREEZE_POLICY.md` now records Community Home button-route/mobile
+    geometry as caged.
+- Verification:
+  - Passed `npm --prefix frontend run audit:community-home-button-inventory`.
+  - Passed `npm --prefix frontend run audit:community-home-phone-buttons`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:dashboard-button-inventory`.
+  - Passed `npm --prefix frontend run audit:global-action-debugids`.
+  - Passed `npm --prefix frontend run audit:global-raw-action-elements`.
+  - Passed `npm exec -- eslint src/pages/CommunityHomePage.tsx tools/audit-community-home-button-inventory.mjs tools/audit-community-home-phone-buttons.mjs`
+    from the `frontend` directory.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Practical meaning:
+  - Community Home compact tool rows, ROSCA Marketplace route, route-local
+    action counts, mobile shell controls, and row/icon geometry should now be
+    treated as stable unless the owner explicitly requests a Community Home
+    change and the audits are intentionally updated.

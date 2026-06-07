@@ -299,6 +299,11 @@ assertContains(
 );
 
 assertContains(
+  /id: "rosca"[\s\S]*?title: "ROSCA"[\s\S]*?detail:[\s\S]*?"Open contribution cycles for this community marketplace"[\s\S]*?openSelectedCommunityRoute\([\s\S]*?routes\.rosca[\s\S]*?"Choose a community first, then open ROSCA in Marketplace\."/,
+  "Community Home ROSCA row must keep its Marketplace wording and selected-community route explanation."
+);
+
+assertContains(
   /function communityQuickActionButton\([\s\S]*?height: isCompact \? 96 : 100[\s\S]*?minHeight: isCompact \? 96 : 100[\s\S]*?maxHeight: isCompact \? 96 : 100[\s\S]*?overflow: "hidden"/,
   "Community Home front quick-action buttons must keep fixed phone geometry."
 );

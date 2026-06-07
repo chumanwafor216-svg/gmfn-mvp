@@ -73,6 +73,11 @@ assertContains(
 );
 
 assertContains(
+  /function communityActionIcon\(primary = false\): React\.CSSProperties \{[\s\S]*?width: 40,[\s\S]*?height: 40,[\s\S]*?overflow: "hidden"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"/,
+  "Community Home compact row icon slots must clip centered text so labels like ROSCA cannot bleed outside the button."
+);
+
+assertContains(
   /function communityActionStyle\([\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"[\s\S]*?overflowWrap: "normal"[\s\S]*?wordBreak: "normal"[\s\S]*?hyphens: "none"/,
   "Community Home route-local action labels must keep whole-word wrapping across all action variants."
 );
@@ -80,6 +85,11 @@ assertContains(
 assertContains(
   /function communityToolRowStyle\(\): React\.CSSProperties \{[\s\S]*?width: "100%"[\s\S]*?gridTemplateColumns: "auto minmax\(0, 1fr\) auto"[\s\S]*?minHeight: 72[\s\S]*?pointerEvents: "auto"[\s\S]*?overflow: "hidden"[\s\S]*?transition: "none"/,
   "Community Home compact rows must keep stable grid geometry and no transition-driven movement."
+);
+
+assertContains(
+  /item\.id === "vault-control"[\s\S]*?\? 9[\s\S]*?: item\.id === "rosca"[\s\S]*?\? 8\.5[\s\S]*?: 22[\s\S]*?item\.id === "vault-control" \|\| item\.id === "rosca"[\s\S]*?\? 950[\s\S]*?: 800/,
+  "Community Home ROSCA row must keep a compact fixed icon text treatment instead of overflowing the icon slot."
 );
 
 assertContains(
