@@ -1,3 +1,62 @@
+### Marketplace Link Center compact rewrite checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner attached a Marketplace Link Center phone reference and said
+    the current page portion was too wordy;
+  - requested stronger non-emoji icons and a layout close to the reference:
+    Link Center hero plus five link/action lanes.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local UI and the Marketplace audits that cage
+    this lane;
+  - no backend, auth, route-target, Dashboard, Community Home, Action Inbox,
+    Finance, Trust Passport, global shell, or mobile tap guard logic changed.
+- Fix:
+  - `frontend/src/pages/MarketplacePage.tsx` now presents the former
+    Records & Links launcher as `Link Center` with the compact line
+    `Share, verify, shop, repost.`;
+  - the active marketplace-owned links section now opens with a screenshot-style
+    Link Center hero showing `5 lanes`, `1 active`, and `Fast links`;
+  - removed the visible long manual pattern from this lane:
+    `What these links do`, three explanatory `Step` cards, and `Outgoing links`;
+  - reshaped the link work into five numbered rows:
+    `Join Community`, `Verify Community`, `Public Shop Face`, `Paid Repost`,
+    and `Owner Controls`;
+  - added deterministic SVG pictograms for join, verify, copy, email, WhatsApp,
+    open, refresh, repost, target, payment, and owner controls;
+  - kept the existing action debug ids, handlers, button count, and native field
+    count intact;
+  - preserved the public shop height-locked status pill and the admin/member
+    join-link guidance required by the mobile tap stability cage.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs` now protects the
+    compact Link Center shape and fails if the old explanatory manual blocks
+    come back;
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` and
+    `frontend/tools/audit-marketplace-front-package.mjs` now expect the
+    `Link Center` launcher wording and compact tags.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-records-links-lane.mjs tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-front-package.mjs`
+    from `frontend`;
+  - `npm exec -- tsc -b --pretty false` from `frontend`;
+  - `git diff --check`;
+  - sandboxed `npm --prefix frontend run build` still hit the known Windows
+    `esbuild` spawn `EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this pass makes the Link Center substantially less wordy and closer to the
+    provided reference, but it is not a live phone screenshot proof;
+  - the Paid Repost row still contains deeper controls below the compact row
+    header because those controls already exist and were not removed in this
+    scoped pass.
+
 ### Trust Passport Community Confirmation lane checkpoint (2026-06-08)
 
 - Trigger:

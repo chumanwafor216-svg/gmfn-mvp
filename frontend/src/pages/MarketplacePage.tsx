@@ -1923,15 +1923,6 @@ function linkReserveTextStyle(): React.CSSProperties {
   };
 }
 
-function publicShopFaceCardStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    ...innerCard("#FFFFFF"),
-    minHeight: isCompact ? 0 : 330,
-    alignSelf: "stretch",
-    overflowAnchor: "none",
-  };
-}
-
 function joinLinkReserveTextStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...linkReserveTextStyle(),
@@ -1970,6 +1961,220 @@ function joinShareMessageCardStyle(isCompact: boolean): React.CSSProperties {
     maxHeight: isCompact ? 146 : 132,
     overscrollBehavior: "contain",
     scrollbarWidth: "thin",
+  };
+}
+
+function marketplaceLinkHeroStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 14,
+    borderRadius: isCompact ? 22 : 26,
+    border: "1px solid rgba(16,37,59,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,250,255,0.98) 100%)",
+    boxShadow:
+      "0 18px 34px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.9)",
+    overflow: "hidden",
+    display: "grid",
+    gridTemplateColumns: isCompact ? "84px minmax(0, 1fr)" : "128px minmax(0, 1fr)",
+    minHeight: isCompact ? 112 : 126,
+  };
+}
+
+function marketplaceLinkHeroIconStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minHeight: "100%",
+    display: "grid",
+    placeItems: "center",
+    color: "#F2C766",
+    background:
+      "linear-gradient(145deg, #123F6B 0%, #08233A 60%, #061827 100%)",
+    boxShadow: "inset -1px 0 0 rgba(255,255,255,0.16)",
+    fontSize: isCompact ? 36 : 46,
+  };
+}
+
+function marketplaceLinkHeroBodyStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    padding: isCompact ? "14px 14px" : "18px 22px",
+    display: "grid",
+    gap: isCompact ? 9 : 10,
+    alignContent: "center",
+  };
+}
+
+function marketplaceLinkHeroTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#07172C",
+    fontSize: isCompact ? 25 : 32,
+    lineHeight: 1.05,
+    fontWeight: 950,
+    letterSpacing: 0,
+    overflowWrap: "break-word",
+  };
+}
+
+function marketplaceLinkHeroSubtitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    color: "#4A6178",
+    fontSize: isCompact ? 14 : 17,
+    lineHeight: 1.2,
+    fontWeight: 760,
+  };
+}
+
+function marketplaceLinkHeroPillRowStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    alignItems: "center",
+  };
+}
+
+function marketplaceLinkHeroPillStyle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 7,
+    minHeight: 36,
+    borderRadius: 13,
+    padding: "0 12px",
+    border: "1px solid rgba(11,45,74,0.11)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(236,244,255,0.96) 100%)",
+    color: "#173750",
+    fontSize: 13,
+    fontWeight: 900,
+    whiteSpace: "nowrap",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
+  };
+}
+
+function marketplaceLinkRowStyle(isCompact: boolean, expanded = false): React.CSSProperties {
+  return {
+    borderRadius: isCompact ? 20 : 22,
+    border: expanded
+      ? "1.5px solid rgba(27,102,210,0.45)"
+      : "1px solid rgba(16,37,59,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
+    boxShadow:
+      expanded
+        ? "0 16px 32px rgba(27,102,210,0.10), inset 0 1px 0 rgba(255,255,255,0.9)"
+        : "0 12px 24px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.9)",
+    padding: isCompact ? 12 : 14,
+    display: "grid",
+    gap: expanded ? 12 : 10,
+    overflow: "hidden",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function marketplaceLinkRowHeaderStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "48px minmax(0, 1fr) auto"
+      : "58px minmax(0, 1fr) auto",
+    gap: isCompact ? 10 : 14,
+    alignItems: "center",
+    minWidth: 0,
+  };
+}
+
+function marketplaceLinkRowIconStyle(
+  tone: "blue" | "gold" | "green" | "purple" | "navy",
+  isCompact: boolean
+): React.CSSProperties {
+  const backgrounds = {
+    blue: "linear-gradient(180deg, #1D74D8 0%, #074E93 100%)",
+    gold: "linear-gradient(180deg, #D9A51F 0%, #8C6509 100%)",
+    green: "linear-gradient(180deg, #35A971 0%, #08704A 100%)",
+    purple: "linear-gradient(180deg, #6A44D8 0%, #23106B 100%)",
+    navy: "linear-gradient(180deg, #244969 0%, #061827 100%)",
+  };
+
+  return {
+    width: isCompact ? 48 : 58,
+    height: isCompact ? 48 : 58,
+    borderRadius: isCompact ? 14 : 16,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#FFFFFF",
+    background: backgrounds[tone],
+    boxShadow:
+      "0 12px 22px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.22)",
+    flexShrink: 0,
+  };
+}
+
+function marketplaceLinkRowTitleStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    minWidth: 0,
+    color: "#07172C",
+    fontSize: isCompact ? 19 : 23,
+    lineHeight: 1.12,
+    fontWeight: 950,
+    overflowWrap: "break-word",
+    wordBreak: "normal",
+  };
+}
+
+function marketplaceLinkRowSubStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: 4,
+    color: "#516579",
+    fontSize: isCompact ? 13 : 15,
+    lineHeight: 1.25,
+    fontWeight: 760,
+    overflowWrap: "break-word",
+  };
+}
+
+function marketplaceLinkRowStatusStyle(
+  tone: "ready" | "warn" | "idle" = "ready"
+): React.CSSProperties {
+  const colors = {
+    ready: {
+      color: "#12633F",
+      bg: "linear-gradient(180deg, #EEFBF4 0%, #D9F0E3 100%)",
+      border: "1px solid rgba(46,155,98,0.18)",
+    },
+    warn: {
+      color: "#8A5A05",
+      bg: "linear-gradient(180deg, #FFF9E8 0%, #F6E6C3 100%)",
+      border: "1px solid rgba(214,170,69,0.28)",
+    },
+    idle: {
+      color: "#45586C",
+      bg: "linear-gradient(180deg, #F5F8FC 0%, #E9EEF6 100%)",
+      border: "1px solid rgba(16,37,59,0.08)",
+    },
+  };
+
+  return {
+    ...stableStatusPillStyle(tone === "ready"),
+    height: 32,
+    minHeight: 32,
+    maxHeight: 32,
+    padding: "0 10px",
+    color: colors[tone].color,
+    background: colors[tone].bg,
+    border: colors[tone].border,
+    justifyContent: "center",
+  };
+}
+
+function marketplaceLinkMiniIconStyle(): React.CSSProperties {
+  return {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 7,
+    flexShrink: 0,
   };
 }
 
@@ -2509,20 +2714,31 @@ type MarketplaceGlyphName =
   | "chart"
   | "chevron"
   | "chevronUp"
+  | "control"
+  | "copy"
   | "cycle"
   | "demand"
+  | "email"
   | "eye"
   | "heart"
+  | "join"
   | "ledger"
   | "links"
   | "members"
+  | "open"
+  | "payment"
   | "pool"
+  | "refresh"
+  | "repost"
   | "rosca"
   | "shop"
   | "spark"
   | "support"
+  | "target"
   | "trade"
-  | "trust";
+  | "trust"
+  | "verify"
+  | "whatsapp";
 
 function MarketplaceGlyph({
   name,
@@ -2591,6 +2807,117 @@ function MarketplaceGlyph({
       break;
     case "chevronUp":
       glyph = <path d="M5.5 14.5 12 8l6.5 6.5" />;
+      break;
+    case "copy":
+      glyph = (
+        <>
+          <rect x="8" y="7" width="10" height="13" rx="2" />
+          <path d="M6 17H5.8A2.8 2.8 0 0 1 3 14.2V6.8A2.8 2.8 0 0 1 5.8 4H13a2.8 2.8 0 0 1 2.8 2.8V7" />
+          <path d="M11 11h4" />
+        </>
+      );
+      break;
+    case "email":
+      glyph = (
+        <>
+          <rect x="3.8" y="6" width="16.4" height="12" rx="2.5" />
+          <path d="m5.5 8.5 6.5 4.8 6.5-4.8" />
+        </>
+      );
+      break;
+    case "open":
+      glyph = (
+        <>
+          <path d="M13 5h6v6" />
+          <path d="M19 5 11 13" />
+          <path d="M10 7H6.5A2.5 2.5 0 0 0 4 9.5v8A2.5 2.5 0 0 0 6.5 20h8A2.5 2.5 0 0 0 17 17.5V14" />
+        </>
+      );
+      break;
+    case "refresh":
+      glyph = (
+        <>
+          <path d="M6.5 8.2A6.8 6.8 0 0 1 18 9.5" />
+          <path d="M18 5.8v3.7h-3.7" />
+          <path d="M17.5 15.8A6.8 6.8 0 0 1 6 14.5" />
+          <path d="M6 18.2v-3.7h3.7" />
+        </>
+      );
+      break;
+    case "join":
+      glyph = (
+        <>
+          <circle cx="9" cy="9" r="3" />
+          <path d="M4.5 18.2c.7-3 2.2-4.5 4.5-4.5s3.8 1.5 4.5 4.5" />
+          <path d="M17.5 8v6" />
+          <path d="M14.5 11h6" />
+        </>
+      );
+      break;
+    case "verify":
+      glyph = (
+        <>
+          <path d="M12 3.8 18.5 6v5.3c0 4-2.5 7.1-6.5 8.9-4-1.8-6.5-4.9-6.5-8.9V6z" />
+          <path d="M8.8 12.1 11 14.3l4.2-4.6" />
+        </>
+      );
+      break;
+    case "whatsapp":
+      glyph = (
+        <>
+          <path d="M5.5 18.3 6.6 15.2A7 7 0 1 1 9 17.5z" />
+          <path d="M9.2 8.8c.5 2.5 2 4.1 4.6 4.9" />
+          <path d="M9.2 8.8c.5-.7 1-.8 1.4-.3l.6.8c.2.3.2.6-.1.9l-.4.4" />
+          <path d="M13.8 13.7l.4-.4c.3-.3.6-.3.9-.1l.8.6c.5.4.4.9-.3 1.4" />
+        </>
+      );
+      break;
+    case "repost":
+      glyph = (
+        <>
+          <path d="M4 13h3l8 4V7l-8 4H4z" />
+          <path d="M7 13l1 5" />
+          <path d="M18 9.5c.8.7 1.2 1.5 1.2 2.5s-.4 1.8-1.2 2.5" />
+          <path d="M19.5 7.2c1.4 1.2 2 2.8 2 4.8s-.6 3.6-2 4.8" />
+        </>
+      );
+      break;
+    case "target":
+      glyph = (
+        <>
+          <circle cx="12" cy="12" r="7.2" />
+          <circle cx="12" cy="12" r="3.6" />
+          <circle cx="12" cy="12" r="1" />
+        </>
+      );
+      break;
+    case "payment":
+      glyph = (
+        <>
+          <rect x="4" y="5" width="5" height="5" rx="1" />
+          <rect x="15" y="5" width="5" height="5" rx="1" />
+          <rect x="4" y="15" width="5" height="5" rx="1" />
+          <path d="M14 15h2.2" />
+          <path d="M19.5 15H20v5h-5" />
+          <path d="M14 18h2" />
+          <path d="M17.5 18h2.5" />
+        </>
+      );
+      break;
+    case "control":
+      glyph = (
+        <>
+          <circle cx="12" cy="12" r="2.7" />
+          <path d="M12 4.5v2" />
+          <path d="M12 17.5v2" />
+          <path d="M4.5 12h2" />
+          <path d="M17.5 12h2" />
+          <path d="M6.7 6.7 8.1 8.1" />
+          <path d="M15.9 15.9l1.4 1.4" />
+          <path d="M17.3 6.7 15.9 8.1" />
+          <path d="M8.1 15.9l-1.4 1.4" />
+        </>
+      );
       break;
     case "cycle":
       glyph = (
@@ -5509,16 +5836,16 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Records & Links
+                  Link Center
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Join, verify, shop face, and paid repost links.
+                  Share, verify, shop, repost.
                 </span>
                 <span style={marketplaceFrontTagRowStyle()}>
                   <span
                     style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
                   >
-                    Join Link
+                    Join
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
@@ -6368,119 +6695,89 @@ export default function MarketplacePage() {
           style={{
             display: "flex",
             justifyContent: "space-between",
-            gap: 12,
+            gap: 10,
             alignItems: "center",
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Records & Links</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Keep join, marketplace, shop, and controlled outward
-              links separated so participants know exactly which door they are
-              opening.
-            </div>
-          </div>
-
+          <div style={sectionLabel()}>Marketplace links</div>
           <StableButton
             debugId="marketplace.links.toggle"
             type="button"
             onClick={(event) => toggleSectionFromButton(event, "tools")}
-            style={marketplaceActionStyle("soft")}
+            style={{
+              ...marketplaceActionStyle("soft"),
+              width: 112,
+              height: 46,
+              minHeight: 46,
+              maxHeight: 46,
+            }}
           >
-            {sectionsOpen.tools ? "Collapse" : "Open"}
+            <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+              <MarketplaceGlyph
+                name={sectionsOpen.tools ? "chevronUp" : "chevron"}
+                size={18}
+              />
+            </span>
+            {sectionsOpen.tools ? "Close" : "Open"}
           </StableButton>
         </div>
 
-        {sectionsOpen.tools ? (
-          <ExplainToggle
-            label="What these links do"
-            what="This area holds the links that belong to the selected community: the community join link, the public community verification record, the public shop face, and controlled private-access links."
-            why="Marketplace-facing links should stay local to this community. Starting a brand-new community belongs to the wider GSN start door, not this selected marketplace desk."
-            next="Use join when someone should enter this exact community, verification when someone should confirm the community exists, the public shop face when someone should see one storefront, and controlled links for private Vault-style access."
-            tone="light"
-            style={{ marginTop: 12 }}
-          />
-        ) : null}
-
-        {sectionsOpen.tools ? (
-          <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: isCompact
-                  ? "1fr"
-                  : "repeat(3, minmax(0, 1fr))",
-                gap: 10,
-              }}
-            >
-              {[
-                [
-                  "Choose the door",
-                  "Join is for entry. Verify is for proof.",
-                ],
-                [
-                  "Share the right face",
-                  "Shop face is the one storefront tied to the member.",
-                ],
-                [
-                  "Place with care",
-                  "Paid repost only moves a selected public block.",
-                ],
-              ].map(([title, detail], index) => (
-                <div key={title} style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Step {index + 1}</div>
-                  <div
-                    style={{
-                      marginTop: 6,
-                      color: "#08233A",
-                      fontWeight: 950,
-                      fontSize: 15,
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {title}
-                  </div>
-                  <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
-                    {detail}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div
-              style={{
-                ...softCard("#FCFEFF"),
-                borderRadius: 18,
-                padding: 16,
-                display: "grid",
-                gap: 14,
-              }}
-            >
-              <div>
-                <div style={sectionLabel()}>Outgoing links</div>
-                <div style={{ marginTop: 8, ...helperText() }}>
-                  Use one clear link for each job: let someone join this
-                  community, verify this community, show your public shop
-                  face, or send a controlled private-Vault route. Each link now
-                  has its own lane.
-                </div>
+        <div style={marketplaceLinkHeroStyle(isCompact)}>
+          <div aria-hidden="true" style={marketplaceLinkHeroIconStyle(isCompact)}>
+            <MarketplaceGlyph name="links" size={isCompact ? 42 : 52} />
+          </div>
+          <div style={marketplaceLinkHeroBodyStyle(isCompact)}>
+            <div>
+              <div style={marketplaceLinkHeroTitleStyle(isCompact)}>
+                Link Center
               </div>
+              <div style={marketplaceLinkHeroSubtitleStyle(isCompact)}>
+                Share, verify, shop, repost.
+              </div>
+            </div>
+            <div style={marketplaceLinkHeroPillRowStyle()}>
+              <span style={marketplaceLinkHeroPillStyle()}>
+                <MarketplaceGlyph name="links" size={16} />
+                5 lanes
+              </span>
+              <span style={marketplaceLinkHeroPillStyle()}>
+                <MarketplaceGlyph name="spark" size={16} />
+                1 active
+              </span>
+              <span style={marketplaceLinkHeroPillStyle()}>
+                <MarketplaceGlyph name="verify" size={16} />
+                Fast links
+              </span>
+            </div>
+          </div>
+        </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: isCompact
-                    ? "1fr"
-                    : "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Join this community</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Send this only to someone who should request access to this
-                    selected marketplace/community.
+        {sectionsOpen.tools ? (
+          <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+                <div style={marketplaceLinkRowStyle(isCompact, true)}>
+                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
+                    <span
+                      aria-hidden="true"
+                      style={marketplaceLinkRowIconStyle("blue", isCompact)}
+                    >
+                      <MarketplaceGlyph name="join" size={isCompact ? 25 : 30} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
+                        1. Join Community
+                      </div>
+                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
+                        Invite someone into this marketplace.
+                      </div>
+                    </div>
+                    <span
+                      style={marketplaceLinkRowStatusStyle(
+                        inviteLink ? "ready" : canManageMarketplaceLinks ? "warn" : "idle"
+                      )}
+                    >
+                      {inviteLink ? "Ready" : canManageMarketplaceLinks ? "Refresh" : "Admin"}
+                    </span>
                   </div>
                   <div style={{ marginTop: 10 }}>
                     <span style={compactStatusPillStyle(Boolean(inviteLink))}>
@@ -6506,27 +6803,43 @@ export default function MarketplacePage() {
                     style={{
                       marginTop: 10,
                       display: "grid",
-                      gap: 8,
+                      gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                      gap: 10,
                     }}
                   >
-                    <div style={sectionLabel()}>Personalize before sending</div>
-                    <input
-                      {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
-                      value={joinRecipientName}
-                      onChange={(event) => setJoinRecipientName(event.target.value)}
-                      placeholder="Receiver name, e.g. John"
-                      style={inputStyle()}
-                      aria-label="Receiver name for join invitation"
-                    />
-                    <textarea
-                      {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
-                      value={joinInviteNote}
-                      onChange={(event) => setJoinInviteNote(event.target.value)}
-                      placeholder="Short personal note (optional)"
-                      rows={2}
-                      style={{ ...textAreaStyle(), minHeight: 68 }}
-                      aria-label="Short personal note for join invitation"
-                    />
+                    <label style={{ display: "grid", gap: 6 }}>
+                      <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        Name
+                      </span>
+                      <input
+                        {...marketplaceFieldTouchProps("marketplace.join.recipient-name")}
+                        value={joinRecipientName}
+                        onChange={(event) => setJoinRecipientName(event.target.value)}
+                        placeholder="Receiver name"
+                        style={inputStyle()}
+                        aria-label="Receiver name for join invitation"
+                      />
+                    </label>
+                    <label style={{ display: "grid", gap: 6 }}>
+                      <span style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
+                        Note (optional)
+                      </span>
+                      <textarea
+                        {...marketplaceFieldTouchProps("marketplace.join.invite-note")}
+                        value={joinInviteNote}
+                        onChange={(event) => setJoinInviteNote(event.target.value)}
+                        placeholder="Short note"
+                        rows={1}
+                        style={{
+                          ...textAreaStyle(),
+                          minHeight: 44,
+                          maxHeight: 44,
+                          resize: "none",
+                          overflowY: "auto",
+                        }}
+                        aria-label="Short personal note for join invitation"
+                      />
+                    </label>
                   </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
@@ -6547,7 +6860,10 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Copy Join Link
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="copy" size={18} />
+                      </span>
+                      Copy
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.refresh"
@@ -6566,7 +6882,14 @@ export default function MarketplacePage() {
                       {creatingInviteLink
                         ? "Refreshing..."
                         : canManageMarketplaceLinks
-                          ? "Refresh Join Link"
+                          ? (
+                            <>
+                              <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                                <MarketplaceGlyph name="refresh" size={18} />
+                              </span>
+                              Refresh
+                            </>
+                          )
                           : "Admin Refresh Only"}
                     </StableButton>
                     <StableButton
@@ -6588,7 +6911,10 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Copy Invite Message
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="copy" size={18} />
+                      </span>
+                      Copy Text
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.email"
@@ -6609,7 +6935,10 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Email Join Link
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="email" size={18} />
+                      </span>
+                      Email
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.whatsapp"
@@ -6632,6 +6961,9 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="whatsapp" size={18} />
+                      </span>
                       WhatsApp
                     </StableButton>
                   </div>
@@ -6652,20 +6984,28 @@ export default function MarketplacePage() {
                   </div>
                 </div>
 
-                <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>Verify community</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Share this when someone only needs to confirm the community exists in GSN.
-                  </div>
-                  <div style={{ marginTop: 10 }}>
+                <div style={marketplaceLinkRowStyle(isCompact)}>
+                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
                     <span
-                      style={compactStatusPillStyle(
-                        Boolean(publicCommunityWorkspaceLink)
+                      aria-hidden="true"
+                      style={marketplaceLinkRowIconStyle("navy", isCompact)}
+                    >
+                      <MarketplaceGlyph name="verify" size={isCompact ? 25 : 30} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
+                        2. Verify Community
+                      </div>
+                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
+                        Public record
+                      </div>
+                    </div>
+                    <span
+                      style={marketplaceLinkRowStatusStyle(
+                        publicCommunityWorkspaceLink ? "ready" : "idle"
                       )}
                     >
-                      {publicCommunityWorkspaceLink
-                        ? "Community verification ready"
-                        : "Community verification not ready yet"}
+                      {publicCommunityWorkspaceLink ? "Ready" : "Pending"}
                     </span>
                   </div>
                   <div
@@ -6698,7 +7038,10 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Copy Verify Link
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="copy" size={18} />
+                      </span>
+                      Copy Link
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.community-desk.email"
@@ -6719,7 +7062,10 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Email Link
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="email" size={18} />
+                      </span>
+                      Email
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.community-desk.open"
@@ -6738,23 +7084,49 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Open Verify Page
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="open" size={18} />
+                      </span>
+                      Open
                     </StableButton>
                   </div>
                 </div>
 
-                <div style={publicShopFaceCardStyle(isCompact)}>
-                  <div style={sectionLabel()}>Public shop face</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Share the one-shop storefront that follows your GSN ID.
-                  </div>
-                  <div style={{ marginTop: 10 }}>
-                    <span style={stableStatusPillStyle(Boolean(publicShopViewLink))}>
+                <div style={marketplaceLinkRowStyle(isCompact)}>
+                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
+                    <span
+                      aria-hidden="true"
+                      style={marketplaceLinkRowIconStyle("gold", isCompact)}
+                    >
+                      <MarketplaceGlyph name="shop" size={isCompact ? 25 : 30} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
+                        3. Public Shop Face
+                      </div>
+                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
+                        One storefront link
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        ...stableStatusPillStyle(Boolean(publicShopViewLink)),
+                        padding: "0 10px",
+                        color: publicShopViewLink ? "#12633F" : "#8A5A05",
+                        background: publicShopViewLink
+                          ? "linear-gradient(180deg, #EEFBF4 0%, #D9F0E3 100%)"
+                          : "linear-gradient(180deg, #FFF9E8 0%, #F6E6C3 100%)",
+                        border: publicShopViewLink
+                          ? "1px solid rgba(46,155,98,0.18)"
+                          : "1px solid rgba(214,170,69,0.28)",
+                        justifyContent: "center",
+                      }}
+                    >
                       {publicShopViewLink
-                        ? "Public shop link ready"
+                        ? "Ready"
                         : publicShopRecord
-                        ? "Public shop link reconnecting"
-                        : "Public shop link needs refresh"}
+                        ? "Refreshing"
+                        : "Needs refresh"}
                     </span>
                   </div>
                   <div
@@ -6822,7 +7194,16 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {preparingPublicShopLink ? "Refreshing..." : "Refresh Shop Link"}
+                      {preparingPublicShopLink ? (
+                        "Refreshing..."
+                      ) : (
+                        <>
+                          <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                            <MarketplaceGlyph name="refresh" size={18} />
+                          </span>
+                          Refresh
+                        </>
+                      )}
                     </StableButton>
                     <StableButton
                       type="button"
@@ -6849,7 +7230,16 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {preparingPublicShopLink ? "Refreshing..." : "Copy Shop Link"}
+                      {preparingPublicShopLink ? (
+                        "Refreshing..."
+                      ) : (
+                        <>
+                          <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                            <MarketplaceGlyph name="copy" size={18} />
+                          </span>
+                          Copy
+                        </>
+                      )}
                     </StableButton>
                     <StableButton
                       type="button"
@@ -6876,7 +7266,10 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Email Link
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="email" size={18} />
+                      </span>
+                      Email
                     </StableButton>
                     <StableButton
                       type="button"
@@ -6903,7 +7296,10 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Open Shop Face
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="open" size={18} />
+                      </span>
+                      Open
                     </StableButton>
                   </div>
                 </div>
@@ -6912,15 +7308,34 @@ export default function MarketplacePage() {
                   id="marketplace-paid-network-placement"
                   {...marketplaceFieldTouchProps("marketplace.network-repost.surface")}
                   style={{
-                    ...innerCard("#F8FBFF"),
+                    ...marketplaceLinkRowStyle(isCompact),
                     scrollMarginTop: isCompact ? 84 : 104,
                     position: "relative",
                     pointerEvents: "auto",
                   }}
                 >
-                  <div style={sectionLabel()}>Paid Repost</div>
-                  <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
-                    Pick a block, target, duration, then generate the payment code.
+                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
+                    <span
+                      aria-hidden="true"
+                      style={marketplaceLinkRowIconStyle("green", isCompact)}
+                    >
+                      <MarketplaceGlyph name="repost" size={isCompact ? 25 : 30} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
+                        4. Paid Repost
+                      </div>
+                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
+                        Target, duration, credits.
+                      </div>
+                    </div>
+                    <span
+                      style={marketplaceLinkRowStatusStyle(
+                        selectedRepostProduct || canPlaceMarketplaceRepost ? "ready" : "idle"
+                      )}
+                    >
+                      {selectedRepostProduct || canPlaceMarketplaceRepost ? "Ready" : "Set up"}
+                    </span>
                   </div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <span style={badge(Boolean(selectedRepostProduct))}>
@@ -7346,7 +7761,16 @@ export default function MarketplacePage() {
                           flex: "0 0 auto",
                         }}
                       >
-                        {loadingRepostTargetSuggestions ? "Finding..." : "Find Target IDs"}
+                        {loadingRepostTargetSuggestions ? (
+                          "Finding..."
+                        ) : (
+                          <>
+                            <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                              <MarketplaceGlyph name="target" size={18} />
+                            </span>
+                            Targets
+                          </>
+                        )}
                       </StableButton>
                     </div>
                     {repostTargetSuggestionError ? (
@@ -7434,7 +7858,10 @@ export default function MarketplacePage() {
                                   maxHeight: 46,
                                 }}
                               >
-                                Use ID
+                                <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                                  <MarketplaceGlyph name="target" size={18} />
+                                </span>
+                                Use
                               </StableButton>
                             </div>
                           );
@@ -7499,7 +7926,16 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {creatingRepostPaymentInstruction ? "Generating..." : "Generate Payment Code"}
+                      {creatingRepostPaymentInstruction ? (
+                        "Generating..."
+                      ) : (
+                        <>
+                          <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                            <MarketplaceGlyph name="payment" size={18} />
+                          </span>
+                          Pay Code
+                        </>
+                      )}
                     </StableButton>
                     <StableButton
                       type="button"
@@ -7517,7 +7953,16 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {loadingRepostCredits ? "Refreshing..." : "Refresh Credits"}
+                      {loadingRepostCredits ? (
+                        "Refreshing..."
+                      ) : (
+                        <>
+                          <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                            <MarketplaceGlyph name="refresh" size={18} />
+                          </span>
+                          Refresh
+                        </>
+                      )}
                     </StableButton>
                     <StableButton
                       type="button"
@@ -7534,7 +7979,16 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      {placingMarketplaceRepost ? "Placing..." : "Place on Network Spotlight"}
+                      {placingMarketplaceRepost ? (
+                        "Placing..."
+                      ) : (
+                        <>
+                          <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                            <MarketplaceGlyph name="spark" size={18} />
+                          </span>
+                          Place
+                        </>
+                      )}
                     </StableButton>
                     <StableCtaLink
                       to={routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, activeCommunityId)}
@@ -7542,13 +7996,34 @@ export default function MarketplacePage() {
                       stableHeight={58}
                       style={marketplaceInlineActionStyle("secondary", false, isCompact)}
                     >
-                      Subscription Spotlight
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="spark" size={18} />
+                      </span>
+                      Spotlight
                     </StableCtaLink>
                   </div>
                 </div>
 
-                <div style={innerCard("#F8FBFF")}>
-                  <div style={sectionLabel()}>Owner controls</div>
+                <div style={marketplaceLinkRowStyle(isCompact)}>
+                  <div style={marketplaceLinkRowHeaderStyle(isCompact)}>
+                    <span
+                      aria-hidden="true"
+                      style={marketplaceLinkRowIconStyle("purple", isCompact)}
+                    >
+                      <MarketplaceGlyph name="control" size={isCompact ? 25 : 30} />
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={marketplaceLinkRowTitleStyle(isCompact)}>
+                        5. Owner Controls
+                      </div>
+                      <div style={marketplaceLinkRowSubStyle(isCompact)}>
+                        Manage your shop & settings.
+                      </div>
+                    </div>
+                    <span style={marketplaceLinkRowStatusStyle("ready")}>
+                      Ready
+                    </span>
+                  </div>
                   <div style={marketplaceInlineActionsStyle(isCompact)}>
                     <StableButton
                       debugId="marketplace.links.owner-shop-control"
@@ -7562,12 +8037,13 @@ export default function MarketplacePage() {
                         isCompact
                       )}
                     >
-                      Open Owner Shop Control
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="control" size={18} />
+                      </span>
+                      Open Control
                     </StableButton>
                   </div>
                 </div>
-              </div>
-            </div>
 
           </div>
         ) : null}

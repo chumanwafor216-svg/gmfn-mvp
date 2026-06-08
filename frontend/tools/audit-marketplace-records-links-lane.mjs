@@ -39,8 +39,8 @@ function sectionBetween(startPattern, endPattern) {
 }
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Records & Links[\s\S]*?Join, verify, shop face, and paid repost links[\s\S]*?Join Link[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost/,
-  "Records & Links grouped card must open marketplace-owned links and not look like the member/trade lane."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Link Center[\s\S]*?Share, verify, shop, repost\.[\s\S]*?Join[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost/,
+  "Link Center grouped card must open marketplace-owned links and not look like the member/trade lane."
 );
 
 assertContains(
@@ -99,35 +99,48 @@ if (!recordsLinksSection.text) {
   }
 
   [
-    /Records & Links/,
-    /Keep join, marketplace, shop, and controlled outward[\s\S]*?links separated/,
-    /What these links do/,
-    /Choose the door[\s\S]*?Join is for entry\. Verify is for proof/,
-    /Share the right face[\s\S]*?Shop face is the one storefront tied to the member/,
-    /Place with care[\s\S]*?Paid repost only moves a selected public block/,
-    /Outgoing links/,
-    /Join this community/,
-    /Verify community/,
-    /Public shop face/,
+    /Marketplace links/,
+    /Link Center/,
+    /Share, verify, shop, repost\./,
+    /5 lanes/,
+    /1 active/,
+    /Fast links/,
+    /1\. Join Community/,
+    /Invite someone into this marketplace/,
+    /Name[\s\S]*?Receiver name/,
+    /Note \(optional\)[\s\S]*?Short note/,
+    /2\. Verify Community/,
+    /Public record/,
+    /3\. Public Shop Face/,
+    /One storefront link/,
     /Paid Repost/,
-    /Owner controls/,
+    /4\. Paid Repost/,
+    /Target, duration, credits/,
+    /5\. Owner Controls/,
+    /Manage your shop & settings/,
+    /Open Control/,
+    /<MarketplaceGlyph name="join"/,
+    /<MarketplaceGlyph name="verify"/,
+    /<MarketplaceGlyph name="shop"/,
+    /<MarketplaceGlyph name="repost"/,
+    /<MarketplaceGlyph name="control"/,
     /debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}/,
     /debugId="marketplace\.links\.owner-shop-control"[\s\S]*?openMarketplaceCta\(event, "shop"\)/,
   ].forEach((pattern) => {
     if (!pattern.test(recordsLinksSection.text)) {
       addFinding(
         recordsLinksSection.start,
-        "Records & Links detail section is missing an expected guided link element.",
+        "Link Center detail section is missing an expected guided link element.",
         pattern.toString()
       );
     }
   });
 
-  if (/(Member Ledger|People, shops|Trusted Trade|Support Requests|Money Pool|ROSCA|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI)/.test(recordsLinksSection.text)) {
+  if (/(Member Ledger|People, shops|Trusted Trade|Support Requests|Money Pool|ROSCA|guarantor|Loan Readiness|Trust Passport|TrustSlip|CCI|What these links do|Choose the door|Outgoing links)/.test(recordsLinksSection.text)) {
     addFinding(
       recordsLinksSection.start,
-      "Records & Links detail section must not expose other major lane responsibilities.",
-      "Records & Links may open owner shop control, but it must not become member, support, money, ROSCA, or trust work."
+      "Link Center detail section must stay compact and must not expose other major lane responsibilities.",
+      "Link Center may open owner shop control, but it must not become member, support, money, ROSCA, trust work, or a long explanatory manual."
     );
   }
 }

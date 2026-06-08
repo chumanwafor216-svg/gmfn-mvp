@@ -89,8 +89,8 @@ while ((emojiMatch = emojiPattern.exec(marketplaceSource))) {
   {
     id: "marketplace.row.records-links",
     glyph: "links",
-    label: "Records & Links",
-    tags: ["Join Link", "Verify", "Shop Face", "Paid Repost"],
+    label: "Link Center",
+    tags: ["Join", "Verify", "Shop Face", "Paid Repost"],
   },
   {
     id: "marketplace.extra-tools.toggle",
