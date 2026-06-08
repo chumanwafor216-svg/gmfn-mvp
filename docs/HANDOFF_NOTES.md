@@ -1,3 +1,57 @@
+### Protected button freeze band added before Marketplace work (2026-06-08)
+
+- Trigger:
+  - product owner wants Dashboard, Community Home, Action Inbox, Cover/Login,
+    and entry-flow buttons shielded before the next Marketplace stabilization
+    pass;
+  - owner explicitly said these surfaces are not perfect, but are close enough
+    for now and should not be disturbed while Marketplace is repaired lane by
+    lane.
+- Confirmed source facts:
+  - Dashboard already has route/action/phone-geometry cages through
+    `audit-dashboard-actions`, `audit-dashboard-button-inventory`, and
+    `audit-dashboard-phone-buttons`;
+  - Community Home already has route/action/phone-geometry cages through
+    `audit-community-home-button-inventory`,
+    `audit-community-home-phone-buttons`, and the shared mobile tap guard;
+  - Action Inbox / Notifications now has its own inventory cage, including the
+    compact phone Dashboard escape button;
+  - member-entry and auth surfaces already have source-level traceability and
+    route-recovery audits through `audit-entry-auth-contracts` and
+    `audit-member-entry-actions`.
+- Fix:
+  - added `frontend/tools/audit-protected-button-freeze.mjs`;
+  - added `npm --prefix frontend run audit:protected-button-freeze`;
+  - added `docs/BUTTON_STABILITY_FREEZE.md`;
+  - updated `docs/FREEZE_POLICY.md` so the protected button freeze band is now
+    explicit.
+- Current protected freeze band:
+  - Dashboard;
+  - Community Home;
+  - Community Join Requests layout;
+  - Action Inbox / Notifications;
+  - Cover, Login, Create Community, Join Entry, Join Pending, Join Approval,
+    Member Activation, Profile, and My GSN and I;
+  - shared mobile tap guard;
+  - global stable-action debug ids and raw-action hygiene;
+  - route fallthrough recovery away from accidental Cover / Welcome dumping.
+- Marketplace protocol now recorded:
+  - Marketplace-specific button inventory is intentionally not part of the
+    protected freeze band because Marketplace is the next unstable page family;
+  - stabilize Marketplace one lane at a time, for example Money Pool first;
+  - for each lane, map every outside-to-inside button, target, hash, reveal
+    state, and explanation state;
+  - after each lane fix, run the protected freeze band plus the relevant
+    Marketplace-specific audits before phone-testing the lane.
+- Verification passed:
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `cd frontend && npm exec -- eslint tools/audit-protected-button-freeze.mjs`;
+  - `git diff --check`.
+- Unabated truth:
+  - this is an audit/source freeze, not proof that the phone UI is perfect;
+  - the value is that future Marketplace work now has a system-level tripwire
+    if it disturbs already-stabilized button families.
+
 ### Community Home app-shell tap rescue added (2026-06-07)
 
 - Trigger:

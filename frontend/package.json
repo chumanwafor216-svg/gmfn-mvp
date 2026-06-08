@@ -29,6 +29,7 @@
     "audit:community-home-phone-buttons": "node tools/audit-community-home-phone-buttons.mjs",
     "audit:community-join-requests-layout": "node tools/audit-community-join-requests-layout.mjs",
     "audit:notifications-button-inventory": "node tools/audit-notifications-button-inventory.mjs",
+    "audit:protected-button-freeze": "node tools/audit-protected-button-freeze.mjs",
     "audit:finance-actions": "node tools/audit-finance-actions.mjs",
     "audit:finance-button-inventory": "node tools/audit-finance-button-inventory.mjs",
     "audit:admin-ops-actions": "node tools/audit-admin-ops-actions.mjs",
