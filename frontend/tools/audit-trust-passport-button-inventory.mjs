@@ -154,18 +154,23 @@ assertContains(
 );
 
 assertContains(
-  /padding: isCompact \? "22px 14px 34px" : "24px 24px 46px"[\s\S]*?background: "linear-gradient\(180deg, #DDEDF8 0%, #F3F7FB 42%, #F8FAFC 100%\)"[\s\S]*?gridTemplateColumns: isCompact \? "104px minmax\(0, 1fr\)" : "190px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 104 : 190[\s\S]*?height: isCompact \? 104 : 190[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?overviewIconBox\(\)/,
-  "Trust Passport identity overview must keep the screenshot-style portrait, title block, and identity row structure."
+  /padding: isCompact \? 12 : 24[\s\S]*?gridTemplateColumns: isCompact \? "64px minmax\(0, 1fr\)" : "124px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 64 : 124[\s\S]*?height: isCompact \? 64 : 124[\s\S]*?Snapshot 1[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?overviewIconBox\(isCompact\)/,
+  "Trust Passport identity overview must keep the compact one-screen snapshot header and two-column fact grid."
 );
 
 assertContains(
-  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 62[\s\S]*?gridTemplateColumns: "44px minmax\(0, 1fr\)"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok\)[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\} communities/,
-  "Trust Passport verification badges must stay in the screenshot-style two-column boxed grid."
+  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 34[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "20px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok\)[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
+  "Trust Passport verification badges must stay as compact one-line snapshot status chips."
 );
 
 assertContains(
   /stableHeight=\{isCompact \? 50 : 58\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
   "Trust Passport public community record action must keep the screenshot-style full-width fixed CTA."
+);
+
+assertNotContains(
+  /minHeight: 62|gridTemplateColumns: "44px minmax\(0, 1fr\)"|width: isCompact \? 104 : 190|height: isCompact \? 104 : 190/g,
+  "Trust Passport identity snapshot must not regress to the old tall screenshot-style geometry."
 );
 
 assertContains(

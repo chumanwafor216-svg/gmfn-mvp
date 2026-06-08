@@ -404,6 +404,10 @@ Rules:
   Keep those responsibilities distinct.
 - Marketplace-local trust may be summarized when the user arrived from one
   marketplace, but the full carried trust story belongs here.
+- Identity Overview is the first One-Screen Snapshot Protocol application. It
+  must fit its title, four identity facts, six compact status signals, and the
+  public community record action inside one 390x844 phone snapshot without
+  tall warning cards or decorative height.
 
 Current pre-redesign Trust Passport section mapping:
 - Current Trust Standing: Identity Overview, Current trust verdict, and What

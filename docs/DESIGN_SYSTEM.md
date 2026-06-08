@@ -125,6 +125,26 @@ One screen should never feel like seven screens stacked together.
 
 Collapse, group, or move deeper content to its own page.
 
+## One-Screen Snapshot Protocol
+
+Some surfaces are meant to communicate one complete record in one screenshot,
+not to behave like a scroll document.
+
+Use this protocol for compact identity, proof, receipt, link, and verification
+snapshots:
+
+- target a 390x844 phone viewport first
+- fit the snapshot card from title to primary action without internal scrolling
+- keep one title, one short subtitle, the minimum facts, status chips, and one
+  primary action
+- remove decorative height, oversized badges, repeated dividers, and explanatory
+  paragraphs
+- use compact SVG pictograms instead of emoji-style marks
+- keep long IDs readable with whole-word wrapping only; do not split labels into
+  one-letter fragments
+- if all facts cannot fit, shorten labels before hiding data
+- deeper explanation belongs below the snapshot or behind a lane/action
+
 ## Focused Action Protocol
 
 When a user starts an action, the screen must reduce to that action.

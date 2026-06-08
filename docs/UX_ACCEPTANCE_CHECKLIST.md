@@ -26,6 +26,19 @@ A screen is acceptable only if:
 
 If the screen feels like a long scroll of unrelated blocks, it fails.
 
+## One-Screen Snapshot Test
+
+Identity, proof, receipt, link, and verification snapshots must be able to fit
+one complete record into a 390x844 phone screenshot when the snapshot itself is
+the intended information unit.
+
+- The title, required facts, status signals, and primary action should be
+  visible without scrolling inside that snapshot.
+- Use short labels, compact rows/chips, and SVG pictograms.
+- Do not use tall decorative cards, large repeated dividers, or explanatory
+  paragraphs inside the snapshot.
+- Text must stay readable and must not split into one-letter stacks.
+
 ## Guided Work Surface Test
 
 Marketplace, Finance, Trust Passport, Loans & Support, Shop Control, and other

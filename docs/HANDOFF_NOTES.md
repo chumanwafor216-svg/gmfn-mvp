@@ -1,3 +1,58 @@
+### Trust Passport One-Screen Snapshot Protocol checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner requested the Trust Passport Identity Overview block to fit
+    as one concise screenshot/shareable record rather than a tall scroll card;
+  - the approved target is a 390x844 phone viewport using SVG pictograms, not
+    emoji or Canva/bitmap assets.
+- Scope:
+  - route remains `/app/trust` through `frontend/src/pages/TrustScorePage.tsx`;
+  - no backend, auth, route, API, data model, Dashboard, Community Home,
+    Marketplace, Finance, global shell, or shared tap-guard logic changed;
+  - action debug id `trust-score.open-public-community-record` remains
+    unchanged.
+- Protocol added:
+  - `docs/DESIGN_SYSTEM.md` now defines the One-Screen Snapshot Protocol for
+    compact identity, proof, receipt, link, and verification snapshots;
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md` now includes the One-Screen Snapshot
+    Test;
+  - `docs/SCREEN_SPECS.md` now records Trust Passport Identity Overview as the
+    first application of this protocol.
+- Fix:
+  - `frontend/src/pages/TrustScorePage.tsx` compresses Identity Overview into a
+    compact snapshot card with a smaller portrait/header row;
+  - preserves the four required identity facts: `GSN ID`, `Community`,
+    `Community ID`, and `Role`;
+  - replaces tall warning tiles with compact one-line SVG-led status chips for
+    phone, community confirmation, continuity, bank, passport, and active
+    community count;
+  - keeps `Open public community record` as a full-width fixed-height CTA.
+- Audit cage updated:
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` now protects the
+    compact snapshot geometry and fails if the old tall 104px/62px warning-card
+    shape returns.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx src/components/TrustPaperMarks.tsx`
+    from `frontend`;
+  - `npm exec -- tsc -b --pretty false` from `frontend`;
+  - `git diff --check` with line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` still hit the known Windows
+    `esbuild` spawn `EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is a code/audit/build-verified compact snapshot, not yet a live
+    390x844 phone screenshot proof;
+  - the Marketplace Link Center screenshots supplied after the previous pass
+    show the same one-screen-density problem still exists there and needs a
+    separate Marketplace correction pass.
+
 ### Marketplace Link Center compact rewrite checkpoint (2026-06-08)
 
 - Trigger:
