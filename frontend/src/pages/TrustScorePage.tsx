@@ -33,6 +33,14 @@ import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
 
 type NoticeTone = "success" | "error";
 
+type TrustPassportLaneKey =
+  | "standing"
+  | "evidence"
+  | "community"
+  | "finance"
+  | "documents"
+  | "repair";
+
 type TrustReadingState = {
   classText: string;
   scoreText: string;
@@ -553,16 +561,6 @@ function innerCard(bg = "#FFFFFF"): React.CSSProperties {
     ...institutionalInnerCard(bg),
     borderRadius: 18,
     padding: 15,
-  };
-}
-
-function sectionLabel(): React.CSSProperties {
-  return {
-    fontSize: 12,
-    color: "#39526C",
-    fontWeight: 1000,
-    letterSpacing: 0.45,
-    textTransform: "uppercase",
   };
 }
 
@@ -1105,6 +1103,8 @@ export default function TrustScorePage() {
     tone: NoticeTone;
     text: string;
   } | null>(null);
+  const [activeTrustPassportLane, setActiveTrustPassportLane] =
+    useState<TrustPassportLaneKey>("standing");
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -1810,6 +1810,54 @@ export default function TrustScorePage() {
     ["No auto-debit", "Yes"],
   ];
 
+  const trustPassportLanes: Array<{
+    key: TrustPassportLaneKey;
+    icon: TrustPaperIconName;
+    label: string;
+    detail: string;
+  }> = [
+    {
+      key: "standing",
+      icon: "shield",
+      label: "Current Trust Standing",
+      detail: "Identity, verdict, and what this reading says.",
+    },
+    {
+      key: "evidence",
+      icon: "chart",
+      label: "Evidence Story",
+      detail: "What helped, what pressured, and why trust moved.",
+    },
+    {
+      key: "community",
+      icon: "community",
+      label: "Community Confirmation",
+      detail: "Local and cross-community trust surfaces.",
+    },
+    {
+      key: "finance",
+      icon: "wallet",
+      label: "Finance Discipline",
+      detail: "Limit, capacity, locked guarantees, and risk context.",
+    },
+    {
+      key: "documents",
+      icon: "document",
+      label: "Documents / TrustSlip",
+      detail: "Open, verify, copy, refresh, or export the reading.",
+    },
+    {
+      key: "repair",
+      icon: "alert",
+      label: "Repair or Next Step",
+      detail: "Review pressure notes before opening the next action.",
+    },
+  ];
+
+  const activeLane =
+    trustPassportLanes.find((lane) => lane.key === activeTrustPassportLane) ||
+    trustPassportLanes[0];
+
   const noticeNode = notice ? (
     <div style={noticeCard(notice.tone)}>{notice.text}</div>
   ) : null;
@@ -1833,6 +1881,117 @@ export default function TrustScorePage() {
         }}
       >
         {noticeNode}
+
+        <section
+          style={{
+            ...pageCard("#FFFFFF"),
+            border: "1px solid rgba(37,78,119,0.14)",
+            boxShadow: "0 14px 36px rgba(7,23,44,0.08)",
+            padding: isCompact ? 12 : 16,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              alignItems: isCompact ? "flex-start" : "center",
+              flexDirection: isCompact ? "column" : "row",
+            }}
+          >
+            <div style={{ minWidth: 0 }}>
+              <div
+                style={{
+                  color: "#617085",
+                  fontSize: 12,
+                  letterSpacing: 1.8,
+                  textTransform: "uppercase",
+                  fontWeight: 1000,
+                }}
+              >
+                Active trust lane
+              </div>
+              <div
+                style={{
+                  color: "#07172C",
+                  fontSize: isCompact ? 21 : 25,
+                  lineHeight: 1.08,
+                  fontWeight: 1000,
+                  marginTop: 4,
+                }}
+              >
+                {activeLane.label}
+              </div>
+              <p style={{ ...helperText(), margin: "6px 0 0" }}>
+                {activeLane.detail}
+              </p>
+            </div>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                color: "#0B63D1",
+                background: "#EEF6FF",
+                border: "1px solid rgba(11,99,209,0.16)",
+                borderRadius: 999,
+                padding: "8px 12px",
+                fontSize: 13,
+                fontWeight: 1000,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <TrustPaperIcon name={activeLane.icon} size={18} />
+              One lane open
+            </span>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "1fr"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: 10,
+              marginTop: 12,
+            }}
+          >
+            {trustPassportLanes.map((lane) => {
+              const isActive = lane.key === activeTrustPassportLane;
+              return (
+                <SecondaryButton
+                  key={lane.key}
+                  onClick={() => setActiveTrustPassportLane(lane.key)}
+                  fullWidth
+                  stableHeight={isCompact ? 62 : 66}
+                  debugId={`trust-score.lane.${lane.key}`}
+                  style={{
+                    justifyContent: "flex-start",
+                    borderRadius: 12,
+                    border: isActive
+                      ? "1px solid rgba(11,99,209,0.36)"
+                      : "1px solid rgba(216,227,238,0.9)",
+                    background: isActive ? "#EEF6FF" : "#FFFFFF",
+                    boxShadow: isActive
+                      ? "0 8px 20px rgba(11,99,209,0.12)"
+                      : "none",
+                    color: "#07172C",
+                    fontSize: isCompact ? 13 : 14,
+                    fontWeight: 1000,
+                    paddingInline: 12,
+                  }}
+                >
+                  <TrustPaperIcon
+                    name={lane.icon}
+                    size={isCompact ? 18 : 20}
+                    color={isActive ? "#0B63D1" : "#526579"}
+                  />
+                  {lane.label}
+                </SecondaryButton>
+              );
+            })}
+          </div>
+        </section>
 
         <section
           style={{
@@ -2094,7 +2253,8 @@ export default function TrustScorePage() {
 
           <section
             style={{
-              display: "grid",
+              display:
+                activeTrustPassportLane === "standing" ? "grid" : "none",
               gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
               gap: 14,
               marginTop: 14,
@@ -2251,6 +2411,11 @@ export default function TrustScorePage() {
             style={{
               ...innerCard("#FFFFFF"),
               border: "1px solid rgba(216,227,238,0.9)",
+              display:
+                activeTrustPassportLane === "evidence" ||
+                activeTrustPassportLane === "repair"
+                  ? "block"
+                  : "none",
               marginTop: 14,
               scrollMarginTop: isCompact ? 96 : 24,
             }}
@@ -2293,7 +2458,13 @@ export default function TrustScorePage() {
             </div>
           </section>
 
-          <section style={{ marginTop: 14 }}>
+          <section
+            style={{
+              display:
+                activeTrustPassportLane === "community" ? "block" : "none",
+              marginTop: 14,
+            }}
+          >
             <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
               5. Trust surfaces
             </div>
@@ -2344,13 +2515,28 @@ export default function TrustScorePage() {
 
           <section
             style={{
-              display: "grid",
+              display:
+                activeTrustPassportLane === "evidence" ||
+                activeTrustPassportLane === "documents" ||
+                activeTrustPassportLane === "repair"
+                  ? "grid"
+                  : "none",
               gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
               gap: 14,
               marginTop: 14,
             }}
           >
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+            <div
+              style={{
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(216,227,238,0.9)",
+                display:
+                  activeTrustPassportLane === "evidence" ||
+                  activeTrustPassportLane === "repair"
+                    ? "block"
+                    : "none",
+              }}
+            >
               <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
                 6. Why did my trust change?
               </div>
@@ -2379,7 +2565,14 @@ export default function TrustScorePage() {
               )}
             </div>
 
-            <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+            <div
+              style={{
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(216,227,238,0.9)",
+                display:
+                  activeTrustPassportLane === "documents" ? "block" : "none",
+              }}
+            >
               <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
                 7. Shareable trust tools
               </div>
@@ -2516,6 +2709,11 @@ export default function TrustScorePage() {
             style={{
               ...innerCard("#FFFFFF"),
               border: "1px solid rgba(216,227,238,0.9)",
+              display:
+                activeTrustPassportLane === "evidence" ||
+                activeTrustPassportLane === "finance"
+                  ? "block"
+                  : "none",
               marginTop: 14,
             }}
           >

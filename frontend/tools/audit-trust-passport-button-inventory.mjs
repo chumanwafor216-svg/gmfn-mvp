@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 8;
-const expectedRenderedActions = 9;
+const expectedSourceActions = 9;
+const expectedRenderedActions = 15;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -101,6 +101,7 @@ for (const action of actions) {
 }
 
 const expectedOrder = [
+  "trust-score.lane.${lane.key}",
   "trust-score.open-public-community-record",
   "debugId={item.debugId}",
   "trust-score.refresh",
@@ -207,5 +208,5 @@ if (findings.length > 0) {
 }
 
 console.log(
-  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the two trust-surface cards.`
+  `Trust Passport button inventory audit passed: ${actions.length} stable source actions, ${expectedRenderedActions} expected rendered action roots including the lane selector and two trust-surface cards.`
 );

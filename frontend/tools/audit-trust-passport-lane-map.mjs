@@ -88,6 +88,51 @@ assertContains(
   "Trust Passport screen spec must record the current section-to-lane map before visual lane replacement work."
 );
 
+assertContains(
+  "trust",
+  /type TrustPassportLaneKey =[\s\S]*?\| "standing"[\s\S]*?\| "evidence"[\s\S]*?\| "community"[\s\S]*?\| "finance"[\s\S]*?\| "documents"[\s\S]*?\| "repair"/,
+  "Trust Passport page must keep the approved lane keys as a typed, auditable UI contract."
+);
+
+assertContains(
+  "trust",
+  /useState<TrustPassportLaneKey>\("standing"\)/,
+  "Trust Passport page must default to Current Trust Standing so the first view is guided, not a content dump."
+);
+
+[
+  ["standing", "Current Trust Standing"],
+  ["evidence", "Evidence Story"],
+  ["community", "Community Confirmation"],
+  ["finance", "Finance Discipline"],
+  ["documents", "Documents / TrustSlip"],
+  ["repair", "Repair or Next Step"],
+].forEach(([key, label]) => {
+  assertContains(
+    "trust",
+    new RegExp(`key: "${key}"[\\s\\S]*?label: "${label}"`),
+    `Trust Passport active lane selector must keep the ${label} lane visible and named.`
+  );
+});
+
+assertContains(
+  "trust",
+  /setActiveTrustPassportLane\(lane\.key\)[\s\S]*?debugId=\{`trust-score\.lane\.\$\{lane\.key\}`\}/,
+  "Trust Passport active lane selector must use stable trust-score lane debug IDs and route every click through one active lane state."
+);
+
+assertContains(
+  "trust",
+  /activeTrustPassportLane === "standing" \? "grid" : "none"[\s\S]*?2\. Current trust verdict[\s\S]*?3\. What this reading says/,
+  "Current Trust Standing must be the only default open work lane instead of exposing every trust section at once."
+);
+
+assertContains(
+  "trust",
+  /activeTrustPassportLane === "evidence"[\s\S]*?activeTrustPassportLane === "repair"[\s\S]*?4\. Why this reading looks like this[\s\S]*?activeTrustPassportLane === "community"[\s\S]*?5\. Trust surfaces/,
+  "Trust Passport secondary lanes must be shielded behind active-lane visibility gates."
+);
+
 assertOrderedSnippets(
   "trust",
   [

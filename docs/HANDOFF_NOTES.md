@@ -1,3 +1,51 @@
+### Trust Passport active lane replacement checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue after the Trust Passport lane map cage;
+  - prior owner direction said active work should replace the old exposed task,
+    not keep pushing a longer page downward.
+- Source facts changed/preserved:
+  - route remains `/app/trust` through `frontend/src/pages/TrustScorePage.tsx`;
+  - `/app/trust-passport` redirect behavior was not changed;
+  - backend, auth, Marketplace, Finance, Dashboard, Community Home, Action
+    Inbox, global shell, and route-target contracts were not changed;
+  - the public community record action remains available from the identity
+    context card.
+- Fix:
+  - added a typed `TrustPassportLaneKey` contract with the approved lanes:
+    Current Trust Standing, Evidence Story, Community Confirmation, Finance
+    Discipline, Documents / TrustSlip, and Repair or Next Step;
+  - defaulted the page to `Current Trust Standing`;
+  - added a stable-button lane selector with `trust-score.lane.*` debug IDs;
+  - made Trust Passport sections visible by active lane instead of exposing the
+    full numbered stack at once;
+  - updated `audit:trust-passport-lane-map` to lock the active-lane state,
+    default lane, lane names, and section visibility gates;
+  - updated `audit:trust-passport-button-inventory` for the six new lane
+    selector buttons.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-lane-map.mjs tools/audit-trust-passport-button-inventory.mjs`
+    from `frontend`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Known unrelated repo-wide lint noise:
+  - `npm --prefix frontend run lint` still fails in existing non-slice files:
+    `frontend/public/sw.js`, `frontend/server.mjs`, and
+    `frontend/src/pages/TrustSlipPage.tsx`.
+- Unabated truth:
+  - this is the first real Trust Passport active-lane behavior pass;
+  - it improves the long-page problem, but each lane still needs a deeper
+    polish/audit pass later, especially Repair or Next Step and Finance
+    Discipline.
+
 ### Trust Passport lane map cage checkpoint (2026-06-08)
 
 - Trigger:
