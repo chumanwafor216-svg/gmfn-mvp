@@ -2191,7 +2191,12 @@ export default function FinancePage() {
             flexWrap: "wrap",
           }}
         >
-          <FinanceSectionLabel icon="down">Visible Cash Flow</FinanceSectionLabel>
+          <div>
+            <FinanceSectionLabel icon="down">Finance quick snapshot</FinanceSectionLabel>
+            <div style={{ marginTop: 7, color: "#52697F", fontSize: 13, fontWeight: 800, lineHeight: 1.45 }}>
+              A short reading only. Open a lane for the full money record.
+            </div>
+          </div>
           <span style={badge(false)}>This month</span>
         </div>
 
@@ -2200,289 +2205,286 @@ export default function FinancePage() {
             marginTop: 14,
             display: "grid",
             gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-            gap: 0,
-            border: "1px solid rgba(12,41,71,0.08)",
-            borderRadius: 20,
-            overflow: "hidden",
-            background: "#FFFFFF",
+            gap: 10,
           }}
         >
           {[
             {
-              label: "Total inflow",
+              label: "Money in",
               value: fmtFinanceAmount(visibleMonthInflow, crossCurrency),
-              note: `${visibleMonthInflowCount} recorded move${
-                visibleMonthInflowCount === 1 ? "" : "s"
-              }`,
+              note: `${visibleMonthInflowCount} move${visibleMonthInflowCount === 1 ? "" : "s"}`,
               color: "#168254",
+              icon: "down" as FinanceGlyphName,
             },
             {
-              label: "Total outflow",
+              label: "Money out",
               value: fmtFinanceAmount(visibleMonthOutflow, crossCurrency),
-              note: `${visibleMonthOutflowCount} recorded move${
-                visibleMonthOutflowCount === 1 ? "" : "s"
-              }`,
+              note: `${visibleMonthOutflowCount} move${visibleMonthOutflowCount === 1 ? "" : "s"}`,
               color: "#C83A3A",
+              icon: "out" as FinanceGlyphName,
             },
             {
               label: "Net movement",
               value: visibleMonthNetLabel,
-              note: "From money activity we can show now",
+              note: "Visible movement",
               color: visibleMonthNet >= 0 ? "#168254" : "#C83A3A",
+              icon: "chart" as FinanceGlyphName,
             },
-          ].map((item, index) => (
+          ].map((item) => (
             <div
               key={item.label}
               style={{
-                padding: isCompact ? 16 : 18,
-                borderRight:
-                  !isCompact && index < 2
-                    ? "1px solid rgba(12,41,71,0.08)"
-                    : "none",
-                borderBottom:
-                  isCompact && index < 2
-                    ? "1px solid rgba(12,41,71,0.08)"
-                    : "none",
+                ...innerCard("#F8FBFF"),
+                borderColor: "rgba(19,95,209,0.10)",
+                display: "grid",
+                gridTemplateColumns: "42px minmax(0, 1fr)",
+                gap: 10,
+                alignItems: "center",
+                padding: isCompact ? 12 : 14,
               }}
             >
-              <div style={{ color: item.color, fontSize: 14, fontWeight: 950 }}>
-                {item.label}
-              </div>
-              <div
+              <span
+                aria-hidden="true"
                 style={{
-                  marginTop: 6,
-                  color: "#07172C",
-                  fontSize: 24,
-                  fontWeight: 950,
-                  lineHeight: 1.1,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 14,
+                  background: item.color,
+                  color: "#FFFFFF",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 10px 18px rgba(7,23,44,0.10)",
                 }}
               >
-                {item.value}
-              </div>
-              <div style={{ marginTop: 5, color: "#52697F", fontSize: 13, fontWeight: 800 }}>
-                {item.note}
+                <FinanceGlyph name={item.icon} size={19} color="#FFFFFF" />
+              </span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: item.color, fontSize: 12, fontWeight: 950 }}>
+                  {item.label}
+                </div>
+                <div
+                  style={{
+                    marginTop: 3,
+                    color: "#07172C",
+                    fontSize: isCompact ? 18 : 20,
+                    fontWeight: 950,
+                    lineHeight: 1.1,
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {item.value}
+                </div>
+                <div style={{ marginTop: 3, color: "#52697F", fontSize: 12, fontWeight: 800 }}>
+                  {item.note}
+                </div>
               </div>
             </div>
           ))}
         </div>
-      </section>
 
-      <section style={pageCard("#FFFFFF")}>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
+            marginTop: 12,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1.05fr) minmax(0, 0.95fr)",
             gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
           }}
         >
-          <FinanceSectionLabel icon="history">Recent Finance Events</FinanceSectionLabel>
-          <SubtleButton
-            onClick={() => {
-              openFinanceDetailLane("events", "finance-events");
-            }}
-            debugId="finance.events.view-all"
-            style={{
-              border: "none",
-              background: "transparent",
-              color: "#135FD1",
-              fontSize: 14,
-              fontWeight: 950,
-              boxShadow: "none",
-              padding: "8px 0",
-              minWidth: 72,
-            }}
-          >
-            View all
-          </SubtleButton>
-        </div>
+          <div style={{ ...innerCard("#FFFFFF"), borderColor: "rgba(12,41,71,0.08)" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <FinanceSectionLabel icon="history">Recent Finance Events</FinanceSectionLabel>
+              <SubtleButton
+                onClick={() => {
+                  openFinanceDetailLane("events", "finance-events");
+                }}
+                debugId="finance.events.view-all"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#135FD1",
+                  fontSize: 13,
+                  fontWeight: 950,
+                  boxShadow: "none",
+                  padding: "6px 0",
+                  minWidth: 64,
+                }}
+              >
+                View all
+              </SubtleButton>
+            </div>
+            <div style={{ marginTop: 8, display: "grid" }}>
+              {poolEvents.length === 0 ? (
+                emptyRecord("No recent money movement is showing yet.")
+              ) : (
+                poolEvents.slice(0, 2).map((row, index) => {
+                  const direction = poolEventDirection(row);
+                  const isOut = direction === "out";
+                  const amountColor = direction === "neutral" ? "#07172C" : isOut ? "#C83A3A" : "#168254";
+                  const amountPrefix = direction === "neutral" ? "" : isOut ? "-" : "+";
 
-        <div style={{ marginTop: 12, display: "grid" }}>
-          {poolEvents.length === 0 ? (
-            emptyRecord("No recent money movement is showing yet.")
-          ) : (
-            poolEvents.slice(0, 3).map((row, index) => {
-              const direction = poolEventDirection(row);
-              const isOut = direction === "out";
-              const amountColor = direction === "neutral" ? "#07172C" : isOut ? "#C83A3A" : "#168254";
-              const amountPrefix = direction === "neutral" ? "" : isOut ? "-" : "+";
-
-              return (
-                <div
-                  key={`${row.id || index}`}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "44px minmax(0, 1fr) auto",
-                    gap: 12,
-                    alignItems: "center",
-                    padding: "13px 0",
-                    borderBottom:
-                      index < Math.min(poolEvents.length, 3) - 1
-                        ? "1px solid rgba(12,41,71,0.08)"
-                        : "none",
-                  }}
-                >
-                  <span
-                    aria-hidden="true"
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 999,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      color: "#FFFFFF",
-                      background: isOut ? "#C83A3A" : "#21A365",
-                      fontSize: 18,
-                      fontWeight: 950,
-                    }}
-                  >
-                    <FinanceGlyph
-                      name={direction === "neutral" ? "history" : isOut ? "out" : "down"}
-                      size={18}
-                      color="#FFFFFF"
-                    />
-                  </span>
-                  <div style={{ minWidth: 0 }}>
+                  return (
                     <div
+                      key={`${row.id || index}`}
                       style={{
-                        color: "#07172C",
-                        fontSize: 16,
-                        fontWeight: 950,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        display: "grid",
+                        gridTemplateColumns: "34px minmax(0, 1fr) auto",
+                        gap: 10,
+                        alignItems: "center",
+                        padding: "10px 0",
+                        borderBottom:
+                          index < Math.min(poolEvents.length, 2) - 1
+                            ? "1px solid rgba(12,41,71,0.08)"
+                            : "none",
                       }}
                     >
-                      {safeStr(row.eventType || "Finance event")}
+                      <span
+                        aria-hidden="true"
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 12,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#FFFFFF",
+                          background: isOut ? "#C83A3A" : "#21A365",
+                        }}
+                      >
+                        <FinanceGlyph
+                          name={direction === "neutral" ? "history" : isOut ? "out" : "down"}
+                          size={16}
+                          color="#FFFFFF"
+                        />
+                      </span>
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            color: "#07172C",
+                            fontSize: 14,
+                            fontWeight: 950,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {safeStr(row.eventType || "Finance event")}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: 2,
+                            color: "#52697F",
+                            fontSize: 12,
+                            fontWeight: 800,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {safeStr(row.note || row.reference || communityLabel)}
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ color: amountColor, fontSize: 13, fontWeight: 950 }}>
+                          {amountPrefix}
+                          {fmtFinanceAmount(row.amount || "0", row.currency || poolCurrency)}
+                        </div>
+                        <div style={{ marginTop: 2, color: "#6F7F92", fontSize: 11, fontWeight: 750 }}>
+                          {row.createdAt ? safeDateTime(row.createdAt) : "Recorded"}
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      style={{
-                        marginTop: 3,
-                        color: "#52697F",
-                        fontSize: 13,
-                        fontWeight: 800,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {safeStr(row.note || row.reference || communityLabel)}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ color: amountColor, fontSize: 15, fontWeight: 950 }}>
-                      {amountPrefix}
-                      {fmtFinanceAmount(row.amount || "0", row.currency || poolCurrency)}
-                    </div>
-                    <div style={{ marginTop: 3, color: "#6F7F92", fontSize: 12, fontWeight: 750 }}>
-                      {row.createdAt ? safeDateTime(row.createdAt) : "Recorded"}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </section>
+                  );
+                })
+              )}
+            </div>
+          </div>
 
-      <section
-        style={{
-          ...pageCard("linear-gradient(145deg, #07172C 0%, #092642 70%, #03101F 100%)"),
-          display: "grid",
-          gridTemplateColumns: isCompact ? "1fr" : "76px minmax(0,1fr) auto",
-          gap: 16,
-          alignItems: "center",
-          color: "#F8FBFF",
-          border: "1px solid rgba(214,170,69,0.30)",
-        }}
-      >
-        <div
-          aria-hidden="true"
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: 20,
-            border: "2px solid rgba(214,170,69,0.62)",
-            color: "#F2CF77",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 950,
-            fontSize: 22,
-          }}
-        >
-          GSN
-        </div>
-        <div>
-          <FinanceSectionLabel icon="shield" color="#F2CF77">
-            Finance Signals
-          </FinanceSectionLabel>
-          <div style={{ marginTop: 6, fontSize: 20, fontWeight: 950 }}>
-            {financeFileReading.title}
-          </div>
-          <div style={{ marginTop: 6, color: "#D8E7F5", fontSize: 14, lineHeight: 1.6 }}>
-            {financeFileReading.detail}
-          </div>
           <div
             style={{
-              marginTop: 12,
+              ...innerCard("linear-gradient(145deg, #07172C 0%, #092642 76%, #03101F 100%)"),
+              color: "#F8FBFF",
+              border: "1px solid rgba(214,170,69,0.26)",
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-              gap: 8,
+              gap: 10,
             }}
           >
-            <div
-              style={{
-                borderRadius: 14,
-                padding: "10px 12px",
-                background: "rgba(33,163,101,0.12)",
-                border: "1px solid rgba(33,163,101,0.22)",
-                color: "#E9F8EF",
-                fontSize: 12,
-                fontWeight: 850,
-                lineHeight: 1.45,
-              }}
-            >
-              Working well: {financeHelps[0]}
+            <FinanceSectionLabel icon="shield" color="#F2CF77">
+              Finance Signals
+            </FinanceSectionLabel>
+            <div style={{ fontSize: 18, fontWeight: 950, lineHeight: 1.15 }}>
+              {financeFileReading.title}
+            </div>
+            <div style={{ color: "#D8E7F5", fontSize: 13, lineHeight: 1.5, fontWeight: 750 }}>
+              {financeFileReading.detail}
             </div>
             <div
               style={{
-                borderRadius: 14,
-                padding: "10px 12px",
-                background: "rgba(242,207,119,0.12)",
-                border: "1px solid rgba(242,207,119,0.26)",
-                color: "#FFF4CC",
-                fontSize: 12,
-                fontWeight: 850,
-                lineHeight: 1.45,
+                display: "grid",
+                gridTemplateColumns: "1fr",
+                gap: 8,
               }}
             >
-              Check this: {financeWatchItems[0]}
+              <div
+                style={{
+                  borderRadius: 14,
+                  padding: "10px 12px",
+                  background: "rgba(33,163,101,0.12)",
+                  border: "1px solid rgba(33,163,101,0.22)",
+                  color: "#E9F8EF",
+                  fontSize: 12,
+                  fontWeight: 850,
+                  lineHeight: 1.45,
+                }}
+              >
+                Working well: {financeHelps[0]}
+              </div>
+              <div
+                style={{
+                  borderRadius: 14,
+                  padding: "10px 12px",
+                  background: "rgba(242,207,119,0.12)",
+                  border: "1px solid rgba(242,207,119,0.26)",
+                  color: "#FFF4CC",
+                  fontSize: 12,
+                  fontWeight: 850,
+                  lineHeight: 1.45,
+                }}
+              >
+                Check this: {financeWatchItems[0]}
+              </div>
             </div>
+            <PrimaryButton
+              onClick={() => {
+                setCollapsed((prev) => ({
+                  ...prev,
+                  overview: false,
+                  reconciliation: false,
+                  borrower: false,
+                }));
+                revealFinanceSection("finance-summary");
+              }}
+              debugId="finance.view-signals"
+              minWidth="100%"
+              style={{
+                minHeight: 50,
+                background:
+                  "linear-gradient(180deg, #FFE28A 0%, #D6AA45 70%, #B78321 100%)",
+                color: "#07172C",
+              }}
+            >
+              View Finance Signals
+            </PrimaryButton>
           </div>
         </div>
-        <PrimaryButton
-          onClick={() => {
-            setCollapsed((prev) => ({
-              ...prev,
-              overview: false,
-              reconciliation: false,
-              borrower: false,
-            }));
-            revealFinanceSection("finance-summary");
-          }}
-          debugId="finance.view-signals"
-          minWidth={isCompact ? "100%" : 210}
-          style={{
-            background:
-              "linear-gradient(180deg, #FFE28A 0%, #D6AA45 70%, #B78321 100%)",
-            color: "#07172C",
-          }}
-        >
-          View Finance Signals
-        </PrimaryButton>
       </section>
 
       <section

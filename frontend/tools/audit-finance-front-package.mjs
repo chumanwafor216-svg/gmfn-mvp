@@ -99,6 +99,20 @@ assertContains(
   "Finance secondary lanes must remain grouped below the four main lane choices."
 );
 
+assertContains(
+  financeFile,
+  financeSource,
+  /Finance quick snapshot[\s\S]*?A short reading only\. Open a lane for the full money record\.[\s\S]*?Money in[\s\S]*?Money out[\s\S]*?Net movement[\s\S]*?Recent Finance Events[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?Finance Signals[\s\S]*?debugId="finance\.view-signals"/,
+  "Finance must keep one compact snapshot after the lane chooser instead of exposing separate cash-flow, event, and signal blocks."
+);
+
+assertNotContains(
+  financeFile,
+  financeSource,
+  /<FinanceSectionLabel icon="down">Visible Cash Flow<\/FinanceSectionLabel>/g,
+  "Finance cash-flow preview must stay inside the compact snapshot, not return as a standalone first-screen block."
+);
+
 ["wallet", "bank", "ledger", "shield"].forEach((glyphName) => {
   assertContains(
     financeFile,

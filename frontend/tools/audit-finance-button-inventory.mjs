@@ -139,8 +139,8 @@ assertContains(
 );
 
 assertContains(
-  /FinanceSectionLabel icon="down"[\s\S]*?Visible Cash Flow[\s\S]*?FinanceSectionLabel icon="history"[\s\S]*?Recent Finance Events[\s\S]*?FinanceSectionLabel icon="shield" color="#F2CF77"[\s\S]*?Finance Signals/,
-  "Finance phone-visible section labels must use deterministic glyphs instead of emoji text."
+  /FinanceSectionLabel icon="down"[\s\S]*?Finance quick snapshot[\s\S]*?FinanceSectionLabel icon="history"[\s\S]*?Recent Finance Events[\s\S]*?FinanceSectionLabel icon="shield" color="#F2CF77"[\s\S]*?Finance Signals/,
+  "Finance phone-visible snapshot labels must use deterministic glyphs instead of emoji text."
 );
 
 assertContains(

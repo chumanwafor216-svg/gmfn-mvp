@@ -40521,3 +40521,53 @@ GSN-branded invite composer and invite-entry continuity.
   - This improves the current Identity Integrity surface and records the
     protocol. Other pages still need the same page-by-page icon pass instead of
     a risky shared-icon restyle that could disturb frozen button/page surfaces.
+
+### Finance compact snapshot pass (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue page-by-page cleanup after Bank / Wallet
+    Details and Identity Integrity, with Finance previously named as another
+    guilty surface for wordiness and overexposure.
+- Unabated truth:
+  - Finance already had stronger audit cages than the earlier pages: route-local
+    SVG glyphs, fixed lane button geometry, and one-detail-lane helpers were
+    already present. The remaining weakness was exposure: after the lane chooser
+    it still showed separate cash-flow, event, and signal preview blocks, which
+    made the front surface feel like several competing pages at once.
+- Fix:
+  - `frontend/src/pages/FinancePage.tsx` now replaces the standalone
+    `Visible Cash Flow`, `Recent Finance Events`, and dark `Finance Signals`
+    preview sections with one compact `Finance quick snapshot` card.
+  - The snapshot keeps the short facts: money in, money out, net movement,
+    latest two finance events, and the first finance-signal reading.
+  - The detailed work still opens through the audited lanes:
+    `Money Summary`, `Records / Events`, and `Signals / Readiness`.
+  - Existing debug IDs remain intact, including `finance.events.view-all` and
+    `finance.view-signals`.
+  - `frontend/tools/audit-finance-front-package.mjs` now cages the compact
+    snapshot and rejects a standalone `Visible Cash Flow` first-screen block
+    returning.
+- Verification so far:
+  - Passed `npm --prefix frontend run audit:finance-front-package`.
+  - Passed `npm --prefix frontend run audit:finance-lane-map`.
+  - Passed `npm --prefix frontend run audit:finance-money-summary-lane`.
+  - Passed `npm --prefix frontend run audit:finance-money-movement-lanes`.
+  - Passed `npm --prefix frontend run audit:finance-banking-rails-lane`.
+  - Passed `npm --prefix frontend run audit:finance-records-events-lane`.
+  - Passed `npm --prefix frontend run audit:finance-signals-readiness-lane`.
+  - Passed `npm --prefix frontend run audit:finance-secondary-route-tools`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-front-package.mjs tools/audit-finance-button-inventory.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` hit the known Windows `esbuild` spawn `EPERM`;
+    approved elevated `npm run build` from `frontend` passed.
+- Remaining risk:
+  - This is a front-surface exposure pass, not a full Finance redesign. The
+    detailed Finance lanes still need phone visual checking after the broader
+    audit/build sweep, especially where real backend data creates long event
+    labels or large currency amounts.
