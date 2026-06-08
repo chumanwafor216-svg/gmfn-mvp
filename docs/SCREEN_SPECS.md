@@ -450,6 +450,32 @@ This mapping is a source-cage before visual redesign. It does not permit Trust
 Passport to remain a long stacked document once the lane replacement work
 begins.
 
+## IdentityIntegrityPage
+
+Purpose:
+Guide a signed-in member through identity status, missing proof, and continuity
+repair without turning the page into a long explanation document.
+
+Must show:
+- compact identity header with unobstructed photo/initials
+- GSN ID, selected community, continuity state, and TrustSlip state as short
+  SVG-led facts
+- proof tasks for Phone, Community, Bank / Wallet, Passport / ID, and Recovery
+- one active proof task with a clear action or explicit route-pending response
+- deeper readings, recovery form, reasons, timeline, and trust-document family
+  material below the front package or behind collapses
+
+Rules:
+- Use the mobile task protocol: short state first, next action first, details
+  later.
+- Use SVG pictograms from the app icon system for core identity tasks.
+- Do not use a large photo hero or long paragraph before the user sees current
+  status and next action.
+- Do not send a completion task to an explanation-only page while implying the
+  missing proof can be completed there.
+- If a signed-in completion route does not exist yet, say so plainly in the
+  active task response.
+
 ## OwnerShopControlPage
 
 Purpose:

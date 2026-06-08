@@ -39675,3 +39675,55 @@ GSN-branded invite composer and invite-entry continuity.
     route remains, pull `sessionStorage.gmfn_mobile_tap_trace`; the new event
     to look for is `click-settle-shell-suppressed`, or any remaining shell
     navigation that occurs without this trace.
+
+### Identity Integrity compact front package (2026-06-08)
+
+- Trigger:
+  - product owner reported `/app/identity` / Identity Integrity as too wordy,
+    poorly arranged, and confusing on phone. The old surface used a large dark
+    hero, oversized portrait area, and long explanation before the user could
+    see what identity proof still needed action.
+- Unabated truth:
+  - The page cannot honestly complete every missing identity obligation yet.
+    Bank / wallet and community confirmation can route to existing signed-in
+    pages, but signed-in phone verification and passport / official ID capture
+    still need proper completion routes. This pass makes those gaps visible
+    instead of pretending an explanation page completes the work.
+- Fix:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx` now starts with a compact
+    white identity front package instead of the tall dark photo hero.
+  - The photo / initials block is unobstructed and small enough to act as an
+    identity anchor without consuming the screen.
+  - GSN ID, Community, Continuity, and TrustSlip are shown as compact SVG-led
+    facts.
+  - Phone, Community, Bank / Wallet, Passport / ID, and Recovery are presented
+    as a task switcher with one active task. Starting a task replaces attention
+    locally instead of exposing a long stacked explanation first.
+  - Bank / wallet routes to Payout Details. Community routes to the Community
+    Confirmation Inbox. Recovery stays on-page. Phone and Passport / ID report
+    `Route pending` until real signed-in completion routes exist.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs` plus
+    `npm --prefix frontend run audit:identity-integrity-front-package` cages
+    the compact package, SVG pictogram use, task switcher, and route-pending
+    honesty.
+  - `docs/SCREEN_REGISTRY.md` now registers `IdentityIntegrityPage`.
+  - `docs/SCREEN_SPECS.md` now defines Identity Integrity as a compact mobile
+    task-protocol screen, not a long explanation document.
+- Verification so far:
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec --prefix frontend -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec --prefix frontend -- tsc -b --pretty false` from the
+    `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Remaining risk:
+  - This is source, audit, TypeScript, and build verified. Real phone checking
+    after deploy is still required for visual acceptance, especially text
+    wrapping in the active task card and whether the front package feels compact
+    enough on the owner's exact device.

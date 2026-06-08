@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import NextActionGuide from "../components/NextActionGuide";
 import PageTopNav from "../components/PageTopNav";
 import {
@@ -42,6 +41,10 @@ import {
   getTrustBandShortLabel,
   normalizeTrustBand,
 } from "../lib/trustBandLanguage";
+import {
+  TrustPaperIcon,
+  type TrustPaperIconName,
+} from "../components/TrustPaperMarks";
 
 type TrustEventRow = {
   id?: number | string;
@@ -90,6 +93,8 @@ type CollapseState = {
   timeline: boolean;
   next: boolean;
 };
+
+type IdentityTaskKey = "phone" | "community" | "bank" | "official_id" | "recovery";
 
 type IdentityExplainers = {
   helps: string[];
@@ -257,6 +262,71 @@ function helperText(): React.CSSProperties {
     color: "#5F7287",
     fontSize: 14,
     lineHeight: 1.75,
+  };
+}
+
+function compactHelperText(): React.CSSProperties {
+  return {
+    color: "#617085",
+    fontSize: 13,
+    lineHeight: 1.35,
+  };
+}
+
+function iconTile(
+  color = "#0B63D1",
+  bg = "linear-gradient(180deg, #EEF6FF 0%, #E7F0FF 100%)"
+): React.CSSProperties {
+  return {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    display: "grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    color,
+    background: bg,
+    border: "1px solid rgba(37,78,119,0.10)",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.76)",
+  };
+}
+
+function compactStatusChip(tone: "ready" | "pending" | "watch" | "neutral"): React.CSSProperties {
+  const styles = {
+    ready: { color: "#166534", bg: "#F0FDF4", border: "rgba(34,197,94,0.18)" },
+    pending: { color: "#92400E", bg: "#FFF7ED", border: "rgba(245,158,11,0.20)" },
+    watch: { color: "#0B63D1", bg: "#EEF6FF", border: "rgba(11,99,209,0.18)" },
+    neutral: { color: "#334155", bg: "#F8FAFC", border: "rgba(148,163,184,0.18)" },
+  }[tone];
+
+  return {
+    minHeight: 30,
+    borderRadius: 999,
+    padding: "6px 10px",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    color: styles.color,
+    background: styles.bg,
+    border: `1px solid ${styles.border}`,
+    fontSize: 12,
+    fontWeight: 1000,
+    whiteSpace: "nowrap",
+  };
+}
+
+function compactFactCard(): React.CSSProperties {
+  return {
+    minHeight: 76,
+    borderRadius: 16,
+    border: "1px solid rgba(37,78,119,0.12)",
+    background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
+    padding: 10,
+    display: "grid",
+    gridTemplateColumns: "42px minmax(0, 1fr)",
+    gap: 10,
+    alignItems: "center",
+    boxShadow: "0 10px 24px rgba(7,23,44,0.045)",
   };
 }
 
@@ -823,6 +893,16 @@ export default function IdentityIntegrityPage() {
       dashboard: routeTarget("dashboard", selectedClanId, "identity-integrity.route.dashboard"),
       trust: routeTarget("trust", selectedClanId, "identity-integrity.route.trust"),
       trustSlip: routeTarget("trustSlip", selectedClanId, "identity-integrity.route.trust-slip"),
+      payoutDetails: routeTarget(
+        "payoutDetails",
+        selectedClanId,
+        "identity-integrity.route.payout-details"
+      ),
+      communityConfirmations: routeTarget(
+        "communityConfirmationInbox",
+        selectedClanId,
+        "identity-integrity.route.community-confirmations"
+      ),
       notifications: routeTarget(
         "notifications",
         selectedClanId,
@@ -848,6 +928,8 @@ export default function IdentityIntegrityPage() {
     tone: NoticeTone;
     text: string;
   } | null>(null);
+  const [activeIdentityTask, setActiveIdentityTask] =
+    useState<IdentityTaskKey>("recovery");
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -1111,6 +1193,130 @@ export default function IdentityIntegrityPage() {
     };
   }, [continuity.status, identityRecovery]);
 
+  const identitySignals = useMemo(() => {
+    const phoneReady = Boolean(
+      me?.phone_verified ||
+        me?.phone_verified_at ||
+        me?.phone_e164_verified ||
+        me?.verified_phone_at
+    );
+    const bankReady = Boolean(
+      me?.bank_verified ||
+        me?.bank_verified_at ||
+        me?.bank_details_recorded ||
+        me?.payout_destination_id ||
+        me?.withdrawal_destination_id
+    );
+    const officialIdReady = Boolean(
+      me?.passport_verified ||
+        me?.passport_verified_at ||
+        me?.official_id_recorded ||
+        me?.official_id_verified_at ||
+        me?.identity_document_recorded
+    );
+    const communityReady = Boolean(selectedClanId && currentClan);
+    const recoveryReady = Boolean(recovery.configured);
+
+    return {
+      phoneReady,
+      bankReady,
+      officialIdReady,
+      communityReady,
+      recoveryReady,
+      missingCount: [
+        phoneReady,
+        communityReady,
+        bankReady,
+        officialIdReady,
+        recoveryReady,
+      ].filter((ready) => !ready).length,
+    };
+  }, [currentClan, me, recovery.configured, selectedClanId]);
+
+  const identityHealthLabel =
+    identitySignals.missingCount <= 0
+      ? "Ready"
+      : identitySignals.missingCount <= 2
+        ? "Needs attention"
+        : "Incomplete";
+
+  const identityTaskRows: Array<{
+    key: IdentityTaskKey;
+    icon: TrustPaperIconName;
+    title: string;
+    status: string;
+    tone: "ready" | "pending" | "watch" | "neutral";
+    detail: string;
+    actionLabel: string;
+    to?: string;
+  }> = [
+    {
+      key: "phone",
+      icon: "phone",
+      title: "Phone",
+      status: identitySignals.phoneReady ? "Ready" : "Route pending",
+      tone: identitySignals.phoneReady ? "ready" : "pending",
+      detail: identitySignals.phoneReady
+        ? "Phone proof is already visible to the identity layer."
+        : "Phone verification exists in entry flow, but signed-in phone capture is not wired yet.",
+      actionLabel: identitySignals.phoneReady ? "Open TrustSlip" : "Needs identity-completion route",
+      to: identitySignals.phoneReady ? routes.trustSlip : undefined,
+    },
+    {
+      key: "community",
+      icon: "community",
+      title: "Community",
+      status: identitySignals.communityReady ? "Selected" : "Open inbox",
+      tone: identitySignals.communityReady ? "ready" : "watch",
+      detail: identitySignals.communityReady
+        ? "This identity is currently tied to a selected community."
+        : "Use the confirmation inbox to review community identity confirmation work.",
+      actionLabel: "Open confirmations",
+      to: routes.communityConfirmations,
+    },
+    {
+      key: "bank",
+      icon: "wallet",
+      title: "Bank / wallet",
+      status: identitySignals.bankReady ? "Recorded" : "Add details",
+      tone: identitySignals.bankReady ? "ready" : "pending",
+      detail: identitySignals.bankReady
+        ? "Bank or wallet evidence is already connected."
+        : "Add payout details so identity can connect to real-world financial records.",
+      actionLabel: "Open payout details",
+      to: routes.payoutDetails,
+    },
+    {
+      key: "official_id",
+      icon: "document",
+      title: "Passport / ID",
+      status: identitySignals.officialIdReady ? "Recorded" : "Route pending",
+      tone: identitySignals.officialIdReady ? "ready" : "pending",
+      detail: identitySignals.officialIdReady
+        ? "Official ID evidence is already visible to the identity layer."
+        : "Official ID capture exists in entry flow, but signed-in capture is not wired yet.",
+      actionLabel: identitySignals.officialIdReady
+        ? "Open TrustSlip"
+        : "Needs identity-completion route",
+      to: identitySignals.officialIdReady ? routes.trustSlip : undefined,
+    },
+    {
+      key: "recovery",
+      icon: "lock",
+      title: "Recovery",
+      status: recovery.configured ? "Configured" : "Set up",
+      tone: recovery.configured ? "ready" : "watch",
+      detail: recovery.configured
+        ? "Private recovery prompts are ready for serious continuity shifts."
+        : "Set private recovery prompts so identity continuity has a clean owner check.",
+      actionLabel: recovery.configured ? "Review recovery" : "Set recovery",
+    },
+  ];
+
+  const activeTask =
+    identityTaskRows.find((item) => item.key === activeIdentityTask) ||
+    identityTaskRows[0];
+
   async function handleRecoverySetup(e: React.FormEvent) {
     e.preventDefault();
     if (recoveryBusy) return;
@@ -1328,6 +1534,29 @@ export default function IdentityIntegrityPage() {
     navigateWithOrigin(navigate, item.to, location);
   }
 
+  function openIdentityTask(item: typeof activeTask) {
+    if (item.to) {
+      navigateWithOrigin(navigate, item.to, location);
+      return;
+    }
+
+    if (item.key === "recovery") {
+      setActiveIdentityTask("recovery");
+      showNotice(
+        "success",
+        recovery.configured
+          ? "Recovery is already configured. Review the recovery block below if you need to change it."
+          : "Recovery setup is open on this page. Fill the private prompts below."
+      );
+      return;
+    }
+
+    showNotice(
+      "error",
+      `${item.title} needs a dedicated signed-in identity-completion route before it can be finished here.`
+    );
+  }
+
   if (loading) {
     return (
       <div
@@ -1370,137 +1599,354 @@ export default function IdentityIntegrityPage() {
       <PageTopNav
         sectionLabel="Identity & Integrity"
         title="Identity & Integrity"
-        subtitle="Your stable GSN identity, your consistency across communities, what strengthened it, what weakened it, and the next clean repair or continuity step."
+        subtitle="Stable identity, current status, and the next clean proof step."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.dashboard}
       />
 
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen brings together your stable identity, cross-community consistency, trust changes, and the next clean continuity or repair step."
-        why="It helps you understand identity and trust as one continuing record instead of scattered signals across several pages."
-        next="Start with the identity summary, then read the identity readings and the timeline before you act on the next clean step."
-        tone="light"
-      />
-
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       <section
-        style={pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 52%, #102A43 100%)")}
+        data-identity-integrity-front-package="true"
+        style={{
+          ...pageCard("#FFFFFF"),
+          padding: isCompact ? 12 : 18,
+          border: "1px solid rgba(37,78,119,0.14)",
+          boxShadow: "0 16px 38px rgba(7,23,44,0.08)",
+        }}
       >
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "220px minmax(0, 1fr)",
-            gap: 18,
-            alignItems: "start",
+            gridTemplateColumns: isCompact ? "76px minmax(0, 1fr)" : "104px minmax(0, 1fr)",
+            gap: isCompact ? 10 : 16,
+            alignItems: "center",
           }}
         >
-          <div>
-            <div
-              style={{
-                width: "100%",
-                height: isCompact ? 240 : 270,
-                borderRadius: 28,
-                overflow: "hidden",
-                border: "1px solid rgba(212,175,55,0.22)",
-                background: "linear-gradient(180deg, rgba(8,17,31,0.9) 0%, rgba(16,42,67,0.98) 100%)",
-                boxShadow: "0 20px 44px rgba(2,12,27,0.32)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {avatarSrc ? (
-                <img
-                  src={avatarSrc}
-                  alt="Identity"
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    objectPosition: "center 15%",
-                    display: "block",
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    color: "#F8FBFF",
-                    fontWeight: 900,
-                    fontSize: 44,
-                  }}
-                >
-                  {profileInitials}
-                </div>
-              )}
-            </div>
+          <div
+            style={{
+              width: isCompact ? 76 : 104,
+              height: isCompact ? 76 : 104,
+              borderRadius: isCompact ? 22 : 28,
+              overflow: "hidden",
+              border: "1px solid rgba(212,175,55,0.22)",
+              background: "linear-gradient(180deg, #07172C 0%, #102A43 100%)",
+              boxShadow: "0 14px 32px rgba(2,12,27,0.16)",
+              display: "grid",
+              placeItems: "center",
+              color: "#FFFFFF",
+              fontWeight: 1000,
+              fontSize: isCompact ? 24 : 34,
+            }}
+          >
+            {avatarSrc ? (
+              <img
+                src={avatarSrc}
+                alt="Identity"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  objectPosition: "center 16%",
+                  display: "block",
+                }}
+              />
+            ) : (
+              profileInitials
+            )}
           </div>
 
-          <div>
-            <div style={sectionLabel()}>Identity summary</div>
-
+          <div style={{ minWidth: 0 }}>
             <div
               style={{
-                marginTop: 10,
-                color: "#F8FBFF",
-                fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
-                lineHeight: 1.12,
-              }}
-            >
-              {displayName}
-            </div>
-
-            <div style={{ marginTop: 12, ...helperText(), color: "#D7E3F1", maxWidth: 860 }}>
-              Identity should remain stable while trust reacts to conduct. This keeps the identity layer and the integrity layer together so the user does not need to search for both separately.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
                 display: "flex",
+                alignItems: "center",
                 gap: 8,
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>GSN ID: {gmfnId}</span>
-              <span style={badge(false)}>Community: {communityLabel}</span>
-              <span style={badge(false)}>
-                TrustSlip: {trustSlipCode || "Awaiting issue"}
+              <span style={compactStatusChip(identitySignals.missingCount <= 0 ? "ready" : "pending")}>
+                <TrustPaperIcon name="shield" size={14} strokeWidth={2.5} />
+                {identityHealthLabel}
+              </span>
+              <span style={compactStatusChip("neutral")}>
+                <TrustPaperIcon name="id" size={14} strokeWidth={2.5} />
+                Identity anchor
               </span>
             </div>
-
-            <CardActionRow style={{ marginTop: 16 }}>
-              <PrimaryButton
-                onClick={copyGmfnId}
-                disabled={!gmfnId || gmfnId === "Pending"}
-                debugId="identity-integrity.copy-gmfn-id"
-              >
-                Copy GSN ID
-              </PrimaryButton>
-
-              <SecondaryButton
-                onClick={copyTrustSlipCode}
-                disabled={!trustSlipCode}
-                debugId="identity-integrity.copy-trust-slip-code"
-              >
-                Copy TrustSlip Code
-              </SecondaryButton>
-
-              <SubtleButton
-                onClick={copyIdentitySnapshot}
-                debugId="identity-integrity.copy-snapshot"
-              >
-                Copy identity snapshot
-              </SubtleButton>
-
-              <StableCtaLink to={routes.trust} debugId="identity-integrity.open-trust">
-                Open Trust Passport
-              </StableCtaLink>
-            </CardActionRow>
+            <div
+              style={{
+                marginTop: 8,
+                color: "#07172C",
+                fontWeight: 1000,
+                fontSize: isCompact ? 27 : 36,
+                lineHeight: 1.02,
+                letterSpacing: 0,
+                overflowWrap: "break-word",
+              }}
+            >
+              {displayName}
+            </div>
+            <div style={{ marginTop: 6, ...compactHelperText() }}>
+              One stable person record. Finish the missing proofs one at a time.
+            </div>
           </div>
+        </div>
+
+        <div
+          data-identity-integrity-fact-grid="true"
+          style={{
+            marginTop: isCompact ? 12 : 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+            gap: isCompact ? 8 : 10,
+          }}
+        >
+          {[
+            {
+              icon: "id" as TrustPaperIconName,
+              label: "GSN ID",
+              value: gmfnId,
+              tone: "watch" as const,
+            },
+            {
+              icon: "community" as TrustPaperIconName,
+              label: "Community",
+              value: communityLabel,
+              tone: identitySignals.communityReady ? "ready" as const : "neutral" as const,
+            },
+            {
+              icon: "shield" as TrustPaperIconName,
+              label: "Continuity",
+              value: continuity.label,
+              tone: continuity.status === "trusted" ? "ready" as const : "pending" as const,
+            },
+            {
+              icon: "document" as TrustPaperIconName,
+              label: "TrustSlip",
+              value: trustSlipCode || "Pending",
+              tone: trustSlipCode ? "ready" as const : "neutral" as const,
+            },
+          ].map((item) => (
+            <div key={item.label} style={compactFactCard()}>
+              <span
+                style={iconTile(
+                  item.tone === "ready"
+                    ? "#166534"
+                    : item.tone === "pending"
+                      ? "#92400E"
+                      : "#0B63D1"
+                )}
+              >
+                <TrustPaperIcon name={item.icon} size={20} strokeWidth={2.4} />
+              </span>
+              <span style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    display: "block",
+                    color: "#617085",
+                    fontSize: 11,
+                    fontWeight: 1000,
+                    lineHeight: 1.1,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {item.label}
+                </span>
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: 4,
+                    color: "#07172C",
+                    fontWeight: 1000,
+                    fontSize: isCompact ? 12.5 : 14,
+                    lineHeight: 1.14,
+                    overflowWrap: "break-word",
+                    wordBreak: "normal",
+                  }}
+                >
+                  {item.value}
+                </span>
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <CardActionRow minHeight={isCompact ? 46 : 52} style={{ marginTop: 12 }}>
+          <PrimaryButton
+            onClick={copyGmfnId}
+            disabled={!gmfnId || gmfnId === "Pending"}
+            stableHeight={isCompact ? 46 : 52}
+            debugId="identity-integrity.copy-gmfn-id"
+          >
+            Copy GSN ID
+          </PrimaryButton>
+
+          <SecondaryButton
+            onClick={copyTrustSlipCode}
+            disabled={!trustSlipCode}
+            stableHeight={isCompact ? 46 : 52}
+            debugId="identity-integrity.copy-trust-slip-code"
+          >
+            Copy TrustSlip
+          </SecondaryButton>
+
+          <SubtleButton
+            onClick={copyIdentitySnapshot}
+            stableHeight={isCompact ? 46 : 52}
+            debugId="identity-integrity.copy-snapshot"
+          >
+            Copy snapshot
+          </SubtleButton>
+        </CardActionRow>
+
+        <div
+          data-identity-integrity-task-switcher="true"
+          style={{
+            marginTop: isCompact ? 12 : 16,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(5, minmax(0, 1fr))",
+            gap: 8,
+          }}
+        >
+          {identityTaskRows.map((item) => {
+            const active = item.key === activeIdentityTask;
+            return (
+              <SecondaryButton
+                key={item.key}
+                onClick={() => setActiveIdentityTask(item.key)}
+                stableHeight={isCompact ? 48 : 58}
+                fullWidth
+                debugId={`identity-integrity.task.${item.key}`}
+                style={{
+                  justifyContent: "flex-start",
+                  borderRadius: 14,
+                  border: active
+                    ? "1px solid rgba(11,99,209,0.34)"
+                    : "1px solid rgba(37,78,119,0.12)",
+                  background: active ? "#EEF6FF" : "#FFFFFF",
+                  boxShadow: "none",
+                  color: "#07172C",
+                  paddingInline: 10,
+                }}
+              >
+                <TrustPaperIcon name={item.icon} size={18} strokeWidth={2.4} />
+                <span style={{ minWidth: 0, textAlign: "left" }}>
+                  <span style={{ display: "block", fontWeight: 1000, fontSize: 12.5 }}>
+                    {item.title}
+                  </span>
+                  <span
+                    style={{
+                      display: "block",
+                      marginTop: 2,
+                      color: "#617085",
+                      fontSize: 11,
+                      fontWeight: 900,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {item.status}
+                  </span>
+                </span>
+              </SecondaryButton>
+            );
+          })}
+        </div>
+
+        <div
+          data-identity-integrity-active-task="true"
+          style={{
+            marginTop: isCompact ? 10 : 12,
+            borderRadius: 18,
+            border: "1px solid rgba(37,78,119,0.12)",
+            background:
+              "linear-gradient(180deg, rgba(248,251,255,0.96) 0%, rgba(255,255,255,0.98) 100%)",
+            padding: isCompact ? 10 : 14,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) auto",
+            gap: 10,
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "42px minmax(0, 1fr)",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <span style={iconTile()}>
+              <TrustPaperIcon name={activeTask.icon} size={20} strokeWidth={2.4} />
+            </span>
+            <span style={{ minWidth: 0 }}>
+              <span
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <b style={{ color: "#07172C", fontSize: isCompact ? 17 : 19 }}>
+                  {activeTask.title}
+                </b>
+                <span style={compactStatusChip(activeTask.tone)}>{activeTask.status}</span>
+              </span>
+              <span style={{ display: "block", marginTop: 4, ...compactHelperText() }}>
+                {activeTask.detail}
+              </span>
+            </span>
+          </div>
+
+          <SecondaryButton
+            onClick={() => openIdentityTask(activeTask)}
+            stableHeight={isCompact ? 48 : 52}
+            fullWidth={isCompact}
+            debugId="identity-integrity.active-task-action"
+            style={{
+              borderRadius: 14,
+              background:
+                activeTask.to || activeTask.key === "recovery"
+                  ? "linear-gradient(180deg, #052B58 0%, #031E42 100%)"
+                  : "linear-gradient(180deg, #FFFFFF 0%, #FFF7ED 100%)",
+              color: activeTask.to || activeTask.key === "recovery" ? "#FFFFFF" : "#92400E",
+              border:
+                activeTask.to || activeTask.key === "recovery"
+                  ? "1px solid rgba(3,30,66,0.18)"
+                  : "1px solid rgba(245,158,11,0.24)",
+              boxShadow: "none",
+            }}
+          >
+            {activeTask.actionLabel}
+          </SecondaryButton>
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
+          }}
+        >
+          <StableCtaLink
+            to={routes.trust}
+            stableHeight={isCompact ? 44 : 48}
+            debugId="identity-integrity.open-trust"
+          >
+            Trust Passport
+          </StableCtaLink>
+          <StableCtaLink
+            to={routes.trustSlip}
+            stableHeight={isCompact ? 44 : 48}
+            debugId="identity-integrity.front-trust-slip"
+          >
+            TrustSlip
+          </StableCtaLink>
         </div>
       </section>
 
