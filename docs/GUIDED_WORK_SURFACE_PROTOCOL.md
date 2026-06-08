@@ -221,6 +221,12 @@ npm --prefix frontend run audit:finance-front-package
 npm --prefix frontend run audit:finance-lane-map
 ```
 
+For Finance Money Summary lane work, also run:
+
+```bash
+npm --prefix frontend run audit:finance-money-summary-lane
+```
+
 ## Current Truth
 
 This protocol is a product safety rule. It does not claim current Marketplace,

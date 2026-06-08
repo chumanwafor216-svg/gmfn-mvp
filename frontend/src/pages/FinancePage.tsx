@@ -1692,6 +1692,14 @@ export default function FinancePage() {
     toggleSection(key);
   }
 
+  function openFinanceDetailLane(key: keyof CollapseState, targetId: string) {
+    setCollapsed({
+      ...defaultCollapseState(),
+      [key]: false,
+    });
+    revealFinanceSection(targetId);
+  }
+
   function openFinanceRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
   }
@@ -2015,8 +2023,7 @@ export default function FinancePage() {
               label: "Money Summary",
               detail: "See your full money position.",
               action: () => {
-                setCollapsed((prev) => ({ ...prev, overview: false }));
-                revealFinanceSection("finance-summary");
+                openFinanceDetailLane("overview", "finance-summary");
               },
               color: "#21A365",
             },
@@ -2034,8 +2041,7 @@ export default function FinancePage() {
               label: "Records / Events",
               detail: "See your money history.",
               action: () => {
-                setCollapsed((prev) => ({ ...prev, events: false }));
-                revealFinanceSection("finance-events");
+                openFinanceDetailLane("events", "finance-events");
               },
               color: "#5B3BC4",
             },
@@ -2274,8 +2280,7 @@ export default function FinancePage() {
           <FinanceSectionLabel icon="history">Recent Finance Events</FinanceSectionLabel>
           <SubtleButton
             onClick={() => {
-              setCollapsed((prev) => ({ ...prev, events: false }));
-              revealFinanceSection("finance-events");
+              openFinanceDetailLane("events", "finance-events");
             }}
             debugId="finance.events.view-all"
             style={{
@@ -2494,9 +2499,10 @@ export default function FinancePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Your money position</div>
+            <FinanceSectionLabel icon="chart">Money Summary</FinanceSectionLabel>
             <div style={{ marginTop: 8, ...helperText() }}>
-              These are the deeper figures for this community.
+              Read your money position first. These figures show the selected
+              community view inside your wider Finance story.
             </div>
           </div>
 

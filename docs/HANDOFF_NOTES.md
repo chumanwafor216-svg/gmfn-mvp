@@ -1,3 +1,53 @@
+### Finance Money Summary lane cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after Finance lane names were caged, product owner asked to continue;
+  - next lane selected: Money Summary, because it is the first Finance lane and
+    should open a plain money-position reading without leaving other detail
+    lanes open.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox, or
+    global shell behavior was changed;
+  - no Finance routes, stable action counts, debug-id namespace, or button
+    geometry were changed;
+  - Money Summary still opens the `finance-summary` section;
+  - Records / Events still opens the `finance-events` section.
+- Fix:
+  - added `openFinanceDetailLane`, which resets Finance detail sections to the
+    default collapsed state before opening one selected detail lane;
+  - Money Summary now uses that helper to open only `overview`;
+  - Records / Events and the Recent Finance Events `View all` action now use
+    the same helper to open only `events`;
+  - changed the summary section heading to `Money Summary`;
+  - changed the summary helper copy so it explains that the figures are the
+    selected-community view inside the wider Finance story;
+  - added `frontend/tools/audit-finance-money-summary-lane.mjs`;
+  - added `npm --prefix frontend run audit:finance-money-summary-lane`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Money Summary lane work
+    has its own required audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:finance-money-summary-lane`;
+  - `npm --prefix frontend run audit:finance-lane-map`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm --prefix frontend run audit:finance-button-inventory`;
+  - `npm --prefix frontend run audit:finance-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-front-package.mjs tools/audit-finance-lane-map.mjs tools/audit-finance-money-summary-lane.mjs tools/audit-finance-actions.mjs tools/audit-finance-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Pending before publish:
+  - final commit, push, and GitHub deploy verification.
+- Unabated truth:
+  - this cages Money Summary lane behavior; it does not fully redesign the
+    summary figures or prove phone feel;
+  - the next likely Finance pass is Money In / Money Out route clarity or the
+    Signals / Readiness lane.
+
 ### Finance lane map naming cage checkpoint (2026-06-08)
 
 - Trigger:
