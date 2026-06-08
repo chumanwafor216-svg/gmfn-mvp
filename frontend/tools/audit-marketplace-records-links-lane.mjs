@@ -105,16 +105,16 @@ if (!recordsLinksSection.text) {
     /5 lanes/,
     /1 active/,
     /Fast links/,
-    /1\. Join Community/,
-    /Invite someone into this marketplace/,
+    /\{isCompact \? "1\. Join" : "1\. Join Community"\}/,
+    /\{isCompact \? "Community invite" : "Invite someone into this marketplace\."\}/,
     /Name[\s\S]*?Receiver name/,
     /Note \(optional\)[\s\S]*?Short note/,
-    /2\. Verify Community/,
+    /\{isCompact \? "2\. Verify" : "2\. Verify Community"\}/,
     /Public record/,
-    /3\. Public Shop Face/,
-    /One storefront link/,
+    /\{isCompact \? "3\. Shop Face" : "3\. Public Shop Face"\}/,
+    /Storefront link/,
     /Paid Repost/,
-    /4\. Paid Repost/,
+    /\{isCompact \? "4\. Repost" : "4\. Paid Repost"\}/,
     /Target, duration, credits/,
     /5\. Owner Controls/,
     /Manage your shop & settings/,
@@ -126,6 +126,7 @@ if (!recordsLinksSection.text) {
     /<MarketplaceGlyph name="control"/,
     /debugId=\{`marketplace\.network-repost\.target\.\$\{code \|\| index\}\.use`\}/,
     /debugId="marketplace\.links\.owner-shop-control"[\s\S]*?openMarketplaceCta\(event, "shop"\)/,
+    /personalizedInviteMaskedLabel/,
   ].forEach((pattern) => {
     if (!pattern.test(recordsLinksSection.text)) {
       addFinding(
@@ -143,7 +144,20 @@ if (!recordsLinksSection.text) {
       "Link Center may open owner shop control, but it must not become member, support, money, ROSCA, trust work, or a long explanatory manual."
     );
   }
+
+  if (/joinLinkReserveTextStyle|>[\s\r\n]*\{inviteLink[\s\S]*?\? personalizedInviteLink/.test(recordsLinksSection.text)) {
+    addFinding(
+      recordsLinksSection.start,
+      "Link Center phone surface must not expose raw join URLs or the old tall join-link reserve box.",
+      "Use masked link summaries and action buttons instead."
+    );
+  }
 }
+
+assertContains(
+  /function marketplaceLinkSummaryStyle\(isCompact: boolean\)[\s\S]*?overflowWrap: "break-word"[\s\S]*?function marketplaceLinkHeroStyle[\s\S]*?gridTemplateColumns: isCompact \? "64px minmax\(0, 1fr\)"[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"/,
+  "Link Center compact protocol must keep masked summaries, smaller phone hero geometry, and two-column phone action groups."
+);
 
 if (findings.length > 0) {
   console.error("Marketplace Records & Links lane audit failed:");

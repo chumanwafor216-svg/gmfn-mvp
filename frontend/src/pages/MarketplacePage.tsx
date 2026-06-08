@@ -1908,33 +1908,6 @@ function cleanMaskedLinkLabel(label: string): string {
   return label.replace(/\s+[^ -~]+\s+/g, " - ");
 }
 
-function linkReserveTextStyle(): React.CSSProperties {
-  return {
-    marginTop: 10,
-    height: 66,
-    minHeight: 66,
-    maxHeight: 66,
-    overflowY: "auto",
-    overscrollBehavior: "contain",
-    scrollbarWidth: "thin",
-    overflowWrap: "anywhere",
-    wordBreak: "break-word",
-    overflowAnchor: "none",
-  };
-}
-
-function joinLinkReserveTextStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    ...linkReserveTextStyle(),
-    height: isCompact ? 78 : 66,
-    minHeight: isCompact ? 78 : 66,
-    maxHeight: isCompact ? 78 : 66,
-    overflowY: "auto",
-    overscrollBehavior: "contain",
-    scrollbarWidth: "thin",
-  };
-}
-
 function shareMessageCardStyle(isCompact = false): React.CSSProperties {
   return {
     marginTop: 10,
@@ -1956,18 +1929,40 @@ function shareMessageCardStyle(isCompact = false): React.CSSProperties {
 function joinShareMessageCardStyle(isCompact: boolean): React.CSSProperties {
   return {
     ...shareMessageCardStyle(isCompact),
-    height: isCompact ? 146 : 132,
-    minHeight: isCompact ? 146 : 132,
-    maxHeight: isCompact ? 146 : 132,
+    height: isCompact ? 92 : 132,
+    minHeight: isCompact ? 92 : 132,
+    maxHeight: isCompact ? 92 : 132,
     overscrollBehavior: "contain",
     scrollbarWidth: "thin",
   };
 }
 
+function marketplaceLinkSummaryStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: isCompact ? 8 : 10,
+    minHeight: isCompact ? 36 : 48,
+    borderRadius: isCompact ? 14 : 16,
+    border: "1px solid rgba(11,45,74,0.10)",
+    background:
+      "linear-gradient(180deg, rgba(246,250,255,0.98) 0%, rgba(233,242,250,0.94) 100%)",
+    color: "#334B61",
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: isCompact ? "7px 10px" : "9px 12px",
+    fontSize: isCompact ? 12 : 13,
+    fontWeight: 820,
+    lineHeight: 1.18,
+    overflow: "hidden",
+    overflowWrap: "break-word",
+    wordBreak: "normal",
+  };
+}
+
 function marketplaceLinkHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
-    marginTop: 14,
-    borderRadius: isCompact ? 22 : 26,
+    marginTop: isCompact ? 10 : 14,
+    borderRadius: isCompact ? 18 : 26,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,250,255,0.98) 100%)",
@@ -1975,8 +1970,8 @@ function marketplaceLinkHeroStyle(isCompact: boolean): React.CSSProperties {
       "0 18px 34px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.9)",
     overflow: "hidden",
     display: "grid",
-    gridTemplateColumns: isCompact ? "84px minmax(0, 1fr)" : "128px minmax(0, 1fr)",
-    minHeight: isCompact ? 112 : 126,
+    gridTemplateColumns: isCompact ? "64px minmax(0, 1fr)" : "128px minmax(0, 1fr)",
+    minHeight: isCompact ? 92 : 126,
   };
 }
 
@@ -1996,9 +1991,9 @@ function marketplaceLinkHeroIconStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceLinkHeroBodyStyle(isCompact: boolean): React.CSSProperties {
   return {
     minWidth: 0,
-    padding: isCompact ? "14px 14px" : "18px 22px",
+    padding: isCompact ? "10px 12px" : "18px 22px",
     display: "grid",
-    gap: isCompact ? 9 : 10,
+    gap: isCompact ? 7 : 10,
     alignContent: "center",
   };
 }
@@ -2006,7 +2001,7 @@ function marketplaceLinkHeroBodyStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceLinkHeroTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#07172C",
-    fontSize: isCompact ? 25 : 32,
+    fontSize: isCompact ? 22 : 32,
     lineHeight: 1.05,
     fontWeight: 950,
     letterSpacing: 0,
@@ -2017,7 +2012,7 @@ function marketplaceLinkHeroTitleStyle(isCompact: boolean): React.CSSProperties 
 function marketplaceLinkHeroSubtitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#4A6178",
-    fontSize: isCompact ? 14 : 17,
+    fontSize: isCompact ? 12.5 : 17,
     lineHeight: 1.2,
     fontWeight: 760,
   };
@@ -2036,15 +2031,15 @@ function marketplaceLinkHeroPillStyle(): React.CSSProperties {
   return {
     display: "inline-flex",
     alignItems: "center",
-    gap: 7,
-    minHeight: 36,
-    borderRadius: 13,
-    padding: "0 12px",
+    gap: 6,
+    minHeight: 30,
+    borderRadius: 12,
+    padding: "0 9px",
     border: "1px solid rgba(11,45,74,0.11)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(236,244,255,0.96) 100%)",
     color: "#173750",
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 900,
     whiteSpace: "nowrap",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
@@ -2063,9 +2058,9 @@ function marketplaceLinkRowStyle(isCompact: boolean, expanded = false): React.CS
       expanded
         ? "0 16px 32px rgba(27,102,210,0.10), inset 0 1px 0 rgba(255,255,255,0.9)"
         : "0 12px 24px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.9)",
-    padding: isCompact ? 12 : 14,
+    padding: isCompact ? 10 : 14,
     display: "grid",
-    gap: expanded ? 12 : 10,
+    gap: isCompact ? 8 : expanded ? 12 : 10,
     overflow: "hidden",
     overflowAnchor: "none",
     transition: "none",
@@ -2076,9 +2071,9 @@ function marketplaceLinkRowHeaderStyle(isCompact: boolean): React.CSSProperties 
   return {
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "48px minmax(0, 1fr) auto"
+      ? "44px minmax(0, 1fr) auto"
       : "58px minmax(0, 1fr) auto",
-    gap: isCompact ? 10 : 14,
+    gap: isCompact ? 8 : 14,
     alignItems: "center",
     minWidth: 0,
   };
@@ -2097,9 +2092,9 @@ function marketplaceLinkRowIconStyle(
   };
 
   return {
-    width: isCompact ? 48 : 58,
-    height: isCompact ? 48 : 58,
-    borderRadius: isCompact ? 14 : 16,
+    width: isCompact ? 44 : 58,
+    height: isCompact ? 44 : 58,
+    borderRadius: isCompact ? 13 : 16,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2115,22 +2110,25 @@ function marketplaceLinkRowTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     minWidth: 0,
     color: "#07172C",
-    fontSize: isCompact ? 19 : 23,
-    lineHeight: 1.12,
+    fontSize: isCompact ? 17 : 23,
+    lineHeight: 1.08,
     fontWeight: 950,
     overflowWrap: "break-word",
     wordBreak: "normal",
+    hyphens: "none",
   };
 }
 
 function marketplaceLinkRowSubStyle(isCompact: boolean): React.CSSProperties {
   return {
-    marginTop: 4,
+    marginTop: 3,
     color: "#516579",
-    fontSize: isCompact ? 13 : 15,
-    lineHeight: 1.25,
+    fontSize: isCompact ? 12 : 15,
+    lineHeight: 1.18,
     fontWeight: 760,
     overflowWrap: "break-word",
+    wordBreak: "normal",
+    hyphens: "none",
   };
 }
 
@@ -2157,10 +2155,10 @@ function marketplaceLinkRowStatusStyle(
 
   return {
     ...stableStatusPillStyle(tone === "ready"),
-    height: 32,
-    minHeight: 32,
-    maxHeight: 32,
-    padding: "0 10px",
+    height: 30,
+    minHeight: 30,
+    maxHeight: 30,
+    padding: "0 9px",
     color: colors[tone].color,
     background: colors[tone].bg,
     border: colors[tone].border,
@@ -2268,10 +2266,10 @@ function marketplaceInlineActionsStyle(
   isCompact: boolean
 ): React.CSSProperties {
   return {
-    marginTop: 12,
+    marginTop: isCompact ? 8 : 12,
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "1fr"
+      ? "repeat(2, minmax(0, 1fr))"
       : "repeat(auto-fit, minmax(168px, 1fr))",
     gridAutoRows: "58px",
     gap: 8,
@@ -2287,15 +2285,13 @@ function marketplaceInlineActionStyle(
   disabled: boolean,
   _isCompact: boolean
 ): React.CSSProperties {
-  void _isCompact;
-
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
     height: 58,
     minHeight: 58,
     maxHeight: 58,
-    padding: "0 11px",
+    padding: _isCompact ? "0 8px" : "0 11px",
     pointerEvents: "auto",
     touchAction: "manipulation",
     overflowAnchor: "none",
@@ -2303,6 +2299,7 @@ function marketplaceInlineActionStyle(
     overflow: "hidden",
     textOverflow: "ellipsis",
     transition: "none",
+    fontSize: _isCompact ? 13 : undefined,
   };
 }
 
@@ -6765,10 +6762,10 @@ export default function MarketplacePage() {
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        1. Join Community
+                        {isCompact ? "1. Join" : "1. Join Community"}
                       </div>
                       <div style={marketplaceLinkRowSubStyle(isCompact)}>
-                        Invite someone into this marketplace.
+                        {isCompact ? "Community invite" : "Invite someone into this marketplace."}
                       </div>
                     </div>
                     <span
@@ -6788,23 +6785,18 @@ export default function MarketplacePage() {
                           : "Admin prepares join link"}
                     </span>
                   </div>
-                  <div
-                    style={{
-                      ...joinLinkReserveTextStyle(isCompact),
-                      ...helperText(),
-                      fontSize: inviteLink ? 12 : 13,
-                    }}
-                  >
+                  <div style={marketplaceLinkSummaryStyle(isCompact)}>
+                    <MarketplaceGlyph name={inviteLink ? "links" : "verify"} size={15} />
                     {inviteLink
-                      ? personalizedInviteLink
+                      ? personalizedInviteMaskedLabel
                       : marketplaceJoinLinkGuidance}
                   </div>
                   <div
                     style={{
-                      marginTop: 10,
+                      marginTop: isCompact ? 8 : 10,
                       display: "grid",
                       gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                      gap: 10,
+                      gap: isCompact ? 8 : 10,
                     }}
                   >
                     <label style={{ display: "grid", gap: 6 }}>
@@ -6832,8 +6824,8 @@ export default function MarketplacePage() {
                         rows={1}
                         style={{
                           ...textAreaStyle(),
-                          minHeight: 44,
-                          maxHeight: 44,
+                          minHeight: isCompact ? 40 : 44,
+                          maxHeight: isCompact ? 40 : 44,
                           resize: "none",
                           overflowY: "auto",
                         }}
@@ -6890,7 +6882,7 @@ export default function MarketplacePage() {
                               Refresh
                             </>
                           )
-                          : "Admin Refresh Only"}
+                          : "Admin only"}
                     </StableButton>
                     <StableButton
                       debugId="marketplace.links.join.copy-message"
@@ -6967,21 +6959,23 @@ export default function MarketplacePage() {
                       WhatsApp
                     </StableButton>
                   </div>
-                  <div style={joinShareMessageCardStyle(isCompact)}>
-                    <div style={sectionLabel()}>Message to send</div>
-                    <div
-                      style={{
-                        marginTop: 8,
-                        ...helperText(),
-                        whiteSpace: "pre-line",
-                        fontSize: 13,
-                      }}
-                    >
-                      {inviteLink
-                        ? joinWhatsappPreview
-                        : marketplaceJoinPreviewPendingMessage}
+                  {!isCompact ? (
+                    <div style={joinShareMessageCardStyle(isCompact)}>
+                      <div style={sectionLabel()}>Message to send</div>
+                      <div
+                        style={{
+                          marginTop: 8,
+                          ...helperText(),
+                          whiteSpace: "pre-line",
+                          fontSize: 13,
+                        }}
+                      >
+                        {inviteLink
+                          ? joinWhatsappPreview
+                          : marketplaceJoinPreviewPendingMessage}
+                      </div>
                     </div>
-                  </div>
+                  ) : null}
                 </div>
 
                 <div style={marketplaceLinkRowStyle(isCompact)}>
@@ -6994,7 +6988,7 @@ export default function MarketplacePage() {
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        2. Verify Community
+                        {isCompact ? "2. Verify" : "2. Verify Community"}
                       </div>
                       <div style={marketplaceLinkRowSubStyle(isCompact)}>
                         Public record
@@ -7008,13 +7002,8 @@ export default function MarketplacePage() {
                       {publicCommunityWorkspaceLink ? "Ready" : "Pending"}
                     </span>
                   </div>
-                  <div
-                    style={{
-                      ...linkReserveTextStyle(),
-                      ...helperText(),
-                      fontSize: 12,
-                    }}
-                  >
+                  <div style={marketplaceLinkSummaryStyle(isCompact)}>
+                    <MarketplaceGlyph name="verify" size={15} />
                     {publicCommunityWorkspaceLink
                       ? maskedMarketplaceFaceLabel
                       : "Community verification appears after the community context is ready."}
@@ -7102,10 +7091,10 @@ export default function MarketplacePage() {
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        3. Public Shop Face
+                        {isCompact ? "3. Shop Face" : "3. Public Shop Face"}
                       </div>
                       <div style={marketplaceLinkRowSubStyle(isCompact)}>
-                        One storefront link
+                        Storefront link
                       </div>
                     </div>
                     <span
@@ -7129,13 +7118,8 @@ export default function MarketplacePage() {
                         : "Needs refresh"}
                     </span>
                   </div>
-                  <div
-                    style={{
-                      ...linkReserveTextStyle(),
-                      ...helperText(),
-                      fontSize: 12,
-                    }}
-                  >
+                  <div style={marketplaceLinkSummaryStyle(isCompact)}>
+                    <MarketplaceGlyph name="shop" size={15} />
                     {publicShopViewLink ? (
                       <StableCtaLink
                         to={publicShopViewLink}
@@ -7159,10 +7143,10 @@ export default function MarketplacePage() {
                           touchAction: "manipulation",
                           overflowWrap: "anywhere",
                           wordBreak: "break-word",
-                          lineHeight: 1.45,
+                          lineHeight: 1.2,
                         }}
                       >
-                        {publicShopViewLink}
+                        {isCompact ? buildMaskedLinkLabel(publicShopViewLink, "shop", activeCommunityName) : publicShopViewLink}
                       </StableCtaLink>
                     ) : (
                       publicShopUnavailableText
@@ -7323,7 +7307,7 @@ export default function MarketplacePage() {
                     </span>
                     <div style={{ minWidth: 0 }}>
                       <div style={marketplaceLinkRowTitleStyle(isCompact)}>
-                        4. Paid Repost
+                        {isCompact ? "4. Repost" : "4. Paid Repost"}
                       </div>
                       <div style={marketplaceLinkRowSubStyle(isCompact)}>
                         Target, duration, credits.

@@ -1,3 +1,61 @@
+### Marketplace Link Center phone amendment checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner checked the Marketplace Link Center on phone and asked
+    whether it was acceptable;
+  - phone screenshots showed hard failures: `Community` splitting into
+    `Communit y`, `storefront` splitting into `storefron t`, raw join URLs
+    exposed too early, and too many tall action buttons stacked vertically.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local Link Center geometry/copy and the
+    audits that cage that surface;
+  - no backend, auth, route targets, Dashboard, Community Home, Action Inbox,
+    Finance, Trust Passport, global shell, or action inventory count changed.
+- Fix:
+  - compact phone Link Center hero now uses smaller 64px icon geometry and
+    shorter spacing;
+  - compact row titles now use phone-safe labels: `Join`, `Verify`,
+    `Shop Face`, and `Repost`, with subtitles carrying the longer meaning;
+  - Link Center row icons shrink to 44px on phone;
+  - phone action groups now use two columns instead of one tall button per row;
+  - raw join/public-shop URLs no longer appear directly in the phone lane body;
+    the lane shows masked link summaries and keeps copy/open/send actions as
+    the way to use the links;
+  - the long join-message preview is hidden on compact phone to stop one invite
+    from consuming the whole screen;
+  - the admin-only join refresh button label is shortened to `Admin only`,
+    while the full admin/member/community-review explanation remains in the
+    response copy.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs` now protects the
+    compact masked-summary pattern, smaller phone hero geometry, and two-column
+    phone action groups;
+  - `frontend/tools/audit-mobile-tap-stability.mjs` now accepts the phone-safe
+    `Admin only` label while still requiring the full join-review explanation.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-records-links-lane.mjs tools/audit-mobile-tap-stability.mjs`
+    from `frontend`;
+  - `npm exec -- tsc -b --pretty false` from `frontend`;
+  - `git diff --check` with line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` still hit the known Windows
+    `esbuild` spawn `EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this amendment should fix the visible word-splitting and reduce the height
+    pressure, but it still is not a true one-active-link-lane state machine;
+  - if phone review still feels long, the next correct change is to add a
+    `Link Center` internal active-lane state so opening `Join`, `Verify`,
+    `Shop Face`, `Repost`, or `Owner Controls` replaces the prior lane body
+    instead of showing multiple lane bodies in one scroll.
+
 ### Trust Passport One-Screen Snapshot Protocol checkpoint (2026-06-08)
 
 - Trigger:

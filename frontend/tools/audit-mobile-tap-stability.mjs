@@ -683,7 +683,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace join-link response must explain admin refresh, member sharing, and community review",
     pattern:
-      /marketplaceJoinLinkGuidance[\s\S]*?A community admin prepares the official join link[\s\S]*?members can copy and share it[\s\S]*?Every join request still goes through community review[\s\S]*?marketplaceJoinRefreshBlockedMessage[\s\S]*?Only a community admin can refresh the official join link[\s\S]*?Admin Refresh Only/,
+      /marketplaceJoinLinkGuidance[\s\S]*?A community admin prepares the official join link[\s\S]*?members can copy and share it[\s\S]*?Every join request still goes through community review[\s\S]*?marketplaceJoinRefreshBlockedMessage[\s\S]*?Only a community admin can refresh the official join link[\s\S]*?Admin only/,
   },
 ];
 
