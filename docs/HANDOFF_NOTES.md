@@ -1,3 +1,51 @@
+### Marketplace Money Pool lane first guided repair checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner approved starting Marketplace from a clean slate and repairing
+    one lane at a time;
+  - first lane selected: Money Pool.
+- Baseline confirmed before edits:
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:marketplace-button-inventory` passed;
+  - `npm --prefix frontend run audit:marketplace-button-lines` passed;
+  - `npm --prefix frontend run audit:marketplace-actions` passed.
+- Confirmed source facts:
+  - Money Pool top tile is `debugId="marketplace.tile.money"` and opens
+    `openMarketplaceSection(event, "money", "marketplace-money-routes")`;
+  - operating row `debugId="marketplace.row.money"` opens the same money lane;
+  - focused money state already leaves unrelated Marketplace sections closed;
+  - Money Pool detail section exposes only:
+    `marketplace.money.toggle`, `marketplace.money.money-in`,
+    `marketplace.money.money-out`, and `marketplace.money.finance`;
+  - current route targets remain shared CTA intents:
+    `moneyIn`, `moneyOut`, and `finance`.
+- Fix:
+  - added a stable `MarketplaceGlyph name="pool"` ledger/card/cash pictogram;
+  - changed the Money Pool top tile to use the `pool` glyph instead of the
+    generic card glyph;
+  - changed the tile helper to `Start here: dues and money routes`;
+  - added a non-action `Start with Money Pool` guide strip after the main
+    Marketplace tiles so non-technical users are not left to decode equal
+    choices;
+  - renamed the opened section from `Marketplace Finance` / `Finance overview`
+    to `Money Pool` / `This community's pool, money in, and money out.`;
+  - added `frontend/tools/audit-marketplace-money-pool-lane.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - updated `audit-marketplace-button-inventory` so the broad Marketplace cage
+    expects the new Money Pool wording and pictogram;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` to list the Money Pool lane
+    audit alongside the required Marketplace audits.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-actions`.
+- Unabated truth:
+  - this is the first Money Pool checkpoint, not a full Marketplace redesign;
+  - the page still exposes other major Marketplace lanes and operating rows;
+  - Money Pool is now clearer and better caged, but physical phone testing is
+    still needed before calling the lane frozen.
+
 ### Guided work surface protocol added for Marketplace, Finance, and Trust Passport (2026-06-08)
 
 - Trigger:

@@ -245,8 +245,13 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]{0,260}aria-label="Open Money In, Money Out, dues and contributions"[\s\S]{0,260}openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]{0,520}Money Pool[\s\S]{0,260}Dues, Money In, Money Out/,
+  /debugId="marketplace\.tile\.money"[\s\S]{0,260}aria-label="Open Money In, Money Out, dues and contributions"[\s\S]{0,260}openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]{0,520}<MarketplaceGlyph name="pool"[\s\S]{0,260}Money Pool[\s\S]{0,260}Start here: dues and money routes/,
   "Marketplace Money Pool tile must open the money section only, with a clear label that cannot be confused with Trust Passport."
+);
+
+assertContains(
+  /Start with Money Pool[\s\S]{0,520}Check this community's pool first,[\s\S]{0,260}Money[\s\S]{0,80}Out, or Finance from that lane/,
+  "Marketplace front door must keep a non-button Money Pool start-here guide before deeper operating lanes."
 );
 
 assertContains(
@@ -275,8 +280,8 @@ assertContains(
 );
 
 assertContains(
-  /id="marketplace-money-routes"[\s\S]*?Marketplace Finance[\s\S]*?Finance overview[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Community Account[\s\S]*?Money In route[\s\S]*?Personal Payout[\s\S]*?Money Out route/,
-  "Marketplace money route detail must keep the compact Marketplace Finance reference-card structure."
+  /id="marketplace-money-routes"[\s\S]*?Money Pool[\s\S]*?This community's pool, money in, and money out\.[\s\S]*?Visible Pool[\s\S]*?Current pool view[\s\S]*?Community Account[\s\S]*?Money In route[\s\S]*?Personal Payout[\s\S]*?Money Out route/,
+  "Marketplace money route detail must keep the compact Money Pool reference-card structure."
 );
 
 const moneySection = sectionBetween(

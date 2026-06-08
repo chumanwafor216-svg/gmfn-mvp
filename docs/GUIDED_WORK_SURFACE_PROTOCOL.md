@@ -156,6 +156,12 @@ npm --prefix frontend run audit:marketplace-button-lines
 npm --prefix frontend run audit:marketplace-actions
 ```
 
+For Money Pool lane work, also run:
+
+```bash
+npm --prefix frontend run audit:marketplace-money-pool-lane
+```
+
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 

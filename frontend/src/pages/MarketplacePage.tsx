@@ -2563,6 +2563,7 @@ type MarketplaceGlyphName =
   | "ledger"
   | "links"
   | "members"
+  | "pool"
   | "shop"
   | "spark"
   | "support"
@@ -2597,6 +2598,18 @@ function MarketplaceGlyph({
           <rect x="3.5" y="6" width="17" height="12" rx="2.5" />
           <path d="M3.5 10h17" />
           <path d="M7 14h4" />
+        </>
+      );
+      break;
+    case "pool":
+      glyph = (
+        <>
+          <rect x="4" y="5" width="16" height="14" rx="2.8" />
+          <path d="M4 9h16" />
+          <circle cx="8" cy="14" r="1.7" />
+          <path d="M12 13h4.5" />
+          <path d="M12 16h3.2" />
+          <path d="M7 3.8h10" />
         </>
       );
       break;
@@ -5353,7 +5366,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="card" size={isCompact ? 28 : 32} />
+                <MarketplaceGlyph name="pool" size={isCompact ? 28 : 32} />
               </span>
               <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 Money Pool
@@ -5362,7 +5375,7 @@ export default function MarketplacePage() {
                 {marketplacePoolLabel}
               </span>
               <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Dues, Money In, Money Out
+                Start here: dues and money routes
               </span>
             </StableButton>
 
@@ -5488,6 +5501,62 @@ export default function MarketplacePage() {
                 This community only
               </span>
             </StableButton>
+          </div>
+
+          <div
+            style={{
+              marginTop: 12,
+              borderRadius: 18,
+              border: "1px solid rgba(11,99,209,0.18)",
+              background:
+                "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(226,238,250,0.96) 100%)",
+              padding: isCompact ? "11px 12px" : "12px 14px",
+              display: "grid",
+              gridTemplateColumns: isCompact
+                ? "40px minmax(0, 1fr)"
+                : "44px minmax(0, 1fr)",
+              gap: 10,
+              alignItems: "center",
+              overflow: "hidden",
+              overflowAnchor: "none",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: isCompact ? 38 : 42,
+                height: isCompact ? 38 : 42,
+                borderRadius: 14,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#FFFFFF",
+                background:
+                  "linear-gradient(180deg, #0B63D1 0%, #08315E 100%)",
+                boxShadow:
+                  "0 10px 18px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.22)",
+              }}
+            >
+              <MarketplaceGlyph name="pool" size={isCompact ? 22 : 24} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
+                Start with Money Pool
+              </div>
+              <div
+                style={{
+                  marginTop: 4,
+                  color: "#173750",
+                  fontSize: isCompact ? 13 : 14,
+                  fontWeight: 800,
+                  lineHeight: 1.35,
+                  overflowWrap: "break-word",
+                }}
+              >
+                Check this community's pool first, then choose Money In, Money
+                Out, or Finance from that lane.
+              </div>
+            </div>
           </div>
 
           {profileDetailsOpen ? (
@@ -5936,7 +6005,7 @@ export default function MarketplacePage() {
                 true
               )}
             >
-              <MarketplaceGlyph name="chart" size={26} />
+              <MarketplaceGlyph name="pool" size={26} />
             </span>
             <div style={{ minWidth: 0 }}>
               <div
@@ -5948,7 +6017,7 @@ export default function MarketplacePage() {
                   overflowWrap: "break-word",
                 }}
               >
-                Marketplace Finance
+                Money Pool
               </div>
               <div
                 style={{
@@ -5959,7 +6028,7 @@ export default function MarketplacePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Finance overview
+                This community's pool, money in, and money out.
               </div>
             </div>
           </div>
