@@ -2407,6 +2407,101 @@ export default function TrustScorePage() {
           </section>
 
           <section
+            style={{
+              ...innerCard("#F8FBFF"),
+              border: "1px solid rgba(11,99,209,0.14)",
+              display:
+                activeTrustPassportLane === "evidence" ? "block" : "none",
+              marginTop: 14,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <TrustPaperWatermark
+              name="chart"
+              color="#0B63D1"
+              size={isCompact ? 168 : 220}
+              opacity={0.045}
+              style={{ right: isCompact ? -70 : -46, top: -44, bottom: "auto" }}
+            />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 9,
+                color: "#0B63D1",
+                fontWeight: 1000,
+                fontSize: 14,
+                textTransform: "uppercase",
+                letterSpacing: 1.6,
+              }}
+            >
+              <TrustPaperIcon name="chart" size={20} />
+              Evidence Story
+            </div>
+            <div
+              style={{
+                color: "#07172C",
+                fontSize: isCompact ? 22 : 28,
+                lineHeight: 1.08,
+                fontWeight: 1000,
+                marginTop: 8,
+              }}
+            >
+              What changed, and why it matters
+            </div>
+            <p
+              style={{
+                ...helperText(),
+                maxWidth: 720,
+                margin: "8px 0 0",
+              }}
+            >
+              This lane explains the visible signals behind the trust reading
+              before showing the deeper record. Start with the plain story, then
+              use the evidence rows only when you need proof.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 12,
+                marginTop: 14,
+              }}
+            >
+              <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+                <div style={{ color: "#0B63D1", fontWeight: 1000 }}>
+                  What GSN sees now
+                </div>
+                <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                  {latestExplanation}
+                </p>
+              </div>
+              <div style={{ ...innerCard("#F0FBF4"), border: "1px solid rgba(46,155,98,0.16)" }}>
+                <div style={{ color: "#166534", fontWeight: 1000 }}>
+                  Strongest support
+                </div>
+                <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                  {passportVm.reasons.helpsTrust[0] ||
+                    "No supporting trust signal is visible yet."}
+                </p>
+              </div>
+              <div style={{ ...innerCard("#FFF8F0"), border: "1px solid rgba(200,58,58,0.14)" }}>
+                <div style={{ color: "#991B1B", fontWeight: 1000 }}>
+                  Needs care
+                </div>
+                <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                  {passportVm.reasons.createsPressure[0] ||
+                    "No pressure signal is visible yet."}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section
             ref={pressureSectionRef}
             style={{
               ...innerCard("#FFFFFF"),

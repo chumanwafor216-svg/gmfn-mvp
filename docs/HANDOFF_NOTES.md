@@ -1,3 +1,44 @@
+### Trust Passport Evidence Story lane checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue after active Trust Passport lane replacement;
+  - next selected lane: Evidence Story, because it still showed deeper records
+    without a plain first explanation.
+- Source facts changed/preserved:
+  - route remains `/app/trust` through `frontend/src/pages/TrustScorePage.tsx`;
+  - `/app/trust-passport` redirect behavior was not changed;
+  - backend, auth, Marketplace, Finance, Dashboard, Community Home, Action
+    Inbox, global shell, and route-target contracts were not changed;
+  - no Trust Passport button inventory change was made in this pass.
+- Fix:
+  - added a gated Evidence Story lead card that appears only when
+    `activeTrustPassportLane === "evidence"`;
+  - the lead card explains the current trust movement in plain language using
+    the existing `latestExplanation`, strongest support signal, and pressure
+    signal before showing deeper evidence blocks;
+  - added `frontend/tools/audit-trust-passport-evidence-story-lane.mjs`;
+  - registered `npm --prefix frontend run audit:trust-passport-evidence-story-lane`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Evidence Story work
+    requires the lane audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-evidence-story-lane`;
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-evidence-story-lane.mjs tools/audit-trust-passport-lane-map.mjs`
+    from `frontend`;
+  - `npm run build` from `frontend` passed elevated because Vite/esbuild
+    spawning is blocked by the normal sandbox on this Windows setup.
+- Unabated truth:
+  - Evidence Story is now clearer, but the lower evidence/context blocks are
+    still inherited from the old page and will need deeper compression later;
+  - Repair or Next Step and Finance Discipline are still the highest-risk Trust
+    Passport lanes after this checkpoint.
+
 ### Trust Passport active lane replacement checkpoint (2026-06-08)
 
 - Trigger:
