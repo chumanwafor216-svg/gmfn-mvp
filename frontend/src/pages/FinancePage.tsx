@@ -2031,7 +2031,7 @@ export default function FinancePage() {
               id: "bank-accounts",
               icon: "bank" as FinanceGlyphName,
               label: "Banking Rails",
-              detail: "See payment and bank details.",
+              detail: "Check rails before acting.",
               action: () => openFinanceRoute(routes.paymentRails),
               color: "#D6AA45",
             },
