@@ -138,6 +138,21 @@ one current state, and one next action before exposing deeper details.
   into internal tabs, drawers, or explicit Screen A / Screen B packages.
 - Button height should normally stay between `48px` and `56px`.
 - Chip height should normally stay between `32px` and `36px`.
+
+## Icon Quality Protocol
+
+- Use app-native SVG pictograms for identity, finance, marketplace, trust, and
+  task surfaces. Do not use emoji as primary app icons.
+- Icons must look deliberate and readable on phone: avoid pale inline marks
+  floating beside text when the icon is carrying meaning.
+- Important task and fact icons should sit inside stable tiles or badges with
+  strong navy, gold, green, or neutral contrast.
+- Pictograms in fact cards should normally be at least `22px` inside a
+  `42px-48px` tile. Task selector icons should normally be at least `18px` and
+  badge-backed when space allows.
+- Icons must not cover photos, proof evidence, or record text.
+- Icon tiles must not cause button labels or card text to split into one-letter
+  stacks.
 - Icon tiles should normally stay between `40px` and `48px`.
 - Short facts such as status, count, readiness, ID, amount, route state, and
   approvals belong in compact chips or two-column mini cards, not one tall

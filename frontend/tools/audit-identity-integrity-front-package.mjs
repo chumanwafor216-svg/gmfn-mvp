@@ -51,6 +51,21 @@ assertContains(
 );
 
 assertContains(
+  /function iconTile\([\s\S]*?width: 46[\s\S]*?height: 46[\s\S]*?borderRadius: 16[\s\S]*?boxShadow:/,
+  "Identity Integrity icons must use strong route-local pictogram tiles, not faded inline marks."
+);
+
+assertContains(
+  /linear-gradient\(180deg, #0B3E78 0%, #061827 100%\)[\s\S]*?linear-gradient\(180deg, #F8D56B 0%, #D6AA45 100%\)/,
+  "Identity Integrity icon tiles must use strong navy and gold contrast surfaces."
+);
+
+assertContains(
+  /taskIconBadge\(active, item\.tone\)[\s\S]*?TrustPaperIcon[\s\S]*?size=\{active \? 20 : 18\}[\s\S]*?strokeWidth=\{2\.85\}/,
+  "Identity Integrity task selector icons must stay large, dark, and badge-backed on phone."
+);
+
+assertContains(
   /data-identity-integrity-task-switcher="true"[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "repeat\(5, minmax\(0, 1fr\)\)"[\s\S]*?debugId=\{`identity-integrity\.task\.\$\{item\.key\}`\}/,
   "Identity Integrity must keep the proof tasks as compact SVG-led selectors, not a long exposed explanation stack."
 );

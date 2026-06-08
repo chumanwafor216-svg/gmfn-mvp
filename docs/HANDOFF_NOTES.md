@@ -39766,3 +39766,34 @@ GSN-branded invite composer and invite-entry continuity.
     missing backend completion endpoints. A future backend task must add
     signed-in phone verification and signed-in official-ID / passport evidence
     capture before these two checks can genuinely complete inside the app.
+
+### Identity Integrity icon quality pass (2026-06-08)
+
+- Trigger:
+  - product owner asked to replace faded / inferior icons while continuing
+    page-by-page stabilization and to make icon quality part of the protocol,
+    not a one-off visual fix.
+- Fix:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx` now presents Identity
+    Integrity icons in stronger route-local tiles and task badges.
+  - Fact icons use 46px tiles with stronger navy / green / gold contrast and
+    larger SVG pictograms.
+  - Task-selector icons are no longer thin inline marks; they sit inside
+    badge-backed 30px / 34px surfaces with stronger stroke width.
+  - The active proof task uses a larger 24px pictogram inside the stronger tile.
+  - `docs/DESIGN_SYSTEM.md` now includes an Icon Quality Protocol:
+    app-native SVG pictograms, no emoji as primary app icons, stable
+    tile/badge placement, enough contrast, and no icon overlap with photos or
+    proof text.
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md` now requires meaningful icons to have
+    enough size, contrast, and stable placement on phone.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs` now cages the
+    stronger Identity Integrity icon tiles and task icon badges.
+- Verification so far:
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm exec --prefix frontend -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`
+    from the `frontend` directory.
+- Remaining risk:
+  - This improves the current Identity Integrity surface and records the
+    protocol. Other pages still need the same page-by-page icon pass instead of
+    a risky shared-icon restyle that could disturb frozen button/page surfaces.

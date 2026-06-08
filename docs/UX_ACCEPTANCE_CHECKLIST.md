@@ -14,6 +14,8 @@ A screen is acceptable only if:
   decision, the current state, and the next action without scrolling whenever
   possible.
 - It uses the approved color system.
+- Meaningful icons are app-native SVG pictograms with enough size, contrast,
+  and stable tile/badge placement to read clearly on phone.
 - It uses consistent rounded cards.
 - It uses enough spacing.
 - It avoids long paragraphs.

@@ -282,20 +282,72 @@ function compactHelperText(): React.CSSProperties {
 }
 
 function iconTile(
-  color = "#0B63D1",
-  bg = "linear-gradient(180deg, #EEF6FF 0%, #E7F0FF 100%)"
+  color = "#FFFFFF",
+  bg = "linear-gradient(180deg, #0B3E78 0%, #061827 100%)"
 ): React.CSSProperties {
   return {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 46,
+    height: 46,
+    borderRadius: 16,
     display: "grid",
     placeItems: "center",
     flex: "0 0 auto",
     color,
     background: bg,
-    border: "1px solid rgba(37,78,119,0.10)",
-    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.76)",
+    border: "1px solid rgba(7,23,44,0.18)",
+    boxShadow:
+      "0 12px 22px rgba(6,24,39,0.16), inset 0 1px 0 rgba(255,255,255,0.16)",
+  };
+}
+
+function identityIconTone(tone: "ready" | "pending" | "watch" | "neutral"): {
+  color: string;
+  bg: string;
+} {
+  if (tone === "ready") {
+    return {
+      color: "#FFFFFF",
+      bg: "linear-gradient(180deg, #168457 0%, #064E3B 100%)",
+    };
+  }
+
+  if (tone === "pending") {
+    return {
+      color: "#3B2504",
+      bg: "linear-gradient(180deg, #F8D56B 0%, #D6AA45 100%)",
+    };
+  }
+
+  if (tone === "neutral") {
+    return {
+      color: "#FFFFFF",
+      bg: "linear-gradient(180deg, #334155 0%, #0F172A 100%)",
+    };
+  }
+
+  return {
+    color: "#FFFFFF",
+    bg: "linear-gradient(180deg, #0B63D1 0%, #073E83 100%)",
+  };
+}
+
+function taskIconBadge(active: boolean, tone: "ready" | "pending" | "watch" | "neutral"): React.CSSProperties {
+  const iconTone = identityIconTone(tone);
+  return {
+    width: active ? 34 : 30,
+    height: active ? 34 : 30,
+    borderRadius: active ? 13 : 12,
+    display: "grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    color: iconTone.color,
+    background: iconTone.bg,
+    border: active
+      ? "1px solid rgba(7,23,44,0.20)"
+      : "1px solid rgba(37,78,119,0.12)",
+    boxShadow: active
+      ? "0 10px 18px rgba(7,23,44,0.16), inset 0 1px 0 rgba(255,255,255,0.18)"
+      : "inset 0 1px 0 rgba(255,255,255,0.14)",
   };
 }
 
@@ -325,13 +377,13 @@ function compactStatusChip(tone: "ready" | "pending" | "watch" | "neutral"): Rea
 
 function compactFactCard(): React.CSSProperties {
   return {
-    minHeight: 76,
+    minHeight: 78,
     borderRadius: 16,
     border: "1px solid rgba(37,78,119,0.12)",
     background: "linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 100%)",
     padding: 10,
     display: "grid",
-    gridTemplateColumns: "42px minmax(0, 1fr)",
+    gridTemplateColumns: "46px minmax(0, 1fr)",
     gap: 10,
     alignItems: "center",
     boxShadow: "0 10px 24px rgba(7,23,44,0.045)",
@@ -1728,11 +1780,11 @@ export default function IdentityIntegrityPage() {
               }}
             >
               <span style={compactStatusChip(identitySignals.missingCount <= 0 ? "ready" : "pending")}>
-                <TrustPaperIcon name="shield" size={14} strokeWidth={2.5} />
+                <TrustPaperIcon name="shield" size={15} strokeWidth={2.8} />
                 {identityHealthLabel}
               </span>
               <span style={compactStatusChip("neutral")}>
-                <TrustPaperIcon name="id" size={14} strokeWidth={2.5} />
+                <TrustPaperIcon name="id" size={15} strokeWidth={2.8} />
                 Identity anchor
               </span>
             </div>
@@ -1791,16 +1843,8 @@ export default function IdentityIntegrityPage() {
             },
           ].map((item) => (
             <div key={item.label} style={compactFactCard()}>
-              <span
-                style={iconTile(
-                  item.tone === "ready"
-                    ? "#166534"
-                    : item.tone === "pending"
-                      ? "#92400E"
-                      : "#0B63D1"
-                )}
-              >
-                <TrustPaperIcon name={item.icon} size={20} strokeWidth={2.4} />
+              <span style={iconTile(identityIconTone(item.tone).color, identityIconTone(item.tone).bg)}>
+                <TrustPaperIcon name={item.icon} size={23} strokeWidth={2.9} />
               </span>
               <span style={{ minWidth: 0 }}>
                 <span
@@ -1892,7 +1936,13 @@ export default function IdentityIntegrityPage() {
                   paddingInline: 10,
                 }}
               >
-                <TrustPaperIcon name={item.icon} size={18} strokeWidth={2.4} />
+                <span style={taskIconBadge(active, item.tone)}>
+                  <TrustPaperIcon
+                    name={item.icon}
+                    size={active ? 20 : 18}
+                    strokeWidth={2.85}
+                  />
+                </span>
                 <span style={{ minWidth: 0, textAlign: "left" }}>
                   <span style={{ display: "block", fontWeight: 1000, fontSize: 12.5 }}>
                     {item.title}
@@ -1940,8 +1990,13 @@ export default function IdentityIntegrityPage() {
               alignItems: "center",
             }}
           >
-            <span style={iconTile()}>
-              <TrustPaperIcon name={activeTask.icon} size={20} strokeWidth={2.4} />
+            <span
+              style={iconTile(
+                identityIconTone(activeTask.tone).color,
+                identityIconTone(activeTask.tone).bg
+              )}
+            >
+              <TrustPaperIcon name={activeTask.icon} size={24} strokeWidth={2.9} />
             </span>
             <span style={{ minWidth: 0 }}>
               <span
