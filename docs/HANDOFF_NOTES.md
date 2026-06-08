@@ -1,3 +1,52 @@
+### Demand Box compact record-list pass (2026-06-08)
+
+- Trigger:
+  - continued after the first Demand Box compact first-action pass;
+  - remaining risk was the lower request areas becoming a long phone stack.
+- Scope:
+  - route remains `/app/demand-box`;
+  - changed only `DemandBoxPage`, the Demand Box page-local audit, and this
+    handoff note;
+  - no backend, API contract, demand visibility rule, Marketplace launcher,
+    Dashboard, Community Home, Action Inbox, shared tap guard, or global shell
+    behavior changed.
+- Fix:
+  - `My live demand` now shows one primary live demand first;
+  - additional personal open demands are tucked behind a stable
+    `More of my demand` disclosure;
+  - `Requests I can answer` now shows one visible community demand first;
+  - additional community demand previews are tucked behind a bounded
+    `More community demand` disclosure instead of exposing up to six cards;
+  - existing fulfill/cancel actions and dynamic Demand Box request debug ids
+    remain available on personal demand records.
+- Audit cage updated:
+  - `frontend/tools/audit-demand-box-front-package.mjs` now rejects the old
+    six-card visible demand preview and the all-open personal demand stack;
+  - the same audit now requires the one-card previews plus stable personal and
+    community demand disclosures.
+- Verification:
+  - passed `npm --prefix frontend run audit:demand-box-front-package`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm --prefix frontend run audit:marketplace-demand-box-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-front-package`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/DemandBoxPage.tsx tools/audit-demand-box-front-package.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is still a frontend exposure/density pass. It does not change how
+    Demand Box records are created, filtered, answered, fulfilled, cancelled,
+    notified, or enforced by the backend.
+  - The extra personal demand drawer can still contain several cards if a user
+    has many open demands. That is deliberately hidden by default, but a future
+    stricter pass could paginate or cap that drawer if real pilot data shows it
+    is still too long.
+
 ### Demand Box compact first-action pass (2026-06-08)
 
 - Trigger:

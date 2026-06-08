@@ -114,6 +114,30 @@ function requirePattern(pattern, message) {
     /debugId=\{`demand-box\.request\.\$\{row\?\.id \|\| index\}\.cancelled`\}/,
     "Demand Box cancel actions must keep stable dynamic debug ids.",
   ],
+  [
+    /const visiblePreview = useMemo\(\(\) => visibleRows\.slice\(0, 1\), \[visibleRows\]\)/,
+    "Demand Box must show only one visible community demand before the drawer.",
+  ],
+  [
+    /const extraVisibleRows = useMemo\(\(\) => visibleRows\.slice\(1, 5\), \[visibleRows\]\)/,
+    "Demand Box must tuck additional community demand into a bounded drawer preview.",
+  ],
+  [
+    /const extraMyOpenRows = useMemo\(\(\) => myOpenRows\.slice\(1\), \[myOpenRows\]\)/,
+    "Demand Box must tuck additional personal demand behind a drawer.",
+  ],
+  [
+    /myOpenRows\.slice\(0, 1\)\.map/,
+    "Demand Box must show only the first live personal demand before the drawer.",
+  ],
+  [
+    /debugId="demand-box\.more-my-demand\.summary"/,
+    "Demand Box must keep additional personal demand behind a stable disclosure.",
+  ],
+  [
+    /debugId="demand-box\.more-visible-demand\.summary"/,
+    "Demand Box must keep additional community demand behind a stable disclosure.",
+  ],
 ].forEach(([pattern, message]) => requirePattern(pattern, message));
 
 [
@@ -132,6 +156,14 @@ function requirePattern(pattern, message) {
   [
     /institutionalStatTile/,
     "Demand Box must not restore the old exposed stat-tile stack.",
+  ],
+  [
+    /visibleRows\.slice\(0, 6\)/,
+    "Demand Box must not restore the six-card community demand preview.",
+  ],
+  [
+    /myOpenRows\.map\(\(row, index\) =>/,
+    "Demand Box must not restore the all-open-personal-demand stack.",
   ],
 ].forEach(([pattern, message]) => {
   const index = source.search(pattern);

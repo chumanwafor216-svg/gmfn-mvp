@@ -695,7 +695,10 @@ export default function DemandBoxPage() {
   }, [me]);
   const memberCciLabel = cciLabel(me);
 
-  const visiblePreview = useMemo(() => visibleRows.slice(0, 6), [visibleRows]);
+  const visiblePreview = useMemo(() => visibleRows.slice(0, 1), [visibleRows]);
+  const extraVisibleRows = useMemo(() => visibleRows.slice(1, 5), [visibleRows]);
+  const hiddenVisibleRowsCount = Math.max(visibleRows.length - 1, 0);
+  const extraMyOpenRows = useMemo(() => myOpenRows.slice(1), [myOpenRows]);
   const demandMode = useMemo(() => {
     const params = new URLSearchParams(location.search);
     return safeStr(params.get("mode") || "").toLowerCase();
@@ -1609,7 +1612,8 @@ export default function DemandBoxPage() {
                 </div>
               </div>
             ) : (
-              myOpenRows.map((row, index) => {
+              <>
+              {myOpenRows.slice(0, 1).map((row, index) => {
                 const rowId = Number(row?.id || 0);
                 const busy = updatingDemandId === rowId;
 
@@ -1697,7 +1701,128 @@ export default function DemandBoxPage() {
                     </div>
                   </div>
                 );
-              })
+              })}
+
+              {extraMyOpenRows.length > 0 ? (
+                <details style={detailsShell()}>
+                  <StableDisclosureSummary
+                    style={detailsSummary()}
+                    stableHeight={46}
+                    debugId="demand-box.more-my-demand.summary"
+                  >
+                    <span>More of my demand</span>
+                    <span style={{ color: "#64748B", fontSize: 13 }}>
+                      {extraMyOpenRows.length} more
+                    </span>
+                  </StableDisclosureSummary>
+
+                  <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
+                    {extraMyOpenRows.map((row, index) => {
+                      const rowId = Number(row?.id || 0);
+                      const busy = updatingDemandId === rowId;
+                      const debugIndex = index + 1;
+
+                      return (
+                        <div key={`${row?.id || debugIndex}`} style={recordCard()}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 10,
+                              flexWrap: "wrap",
+                              alignItems: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                color: "#0B1F33",
+                                fontWeight: 900,
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {firstTruthy(row?.title, "Need")}
+                            </div>
+
+                            <div
+                              style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
+                            >
+                              <span style={badge(true)}>
+                                {urgencyLabel(row?.urgency)}
+                              </span>
+                              {safeStr(row?.status) ? (
+                                <span style={badge(false)}>
+                                  {safeStr(row?.status)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: 8, ...helperText() }}>
+                            {firstTruthy(row?.description, "No extra detail yet.")}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {safeStr(row?.area) ? (
+                              <span style={badge(false)}>
+                                Area: {safeStr(row?.area)}
+                              </span>
+                            ) : null}
+                            {safeStr(row?.payment_mode) ? (
+                              <span style={badge(false)}>
+                                Terms: {safeStr(row?.payment_mode)}
+                              </span>
+                            ) : null}
+                            {row?.allow_trust_credit ? (
+                              <span style={badge(false)}>Trust credit allowed</span>
+                            ) : null}
+                            {safeStr(row?.created_at) ? (
+                              <span style={badge(false)}>
+                                {safeDateTime(row?.created_at)}
+                              </span>
+                            ) : null}
+                          </div>
+
+                          <div style={demandActionRowStyle(isCompact, 54, 160, 12)}>
+                            <SecondaryButton
+                              onClick={() =>
+                                handleUpdateDemandStatus(row, "fulfilled")
+                              }
+                              disabled={busy}
+                              busy={busy}
+                              busyLabel="Updating..."
+                              debugId={`demand-box.request.${row?.id || debugIndex}.fulfilled`}
+                              style={demandActionStyle(54)}
+                            >
+                              Mark fulfilled
+                            </SecondaryButton>
+
+                            <SubtleButton
+                              onClick={() =>
+                                handleUpdateDemandStatus(row, "cancelled")
+                              }
+                              disabled={busy}
+                              busy={busy}
+                              busyLabel="Updating..."
+                              debugId={`demand-box.request.${row?.id || debugIndex}.cancelled`}
+                              style={demandActionStyle(54)}
+                            >
+                              Cancel demand
+                            </SubtleButton>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </details>
+              ) : null}
+              </>
             )}
           </div>
         </section>
@@ -1728,7 +1853,8 @@ export default function DemandBoxPage() {
                 </div>
               </div>
             ) : (
-              visiblePreview.map((row, index) => (
+              <>
+              {visiblePreview.map((row, index) => (
                 <div key={`${row?.id || index}`} style={recordCard()}>
                   <div
                     style={{
@@ -1795,7 +1921,104 @@ export default function DemandBoxPage() {
                     ) : null}
                   </div>
                 </div>
-              ))
+              ))}
+
+              {extraVisibleRows.length > 0 ? (
+                <details style={detailsShell()}>
+                  <StableDisclosureSummary
+                    style={detailsSummary()}
+                    stableHeight={46}
+                    debugId="demand-box.more-visible-demand.summary"
+                  >
+                    <span>More community demand</span>
+                    <span style={{ color: "#64748B", fontSize: 13 }}>
+                      {hiddenVisibleRowsCount} more
+                    </span>
+                  </StableDisclosureSummary>
+
+                  <div style={{ padding: "0 14px 14px", display: "grid", gap: 10 }}>
+                    {extraVisibleRows.map((row, index) => {
+                      const debugIndex = index + 1;
+
+                      return (
+                        <div key={`${row?.id || debugIndex}`} style={recordCard()}>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              gap: 10,
+                              flexWrap: "wrap",
+                              alignItems: "center",
+                            }}
+                          >
+                            <div
+                              style={{
+                                color: "#0B1F33",
+                                fontWeight: 900,
+                                lineHeight: 1.35,
+                              }}
+                            >
+                              {firstTruthy(row?.title, "Need")}
+                            </div>
+
+                            <div
+                              style={{ display: "flex", gap: 8, flexWrap: "wrap" }}
+                            >
+                              <span style={badge(true)}>
+                                {urgencyLabel(row?.urgency)}
+                              </span>
+                              {safeStr(row?.requester_trust_band) ? (
+                                <span style={badge(false)}>
+                                  Trust {safeStr(row?.requester_trust_band)}
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div style={{ marginTop: 8, ...helperText() }}>
+                            {firstTruthy(row?.description, "No extra detail yet.")}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <span style={badge(false)}>By: {requesterName(row)}</span>
+                            {safeStr(row?.requester_gmfn_id) ? (
+                              <span style={badge(false)}>
+                                GSN ID {safeStr(row?.requester_gmfn_id)}
+                              </span>
+                            ) : null}
+                            {safeStr(row?.whatsapp_number) ? (
+                              <span style={badge(false)}>
+                                Contact: {safeStr(row?.whatsapp_number)}
+                              </span>
+                            ) : null}
+                            {safeStr(row?.area) ? (
+                              <span style={badge(false)}>
+                                Area: {safeStr(row?.area)}
+                              </span>
+                            ) : null}
+                            {safeStr(row?.payment_mode) ? (
+                              <span style={badge(false)}>
+                                Terms: {safeStr(row?.payment_mode)}
+                              </span>
+                            ) : null}
+                            {row?.allow_trust_credit ? (
+                              <span style={badge(false)}>Trust credit allowed</span>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </details>
+              ) : null}
+              </>
             )}
           </div>
 
