@@ -502,6 +502,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     intent: "demandBox",
     tone: "soft",
     keywords: ["need", "demand", "request", "post", "supply", "want"],
+    visible: false,
   },
   {
     id: "community",
@@ -5704,7 +5705,7 @@ export default function MarketplacePage() {
               <div style={{ ...helperText(), marginBottom: 12 }}>
                 Use this helper when the job is not one of the main cards.
                 Search still understands money, ROSCA, support, shop, invite,
-                and records.
+                demand, and records.
               </div>
 
               <form
@@ -7628,7 +7629,7 @@ export default function MarketplacePage() {
             label="What this trade lane does"
             what="This lane shows the known members and shops that are visible inside the current community marketplace."
             why="Trade should stay community-bound, so users can inspect who is visible here before opening a shop."
-            next="Check the member identity first, open a connected shop only when needed, and use Support Requests for borrowing work."
+            next="Check the member identity first, open a connected shop only when needed, use Demand Box for needs, and use Support Requests for borrowing work."
             tone="light"
             style={{ marginTop: 12 }}
           />
@@ -7689,6 +7690,49 @@ export default function MarketplacePage() {
                 </div>
               </div>
             ))}
+          </div>
+        ) : null}
+
+        {sectionsOpen.members ? (
+          <div
+            style={{
+              marginTop: 14,
+              ...innerCard("#FFFDF7"),
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr) auto",
+              gap: isCompact ? 12 : 14,
+              alignItems: "center",
+              borderColor: "rgba(128,90,15,0.18)",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="demand" size={24} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>Demand Box</div>
+              <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
+                Post what this marketplace needs, then let the fuller Demand
+                Box page carry the request.
+              </div>
+            </div>
+            <StableButton
+              debugId="marketplace.members.demand-box"
+              type="button"
+              onClick={(event) => openMarketplaceCta(event, "demandBox")}
+              style={marketplaceInlineActionStyle(
+                "secondary",
+                false,
+                isCompact
+              )}
+            >
+              Open Demand Box
+            </StableButton>
           </div>
         ) : null}
 

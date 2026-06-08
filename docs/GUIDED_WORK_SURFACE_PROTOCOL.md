@@ -198,6 +198,12 @@ For Marketplace compact Trust pill work, also run:
 npm --prefix frontend run audit:marketplace-trust-pill
 ```
 
+For Demand Box placement inside Marketplace work, also run:
+
+```bash
+npm --prefix frontend run audit:marketplace-demand-box-lane
+```
+
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 

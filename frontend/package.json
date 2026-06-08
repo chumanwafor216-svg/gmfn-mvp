@@ -24,6 +24,7 @@
     "audit:marketplace-records-links-lane": "node tools/audit-marketplace-records-links-lane.mjs",
     "audit:marketplace-more-tools-lane": "node tools/audit-marketplace-more-tools-lane.mjs",
     "audit:marketplace-trust-pill": "node tools/audit-marketplace-trust-pill.mjs",
+    "audit:marketplace-demand-box-lane": "node tools/audit-marketplace-demand-box-lane.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",

@@ -45,7 +45,6 @@ const expectedVisibleIds = [
   "trust",
   "identity",
   "trustslip",
-  "demand",
   "community",
   "messages",
 ];
@@ -66,6 +65,7 @@ if (visibleIds.join("|") !== expectedVisibleIds.join("|")) {
   "support",
   "shop",
   "invite",
+  "demand",
 ].forEach((id) => {
   const itemPattern = new RegExp(`id: "${id}"[\\s\\S]*?visible: false`);
   if (!itemPattern.test(intentItemsBlock)) {
@@ -83,7 +83,7 @@ assertContains(
 );
 
 assertContains(
-  /Use this helper when the job is not one of the main cards\.[\s\S]*?Search still understands money, ROSCA, support, shop, invite,[\s\S]*?placeholder="Try: trust, identity, proof, messages\.\.\."/,
+  /Use this helper when the job is not one of the main cards\.[\s\S]*?Search still understands money, ROSCA, support, shop, invite,[\s\S]*?demand, and records\.[\s\S]*?placeholder="Try: trust, identity, proof, messages\.\.\."/,
   "Expanded More helper must explain that search can still find main lanes without exposing them as equal buttons."
 );
 

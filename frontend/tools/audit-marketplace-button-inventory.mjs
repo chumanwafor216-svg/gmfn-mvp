@@ -19,13 +19,13 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 55;
+const expectedStableActionCount = 56;
 const expectedNativeFieldCount = 13;
 const expectedSourceBreakdown = {
   front: 11,
-  body: 44,
+  body: 45,
 };
-const expectedVisibleIntentActionCount = 6;
+const expectedVisibleIntentActionCount = 5;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 30,
@@ -595,6 +595,7 @@ const expectedOrder = [
   exactDebugId("marketplace.network-repost.subscription"),
   exactDebugId("marketplace.links.owner-shop-control"),
   exactDebugId("marketplace.members.toggle"),
+  exactDebugId("marketplace.members.demand-box"),
   dynamicDebugId(
     "marketplace.member.*.shop",
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/

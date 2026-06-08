@@ -1,3 +1,62 @@
+### Marketplace Demand Box placement cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the compact Trust pill was caged, product owner asked to continue the
+    Marketplace package;
+  - next cleanup selected: Demand Box, because it was still visible inside More
+    / Community Tools even though the Marketplace blueprint says demand is a
+    real marketplace-local tool.
+- Source facts changed/preserved:
+  - Demand Box remains searchable from the full `MARKETPLACE_INTENT_ITEMS` map;
+  - Demand Box is no longer a visible More / Community Tools button;
+  - Trade & Shops remains the outside launcher for trusted trade, demand, and
+    public shops;
+  - Marketplace stable source action count intentionally changes from 55 to 56:
+    11 front actions and 45 body actions;
+  - visible More intent buttons intentionally change from 6 to 5;
+  - no backend, auth, Dashboard, Community Home, Action Inbox, or global shell
+    behavior was changed.
+- Fix:
+  - marked the `demand` intent item `visible: false`, keeping it searchable but
+    removing it from the visible More button grid;
+  - updated More helper copy so it tells users search still understands demand;
+  - added a caged Demand Box mini-panel inside the open Trade & Shops lane;
+  - added stable button `debugId="marketplace.members.demand-box"` routing
+    through shared CTA intent `demandBox`;
+  - updated the Trusted Trade lane audit to require the Demand Box placement;
+  - added `frontend/tools/audit-marketplace-demand-box-lane.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-demand-box-lane`;
+  - updated Marketplace inventory and line audits to lock 56 stable source
+    actions, 45 body actions, and 5 visible More intent buttons;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Demand Box placement work
+    has a required guard.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-demand-box-lane`;
+  - `npm --prefix frontend run audit:marketplace-more-tools-lane`;
+  - `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - `npm --prefix frontend run audit:marketplace-trust-pill`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-demand-box-lane.mjs tools/audit-marketplace-more-tools-lane.mjs tools/audit-marketplace-trusted-trade-lane.mjs tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-button-lines.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Publish status:
+  - final commit, push, and GitHub deploy verification are reported in the
+    session close-out rather than self-referenced inside this same commit.
+- Unabated truth:
+  - this places the Marketplace-local Demand Box launcher correctly;
+  - it does not redesign the deeper `/app/demand-box` page.
+
 ### Marketplace compact Trust pill cage checkpoint (2026-06-08)
 
 - Trigger:
