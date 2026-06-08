@@ -13,6 +13,7 @@ export type TrustPaperIconName =
   | "hash"
   | "home"
   | "id"
+  | "image"
   | "lock"
   | "phone"
   | "qr"
@@ -21,7 +22,9 @@ export type TrustPaperIconName =
   | "shield"
   | "shop"
   | "spark"
+  | "tag"
   | "user"
+  | "video"
   | "wallet";
 
 type IconProps = {
@@ -125,6 +128,12 @@ export function TrustPaperIcon({
           <circle {...common} cx="8.5" cy="11" r="2" />
           <path {...common} d="M5.6 16c.6-1.6 1.6-2.4 2.9-2.4s2.3.8 2.9 2.4M14 10h4M14 14h4" />
         </>
+      ) : name === "image" ? (
+        <>
+          <rect {...common} x="4" y="5" width="16" height="14" rx="2.2" />
+          <circle {...common} cx="9" cy="10" r="1.7" />
+          <path {...common} d="m5.5 17 4.2-4.2 3.1 3.1 2.1-2.1L20 18" />
+        </>
       ) : name === "lock" ? (
         <>
           <rect {...common} x="5" y="10" width="14" height="10" rx="2" />
@@ -169,10 +178,21 @@ export function TrustPaperIcon({
           <path {...common} d="M12 3l1.5 5 5 1.5-5 1.5-1.5 5-1.5-5-5-1.5 5-1.5L12 3Z" />
           <path {...common} d="M18 16l.8 2.2L21 19l-2.2.8L18 22l-.8-2.2L15 19l2.2-.8L18 16Z" />
         </>
+      ) : name === "tag" ? (
+        <>
+          <path {...common} d="M4 5.5V11l8.2 8.2a2 2 0 0 0 2.8 0l4.2-4.2a2 2 0 0 0 0-2.8L11 4H5.5A1.5 1.5 0 0 0 4 5.5Z" />
+          <path {...common} d="M8.2 8.2h.01" />
+        </>
       ) : name === "user" ? (
         <>
           <circle {...common} cx="12" cy="8" r="4" />
           <path {...common} d="M4.5 21c.9-4.2 3.4-6.3 7.5-6.3s6.6 2.1 7.5 6.3" />
+        </>
+      ) : name === "video" ? (
+        <>
+          <rect {...common} x="4" y="6" width="12" height="12" rx="2.2" />
+          <path {...common} d="m16 10 4-2.5v9L16 14" />
+          <path {...common} d="M8 10h4M8 14h2" />
         </>
       ) : (
         <>

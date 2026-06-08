@@ -1,3 +1,58 @@
+### Shop Assets SVG icon protocol pass (2026-06-08)
+
+- Trigger:
+  - continued Shop Control / Marketplace-linked stabilization after hiding the
+    embedded gallery workspace from the plain Shop Control overview;
+  - product owner asked that weak emoji-style marks be replaced with stronger
+    app-native icons while working page by page.
+- Scope:
+  - affected owner gallery route/component: `/app/shop-control` when the owner
+    opens the Shop gallery/products layer, plus standalone Shop Assets usage;
+  - changed only `TrustPaperMarks`, `ShopAssetsPage`, the Shop Assets slot
+    audit, and this handoff note;
+  - no backend, API contract, public shop URL contract, product payload,
+    upload behavior, Marketplace launcher, Dashboard, Community Home,
+    Action Inbox, shared tap guard, or global shell behavior changed.
+- Fix:
+  - extended `TrustPaperIcon` with app-native SVG pictograms for `image`,
+    `tag`, and `video`;
+  - replaced Shop Assets owner-facing emoji labels for shop picture, public
+    products, Vault offers, hidden records, selected blocks, preview status,
+    posted-item status, tag, video, and public/private placement chips;
+  - public/private product select options now use plain text labels instead of
+    emoji-prefixed labels.
+- Audit cage updated:
+  - `frontend/tools/audit-shop-assets-slots.mjs` now rejects emoji/mojibake
+    icon text in `ShopAssetsPage`;
+  - the same audit now requires the shared `TrustPaperIcon` import, the compact
+    `iconBadge` helper, the image/shop/lock/document workbench chips, and the
+    new image/tag/video icon names.
+- Verification:
+  - passed `npm --prefix frontend run audit:shop-assets-slots`;
+  - passed `npm --prefix frontend run audit:shop-control-button-inventory`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:shop-gallery-button-inventory`;
+  - passed `npm --prefix frontend run audit:community-shop-actions`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/ShopAssetsPage.tsx src/components/TrustPaperMarks.tsx tools/audit-shop-assets-slots.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is an icon quality and label-cleanup pass, not a full Shop Assets
+    density redesign. The signboard form, product editor, posted list, Vault
+    tools, and paid repost handoff still deserve separate guided-work passes.
+  - `npm --prefix frontend run audit:link-contracts` is currently red on
+    Marketplace public-link/join-link patterns in `MarketplacePage.tsx`; this
+    pass did not touch `MarketplacePage.tsx`.
+  - `npm --prefix frontend run audit:button-stability` is currently red on
+    Marketplace grouped-lane/money-card geometry patterns in
+    `MarketplacePage.tsx`; this pass did not touch `MarketplacePage.tsx`.
+
 ### Shop Control overview/product exposure pass (2026-06-08)
 
 - Trigger:

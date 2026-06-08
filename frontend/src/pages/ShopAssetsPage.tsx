@@ -14,6 +14,10 @@ import {
   institutionalSoftCard,
   institutionalStatTile,
 } from "../lib/institutionalSurface";
+import {
+  TrustPaperIcon,
+  type TrustPaperIconName,
+} from "../components/TrustPaperMarks";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
   getMe,
@@ -181,6 +185,35 @@ function badge(primary = false): React.CSSProperties {
     fontWeight: 900,
     whiteSpace: "normal",
   };
+}
+
+function iconBadge(
+  icon: TrustPaperIconName,
+  label: React.ReactNode,
+  primary = false
+) {
+  return (
+    <span style={badge(primary)}>
+      <TrustPaperIcon name={icon} size={14} strokeWidth={2.7} />
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function labelWithIcon(icon: TrustPaperIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        minWidth: 0,
+      }}
+    >
+      <TrustPaperIcon name={icon} size={15} strokeWidth={2.65} />
+      <span>{label}</span>
+    </span>
+  );
 }
 
 function ownerActionGrid(isCompact: boolean): React.CSSProperties {
@@ -1616,10 +1649,10 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>🖼️ Shop picture: {safeStr(shopPreviewUrl) ? "Ready" : "Needed"}</span>
-              <span style={badge(publicProducts.length > 0)}>🛍️ Public products: {publicProducts.length} / 12</span>
-              <span style={badge(vaultProducts.length > 0)}>🔐 Vault offers: {vaultProducts.length} / 6</span>
-              <span style={badge(false)}>🧾 Hidden: {hiddenProducts.length}</span>
+              {iconBadge("image", <>Shop picture: {safeStr(shopPreviewUrl) ? "Ready" : "Needed"}</>, true)}
+              {iconBadge("shop", <>Public products: {publicProducts.length} / 12</>, publicProducts.length > 0)}
+              {iconBadge("lock", <>Vault offers: {vaultProducts.length} / 6</>, vaultProducts.length > 0)}
+              {iconBadge("document", <>Hidden: {hiddenProducts.length}</>)}
             </div>
 
             <div
@@ -1681,7 +1714,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               }}
             >
               <div style={statTile()}>
-                <div style={sectionLabel()}>🛍️ Public</div>
+                <div style={sectionLabel()}>{labelWithIcon("shop", "Public")}</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1698,7 +1731,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>🔐 Vault</div>
+                <div style={sectionLabel()}>{labelWithIcon("lock", "Vault")}</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1715,7 +1748,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
 
               <div style={statTile()}>
-                <div style={sectionLabel()}>🧾 Hidden</div>
+                <div style={sectionLabel()}>{labelWithIcon("document", "Hidden")}</div>
                 <div
                   style={{
                     marginTop: 8,
@@ -1770,21 +1803,21 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
             }}
           >
             <div style={innerCard("#FCFEFF")}>
-              <div style={sectionLabel()}>🖼️ 1. Public picture</div>
+              <div style={sectionLabel()}>{labelWithIcon("image", "1. Public picture")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Make the shop face clear before people see the product shelf.
               </div>
             </div>
 
             <div style={innerCard("#FFFFFF")}>
-              <div style={sectionLabel()}>🛍️ 2. Public products</div>
+              <div style={sectionLabel()}>{labelWithIcon("shop", "2. Public products")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Add only the items people can browse and share openly.
               </div>
             </div>
 
             <div style={innerCard("#FFFBEF")}>
-              <div style={sectionLabel()}>🔐 3. Vault offers</div>
+              <div style={sectionLabel()}>{labelWithIcon("lock", "3. Vault offers")}</div>
               <div style={{ marginTop: 8, ...helperText(), color: "#0B1F33" }}>
                 Use Vault only for private offers shared by controlled access.
               </div>
@@ -1806,7 +1839,7 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
           }}
         >
           <div>
-            <div style={sectionLabel()}>🖼️ Public shop picture</div>
+            <div style={sectionLabel()}>{labelWithIcon("image", "Public shop picture")}</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               This picture belongs to this shop only. It does not change the
               community picture or any other member's shop.
@@ -2061,9 +2094,11 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
             </div>
 
-            <span style={badge(occupiedPublicSlotCount > 0)}>
-              {occupiedPublicSlotCount} / 12 live blocks
-            </span>
+            {iconBadge(
+              "shop",
+              <>{occupiedPublicSlotCount} / 12 live blocks</>,
+              occupiedPublicSlotCount > 0
+            )}
           </div>
 
           <div
@@ -2277,11 +2312,13 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
               </div>
 
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <span style={badge(Boolean(selectedPublicProduct))}>
-                  {selectedPublicProduct ? "Live public item" : "Empty block"}
-                </span>
-                <span style={badge(false)}>Public gallery</span>
-                {selectedPublicProduct?.video_url ? <span style={badge(false)}>Video</span> : null}
+                {iconBadge(
+                  selectedPublicProduct ? "check" : "hash",
+                  selectedPublicProduct ? "Live public item" : "Empty block",
+                  Boolean(selectedPublicProduct)
+                )}
+                {iconBadge("shop", "Public gallery")}
+                {selectedPublicProduct?.video_url ? iconBadge("video", "Video") : null}
               </div>
 
               {galleryActionNotice?.slotNumber === selectedPublicSlot ? (
@@ -2594,8 +2631,8 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     onChange={(e) => setProductVisibility(e.target.value)}
                     style={{ ...inputStyle(), marginTop: 8 }}
                   >
-                    <option value="community_visible">🛍️ Public gallery</option>
-                    <option value="vault_private">🔐 Private Vault</option>
+                    <option value="community_visible">Public gallery</option>
+                    <option value="vault_private">Private Vault</option>
                   </select>
                 </div>
 
@@ -2748,22 +2785,27 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                     marginBottom: 8,
                   }}
                 >
-                  <span style={badge(true)}>
-                    {editingProductId ? `Item #${editingProductId}` : "Item number after post"}
-                  </span>
+                  {iconBadge(
+                    "tag",
+                    editingProductId ? `Item #${editingProductId}` : "Item number after post",
+                    true
+                  )}
 
                   {safeStr(productLabel) ? (
-                    <span style={badge(false)}>Tag: {safeStr(productLabel)}</span>
+                    iconBadge("tag", <>Tag: {safeStr(productLabel)}</>)
                   ) : null}
 
-                  <span style={badge(false)}>
-                    {firstTruthy(productVisibility, "community_visible") === "vault_private"
-                      ? "🔐 Private Vault"
-                      : "🛍️ Public gallery"}
-                  </span>
+                  {iconBadge(
+                    firstTruthy(productVisibility, "community_visible") === "vault_private"
+                      ? "lock"
+                      : "shop",
+                    firstTruthy(productVisibility, "community_visible") === "vault_private"
+                      ? "Private Vault"
+                      : "Public gallery"
+                  )}
 
                   {safeStr(productVideoPreviewUrl || productVideoUrlInput) ? (
-                    <span style={badge(false)}>Video attached</span>
+                    iconBadge("video", "Video attached")
                   ) : null}
                 </div>
 
@@ -2936,35 +2978,26 @@ export default function ShopAssetsPage(props: ShopAssetsPageProps = {}) {
                   </div>
 
                   <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <span style={badge(true)}>Item #{item.id}</span>
+                    {iconBadge("tag", <>Item #{item.id}</>, true)}
                     {publicSlotNumber > 0 &&
                     firstTruthy(item?.visibility_mode, "community_visible") !== "vault_private" ? (
-                      <span style={badge(false)}>Block #{publicSlotNumber}</span>
+                      iconBadge("hash", <>Block #{publicSlotNumber}</>)
                     ) : null}
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: isHidden
-                          ? "rgba(248,250,252,0.16)"
-                          : "rgba(34,197,94,0.12)",
-                        color: isHidden ? "#CBD5E1" : "#BBF7D0",
-                      }}
-                    >
-                      {isHidden ? "Hidden - can restore" : "Live"}
-                    </span>
-                    {label ? <span style={badge(false)}>Tag: {label}</span> : null}
-                    {itemVideo ? <span style={badge(false)}>Video</span> : null}
-                    <span
-                      style={{
-                        ...badge(false),
-                        background: "rgba(212,175,55,0.10)",
-                        color: "#F6D77A",
-                      }}
-                    >
-                      {firstTruthy(item?.visibility_mode, "community_visible") === "vault_private"
-                        ? "🔐 Private Vault"
-                        : "🛍️ Public gallery"}
-                    </span>
+                    {iconBadge(
+                      isHidden ? "document" : "check",
+                      isHidden ? "Hidden - can restore" : "Live",
+                      !isHidden
+                    )}
+                    {label ? iconBadge("tag", <>Tag: {label}</>) : null}
+                    {itemVideo ? iconBadge("video", "Video") : null}
+                    {iconBadge(
+                      firstTruthy(item?.visibility_mode, "community_visible") === "vault_private"
+                        ? "lock"
+                        : "shop",
+                      firstTruthy(item?.visibility_mode, "community_visible") === "vault_private"
+                        ? "Private Vault"
+                        : "Public gallery"
+                    )}
                   </div>
 
                   <div

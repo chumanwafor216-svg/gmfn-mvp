@@ -5,12 +5,18 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const shopAssetsFile = "src/pages/ShopAssetsPage.tsx";
+const shopAssetsSource = read(shopAssetsFile);
 
 function read(relativePath) {
   return readFileSync(join(frontendRoot, relativePath), "utf8");
 }
 
 const findings = [];
+
+function lineAt(source, index) {
+  return source.slice(0, index).split(/\r?\n/).length;
+}
 
 function assertContains(file, pattern, message) {
   const text = read(file);
@@ -29,6 +35,42 @@ assertContains(
   "src/pages/ShopAssetsPage.tsx",
   /function unwrapProductRecord\(raw: any\): any \{[\s\S]*?raw\?\.item \|\| raw\?\.product \|\| raw\?\.data \|\| raw/,
   "Shop Assets must unwrap public/authenticated product response rows before counting owner gallery blocks."
+);
+
+const forbiddenEmojiIconPattern = /[\u{1F300}-\u{1FAFF}]\uFE0F?|ð/gu;
+let forbiddenEmojiMatch;
+while ((forbiddenEmojiMatch = forbiddenEmojiIconPattern.exec(shopAssetsSource))) {
+  findings.push({
+    file: shopAssetsFile,
+    line: lineAt(shopAssetsSource, forbiddenEmojiMatch.index),
+    message:
+      "Shop Assets must use app-native SVG pictograms for owner-facing status labels, not emoji or mojibake icon text.",
+    text: forbiddenEmojiMatch[0],
+  });
+}
+
+assertContains(
+  shopAssetsFile,
+  /import \{[\s\S]*?TrustPaperIcon[\s\S]*?type TrustPaperIconName[\s\S]*?\} from "\.\.\/components\/TrustPaperMarks";/,
+  "Shop Assets must use the shared TrustPaperIcon SVG pictogram set for owner-facing icon chips."
+);
+
+assertContains(
+  shopAssetsFile,
+  /function iconBadge\([\s\S]*?icon: TrustPaperIconName[\s\S]*?<TrustPaperIcon name=\{icon\} size=\{14\} strokeWidth=\{2\.7\}/,
+  "Shop Assets must keep a compact SVG-backed chip helper for shop picture, public products, Vault, hidden, and block status."
+);
+
+assertContains(
+  shopAssetsFile,
+  /iconBadge\("image"[\s\S]*?Shop picture:[\s\S]*?iconBadge\("shop"[\s\S]*?Public products:[\s\S]*?iconBadge\("lock"[\s\S]*?Vault offers:[\s\S]*?iconBadge\("document"[\s\S]*?Hidden:/,
+  "Shop Assets workbench counters must use image/shop/lock/document SVG chips instead of emoji labels."
+);
+
+assertContains(
+  "src/components/TrustPaperMarks.tsx",
+  /\| "image"[\s\S]*?\| "tag"[\s\S]*?\| "video"/,
+  "TrustPaperIcon must expose image, tag, and video pictograms for shop media surfaces."
 );
 
 assertContains(
