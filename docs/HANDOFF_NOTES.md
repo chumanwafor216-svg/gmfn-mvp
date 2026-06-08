@@ -1,3 +1,51 @@
+### Marketplace Paid Repost compact surface pass (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue Marketplace stabilization after the Link
+    Center row pass. Phone screenshots showed Paid Repost still behaving like a
+    long exposed form, with selected block media, target helper, credit
+    explanation, and four large actions all visible in one stack.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local Paid Repost / Records & Links geometry
+    and the Records & Links audit cage;
+  - no backend, auth, API, data model, Dashboard, Community Home, Trust
+    Passport, Finance, global shell, or shared tap-guard logic changed.
+- Fix:
+  - compact Paid Repost now hides the repeated top status chip row on phone;
+  - selected public block media shrank from a tall 292px compact card to a
+    92px evidence row with a 72px media tile and two-line title clamp;
+  - compact setup fields now use a one-full-row block selector plus target /
+    duration side-by-side instead of three full-height rows;
+  - target suggestions moved behind a guarded `StableDisclosureSummary`;
+  - credit / billing explanation and the Spotlight subscription route moved
+    behind a guarded `StableDisclosureSummary`;
+  - the main visible payment action group is now Pay Code, Refresh, and Place,
+    keeping the fourth Spotlight route out of the first phone action stack;
+  - existing paid repost debug ids and backend handlers were preserved.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs` now protects the
+    92px compact selected-block row, 72px media tile, two-column compact setup
+    fields, guarded Target Help / Credit Details disclosures, and the Pay Code
+    -> Refresh -> Place main action order before the hidden Spotlight route.
+- Verification so far:
+  - passed `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-front-package`;
+  - passed `npm --prefix frontend run audit:marketplace-button-lines`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm --prefix frontend run audit:marketplace-actions`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-records-links-lane.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`.
+- Unabated truth:
+  - this cages Paid Repost's visible phone overflow only. It does not complete
+    the full Marketplace audit sequence for Money Pool, ROSCA, Support
+    Request, or Trusted Trade, and it does not change paid-credit backend
+    behavior.
+
 ### Marketplace Link Center mobile geometry pass (2026-06-08)
 
 - Trigger:

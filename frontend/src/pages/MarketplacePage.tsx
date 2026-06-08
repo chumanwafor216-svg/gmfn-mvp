@@ -24,6 +24,7 @@ import {
 } from "../lib/publicLinks";
 import { useLocation, useNavigate } from "react-router-dom";
 import { StableButton, StableCtaLink } from "../components/StableButton";
+import { StableDisclosureSummary } from "../components/StableButton";
 import {
   addLoanGuarantorRequest,
   cancelLoanRequest,
@@ -7335,12 +7336,19 @@ export default function MarketplacePage() {
                       {selectedRepostProduct || canPlaceMarketplaceRepost ? "Ready" : "Set up"}
                     </span>
                   </div>
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      marginTop: 10,
+                      display: isCompact ? "none" : "flex",
+                      gap: 8,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <span style={badge(Boolean(selectedRepostProduct))}>
                       {loadingRepostProducts
-                        ? "Loading public blocks"
+                        ? "Loading block"
                         : selectedRepostProduct
-                        ? "One block selected"
+                        ? "Block ready"
                         : "No block ready"}
                     </span>
                     <span style={badge(Boolean(resolvedRepostTargetCommunityInput))}>
@@ -7352,26 +7360,26 @@ export default function MarketplacePage() {
                       {resolvedRepostDurationDays} day{resolvedRepostDurationDays === 1 ? "" : "s"}
                     </span>
                     <span style={badge(canPlaceMarketplaceRepost)}>
-                      {availableMarketplaceRepostCredits} paid credit{availableMarketplaceRepostCredits === 1 ? "" : "s"} available
+                      {availableMarketplaceRepostCredits} credit{availableMarketplaceRepostCredits === 1 ? "" : "s"}
                     </span>
                   </div>
                   {selectedRepostProduct ? (
                     <div
                       style={{
                         marginTop: 12,
-                        minHeight: isCompact ? 292 : 190,
-                        padding: 12,
-                        borderRadius: 20,
+                        minHeight: isCompact ? 92 : 190,
+                        padding: isCompact ? 9 : 12,
+                        borderRadius: isCompact ? 17 : 20,
                         border: "1px solid rgba(11, 45, 74, 0.14)",
                         background:
                           "linear-gradient(135deg, rgba(7,23,44,0.96) 0%, rgba(13,54,88,0.92) 100%)",
                         color: "#FFFFFF",
                         display: "grid",
                         gridTemplateColumns: isCompact
-                          ? "1fr"
+                          ? "72px minmax(0, 1fr)"
                           : "minmax(160px, 0.42fr) minmax(0, 1fr)",
-                        gap: 12,
-                        alignItems: "stretch",
+                        gap: isCompact ? 9 : 12,
+                        alignItems: isCompact ? "center" : "stretch",
                         overflow: "hidden",
                         overflowAnchor: "none",
                         transition: "none",
@@ -7379,8 +7387,9 @@ export default function MarketplacePage() {
                     >
                       <div
                         style={{
-                          minHeight: isCompact ? 152 : 164,
-                          borderRadius: 18,
+                          minHeight: isCompact ? 72 : 164,
+                          height: isCompact ? 72 : undefined,
+                          borderRadius: isCompact ? 14 : 18,
                           overflow: "hidden",
                           background:
                             "linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04))",
@@ -7399,7 +7408,7 @@ export default function MarketplacePage() {
                             style={{
                               width: "100%",
                               height: "100%",
-                              minHeight: isCompact ? 152 : 164,
+                              minHeight: isCompact ? 72 : 164,
                               objectFit: "cover",
                               display: "block",
                             }}
@@ -7411,7 +7420,7 @@ export default function MarketplacePage() {
                             style={{
                               width: "100%",
                               height: "100%",
-                              minHeight: isCompact ? 152 : 164,
+                              minHeight: isCompact ? 72 : 164,
                               objectFit: "cover",
                               display: "block",
                             }}
@@ -7433,25 +7442,36 @@ export default function MarketplacePage() {
                         style={{
                           minWidth: 0,
                           display: "grid",
-                          gap: 9,
+                          gap: isCompact ? 5 : 9,
                           alignContent: "center",
                         }}
                       >
-                        <div style={{ ...sectionLabel(), color: "#F2C766" }}>
+                        <div
+                          style={{
+                            ...sectionLabel(),
+                            color: "#F2C766",
+                            display: isCompact ? "none" : undefined,
+                          }}
+                        >
                           Selected public block
                         </div>
                         <div
                           style={{
-                            fontSize: isCompact ? 22 : 26,
-                            lineHeight: 1.05,
+                            fontSize: isCompact ? 15 : 26,
+                            lineHeight: isCompact ? 1.12 : 1.05,
                             fontWeight: 950,
-                            overflowWrap: "anywhere",
+                            overflowWrap: "break-word",
+                            wordBreak: "normal",
+                            display: isCompact ? "-webkit-box" : undefined,
+                            WebkitLineClamp: isCompact ? 2 : undefined,
+                            WebkitBoxOrient: isCompact ? "vertical" : undefined,
+                            overflow: "hidden",
                           }}
                         >
                           Block #{selectedRepostProduct.blockNumber || "?"}:{" "}
                           {selectedRepostProduct.title}
                         </div>
-                        {selectedRepostProduct.description ? (
+                        {selectedRepostProduct.description && !isCompact ? (
                           <div
                             style={{
                               color: "rgba(255,255,255,0.78)",
@@ -7469,6 +7489,7 @@ export default function MarketplacePage() {
                             gap: 8,
                             flexWrap: "wrap",
                             alignItems: "center",
+                            minWidth: 0,
                           }}
                         >
                           {repostProductPriceLabel(selectedRepostProduct) ? (
@@ -7482,40 +7503,46 @@ export default function MarketplacePage() {
                               {repostProductPriceLabel(selectedRepostProduct)}
                             </span>
                           ) : null}
-                          <span
+                          {!isCompact ? (
+                            <>
+                              <span
+                                style={{
+                                  ...badge(true),
+                                  background: "rgba(255,255,255,0.12)",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Product ID {selectedRepostProduct.id}
+                              </span>
+                              <span
+                                style={{
+                                  ...badge(true),
+                                  background: "rgba(255,255,255,0.12)",
+                                  color: "#FFFFFF",
+                                }}
+                              >
+                                Exact block handoff
+                              </span>
+                            </>
+                          ) : null}
+                        </div>
+                        {!isCompact ? (
+                          <div
                             style={{
-                              ...badge(true),
-                              background: "rgba(255,255,255,0.12)",
-                              color: "#FFFFFF",
+                              color: "rgba(255,255,255,0.72)",
+                              fontSize: 13,
+                              lineHeight: 1.45,
+                              overflowWrap: "anywhere",
                             }}
                           >
-                            Product ID {selectedRepostProduct.id}
-                          </span>
-                          <span
-                            style={{
-                              ...badge(true),
-                              background: "rgba(255,255,255,0.12)",
-                              color: "#FFFFFF",
-                            }}
-                          >
-                            Exact block handoff
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            color: "rgba(255,255,255,0.72)",
-                            fontSize: 13,
-                            lineHeight: 1.45,
-                            overflowWrap: "anywhere",
-                          }}
-                        >
-                          {selectedRepostProduct.originShopName
-                            ? `From ${selectedRepostProduct.originShopName}. `
-                            : ""}
-                          {selectedRepostProduct.sellerGmfnId
-                            ? `GSN ID ${displayGsnLabel(selectedRepostProduct.sellerGmfnId)}.`
-                            : "This block will carry its shop identity into the target Spotlight."}
-                        </div>
+                            {selectedRepostProduct.originShopName
+                              ? `From ${selectedRepostProduct.originShopName}. `
+                              : ""}
+                            {selectedRepostProduct.sellerGmfnId
+                              ? `GSN ID ${displayGsnLabel(selectedRepostProduct.sellerGmfnId)}.`
+                              : "This block will carry its shop identity into the target Spotlight."}
+                          </div>
+                        ) : null}
                         <StableButton
                           type="button"
                           debugId="marketplace.network-repost.selected-block.copy-link"
@@ -7547,6 +7574,7 @@ export default function MarketplacePage() {
                               !selectedRepostProductPublicLink,
                               isCompact
                             ),
+                            display: isCompact ? "none" : undefined,
                             height: 48,
                             minHeight: 48,
                             maxHeight: 48,
@@ -7612,13 +7640,21 @@ export default function MarketplacePage() {
                     style={{
                       display: "grid",
                       gridTemplateColumns: isCompact
-                        ? "1fr"
+                        ? "minmax(0, 1fr) minmax(112px, 0.48fr)"
                         : "minmax(0, 1fr) minmax(0, 1fr) minmax(150px, 0.55fr)",
                       gap: 10,
                       marginTop: 12,
                     }}
                   >
-                    <label style={{ display: "grid", gap: 6, color: "#0B1F33", fontWeight: 850 }}>
+                    <label
+                      style={{
+                        display: "grid",
+                        gap: 6,
+                        color: "#0B1F33",
+                        fontWeight: 850,
+                        gridColumn: isCompact ? "1 / -1" : undefined,
+                      }}
+                    >
                       <span style={{ fontSize: 12 }}>Public block</span>
                       <select
                         {...marketplaceFieldTouchProps(
@@ -7690,7 +7726,14 @@ export default function MarketplacePage() {
                     </label>
                   </div>
                   {selectedRepostProduct ? (
-                    <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <div
+                      style={{
+                        marginTop: 10,
+                        display: isCompact ? "none" : "flex",
+                        gap: 8,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <span style={badge(true)}>
                         Block identity kept
                       </span>
@@ -7702,7 +7745,8 @@ export default function MarketplacePage() {
                       </span>
                     </div>
                   ) : null}
-                  <div
+                  <details
+                    open={!isCompact}
                     style={{
                       marginTop: 12,
                       padding: 12,
@@ -7713,6 +7757,25 @@ export default function MarketplacePage() {
                       gap: 10,
                     }}
                   >
+                    <StableDisclosureSummary
+                      debugId="marketplace.network-repost.target-help.summary"
+                      stableHeight={36}
+                      style={{
+                        cursor: "pointer",
+                        color: "#0B1F33",
+                        fontWeight: 950,
+                        listStyle: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
+                      }}
+                    >
+                      <span>Target help</span>
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="target" size={18} />
+                      </span>
+                    </StableDisclosureSummary>
                     <div
                       style={{
                         display: "flex",
@@ -7723,7 +7786,13 @@ export default function MarketplacePage() {
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 950, color: "#0B1F33" }}>
+                        <div
+                          style={{
+                            fontWeight: 950,
+                            color: "#0B1F33",
+                            display: isCompact ? "none" : undefined,
+                          }}
+                        >
                           Target help
                         </div>
                         <div style={{ ...helperText(), fontSize: 13 }}>
@@ -7866,44 +7935,30 @@ export default function MarketplacePage() {
                         })}
                       </div>
                     ) : null}
-                  </div>
+                  </details>
                   <div
                     style={{
                       marginTop: 12,
-                      padding: 12,
-                      borderRadius: 18,
-                      border: "1px solid rgba(11, 45, 74, 0.12)",
-                      background: canPlaceMarketplaceRepost
-                        ? "rgba(46, 155, 98, 0.08)"
-                        : "rgba(214, 170, 69, 0.12)",
-                      color: "#0B1F33",
                       display: "grid",
+                      gridTemplateColumns: isCompact
+                        ? "repeat(2, minmax(0, 1fr))"
+                        : "repeat(4, minmax(0, 1fr))",
                       gap: 8,
                     }}
                   >
-                    <div style={{ fontWeight: 900 }}>
-                      {canPlaceMarketplaceRepost
-                        ? "Credit ready."
-                        : `Need ${missingMarketplaceRepostCredits} Spotlight credit${
-                            missingMarketplaceRepostCredits === 1 ? "" : "s"
-                          } before placing.`}
-                    </div>
-                    <div style={{ ...helperText(), fontSize: 13 }}>
-                      {requiredMarketplaceRepostCredits} day{requiredMarketplaceRepostCredits === 1 ? "" : "s"} =
-                      {" "}{formatRailMoney(requiredMarketplaceRepostAmount, "GBP")}.
-                    </div>
-                    {latestRepostPaymentReference ? (
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        Latest code: <strong>{latestRepostPaymentReference}</strong>
-                        {latestRepostPaymentAmount ? ` | ${latestRepostPaymentAmount}` : ""}
-                        {latestRepostPaymentStatus ? ` | ${latestRepostPaymentStatus}` : ""}
-                      </div>
-                    ) : (
-                      <div style={{ ...helperText(), fontSize: 13 }}>
-                        Generate when the block and target are ready.
-                      </div>
-                    )}
-                </div>
+                    <span style={badge(Boolean(selectedRepostProduct))}>
+                      Block {selectedRepostProduct ? "ready" : "needed"}
+                    </span>
+                    <span style={badge(Boolean(resolvedRepostTargetCommunityInput))}>
+                      Target {resolvedRepostTargetCommunityInput ? "ready" : "needed"}
+                    </span>
+                    <span style={badge(true)}>
+                      {resolvedRepostDurationDays} day{resolvedRepostDurationDays === 1 ? "" : "s"}
+                    </span>
+                    <span style={badge(canPlaceMarketplaceRepost)}>
+                      {availableMarketplaceRepostCredits}/{requiredMarketplaceRepostCredits} credit{requiredMarketplaceRepostCredits === 1 ? "" : "s"}
+                    </span>
+                  </div>
                   <div
                     {...marketplaceFieldTouchProps("marketplace.network-repost.payment-actions")}
                     style={marketplaceInlineActionsStyle(isCompact)}
@@ -7988,18 +8043,84 @@ export default function MarketplacePage() {
                         </>
                       )}
                     </StableButton>
+                  </div>
+                  <details
+                    open={!isCompact}
+                    style={{
+                      marginTop: 12,
+                      padding: 12,
+                      borderRadius: 18,
+                      border: "1px solid rgba(11, 45, 74, 0.12)",
+                      background: canPlaceMarketplaceRepost
+                        ? "rgba(46, 155, 98, 0.08)"
+                        : "rgba(214, 170, 69, 0.12)",
+                      color: "#0B1F33",
+                      display: "grid",
+                      gap: 8,
+                    }}
+                  >
+                    <StableDisclosureSummary
+                      debugId="marketplace.network-repost.credit-details.summary"
+                      stableHeight={36}
+                      style={{
+                        cursor: "pointer",
+                        color: "#0B1F33",
+                        fontWeight: 950,
+                        listStyle: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 10,
+                      }}
+                    >
+                      <span>
+                        {canPlaceMarketplaceRepost
+                          ? "Credit details"
+                          : `Need ${missingMarketplaceRepostCredits} credit${
+                              missingMarketplaceRepostCredits === 1 ? "" : "s"
+                            }`}
+                      </span>
+                      <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                        <MarketplaceGlyph name="payment" size={18} />
+                      </span>
+                    </StableDisclosureSummary>
+                    <div style={{ fontWeight: 900 }}>
+                      {canPlaceMarketplaceRepost
+                        ? "Credit ready."
+                        : `Need ${missingMarketplaceRepostCredits} Spotlight credit${
+                            missingMarketplaceRepostCredits === 1 ? "" : "s"
+                          } before placing.`}
+                    </div>
+                    <div style={{ ...helperText(), fontSize: 13 }}>
+                      {requiredMarketplaceRepostCredits} day{requiredMarketplaceRepostCredits === 1 ? "" : "s"} =
+                      {" "}{formatRailMoney(requiredMarketplaceRepostAmount, "GBP")}.
+                    </div>
+                    {latestRepostPaymentReference ? (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Latest code: <strong>{latestRepostPaymentReference}</strong>
+                        {latestRepostPaymentAmount ? ` | ${latestRepostPaymentAmount}` : ""}
+                        {latestRepostPaymentStatus ? ` | ${latestRepostPaymentStatus}` : ""}
+                      </div>
+                    ) : (
+                      <div style={{ ...helperText(), fontSize: 13 }}>
+                        Generate when the block and target are ready.
+                      </div>
+                    )}
                     <StableCtaLink
                       to={routeWithCommunity(APP_ROUTES.SUBSCRIPTION_SPOTLIGHT, activeCommunityId)}
                       debugId="marketplace.network-repost.subscription"
                       stableHeight={58}
-                      style={marketplaceInlineActionStyle("secondary", false, isCompact)}
+                      style={{
+                        ...marketplaceInlineActionStyle("secondary", false, isCompact),
+                        marginTop: 8,
+                      }}
                     >
                       <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
                         <MarketplaceGlyph name="spark" size={18} />
                       </span>
                       Spotlight
                     </StableCtaLink>
-                  </div>
+                  </details>
                 </div>
 
                 <div style={marketplaceLinkRowStyle(isCompact)}>
