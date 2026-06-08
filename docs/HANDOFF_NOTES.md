@@ -1,3 +1,38 @@
+### Marketplace Money Pool compact fact-grid pass (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue Marketplace stabilization after Link Center
+    / Paid Repost was caged. The Guided Work Surface Protocol says the first
+    Marketplace repair sequence must protect Money Pool before ROSCA, Support
+    Request, and Trusted Trade.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local Money Pool presentation and the Money
+    Pool lane audit;
+  - no backend, auth, API, data model, Dashboard, Community Home, Trust
+    Passport, Finance, global shell, or shared tap-guard logic changed.
+- Fix:
+  - compact Money Pool facts now use a two-column phone grid instead of three
+    full-width short-fact cards;
+  - the visible pool amount remains the wide current-state row;
+  - Community Account and Personal Payout now sit as compact readiness cards;
+  - Money In, Money Out, and Finance buttons keep their existing debug ids and
+    route handlers but now include app-native SVG pictograms;
+  - the action row explicitly spans the full compact grid so route buttons do
+    not squeeze into one column.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-money-pool-lane.mjs` now protects the
+    two-column compact grid, the wide pool row, compact readiness cards, icon-led
+    route actions, and full-width action row.
+- Verification so far:
+  - passed `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm --prefix frontend run audit:marketplace-actions`.
+- Unabated truth:
+  - this is a presentation/action-surface tightening only. It does not change
+    Money In, Money Out, Finance, settlement readiness, payout readiness, or
+    pool backend behavior.
+
 ### Marketplace Paid Repost compact surface pass (2026-06-08)
 
 - Trigger:

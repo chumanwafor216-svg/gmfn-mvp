@@ -2314,31 +2314,40 @@ function marketplaceMoneyPanelStyle(isCompact: boolean): React.CSSProperties {
   return {
     marginTop: isCompact ? 12 : 16,
     display: "grid",
+    gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr",
     gap: isCompact ? 8 : 12,
     overflowAnchor: "none",
     transition: "none",
   };
 }
 
-function marketplaceMoneyRouteCardStyle(isCompact: boolean): React.CSSProperties {
+function marketplaceMoneyRouteCardStyle(
+  isCompact: boolean,
+  wide = false
+): React.CSSProperties {
   return {
-    minHeight: isCompact ? 92 : 150,
-    borderRadius: isCompact ? 18 : 24,
+    minHeight: isCompact ? (wide ? 84 : 112) : 150,
+    gridColumn: isCompact && wide ? "1 / -1" : undefined,
+    borderRadius: isCompact ? 16 : 24,
     border: "1px solid rgba(16,37,59,0.08)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(249,252,255,0.98) 100%)",
     boxShadow:
       "0 16px 30px rgba(10,24,49,0.075), inset 0 1px 0 rgba(255,255,255,0.92)",
-    padding: isCompact ? "12px 13px" : "22px 24px",
+    padding: isCompact ? "10px" : "22px 24px",
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "50px minmax(0, 1fr) auto"
+      ? wide
+        ? "42px minmax(0, 1fr) auto"
+        : "38px minmax(0, 1fr)"
       : "92px minmax(0, 1fr) auto",
     gridTemplateAreas: isCompact
-      ? '"icon text status"'
+      ? wide
+        ? '"icon text status"'
+        : '"icon status" "text text"'
       : '"icon text status"',
     gap: isCompact ? "9px" : "14px 24px",
-    alignItems: "center",
+    alignItems: wide || !isCompact ? "center" : "start",
     overflow: "hidden",
     overflowAnchor: "none",
     transform: "none",
@@ -2355,9 +2364,9 @@ function marketplaceMoneyIconBubbleStyle(
 
   return {
     gridArea: "icon",
-    width: isCompact ? 48 : 80,
-    height: isCompact ? 48 : 80,
-    borderRadius: 999,
+    width: isCompact ? 38 : 80,
+    height: isCompact ? 38 : 80,
+    borderRadius: isCompact ? 13 : 999,
     display: "inline-flex",
     alignItems: "center",
     justifyContent: "center",
@@ -2383,7 +2392,7 @@ function marketplaceMoneyTextStackStyle(): React.CSSProperties {
 function marketplaceMoneyTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#08233A",
-    fontSize: isCompact ? 15 : 20,
+    fontSize: isCompact ? 13 : 20,
     fontWeight: 950,
     lineHeight: 1.14,
     overflowWrap: "break-word",
@@ -2394,7 +2403,7 @@ function marketplaceMoneyTitleStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceMoneyValueStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#061827",
-    fontSize: isCompact ? 21 : 42,
+    fontSize: isCompact ? 17 : 42,
     fontWeight: 950,
     lineHeight: isCompact ? 1.04 : 1,
     letterSpacing: 0,
@@ -2409,7 +2418,7 @@ function marketplaceMoneyRouteValueStyle(
 ): React.CSSProperties {
   return {
     ...marketplaceMoneyValueStyle(isCompact),
-    fontSize: ready ? (isCompact ? 18 : 30) : isCompact ? 21 : 42,
+    fontSize: ready ? (isCompact ? 14 : 30) : isCompact ? 17 : 42,
     lineHeight: ready ? 1.08 : 1,
     display: "-webkit-box",
     WebkitLineClamp: ready ? 2 : 1,
@@ -2421,7 +2430,7 @@ function marketplaceMoneyRouteValueStyle(
 function marketplaceMoneyHelperStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#41556B",
-    fontSize: isCompact ? 12.5 : 17,
+    fontSize: isCompact ? 11.5 : 17,
     fontWeight: 750,
     lineHeight: 1.24,
     overflowWrap: "break-word",
@@ -2433,7 +2442,7 @@ function marketplaceMoneyStatusAreaStyle(): React.CSSProperties {
   return {
     gridArea: "status",
     justifySelf: "end",
-    alignSelf: "center",
+    alignSelf: "start",
     display: "inline-flex",
     alignItems: "center",
     gap: 10,
@@ -2444,8 +2453,11 @@ function marketplaceMoneyStatusAreaStyle(): React.CSSProperties {
 function marketplaceMoneyStatusPillStyle(ready = false): React.CSSProperties {
   return {
     ...stableStatusPillStyle(ready),
+    height: 28,
+    minHeight: 28,
+    maxHeight: 28,
     minWidth: 0,
-    padding: "0 10px",
+    padding: "0 8px",
     justifyContent: "center",
     color: ready ? "#1D6D46" : "#3D4F61",
     background: ready
@@ -6199,7 +6211,7 @@ export default function MarketplacePage() {
 
         {sectionsOpen.money ? (
           <div style={marketplaceMoneyPanelStyle(isCompact)}>
-            <div style={marketplaceMoneyRouteCardStyle(isCompact)}>
+            <div style={marketplaceMoneyRouteCardStyle(isCompact, true)}>
               <span
                 aria-hidden="true"
                 style={marketplaceMoneyIconBubbleStyle(isCompact, "soft")}
@@ -6284,7 +6296,12 @@ export default function MarketplacePage() {
               </div>
             </div>
 
-            <div style={marketplaceInlineActionsStyle(isCompact)}>
+            <div
+              style={{
+                ...marketplaceInlineActionsStyle(isCompact),
+                gridColumn: isCompact ? "1 / -1" : undefined,
+              }}
+            >
               <StableButton
                 debugId="marketplace.money.money-in"
                 type="button"
@@ -6292,6 +6309,9 @@ export default function MarketplacePage() {
                 stableHeight={58}
                 style={marketplaceInlineActionStyle("primary", false, isCompact)}
               >
+                <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                  <MarketplaceGlyph name="cash" size={18} />
+                </span>
                 Money In
               </StableButton>
               <StableButton
@@ -6301,6 +6321,9 @@ export default function MarketplacePage() {
                 stableHeight={58}
                 style={marketplaceInlineActionStyle("secondary", false, isCompact)}
               >
+                <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                  <MarketplaceGlyph name="card" size={18} />
+                </span>
                 Money Out
               </StableButton>
               <StableButton
@@ -6310,6 +6333,9 @@ export default function MarketplacePage() {
                 stableHeight={58}
                 style={marketplaceInlineActionStyle("secondary", false, isCompact)}
               >
+                <span aria-hidden="true" style={marketplaceLinkMiniIconStyle()}>
+                  <MarketplaceGlyph name="chart" size={18} />
+                </span>
                 Finance
               </StableButton>
             </div>

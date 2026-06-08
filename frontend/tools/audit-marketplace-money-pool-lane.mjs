@@ -59,6 +59,11 @@ assertContains(
 );
 
 assertContains(
+  /function marketplaceMoneyPanelStyle\(isCompact: boolean\)[\s\S]*?gridTemplateColumns: isCompact \? "repeat\(2, minmax\(0, 1fr\)\)" : "1fr"[\s\S]*?function marketplaceMoneyRouteCardStyle\(\s*isCompact: boolean,\s*wide = false[\s\S]*?minHeight: isCompact \? \(wide \? 84 : 112\) : 150[\s\S]*?gridColumn: isCompact && wide \? "1 \/ -1" : undefined[\s\S]*?wide[\s\S]*?\? "42px minmax\(0, 1fr\) auto"[\s\S]*?: "38px minmax\(0, 1fr\)"[\s\S]*?\? '"icon text status"'[\s\S]*?: '"icon status" "text text"'/,
+  "Money Pool compact facts must use a two-column phone grid with one wide pool row and two compact readiness cards."
+);
+
+assertContains(
   /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"/,
   "Opening Money Pool must use the focused one-lane state, leaving unrelated lanes stepped back."
 );
@@ -92,12 +97,14 @@ if (!moneySection.text) {
   [
     /Money Pool/,
     /This community's pool, money in, and money out\./,
+    /marketplaceMoneyRouteCardStyle\(isCompact, true\)/,
     /Visible Pool[\s\S]*?Current pool view/,
     /Community Account[\s\S]*?Money In route/,
     /Personal Payout[\s\S]*?Money Out route/,
-    /debugId="marketplace\.money\.money-in"[\s\S]*?openMarketplaceCta\(event, "moneyIn"\)/,
-    /debugId="marketplace\.money\.money-out"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)/,
-    /debugId="marketplace\.money\.finance"[\s\S]*?openMarketplaceCta\(event, "finance"\)/,
+    /debugId="marketplace\.money\.money-in"[\s\S]*?openMarketplaceCta\(event, "moneyIn"\)[\s\S]*?<MarketplaceGlyph name="cash"/,
+    /debugId="marketplace\.money\.money-out"[\s\S]*?openMarketplaceCta\(event, "moneyOut"\)[\s\S]*?<MarketplaceGlyph name="card"/,
+    /debugId="marketplace\.money\.finance"[\s\S]*?openMarketplaceCta\(event, "finance"\)[\s\S]*?<MarketplaceGlyph name="chart"/,
+    /style=\{\{[\s\S]*?\.\.\.marketplaceInlineActionsStyle\(isCompact\)[\s\S]*?gridColumn: isCompact \? "1 \/ -1" : undefined/,
   ].forEach((pattern) => {
     if (!pattern.test(moneySection.text)) {
       addFinding(
