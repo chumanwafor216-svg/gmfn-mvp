@@ -1,3 +1,47 @@
+### Future Community Package capacity model note (2026-06-08)
+
+- Product-owner memory note:
+  - do not switch the current Marketplace stabilization sequence just for this;
+    record it so it can be picked up after the active lane work.
+- Intended product idea:
+  - normal community membership should have a free/basic cap, likely around 15
+    people;
+  - larger communities should be handled as a paid `Community Package` capacity
+    tier instead of pretending all community sizes cost the same to support;
+  - possible tier direction:
+    - basic/free: up to about 15 people;
+    - first paid capacity band: roughly 16 to 40 or 50 people;
+    - larger paid capacity band: up to about 100 people, with a higher package
+      price;
+  - exact numbers and pricing still need product confirmation before
+    implementation.
+- Package content idea:
+  - paying for the Community Package should unlock a bundle of allowances for
+    the selected community, rather than forcing the owner to buy every small
+    feature separately;
+  - possible allowances include:
+    - extra member capacity;
+    - one or more ROSCA cycles inside the same community;
+    - free/allocated vote or resolution capacity;
+    - free/allocated spotlight capacity;
+    - subscription spotlight allowance;
+    - other community-scale records or diary/block capacity where appropriate.
+- ROSCA implication:
+  - ROSCA remains member-scoped, not whole-community-by-default;
+  - a paid community package may allow multiple ROSCA cycles in one community,
+    but each cycle still needs its own name, contribution amount, currency,
+    frequency/duration, and selected members.
+- Meeting / resolution idea:
+  - investigate whether the repo already has a meeting-link or external meeting
+    handoff concept;
+  - desired real-life flow may be: meeting happens outside GSN, for example in a
+    WhatsApp community or meeting link, then the meeting resolution is brought
+    into GSN as a record/resolution for accountability.
+- Unabated truth:
+  - this is not implemented yet and should not be treated as a current backend
+    entitlement model until routes, pricing, data ownership, permissions, and
+    package limits are mapped.
+
 ### Marketplace Money Pool compact fact-grid pass (2026-06-08)
 
 - Trigger:
