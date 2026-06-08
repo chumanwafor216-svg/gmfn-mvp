@@ -1,3 +1,69 @@
+### Marketplace Trusted Trade compact member/shop pass (2026-06-08)
+
+- Trigger:
+  - continued the Marketplace stabilization sequence after Money Pool, ROSCA,
+    Support Requests, Link Center, and Paid Repost;
+  - next protocol lane was Trusted Trade / Trade & Shops.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local Trusted Trade presentation and
+    Marketplace audit cages;
+  - no backend, auth, API contract, member visibility rule, shop route,
+    Dashboard, Community Home, Action Inbox, shared tap guard, or global shell
+    behavior changed.
+- Fix:
+  - removed the old exposed Trusted Trade explainer plus three instruction
+    cards from the opened lane;
+  - added compact status chips for visible members, public shops, and
+    community-bound trade;
+  - kept Demand Box inside Trade & Shops as a short marketplace-local route row
+    instead of a taller explanatory block;
+  - changed member rows into compact icon-led rows with stable GSN ID/shop
+    status pills and no long helper sentence;
+  - first visible member list is capped to three rows on phone and five on
+    wider layouts;
+  - remaining visible members sit behind a guarded `More visible members`
+    `StableDisclosureSummary` so the lane does not become a full directory on
+    first open;
+  - `Open shop` retains the existing dynamic
+    `marketplace.member.*.shop` debug-id family and public shop route target.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-trusted-trade-lane.mjs` now protects the
+    compact member/shop shape and rejects the old explainer/three-card stack;
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` and
+    `frontend/tools/audit-marketplace-button-lines.mjs` now account for the
+    second audited `Open shop` template inside the tucked-away member list;
+  - `frontend/tools/audit-marketplace-demand-box-lane.mjs` and
+    `frontend/tools/audit-marketplace-front-package.mjs` now protect the
+    compact Demand Box row wording.
+- Verification:
+  - passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm --prefix frontend run audit:marketplace-button-lines`;
+  - passed `npm --prefix frontend run audit:marketplace-demand-box-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-front-package`;
+  - passed `npm --prefix frontend run audit:marketplace-actions`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-support-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-more-tools-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-trust-pill`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-trusted-trade-lane.mjs tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-button-lines.mjs tools/audit-marketplace-front-package.mjs tools/audit-marketplace-demand-box-lane.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`.
+- Unabated truth:
+  - this is a presentation/action-surface tightening only. It does not change
+    who is allowed to see a member, whether a shop is visible, shop ownership,
+    Demand Box backend behavior, or public shop routes.
+  - The hidden-member disclosure creates a second source template for the same
+    dynamic `Open shop` action family. That is intentionally audited, but it is
+    still one extra source action template in Marketplace.
+  - The deeper Demand Box page itself may still need its own guided-work pass.
+
 ### Marketplace Support Requests compact first-action pass (2026-06-08)
 
 - Trigger:

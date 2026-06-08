@@ -58,6 +58,11 @@ assertContains(
   "Opening Trusted Trade must use the focused one-lane state, leaving unrelated lanes stepped back."
 );
 
+assertContains(
+  /visibleTradeMemberRows = memberRows\.slice\(0, isCompact \? 3 : 5\)[\s\S]*?hiddenTradeMemberRows = memberRows\.slice\(visibleTradeMemberRows\.length\)[\s\S]*?visibleTradeShopCount = memberRows\.filter\(\(row\) => row\.shopTo\)\.length/,
+  "Trusted Trade must cap the first visible member list and tuck the rest behind a compact disclosure."
+);
+
 const trustedTradeSection = sectionBetween(
   /id="marketplace-members-shops"/,
   /id="marketplace-loans-support"/
@@ -69,17 +74,18 @@ if (!trustedTradeSection.text) {
   [
     /Trusted Trade/,
     /See known members and visible shops inside this selected/,
-    /What this trade lane does/,
-    /community-bound/,
-    /use Demand Box for needs/,
+    /\{memberRows\.length\} visible member/,
+    /\{visibleTradeShopCount\} public shop/,
+    /Community-bound trade/,
     /<MarketplaceGlyph name="demand" size=\{24\} \/>/,
-    /Demand Box[\s\S]*?Post what this marketplace needs[\s\S]*?fuller Demand[\s\S]*?Box page carry the request/,
-    /debugId="marketplace\.members\.demand-box"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
-    /Step \{step\}/,
-    /Check the member[\s\S]*?Read the name and GSN ID first/,
-    /Open the shop[\s\S]*?Visit only shops visible in this community/,
-    /Keep it local[\s\S]*?Use other lanes for support, money, or trust work/,
-    /Trade actions stay inside this community's visible[\s\S]*?member and shop list/,
+    /Demand Box[\s\S]*?Post a local need or offer request for this marketplace/,
+    /debugId="marketplace\.members\.demand-box"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Demand Box/,
+    /Visible members/,
+    /Full visible list shown/,
+    /more tucked away/,
+    /debugId="marketplace\.members\.more-visible\.summary"[\s\S]*?More visible members/,
+    /Shop visible/,
+    /No shop yet/,
     /debugId="marketplace\.members\.toggle"/,
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/,
   ].forEach((pattern) => {
@@ -97,6 +103,14 @@ if (!trustedTradeSection.text) {
       trustedTradeSection.start,
       "Trusted Trade detail section must not expose other major lane responsibilities.",
       "Trusted Trade should stay member/shop focused; Support Requests owns guarantor selection."
+    );
+  }
+
+  if (/What this trade lane does|Step \{step\}|Read the name and GSN ID first|Use other lanes for support, money, or trust work/.test(trustedTradeSection.text)) {
+    addFinding(
+      trustedTradeSection.start,
+      "Trusted Trade detail section must not restore the old explainer and three-card instruction stack.",
+      "The compact Trade lane should show status chips, Demand Box, visible members, and a tucked-away member disclosure."
     );
   }
 }

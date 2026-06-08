@@ -5426,6 +5426,10 @@ export default function MarketplacePage() {
     !supportDraftStillOpen ||
     loanStatusLower === "approved";
 
+  const visibleTradeMemberRows = memberRows.slice(0, isCompact ? 3 : 5);
+  const hiddenTradeMemberRows = memberRows.slice(visibleTradeMemberRows.length);
+  const visibleTradeShopCount = memberRows.filter((row) => row.shopTo).length;
+
   function showGuarantorRequestBlockedNotice() {
     if (sendingGuarantorRequests) {
       showNotice("error", "GSN is already sending these guarantor requests.");
@@ -8451,84 +8455,36 @@ export default function MarketplacePage() {
         </div>
 
         {sectionsOpen.members ? (
-          <ExplainToggle
-            label="What this trade lane does"
-            what="This lane shows the known members and shops that are visible inside the current community marketplace."
-            why="Trade should stay community-bound, so users can inspect who is visible here before opening a shop."
-            next="Check the member identity first, open a connected shop only when needed, use Demand Box for needs, and use Support Requests for borrowing work."
-            tone="light"
-            style={{ marginTop: 12 }}
-          />
-        ) : null}
-
-        {sectionsOpen.members ? (
           <div
             style={{
               marginTop: 12,
-              display: "grid",
-              gridTemplateColumns: isCompact
-                ? "repeat(3, minmax(0, 1fr))"
-                : "repeat(3, minmax(0, 1fr))",
-              gap: isCompact ? 7 : 10,
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
             }}
           >
-            {[
-              ["1", "Check the member", "Read the name and GSN ID first."],
-              ["2", "Open the shop", "Visit only shops visible in this community."],
-              ["3", "Keep it local", "Use other lanes for support, money, or trust work."],
-            ].map(([step, title, detail]) => (
-              <div
-                key={step}
-                style={{
-                  borderRadius: 18,
-                  border: "1px solid rgba(75,54,200,0.16)",
-                  background:
-                    "linear-gradient(180deg, rgba(247,246,255,0.98) 0%, rgba(235,233,252,0.94) 100%)",
-                  padding: isCompact ? 12 : 14,
-                  overflow: "hidden",
-                  overflowAnchor: "none",
-                }}
-              >
-                <div style={{ ...sectionLabel(), color: "#4338CA" }}>
-                  Step {step}
-                </div>
-                <div
-                  style={{
-                    marginTop: 6,
-                    color: "#08233A",
-                    fontSize: isCompact ? 15 : 16,
-                    fontWeight: 950,
-                    lineHeight: 1.2,
-                    overflowWrap: "break-word",
-                  }}
-                >
-                  {title}
-                </div>
-                <div
-                  style={{
-                    marginTop: 5,
-                    color: "#5E6F82",
-                    fontSize: isCompact ? 12 : 13,
-                    fontWeight: 800,
-                    lineHeight: 1.35,
-                    overflowWrap: "break-word",
-                  }}
-                >
-                  {detail}
-                </div>
-              </div>
-            ))}
+            <span style={stableStatusPillStyle(memberRows.length > 0)}>
+              {memberRows.length} visible member{memberRows.length === 1 ? "" : "s"}
+            </span>
+            <span style={stableStatusPillStyle(visibleTradeShopCount > 0)}>
+              {visibleTradeShopCount} public shop{visibleTradeShopCount === 1 ? "" : "s"}
+            </span>
+            <span style={stableStatusPillStyle(true)}>
+              Community-bound trade
+            </span>
           </div>
         ) : null}
 
         {sectionsOpen.members ? (
           <div
             style={{
-              marginTop: 14,
+              marginTop: 12,
               ...innerCard("#FFFDF7"),
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr) auto",
-              gap: isCompact ? 12 : 14,
+              gridTemplateColumns: isCompact
+                ? "42px minmax(0, 1fr)"
+                : "46px minmax(0, 1fr) 190px",
+              gap: isCompact ? 10 : 14,
               alignItems: "center",
               borderColor: "rgba(128,90,15,0.18)",
             }}
@@ -8544,163 +8500,283 @@ export default function MarketplacePage() {
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={sectionLabel()}>Demand Box</div>
-              <div style={{ marginTop: 7, ...helperText(), fontSize: 13 }}>
-                Post what this marketplace needs, then let the fuller Demand
-                Box page carry the request.
+              <div style={{ marginTop: 5, ...helperText(), fontSize: 13 }}>
+                Post a local need or offer request for this marketplace.
               </div>
             </div>
             <StableButton
               debugId="marketplace.members.demand-box"
               type="button"
               onClick={(event) => openMarketplaceCta(event, "demandBox")}
-              style={marketplaceInlineActionStyle(
-                "secondary",
-                false,
-                isCompact
-              )}
+              style={{
+                ...marketplaceInlineActionStyle(
+                  "secondary",
+                  false,
+                  isCompact
+                ),
+                gridColumn: isCompact ? "1 / -1" : undefined,
+              }}
             >
-              Open Demand Box
+              Demand Box
             </StableButton>
           </div>
         ) : null}
 
         {sectionsOpen.members ? (
-          <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 10,
+                alignItems: "center",
+                flexWrap: "wrap",
+              }}
+            >
+              <div style={sectionLabel()}>Visible members</div>
+              <span style={stableStatusPillStyle(hiddenTradeMemberRows.length === 0)}>
+                {hiddenTradeMemberRows.length > 0
+                  ? `${hiddenTradeMemberRows.length} more tucked away`
+                  : "Full visible list shown"}
+              </span>
+            </div>
+
             {memberRows.length === 0 ? (
-              <div style={{ color: "#64748B", lineHeight: 1.8 }}>
+              <div style={{ ...innerCard("#FCFEFF"), color: "#64748B", lineHeight: 1.6 }}>
                 No members are visible in this marketplace yet.
               </div>
             ) : (
-              memberRows.map((row, index) => {
-                return (
-                  <div
-                    key={`${row.gmfnId || index}`}
+              visibleTradeMemberRows.map((row, index) => (
+                <div
+                  key={`${row.gmfnId || row.userId || index}`}
+                  style={{
+                    borderRadius: isCompact ? 14 : 16,
+                    border: "1px solid rgba(16,37,59,0.08)",
+                    background:
+                      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,252,255,0.98) 100%)",
+                    padding: isCompact ? 10 : 12,
+                    overflow: "hidden",
+                    display: "grid",
+                    gridTemplateColumns: row.shopTo
+                      ? isCompact
+                        ? "38px minmax(0, 1fr) 98px"
+                        : "42px minmax(0, 1fr) 130px"
+                      : isCompact
+                      ? "38px minmax(0, 1fr)"
+                      : "42px minmax(0, 1fr)",
+                    gap: isCompact ? 8 : 10,
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
                     style={{
-                      ...innerCard("#FCFEFF"),
-                      padding: isCompact ? 12 : 14,
-                      overflow: "hidden",
+                      width: isCompact ? 38 : 42,
+                      height: isCompact ? 38 : 42,
+                      borderRadius: isCompact ? 13 : 14,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flex: "0 0 auto",
+                      color: "#FFFFFF",
+                      background: row.shopTo
+                        ? "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+                        : "linear-gradient(180deg, #244969 0%, #061827 100%)",
+                      boxShadow:
+                        "0 10px 18px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.22)",
                     }}
                   >
+                    <MarketplaceGlyph
+                      name={row.shopTo ? "trade" : "members"}
+                      size={20}
+                    />
+                  </span>
+
+                  <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
                     <div
                       style={{
+                        color: "#0B1F33",
+                        fontSize: isCompact ? 14 : 16,
+                        fontWeight: 950,
+                        lineHeight: 1.18,
+                        overflow: "hidden",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: "vertical",
+                        overflowWrap: "break-word",
+                        wordBreak: "normal",
+                      }}
+                    >
+                      {row.name}
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 6,
+                        minWidth: 0,
+                      }}
+                    >
+                      <span style={stableStatusPillStyle(Boolean(row.gmfnId))}>
+                        {row.gmfnId ? displayGsnLabel(row.gmfnId) : "ID pending"}
+                      </span>
+                      <span style={stableStatusPillStyle(Boolean(row.shopTo))}>
+                        {row.shopTo ? "Shop visible" : "No shop yet"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {row.shopTo ? (
+                    <StableCtaLink
+                      debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`}
+                      to={row.shopTo}
+                      stableHeight={52}
+                      style={marketplaceInlineActionStyle(
+                        "secondary",
+                        false,
+                        isCompact
+                      )}
+                    >
+                      Open shop
+                    </StableCtaLink>
+                  ) : null}
+                </div>
+              ))
+            )}
+
+            {hiddenTradeMemberRows.length > 0 ? (
+              <details
+                style={{
+                  ...innerCard("#FFFFFF"),
+                  padding: 0,
+                  overflow: "hidden",
+                }}
+              >
+                <StableDisclosureSummary
+                  debugId="marketplace.members.more-visible.summary"
+                  stableHeight={50}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    padding: "0 12px",
+                    color: "#173750",
+                    fontSize: isCompact ? 13 : 14,
+                    fontWeight: 950,
+                    background:
+                      "linear-gradient(180deg, rgba(236,243,250,0.96) 0%, rgba(222,233,244,0.92) 100%)",
+                  }}
+                >
+                  <span>More visible members</span>
+                  <span>{hiddenTradeMemberRows.length}</span>
+                </StableDisclosureSummary>
+                <div
+                  style={{
+                    padding: 10,
+                    display: "grid",
+                    gap: 8,
+                  }}
+                >
+                  {hiddenTradeMemberRows.map((row, index) => (
+                    <div
+                      key={`${row.gmfnId || row.userId || visibleTradeMemberRows.length + index}`}
+                      style={{
+                        borderRadius: isCompact ? 14 : 16,
+                        border: "1px solid rgba(16,37,59,0.08)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,252,255,0.98) 100%)",
+                        padding: isCompact ? 10 : 12,
+                        overflow: "hidden",
                         display: "grid",
-                        gridTemplateColumns: isCompact
-                          ? "1fr"
-                          : "minmax(0, 1fr) auto",
-                        gap: isCompact ? 10 : 14,
+                        gridTemplateColumns: row.shopTo
+                          ? isCompact
+                            ? "38px minmax(0, 1fr) 98px"
+                            : "42px minmax(0, 1fr) 130px"
+                          : isCompact
+                          ? "38px minmax(0, 1fr)"
+                          : "42px minmax(0, 1fr)",
+                        gap: isCompact ? 8 : 10,
                         alignItems: "center",
                       }}
                     >
-                      <div
+                      <span
+                        aria-hidden="true"
                         style={{
-                          display: "flex",
-                          gap: 12,
-                          alignItems: "flex-start",
-                          minWidth: 0,
-                          width: "100%",
+                          width: isCompact ? 38 : 42,
+                          height: isCompact ? 38 : 42,
+                          borderRadius: isCompact ? 13 : 14,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          flex: "0 0 auto",
+                          color: "#FFFFFF",
+                          background: row.shopTo
+                            ? "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)"
+                            : "linear-gradient(180deg, #244969 0%, #061827 100%)",
+                          boxShadow:
+                            "0 10px 18px rgba(10,24,49,0.11), inset 0 1px 0 rgba(255,255,255,0.22)",
                         }}
                       >
+                        <MarketplaceGlyph
+                          name={row.shopTo ? "trade" : "members"}
+                          size={20}
+                        />
+                      </span>
+
+                      <div style={{ minWidth: 0, display: "grid", gap: 5 }}>
                         <div
                           style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 999,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flex: "0 0 auto",
-                            border: "1px solid rgba(16,37,59,0.10)",
-                            background:
-                              "linear-gradient(180deg, #FFFFFF 0%, #EEF6FF 100%)",
-                            color: "#12324F",
-                            fontSize: 13,
-                            fontWeight: 900,
-                            boxShadow:
-                              "0 8px 16px rgba(10,24,49,0.07), inset 0 1px 0 rgba(255,255,255,0.92)",
+                            color: "#0B1F33",
+                            fontSize: isCompact ? 14 : 16,
+                            fontWeight: 950,
+                            lineHeight: 1.18,
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflowWrap: "break-word",
+                            wordBreak: "normal",
                           }}
                         >
-                          {index + 1}
+                          {row.name}
                         </div>
-
                         <div
                           style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 6,
                             minWidth: 0,
-                            maxWidth: "100%",
-                            display: "grid",
-                            gap: 8,
                           }}
                         >
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 8,
-                              flexWrap: "wrap",
-                              minWidth: 0,
-                            }}
-                          >
-                            <span
-                              style={{
-                                color: "#0B1F33",
-                                fontSize: isCompact ? 15 : 17,
-                                fontWeight: 950,
-                                lineHeight: 1.25,
-                                maxWidth: "100%",
-                                overflowWrap: "anywhere",
-                                wordBreak: "break-word",
-                              }}
-                            >
-                              {row.name}
-                            </span>
-                            <span style={compactStatusPillStyle(true)}>
-                              GSN ID:{" "}
-                              {row.gmfnId ? displayGsnLabel(row.gmfnId) : "Pending"}
-                            </span>
-                            <span style={compactStatusPillStyle(Boolean(row.shopTo))}>
-                              Shop: {row.shopName}
-                            </span>
-                          </div>
-
-                          <div
-                            style={{
-                              color: "#51657A",
-                              fontSize: 12,
-                              fontWeight: 800,
-                              lineHeight: 1.45,
-                            }}
-                          >
-                            Trade actions stay inside this community's visible
-                            member and shop list.
-                          </div>
+                          <span style={stableStatusPillStyle(Boolean(row.gmfnId))}>
+                            {row.gmfnId ? displayGsnLabel(row.gmfnId) : "ID pending"}
+                          </span>
+                          <span style={stableStatusPillStyle(Boolean(row.shopTo))}>
+                            {row.shopTo ? "Shop visible" : "No shop yet"}
+                          </span>
                         </div>
                       </div>
 
                       {row.shopTo ? (
-                        <div
-                          style={{
-                            ...marketplaceInlineActionsStyle(isCompact),
-                            marginTop: 0,
-                            minWidth: isCompact ? "100%" : 260,
-                            justifyContent: isCompact ? "flex-start" : "flex-end",
-                          }}
+                        <StableCtaLink
+                          debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`}
+                          to={row.shopTo}
+                          stableHeight={52}
+                          style={marketplaceInlineActionStyle(
+                            "secondary",
+                            false,
+                            isCompact
+                          )}
                         >
-                          {row.shopTo ? (
-                            <StableCtaLink
-                              debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`}
-                              to={row.shopTo}
-                              stableHeight={58}
-                              style={marketplaceInlineActionStyle("secondary", false, isCompact)}
-                            >
-                              Open shop
-                            </StableCtaLink>
-                          ) : null}
-                        </div>
+                          Open shop
+                        </StableCtaLink>
                       ) : null}
                     </div>
-                  </div>
-                );
-              })
-            )}
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </div>
         ) : null}
       </section>

@@ -63,12 +63,11 @@ if (!trustedTradeSection.text) {
   addFinding(-1, "Trade & Shops section must exist before Support Requests.");
 } else {
   [
-    /What this trade lane does[\s\S]*?use Demand Box for needs/,
     /<MarketplaceGlyph name="demand" size=\{24\} \/>/,
-    /Demand Box[\s\S]*?Post what this marketplace needs[\s\S]*?fuller Demand[\s\S]*?Box page carry the request/,
+    /Demand Box[\s\S]*?Post a local need or offer request for this marketplace/,
     /debugId="marketplace\.members\.demand-box"/,
     /onClick=\{\(event\) => openMarketplaceCta\(event, "demandBox"\)\}/,
-    /Open Demand Box/,
+    /Demand Box/,
   ].forEach((pattern) => {
     if (!pattern.test(trustedTradeSection.text)) {
       addFinding(

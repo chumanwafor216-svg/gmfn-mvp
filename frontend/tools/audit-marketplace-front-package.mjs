@@ -130,7 +130,7 @@ assertContains(
 assertContains(
   marketplaceFile,
   marketplaceSource,
-  /debugId="marketplace\.members\.demand-box"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Open Demand Box/,
+  /Post a local need or offer request for this marketplace[\s\S]*?debugId="marketplace\.members\.demand-box"[\s\S]*?openMarketplaceCta\(event, "demandBox"\)[\s\S]*?Demand Box/,
   "Demand Box must stay caged inside Trade & Shops as the marketplace-local demand launcher."
 );
 
