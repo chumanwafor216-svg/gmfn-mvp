@@ -36,6 +36,7 @@ band because Marketplace is the next page family to repair.
 
 Marketplace must be handled lane by lane, with its own route-local audits:
 
+- first apply `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`;
 - choose one lane, such as Money Pool;
 - map every visible button from outside to inside;
 - confirm exact target route, hash, section opening behavior, and explanation

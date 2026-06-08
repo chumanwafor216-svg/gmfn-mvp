@@ -20,6 +20,7 @@ Before doing route-purpose work, navigation restructuring, marketplace/community
 ownership changes, or page-responsibility changes, also read:
 
 - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
+- `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`
 
 For Marketplace page-composition work specifically, also read:
 
@@ -39,6 +40,11 @@ The canonical system skeleton is the current authoritative skeleton for:
 - Trust / CCI / Trust Passport / TrustSlip
 - Dashboard
 - Admin / oversight
+
+The guided work surface protocol is the current authoritative interaction rule
+for large operational pages such as Marketplace, Finance, Trust Passport, Loans
+& Support, and Shop Control. These surfaces must guide one major lane at a time
+instead of exposing every tool, record, shortcut, and explanation at once.
 
 If that document conflicts with older provisional architecture notes, the
 canonical system skeleton wins until those notes are updated.

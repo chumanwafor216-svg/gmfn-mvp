@@ -322,6 +322,81 @@ Deferred deeper surfaces:
 - Owner Command Centre / Community Regiment page for deeper owner-side structure.
 - Trust Calendar / Event Timeline placement under Trust Events, What Matters Now, Notifications, or Focus Commitments.
 
+## MarketplacePage
+
+Purpose:
+Operate one selected community/marketplace.
+
+Must show:
+- selected community / marketplace identity
+- current member context inside that marketplace
+- no more than four primary work lanes first:
+  - Money Pool
+  - ROSCA
+  - Support Request
+  - Trusted Trade
+- compact trust/status signal for this marketplace
+- a clear way to return to Community Home or Dashboard
+
+Rules:
+- Marketplace is the operational nucleus for one selected community, not a
+  dumping ground for every finance, trust, shop, support, demand, and link tool
+  at once.
+- The first screen must act as a guided front desk.
+- Open only one major lane as the main visible work area at a time.
+- When a lane opens, unrelated lanes must visually step back until the user
+  finishes, pauses, or returns to the lane chooser.
+- Money Pool, ROSCA, Support Request, and Trusted Trade must be stabilized
+  lane-by-lane, with outside launcher, target section/hash/open state, inner
+  buttons, fields, copy, and pictograms audited before moving to the next lane.
+- Cumulative Finance belongs to Finance. Full Trust Passport evidence belongs
+  to Trust Passport. Shop editing belongs to Shop Control. Marketplace may link
+  or summarize those areas but should not expose their full internal workload.
+- Use stable real-life pictograms or deterministic SVG marks. Do not use weak
+  emoji-style marks for core marketplace lanes.
+
+## FinancePage
+
+Purpose:
+Show the member's cumulative money story and permitted finance records across
+communities.
+
+Must show:
+- plain finance summary first
+- major finance lanes such as Money Summary, Money In, Money Out, Banking
+  Rails, Records / Events, and Signals / Readiness
+- clear route back to the originating marketplace or Dashboard
+
+Rules:
+- Finance must guide the user through one money lane at a time.
+- Do not expose every route, event table, signal, and payment tool as equal
+  first-screen choices.
+- Marketplace-local finance may be summarized when the user arrived from a
+  selected marketplace, but the full one-community operating lane remains
+  Marketplace-owned.
+- Deep finance records and secondary tools should appear only after the user
+  opens the relevant lane.
+
+## TrustPassportPage
+
+Purpose:
+Show the member's fuller trust/evidence story across communities.
+
+Must show:
+- current trust standing first
+- major trust lanes such as Evidence Story, Community Confirmation, Finance
+  Discipline, Documents / TrustSlip, and Repair or Next Step
+- clear route back to the originating marketplace, Community Home, or Dashboard
+
+Rules:
+- Trust Passport must guide one trust lane at a time.
+- Do not expose the whole evidence universe, every document route, every trust
+  event, and every explanation layer at once.
+- TrustSlip is the portable proof layer. Trust Passport is the fuller story.
+  Keep those responsibilities distinct.
+- Marketplace-local trust may be summarized when the user arrived from one
+  marketplace, but the full carried trust story belongs here.
+
 ## OwnerShopControlPage
 
 Purpose:

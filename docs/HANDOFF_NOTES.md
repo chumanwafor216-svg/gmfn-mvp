@@ -1,3 +1,52 @@
+### Guided work surface protocol added for Marketplace, Finance, and Trust Passport (2026-06-08)
+
+- Trigger:
+  - product owner confirmed the core product direction again: large surfaces
+    must not dump every tool and record on underbanked/unbanked users;
+  - Marketplace, Finance, and Trust Passport are all guilty of the same pattern:
+    too many equal choices, too many exposed sections, and not enough guided
+    lane-by-lane progression;
+  - owner identified this as a recurring assistant handoff failure where chat
+    instructions disappear between sessions.
+- Fix:
+  - added `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`;
+  - updated `docs/PROJECT_PROTOCOL.md` so route/page-responsibility work must
+    read the guided work surface protocol;
+  - updated `docs/UX_ACCEPTANCE_CHECKLIST.md` with the Guided Work Surface Test;
+  - updated `docs/SCREEN_SPECS.md` with explicit Marketplace, Finance, and
+    Trust Passport guided-lane rules;
+  - updated `docs/BUTTON_STABILITY_FREEZE.md` so Marketplace lane work starts
+    from the guided work surface protocol before button-level auditing.
+- New system rule:
+  - large work surfaces must behave like guided desks:
+    current context, three to five major lanes, one active lane at a time,
+    unrelated lanes step back, and deep records/tools appear only after a lane
+    choice;
+  - the rule applies especially to Marketplace, Finance, Trust Passport,
+    TrustSlip when used as a decision workspace, Loans & Support, Shop Control,
+    and future large operational pages.
+- Marketplace-specific direction:
+  - first stabilize the front lanes in order:
+    Money Pool, ROSCA, Support Request, Trusted Trade;
+  - do not begin by touching all icons or every inner tool at once;
+  - for each lane, map launcher, target section/hash/open state, inner controls,
+    pictograms, copy, audits, and phone behavior before moving to the next lane.
+- Finance-specific direction:
+  - Finance should guide through Money Summary, Money In, Money Out, Banking
+    Rails, Records / Events, and Signals / Readiness rather than exposing every
+    money route and event table at once.
+- Trust Passport-specific direction:
+  - Trust Passport should guide through Current Trust Standing, Evidence Story,
+    Community Confirmation, Finance Discipline, Documents / TrustSlip, and
+    Repair / Next Step rather than exposing the full evidence universe at once.
+- Verification passed:
+  - `git diff --check`.
+- Unabated truth:
+  - this is a protocol/documentation correction, not the UI repair itself;
+  - the current Marketplace, Finance, and Trust Passport screens should be
+    treated as not yet compliant until lane-by-lane implementation and audits
+    prove otherwise.
+
 ### Protected button freeze band added before Marketplace work (2026-06-08)
 
 - Trigger:

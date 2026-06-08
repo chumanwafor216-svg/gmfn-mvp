@@ -24,6 +24,22 @@ A screen is acceptable only if:
 
 If the screen feels like a long scroll of unrelated blocks, it fails.
 
+## Guided Work Surface Test
+
+Marketplace, Finance, Trust Passport, Loans & Support, Shop Control, and other
+large operational pages must pass the guided-work-surface test:
+
+- The first screen shows context and no more than three to five major lanes.
+- One lane becomes the main visible work area after the user opens it.
+- Unrelated lanes step back while the active lane is being handled.
+- Deep records, manuals, route tools, and secondary choices are not all exposed
+  at once.
+- Every lane button routes, reveals, or explains in place.
+- The user can return to the lane chooser without losing the page context.
+
+If a large work surface asks a non-technical user to decode many equal choices
+at once, it fails even if every individual button technically works.
+
 ## Dashboard Test
 
 Dashboard must feel like a command centre, not a dumping ground.
