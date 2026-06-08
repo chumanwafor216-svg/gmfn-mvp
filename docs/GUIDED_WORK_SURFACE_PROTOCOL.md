@@ -277,6 +277,12 @@ For Trust Passport Repair or Next Step lane work, also run:
 npm --prefix frontend run audit:trust-passport-repair-lane
 ```
 
+For Trust Passport Finance Discipline lane work, also run:
+
+```bash
+npm --prefix frontend run audit:trust-passport-finance-discipline-lane
+```
+
 For Finance front package work, also run:
 
 ```bash

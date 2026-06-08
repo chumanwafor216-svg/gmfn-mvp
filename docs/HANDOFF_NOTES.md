@@ -1,3 +1,54 @@
+### Trust Passport Finance Discipline lane checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue after Repair / Next Step lane caging;
+  - next selected lane: Finance Discipline, because it still depended on the
+    broad institutional evidence table without a plain trust-facing money
+    explanation.
+- Source facts changed/preserved:
+  - route remains `/app/trust` through `frontend/src/pages/TrustScorePage.tsx`;
+  - `/app/trust-passport` redirect behavior was not changed;
+  - backend, auth, Marketplace, Finance, Dashboard, Community Home, Action
+    Inbox, global shell, shared route targets, and Trust Passport button
+    inventory were not changed;
+  - Trust Passport still summarizes finance discipline as trust evidence;
+    Finance remains the full money-work domain.
+- Fix:
+  - added a typed `financeDisciplineCards` model sourced from existing
+    TrustSlip/capacity fields;
+  - added a gated Finance Discipline lead card that appears only when
+    `activeTrustPassportLane === "finance"`;
+  - the lane now explains trust limit, available capacity, locked guarantees,
+    overexposure, and risk level before the deeper institutional table;
+  - added clear copy that this lane does not move money, create a bank
+    guarantee, start auto-debit, or replace the Finance page;
+  - added `frontend/tools/audit-trust-passport-finance-discipline-lane.mjs`;
+  - registered
+    `npm --prefix frontend run audit:trust-passport-finance-discipline-lane`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Finance Discipline lane
+    work requires the finance-discipline audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-finance-discipline-lane`;
+  - `npm --prefix frontend run audit:trust-passport-repair-lane`;
+  - `npm --prefix frontend run audit:trust-passport-evidence-story-lane`;
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-finance-discipline-lane.mjs`
+    from `frontend`;
+  - `npm run build` from `frontend` passed elevated because Vite/esbuild
+    spawning is blocked by the normal sandbox on this Windows setup.
+- Unabated truth:
+  - Finance Discipline is now much clearer, but the lower institutional table is
+    still broad and inherited; future polish should compress it or tailor it
+    further per active lane;
+  - Community Confirmation and Documents / TrustSlip are the remaining Trust
+    Passport lanes without dedicated lane audits.
+
 ### Trust Passport Repair / Next Step lane checkpoint (2026-06-08)
 
 - Trigger:

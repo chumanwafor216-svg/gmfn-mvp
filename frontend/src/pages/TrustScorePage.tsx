@@ -1810,6 +1810,39 @@ export default function TrustScorePage() {
     ["No auto-debit", "Yes"],
   ];
 
+  const financeDisciplineCards: Array<[string, string, string, TrustPaperIconName]> = [
+    [
+      "Trust limit",
+      `${trustLimit} ${trustCurrency}`,
+      "The current ceiling GSN can show from this trust record.",
+      "wallet",
+    ],
+    [
+      "Available capacity",
+      `${safeStr(capacityContext?.available_guarantee_capacity || "0.00")} ${trustCurrency}`,
+      "What still appears available before the record looks stretched.",
+      "check",
+    ],
+    [
+      "Locked guarantees",
+      `${safeStr(capacityContext?.current_locked_guarantees || "0.00")} ${trustCurrency}`,
+      "Support already standing behind active commitments.",
+      "shield",
+    ],
+    [
+      "Overexposure",
+      safeStr(capacityContext?.overexposure_ratio || "0.00"),
+      "How stretched the guarantee position looks right now.",
+      "chart",
+    ],
+    [
+      "Risk level",
+      riskLevel,
+      "A plain warning level from the current capacity context.",
+      "alert",
+    ],
+  ];
+
   const trustPassportLanes: Array<{
     key: TrustPassportLaneKey;
     icon: TrustPaperIconName;
@@ -2904,6 +2937,133 @@ export default function TrustScorePage() {
                 </span>
                 <span style={statusPillStyle("Limited")}>Expires: {expiresText}</span>
               </div>
+            </div>
+          </section>
+
+          <section
+            style={{
+              ...innerCard("#F8FBFF"),
+              border: "1px solid rgba(11,99,209,0.14)",
+              display:
+                activeTrustPassportLane === "finance" ? "block" : "none",
+              marginTop: 14,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <TrustPaperWatermark
+              name="wallet"
+              color="#0B63D1"
+              size={isCompact ? 168 : 224}
+              opacity={0.045}
+              style={{ right: isCompact ? -74 : -42, top: -52, bottom: "auto" }}
+            />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 9,
+                color: "#0B63D1",
+                fontSize: 14,
+                fontWeight: 1000,
+                letterSpacing: 1.6,
+                textTransform: "uppercase",
+              }}
+            >
+              <TrustPaperIcon name="wallet" size={20} />
+              Finance Discipline
+            </div>
+            <div
+              style={{
+                color: "#07172C",
+                fontSize: isCompact ? 22 : 28,
+                lineHeight: 1.08,
+                fontWeight: 1000,
+                marginTop: 8,
+              }}
+            >
+              What money discipline says about trust
+            </div>
+            <p
+              style={{
+                ...helperText(),
+                maxWidth: 720,
+                margin: "8px 0 0",
+              }}
+            >
+              This lane explains the trust-facing money signals. It does not
+              move money, create a bank guarantee, or start auto-debit. Finance
+              remains the place for the fuller money story.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(5, minmax(0, 1fr))",
+                gap: 10,
+                marginTop: 14,
+              }}
+            >
+              {financeDisciplineCards.map(([label, value, detail, icon]) => (
+                <div
+                  key={label}
+                  style={{
+                    ...innerCard("#FFFFFF"),
+                    border:
+                      label === "Risk level"
+                        ? "1px solid rgba(200,58,58,0.16)"
+                        : "1px solid rgba(216,227,238,0.9)",
+                    minHeight: isCompact ? 0 : 154,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      color: label === "Risk level" ? "#991B1B" : "#0B63D1",
+                      fontWeight: 1000,
+                    }}
+                  >
+                    <TrustPaperIcon name={icon} size={18} />
+                    {label}
+                  </div>
+                  <div
+                    style={{
+                      color: label === "Risk level" ? "#991B1B" : "#07172C",
+                      fontSize: isCompact ? 20 : 22,
+                      lineHeight: 1.1,
+                      fontWeight: 1000,
+                      marginTop: 8,
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {value}
+                  </div>
+                  <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.45 }}>
+                    {detail}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                ...innerCard("#FFFFFF"),
+                border: "1px solid rgba(216,227,238,0.9)",
+                marginTop: 12,
+              }}
+            >
+              <div style={{ color: "#07172C", fontWeight: 1000 }}>
+                Plain rule
+              </div>
+              <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                GSN is showing whether the record looks disciplined enough for
+                trust decisions. It is not promising repayment, collecting
+                money, or replacing the Finance page.
+              </p>
             </div>
           </section>
 
