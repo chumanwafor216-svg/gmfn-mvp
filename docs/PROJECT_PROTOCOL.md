@@ -21,6 +21,7 @@ ownership changes, or page-responsibility changes, also read:
 
 - `docs/CANONICAL_SYSTEM_SKELETON_2026-04-19.md`
 - `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`
+- `docs/GSN_MOBILE_UI_PROTOCOL.md`
 
 For Marketplace page-composition work specifically, also read:
 
@@ -45,6 +46,12 @@ The guided work surface protocol is the current authoritative interaction rule
 for large operational pages such as Marketplace, Finance, Trust Passport, Loans
 & Support, and Shop Control. These surfaces must guide one major lane at a time
 instead of exposing every tool, record, shortcut, and explanation at once.
+
+The GSN Mobile UI Protocol is the current authoritative density and
+screenshot-readiness rule for phone layouts. Mobile task pages must show the
+current state and next action without scrolling, keep one lane open at a time,
+hide long explanation and raw data by default, and use compact chips or
+two-column facts for short information.
 
 If that document conflicts with older provisional architecture notes, the
 canonical system skeleton wins until those notes are updated.

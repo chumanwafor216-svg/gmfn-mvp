@@ -125,6 +125,28 @@ One screen should never feel like seven screens stacked together.
 
 Collapse, group, or move deeper content to its own page.
 
+For phone layouts, `docs/GSN_MOBILE_UI_PROTOCOL.md` is the density and
+screenshot-readiness source of truth. Mobile task pages must show one decision,
+one current state, and one next action before exposing deeper details.
+
+## Mobile Density Protocol
+
+- Mobile hero blocks should normally stay between `96px` and `140px`, or about
+  `18%` of the viewport height.
+- Collapsed mobile cards should normally stay between `88px` and `110px`.
+- Expanded task panels should stay within `70vh`; longer processes must split
+  into internal tabs, drawers, or explicit Screen A / Screen B packages.
+- Button height should normally stay between `48px` and `56px`.
+- Chip height should normally stay between `32px` and `36px`.
+- Icon tiles should normally stay between `40px` and `48px`.
+- Short facts such as status, count, readiness, ID, amount, route state, and
+  approvals belong in compact chips or two-column mini cards, not one tall
+  full-width block.
+- No more than three major buttons should be visible at once. Additional
+  actions belong in a drawer, advanced area, or compact two-column action row.
+- Raw URLs, logs, repeated explanation, policy text, and admin-only controls
+  stay hidden until the user opens advanced details.
+
 ## One-Screen Snapshot Protocol
 
 Some surfaces are meant to communicate one complete record in one screenshot,

@@ -17,6 +17,11 @@ This protocol applies especially to:
 - Shop Control
 - any future page that contains multiple operational domains
 
+For phone density, screenshot readiness, copy limits, and mobile action
+geometry, this protocol works together with `docs/GSN_MOBILE_UI_PROTOCOL.md`.
+When they overlap, use the stricter rule that keeps one active decision visible
+with the current state and next action above the fold.
+
 ## Core Rule
 
 A large work surface must behave like a guided desk:
@@ -56,6 +61,8 @@ When a user opens one lane:
 - the opened lane becomes the main visible work area;
 - unrelated lanes step back by leaving the active work area, not by stacking
   above or below the newly opened lane;
+- on mobile, the active lane should keep its current step and primary action
+  visible without forcing the user through unrelated content;
 - buttons inside that lane must route, reveal, or explain in place;
 - the page must not keep competing deep sections visually fighting the active
   lane;

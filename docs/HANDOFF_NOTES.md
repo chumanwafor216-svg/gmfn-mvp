@@ -1,3 +1,34 @@
+### GSN Mobile UI Protocol v1 checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner attached a new `GSN Mobile UI Protocol v1` text block and
+    asked Codex to read and act on it;
+  - the protocol targets oversized blocks, excessive scrolling, weak
+    screenshot framing, long exposed explanations, raw URLs, and multiple open
+    task panels on phone.
+- Scope:
+  - documentation/system protocol only;
+  - no frontend page code, backend, auth, API, data model, route target, frozen
+    Dashboard area, Marketplace lane code, Trust Passport code, or shared tap
+    guard changed.
+- Fix:
+  - added `docs/GSN_MOBILE_UI_PROTOCOL.md` as the clean source-of-truth version
+    of the attached protocol;
+  - linked it from `README.md` and `docs/PROJECT_PROTOCOL.md` so future
+    mobile UI, density, screenshot-readiness, and lane-collapse work must read
+    it;
+  - added a `Mobile Density Protocol` summary to `docs/DESIGN_SYSTEM.md`;
+  - added mobile two-second and density tests to
+    `docs/UX_ACCEPTANCE_CHECKLIST.md`;
+  - linked it into `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`;
+  - added a shared `Mobile Task Page Rule` to `docs/SCREEN_SPECS.md`.
+- Unabated truth:
+  - this checkpoint makes the protocol mandatory and discoverable, but it does
+    not by itself repair every existing mobile page;
+  - the correct implementation path remains lane-by-lane/page-by-page, with
+    audits updated for each surface, because a broad visual rewrite would risk
+    breaking the button freeze work that has just been stabilized.
+
 ### Trust Passport portable snapshot amendment checkpoint (2026-06-08)
 
 - Trigger:

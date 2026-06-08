@@ -13,6 +13,9 @@ It is the current authoritative skeleton for how Community Home, Marketplace,
 Shop Gallery, Finance, Trust Passport, TrustSlip, CCI, Dashboard, and Admin fit
 together.
 
+For mobile UI density, screenshot readiness, lane collapse, and action-surface
+work, also read `docs/GSN_MOBILE_UI_PROTOCOL.md`.
+
 For innovation-case, investor, policy, TrustSlip, merchant-verification, or
 development-finance explanation work, also read
 `docs/INNOVATION_POLICY_LOGIC_2026-04-20.md`.

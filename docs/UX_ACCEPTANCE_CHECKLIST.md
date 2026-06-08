@@ -10,6 +10,9 @@ A screen is acceptable only if:
   not remain stacked into a long page above or below the new task.
 - It follows the Action Response Protocol: every meaningful action succeeds
   visibly, routes visibly, or explains why it cannot continue.
+- On mobile, it follows `docs/GSN_MOBILE_UI_PROTOCOL.md`: one screen shows one
+  decision, the current state, and the next action without scrolling whenever
+  possible.
 - It uses the approved color system.
 - It uses consistent rounded cards.
 - It uses enough spacing.
@@ -25,6 +28,29 @@ A screen is acceptable only if:
 ## Busy Page Test
 
 If the screen feels like a long scroll of unrelated blocks, it fails.
+
+## Mobile Two-Second Test
+
+A mobile task page fails if a non-technical user cannot see these within two
+seconds:
+
+- what the page is;
+- the current state;
+- the next action.
+
+The first mobile screen must not spend half the viewport on decoration, raw
+links, policy text, logs, admin controls, or repeated explanation.
+
+## Mobile Density Test
+
+- Hero blocks should normally stay between `96px` and `140px`.
+- Collapsed task cards should normally stay between `88px` and `110px`.
+- Expanded task panels should stay within `70vh` before splitting into tabs,
+  drawers, or Screen A / Screen B packages.
+- Short facts must use chips or two-column mini cards.
+- No more than three major buttons should be visible at once.
+- Long explanation, raw URLs, admin-only actions, and audit trails should be
+  collapsed by default.
 
 ## One-Screen Snapshot Test
 

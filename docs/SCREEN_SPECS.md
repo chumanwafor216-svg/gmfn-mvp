@@ -127,6 +127,20 @@ Rules:
 - Remove must clear the saved account profile picture, not only hide it locally.
 - Dashboard must stay a reflector / command centre, not a content dump.
 
+## Mobile Task Page Rule
+
+All authenticated mobile task pages must follow
+`docs/GSN_MOBILE_UI_PROTOCOL.md`.
+
+Rules:
+- one phone screen should present one decision;
+- the current state and next action should be visible without scrolling
+  whenever possible;
+- short facts should use chips or two-column mini cards;
+- raw URLs, logs, policy text, repeated explanation, and admin-only controls
+  should be collapsed by default;
+- long processes should show only the current step expanded.
+
 ## AuthGatewayPage
 
 Purpose:
