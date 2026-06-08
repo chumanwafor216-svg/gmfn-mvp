@@ -19,11 +19,11 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 62;
+const expectedStableActionCount = 61;
 const expectedNativeFieldCount = 13;
 const expectedSourceBreakdown = {
   front: 17,
-  body: 45,
+  body: 44,
 };
 const expectedVisibleIntentActionCount = 13;
 const expectedMobileShellBreakdown = {
@@ -270,6 +270,11 @@ assertContains(
 );
 
 assertContains(
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open trusted trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trusted Trade[\s\S]*?Known members and shops/,
+  "Marketplace Trusted Trade tile must open the members/shops trade lane with community-bound wording."
+);
+
+assertContains(
   /debugId="marketplace\.row\.money"[\s\S]{0,300}aria-label="Open Money In and Money Out for this marketplace"[\s\S]{0,300}openMarketplaceSection\(event, "money", "marketplace-money-routes"\)/,
   "Marketplace Money In / Money Out row must open the money section only."
 );
@@ -282,6 +287,11 @@ assertContains(
 assertContains(
   /debugId="marketplace\.row\.loan-process"[\s\S]*?aria-label="Open Loan Process and support workbench"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support Request[\s\S]*?Start the request, check fit, then continue the borrowing flow/,
   "Marketplace Support Request operating row must open the support section only and explain the guided flow."
+);
+
+assertContains(
+  /debugId="marketplace\.row\.member-ledger"[\s\S]*?aria-label="Open Member Ledger and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Trusted Trade[\s\S]*?See known members, GSN IDs, and connected shops/,
+  "Marketplace Trusted Trade operating row must open the members/shops trade lane with clear member-shop wording."
 );
 
 assertContains(
@@ -395,6 +405,50 @@ if (!roscaSection) {
       });
     }
   });
+}
+
+const trustedTradeSection = sectionBetween(
+  /id="marketplace-members-shops"/,
+  /id="marketplace-loans-support"/
+);
+
+if (!trustedTradeSection) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace Trusted Trade section was not found for scoped button auditing.",
+    text: "Expected id=\"marketplace-members-shops\" before id=\"marketplace-loans-support\".",
+  });
+} else {
+  [
+    /Trusted Trade/,
+    /See known members and visible shops inside this selected/,
+    /What this trade lane does/,
+    /community-bound/,
+    /Step \{step\}/,
+    /Check the member[\s\S]*?Read the name and GSN ID first/,
+    /Open the shop[\s\S]*?Visit only shops visible in this community/,
+    /Keep it local[\s\S]*?Use other lanes for support, money, or trust work/,
+    /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/,
+  ].forEach((pattern) => {
+    if (!pattern.test(trustedTradeSection)) {
+      findings.push({
+        file: marketplaceFile,
+        line: lineAt(source.indexOf(trustedTradeSection)),
+        message: "Marketplace Trusted Trade lane must keep the guided member/shop structure.",
+        text: pattern.toString(),
+      });
+    }
+  });
+
+  if (/choose-supporter|Choose supporter|toggleMemberAsSupporter|guarantor|loan|Loan Readiness/.test(trustedTradeSection)) {
+    findings.push({
+      file: marketplaceFile,
+      line: lineAt(source.indexOf(trustedTradeSection)),
+      message: "Marketplace Trusted Trade lane must not expose support or guarantor actions.",
+      text: "Trusted Trade should stay member/shop focused; Support Requests owns guarantor selection.",
+    });
+  }
 }
 
 const supportSection = sectionBetween(
@@ -560,10 +614,6 @@ const expectedOrder = [
   dynamicDebugId(
     "marketplace.member.*.shop",
     /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.shop`\}/
-  ),
-  dynamicDebugId(
-    "marketplace.member.*.choose-supporter",
-    /debugId=\{`marketplace\.member\.\$\{row\.gmfnId[\s\S]{0,140}\}\.choose-supporter`\}/
   ),
   exactDebugId("marketplace.support.toggle"),
   exactDebugId("marketplace.support.start-request"),

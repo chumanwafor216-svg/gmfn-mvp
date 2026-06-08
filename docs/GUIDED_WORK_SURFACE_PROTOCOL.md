@@ -174,6 +174,12 @@ For Support Requests lane work, also run:
 npm --prefix frontend run audit:marketplace-support-lane
 ```
 
+For Trusted Trade lane work, also run:
+
+```bash
+npm --prefix frontend run audit:marketplace-trusted-trade-lane
+```
+
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 

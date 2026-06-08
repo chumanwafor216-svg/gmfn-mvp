@@ -2700,8 +2700,18 @@ function MarketplaceGlyph({
         </>
       );
       break;
-    case "shop":
     case "trade":
+      glyph = (
+        <>
+          <path d="M5 10h14l-1.2-4.5H6.2z" />
+          <path d="M6.5 10v8.5h11V10" />
+          <path d="M9 18.5V14h4.4" />
+          <path d="M5 10c.4 1.4 1.3 2.1 2.5 2.1S9.6 11.4 10 10c.4 1.4 1.3 2.1 2.5 2.1s2.1-.7 2.5-2.1c.4 1.4 1.2 2.1 2.5 2.1S19.6 11.4 20 10" />
+          <path d="M13.8 16.1 15.4 17.7 18.5 14.5" />
+        </>
+      );
+      break;
+    case "shop":
       glyph = (
         <>
           <path d="M5 10h14l-1.2-4.5H6.2z" />
@@ -4433,12 +4443,6 @@ export default function MarketplacePage() {
       safeStr(moneySurface?.payoutDestination?.accountNumber)
   );
 
-  const suggestedSupporterMap = useMemo(() => {
-    return new Map<string, SuggestedSupporter>(
-      suggestedSupporters.map((item) => [item.key, item])
-    );
-  }, [suggestedSupporters]);
-
   const selectedSupporterKeys = useMemo(() => {
     return new Set(selectedSupporters.map((item) => item.key));
   }, [selectedSupporters]);
@@ -4928,17 +4932,6 @@ export default function MarketplacePage() {
       }
       return [...prev, item];
     });
-  }
-
-  function toggleMemberAsSupporter(row: {
-    supportKey: string;
-    name: string;
-    gmfnId: string;
-    userId: number;
-  }) {
-    const match = suggestedSupporterMap.get(row.supportKey);
-    if (!match) return;
-    toggleSuggestedSupporter(match);
   }
 
   async function handleSendGuarantorRequests() {
@@ -5466,7 +5459,7 @@ export default function MarketplacePage() {
                 {marketplaceTradeLabel}
               </span>
               <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Members and visible shops
+                Known members and shops
               </span>
             </StableButton>
 
@@ -5769,10 +5762,10 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Member Ledger
+                  Trusted Trade
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  See visible members, GSN IDs, and connected shops.
+                  See known members, GSN IDs, and connected shops.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -7724,11 +7717,29 @@ export default function MarketplacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Members and shops</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Each line shows the person, their GSN ID, and the shop visible
-              in this marketplace.
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="trade" size={26} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>Trusted Trade</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                See known members and visible shops inside this selected
+                community.
+              </div>
             </div>
           </div>
 
@@ -7743,6 +7754,75 @@ export default function MarketplacePage() {
         </div>
 
         {sectionsOpen.members ? (
+          <ExplainToggle
+            label="What this trade lane does"
+            what="This lane shows the known members and shops that are visible inside the current community marketplace."
+            why="Trade should stay community-bound, so users can inspect who is visible here before opening a shop."
+            next="Check the member identity first, open a connected shop only when needed, and use Support Requests for borrowing work."
+            tone="light"
+            style={{ marginTop: 12 }}
+          />
+        ) : null}
+
+        {sectionsOpen.members ? (
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {[
+              ["1", "Check the member", "Read the name and GSN ID first."],
+              ["2", "Open the shop", "Visit only shops visible in this community."],
+              ["3", "Keep it local", "Use other lanes for support, money, or trust work."],
+            ].map(([step, title, detail]) => (
+              <div
+                key={step}
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(75,54,200,0.16)",
+                  background:
+                    "linear-gradient(180deg, rgba(247,246,255,0.98) 0%, rgba(235,233,252,0.94) 100%)",
+                  padding: isCompact ? 12 : 14,
+                  overflow: "hidden",
+                  overflowAnchor: "none",
+                }}
+              >
+                <div style={{ ...sectionLabel(), color: "#4338CA" }}>
+                  Step {step}
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#08233A",
+                    fontSize: isCompact ? 15 : 16,
+                    fontWeight: 950,
+                    lineHeight: 1.2,
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {title}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#5E6F82",
+                    fontSize: isCompact ? 12 : 13,
+                    fontWeight: 800,
+                    lineHeight: 1.35,
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {detail}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {sectionsOpen.members ? (
           <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
             {memberRows.length === 0 ? (
               <div style={{ color: "#64748B", lineHeight: 1.8 }}>
@@ -7750,9 +7830,6 @@ export default function MarketplacePage() {
               </div>
             ) : (
               memberRows.map((row, index) => {
-                const fitSuggestion = suggestedSupporterMap.get(row.supportKey);
-                const selected = selectedSupporterKeys.has(row.supportKey);
-
                 return (
                   <div
                     key={`${row.gmfnId || index}`}
@@ -7842,23 +7919,21 @@ export default function MarketplacePage() {
                             </span>
                           </div>
 
-                          {fitSuggestion ? (
-                            <div
-                              style={{
-                                color: "#51657A",
-                                fontSize: 12,
-                                fontWeight: 800,
-                                lineHeight: 1.45,
-                              }}
-                            >
-                              This member may be able to support the current
-                              request.
-                            </div>
-                          ) : null}
+                          <div
+                            style={{
+                              color: "#51657A",
+                              fontSize: 12,
+                              fontWeight: 800,
+                              lineHeight: 1.45,
+                            }}
+                          >
+                            Trade actions stay inside this community's visible
+                            member and shop list.
+                          </div>
                         </div>
                       </div>
 
-                      {(row.shopTo || fitSuggestion) ? (
+                      {row.shopTo ? (
                         <div
                           style={{
                             ...marketplaceInlineActionsStyle(isCompact),
@@ -7876,26 +7951,6 @@ export default function MarketplacePage() {
                             >
                               Open shop
                             </StableCtaLink>
-                          ) : null}
-
-                          {fitSuggestion ? (
-                            <StableButton
-                              debugId={`marketplace.member.${row.gmfnId || row.userId || "unknown"}.choose-supporter`}
-                              type="button"
-                              onClick={(event) => {
-                                runMarketplaceAction(event, () => {
-                                  toggleMemberAsSupporter(row);
-                                });
-                              }}
-                              stableHeight={58}
-                              style={marketplaceInlineActionStyle(
-                                selected ? "primary" : "soft",
-                                false,
-                                isCompact
-                              )}
-                            >
-                              {selected ? "Chosen" : "Choose supporter"}
-                            </StableButton>
                           ) : null}
                         </div>
                       ) : null}

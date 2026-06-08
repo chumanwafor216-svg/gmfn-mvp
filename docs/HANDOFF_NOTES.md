@@ -1,3 +1,60 @@
+### Marketplace Trusted Trade lane guided repair checkpoint (2026-06-08)
+
+- Trigger:
+  - after Money Pool, ROSCA, and Support Requests were repaired and caged,
+    product owner asked to continue the full Marketplace package before phone
+    checks;
+  - next major lane selected: Trusted Trade.
+- Source facts changed/preserved:
+  - Trusted Trade top tile remains `debugId="marketplace.tile.members"` and
+    opens `openMarketplaceSection(event, "members", "marketplace-members-shops")`;
+  - operating row remains `debugId="marketplace.row.member-ledger"` and opens
+    the same member/shop anchor;
+  - section anchor remains `id="marketplace-members-shops"`;
+  - member shop links remain dynamic
+    `marketplace.member.${row.gmfnId || row.userId || "unknown"}.shop`;
+  - removed the dynamic member-lane support action
+    `marketplace.member.${row.gmfnId || row.userId || "unknown"}.choose-supporter`.
+- Fix:
+  - separated the `trade` pictogram from the generic `shop` pictogram by adding
+    a checked-shop Trusted Trade glyph;
+  - changed tile helper from `Members and visible shops` to
+    `Known members and shops`;
+  - changed operating row visible title from `Member Ledger` to
+    `Trusted Trade`;
+  - changed row detail to `See known members, GSN IDs, and connected shops.`;
+  - changed opened section header to `Trusted Trade` with a community-bound
+    member/shop description;
+  - added a compact three-step guide inside the lane:
+    check the member, open the shop, keep it local;
+  - removed support fit/guarantor wording and the `Choose supporter` button
+    from Trusted Trade because Support Requests now owns guarantor selection;
+  - removed the now-unused `toggleMemberAsSupporter` helper and
+    `suggestedSupporterMap` memo;
+  - added `frontend/tools/audit-marketplace-trusted-trade-lane.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - updated `audit-marketplace-button-inventory`,
+    `audit-marketplace-button-lines`, and
+    `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` for the Trusted Trade lane cage.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `cd frontend && npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-button-lines.mjs tools/audit-marketplace-money-pool-lane.mjs tools/audit-marketplace-rosca-lane.mjs tools/audit-marketplace-support-lane.mjs tools/audit-marketplace-trusted-trade-lane.mjs`;
+  - `git diff --check`;
+  - `npm run build` passed after rerunning elevated because the normal sandbox
+    run hit the known Windows/Vite `spawn EPERM` while loading esbuild.
+- Unabated truth:
+  - this intentionally reduces the Marketplace action count by one because the
+    member lane no longer exposes Support Requests work;
+  - Trusted Trade is now more cohesive, but Trust and remaining operating rows
+    still need their own pass before final phone testing.
+
 ### Marketplace Support Requests lane guided repair checkpoint (2026-06-08)
 
 - Trigger:
