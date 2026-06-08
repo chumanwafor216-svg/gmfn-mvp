@@ -68,7 +68,7 @@ assertContains(
   ["money-in", "card", "Money In", "Open guided pay-in."],
   ["reports", "chart", "Money Summary", "See your full money position."],
   ["bank-accounts", "bank", "Banking Rails", "Check rails before acting."],
-  ["export-data", "ledger", "Records / Events", "See your money history."],
+  ["export-data", "ledger", "Records / Events", "Read money records."],
 ].forEach(([id, icon, label, detail]) => {
   [
     `id: "${id}"`,

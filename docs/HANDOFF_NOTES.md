@@ -1,3 +1,52 @@
+### Finance Records / Events lane cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the Signals / Readiness launcher was caged, product owner asked to
+    continue;
+  - next lane selected: Records / Events, because it is the remaining major
+    Finance lane that opens an in-page money-records section.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox, or
+    global shell behavior was changed;
+  - no Finance route targets, stable action counts, debug-id namespace, or
+    button geometry were changed;
+  - Records / Events still opens the `finance-events` section through
+    `openFinanceDetailLane("events", "finance-events")`;
+  - Recent Finance Events `View all` still opens the same events lane helper;
+  - `finance-events` remains collapsed by default and still renders phone cards
+    plus a desktop table.
+- Fix:
+  - changed Finance `Records / Events` detail copy from
+    `See your money history.` to `Read money records.`;
+  - added `frontend/tools/audit-finance-records-events-lane.mjs`;
+  - added `npm --prefix frontend run audit:finance-records-events-lane`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Records / Events lane
+    work has its own required audit;
+  - updated the Finance front-package audit to expect the new Records / Events
+    copy.
+- Verification passed:
+  - `npm --prefix frontend run audit:finance-records-events-lane`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm --prefix frontend run audit:finance-lane-map`;
+  - `npm --prefix frontend run audit:finance-button-inventory`;
+  - `npm --prefix frontend run audit:finance-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-records-events-lane.mjs tools/audit-finance-signals-readiness-lane.mjs tools/audit-finance-banking-rails-lane.mjs tools/audit-finance-front-package.mjs tools/audit-finance-lane-map.mjs tools/audit-finance-money-movement-lanes.mjs tools/audit-finance-money-summary-lane.mjs tools/audit-finance-actions.mjs tools/audit-finance-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Pending before publish:
+  - final commit, push, and GitHub deploy verification.
+- Unabated truth:
+  - this cages the Finance Records / Events launcher and in-page events lane; it
+    does not remodel the inner event table/card design;
+  - after this, the major Finance front lanes are source-caged, but a physical
+    phone check is still needed before claiming the page feels finished.
+
 ### Finance Signals / Readiness launcher cage checkpoint (2026-06-08)
 
 - Trigger:

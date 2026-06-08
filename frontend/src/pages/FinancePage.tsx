@@ -2039,7 +2039,7 @@ export default function FinancePage() {
               id: "export-data",
               icon: "ledger" as FinanceGlyphName,
               label: "Records / Events",
-              detail: "See your money history.",
+              detail: "Read money records.",
               action: () => {
                 openFinanceDetailLane("events", "finance-events");
               },
