@@ -1,3 +1,52 @@
+### Marketplace ROSCA lane guided repair checkpoint (2026-06-08)
+
+- Trigger:
+  - after Money Pool was caged, product owner asked to continue Marketplace as
+    a full package, with buttons treated as a major part of the polish;
+  - next major lane selected: ROSCA.
+- Source facts preserved:
+  - ROSCA top tile remains `debugId="marketplace.tile.rosca"` and opens
+    `openMarketplaceSection(event, "rosca", "marketplace-rosca")`;
+  - operating row `debugId="marketplace.row.rosca"` opens the same ROSCA lane;
+  - section anchor remains `id="marketplace-rosca"`;
+  - ROSCA detail button order remains:
+    `marketplace.rosca.toggle`, `marketplace.rosca.activate-yearly`,
+    `marketplace.rosca.start-cycle`, and `marketplace.rosca.record-payout`.
+- Fix:
+  - added stable `MarketplaceGlyph name="rosca"` savings-circle pictogram;
+  - changed ROSCA tile and row icon usage from generic `cycle` to `rosca`;
+  - changed the tile helper to `Member savings circle`;
+  - changed the operating row detail to
+    `Start a guided member savings circle in this community.`;
+  - changed the opened section subtitle to
+    `Member savings circle for this community only`;
+  - simplified the ROSCA explanation around known-group contribution, local
+    recordkeeping, and the fact that GSN does not move external money by itself;
+  - added a compact three-step guide inside the ROSCA lane:
+    activate yearly service, start member cycle, record payout;
+  - made the yearly activation button primary while the yearly service is not
+    active, so the first real step is visually obvious;
+  - added `frontend/tools/audit-marketplace-rosca-lane.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - updated `audit-marketplace-button-inventory` and
+    `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` for the ROSCA lane cage.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `cd frontend && npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-money-pool-lane.mjs tools/audit-marketplace-rosca-lane.mjs`;
+  - `git diff --check`;
+  - `npm run build` passed after rerunning elevated because the normal sandbox
+    run hit the known Windows/Vite `spawn EPERM` while loading esbuild.
+- Unabated truth:
+  - this repairs and cages ROSCA's visible lane structure and buttons;
+  - it does not yet complete Support Requests, Trusted Trade, Trust, or the
+    deeper operating rows;
+  - physical phone testing is still required before calling ROSCA frozen.
+
 ### Marketplace Money Pool lane first guided repair checkpoint (2026-06-08)
 
 - Trigger:

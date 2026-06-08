@@ -2564,6 +2564,7 @@ type MarketplaceGlyphName =
   | "links"
   | "members"
   | "pool"
+  | "rosca"
   | "shop"
   | "spark"
   | "support"
@@ -2646,6 +2647,19 @@ function MarketplaceGlyph({
           <path d="M16.8 16.9A7 7 0 0 1 5.5 15" />
           <path d="M5.5 18.5V15H9" />
           <circle cx="12" cy="12" r="2.4" />
+        </>
+      );
+      break;
+    case "rosca":
+      glyph = (
+        <>
+          <circle cx="12" cy="12" r="7.2" />
+          <path d="M7.2 8.8a6.4 6.4 0 0 1 5.4-2.1" />
+          <path d="M12.6 4.7 15 7l-2.4 2.3" />
+          <path d="M16.8 15.2a6.4 6.4 0 0 1-5.4 2.1" />
+          <path d="M11.4 19.3 9 17l2.4-2.3" />
+          <path d="M8.7 12h6.6" />
+          <path d="M10.3 9.8h3.4a1.6 1.6 0 0 1 0 3.2h-2.6a1.6 1.6 0 0 0 0 3.2h3.6" />
         </>
       );
       break;
@@ -5395,7 +5409,7 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="cycle" size={isCompact ? 28 : 32} />
+                <MarketplaceGlyph name="rosca" size={isCompact ? 28 : 32} />
               </span>
               <span style={marketplaceOsTileTitleStyle(isCompact)}>
                 ROSCA
@@ -5404,7 +5418,7 @@ export default function MarketplacePage() {
                 {roscaMetricLabel}
               </span>
               <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Community contribution cycle
+                Member savings circle
               </span>
             </StableButton>
 
@@ -5699,14 +5713,14 @@ export default function MarketplacePage() {
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="cycle" size={isCompact ? 22 : 24} />
+                <MarketplaceGlyph name="rosca" size={isCompact ? 22 : 24} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
                   ROSCA
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Start contribution rotation for members in this community.
+                  Start a guided member savings circle in this community.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -6205,7 +6219,7 @@ export default function MarketplacePage() {
                 true
               )}
             >
-              <MarketplaceGlyph name="cycle" size={26} />
+              <MarketplaceGlyph name="rosca" size={26} />
             </span>
             <div style={{ minWidth: 0 }}>
               <div
@@ -6228,7 +6242,7 @@ export default function MarketplacePage() {
                   lineHeight: 1.25,
                 }}
               >
-                Contribution cycles for this marketplace only
+                Member savings circle for this community only
               </div>
             </div>
           </div>
@@ -6249,13 +6263,69 @@ export default function MarketplacePage() {
         </div>
 
         <ExplainToggle
-          label="What ROSCA does"
-          what="ROSCA starts a contribution rotation for active members inside this selected community marketplace."
-          why="The engine creates Money In expectations, tracks confirmed contributions, and records payout completion. It does not move external money by itself."
-          next="Activate the yearly service first, then start a cycle when the member group is ready."
+          label="What this savings circle does"
+          what="ROSCA helps a known group contribute on schedule and take turns receiving the pool."
+          why="GSN records the plan, contribution expectations, and payout completion. It does not move external money by itself."
+          next="Activate the yearly service first, then start the member cycle when the group is ready."
           tone="light"
           style={{ marginTop: 12 }}
         />
+
+        <div
+          style={{
+            marginTop: 12,
+            display: "grid",
+            gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+            gap: 10,
+          }}
+        >
+          {[
+            ["1", "Activate yearly service", "Unlock this community's ROSCA desk."],
+            ["2", "Start member cycle", "Set the amount, currency, and days."],
+            ["3", "Record payout", "Mark the round after the community confirms it."],
+          ].map(([step, title, detail]) => (
+            <div
+              key={step}
+              style={{
+                borderRadius: 18,
+                border: "1px solid rgba(184,135,30,0.18)",
+                background:
+                  "linear-gradient(180deg, rgba(255,252,244,0.98) 0%, rgba(248,241,222,0.94) 100%)",
+                padding: isCompact ? 12 : 14,
+                overflow: "hidden",
+                overflowAnchor: "none",
+              }}
+            >
+              <div style={{ ...sectionLabel(), color: "#8A5A08" }}>
+                Step {step}
+              </div>
+              <div
+                style={{
+                  marginTop: 6,
+                  color: "#08233A",
+                  fontSize: isCompact ? 15 : 16,
+                  fontWeight: 950,
+                  lineHeight: 1.2,
+                  overflowWrap: "break-word",
+                }}
+              >
+                {title}
+              </div>
+              <div
+                style={{
+                  marginTop: 5,
+                  color: "#5E6F82",
+                  fontSize: isCompact ? 12 : 13,
+                  fontWeight: 800,
+                  lineHeight: 1.35,
+                  overflowWrap: "break-word",
+                }}
+              >
+                {detail}
+              </div>
+            </div>
+          ))}
+        </div>
 
         <div
           style={{
@@ -6271,9 +6341,8 @@ export default function MarketplacePage() {
           <div style={innerCard("#FCFEFF")}>
             <div style={sectionLabel()}>Start cycle</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The default payout order is ranked by member trust score, because
-              higher-trust members reduce fear of disappointment at the start of
-              the cycle.
+              The default payout order starts with higher-trust members so the
+              circle begins with less fear and clearer accountability.
             </div>
 
             <div
@@ -6358,12 +6427,12 @@ export default function MarketplacePage() {
                 }}
                 stableHeight={58}
                 style={marketplaceInlineActionStyle(
-                  "secondary",
+                  roscaYearlyActive ? "secondary" : "primary",
                   creatingRoscaPackage,
                   isCompact
                 )}
               >
-                {creatingRoscaPackage ? "Creating..." : "Activate GBP 60 yearly"}
+                {creatingRoscaPackage ? "Creating..." : "Activate yearly service"}
               </StableButton>
               <StableButton
                 debugId="marketplace.rosca.start-cycle"

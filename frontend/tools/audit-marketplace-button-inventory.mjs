@@ -255,7 +255,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.rosca"[\s\S]{0,300}aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]{0,320}openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]{0,520}ROSCA[\s\S]{0,260}Community contribution cycle/,
+  /debugId="marketplace\.tile\.rosca"[\s\S]{0,300}aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]{0,320}openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]{0,520}<MarketplaceGlyph name="rosca"[\s\S]{0,260}ROSCA[\s\S]{0,260}Member savings circle/,
   "Marketplace ROSCA tile must open the ROSCA section only and stay visible as its own Marketplace emblem."
 );
 
@@ -275,7 +275,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.rosca"[\s\S]{0,300}aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]{0,300}openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)/,
+  /debugId="marketplace\.row\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Start a guided member savings circle in this community/,
   "Marketplace ROSCA operating row must open the ROSCA section only."
 );
 
@@ -366,6 +366,25 @@ if (!roscaSection) {
       text: "Expected inactive yearly service explainer was not found.",
     });
   }
+
+  [
+    /Member savings circle for this community only/,
+    /What this savings circle does/,
+    /Step \{step\}/,
+    /Activate yearly service/,
+    /Start member cycle/,
+    /Record payout/,
+    /roscaYearlyActive \? "secondary" : "primary"/,
+  ].forEach((pattern) => {
+    if (!pattern.test(roscaSection)) {
+      findings.push({
+        file: marketplaceFile,
+        line: lineAt(source.indexOf(roscaSection)),
+        message: "Marketplace ROSCA lane must keep the guided three-step savings-circle structure.",
+        text: pattern.toString(),
+      });
+    }
+  });
 }
 
 assertContains(
