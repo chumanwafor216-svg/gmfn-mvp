@@ -186,6 +186,12 @@ For Records & Links lane work, also run:
 npm --prefix frontend run audit:marketplace-records-links-lane
 ```
 
+For More / Community Tools lane work, also run:
+
+```bash
+npm --prefix frontend run audit:marketplace-more-tools-lane
+```
+
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 

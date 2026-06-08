@@ -399,6 +399,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     intent: "moneyIn",
     tone: "primary",
     keywords: ["add", "deposit", "pay", "pay in", "money in", "fund", "top up"],
+    visible: false,
   },
   {
     id: "money-out",
@@ -409,6 +410,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     intent: "moneyOut",
     tone: "secondary",
     keywords: ["withdraw", "cash out", "money out", "payout", "take out"],
+    visible: false,
   },
   {
     id: "finance",
@@ -419,6 +421,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     intent: "finance",
     tone: "secondary",
     keywords: ["finance", "balance", "pool", "record", "account", "money"],
+    visible: false,
   },
   {
     id: "rosca",
@@ -428,6 +431,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     to: "#marketplace-rosca",
     tone: "secondary",
     keywords: ["rosca", "cycle", "ajo", "susu", "contribution", "rotation"],
+    visible: false,
   },
   {
     id: "support",
@@ -437,6 +441,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     to: "#marketplace-loans-support",
     tone: "secondary",
     keywords: ["loan", "borrow", "support", "lend", "help", "guarantor"],
+    visible: false,
   },
   {
     id: "shop",
@@ -446,6 +451,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     to: "",
     tone: "secondary",
     keywords: ["shop", "gallery", "sell", "market", "store", "product"],
+    visible: false,
   },
   {
     id: "invite",
@@ -455,6 +461,7 @@ const MARKETPLACE_INTENT_ITEMS: MarketplaceIntentItem[] = [
     to: "#marketplace-owned-links",
     tone: "soft",
     keywords: ["invite", "join", "link", "bring", "people", "share"],
+    visible: false,
   },
   {
     id: "trust",
@@ -5555,18 +5562,18 @@ export default function MarketplacePage() {
                   More / Community Tools
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Community tools and connections.
+                  Trust, ID, proof, messages, and route help.
                 </span>
                 <span style={marketplaceFrontTagRowStyle()}>
                   <span
                     style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
                   >
-                    Identity
+                    Trust
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
                   >
-                    Invite
+                    Identity
                   </span>
                   <span
                     style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
@@ -5576,7 +5583,7 @@ export default function MarketplacePage() {
                   <span
                     style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
                   >
-                    More
+                    Messages
                   </span>
                 </span>
               </span>
@@ -5688,9 +5695,9 @@ export default function MarketplacePage() {
           {intentGuideOpen ? (
             <div style={intentGuideCardStyle()}>
               <div style={{ ...helperText(), marginBottom: 12 }}>
-                Say the job you want to do inside this one marketplace, like
-                loan, deposit, withdraw, shop, invite, or trust. GSN will point
-                you to the closest working place.
+                Use this helper when the job is not one of the main cards.
+                Search still understands money, ROSCA, support, shop, invite,
+                and records.
               </div>
 
               <form
@@ -5708,7 +5715,7 @@ export default function MarketplacePage() {
                   {...marketplaceFieldTouchProps("marketplace.intent.query")}
                   value={intentQuery}
                   onChange={(event) => setIntentQuery(event.target.value)}
-                  placeholder="Try: loan, deposit, withdraw, shop, invite..."
+                  placeholder="Try: trust, identity, proof, messages..."
                   aria-label="Type what you want to do next"
                   style={{
                     ...inputStyle(),

@@ -1,3 +1,64 @@
+### Marketplace More / Community Tools lane guided repair checkpoint (2026-06-08)
+
+- Trigger:
+  - after `Records & Links` was caged, product owner asked to continue the
+    full Marketplace package;
+  - next cleanup selected: `More / Community Tools`, because it was still
+    exposing many choices and could become the old all-purpose dumping drawer.
+- Source facts changed/preserved:
+  - front launcher remains `debugId="marketplace.extra-tools.toggle"`;
+  - stable Marketplace action count remains 55 total, with 11 front actions and
+    44 body actions;
+  - the expanded More panel still uses stable dynamic debug ids
+    `marketplace.intent.${item.id}`;
+  - search still uses the full `MARKETPLACE_INTENT_ITEMS` map, so hidden major
+    lanes remain searchable from the input;
+  - no backend, auth, Dashboard, Community Home, Action Inbox, or global shell
+    behavior was changed.
+- Fix:
+  - changed the front card helper from `Community tools and connections.` to
+    `Trust, ID, proof, messages, and route help.`;
+  - changed front tags from `Identity`, `Invite`, `TrustSlip`, `More` to
+    `Trust`, `Identity`, `TrustSlip`, `Messages`;
+  - hid major/front-card routes from the visible More button grid:
+    `money-in`, `money-out`, `finance`, `rosca`, `support`, `shop`, and
+    `invite`;
+  - kept secondary visible More buttons only:
+    `trust`, `identity`, `trustslip`, `demand`, `community`, and `messages`;
+  - changed More helper text to explain that search still understands money,
+    ROSCA, support, shop, invite, and records without showing them as equal
+    buttons;
+  - changed the placeholder to
+    `Try: trust, identity, proof, messages...`;
+  - added `frontend/tools/audit-marketplace-more-tools-lane.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-more-tools-lane`;
+  - updated `audit-marketplace-button-inventory` and
+    `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so this lane is caged.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-more-tools-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-more-tools-lane.mjs tools/audit-marketplace-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Unabated truth:
+  - this makes More less noisy but does not remove the underlying routes;
+  - Demand Box is still visible in More because it does not yet have its own
+    caged Marketplace lane in this package;
+  - commit, push, and GitHub deploy verification still need to happen for this
+    checkpoint.
+
 ### Marketplace Records & Links lane guided repair checkpoint (2026-06-08)
 
 - Trigger:
@@ -51,8 +112,9 @@
     but it is a real Marketplace-owned link/record responsibility;
   - this pass reduces user confusion by keeping member/trade wording inside
     `Trade & Shops` and link/record wording inside `Records & Links`;
-  - commit, push, and GitHub deploy verification still need to happen for this
-    checkpoint.
+  - committed and pushed as `76bc6b0 Cage Marketplace records links lane`;
+  - GitHub `Trigger Render Deploy` and `Backend Tests` both completed
+    successfully for that commit.
 
 ### Marketplace grouped front-door checkpoint (2026-06-08)
 

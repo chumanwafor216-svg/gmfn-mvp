@@ -25,7 +25,7 @@ const expectedSourceBreakdown = {
   front: 11,
   body: 44,
 };
-const expectedVisibleIntentActionCount = 13;
+const expectedVisibleIntentActionCount = 6;
 const expectedMobileShellBreakdown = {
   top: 2,
   drawer: 30,
@@ -260,8 +260,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Community tools and connections[\s\S]*?Identity[\s\S]*?Invite[\s\S]*?TrustSlip[\s\S]*?More/,
-  "Marketplace More / Community Tools grouped card must keep secondary community tools grouped without hiding ROSCA."
+  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Trust, ID, proof, messages, and route help[\s\S]*?Trust[\s\S]*?Identity[\s\S]*?TrustSlip[\s\S]*?Messages/,
+  "Marketplace More / Community Tools grouped card must keep only secondary helper tools visible on the front card."
 );
 
 assertContains(
