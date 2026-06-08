@@ -140,9 +140,18 @@ snapshots:
 - remove decorative height, oversized badges, repeated dividers, and explanatory
   paragraphs
 - use compact SVG pictograms instead of emoji-style marks
+- keep verification photos, IDs, seals, and names unobstructed; badges may sit
+  beside or dock on an edge, but must not cover the evidence being shown
 - keep long IDs readable with whole-word wrapping only; do not split labels into
   one-letter fragments
 - if all facts cannot fit, shorten labels before hiding data
+- keep the snapshot as its own portable package boundary: screenshot, PDF, or
+  shared proof should not need unrelated page content above or below to feel
+  complete
+- if a status says something is incomplete, include a clear route or action to
+  continue that completion work from the snapshot package
+- if the record cannot fit as one package, split it into explicit `Page 1`,
+  `Page 2` packages instead of letting one card bleed into the next section
 - deeper explanation belongs below the snapshot or behind a lane/action
 
 ## Focused Action Protocol

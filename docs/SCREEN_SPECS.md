@@ -408,6 +408,12 @@ Rules:
   must fit its title, four identity facts, six compact status signals, and the
   public community record action inside one 390x844 phone snapshot without
   tall warning cards or decorative height.
+- Identity Overview must keep the member photo unobstructed, dock any trust
+  seal away from the face/proof image, and include a direct `Complete ID
+  checks` path when the snapshot is showing unfinished identity requirements.
+- Identity Overview should behave as a portable official package: screenshot,
+  print, or PDF framing must not require visible pieces of the previous or next
+  Trust Passport section to make sense.
 
 Current pre-redesign Trust Passport section mapping:
 - Current Trust Standing: Identity Overview, Current trust verdict, and What

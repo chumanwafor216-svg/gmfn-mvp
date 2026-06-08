@@ -1,3 +1,61 @@
+### Trust Passport portable snapshot amendment checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner checked the Trust Passport Identity Overview on phone and
+    said the seal was blocking the photo, the block had no direct identification
+    completion path, and screenshots still caught unrelated page content above
+    or below the identity package.
+- Scope:
+  - route remains `/app/trust`;
+  - changed only Trust Passport page-local snapshot geometry and the audit that
+    cages that route-local action inventory;
+  - no backend, auth, API, data model, Dashboard, Community Home, Marketplace,
+    Finance, global shell, or shared tap-guard logic changed.
+- Fix:
+  - compact Identity Overview portrait increased from 64px to 88px;
+  - the trust seal is now docked on the portrait edge instead of covering the
+    member photo;
+  - the snapshot card now has a compact phone package minimum height and scroll
+    margin so the next Trust Passport section is less likely to bleed into a
+    screenshot of the identity package;
+  - the compact identity fact icons were tightened to 30px so the larger photo
+    does not reintroduce word squeezing;
+  - added a fixed-height `Complete ID checks` primary action routed through the
+    existing Identity / CCI target (`routes.identity`);
+  - preserved the existing `trust-score.open-public-community-record` debug id
+    and public community record action.
+- Protocol updated:
+  - `docs/DESIGN_SYSTEM.md`, `docs/UX_ACCEPTANCE_CHECKLIST.md`, and
+    `docs/SCREEN_SPECS.md` now state that portable snapshot packages must keep
+    evidence photos unobstructed, include a completion route when showing
+    incomplete status, and not depend on neighboring page sections for
+    screenshot/PDF/export context.
+- Audit cage updated:
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` now expects 11
+    Trust Passport stable source actions / 17 rendered action roots and protects
+    the new 88px portrait, docked seal, package min-height, and completion
+    action before the public record action.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs`
+    from `frontend`;
+  - `npm exec -- tsc -b --pretty false` from `frontend`;
+  - `git diff --check` with line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` still hit the known Windows
+    `esbuild` spawn `EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is code/audit/build verified, not yet a new owner phone screenshot;
+  - the new package min-height should stop most adjacent-section bleed, but
+    true screenshot/PDF export still needs a later dedicated export/print mode
+    if the product must guarantee exact official framing across every phone.
+
 ### Marketplace Link Center phone amendment checkpoint (2026-06-08)
 
 - Trigger:

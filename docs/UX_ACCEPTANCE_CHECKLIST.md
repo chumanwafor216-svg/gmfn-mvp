@@ -35,6 +35,12 @@ the intended information unit.
 - The title, required facts, status signals, and primary action should be
   visible without scrolling inside that snapshot.
 - Use short labels, compact rows/chips, and SVG pictograms.
+- Verification photos and official marks must not cover each other; the person,
+  ID, or proof item being shown must remain visible.
+- The snapshot must include the next completion or verification action when it
+  shows an incomplete status.
+- A screenshot/PDF/export should start and end on the snapshot package, not
+  depend on neighboring page sections for context.
 - Do not use tall decorative cards, large repeated dividers, or explanatory
   paragraphs inside the snapshot.
 - Text must stay readable and must not split into one-letter stacks.

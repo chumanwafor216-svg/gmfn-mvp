@@ -9,7 +9,6 @@ import {
 } from "../components/StableButton";
 import {
   TrustPaperIcon,
-  TrustPaperSeal,
   TrustPaperSecurityFooter,
   TrustPaperWatermark,
   type TrustPaperIconName,
@@ -633,8 +632,8 @@ function titleCaseWords(value: string): string {
 
 function overviewIconBox(isCompact = false): React.CSSProperties {
   return {
-    width: isCompact ? 32 : 38,
-    height: isCompact ? 32 : 38,
+    width: isCompact ? 30 : 38,
+    height: isCompact ? 30 : 38,
     borderRadius: isCompact ? 10 : 12,
     display: "grid",
     placeItems: "center",
@@ -2076,15 +2075,19 @@ export default function TrustScorePage() {
             borderRadius: isCompact ? 20 : 28,
             boxShadow: "0 14px 32px rgba(7,23,44,0.12)",
             padding: isCompact ? 12 : 24,
+            minHeight: isCompact ? "min(720px, calc(100svh - 132px))" : undefined,
             position: "relative",
             overflow: "hidden",
+            display: "grid",
+            alignContent: "start",
+            scrollMarginTop: isCompact ? 112 : 24,
           }}
         >
           <section
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "64px minmax(0, 1fr)" : "124px minmax(0, 1fr)",
-              gap: isCompact ? 10 : 18,
+              gridTemplateColumns: isCompact ? "88px minmax(0, 1fr)" : "132px minmax(0, 1fr)",
+              gap: isCompact ? 12 : 18,
               alignItems: "center",
               position: "relative",
               zIndex: 1,
@@ -2092,8 +2095,8 @@ export default function TrustScorePage() {
           >
             <div
               style={{
-                width: isCompact ? 64 : 124,
-                height: isCompact ? 64 : 124,
+                width: isCompact ? 88 : 132,
+                height: isCompact ? 88 : 132,
                 borderRadius: isCompact ? 16 : 22,
                 display: "grid",
                 placeItems: "center",
@@ -2101,8 +2104,8 @@ export default function TrustScorePage() {
                 border: "2px solid rgba(214,170,69,0.28)",
                 color: "#0B63D1",
                 fontWeight: 1000,
-                fontSize: isCompact ? 18 : 30,
-                overflow: "hidden",
+                fontSize: isCompact ? 22 : 30,
+                overflow: "visible",
                 boxShadow: "inset 0 0 0 4px rgba(255,255,255,0.72), 0 10px 20px rgba(7,23,44,0.09)",
                 position: "relative",
               }}
@@ -2116,12 +2119,31 @@ export default function TrustScorePage() {
                     height: "100%",
                     objectFit: "cover",
                     display: "block",
+                    borderRadius: isCompact ? 14 : 20,
                   }}
                 />
               ) : (
                 passportInitials
               )}
-              <TrustPaperSeal compact={isCompact} />
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  right: isCompact ? -8 : -7,
+                  bottom: isCompact ? -8 : -7,
+                  width: isCompact ? 30 : 38,
+                  height: isCompact ? 30 : 38,
+                  borderRadius: isCompact ? 10 : 13,
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#FFFFFF",
+                  background: "linear-gradient(135deg, #0B63D1 0%, #073E83 100%)",
+                  border: "3px solid #FFFFFF",
+                  boxShadow: "0 10px 22px rgba(11,99,209,0.24)",
+                }}
+              >
+                <TrustPaperIcon name="shield" size={isCompact ? 19 : 24} strokeWidth={2.35} />
+              </span>
             </div>
 
             <div style={{ minWidth: 0 }}>
@@ -2137,7 +2159,7 @@ export default function TrustScorePage() {
                   border: "1px solid rgba(160,117,33,0.24)",
                   color: "#4A3410",
                   fontWeight: 1000,
-                  fontSize: isCompact ? 11 : 13,
+                  fontSize: isCompact ? 10.5 : 13,
                   boxShadow: "0 10px 20px rgba(160,117,33,0.10)",
                 }}
               >
@@ -2146,9 +2168,9 @@ export default function TrustScorePage() {
               </div>
               <h1
                 style={{
-                  margin: isCompact ? "6px 0 0" : "10px 0 0",
+                  margin: isCompact ? "5px 0 0" : "10px 0 0",
                   color: "#07172C",
-                  fontSize: isCompact ? 23 : 36,
+                  fontSize: isCompact ? 27 : 36,
                   lineHeight: 1.03,
                   fontWeight: 1000,
                   letterSpacing: 0,
@@ -2162,7 +2184,7 @@ export default function TrustScorePage() {
                   margin: isCompact ? "4px 0 0" : "8px 0 0",
                   maxWidth: 460,
                   color: "#617085",
-                  fontSize: isCompact ? 12.5 : 15,
+                  fontSize: isCompact ? 12 : 15,
                   lineHeight: 1.25,
                 }}
               >
@@ -2178,7 +2200,7 @@ export default function TrustScorePage() {
                 ? "repeat(2, minmax(0, 1fr))"
                 : "repeat(2, minmax(0, 1fr))",
               gap: isCompact ? 8 : 10,
-              marginTop: isCompact ? 12 : 18,
+              marginTop: isCompact ? 14 : 18,
               position: "relative",
               zIndex: 1,
             }}
@@ -2189,12 +2211,12 @@ export default function TrustScorePage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: isCompact
-                    ? "32px minmax(0, 1fr)"
+                    ? "30px minmax(0, 1fr)"
                     : "38px minmax(0, 1fr)",
-                  gap: isCompact ? 8 : 10,
+                  gap: isCompact ? 7 : 10,
                   alignItems: "center",
-                  minHeight: isCompact ? 52 : 64,
-                  padding: isCompact ? "8px 9px" : "10px 12px",
+                  minHeight: isCompact ? 50 : 64,
+                  padding: isCompact ? "7px 8px" : "10px 12px",
                   borderRadius: isCompact ? 14 : 16,
                   border: "1px solid rgba(216,227,238,0.72)",
                   background:
@@ -2243,7 +2265,7 @@ export default function TrustScorePage() {
               display: "flex",
               flexWrap: "wrap",
               gap: isCompact ? 6 : 8,
-              marginTop: isCompact ? 10 : 16,
+              marginTop: isCompact ? 12 : 16,
               position: "relative",
               zIndex: 1,
             }}
@@ -2280,37 +2302,60 @@ export default function TrustScorePage() {
             </span>
           </div>
 
-          <SecondaryButton
-            onClick={() => {
-              if (communityVerifyPath) {
-                openTrustRoute(communityVerifyPath);
-                return;
-              }
-              setNotice({
-                tone: "error",
-                text: "The public community record is not ready because this Trust Passport has no community code yet.",
-              });
-            }}
-            stableHeight={isCompact ? 50 : 58}
-            fullWidth
+          <div
             style={{
-              marginTop: isCompact ? 10 : 16,
-              gridColumn: "1 / -1",
-              borderRadius: isCompact ? 12 : 14,
-              background: "linear-gradient(180deg, #052B58 0%, #031E42 100%)",
-              border: "1px solid rgba(3,30,66,0.18)",
-              color: "#FFFFFF",
-              boxShadow: "0 10px 22px rgba(3,30,66,0.17)",
-              fontSize: isCompact ? 13 : 16,
-              fontWeight: 1000,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
+              gap: isCompact ? 8 : 10,
+              marginTop: isCompact ? 12 : 16,
               position: "relative",
               zIndex: 1,
             }}
-            debugId="trust-score.open-public-community-record"
           >
-            <OpenRecordGlyph size={isCompact ? 18 : 21} />
-            Open public community record
-          </SecondaryButton>
+            <PrimaryButton
+              onClick={() => openTrustRoute(routes.identity)}
+              stableHeight={isCompact ? 50 : 58}
+              fullWidth
+              style={{
+                borderRadius: isCompact ? 12 : 14,
+                fontSize: isCompact ? 13 : 16,
+                fontWeight: 1000,
+                paddingInline: isCompact ? 10 : 14,
+              }}
+              debugId="trust-score.complete-identification"
+            >
+              <TrustPaperIcon name="id" size={isCompact ? 18 : 21} strokeWidth={2.4} />
+              Complete ID checks
+            </PrimaryButton>
+            <SecondaryButton
+              onClick={() => {
+                if (communityVerifyPath) {
+                  openTrustRoute(communityVerifyPath);
+                  return;
+                }
+                setNotice({
+                  tone: "error",
+                  text: "The public community record is not ready because this Trust Passport has no community code yet.",
+                });
+              }}
+              stableHeight={isCompact ? 50 : 58}
+              fullWidth
+              style={{
+                borderRadius: isCompact ? 12 : 14,
+                background: "linear-gradient(180deg, #052B58 0%, #031E42 100%)",
+                border: "1px solid rgba(3,30,66,0.18)",
+                color: "#FFFFFF",
+                boxShadow: "0 10px 22px rgba(3,30,66,0.17)",
+                fontSize: isCompact ? 13 : 16,
+                fontWeight: 1000,
+                paddingInline: isCompact ? 10 : 14,
+              }}
+              debugId="trust-score.open-public-community-record"
+            >
+              <OpenRecordGlyph size={isCompact ? 18 : 21} />
+              Open public community record
+            </SecondaryButton>
+          </div>
         </section>
 
         <section

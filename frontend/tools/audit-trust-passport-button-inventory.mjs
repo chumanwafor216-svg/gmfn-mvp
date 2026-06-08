@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 10;
-const expectedRenderedActions = 16;
+const expectedSourceActions = 11;
+const expectedRenderedActions = 17;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -102,6 +102,7 @@ for (const action of actions) {
 
 const expectedOrder = [
   "trust-score.lane.${lane.key}",
+  "trust-score.complete-identification",
   "trust-score.open-public-community-record",
   "trust-score.repair-next-step",
   "debugId={item.debugId}",
@@ -154,8 +155,8 @@ assertContains(
 );
 
 assertContains(
-  /padding: isCompact \? 12 : 24[\s\S]*?gridTemplateColumns: isCompact \? "64px minmax\(0, 1fr\)" : "124px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 64 : 124[\s\S]*?height: isCompact \? 64 : 124[\s\S]*?Snapshot 1[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?overviewIconBox\(isCompact\)/,
-  "Trust Passport identity overview must keep the compact one-screen snapshot header and two-column fact grid."
+  /padding: isCompact \? 12 : 24[\s\S]*?minHeight: isCompact \? "min\(720px, calc\(100svh - 132px\)\)" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "88px minmax\(0, 1fr\)" : "132px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 88 : 132[\s\S]*?height: isCompact \? 88 : 132[\s\S]*?overflow: "visible"[\s\S]*?right: isCompact \? -8 : -7[\s\S]*?Snapshot 1[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?overviewIconBox\(isCompact\)/,
+  "Trust Passport identity overview must keep the portable snapshot package boundary, unobstructed photo seal, and two-column fact grid."
 );
 
 assertContains(
@@ -164,8 +165,13 @@ assertContains(
 );
 
 assertContains(
+  /debugId="trust-score\.complete-identification"[\s\S]*?TrustPaperIcon name="id"[\s\S]*?Complete ID checks[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
+  "Trust Passport identity snapshot must include a fixed completion action before the public community record action."
+);
+
+assertContains(
   /stableHeight=\{isCompact \? 50 : 58\}[\s\S]*?fullWidth[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
-  "Trust Passport public community record action must keep the screenshot-style full-width fixed CTA."
+  "Trust Passport public community record action must keep the screenshot-style fixed CTA."
 );
 
 assertNotContains(
