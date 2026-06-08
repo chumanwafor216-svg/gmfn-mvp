@@ -1961,8 +1961,8 @@ function marketplaceLinkSummaryStyle(isCompact: boolean): React.CSSProperties {
 
 function marketplaceLinkHeroStyle(isCompact: boolean): React.CSSProperties {
   return {
-    marginTop: isCompact ? 10 : 14,
-    borderRadius: isCompact ? 18 : 26,
+    marginTop: isCompact ? 8 : 14,
+    borderRadius: isCompact ? 16 : 26,
     border: "1px solid rgba(16,37,59,0.10)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(247,250,255,0.98) 100%)",
@@ -1970,8 +1970,8 @@ function marketplaceLinkHeroStyle(isCompact: boolean): React.CSSProperties {
       "0 18px 34px rgba(10,24,49,0.09), inset 0 1px 0 rgba(255,255,255,0.9)",
     overflow: "hidden",
     display: "grid",
-    gridTemplateColumns: isCompact ? "64px minmax(0, 1fr)" : "128px minmax(0, 1fr)",
-    minHeight: isCompact ? 92 : 126,
+    gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "128px minmax(0, 1fr)",
+    minHeight: isCompact ? 82 : 126,
   };
 }
 
@@ -1991,7 +1991,7 @@ function marketplaceLinkHeroIconStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceLinkHeroBodyStyle(isCompact: boolean): React.CSSProperties {
   return {
     minWidth: 0,
-    padding: isCompact ? "10px 12px" : "18px 22px",
+    padding: isCompact ? "9px 10px" : "18px 22px",
     display: "grid",
     gap: isCompact ? 7 : 10,
     alignContent: "center",
@@ -2001,7 +2001,7 @@ function marketplaceLinkHeroBodyStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceLinkHeroTitleStyle(isCompact: boolean): React.CSSProperties {
   return {
     color: "#07172C",
-    fontSize: isCompact ? 22 : 32,
+    fontSize: isCompact ? 20 : 32,
     lineHeight: 1.05,
     fontWeight: 950,
     letterSpacing: 0,
@@ -2032,14 +2032,14 @@ function marketplaceLinkHeroPillStyle(): React.CSSProperties {
     display: "inline-flex",
     alignItems: "center",
     gap: 6,
-    minHeight: 30,
+    minHeight: 28,
     borderRadius: 12,
     padding: "0 9px",
     border: "1px solid rgba(11,45,74,0.11)",
     background:
       "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(236,244,255,0.96) 100%)",
     color: "#173750",
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: 900,
     whiteSpace: "nowrap",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.88)",
@@ -2058,7 +2058,7 @@ function marketplaceLinkRowStyle(isCompact: boolean, expanded = false): React.CS
       expanded
         ? "0 16px 32px rgba(27,102,210,0.10), inset 0 1px 0 rgba(255,255,255,0.9)"
         : "0 12px 24px rgba(10,24,49,0.065), inset 0 1px 0 rgba(255,255,255,0.9)",
-    padding: isCompact ? 10 : 14,
+    padding: isCompact ? 9 : 14,
     display: "grid",
     gap: isCompact ? 8 : expanded ? 12 : 10,
     overflow: "hidden",
@@ -2071,8 +2071,9 @@ function marketplaceLinkRowHeaderStyle(isCompact: boolean): React.CSSProperties 
   return {
     display: "grid",
     gridTemplateColumns: isCompact
-      ? "44px minmax(0, 1fr) auto"
+      ? "44px minmax(0, 1fr)"
       : "58px minmax(0, 1fr) auto",
+    gridTemplateRows: isCompact ? "auto auto" : undefined,
     gap: isCompact ? 8 : 14,
     alignItems: "center",
     minWidth: 0,
@@ -2133,7 +2134,8 @@ function marketplaceLinkRowSubStyle(isCompact: boolean): React.CSSProperties {
 }
 
 function marketplaceLinkRowStatusStyle(
-  tone: "ready" | "warn" | "idle" = "ready"
+  tone: "ready" | "warn" | "idle" = "ready",
+  isCompact = false
 ): React.CSSProperties {
   const colors = {
     ready: {
@@ -2155,14 +2157,18 @@ function marketplaceLinkRowStatusStyle(
 
   return {
     ...stableStatusPillStyle(tone === "ready"),
-    height: 30,
-    minHeight: 30,
-    maxHeight: 30,
+    height: isCompact ? 28 : 30,
+    minHeight: isCompact ? 28 : 30,
+    maxHeight: isCompact ? 28 : 30,
     padding: "0 9px",
     color: colors[tone].color,
     background: colors[tone].bg,
     border: colors[tone].border,
     justifyContent: "center",
+    gridColumn: isCompact ? "2 / 3" : undefined,
+    justifySelf: isCompact ? "start" : undefined,
+    maxWidth: isCompact ? "100%" : undefined,
+    whiteSpace: "nowrap",
   };
 }
 
@@ -2271,7 +2277,7 @@ function marketplaceInlineActionsStyle(
     gridTemplateColumns: isCompact
       ? "repeat(2, minmax(0, 1fr))"
       : "repeat(auto-fit, minmax(168px, 1fr))",
-    gridAutoRows: "58px",
+    gridAutoRows: isCompact ? "52px" : "58px",
     gap: 8,
     alignItems: "stretch",
     alignContent: "start",
@@ -2288,9 +2294,9 @@ function marketplaceInlineActionStyle(
   return {
     ...marketplaceActionStyle(kind, disabled),
     width: "100%",
-    height: 58,
-    minHeight: 58,
-    maxHeight: 58,
+    height: _isCompact ? 52 : 58,
+    minHeight: _isCompact ? 52 : 58,
+    maxHeight: _isCompact ? 52 : 58,
     padding: _isCompact ? "0 8px" : "0 11px",
     pointerEvents: "auto",
     touchAction: "manipulation",
@@ -6770,7 +6776,8 @@ export default function MarketplacePage() {
                     </div>
                     <span
                       style={marketplaceLinkRowStatusStyle(
-                        inviteLink ? "ready" : canManageMarketplaceLinks ? "warn" : "idle"
+                        inviteLink ? "ready" : canManageMarketplaceLinks ? "warn" : "idle",
+                        isCompact
                       )}
                     >
                       {inviteLink ? "Ready" : canManageMarketplaceLinks ? "Refresh" : "Admin"}
@@ -6996,7 +7003,8 @@ export default function MarketplacePage() {
                     </div>
                     <span
                       style={marketplaceLinkRowStatusStyle(
-                        publicCommunityWorkspaceLink ? "ready" : "idle"
+                        publicCommunityWorkspaceLink ? "ready" : "idle",
+                        isCompact
                       )}
                     >
                       {publicCommunityWorkspaceLink ? "Ready" : "Pending"}
@@ -7109,6 +7117,11 @@ export default function MarketplacePage() {
                           ? "1px solid rgba(46,155,98,0.18)"
                           : "1px solid rgba(214,170,69,0.28)",
                         justifyContent: "center",
+                        gridColumn: isCompact ? "2 / 3" : undefined,
+                        justifySelf: isCompact ? "start" : undefined,
+                        height: isCompact ? 28 : undefined,
+                        minHeight: isCompact ? 28 : undefined,
+                        maxHeight: isCompact ? 28 : undefined,
                       }}
                     >
                       {publicShopViewLink
@@ -7315,7 +7328,8 @@ export default function MarketplacePage() {
                     </div>
                     <span
                       style={marketplaceLinkRowStatusStyle(
-                        selectedRepostProduct || canPlaceMarketplaceRepost ? "ready" : "idle"
+                        selectedRepostProduct || canPlaceMarketplaceRepost ? "ready" : "idle",
+                        isCompact
                       )}
                     >
                       {selectedRepostProduct || canPlaceMarketplaceRepost ? "Ready" : "Set up"}
@@ -8004,7 +8018,7 @@ export default function MarketplacePage() {
                         Manage your shop & settings.
                       </div>
                     </div>
-                    <span style={marketplaceLinkRowStatusStyle("ready")}>
+                    <span style={marketplaceLinkRowStatusStyle("ready", isCompact)}>
                       Ready
                     </span>
                   </div>

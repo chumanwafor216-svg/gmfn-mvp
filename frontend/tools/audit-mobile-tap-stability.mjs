@@ -617,7 +617,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace inline action grids must not create page-local stacking layers around mobile buttons",
     pattern:
-      /function marketplaceInlineActionsStyle\([\s\S]*?display: "grid",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: 58,[\s\S]*?maxHeight: 58,[\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?transition: "none",/,
+      /function marketplaceInlineActionsStyle\([\s\S]*?display: "grid",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 52 : 58[\s\S]*?maxHeight: _isCompact \? 52 : 58[\s\S]*?pointerEvents: "auto",(?![\s\S]{0,180}(?:zIndex|isolation):)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?transition: "none",/,
   },
   {
     label:

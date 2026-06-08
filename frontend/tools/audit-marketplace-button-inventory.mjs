@@ -661,8 +661,8 @@ assertContains(
 );
 
 assertContains(
-  /function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: 58[\s\S]*?minHeight: 58[\s\S]*?maxHeight: 58[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.open"[\s\S]*?stableHeight=\{58\}/,
-  "Marketplace inline/link-desk buttons must keep one 58px row reserve so public-shop controls cannot jump between refresh/copy/email/open states."
+  /function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"[\s\S]*?function marketplaceInlineActionStyle[\s\S]*?height: _isCompact \? 52 : 58[\s\S]*?minHeight: _isCompact \? 52 : 58[\s\S]*?maxHeight: _isCompact \? 52 : 58[\s\S]*?debugId="marketplace\.public-shop\.refresh"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.copy"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.email"[\s\S]*?stableHeight=\{58\}[\s\S]*?debugId="marketplace\.public-shop\.open"[\s\S]*?stableHeight=\{58\}/,
+  "Marketplace inline/link-desk buttons must keep one stable row reserve: 52px on phone and 58px on desktop so public-shop controls cannot jump between refresh/copy/email/open states."
 );
 
 assertNotContains(

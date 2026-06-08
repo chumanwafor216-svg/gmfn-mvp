@@ -1,3 +1,55 @@
+### Marketplace Link Center mobile geometry pass (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue page-by-page stabilization after the Trust
+    Passport icon pass. Earlier phone screenshots showed Marketplace Link
+    Center rows splitting labels such as Join/Verify/Public Shop into awkward
+    fragments and exposing tall action stacks.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local Link Center / Records & Links geometry
+    and the audits that cage Marketplace action geometry;
+  - no backend, auth, API, data model, Dashboard, Community Home, Trust
+    Passport, Finance, global shell, or shared tap-guard logic changed.
+- Fix:
+  - compact Link Center hero reduced from a 64px icon rail / 92px min-height to
+    a 58px icon rail / 82px min-height;
+  - mobile Link Center row headers now use two columns instead of icon + text +
+    status, giving the title enough width to avoid one-letter stacks;
+  - status chips now sit below the row title on phone, not in a third squeezed
+    column;
+  - Public Shop Face received the same mobile status-chip placement;
+  - Link Center inline action rows now reserve 52px on phone and 58px on
+    desktop, keeping the phone controls inside the documented 48-56px range
+    while preserving desktop geometry.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-records-links-lane.mjs` now protects the
+    compact hero, two-column mobile headers, status-under-title placement, and
+    52px phone action rows.
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` and
+    `frontend/tools/audit-marketplace-actions.mjs` now accept the intentional
+    phone/desktop split for Link Center inline row reserves.
+- Verification so far:
+  - passed `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-front-package`;
+  - passed `npm --prefix frontend run audit:marketplace-button-lines`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm --prefix frontend run audit:marketplace-actions`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-records-links-lane.mjs tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-actions.mjs tools/audit-mobile-tap-stability.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this pass fixes the shared Link Center row geometry. It does not yet audit
+    every inner Paid Repost field, target helper, credit/payment branch, or
+    ROSCA cycle model. Marketplace should still continue lane-by-lane.
+
 ### Trust Passport snapshot icon and clear-photo pass (2026-06-08)
 
 - Trigger:

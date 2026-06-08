@@ -155,8 +155,8 @@ if (!recordsLinksSection.text) {
 }
 
 assertContains(
-  /function marketplaceLinkSummaryStyle\(isCompact: boolean\)[\s\S]*?overflowWrap: "break-word"[\s\S]*?function marketplaceLinkHeroStyle[\s\S]*?gridTemplateColumns: isCompact \? "64px minmax\(0, 1fr\)"[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"/,
-  "Link Center compact protocol must keep masked summaries, smaller phone hero geometry, and two-column phone action groups."
+  /function marketplaceLinkSummaryStyle\(isCompact: boolean\)[\s\S]*?overflowWrap: "break-word"[\s\S]*?function marketplaceLinkHeroStyle[\s\S]*?gridTemplateColumns: isCompact \? "58px minmax\(0, 1fr\)"[\s\S]*?minHeight: isCompact \? 82 : 126[\s\S]*?function marketplaceLinkRowHeaderStyle[\s\S]*?\? "44px minmax\(0, 1fr\)"[\s\S]*?function marketplaceLinkRowStatusStyle[\s\S]*?gridColumn: isCompact \? "2 \/ 3" : undefined[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridAutoRows: isCompact \? "52px" : "58px"/,
+  "Link Center compact protocol must keep masked summaries, smaller phone hero geometry, two-column mobile headers, and shorter two-column phone action groups."
 );
 
 if (findings.length > 0) {
