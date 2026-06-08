@@ -5,9 +5,14 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const frontendRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = join(frontendRoot, "..");
 
 function read(relativePath) {
   return readFileSync(join(frontendRoot, relativePath), "utf8");
+}
+
+function readRepo(relativePath) {
+  return readFileSync(join(repoRoot, relativePath), "utf8");
 }
 
 const findings = [];
@@ -29,6 +34,20 @@ function assertNotContains(file, pattern, message) {
   const text = read(file);
   text.split(/\r?\n/).forEach((line, index) => {
     if (pattern.test(line)) {
+      findings.push({
+        file,
+        line: index + 1,
+        message,
+        text: line.trim(),
+      });
+    }
+  });
+}
+
+function assertAsciiOnly(file, message) {
+  const text = read(file);
+  text.split(/\r?\n/).forEach((line, index) => {
+    if ([...line].some((char) => char.charCodeAt(0) > 127)) {
       findings.push({
         file,
         line: index + 1,
@@ -88,6 +107,58 @@ assertContains(
   /import \{ brandClampLines, brandSingleLine \} from "\.\.\/styles\/gmfnBrand";[\s\S]*?function routeTileStyle\(primary = false, compact = false\): React\.CSSProperties \{[\s\S]*?height: compact \? 66 : 88,[\s\S]*?maxHeight: compact \? 66 : 88,[\s\S]*?overflow: "hidden",[\s\S]*?function routeTitleStyle\(compact = false\): React\.CSSProperties \{[\s\S]*?brandSingleLine\(\)[\s\S]*?function routeHelperStyle\(compact = false\): React\.CSSProperties \{[\s\S]*?brandClampLines\(2\)/,
   "Loans overview route labels must keep fixed phone-safe heights and clamped text so they cannot turn labels into one-letter columns or overlap route cards."
 );
+
+assertContains(
+  "src/pages/LoansPage.tsx",
+  /import \{[\s\S]*TrustPaperIcon[\s\S]*TrustPaperIconName[\s\S]*\} from "\.\.\/components\/TrustPaperMarks";[\s\S]*function routeIcon\([\s\S]*<TrustPaperIcon[\s\S]*debugId="loans\.route\.money-out"/,
+  "Loans & Support must use app-native SVG pictograms for visible lane/action icons, including Money Out."
+);
+
+assertAsciiOnly(
+  "src/pages/LoansPage.tsx",
+  "Loans & Support source must not reintroduce emoji/mojibake display glyphs for core icons."
+);
+
+assertContains(
+  "src/pages/WithdrawalInstructionsPage.tsx",
+  /TrustPaperIcon[\s\S]*UK sort code[\s\S]*value=\{destination\.sortCode\}[\s\S]*debugId="money-out\.save-destination"[\s\S]*destinationNotice/,
+  "Loans & Support Money Out must expose UK sort code beside the payout save action and show the save response locally."
+);
+
+assertAsciiOnly(
+  "src/pages/WithdrawalInstructionsPage.tsx",
+  "Money Out source must not reintroduce emoji/mojibake display glyphs for core icons."
+);
+
+assertContains(
+  "src/lib/communityMoney.ts",
+  /export type CommunitySettlementDestination = \{[\s\S]*sortCode: string;[\s\S]*country: string;[\s\S]*currency: string;[\s\S]*noteWithSortCode[\s\S]*sort_code: normalizeSortCode\(destination\.sortCode\)/,
+  "Community money destination must carry sort code, country, and currency through shared frontend logic."
+);
+
+assertContains(
+  "src/lib/api.ts",
+  /sort_code\?: string \| null;[\s\S]*bank_sort_code\?: string \| null;[\s\S]*cleaned\.sort_code = sortCode;[\s\S]*cleaned\.bank_sort_code = sortCode;/,
+  "Withdrawal destination API payloads must keep sort_code and bank_sort_code aliases."
+);
+
+const backendWithdrawalDestination = readRepo(
+  "gmfn_backend/app/api/routes/withdrawal_destinations.py"
+);
+
+if (
+  !/sort_code: Optional\[str\][\s\S]*bank_sort_code: Optional\[str\][\s\S]*"sort_code": sort_code or None[\s\S]*_note_with_sort_code/.test(
+    backendWithdrawalDestination
+  )
+) {
+  findings.push({
+    file: "gmfn_backend/app/api/routes/withdrawal_destinations.py",
+    line: 1,
+    message:
+      "Backend withdrawal destination route must accept, preserve, and echo sort_code without requiring a schema migration.",
+    text: "Expected sort_code/bank_sort_code payload support was not found.",
+  });
+}
 
 [
   "src/pages/LoanReadinessPage.tsx",

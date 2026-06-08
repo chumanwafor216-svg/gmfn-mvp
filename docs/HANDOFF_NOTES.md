@@ -40571,3 +40571,53 @@ GSN-branded invite composer and invite-entry continuity.
     detailed Finance lanes still need phone visual checking after the broader
     audit/build sweep, especially where real backend data creates long event
     labels or large currency amounts.
+
+### Loans & Support payout sort-code pass (2026-06-08)
+
+- Trigger:
+  - product owner reported that Loans & Support -> Money Out / banking details
+    did not expose a UK sort code, felt too word-heavy/faint in places, and
+    still used weak emoji-style icons.
+- Unabated truth:
+  - `UserPayoutDestination` still has no dedicated `sort_code` database column.
+    This pass does not pretend a schema migration happened. It uses the same
+    safe temporary pattern as Payout Details: keep sort code in frontend state,
+    send `sort_code` / `bank_sort_code`, and preserve it in the existing note
+    channel until a backend migration is approved.
+- Fix:
+  - `frontend/src/lib/communityMoney.ts` now adds `sortCode`, `country`, and
+    `currency` to `CommunitySettlementDestination`, normalizes sort code from
+    future API fields or existing notes, and stores it separately in local
+    state.
+  - `frontend/src/lib/api.ts` now carries `sort_code` and `bank_sort_code`
+    aliases through withdrawal destination save/update payloads.
+  - `gmfn_backend/app/api/routes/withdrawal_destinations.py` now accepts
+    `sort_code` / `bank_sort_code`, preserves it inside the existing note
+    storage, strips it back out of user-facing note text, and echoes it in the
+    API response.
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx` now shows `UK sort
+    code` and `Country or region` in the personal payout form, copies/previews
+    sort code, requires it when profile/phone/currency hints point to UK/GBP,
+    and shows a local save response beside the payout action.
+  - `frontend/src/pages/LoansPage.tsx` now replaces the visible Loans & Support
+    emoji/mojibake icon marks with app-native `TrustPaperIcon` SVG pictograms.
+  - `frontend/tools/audit-loans-actions.mjs` now cages the Loans/Support SVG
+    icon requirement, Money-Out sort-code form requirement, shared destination
+    sort-code plumbing, and backend no-migration preservation path.
+- Verification:
+  - Passed `npm --prefix frontend run audit:loans-actions`.
+  - Passed `npm exec -- eslint src/pages/LoansPage.tsx src/pages/WithdrawalInstructionsPage.tsx src/lib/communityMoney.ts src/lib/api.ts tools/audit-loans-actions.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `python -m pytest gmfn_backend/tests/test_entry_create.py -q`.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm --prefix frontend run build` hit Windows `esbuild` spawn
+    `EPERM`; approved elevated `npm run build` from `frontend` passed.
+- Known blocker outside this pass:
+  - `npm --prefix frontend run audit:button-stability` still fails on
+    Marketplace grouped-lane and money-detail geometry guard patterns. This
+    failure is in `MarketplacePage.tsx`, not the Loans/Support or Money-Out
+    files changed here, and should be handled in the next Marketplace guard
+    pass rather than silently mixed into this payout fix.

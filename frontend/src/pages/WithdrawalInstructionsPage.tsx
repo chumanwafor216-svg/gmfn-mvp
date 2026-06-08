@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import {
+  TrustPaperIcon,
+  type TrustPaperIconName,
+} from "../components/TrustPaperMarks";
 import { navigateWithOrigin } from "../lib/nav";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
@@ -75,7 +79,10 @@ function defaultDestination(): CommunitySettlementDestination {
     destinationName: "",
     bankName: "",
     accountNumber: "",
+    sortCode: "",
     phoneNumber: "",
+    country: "",
+    currency: "",
     note: "",
   };
 }
@@ -256,6 +263,22 @@ function badge(primary = false): React.CSSProperties {
     whiteSpace: "normal",
     boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
   };
+}
+
+function iconLabel(icon: TrustPaperIconName, label: string): React.ReactElement {
+  return (
+    <div
+      style={{
+        ...sectionLabel(),
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+      }}
+    >
+      <TrustPaperIcon name={icon} size={15} strokeWidth={2.4} />
+      <span>{label}</span>
+    </div>
+  );
 }
 
 function moneyOutActionButtonStyle(
@@ -454,11 +477,48 @@ function splitRouteLines(route: CommunityMoneyRoute | null): string[] {
     .filter(Boolean);
 }
 
-function destinationReady(destination: CommunitySettlementDestination): boolean {
+function destinationReady(
+  destination: CommunitySettlementDestination,
+  needsSortCode = false
+): boolean {
   return Boolean(
     safeStr(destination.destinationName) &&
       safeStr(destination.bankName) &&
-      safeStr(destination.accountNumber)
+      safeStr(destination.accountNumber) &&
+      (!needsSortCode || safeStr(destination.sortCode))
+  );
+}
+
+function destinationCountryHint(destination: CommunitySettlementDestination, me: any): string {
+  return firstTruthy(
+    destination.country,
+    me?.country,
+    me?.country_of_residence,
+    me?.residence_country,
+    me?.profile?.country,
+    me?.phone_country_hint,
+    me?.locale_country_hint
+  );
+}
+
+function needsUkSortCode(
+  destination: CommunitySettlementDestination,
+  me: any,
+  currency: string
+): boolean {
+  const hint = destinationCountryHint(destination, me).toLowerCase();
+  const normalizedCurrency = safeStr(destination.currency || currency).toUpperCase();
+  const phone = safeStr(destination.phoneNumber || me?.phone_e164 || me?.phone);
+  return (
+    normalizedCurrency === "GBP" ||
+    phone.startsWith("+44") ||
+    hint === "gb" ||
+    hint === "uk" ||
+    hint.includes("united kingdom") ||
+    hint.includes("england") ||
+    hint.includes("scotland") ||
+    hint.includes("wales") ||
+    hint.includes("northern ireland")
   );
 }
 
@@ -573,6 +633,10 @@ export default function WithdrawalInstructionsPage() {
     tone: NoticeTone;
     text: string;
   } | null>(null);
+  const [destinationNotice, setDestinationNotice] = useState<{
+    tone: NoticeTone;
+    text: string;
+  } | null>(null);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -658,7 +722,20 @@ export default function WithdrawalInstructionsPage() {
 
         setMoneySurface(surface);
         setWithdrawalRoute(surface?.withdrawalRoute || null);
-        setDestination(surface?.payoutDestination || defaultDestination());
+        const nextDestination = surface?.payoutDestination || defaultDestination();
+        setDestination({
+          ...nextDestination,
+          country: firstTruthy(
+            nextDestination.country,
+            meRes?.country,
+            meRes?.country_of_residence,
+            meRes?.residence_country,
+            meRes?.profile?.country,
+            meRes?.phone_country_hint,
+            meRes?.locale_country_hint
+          ),
+          currency: firstTruthy(nextDestination.currency, surface?.poolCurrency),
+        });
         setReadinessPlan(readinessRes);
         setBorrowerPreflight(preflightRes);
       } else {
@@ -756,7 +833,9 @@ export default function WithdrawalInstructionsPage() {
       communitySettlement?.accountNumber
   );
 
-  const payoutReady = destinationReady(destination);
+  const destinationCountry = destinationCountryHint(destination, me);
+  const payoutNeedsSortCode = needsUkSortCode(destination, me, poolCurrency);
+  const payoutReady = destinationReady(destination, payoutNeedsSortCode);
 
   const readinessRecommendation = extractRecommendation(readinessPlan);
   const suggestedSafeAmount = extractSuggestedSafeAmount(readinessPlan);
@@ -947,16 +1026,25 @@ export default function WithdrawalInstructionsPage() {
   async function handleSaveDestination() {
     if (!selectedClanId || !currentGmfnId) {
       showNotice("error", "Community or GSN ID is not visible yet.");
+      setDestinationNotice({
+        tone: "error",
+        text: "Community or GSN ID is not visible yet.",
+      });
       return;
     }
 
     setSavingDestination(true);
+    setDestinationNotice(null);
 
     try {
       const saved = await saveCommunitySettlementDestination(
         selectedClanId,
         currentGmfnId,
-        destination
+        {
+          ...destination,
+          country: firstTruthy(destination.country, destinationCountry),
+          currency: firstTruthy(destination.currency, poolCurrency),
+        }
       );
 
       setDestination(saved);
@@ -971,12 +1059,22 @@ export default function WithdrawalInstructionsPage() {
       );
 
       showNotice("success", "Personal payout account saved.");
+      setDestinationNotice({
+        tone: "success",
+        text: "Payout account saved here. GSN will use these details only after approval.",
+      });
     } catch (err: any) {
+      const errorText =
+        safeStr(err?.message) ||
+        "Personal payout account could not be saved right now.";
       showNotice(
         "error",
-        safeStr(err?.message) ||
-          "Personal payout account could not be saved right now."
+        errorText
       );
+      setDestinationNotice({
+        tone: "error",
+        text: errorText,
+      });
     } finally {
       setSavingDestination(false);
     }
@@ -1107,7 +1205,11 @@ export default function WithdrawalInstructionsPage() {
       destination.accountNumber
         ? `Account number: ${destination.accountNumber}`
         : "",
+      destination.sortCode ? `UK sort code: ${destination.sortCode}` : "",
       destination.phoneNumber ? `Phone: ${destination.phoneNumber}` : "",
+      firstTruthy(destination.country, destinationCountry)
+        ? `Country: ${firstTruthy(destination.country, destinationCountry)}`
+        : "",
       destination.note ? `Note: ${destination.note}` : "",
     ]
       .filter(Boolean)
@@ -1144,6 +1246,7 @@ export default function WithdrawalInstructionsPage() {
       destination.destinationName
         ? `Payout account: ${destination.destinationName}`
         : "",
+      destination.sortCode ? `UK sort code: ${destination.sortCode}` : "",
       communitySettlement?.bankName
         ? `Community rail: ${communitySettlement.bankName}`
         : "",
@@ -1269,13 +1372,16 @@ export default function WithdrawalInstructionsPage() {
             borderRadius: 16,
             display: "grid",
             placeItems: "center",
-            fontSize: 27,
             background: identityReady
               ? "rgba(46,155,98,0.14)"
               : "rgba(214,170,69,0.18)",
           }}
         >
-          {identityReady ? "✅" : "⚠️"}
+          <TrustPaperIcon
+            name={identityReady ? "check" : "alert"}
+            size={24}
+            color={identityReady ? "#B9F0CD" : "#F6D878"}
+          />
         </div>
         <div>
           <div
@@ -1297,7 +1403,7 @@ export default function WithdrawalInstructionsPage() {
           </div>
         </div>
         <div aria-hidden="true" style={{ color: "#D5E7FA", fontSize: 28, fontWeight: 900 }}>
-          ›
+          {">"}
         </div>
       </div>
 
@@ -1329,7 +1435,7 @@ export default function WithdrawalInstructionsPage() {
                 "0 22px 42px rgba(2,6,23,0.32), inset 0 1px 0 rgba(255,255,255,0.10)",
             }}
           >
-            👛
+            <TrustPaperIcon name="wallet" size={isCompact ? 30 : 46} />
           </div>
 
           <div>
@@ -1380,11 +1486,11 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           {[
-            ["🧭", "Context", identityReady],
-            ["💰", "Amount", requestedAmount > 0],
-            ["🏦", "Payout", payoutReady],
-            ["🛤️", "Rail", communityRailReady],
-            ["✅", "Result", Boolean(latestWithdrawalResult) || withdrawalCanWidenRoutes],
+            ["globe", "Context", identityReady],
+            ["wallet", "Amount", requestedAmount > 0],
+            ["bank", "Payout", payoutReady],
+            ["document", "Rail", communityRailReady],
+            ["check", "Result", Boolean(latestWithdrawalResult) || withdrawalCanWidenRoutes],
           ].map(([icon, label, active]) => (
             <div
               key={String(label)}
@@ -1418,7 +1524,11 @@ export default function WithdrawalInstructionsPage() {
                   fontSize: isCompact ? 16 : 18,
                 }}
               >
-                {icon}
+                <TrustPaperIcon
+                  name={icon as TrustPaperIconName}
+                  size={17}
+                  strokeWidth={2.4}
+                />
               </span>
               <span
                 style={{
@@ -1475,7 +1585,7 @@ export default function WithdrawalInstructionsPage() {
             }}
           >
             <div style={statTile()}>
-              <div style={sectionLabel()}>💵 Requested</div>
+              {iconLabel("wallet", "Requested")}
               <div
                 style={{
                   marginTop: 8,
@@ -1490,7 +1600,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>🛡️ Available</div>
+              {iconLabel("shield", "Available")}
               <div
                 style={{
                   marginTop: 8,
@@ -1505,7 +1615,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>🟠 Support gap</div>
+              {iconLabel("alert", "Support gap")}
               <div
                 style={{
                   marginTop: 8,
@@ -1520,7 +1630,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>🧭 Path</div>
+              {iconLabel("globe", "Path")}
               <div
                 style={{
                   marginTop: 8,
@@ -1535,7 +1645,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>🛤️ Rail</div>
+              {iconLabel("document", "Rail")}
               <div
                 style={{
                   marginTop: 8,
@@ -1550,7 +1660,7 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={statTile()}>
-              <div style={sectionLabel()}>👤 Payout</div>
+              {iconLabel("bank", "Payout")}
               <div
                 style={{
                   marginTop: 8,
@@ -1579,7 +1689,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>💰 Amount Decision</div>
+            {iconLabel("wallet", "Amount Decision")}
             <div style={{ marginTop: 8, ...helperText() }}>
               Enter how much you want to withdraw.
             </div>
@@ -1660,7 +1770,7 @@ export default function WithdrawalInstructionsPage() {
                 }}
               >
                 <div style={innerCard("#FFFFFF")}>
-                  <div style={sectionLabel()}>🚦 Path Status</div>
+                  {iconLabel("shield", "Path Status")}
                   <div
                     style={{
                       marginTop: 8,
@@ -1788,7 +1898,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>🏦 Payout Preview</div>
+            {iconLabel("bank", "Payout Preview")}
             <div style={{ marginTop: 8, ...helperText() }}>
               Complete payout details only when the preview is incomplete.
             </div>
@@ -1865,6 +1975,39 @@ export default function WithdrawalInstructionsPage() {
                 </div>
 
                 <div>
+                  <div style={sectionLabel()}>
+                    UK sort code{payoutNeedsSortCode ? " required" : " if UK/GBP"}
+                  </div>
+                  <input
+                    value={destination.sortCode}
+                    onChange={(e) =>
+                      setDestination((prev) => ({
+                        ...prev,
+                        sortCode: e.target.value,
+                      }))
+                    }
+                    inputMode="numeric"
+                    placeholder="12-34-56"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div>
+                  <div style={sectionLabel()}>Country or region</div>
+                  <input
+                    value={destination.country || destinationCountry}
+                    onChange={(e) =>
+                      setDestination((prev) => ({
+                        ...prev,
+                        country: e.target.value,
+                      }))
+                    }
+                    placeholder="United Kingdom"
+                    style={{ ...inputStyle(), marginTop: 8 }}
+                  />
+                </div>
+
+                <div>
                   <div style={sectionLabel()}>Phone number</div>
                   <input
                     value={destination.phoneNumber}
@@ -1910,7 +2053,7 @@ export default function WithdrawalInstructionsPage() {
                     {savingDestination ? "Saving..." : "Save Payout Account"}
                   </PrimaryButton>
 
-                    <SecondaryButton
+                  <SecondaryButton
                       onClick={handleCopyPayoutAccount}
                       debugId="money-out.copy-payout-account"
                       style={moneyOutActionButtonStyle("secondary")}
@@ -1918,6 +2061,22 @@ export default function WithdrawalInstructionsPage() {
                     Copy Payout Account
                   </SecondaryButton>
                 </div>
+
+                {destinationNotice ? (
+                  <div
+                    style={{
+                      ...innerCard(
+                        destinationNotice.tone === "success" ? "#F0FBF6" : "#FFF5F5"
+                      ),
+                      color:
+                        destinationNotice.tone === "success" ? "#166534" : "#991B1B",
+                      fontWeight: 900,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {destinationNotice.text}
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -1981,6 +2140,44 @@ export default function WithdrawalInstructionsPage() {
                     {safeStr(destination.accountNumber || "Awaiting entry")}
                   </div>
                 </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>
+                    UK sort code{payoutNeedsSortCode ? " required" : ""}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color:
+                        payoutNeedsSortCode && !safeStr(destination.sortCode)
+                          ? "#FCD34D"
+                          : "#F8FBFF",
+                      fontWeight: 900,
+                      fontSize: 16,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {safeStr(
+                      destination.sortCode ||
+                        (payoutNeedsSortCode ? "Awaiting sort code" : "Not required")
+                    )}
+                  </div>
+                </div>
+
+                <div style={statTile()}>
+                  <div style={sectionLabel()}>Country profile</div>
+                  <div
+                    style={{
+                      marginTop: 8,
+                      color: "#F8FBFF",
+                      fontWeight: 900,
+                      fontSize: 16,
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {safeStr(destination.country || destinationCountry || "Not stated")}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1998,7 +2195,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>🛤️ Community Money-Out Rail</div>
+            {iconLabel("document", "Community Money-Out Rail")}
             <div style={{ marginTop: 8, ...helperText() }}>
               Fixed community withdrawal rail.
             </div>
@@ -2111,7 +2308,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>⏳ Execution & Result</div>
+            <div style={sectionLabel()}> Execution & Result</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {latestResultText}
             </div>

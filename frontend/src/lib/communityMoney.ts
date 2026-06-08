@@ -63,7 +63,10 @@ export type CommunitySettlementDestination = {
   destinationName: string;
   bankName: string;
   accountNumber: string;
+  sortCode: string;
   phoneNumber: string;
+  country: string;
+  currency: string;
   note: string;
 };
 
@@ -163,6 +166,36 @@ function firstTruthy(...values: any[]): string {
     if (text) return text;
   }
   return "";
+}
+
+function normalizeSortCode(value: any): string {
+  return safeStr(value)
+    .replace(/[^\dA-Za-z]/g, "")
+    .replace(/(.{2})(?=.)/g, "$1-")
+    .slice(0, 16);
+}
+
+function extractSortCodeFromNote(note: any): string {
+  const raw = safeStr(note);
+  if (!raw) return "";
+  const match = raw.match(/(?:UK\s*)?Sort code:\s*([^|;\n]+)/i);
+  return normalizeSortCode(match?.[1] || "");
+}
+
+function stripSortCodeFromNote(note: any): string {
+  return safeStr(note)
+    .split("|")
+    .map((part) => safeStr(part))
+    .filter((part) => part && !/^(?:UK\s*)?Sort code:/i.test(part))
+    .join(" | ");
+}
+
+function noteWithSortCode(note: any, sortCode: any): string {
+  const base = stripSortCodeFromNote(note);
+  const normalized = normalizeSortCode(sortCode);
+  return [base, normalized ? `UK Sort code: ${normalized}` : ""]
+    .filter(Boolean)
+    .join(" | ");
 }
 
 function apiBase(): string {
@@ -531,7 +564,10 @@ export function defaultDestination(): CommunitySettlementDestination {
     destinationName: "",
     bankName: "",
     accountNumber: "",
+    sortCode: "",
     phoneNumber: "",
+    country: "",
+    currency: "",
     note: "",
   };
 }
@@ -908,14 +944,38 @@ export async function getCommunitySettlementDestination(
           src?.bank_account_number,
           fallback.accountNumber
         ),
+        sortCode: firstTruthy(
+          src?.sort_code,
+          src?.bank_sort_code,
+          src?.sortCode,
+          fallback.sortCode,
+          extractSortCodeFromNote(src?.note),
+          extractSortCodeFromNote(fallback.note)
+        ),
         phoneNumber: firstTruthy(
           src?.phone_number,
           src?.phone,
           fallback.phoneNumber
         ),
-        note: firstTruthy(src?.note, src?.description, fallback.note),
+        country: firstTruthy(src?.country, src?.region, fallback.country),
+        currency: firstTruthy(src?.currency, fallback.currency),
+        note: stripSortCodeFromNote(
+          firstTruthy(src?.note, src?.description, fallback.note)
+        ),
       }
-    : fallback;
+    : {
+        destinationName: safeStr(fallback.destinationName),
+        bankName: safeStr(fallback.bankName),
+        accountNumber: safeStr(fallback.accountNumber),
+        sortCode: firstTruthy(
+          fallback.sortCode,
+          extractSortCodeFromNote(fallback.note)
+        ),
+        phoneNumber: safeStr(fallback.phoneNumber),
+        country: safeStr(fallback.country),
+        currency: safeStr(fallback.currency),
+        note: stripSortCodeFromNote(fallback.note),
+      };
 
   writeLocalJSON(destinationStorageKey(gmfnId, clanId), normalized);
   return normalized;
@@ -932,8 +992,12 @@ export async function saveCommunitySettlementDestination(
     destination_name: safeStr(destination.destinationName),
     bank_name: safeStr(destination.bankName),
     account_number: safeStr(destination.accountNumber),
+    sort_code: normalizeSortCode(destination.sortCode),
+    bank_sort_code: normalizeSortCode(destination.sortCode),
     phone_number: safeStr(destination.phoneNumber),
-    note: safeStr(destination.note),
+    country: safeStr(destination.country),
+    currency: safeStr(destination.currency),
+    note: noteWithSortCode(destination.note, destination.sortCode),
   };
 
   const viaWrapper =
@@ -959,19 +1023,33 @@ export async function saveCommunitySettlementDestination(
           src?.bank_account_number,
           destination.accountNumber
         ),
+        sortCode: firstTruthy(
+          src?.sort_code,
+          src?.bank_sort_code,
+          src?.sortCode,
+          destination.sortCode,
+          extractSortCodeFromNote(src?.note)
+        ),
         phoneNumber: firstTruthy(
           src?.phone_number,
           src?.phone,
           destination.phoneNumber
         ),
-        note: firstTruthy(src?.note, src?.description, destination.note),
+        country: firstTruthy(src?.country, src?.region, destination.country),
+        currency: firstTruthy(src?.currency, destination.currency),
+        note: stripSortCodeFromNote(
+          firstTruthy(src?.note, src?.description, destination.note)
+        ),
       }
     : {
         destinationName: safeStr(destination.destinationName),
         bankName: safeStr(destination.bankName),
         accountNumber: safeStr(destination.accountNumber),
+        sortCode: normalizeSortCode(destination.sortCode),
         phoneNumber: safeStr(destination.phoneNumber),
-        note: safeStr(destination.note),
+        country: safeStr(destination.country),
+        currency: safeStr(destination.currency),
+        note: stripSortCodeFromNote(destination.note),
       };
 
   writeLocalJSON(destinationStorageKey(gmfnId, clanId), normalized);

@@ -1643,6 +1643,8 @@ function normalizeWithdrawalDestinationPayload(payload: {
   destination_name?: string | null;
   bank_name?: string | null;
   account_number?: string | null;
+  sort_code?: string | null;
+  bank_sort_code?: string | null;
   phone_number?: string | null;
   country?: string | null;
   currency?: string | null;
@@ -1655,6 +1657,9 @@ function normalizeWithdrawalDestinationPayload(payload: {
   const destinationName = String(payload?.destination_name || "").trim();
   const bankName = String(payload?.bank_name || "").trim();
   const accountNumber = String(payload?.account_number || "").trim();
+  const sortCode = String(
+    payload?.sort_code || payload?.bank_sort_code || ""
+  ).trim();
   const phoneNumber = String(payload?.phone_number || "").trim();
   const country = String(payload?.country || "").trim();
   const currency = String(payload?.currency || "").trim().toUpperCase();
@@ -1682,6 +1687,11 @@ function normalizeWithdrawalDestinationPayload(payload: {
   if (accountNumber) {
     cleaned.account_number = accountNumber;
     cleaned.bank_account_number = accountNumber;
+  }
+
+  if (sortCode) {
+    cleaned.sort_code = sortCode;
+    cleaned.bank_sort_code = sortCode;
   }
 
   if (phoneNumber) {
@@ -1740,6 +1750,8 @@ export async function saveWithdrawalDestination(payload: {
   destination_name?: string | null;
   bank_name?: string | null;
   account_number?: string | null;
+  sort_code?: string | null;
+  bank_sort_code?: string | null;
   phone_number?: string | null;
   country?: string | null;
   currency?: string | null;
@@ -1772,6 +1784,8 @@ export async function updateWithdrawalDestination(payload: {
   destination_name?: string | null;
   bank_name?: string | null;
   account_number?: string | null;
+  sort_code?: string | null;
+  bank_sort_code?: string | null;
   phone_number?: string | null;
   country?: string | null;
   currency?: string | null;

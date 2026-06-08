@@ -47,6 +47,48 @@ def _normalize_phone(value: object) -> str:
     return compact
 
 
+def _normalize_sort_code(value: object) -> str:
+    raw = "".join(ch for ch in _clean(value) if ch.isalnum()).upper()
+    if not raw:
+        return ""
+    chunks = [raw[index : index + 2] for index in range(0, len(raw), 2)]
+    return "-".join(chunks)[:16]
+
+
+def _extract_sort_code_from_note(note: object) -> str:
+    raw = _clean(note)
+    if not raw:
+        return ""
+    for part in raw.split("|"):
+        text = _clean(part)
+        lower = text.lower()
+        if lower.startswith("sort code:") or lower.startswith("uk sort code:"):
+            return _normalize_sort_code(text.split(":", 1)[1])
+    return ""
+
+
+def _strip_sort_code_from_note(note: object) -> str:
+    raw = _clean(note)
+    if not raw:
+        return ""
+    parts = []
+    for part in raw.split("|"):
+        text = _clean(part)
+        lower = text.lower()
+        if lower.startswith("sort code:") or lower.startswith("uk sort code:"):
+            continue
+        if text:
+            parts.append(text)
+    return " | ".join(parts)
+
+
+def _note_with_sort_code(note: object, sort_code: object) -> str:
+    base = _strip_sort_code_from_note(note)
+    normalized = _normalize_sort_code(sort_code)
+    parts = [part for part in [base, f"UK Sort code: {normalized}" if normalized else ""] if part]
+    return " | ".join(parts)
+
+
 def _verification_summary(current_user: User) -> tuple[str, str]:
     if getattr(current_user, "phone_verified_at", None):
         return (
@@ -96,6 +138,8 @@ class WithdrawalDestinationIn(BaseModel):
     destination_name: str = Field(..., min_length=2, max_length=160)
     bank_name: str = Field(..., min_length=2, max_length=120)
     account_number: str = Field(..., min_length=6, max_length=64)
+    sort_code: Optional[str] = Field(default=None, max_length=32)
+    bank_sort_code: Optional[str] = Field(default=None, max_length=32)
     phone_number: Optional[str] = Field(default=None, max_length=32)
     country: Optional[str] = Field(default=None, max_length=64)
     currency: Optional[str] = Field(default="NGN", max_length=8)
@@ -103,6 +147,7 @@ class WithdrawalDestinationIn(BaseModel):
 
 
 def _payload(row: UserPayoutDestination) -> dict:
+    sort_code = _extract_sort_code_from_note(row.note)
     return {
         "id": int(row.id),
         "destination_name": row.destination_name,
@@ -111,10 +156,12 @@ def _payload(row: UserPayoutDestination) -> dict:
         "bank": row.bank_name,
         "account_number": row.account_number,
         "bank_account_number": row.account_number,
+        "sort_code": sort_code or None,
+        "bank_sort_code": sort_code or None,
         "phone_number": row.phone_number,
         "country": row.country,
         "currency": row.currency,
-        "note": row.note,
+        "note": _strip_sort_code_from_note(row.note),
         "verification_status": row.verification_status,
         "verification_note": row.verification_note,
         "phone_country_hint": row.phone_country_hint,
@@ -200,7 +247,11 @@ def create_my_withdrawal_destination(
         phone_number=_normalize_phone(payload.phone_number) or None,
         country=_clean(payload.country) or None,
         currency=_normalize_currency(payload.currency),
-        note=_clean(payload.note) or None,
+        note=_note_with_sort_code(
+            payload.note,
+            payload.sort_code or payload.bank_sort_code,
+        )
+        or None,
         verification_status=verification_status,
         verification_note=verification_note,
         verified_at=None,
@@ -229,7 +280,10 @@ def update_my_withdrawal_destination(
     row.phone_number = _normalize_phone(payload.phone_number) or None
     row.country = _clean(payload.country) or None
     row.currency = _normalize_currency(payload.currency)
-    row.note = _clean(payload.note) or None
+    row.note = _note_with_sort_code(
+        payload.note,
+        payload.sort_code or payload.bank_sort_code,
+    ) or None
     row.verification_status = verification_status
     row.verification_note = verification_note
     row.verified_at = None

@@ -2,6 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PageTopNav from "../components/PageTopNav";
 import { StableCtaLink, SubtleButton } from "../components/StableButton";
+import {
+  TrustPaperIcon,
+  type TrustPaperIconName,
+} from "../components/TrustPaperMarks";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -333,6 +337,38 @@ function routeIconCircle(primary = false, compact = false): React.CSSProperties 
       ? "0 10px 20px rgba(19,95,209,0.22)"
       : "inset 0 1px 0 rgba(255,255,255,0.95)",
   };
+}
+
+function routeIcon(
+  name: TrustPaperIconName,
+  primary = false,
+  compact = false
+): React.ReactElement {
+  return (
+    <span style={routeIconCircle(primary, compact)} aria-hidden="true">
+      <TrustPaperIcon
+        name={name}
+        size={compact ? 20 : 24}
+        strokeWidth={2.4}
+      />
+    </span>
+  );
+}
+
+function iconLabel(name: TrustPaperIconName, label: string): React.ReactElement {
+  return (
+    <div
+      style={{
+        ...sectionLabel(),
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+      }}
+    >
+      <TrustPaperIcon name={name} size={15} strokeWidth={2.4} />
+      <span>{label}</span>
+    </div>
+  );
 }
 
 function routeTitleStyle(compact = false): React.CSSProperties {
@@ -761,14 +797,13 @@ export default function LoansPage() {
                 maxWidth: 580,
               }}
             >
-              <span style={badge(false)}>👥 Community: {communityLabel}</span>
-              <span style={badge(false)}>✅ Active support items: {activeLoans.length}</span>
+              <span style={badge(false)}>Community: {communityLabel}</span>
+              <span style={badge(false)}>Active support items: {activeLoans.length}</span>
               <span style={badge(false)}>
-                🕒 Pending guarantor requests: {guarantorInbox.length}
+                Pending guarantor requests: {guarantorInbox.length}
               </span>
             </div>
           </div>
-
           <div
             style={{
               ...softCard("#FFFFFF"),
@@ -799,7 +834,7 @@ export default function LoansPage() {
                 boxShadow: "0 16px 32px rgba(2,6,23,0.28)",
               }}
             >
-              🪙
+              <TrustPaperIcon name="wallet" size={34} strokeWidth={2.4} />
             </div>
             <div style={{ marginTop: 14, ...sectionLabel(), color: "#D7E3F1" }}>
               Pool position
@@ -837,7 +872,7 @@ export default function LoansPage() {
           }}
         >
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <span style={routeIconCircle(false)}>📊</span>
+            {routeIcon("chart")}
             <div>
               <div style={sectionLabel()}>Support summary</div>
               <div style={{ marginTop: 4, ...helperText() }}>
@@ -853,7 +888,7 @@ export default function LoansPage() {
             debugId="loans.toggle-overview"
             style={{ borderRadius: 999 }}
           >
-            {collapsed.overview ? "View details" : "View details ›"}
+            {collapsed.overview ? "View details" : "View details "}
           </SubtleButton>
         </div>
 
@@ -867,7 +902,7 @@ export default function LoansPage() {
             }}
           >
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>💳 Active loans</div>
+              {iconLabel("document", "Active loans")}
               <div
                 style={{
                   marginTop: 8,
@@ -881,7 +916,7 @@ export default function LoansPage() {
             </div>
 
             <div style={statTile("#FFFBEF")}>
-              <div style={sectionLabel()}>👤 Borrower side</div>
+              {iconLabel("user", "Borrower side")}
               <div
                 style={{
                   marginTop: 8,
@@ -895,7 +930,7 @@ export default function LoansPage() {
             </div>
 
             <div style={statTile("#F8FBFF")}>
-              <div style={sectionLabel()}>🛡️ Guarantor side</div>
+              {iconLabel("shield", "Guarantor side")}
               <div
                 style={{
                   marginTop: 8,
@@ -909,7 +944,7 @@ export default function LoansPage() {
             </div>
 
             <div style={{ ...statTile("#FFF5F5"), gridColumn: "span 1" }}>
-              <div style={sectionLabel()}>⏳ Pending requests</div>
+              {iconLabel("alert", "Pending requests")}
               <div
                 style={{
                   marginTop: 8,
@@ -923,7 +958,7 @@ export default function LoansPage() {
             </div>
 
             <div style={{ ...statTile("#F0FBF6"), gridColumn: isCompact ? "1 / -1" : "span 2" }}>
-              <div style={sectionLabel()}>🪙 Pool</div>
+              {iconLabel("wallet", "Pool")}
               <div
                 style={{
                   marginTop: 8,
@@ -950,7 +985,9 @@ export default function LoansPage() {
           }}
         >
           <div style={{ display: "grid", gridTemplateColumns: "96px minmax(0, 1fr)", gap: 16 }}>
-            <span style={{ ...routeIconCircle(false), width: 86, height: 86, fontSize: 46 }}>🎯</span>
+            <span style={{ ...routeIconCircle(false), width: 86, height: 86 }}>
+              <TrustPaperIcon name="spark" size={42} strokeWidth={2.3} />
+            </span>
             <div>
               <div style={sectionLabel()}>Current support focus</div>
               <div
@@ -974,13 +1011,13 @@ export default function LoansPage() {
             <div style={sectionLabel()}>How to read this page</div>
             <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
               <div style={helperText()}>
-                • Borrower-side load = your own support request flow.
+                Borrower-side load = your own support request flow.
               </div>
               <div style={helperText()}>
-                • Guarantor-side load = you are attached to someone else's support flow.
+                Guarantor-side load = you are attached to someone else's support flow.
               </div>
               <div style={helperText()}>
-                • Pending requests = someone is waiting for your decision.
+                Pending requests = someone is waiting for your decision.
               </div>
             </div>
           </div>
@@ -989,7 +1026,7 @@ export default function LoansPage() {
 
       <section id="loans-next-routes" style={pageCard("#FFFFFF")}>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <span style={routeIconCircle(false)}>🧭</span>
+          {routeIcon("globe")}
           <div>
             <div style={sectionLabel()}>Live support modules</div>
             <div style={{ marginTop: 4, ...helperText() }}>
@@ -1013,7 +1050,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(true, isCompact)}
           >
-            <span style={routeIconCircle(true, isCompact)}>▶️</span>
+            {routeIcon("spark", true, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Start Support Request</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1029,7 +1066,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>⬇️</span>
+            {routeIcon("wallet", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Money In</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1045,7 +1082,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>⬆️</span>
+            {routeIcon("bank", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Money Out</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1061,7 +1098,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>🛡️</span>
+            {routeIcon("shield", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Loan Readiness</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1077,7 +1114,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>💡</span>
+            {routeIcon("spark", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Loan Suggestions</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1093,7 +1130,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>👥</span>
+            {routeIcon("community", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Incoming Guarantor Requests</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1109,7 +1146,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>🔔</span>
+            {routeIcon("alert", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Action Inbox</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1125,7 +1162,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>🏆</span>
+            {routeIcon("chart", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Guarantor Earnings</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1141,7 +1178,7 @@ export default function LoansPage() {
             fullWidth
             style={routeTileStyle(false, isCompact)}
           >
-            <span style={routeIconCircle(false, isCompact)}>🏪</span>
+            {routeIcon("shop", false, isCompact)}
             <div>
               <div style={routeTitleStyle(isCompact)}>Marketplace</div>
               <div style={routeHelperStyle(isCompact)}>
@@ -1154,7 +1191,7 @@ export default function LoansPage() {
 
       <section id="loans-queues-flows" style={pageCard("#FFFFFF")}>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <span style={routeIconCircle(false)}>👥</span>
+          {routeIcon("community")}
           <div>
             <div style={sectionLabel()}>Queues & flows</div>
             <div style={{ marginTop: 4, ...helperText() }}>
@@ -1180,8 +1217,8 @@ export default function LoansPage() {
               alignItems: "center",
             }}
           >
-            <span style={{ ...routeIconCircle(false), width: 64, height: 64, fontSize: 34 }}>
-              👤
+            <span style={{ ...routeIconCircle(false), width: 64, height: 64 }}>
+              <TrustPaperIcon name="user" size={32} strokeWidth={2.4} />
             </span>
             <div>
               <div style={{ ...routeTitleStyle(), color: "#0B4EB3" }}>
@@ -1204,8 +1241,8 @@ export default function LoansPage() {
               alignItems: "center",
             }}
           >
-            <span style={{ ...routeIconCircle(false), width: 64, height: 64, fontSize: 34 }}>
-              🧑‍🤝‍🧑
+            <span style={{ ...routeIconCircle(false), width: 64, height: 64 }}>
+              <TrustPaperIcon name="community" size={32} strokeWidth={2.4} />
             </span>
             <div>
               <div style={{ ...routeTitleStyle(), color: "#5B21B6" }}>
@@ -1236,7 +1273,7 @@ export default function LoansPage() {
           alignItems: "center",
         }}
       >
-        <span style={routeIconCircle(false)}>ℹ️</span>
+        {routeIcon("document")}
         <div>
           <div style={{ color: "#07172C", fontWeight: 950, lineHeight: 1.35 }}>
             Loans & Support stays community-specific. Finance shows the money picture;
