@@ -192,6 +192,12 @@ For More / Community Tools lane work, also run:
 npm --prefix frontend run audit:marketplace-more-tools-lane
 ```
 
+For Marketplace compact Trust pill work, also run:
+
+```bash
+npm --prefix frontend run audit:marketplace-trust-pill
+```
+
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 

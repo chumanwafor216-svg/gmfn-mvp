@@ -1,3 +1,55 @@
+### Marketplace compact Trust pill cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the More / Community Tools lane was caged, product owner asked to
+    continue the full Marketplace package;
+  - next safe cleanup selected: the compact front Trust pill, because it is a
+    status signal and should not become another full lane or Trust Passport
+    surface.
+- Source facts changed/preserved:
+  - front pill remains `debugId="marketplace.tile.trust"`;
+  - it still toggles `profileDetailsOpen` through `toggleProfileDetails`;
+  - stable pill height remains `isCompact ? 46 : 48`;
+  - no backend, auth, Dashboard, Community Home, Action Inbox, or global shell
+    behavior was changed.
+- Fix:
+  - renamed the expanded heading from `Your Trust in this marketplace` to
+    `Local Marketplace Trust`;
+  - added plain-language copy explaining that this is the selected community's
+    local trust signal and fuller proof routes live under More / Community
+    Tools;
+  - renamed stats from `Trust` and `Finance` to `Local trust` and
+    `Local finance signal`;
+  - added `frontend/tools/audit-marketplace-trust-pill.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-trust-pill`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so compact Trust-pill work
+    has a required guard.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-trust-pill`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - `npm --prefix frontend run audit:marketplace-more-tools-lane`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-trust-pill.mjs tools/audit-marketplace-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Publish status:
+  - final commit, push, and GitHub deploy verification are reported in the
+    session close-out rather than self-referenced inside this same commit.
+- Unabated truth:
+  - this cages the compact Trust pill only;
+  - it does not audit or redesign the full Trust Passport page yet.
+
 ### Marketplace More / Community Tools lane guided repair checkpoint (2026-06-08)
 
 - Trigger:
@@ -56,8 +108,9 @@
   - this makes More less noisy but does not remove the underlying routes;
   - Demand Box is still visible in More because it does not yet have its own
     caged Marketplace lane in this package;
-  - commit, push, and GitHub deploy verification still need to happen for this
-    checkpoint.
+  - committed and pushed as `eea70ab Cage Marketplace more tools lane`;
+  - GitHub `Trigger Render Deploy` and `Backend Tests` both completed
+    successfully for that commit.
 
 ### Marketplace Records & Links lane guided repair checkpoint (2026-06-08)
 

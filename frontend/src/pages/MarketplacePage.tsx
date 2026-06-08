@@ -5653,7 +5653,11 @@ export default function MarketplacePage() {
 
           {profileDetailsOpen ? (
             <div style={{ marginTop: 12, ...innerCard("#FFFFFF") }}>
-              <div style={sectionLabel()}>Your Trust in this marketplace</div>
+              <div style={sectionLabel()}>Local Marketplace Trust</div>
+              <div style={{ marginTop: 8, ...helperText(), fontSize: 13 }}>
+                This is this selected community's local trust signal. Use More
+                / Community Tools when you need fuller proof routes.
+              </div>
               <div
                 style={{
                   marginTop: 10,
@@ -5666,11 +5670,14 @@ export default function MarketplacePage() {
               >
                 {[
                   ["Marketplace ID", communityIdentity(selectedCommunity)],
-                  ["Trust", marketplaceTrustDisplay],
+                  ["Local trust", marketplaceTrustDisplay],
                   ["Trust events", marketplaceTrustEvidenceLabel],
                   ["Positive trust", marketplaceTrustPositiveLabel],
                   ["Negative trust", marketplaceTrustNegativeLabel],
-                  ["Finance", communityFinanceLabel(selectedCommunity)],
+                  [
+                    "Local finance signal",
+                    communityFinanceLabel(selectedCommunity),
+                  ],
                 ].map(([label, value]) => (
                   <div key={label} style={marketplaceProfileStatStyle()}>
                     <div style={sectionLabel()}>{label}</div>
