@@ -1,3 +1,48 @@
+### Trust Passport Repair / Next Step lane checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue after Evidence Story lane caging;
+  - next selected lane: Repair or Next Step, because it owns the practical
+    "what should I do now" behavior.
+- Source facts changed/preserved:
+  - route remains `/app/trust` through `frontend/src/pages/TrustScorePage.tsx`;
+  - `/app/trust-passport` redirect behavior was not changed;
+  - backend, auth, Marketplace, Finance, Dashboard, Community Home, Action
+    Inbox, global shell, and shared route targets were not changed;
+  - Documents / TrustSlip actions remain in the Documents lane.
+- Fix:
+  - added a gated Repair or Next Step lead card that appears only when
+    `activeTrustPassportLane === "repair"`;
+  - the lead card uses the existing `nextStep` guidance object, pressure signal,
+    and Action Inbox fallback instead of inventing new route logic;
+  - added one stable CTA: `trust-score.repair-next-step`, which shows a visible
+    notice and then routes through `nextStep.ctaTo`;
+  - kept pressure notes and recent trust movement visible in the Repair lane;
+  - updated `audit:trust-passport-button-inventory` for the new stable action;
+  - added `frontend/tools/audit-trust-passport-repair-lane.mjs`;
+  - registered `npm --prefix frontend run audit:trust-passport-repair-lane`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Repair lane work requires
+    the repair audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-repair-lane`;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-passport-evidence-story-lane`;
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-repair-lane.mjs tools/audit-trust-passport-button-inventory.mjs`
+    from `frontend`;
+  - `npm run build` from `frontend` passed elevated because Vite/esbuild
+    spawning is blocked by the normal sandbox on this Windows setup.
+- Unabated truth:
+  - Repair now has an actionable next-step surface, but it still depends on the
+    quality of `guidance.nextBestStep` data when the backend provides it;
+  - Finance Discipline is now the next highest-risk Trust Passport lane because
+    it still shares the broad institutional evidence table.
+
 ### Trust Passport Evidence Story lane checkpoint (2026-06-08)
 
 - Trigger:

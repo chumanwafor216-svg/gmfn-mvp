@@ -2502,6 +2502,113 @@ export default function TrustScorePage() {
           </section>
 
           <section
+            style={{
+              ...innerCard("#FFF8F0"),
+              border: "1px solid rgba(200,58,58,0.16)",
+              display:
+                activeTrustPassportLane === "repair" ? "block" : "none",
+              marginTop: 14,
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            <TrustPaperWatermark
+              name="alert"
+              color="#991B1B"
+              size={isCompact ? 170 : 226}
+              opacity={0.045}
+              style={{ right: isCompact ? -76 : -44, top: -52, bottom: "auto" }}
+            />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 9,
+                color: "#991B1B",
+                fontSize: 14,
+                fontWeight: 1000,
+                letterSpacing: 1.6,
+                textTransform: "uppercase",
+              }}
+            >
+              <TrustPaperIcon name="alert" size={20} />
+              Repair or Next Step
+            </div>
+            <div
+              style={{
+                color: "#07172C",
+                fontSize: isCompact ? 22 : 28,
+                lineHeight: 1.08,
+                fontWeight: 1000,
+                marginTop: 8,
+              }}
+            >
+              {nextStep.title}
+            </div>
+            <p
+              style={{
+                ...helperText(),
+                maxWidth: 720,
+                margin: "8px 0 0",
+              }}
+            >
+              {nextStep.detail}
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "minmax(0, 1fr) minmax(0, 1fr)",
+                gap: 12,
+                marginTop: 14,
+              }}
+            >
+              <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+                <div style={{ color: "#991B1B", fontWeight: 1000 }}>
+                  First thing to check
+                </div>
+                <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                  {passportVm.reasons.createsPressure[0] ||
+                    "No urgent pressure signal is visible yet. Keep the current record clean and watch the next trust event."}
+                </p>
+              </div>
+              <div style={{ ...innerCard("#FFFFFF"), border: "1px solid rgba(216,227,238,0.9)" }}>
+                <div style={{ color: "#166534", fontWeight: 1000 }}>
+                  What not to do
+                </div>
+                <p style={{ ...helperText(), margin: "8px 0 0" }}>
+                  Do not guess the repair path from the score alone. Open the
+                  next action only after reading the pressure notes below.
+                </p>
+              </div>
+            </div>
+
+            <PrimaryButton
+              onClick={() => {
+                setNotice({
+                  tone: "success",
+                  text: "Opening the next safe trust step now.",
+                });
+                openTrustRoute(nextStep.ctaTo);
+              }}
+              fullWidth
+              stableHeight={isCompact ? 54 : 62}
+              debugId="trust-score.repair-next-step"
+              style={{
+                marginTop: 14,
+                borderRadius: 12,
+                fontSize: isCompact ? 14 : 16,
+                fontWeight: 1000,
+              }}
+            >
+              <TrustPaperIcon name="alert" size={isCompact ? 18 : 20} />
+              {nextStep.ctaLabel}
+            </PrimaryButton>
+          </section>
+
+          <section
             ref={pressureSectionRef}
             style={{
               ...innerCard("#FFFFFF"),

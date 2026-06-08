@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 9;
-const expectedRenderedActions = 15;
+const expectedSourceActions = 10;
+const expectedRenderedActions = 16;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -103,6 +103,7 @@ for (const action of actions) {
 const expectedOrder = [
   "trust-score.lane.${lane.key}",
   "trust-score.open-public-community-record",
+  "trust-score.repair-next-step",
   "debugId={item.debugId}",
   "trust-score.refresh",
   "trust-score.copy-snapshot",
