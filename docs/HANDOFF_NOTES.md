@@ -1,3 +1,67 @@
+### Marketplace ROSCA member-scoped start-cycle pass (2026-06-08)
+
+- Trigger:
+  - continued the Marketplace stabilization sequence after Money Pool and the
+    future Community Package note;
+  - product owner had specifically warned that ROSCA must not treat every
+    community member as belonging to every ROSCA cycle.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local ROSCA UI / start-cycle payload and
+    Marketplace audits;
+  - no backend, auth, schema, payment, Dashboard, Community Home, Action Inbox,
+    shared tap guard, or global shell behavior changed.
+- Backend truth confirmed:
+  - `POST /rosca/cycles` already accepts `member_user_ids` and
+    `payout_order_user_ids`;
+  - if `member_user_ids` is omitted, `rosca_service._validate_member_set(...)`
+    defaults to all active community members;
+  - therefore the old Marketplace form could accidentally start a cycle for the
+    whole community.
+- Fix:
+  - added explicit ROSCA member selection from the current marketplace member
+    list;
+  - `Start ROSCA Cycle` now requires at least two selected members before it
+    submits;
+  - the `createRoscaCycle(...)` payload now sends
+    `member_user_ids: selectedRoscaMemberIds`;
+  - the visible ROSCA desk now says membership is cycle-specific, not the whole
+    community unless everyone is deliberately chosen;
+  - cycle status now distinguishes selected-now members from latest-cycle
+    members and shows latest/planned frequency;
+  - the new checkbox field is counted as a guarded native Marketplace field.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-rosca-lane.mjs` now protects explicit
+    member selection and the `member_user_ids` payload;
+  - `frontend/tools/audit-marketplace-button-lines.mjs` and
+    `frontend/tools/audit-marketplace-button-inventory.mjs` now accept 14
+    guarded Marketplace native fields and template-literal
+    `marketplaceFieldTouchProps(...)` IDs for member checkboxes.
+- Verification:
+  - passed `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-front-package`;
+  - passed `npm --prefix frontend run audit:marketplace-button-lines`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm --prefix frontend run audit:marketplace-actions`;
+  - passed `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-rosca-lane.mjs tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-button-lines.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this fixes the dangerous whole-community default from the Marketplace start
+    form, but it does not yet add manual payout-order editing, a dedicated
+    copy/export cycle-record button, or a deeper cycle-management page.
+  - The backend still keeps its all-active-members fallback for callers that
+    omit `member_user_ids`; if that fallback should be forbidden system-wide,
+    that is a backend behavior change and needs a separate audited pass.
+
 ### Future Community Package capacity model note (2026-06-08)
 
 - Product-owner memory note:

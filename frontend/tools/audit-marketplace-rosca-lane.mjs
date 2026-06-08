@@ -63,6 +63,11 @@ assertContains(
   "Opening ROSCA must use the focused one-lane state, leaving unrelated lanes stepped back."
 );
 
+assertContains(
+  /selectedRoscaMemberIds\.length < 2[\s\S]*?Choose at least two members for this ROSCA cycle[\s\S]*?createRoscaCycle\(\{[\s\S]*?member_user_ids: selectedRoscaMemberIds/,
+  "Starting a ROSCA cycle must require explicit selected members and send member_user_ids to the backend."
+);
+
 const roscaSection = sectionBetween(
   /id="marketplace-rosca"/,
   /id="marketplace-owned-links"/
@@ -95,8 +100,11 @@ if (!roscaSection.text) {
     /GSN records the plan, contribution expectations, and payout completion/,
     /Step \{step\}/,
     /Activate yearly service[\s\S]*?Unlock this community's ROSCA desk/,
-    /Start member cycle[\s\S]*?Set the amount, currency, and days/,
-    /Record payout[\s\S]*?after the community confirms it/,
+    /Choose members[\s\S]*?Select only the people in this cycle/,
+    /Start cycle[\s\S]*?Set name, amount, currency, and days/,
+    /Membership[\s\S]*?Choose 2\+/,
+    /Alerts, contribution references, and payout order follow these[\s\S]*?selected cycle members/,
+    /Latest members[\s\S]*?members in cycle/,
     /debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?roscaYearlyActive \? "secondary" : "primary"[\s\S]*?Activate yearly service/,
     /debugId="marketplace\.rosca\.start-cycle"[\s\S]*?Activate the GBP 60 yearly ROSCA service before starting a cycle/,
     /debugId="marketplace\.rosca\.record-payout"[\s\S]*?No ROSCA round is ready for payout recording yet/,
@@ -117,6 +125,7 @@ if (!roscaSection.text) {
       "ROSCA may reference contribution expectations, but must not expose trust, shop, support, trade, or money-route lane content."
     );
   }
+
 }
 
 if (findings.length > 0) {

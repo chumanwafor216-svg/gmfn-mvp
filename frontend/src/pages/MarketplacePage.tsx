@@ -255,6 +255,7 @@ type RoscaCycleSummary = {
   status?: string | null;
   currency?: string | null;
   contribution_amount?: string | null;
+  interval_days?: number | null;
   total_rounds?: number | null;
   total_expected_contributions?: number | null;
   total_confirmed_contributions?: number | null;
@@ -3257,6 +3258,7 @@ export default function MarketplacePage() {
   const [roscaContributionAmount, setRoscaContributionAmount] = useState("25.00");
   const [roscaCurrency, setRoscaCurrency] = useState("GBP");
   const [roscaIntervalDays, setRoscaIntervalDays] = useState("30");
+  const [selectedRoscaMemberIds, setSelectedRoscaMemberIds] = useState<number[]>([]);
   const [creatingRoscaPackage, setCreatingRoscaPackage] = useState(false);
   const [startingRoscaCycle, setStartingRoscaCycle] = useState(false);
   const [recordingRoscaPayoutKey, setRecordingRoscaPayoutKey] =
@@ -4794,6 +4796,34 @@ export default function MarketplacePage() {
     return rows;
   }, [activeCommunityId, members, shops]);
 
+  const roscaSelectableMembers = useMemo(() => {
+    return memberRows
+      .filter((row) => positiveNumber(row.userId) > 0)
+      .map((row) => ({
+        userId: positiveNumber(row.userId),
+        name: row.name,
+        gmfnId: row.gmfnId,
+        role: safeStr(row.member?.role || "member"),
+      }));
+  }, [memberRows]);
+
+  const selectedRoscaMemberSet = useMemo(() => {
+    return new Set(selectedRoscaMemberIds);
+  }, [selectedRoscaMemberIds]);
+
+  const selectedRoscaMembers = useMemo(() => {
+    return roscaSelectableMembers.filter((row) =>
+      selectedRoscaMemberSet.has(row.userId)
+    );
+  }, [roscaSelectableMembers, selectedRoscaMemberSet]);
+
+  useEffect(() => {
+    const availableIds = new Set(roscaSelectableMembers.map((row) => row.userId));
+    setSelectedRoscaMemberIds((prev) =>
+      prev.filter((userId) => availableIds.has(userId))
+    );
+  }, [roscaSelectableMembers]);
+
   const activeLoanCount = useMemo(() => {
     return loans.filter((item) => {
       const status = safeStr(item?.status).toLowerCase();
@@ -4937,6 +4967,13 @@ export default function MarketplacePage() {
       showNotice("error", "Enter a ROSCA contribution amount above zero.");
       return;
     }
+    if (selectedRoscaMemberIds.length < 2) {
+      showNotice(
+        "error",
+        "Choose at least two members for this ROSCA cycle. Do not start it for the whole community by accident."
+      );
+      return;
+    }
 
     setStartingRoscaCycle(true);
     try {
@@ -4947,6 +4984,7 @@ export default function MarketplacePage() {
         currency: safeStr(roscaCurrency).toUpperCase() || "GBP",
         interval_days:
           Number.isFinite(interval) && interval > 0 ? Math.floor(interval) : 30,
+        member_user_ids: selectedRoscaMemberIds,
         note: "Started from Marketplace ROSCA desk.",
       });
 
@@ -6441,8 +6479,8 @@ export default function MarketplacePage() {
         >
           {[
             ["1", "Activate yearly service", "Unlock this community's ROSCA desk."],
-            ["2", "Start member cycle", "Set the amount, currency, and days."],
-            ["3", "Record payout", "Mark the round after the community confirms it."],
+            ["2", "Choose members", "Select only the people in this cycle."],
+            ["3", "Start cycle", "Set name, amount, currency, and days."],
           ].map(([step, title, detail]) => (
             <div
               key={step}
@@ -6501,8 +6539,9 @@ export default function MarketplacePage() {
           <div style={innerCard("#FCFEFF")}>
             <div style={sectionLabel()}>Start cycle</div>
             <div style={{ marginTop: 8, ...helperText() }}>
-              The default payout order starts with higher-trust members so the
-              circle begins with less fear and clearer accountability.
+              Build one named cycle at a time. Membership is selected for this
+              cycle only; it is not the whole community unless you choose
+              everyone.
             </div>
 
             <div
@@ -6510,13 +6549,18 @@ export default function MarketplacePage() {
                 marginTop: 14,
                 display: "grid",
                 gridTemplateColumns: isCompact
-                  ? "1fr"
+                  ? "repeat(2, minmax(0, 1fr))"
                   : "1.2fr 0.8fr 0.6fr 0.6fr",
                 gap: 10,
                 alignItems: "end",
               }}
             >
-              <label style={{ display: "block" }}>
+              <label
+                style={{
+                  display: "block",
+                  gridColumn: isCompact ? "1 / -1" : undefined,
+                }}
+              >
                 <div style={{ ...helperText(), fontSize: 12, fontWeight: 900 }}>
                   Cycle name
                 </div>
@@ -6570,6 +6614,148 @@ export default function MarketplacePage() {
             </div>
 
             <div
+              style={{
+                marginTop: 12,
+                borderRadius: 16,
+                border: "1px solid rgba(16,37,59,0.08)",
+                background:
+                  "linear-gradient(180deg, rgba(248,252,255,0.98) 0%, rgba(239,246,253,0.96) 100%)",
+                padding: isCompact ? 10 : 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div style={sectionLabel()}>Membership</div>
+                <span style={stableStatusPillStyle(selectedRoscaMemberIds.length >= 2)}>
+                  {selectedRoscaMemberIds.length >= 2
+                    ? `${selectedRoscaMemberIds.length} selected`
+                    : "Choose 2+"}
+                </span>
+              </div>
+              <div
+                style={{
+                  marginTop: 7,
+                  color: "#41556B",
+                  fontSize: isCompact ? 12 : 13,
+                  fontWeight: 800,
+                  lineHeight: 1.3,
+                }}
+              >
+                Alerts, contribution references, and payout order follow these
+                selected cycle members.
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "repeat(2, minmax(0, 1fr))"
+                    : "repeat(auto-fit, minmax(160px, 1fr))",
+                  gap: 8,
+                }}
+              >
+                {roscaSelectableMembers.length ? (
+                  roscaSelectableMembers.map((member) => {
+                    const selected = selectedRoscaMemberSet.has(member.userId);
+                    return (
+                      <label
+                        key={member.userId}
+                        style={{
+                          minHeight: isCompact ? 50 : 56,
+                          borderRadius: 14,
+                          border: selected
+                            ? "1px solid rgba(34,102,65,0.28)"
+                            : "1px solid rgba(16,37,59,0.08)",
+                          background: selected
+                            ? "linear-gradient(180deg, #F1FBF5 0%, #DDEFE6 100%)"
+                            : "#FFFFFF",
+                          padding: "8px 9px",
+                          display: "grid",
+                          gridTemplateColumns: "22px minmax(0, 1fr)",
+                          gap: 7,
+                          alignItems: "center",
+                          color: "#08233A",
+                          fontWeight: 900,
+                          overflow: "hidden",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <input
+                          {...marketplaceFieldTouchProps(
+                            `marketplace.rosca.member.${member.userId}`
+                          )}
+                          type="checkbox"
+                          checked={selected}
+                          onChange={(event) => {
+                            const checked = event.currentTarget.checked;
+                            setSelectedRoscaMemberIds((prev) => {
+                              if (checked) {
+                                return Array.from(new Set([...prev, member.userId]));
+                              }
+                              return prev.filter((userId) => userId !== member.userId);
+                            });
+                          }}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            accentColor: "#1D6D46",
+                          }}
+                        />
+                        <span style={{ minWidth: 0 }}>
+                          <span
+                            style={{
+                              display: "block",
+                              fontSize: isCompact ? 12 : 13,
+                              lineHeight: 1.1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {member.name}
+                          </span>
+                          <span
+                            style={{
+                              display: "block",
+                              marginTop: 2,
+                              color: "#617085",
+                              fontSize: 10.5,
+                              fontWeight: 850,
+                              lineHeight: 1.1,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
+                          >
+                            {firstTruthy(member.gmfnId, member.role, "member")}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })
+                ) : (
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      ...helperText(),
+                      fontSize: 12,
+                      fontWeight: 800,
+                    }}
+                  >
+                    No visible marketplace members are ready for cycle selection.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div
               {...marketplaceFieldTouchProps("marketplace.rosca.actions")}
               style={{
                 ...marketplaceInlineActionsStyle(isCompact),
@@ -6613,7 +6799,9 @@ export default function MarketplacePage() {
                 stableHeight={58}
                 style={marketplaceInlineActionStyle(
                   "primary",
-                  startingRoscaCycle || !roscaYearlyActive,
+                  startingRoscaCycle ||
+                    !roscaYearlyActive ||
+                    selectedRoscaMemberIds.length < 2,
                   isCompact
                 )}
               >
@@ -6663,12 +6851,29 @@ export default function MarketplacePage() {
             >
               {[
                 ["Service", roscaYearlyActive ? "Yearly service active" : "Inactive"],
-                ["Members", `${members.length} visible in this marketplace`],
+                [
+                  "Selected now",
+                  selectedRoscaMembers.length >= 2
+                    ? `${selectedRoscaMembers.length} cycle members`
+                    : "Choose 2+ members",
+                ],
                 [
                   "Latest cycle",
                   latestRoscaCycle
                     ? firstTruthy(latestRoscaCycle.title, "ROSCA cycle")
                     : "No cycle started yet",
+                ],
+                [
+                  "Latest members",
+                  latestRoscaCycle?.member_user_ids?.length
+                    ? `${latestRoscaCycle.member_user_ids.length} members in cycle`
+                    : `${members.length} visible in marketplace`,
+                ],
+                [
+                  "Frequency",
+                  latestRoscaCycle?.interval_days
+                    ? `Every ${positiveNumber(latestRoscaCycle.interval_days)} days`
+                    : `${positiveNumber(roscaIntervalDays || 30)} days planned`,
                 ],
                 [
                   "Contributions",

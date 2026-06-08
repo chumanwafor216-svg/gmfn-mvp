@@ -10,7 +10,7 @@ const source = readFileSync(join(frontendRoot, marketplaceFile), "utf8");
 const findings = [];
 
 const expectedStableActionCount = 56;
-const expectedNativeFieldCount = 13;
+const expectedNativeFieldCount = 14;
 const allowedBusyDisabledExpressions = new Set([
   "creatingRepostPaymentInstruction",
   "loadingRepostCredits",
@@ -188,7 +188,7 @@ for (const action of actions) {
 }
 
 for (const field of nativeFields) {
-  if (!/marketplaceFieldTouchProps\(\s*"[^"]+"\s*\)/.test(field.block)) {
+  if (!/marketplaceFieldTouchProps\(\s*(?:"[^"]+"|`[^`]+`)\s*\)/.test(field.block)) {
     addFinding(
       field.line,
       "Marketplace native input/select/textarea is missing marketplaceFieldTouchProps, so mobile taps may leak into neighbouring actions.",

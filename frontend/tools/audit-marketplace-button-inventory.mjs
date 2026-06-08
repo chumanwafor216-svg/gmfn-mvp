@@ -20,7 +20,7 @@ const actionTargetRoutesSource = readFileSync(
 );
 const findings = [];
 const expectedStableActionCount = 56;
-const expectedNativeFieldCount = 13;
+const expectedNativeFieldCount = 14;
 const expectedSourceBreakdown = {
   front: 11,
   body: 45,
@@ -158,7 +158,7 @@ if (nativeFields.length !== expectedNativeFieldCount) {
 }
 
 for (const field of nativeFields) {
-  if (!/\{\s*\.\.\.marketplaceFieldTouchProps\(\s*"[^"]+"\s*\)\s*\}/.test(field.block)) {
+  if (!/\{\s*\.\.\.marketplaceFieldTouchProps\(\s*(?:"[^"]+"|`[^`]+`)\s*\)\s*\}/.test(field.block)) {
     findings.push({
       file: marketplaceFile,
       line: field.line,
@@ -171,6 +171,11 @@ for (const field of nativeFields) {
 assertContains(
   /function marketplaceFieldTouchProps\(debugId: string\)[\s\S]*?"data-gmfn-action-root": "true"[\s\S]*?"data-cta-id": debugId[\s\S]*?"data-gmfn-debug-id": debugId[\s\S]*?onPointerDownCapture: stopMarketplaceTap[\s\S]*?onPointerDown: stopMarketplaceTap[\s\S]*?onPointerUpCapture: stopMarketplaceTap[\s\S]*?onPointerUp: stopMarketplaceTap[\s\S]*?onMouseDownCapture: stopMarketplaceTap[\s\S]*?onMouseDown: stopMarketplaceTap[\s\S]*?onClickCapture: stopMarketplaceTap[\s\S]*?onClick: stopMarketplaceTap/,
   "Marketplace native field tap roots must use stable action-root metadata and pointer/mouse/click guards without touch double-fire handlers."
+);
+
+assertContains(
+  /selectedRoscaMemberIds\.length < 2[\s\S]*?Choose at least two members for this ROSCA cycle[\s\S]*?createRoscaCycle\(\{[\s\S]*?member_user_ids: selectedRoscaMemberIds/,
+  "Marketplace ROSCA Start Cycle must require explicit member selection and pass member_user_ids."
 );
 
 if (actions.length !== expectedStableActionCount) {
@@ -382,7 +387,9 @@ if (!roscaSection) {
     /What this savings circle does/,
     /Step \{step\}/,
     /Activate yearly service/,
-    /Start member cycle/,
+    /Choose members/,
+    /Start cycle/,
+    /Membership/,
     /Record payout/,
     /roscaYearlyActive \? "secondary" : "primary"/,
   ].forEach((pattern) => {
