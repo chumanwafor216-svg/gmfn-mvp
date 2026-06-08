@@ -1,3 +1,49 @@
+### Finance Signals / Readiness launcher cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the Banking Rails launcher was caged, product owner asked to continue;
+  - next lane selected: Signals / Readiness, because it is the remaining
+    Finance front lane that opens the support-readiness route.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox, or
+    global shell behavior was changed;
+  - no Finance route targets, stable action counts, debug-id namespace, or
+    button geometry were changed;
+  - Signals / Readiness still resolves through the shared `loanReadiness` CTA
+    intent;
+  - `LoanReadinessPage.tsx` was not edited and already explains that Finance
+    records the wider money story while readiness decides whether one support
+    path should continue.
+- Fix:
+  - changed Finance `Signals / Readiness` detail copy from
+    `Check support readiness` to `Read support readiness`;
+  - added `frontend/tools/audit-finance-signals-readiness-lane.mjs`;
+  - added `npm --prefix frontend run audit:finance-signals-readiness-lane`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Signals / Readiness lane
+    work has its own required audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:finance-signals-readiness-lane`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm --prefix frontend run audit:finance-lane-map`;
+  - `npm --prefix frontend run audit:finance-button-inventory`;
+  - `npm --prefix frontend run audit:finance-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-signals-readiness-lane.mjs tools/audit-finance-banking-rails-lane.mjs tools/audit-finance-front-package.mjs tools/audit-finance-lane-map.mjs tools/audit-finance-money-movement-lanes.mjs tools/audit-finance-money-summary-lane.mjs tools/audit-finance-actions.mjs tools/audit-finance-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Pending before publish:
+  - final commit, push, and GitHub deploy verification.
+- Unabated truth:
+  - this cages the Finance Signals / Readiness launcher and route relationship;
+    it does not remodel the inner Loan Readiness page;
+  - after this, the Finance front package is much better source-caged, but a
+    physical phone check is still needed before claiming it feels finished.
+
 ### Finance Banking Rails launcher cage checkpoint (2026-06-08)
 
 - Trigger:

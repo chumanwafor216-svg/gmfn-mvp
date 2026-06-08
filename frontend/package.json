@@ -46,6 +46,7 @@
     "audit:finance-lane-map": "node tools/audit-finance-lane-map.mjs",
     "audit:finance-money-movement-lanes": "node tools/audit-finance-money-movement-lanes.mjs",
     "audit:finance-money-summary-lane": "node tools/audit-finance-money-summary-lane.mjs",
+    "audit:finance-signals-readiness-lane": "node tools/audit-finance-signals-readiness-lane.mjs",
     "audit:admin-ops-actions": "node tools/audit-admin-ops-actions.mjs",
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",
     "audit:action-response-protocol": "node tools/audit-action-response-protocol.mjs",

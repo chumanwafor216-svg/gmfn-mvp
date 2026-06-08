@@ -239,6 +239,12 @@ For Finance Banking Rails lane work, also run:
 npm --prefix frontend run audit:finance-banking-rails-lane
 ```
 
+For Finance Signals / Readiness lane work, also run:
+
+```bash
+npm --prefix frontend run audit:finance-signals-readiness-lane
+```
+
 ## Current Truth
 
 This protocol is a product safety rule. It does not claim current Marketplace,

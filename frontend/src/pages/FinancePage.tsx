@@ -2132,7 +2132,7 @@ export default function FinancePage() {
               {
                 icon: "check" as FinanceGlyphName,
                 label: "Signals / Readiness",
-                detail: "Check support readiness",
+                detail: "Read support readiness",
                 action: () => openFinanceRoute(routes.loanReadiness),
               },
               {
