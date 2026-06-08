@@ -2120,25 +2120,25 @@ export default function FinancePage() {
               {
                 icon: "out" as FinanceGlyphName,
                 label: "Money Out",
-                detail: "Open guided payout",
+                detail: "Open guided payout.",
                 action: () => openFinanceRoute(routes.moneyOut),
               },
               {
                 icon: "receipt" as FinanceGlyphName,
                 label: "Payout Details",
-                detail: "Confirm payout information",
+                detail: "Confirm payout details.",
                 action: () => openFinanceRoute(routes.payoutDetails),
               },
               {
                 icon: "check" as FinanceGlyphName,
                 label: "Signals / Readiness",
-                detail: "Read support readiness",
+                detail: "Read support readiness.",
                 action: () => openFinanceRoute(routes.loanReadiness),
               },
               {
                 icon: "shield" as FinanceGlyphName,
                 label: "Trust Passport",
-                detail: "See your trust record",
+                detail: "Read trust record.",
                 action: () => openFinanceRoute(routes.trust),
               },
             ].map((tool) => (

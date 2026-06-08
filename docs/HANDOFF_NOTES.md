@@ -1,3 +1,60 @@
+### Finance secondary route tools cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the major Finance front lanes were source-caged, product owner asked
+    to continue;
+  - next risk selected: compact secondary route tools, because Payout Details
+    and Trust Passport should stay linked and readable without becoming noisy
+    major Finance lanes.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox, or
+    global shell behavior was changed;
+  - no Finance route targets, stable action counts, debug-id namespace, or
+    button geometry were changed;
+  - Money Out, Payout Details, Signals / Readiness, and Trust Passport still
+    resolve through shared CTA intents with selected-community context;
+  - Trust Passport still resolves to the current `/app/trust` alias target; no
+    unnamed Trust Passport screen was invented.
+- Fix:
+  - tightened compact Finance mini-tool copy to:
+    `Open guided payout.`, `Confirm payout details.`,
+    `Read support readiness.`, and `Read trust record.`;
+  - added `frontend/tools/audit-finance-secondary-route-tools.mjs`;
+  - added `npm --prefix frontend run audit:finance-secondary-route-tools`;
+  - updated the guided work protocol and Finance screen spec to record that
+    Payout Details and Trust Passport are compact linked tools, not competing
+    major Finance lanes;
+  - updated existing Money Out and Signals / Readiness exact-string audits to
+    expect the polished copy.
+- Verification passed:
+  - `npm --prefix frontend run audit:finance-secondary-route-tools`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm --prefix frontend run audit:finance-lane-map`;
+  - `npm --prefix frontend run audit:finance-button-inventory`;
+  - `npm --prefix frontend run audit:finance-actions`;
+  - `npm --prefix frontend run audit:finance-money-movement-lanes`;
+  - `npm --prefix frontend run audit:finance-signals-readiness-lane`;
+  - `npm --prefix frontend run audit:finance-banking-rails-lane`;
+  - `npm --prefix frontend run audit:finance-records-events-lane`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-secondary-route-tools.mjs tools/audit-finance-money-movement-lanes.mjs tools/audit-finance-signals-readiness-lane.mjs tools/audit-finance-front-package.mjs tools/audit-finance-lane-map.mjs tools/audit-finance-actions.mjs tools/audit-finance-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild;
+  - line-auditor pass confirmed the diff is scoped, package/protocol/spec
+    alignment is present, and the only caveat is to stage the new audit file.
+- Pending before publish:
+  - final commit, push, and GitHub deploy verification.
+- Unabated truth:
+  - this cages the compact Finance secondary route tools; it does not redesign
+    Payout Details or the Trust Passport/Trust Score page itself;
+  - Finance is now more strongly source-caged, but physical phone checking is
+    still required before calling the full Finance page visually finished.
+
 ### Finance Records / Events lane cage checkpoint (2026-06-08)
 
 - Trigger:

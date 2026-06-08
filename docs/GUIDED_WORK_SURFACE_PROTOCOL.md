@@ -251,6 +251,12 @@ For Finance Records / Events lane work, also run:
 npm --prefix frontend run audit:finance-records-events-lane
 ```
 
+For Finance secondary route tool work, also run:
+
+```bash
+npm --prefix frontend run audit:finance-secondary-route-tools
+```
+
 ## Current Truth
 
 This protocol is a product safety rule. It does not claim current Marketplace,

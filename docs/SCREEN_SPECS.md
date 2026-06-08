@@ -365,6 +365,8 @@ Must show:
 - plain finance summary first
 - major finance lanes such as Money Summary, Money In, Money Out, Banking
   Rails, Records / Events, and Signals / Readiness
+- Secondary route tools such as Payout Details and Trust Passport may remain
+  visible only as compact linked tools, not as competing major Finance lanes.
 - clear route back to the originating marketplace or Dashboard
 
 Rules:

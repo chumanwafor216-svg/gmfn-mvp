@@ -56,7 +56,7 @@ assertContains(
 
 assertContains(
   "finance",
-  /Other finance lanes[\s\S]*?label: "Money Out"[\s\S]*?detail: "Open guided payout"[\s\S]*?action: \(\) => openFinanceRoute\(routes\.moneyOut\)[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
+  /Other finance lanes[\s\S]*?label: "Money Out"[\s\S]*?detail: "Open guided payout\."[\s\S]*?action: \(\) => openFinanceRoute\(routes\.moneyOut\)[\s\S]*?debugId=\{`finance\.mini-tool\.\$\{tool\.label\.toLowerCase\(\)\.replace/,
   "Finance Money Out launcher must clearly open the guided payout route and keep its stable mini-tool debug id."
 );
 
