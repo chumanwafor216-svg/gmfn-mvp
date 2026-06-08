@@ -204,6 +204,13 @@ For Demand Box placement inside Marketplace work, also run:
 npm --prefix frontend run audit:marketplace-demand-box-lane
 ```
 
+For Marketplace front package closeout before asking the product owner to
+phone-check or switch to another page, also run:
+
+```bash
+npm --prefix frontend run audit:marketplace-front-package
+```
+
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 

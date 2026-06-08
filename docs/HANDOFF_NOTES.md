@@ -1,3 +1,57 @@
+### Marketplace front package readiness cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after Money Pool, ROSCA, Trusted Trade, Support, Records & Links, More /
+    Community Tools, compact Trust, and Demand Box placement were each caged,
+    product owner asked to continue and asked to be told when to check or
+    switch.
+- Source facts changed/preserved:
+  - no Marketplace page UX structure was redesigned in this checkpoint;
+  - no backend, auth, Dashboard, Community Home, Action Inbox, or global shell
+    behavior was changed;
+  - this checkpoint adds a closeout audit around the already repaired
+    Marketplace front package.
+- Fix:
+  - added `frontend/tools/audit-marketplace-front-package.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-front-package`;
+  - the audit rejects emoji-style marks in `MarketplacePage.tsx`;
+  - the audit requires deterministic `MarketplaceGlyph` pictograms for the
+    front package and Demand Box;
+  - the audit requires the grouped front cards, compact local Trust summary,
+    Demand Box placement, one-lane focus guide, and all lane-level audit scripts
+    to remain registered;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so this closeout audit is run
+    before asking for phone-check or switching pages.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - `npm --prefix frontend run audit:marketplace-more-tools-lane`;
+  - `npm --prefix frontend run audit:marketplace-trust-pill`;
+  - `npm --prefix frontend run audit:marketplace-demand-box-lane`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-front-package.mjs tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-button-lines.mjs tools/audit-marketplace-money-pool-lane.mjs tools/audit-marketplace-rosca-lane.mjs tools/audit-marketplace-support-lane.mjs tools/audit-marketplace-trusted-trade-lane.mjs tools/audit-marketplace-records-links-lane.mjs tools/audit-marketplace-more-tools-lane.mjs tools/audit-marketplace-trust-pill.mjs tools/audit-marketplace-demand-box-lane.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Publish status:
+  - final commit, push, and GitHub deploy verification are reported in the
+    session close-out rather than self-referenced inside this same commit.
+- Unabated truth:
+  - this is a source-level readiness cage, not a physical phone test;
+  - after this passes and publishes, the right next step is for the product
+    owner to check Marketplace on the phone before we switch to another large
+    page such as Finance or Trust Passport.
+
 ### Marketplace Demand Box placement cage checkpoint (2026-06-08)
 
 - Trigger:
