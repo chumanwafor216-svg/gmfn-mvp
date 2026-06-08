@@ -114,8 +114,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /debugId="marketplace\.tile\.rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?debugId="marketplace\.row\.rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"/,
-  "Marketplace ROSCA must keep a visible tile, operating-lane row, section anchor, and stable yearly/start/payout controls."
+  /id: "rosca"[\s\S]*?to: "#marketplace-rosca"[\s\S]*?debugId="marketplace\.tile\.rosca"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?ROSCA[\s\S]*?Member savings circle for this community[\s\S]*?id="marketplace-rosca"[\s\S]*?debugId="marketplace\.rosca\.activate-yearly"[\s\S]*?debugId="marketplace\.rosca\.start-cycle"[\s\S]*?debugId="marketplace\.rosca\.record-payout"/,
+  "Marketplace ROSCA must stay visible as a distinct major front lane, keep the ROSCA intent anchor, and keep stable yearly/start/payout controls."
 );
 
 assertContains(
@@ -314,8 +314,8 @@ assertContains(
 
 assertContains(
   "src/pages/MarketplacePage.tsx",
-  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceOsTileStyle[\s\S]*?height: isCompact \? 116 : 178[\s\S]*?maxHeight: isCompact \? 116 : 178[\s\S]*?gridTemplateColumns: isCompact \? "46px minmax\(0, 1fr\)" : "1fr"[\s\S]*?2\.35em 1\.35em 1\.45em[\s\S]*?gridTemplateAreas[\s\S]*?icon title[\s\S]*?textAlign: isCompact \? "left" : "center"[\s\S]*?function marketplaceOsIconStyle[\s\S]*?gridArea: "icon"[\s\S]*?width: isCompact \? 46 : 62[\s\S]*?function marketplaceOsTileMetricStyle[\s\S]*?WebkitLineClamp: isCompact \? 1 : 2[\s\S]*?whiteSpace: "normal"[\s\S]*?function marketplaceOsTileHelperStyle[\s\S]*?WebkitLineClamp: isCompact \? 1 : 2[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
-  "Marketplace front-page tiles and operating-lane rows must keep fixed phone-safe action geometry with enough reserve so text cannot escape button boxes."
+  /function marketplaceActionStyle[\s\S]*?height: 56[\s\S]*?maxHeight: 56[\s\S]*?function marketplaceInlineActionsStyle[\s\S]*?gridAutoRows: "58px"[\s\S]*?function marketplaceOsRowStyle[\s\S]*?height: isCompact \? 116 : 96[\s\S]*?maxHeight: isCompact \? 116 : 96[\s\S]*?42px minmax\(0, 1fr\) 18px[\s\S]*?overflow: "hidden"[\s\S]*?transform: "none"[\s\S]*?flexShrink: 0[\s\S]*?transition: "none"[\s\S]*?function marketplaceFrontLaneCardStyle[\s\S]*?\.\.\.marketplaceOsRowStyle\(isCompact\)[\s\S]*?minHeight: isCompact \? 126 : 116[\s\S]*?height: "auto"[\s\S]*?maxHeight: "none"[\s\S]*?58px minmax\(0, 1fr\) 18px[\s\S]*?function marketplaceFrontLaneIconStyle[\s\S]*?width: isCompact \? 58 : 64[\s\S]*?height: isCompact \? 58 : 64[\s\S]*?function marketplaceFrontTagStyle[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflow: "hidden"[\s\S]*?textOverflow: "ellipsis"[\s\S]*?function marketplaceOsRowTextStackStyle[\s\S]*?overflow: "hidden"[\s\S]*?function marketplaceOsRowDetailStyle[\s\S]*?WebkitLineClamp: isCompact \? 3 : 2[\s\S]*?function marketplaceOsArrowStyle[\s\S]*?width: 18/,
+  "Marketplace front grouped-lane cards and inner action rows must keep phone-safe geometry, clamped text, and stable tap targets."
 );
 
 assertContains(

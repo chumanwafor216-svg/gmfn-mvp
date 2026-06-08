@@ -44,13 +44,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open trusted trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trusted Trade[\s\S]*?Known members and shops/,
-  "Trusted Trade top tile must stay a guided trade launcher and open only the members/shops section."
-);
-
-assertContains(
-  /debugId="marketplace\.row\.member-ledger"[\s\S]*?aria-label="Open Member Ledger and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Trusted Trade[\s\S]*?See known members, GSN IDs, and connected shops/,
-  "Trusted Trade operating row must open the same member/shop section and explain the lane in plain language."
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open trusted trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trusted Trade[\s\S]*?Demand Box[\s\S]*?Public Shops/,
+  "Trade & Shops grouped card must stay a guided trade launcher and open only the members/shops section."
 );
 
 assertContains(

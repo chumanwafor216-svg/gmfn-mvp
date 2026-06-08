@@ -2300,52 +2300,13 @@ function marketplaceOsSectionStyle(isCompact: boolean): React.CSSProperties {
 function marketplaceOsHeaderStyle(isCompact: boolean): React.CSSProperties {
   return {
     borderRadius: isCompact ? 22 : 26,
-    border: "1px solid var(--hero-border)",
-    background: "var(--hero-bg)",
-    padding: isCompact ? 18 : 24,
-    color: "var(--gsn-text-inverse)",
-    boxShadow: "var(--shadow-heavy)",
-    overflow: "hidden",
-  };
-}
-
-function marketplaceOsTileStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    width: "100%",
-    height: isCompact ? 116 : 178,
-    minHeight: isCompact ? 116 : 178,
-    maxHeight: isCompact ? 116 : 178,
-    borderRadius: isCompact ? 18 : 20,
-    border: "1px solid var(--gsn-border)",
+    border: "1px solid rgba(16,37,59,0.08)",
     background:
-      "linear-gradient(180deg, var(--gsn-white) 0%, var(--gsn-blue-50) 100%)",
-    padding: isCompact ? 12 : 14,
-    display: "grid",
-    gridTemplateColumns: isCompact ? "46px minmax(0, 1fr)" : "1fr",
-    gridTemplateRows: isCompact
-      ? "2.35em 1.35em 1.45em"
-      : "62px 2.35em 1.45em 2.7em",
-    gridTemplateAreas: isCompact
-      ? '"icon title" "icon metric" "icon helper"'
-      : '"icon" "title" "metric" "helper"',
-    columnGap: isCompact ? 11 : 0,
-    rowGap: isCompact ? 3 : 9,
-    alignContent: "center",
+      "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(248,251,255,0.98) 100%)",
+    padding: isCompact ? 14 : 18,
     color: "var(--gsn-text-main)",
-    textAlign: isCompact ? "left" : "center",
-    boxShadow: "var(--shadow-soft)",
-    cursor: "pointer",
-    touchAction: "manipulation",
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-    appearance: "none",
-    WebkitAppearance: "none",
-    boxSizing: "border-box",
+    boxShadow: "0 18px 34px rgba(10,24,49,0.08)",
     overflow: "hidden",
-    overflowAnchor: "none",
-    transform: "none",
-    flexShrink: 0,
-    transition: "none",
   };
 }
 
@@ -2364,62 +2325,6 @@ function marketplaceOsIconStyle(bg: string, isCompact = false): React.CSSPropert
     fontSize: isCompact ? 26 : 30,
     boxShadow:
       "0 14px 26px rgba(10,24,49,0.16), inset 0 1px 0 rgba(255,255,255,0.22)",
-  };
-}
-
-function marketplaceOsTileTitleStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    gridArea: "title",
-    minWidth: 0,
-    display: "-webkit-box",
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: "vertical",
-    overflow: "hidden",
-    color: "var(--gsn-text-main)",
-    fontSize: isCompact ? 14 : 18,
-    fontWeight: 950,
-    lineHeight: 1.15,
-    overflowWrap: "break-word",
-    wordBreak: "normal",
-    hyphens: "none",
-  };
-}
-
-function marketplaceOsTileMetricStyle(
-  color: string,
-  isCompact: boolean
-): React.CSSProperties {
-  return {
-    gridArea: "metric",
-    minWidth: 0,
-    display: "-webkit-box",
-    WebkitLineClamp: isCompact ? 1 : 2,
-    WebkitBoxOrient: "vertical",
-    color,
-    fontSize: isCompact ? 15 : 20,
-    fontWeight: 950,
-    lineHeight: 1.15,
-    whiteSpace: "normal",
-    overflow: "hidden",
-    overflowWrap: "break-word",
-    wordBreak: "normal",
-  };
-}
-
-function marketplaceOsTileHelperStyle(isCompact: boolean): React.CSSProperties {
-  return {
-    ...helperText(),
-    gridArea: "helper",
-    minWidth: 0,
-    display: "-webkit-box",
-    WebkitLineClamp: isCompact ? 1 : 2,
-    WebkitBoxOrient: "vertical",
-    overflow: "hidden",
-    fontSize: isCompact ? 11 : 12,
-    lineHeight: 1.3,
-    overflowWrap: "normal",
-    wordBreak: "normal",
-    hyphens: "none",
   };
 }
 
@@ -2455,6 +2360,64 @@ function marketplaceOsRowStyle(isCompact: boolean): React.CSSProperties {
     transform: "none",
     flexShrink: 0,
     transition: "none",
+  };
+}
+
+function marketplaceFrontLaneCardStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...marketplaceOsRowStyle(isCompact),
+    minHeight: isCompact ? 126 : 116,
+    height: "auto",
+    maxHeight: "none",
+    borderRadius: isCompact ? 20 : 22,
+    gridTemplateColumns: isCompact
+      ? "58px minmax(0, 1fr) 18px"
+      : "64px minmax(0, 1fr) 20px",
+    padding: isCompact ? 14 : 16,
+    gap: isCompact ? 12 : 16,
+    background:
+      "linear-gradient(180deg, rgba(255,255,255,0.995) 0%, rgba(250,253,255,0.98) 100%)",
+  };
+}
+
+function marketplaceFrontLaneIconStyle(
+  bg: string,
+  isCompact = false
+): React.CSSProperties {
+  return {
+    ...marketplaceOsRowIconStyle(bg, isCompact),
+    width: isCompact ? 58 : 64,
+    height: isCompact ? 58 : 64,
+    borderRadius: isCompact ? 18 : 20,
+  };
+}
+
+function marketplaceFrontTagRowStyle(): React.CSSProperties {
+  return {
+    display: "flex",
+    gap: 7,
+    flexWrap: "wrap",
+    alignItems: "center",
+    minWidth: 0,
+  };
+}
+
+function marketplaceFrontTagStyle(
+  color: string,
+  background: string
+): React.CSSProperties {
+  return {
+    borderRadius: 999,
+    background,
+    color,
+    padding: "6px 10px",
+    fontSize: 12,
+    fontWeight: 950,
+    lineHeight: 1.15,
+    whiteSpace: "nowrap",
+    maxWidth: "100%",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   };
 }
 
@@ -4522,16 +4485,6 @@ export default function MarketplacePage() {
   const marketplaceJoinRefreshBlockedMessage =
     "Only a community admin can refresh the official join link. Members can share it after an admin prepares it.";
 
-  const marketplacePoolLabel =
-    visiblePoolAmount === "—"
-      ? "Pool pending"
-      : `${visiblePoolAmount} ${visiblePoolCurrency}`;
-  const marketplaceSupportLabel =
-    activeLoanCount > 0 ? `${activeLoanCount} active` : "Open support";
-  const marketplaceTradeLabel =
-    shops.length > 0 ? `${shops.length} visible shops` : "Open shop";
-  const marketplaceMemberLabel =
-    memberRows.length > 0 ? `${memberRows.length} visible members` : "Members";
   const marketplaceTrustDisplay = marketplaceTrustLabel(
     selectedCommunity,
     marketplaceTrust
@@ -4570,14 +4523,6 @@ export default function MarketplacePage() {
       null
     );
   }, [latestRoscaCycle]);
-  const roscaMetricLabel = latestRoscaCycle
-    ? `${positiveNumber(latestRoscaCycle.total_confirmed_contributions)} / ${positiveNumber(
-        latestRoscaCycle.total_expected_contributions
-      )} confirmed`
-    : roscaYearlyActive
-      ? "Yearly active"
-      : "GBP 60 yearly";
-
   function openMarketplaceSection(
     event: React.SyntheticEvent<HTMLElement> | undefined,
     key: keyof SectionState,
@@ -5236,33 +5181,35 @@ export default function MarketplacePage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr)",
-              gap: 18,
+              gridTemplateColumns: isCompact
+                ? "64px minmax(0, 1fr)"
+                : "76px minmax(0, 1fr) auto",
+              gap: isCompact ? 12 : 16,
               alignItems: "center",
             }}
           >
             <div
               style={{
-                width: isCompact ? 76 : 92,
-                height: isCompact ? 92 : 112,
+                width: isCompact ? 58 : 68,
+                height: isCompact ? 70 : 82,
                 display: "grid",
                 placeItems: "center",
               }}
             >
               <GSNBrandMark
-                width={isCompact ? 62 : 76}
-                height={isCompact ? 76 : 94}
+                width={isCompact ? 48 : 56}
+                height={isCompact ? 60 : 70}
               />
             </div>
 
             <div style={{ minWidth: 0 }}>
               <div
                 style={{
-                  fontSize: 11,
+                  color: "#08233A",
+                  fontSize: isCompact ? 20 : 26,
                   fontWeight: 950,
-                  letterSpacing: 2.4,
-                  color: "#F3D06A",
-                  textTransform: "uppercase",
+                  lineHeight: 1.08,
+                  overflowWrap: "break-word",
                 }}
               >
                 GSN Marketplace
@@ -5270,51 +5217,54 @@ export default function MarketplacePage() {
 
               <div
                 style={{
-                  marginTop: 8,
-                  color: "#FFFFFF",
-                  fontSize: isCompact ? 30 : 46,
-                  fontWeight: 950,
-                  lineHeight: 1.02,
+                  marginTop: 6,
+                  color: "#4A6178",
+                  fontSize: isCompact ? 13 : 15,
+                  fontWeight: 850,
+                  lineHeight: 1.35,
                   overflowWrap: "break-word",
-                  wordBreak: "normal",
                 }}
               >
-                {communityName(selectedCommunity)}
-              </div>
-
-              <div
-                style={{
-                  marginTop: 10,
-                  maxWidth: 760,
-                  color: "rgba(248,251,255,0.84)",
-                  fontSize: isCompact ? 14 : 17,
-                  lineHeight: 1.5,
-                  fontWeight: 750,
-                }}
-              >
-                Trade, support, dues, members, and records in one trusted
-                community place.
-              </div>
-
-              <div
-                style={{
-                  marginTop: 16,
-                  display: "flex",
-                  gap: 8,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span style={{ ...badgeStyle(true), color: "#12324F" }}>
-                  <MarketplaceGlyph name="shop" size={15} /> {marketplaceTradeLabel}
-                </span>
-                <span style={{ ...badgeStyle(true), color: "#12324F" }}>
-                  <MarketplaceGlyph name="members" size={15} /> {marketplaceMemberLabel}
-                </span>
-                <span style={{ ...badgeStyle(true), color: "#12324F" }}>
-                  <MarketplaceGlyph name="trust" size={15} /> {marketplaceTrustDisplay}
-                </span>
+                {communityName(selectedCommunity)}. Trade. Support. Dues.
+                Members. Records.
               </div>
             </div>
+
+            <StableButton
+              type="button"
+              debugId="marketplace.tile.trust"
+              aria-label="Open this marketplace trust summary"
+              onClick={toggleProfileDetails}
+              aria-expanded={profileDetailsOpen}
+              stableHeight={isCompact ? 46 : 48}
+              style={{
+                ...(isCompact
+                  ? {
+                      gridColumn: "1 / span 2",
+                      justifySelf: "start",
+                      marginTop: 8,
+                    }
+                  : {}),
+                border: "1px solid rgba(11,99,209,0.12)",
+                borderRadius: 999,
+                background:
+                  "linear-gradient(180deg, rgba(235,246,255,0.98) 0%, rgba(220,237,250,0.96) 100%)",
+                color: "#0B63D1",
+                padding: "0 14px",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 14,
+                fontWeight: 950,
+                lineHeight: 1,
+                boxShadow: "0 8px 18px rgba(10,24,49,0.08)",
+                cursor: "pointer",
+                touchAction: "manipulation",
+              }}
+            >
+              <MarketplaceGlyph name="trust" size={16} />
+              {marketplaceTrustDisplay}
+            </StableButton>
           </div>
         </div>
 
@@ -5333,10 +5283,7 @@ export default function MarketplacePage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: isCompact
-                ? "1fr"
-                : "repeat(5, minmax(0, 1fr))",
-              gap: isCompact ? 8 : 12,
+              gap: isCompact ? 10 : 12,
             }}
           >
             <StableButton
@@ -5346,25 +5293,44 @@ export default function MarketplacePage() {
               onClick={(event) =>
                 openMarketplaceSection(event, "money", "marketplace-money-routes")
               }
-              style={marketplaceOsTileStyle(isCompact)}
+              style={marketplaceFrontLaneCardStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
-                style={marketplaceOsIconStyle(
+                style={marketplaceFrontLaneIconStyle(
                   "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)",
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="pool" size={isCompact ? 28 : 32} />
+                <MarketplaceGlyph name="pool" size={isCompact ? 30 : 34} />
               </span>
-              <span style={marketplaceOsTileTitleStyle(isCompact)}>
-                Money Pool
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  Finance & Pool
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Pool, money in/out, and banking.
+                </span>
+                <span style={marketplaceFrontTagRowStyle()}>
+                  <span
+                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE")}
+                  >
+                    Money In
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE")}
+                  >
+                    Money Out
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#0B4EA2", "#E7F1FE")}
+                  >
+                    Banking Rails
+                  </span>
+                </span>
               </span>
-              <span style={marketplaceOsTileMetricStyle("#0B63D1", isCompact)}>
-                {marketplacePoolLabel}
-              </span>
-              <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Start here: dues and money routes
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
@@ -5375,58 +5341,44 @@ export default function MarketplacePage() {
               onClick={(event) =>
                 openMarketplaceSection(event, "rosca", "marketplace-rosca")
               }
-              style={marketplaceOsTileStyle(isCompact)}
+              style={marketplaceFrontLaneCardStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
-                style={marketplaceOsIconStyle(
+                style={marketplaceFrontLaneIconStyle(
                   "linear-gradient(180deg, #B8871E 0%, #513A0B 100%)",
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="rosca" size={isCompact ? 28 : 32} />
+                <MarketplaceGlyph name="rosca" size={isCompact ? 30 : 34} />
               </span>
-              <span style={marketplaceOsTileTitleStyle(isCompact)}>
-                ROSCA
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  ROSCA
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Member savings circle for this community.
+                </span>
+                <span style={marketplaceFrontTagRowStyle()}>
+                  <span
+                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6")}
+                  >
+                    Yearly Service
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6")}
+                  >
+                    Member Cycle
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#8A5B0A", "#F8EED6")}
+                  >
+                    Payout Record
+                  </span>
+                </span>
               </span>
-              <span style={marketplaceOsTileMetricStyle("#9A6509", isCompact)}>
-                {roscaMetricLabel}
-              </span>
-              <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Member savings circle
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.tile.support"
-              aria-label="Open Support Requests, guarantors and loans"
-              onClick={(event) =>
-                openMarketplaceSection(
-                  event,
-                  "support",
-                  "marketplace-loans-support"
-                )
-              }
-              style={marketplaceOsTileStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="support" size={isCompact ? 28 : 32} />
-              </span>
-              <span style={marketplaceOsTileTitleStyle(isCompact)}>
-                Support Requests
-              </span>
-              <span style={marketplaceOsTileMetricStyle("#18864A", isCompact)}>
-                {marketplaceSupportLabel}
-              </span>
-              <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Guided help request
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
@@ -5441,53 +5393,188 @@ export default function MarketplacePage() {
                   "marketplace-members-shops"
                 )
               }
-              style={marketplaceOsTileStyle(isCompact)}
+              style={marketplaceFrontLaneCardStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
-                style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)",
+                style={marketplaceFrontLaneIconStyle(
+                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="trade" size={isCompact ? 28 : 32} />
+                <MarketplaceGlyph name="trade" size={isCompact ? 30 : 34} />
               </span>
-              <span style={marketplaceOsTileTitleStyle(isCompact)}>
-                Trusted Trade
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  Trade & Shops
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Shops, offers, and visible trade.
+                </span>
+                <span style={marketplaceFrontTagRowStyle()}>
+                  <span
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8")}
+                  >
+                    Trusted Trade
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8")}
+                  >
+                    Demand Box
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#805A0F", "#F7EED8")}
+                  >
+                    Public Shops
+                  </span>
+                </span>
               </span>
-              <span style={marketplaceOsTileMetricStyle("#4338CA", isCompact)}>
-                {marketplaceTradeLabel}
-              </span>
-              <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Known members and shops
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
             </StableButton>
 
             <StableButton
               type="button"
-              debugId="marketplace.tile.trust"
-              aria-label="Open this marketplace trust summary"
-              onClick={toggleProfileDetails}
-              aria-expanded={profileDetailsOpen}
-              style={marketplaceOsTileStyle(isCompact)}
+              debugId="marketplace.tile.support"
+              aria-label="Open Support Requests, guarantors and loans"
+              onClick={(event) =>
+                openMarketplaceSection(
+                  event,
+                  "support",
+                  "marketplace-loans-support"
+                )
+              }
+              style={marketplaceFrontLaneCardStyle(isCompact)}
             >
               <span
                 aria-hidden="true"
-                style={marketplaceOsIconStyle(
-                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
+                style={marketplaceFrontLaneIconStyle(
+                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="trust" size={isCompact ? 28 : 32} />
+                <MarketplaceGlyph name="support" size={isCompact ? 30 : 34} />
               </span>
-              <span style={marketplaceOsTileTitleStyle(isCompact)}>
-                Trust
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  Support & Loans
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Get help and manage loans.
+                </span>
+                <span style={marketplaceFrontTagRowStyle()}>
+                  <span
+                    style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8")}
+                  >
+                    Support Requests
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#0B6B3B", "#DFF3E8")}
+                  >
+                    Loan Process
+                  </span>
+                </span>
               </span>
-              <span style={marketplaceOsTileMetricStyle("#A16A08", isCompact)}>
-                {marketplaceTrustDisplay}
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
               </span>
-              <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                This community only
+            </StableButton>
+
+            <StableButton
+              type="button"
+              debugId="marketplace.row.records-links"
+              aria-label="Open Records and Links for this marketplace"
+              onClick={(event) =>
+                openMarketplaceSection(event, "tools", "marketplace-owned-links")
+              }
+              style={marketplaceFrontLaneCardStyle(isCompact)}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceFrontLaneIconStyle(
+                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)",
+                  isCompact
+                )}
+              >
+                <MarketplaceGlyph name="members" size={isCompact ? 30 : 34} />
+              </span>
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  Members & Records
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  People, shops, and community records.
+                </span>
+                <span style={marketplaceFrontTagRowStyle()}>
+                  <span
+                    style={marketplaceFrontTagStyle("#4338CA", "#ECEAFE")}
+                  >
+                    Member Ledger
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#4338CA", "#ECEAFE")}
+                  >
+                    Records & Links
+                  </span>
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph name="chevron" size={18} />
+              </span>
+            </StableButton>
+
+            <StableButton
+              type="button"
+              debugId="marketplace.extra-tools.toggle"
+              onClick={toggleIntentGuide}
+              aria-expanded={intentGuideOpen}
+              style={marketplaceFrontLaneCardStyle(isCompact)}
+            >
+              <span
+                aria-hidden="true"
+                style={marketplaceFrontLaneIconStyle(
+                  "linear-gradient(180deg, #173750 0%, #061827 100%)",
+                  isCompact
+                )}
+              >
+                <MarketplaceGlyph name="spark" size={isCompact ? 30 : 34} />
+              </span>
+              <span style={marketplaceOsRowTextStackStyle()}>
+                <span style={marketplaceOsRowTitleStyle(isCompact)}>
+                  More / Community Tools
+                </span>
+                <span style={marketplaceOsRowDetailStyle(isCompact)}>
+                  Community tools and connections.
+                </span>
+                <span style={marketplaceFrontTagRowStyle()}>
+                  <span
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                  >
+                    Identity
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                  >
+                    Invite
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                  >
+                    TrustSlip
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#173750", "#EEF3F7")}
+                  >
+                    More
+                  </span>
+                </span>
+              </span>
+              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
+                <MarketplaceGlyph
+                  name={intentGuideOpen ? "chevronUp" : "chevron"}
+                  size={18}
+                />
               </span>
             </StableButton>
           </div>
@@ -5496,9 +5583,9 @@ export default function MarketplacePage() {
             style={{
               marginTop: 12,
               borderRadius: 18,
-              border: "1px solid rgba(11,99,209,0.18)",
+              border: "1px solid rgba(11,99,209,0.14)",
               background:
-                "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(226,238,250,0.96) 100%)",
+                "linear-gradient(180deg, rgba(240,247,255,0.98) 0%, rgba(229,240,250,0.96) 100%)",
               padding: isCompact ? "11px 12px" : "12px 14px",
               display: "grid",
               gridTemplateColumns: isCompact
@@ -5526,11 +5613,11 @@ export default function MarketplacePage() {
                   "0 10px 18px rgba(10,24,49,0.14), inset 0 1px 0 rgba(255,255,255,0.22)",
               }}
             >
-              <MarketplaceGlyph name="pool" size={isCompact ? 22 : 24} />
+              <MarketplaceGlyph name="spark" size={isCompact ? 22 : 24} />
             </span>
             <div style={{ minWidth: 0 }}>
               <div style={{ ...sectionLabel(), color: "#0B4EA2" }}>
-                Start with Money Pool
+                Focus your work
               </div>
               <div
                 style={{
@@ -5542,8 +5629,7 @@ export default function MarketplacePage() {
                   overflowWrap: "break-word",
                 }}
               >
-                Check this community's pool first, then choose Money In, Money
-                Out, or Finance from that lane.
+                Open one lane at a time. Everything else steps back.
               </div>
             </div>
           </div>
@@ -5588,289 +5674,6 @@ export default function MarketplacePage() {
               </div>
             </div>
           ) : null}
-
-          <div
-            style={{
-              marginTop: 14,
-              color: "#5F7287",
-              fontSize: 12,
-              fontWeight: 950,
-              letterSpacing: 1.6,
-              textTransform: "uppercase",
-            }}
-          >
-            Operating lanes
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
-              display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
-              gap: 10,
-            }}
-          >
-            <StableButton
-              type="button"
-              debugId="marketplace.row.money"
-              aria-label="Open Money In and Money Out for this marketplace"
-              onClick={(event) =>
-                openMarketplaceSection(event, "money", "marketplace-money-routes")
-              }
-              style={marketplaceOsRowStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #1177CC 0%, #05365F 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="cash" size={isCompact ? 22 : 24} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Money In / Money Out
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Pay into this community or start a guided withdrawal.
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.row.payment-rails"
-              aria-label="Open Banking Rails for this marketplace"
-              onClick={(event) =>
-                openMarketplaceCta(event, "paymentRails")
-              }
-              style={marketplaceOsRowStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #C9952F 0%, #6D470B 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="bank" size={isCompact ? 22 : 24} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Banking Rails
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Payment rails, bank transfers, and settlement setup.
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.row.rosca"
-              aria-label="Open ROSCA contribution cycles for this marketplace"
-              onClick={(event) =>
-                openMarketplaceSection(event, "rosca", "marketplace-rosca")
-              }
-              style={marketplaceOsRowStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #C9952F 0%, #6D470B 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="rosca" size={isCompact ? 22 : 24} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  ROSCA
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Start a guided member savings circle in this community.
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.row.loan-process"
-              aria-label="Open Loan Process and support workbench"
-              onClick={(event) =>
-                openMarketplaceSection(
-                  event,
-                  "support",
-                  "marketplace-loans-support"
-                )
-              }
-              style={marketplaceOsRowStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="heart" size={isCompact ? 22 : 24} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Support Request
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Start the request, check fit, then continue the borrowing flow.
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.row.member-ledger"
-              aria-label="Open Member Ledger and visible shops"
-              onClick={(event) =>
-                openMarketplaceSection(
-                  event,
-                  "members",
-                  "marketplace-members-shops"
-                )
-              }
-              style={marketplaceOsRowStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="ledger" size={isCompact ? 22 : 24} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Trusted Trade
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  See known members, GSN IDs, and connected shops.
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.row.demand-box"
-              aria-label="Open Demand Box for this marketplace"
-              onClick={(event) => openMarketplaceCta(event, "demandBox")}
-              style={marketplaceOsRowStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #D7A22D 0%, #805A0F 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="demand" size={isCompact ? 22 : 24} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Demand Box
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Open community requests and visible needs.
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-
-            <StableButton
-              type="button"
-              debugId="marketplace.row.records-links"
-              aria-label="Open Records and Links for this marketplace"
-              onClick={(event) =>
-                openMarketplaceSection(event, "tools", "marketplace-owned-links")
-              }
-              style={marketplaceOsRowStyle(isCompact)}
-            >
-              <span
-                aria-hidden="true"
-                style={marketplaceOsRowIconStyle(
-                  "linear-gradient(180deg, #158BA0 0%, #075064 100%)",
-                  isCompact
-                )}
-              >
-                <MarketplaceGlyph name="links" size={isCompact ? 22 : 24} />
-              </span>
-              <span style={marketplaceOsRowTextStackStyle()}>
-                <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Records & Links
-                </span>
-                <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Join links, public faces, and controlled links.
-                </span>
-              </span>
-              <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-                <MarketplaceGlyph name="chevron" size={18} />
-              </span>
-            </StableButton>
-          </div>
-
-          <StableButton
-            type="button"
-            debugId="marketplace.extra-tools.toggle"
-            onClick={toggleIntentGuide}
-            aria-expanded={intentGuideOpen}
-            style={{
-              ...marketplaceOsRowStyle(isCompact),
-              marginTop: 14,
-              minHeight: isCompact ? 92 : 86,
-              background:
-                "linear-gradient(180deg, rgba(255,255,255,0.99) 0%, rgba(238,244,250,0.98) 100%)",
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={marketplaceOsRowIconStyle(
-                "linear-gradient(180deg, #0B63D1 0%, #08264B 100%)",
-                isCompact
-              )}
-            >
-              <MarketplaceGlyph name="spark" size={isCompact ? 22 : 24} />
-            </span>
-            <span style={marketplaceOsRowTextStackStyle()}>
-              <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                {intentGuideOpen ? "Hide more tools" : "More marketplace tools"}
-              </span>
-              <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                CCI, TrustSlip, shop, invite, identity, and messages.
-              </span>
-            </span>
-            <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
-              <MarketplaceGlyph
-                name={intentGuideOpen ? "chevronUp" : "chevron"}
-                size={18}
-              />
-            </span>
-          </StableButton>
 
           {intentGuideOpen ? (
             <div style={intentGuideCardStyle()}>

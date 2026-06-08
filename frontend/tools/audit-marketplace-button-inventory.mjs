@@ -19,10 +19,10 @@ const actionTargetRoutesSource = readFileSync(
   "utf8"
 );
 const findings = [];
-const expectedStableActionCount = 61;
+const expectedStableActionCount = 55;
 const expectedNativeFieldCount = 13;
 const expectedSourceBreakdown = {
-  front: 17,
+  front: 11,
   body: 44,
 };
 const expectedVisibleIntentActionCount = 13;
@@ -245,53 +245,43 @@ if (visibleIntentActionCount !== expectedVisibleIntentActionCount) {
 }
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]{0,260}aria-label="Open Money In, Money Out, dues and contributions"[\s\S]{0,260}openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]{0,520}<MarketplaceGlyph name="pool"[\s\S]{0,260}Money Pool[\s\S]{0,260}Start here: dues and money routes/,
-  "Marketplace Money Pool tile must open the money section only, with a clear label that cannot be confused with Trust Passport."
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Banking Rails/,
+  "Marketplace Finance & Pool grouped card must open the money section only and show money route tags."
 );
 
 assertContains(
-  /Start with Money Pool[\s\S]{0,520}Check this community's pool first,[\s\S]{0,260}Money[\s\S]{0,80}Out, or Finance from that lane/,
-  "Marketplace front door must keep a non-button Money Pool start-here guide before deeper operating lanes."
+  /Focus your work[\s\S]*?Open one lane at a time\. Everything else steps back\./,
+  "Marketplace front door must keep the focus-your-work guide after the grouped lane cards."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.rosca"[\s\S]{0,300}aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]{0,320}openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]{0,520}<MarketplaceGlyph name="rosca"[\s\S]{0,260}ROSCA[\s\S]{0,260}Member savings circle/,
-  "Marketplace ROSCA tile must open the ROSCA section only and stay visible as its own Marketplace emblem."
+  /debugId="marketplace\.tile\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?<MarketplaceGlyph name="rosca"[\s\S]*?ROSCA[\s\S]*?Member savings circle for this community[\s\S]*?Yearly Service[\s\S]*?Member Cycle[\s\S]*?Payout Record/,
+  "Marketplace ROSCA grouped card must stay a distinct major front lane and open the ROSCA section only."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]{0,300}aria-label="Open Support Requests, guarantors and loans"[\s\S]{0,320}openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]{0,520}<MarketplaceGlyph name="support"[\s\S]{0,260}Support Requests[\s\S]{0,260}Guided help request/,
-  "Marketplace Support Requests tile must open the support section only."
+  /debugId="marketplace\.extra-tools\.toggle"[\s\S]*?More \/ Community Tools[\s\S]*?Community tools and connections[\s\S]*?Identity[\s\S]*?Invite[\s\S]*?TrustSlip[\s\S]*?More/,
+  "Marketplace More / Community Tools grouped card must keep secondary community tools grouped without hiding ROSCA."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.trust"[\s\S]{0,300}aria-label="Open this marketplace trust summary"[\s\S]{0,180}onClick=\{toggleProfileDetails\}/,
+  /debugId="marketplace\.tile\.support"[\s\S]*?aria-label="Open Support Requests, guarantors and loans"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?<MarketplaceGlyph name="support"[\s\S]*?Support & Loans[\s\S]*?Get help and manage loans[\s\S]*?Support Requests[\s\S]*?Loan Process/,
+  "Marketplace Support & Loans grouped card must open the support section only."
+);
+
+assertContains(
+  /debugId="marketplace\.tile\.trust"[\s\S]*?aria-label="Open this marketplace trust summary"[\s\S]*?onClick=\{toggleProfileDetails\}[\s\S]*?\{marketplaceTrustDisplay\}/,
   "Marketplace Trust tile must toggle the local marketplace trust summary, not hijack the Money Pool tile or route directly to Trust Passport."
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open trusted trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trusted Trade[\s\S]*?Known members and shops/,
-  "Marketplace Trusted Trade tile must open the members/shops trade lane with community-bound wording."
+  /debugId="marketplace\.tile\.members"[\s\S]*?aria-label="Open trusted trade, members and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?<MarketplaceGlyph name="trade"[\s\S]*?Trade & Shops[\s\S]*?Shops, offers, and visible trade[\s\S]*?Trusted Trade[\s\S]*?Demand Box[\s\S]*?Public Shops/,
+  "Marketplace Trade & Shops grouped card must open the members/shops trade lane with community-bound wording."
 );
 
 assertContains(
-  /debugId="marketplace\.row\.money"[\s\S]{0,300}aria-label="Open Money In and Money Out for this marketplace"[\s\S]{0,300}openMarketplaceSection\(event, "money", "marketplace-money-routes"\)/,
-  "Marketplace Money In / Money Out row must open the money section only."
-);
-
-assertContains(
-  /debugId="marketplace\.row\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Start a guided member savings circle in this community/,
-  "Marketplace ROSCA operating row must open the ROSCA section only."
-);
-
-assertContains(
-  /debugId="marketplace\.row\.loan-process"[\s\S]*?aria-label="Open Loan Process and support workbench"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support Request[\s\S]*?Start the request, check fit, then continue the borrowing flow/,
-  "Marketplace Support Request operating row must open the support section only and explain the guided flow."
-);
-
-assertContains(
-  /debugId="marketplace\.row\.member-ledger"[\s\S]*?aria-label="Open Member Ledger and visible shops"[\s\S]*?openMarketplaceSection\(\s*event,\s*"members",\s*"marketplace-members-shops"\s*\)[\s\S]*?Trusted Trade[\s\S]*?See known members, GSN IDs, and connected shops/,
-  "Marketplace Trusted Trade operating row must open the members/shops trade lane with clear member-shop wording."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?Members & Records[\s\S]*?People, shops, and community records[\s\S]*?Member Ledger[\s\S]*?Records & Links/,
+  "Marketplace Members & Records grouped card must open marketplace-owned links and records."
 );
 
 assertContains(
@@ -560,17 +550,11 @@ assertFileContains(
 const expectedOrder = [
   exactDebugId("marketplace.empty.community-home"),
   exactDebugId("marketplace.empty.dashboard"),
+  exactDebugId("marketplace.tile.trust"),
   exactDebugId("marketplace.tile.money"),
   exactDebugId("marketplace.tile.rosca"),
-  exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.tile.members"),
-  exactDebugId("marketplace.tile.trust"),
-  exactDebugId("marketplace.row.money"),
-  exactDebugId("marketplace.row.payment-rails"),
-  exactDebugId("marketplace.row.rosca"),
-  exactDebugId("marketplace.row.loan-process"),
-  exactDebugId("marketplace.row.member-ledger"),
-  exactDebugId("marketplace.row.demand-box"),
+  exactDebugId("marketplace.tile.support"),
   exactDebugId("marketplace.row.records-links"),
   exactDebugId("marketplace.extra-tools.toggle"),
   exactDebugId("marketplace.intent.submit"),

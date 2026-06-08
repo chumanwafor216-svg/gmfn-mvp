@@ -44,13 +44,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?<MarketplaceGlyph name="rosca"[\s\S]*?ROSCA[\s\S]*?Member savings circle/,
-  "ROSCA top tile must stay a guided ROSCA launcher and open only the ROSCA section."
+  /debugId="marketplace\.tile\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?<MarketplaceGlyph name="rosca"[\s\S]*?ROSCA[\s\S]*?Member savings circle for this community[\s\S]*?Yearly Service[\s\S]*?Member Cycle[\s\S]*?Payout Record/,
+  "ROSCA must stay visible as its own major grouped launcher on the Marketplace front door."
 );
 
 assertContains(
-  /debugId="marketplace\.row\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Start a guided member savings circle in this community/,
-  "ROSCA operating row must open the same ROSCA section and explain the lane in plain language."
+  /id: "rosca"[\s\S]*?label: "Open ROSCA"[\s\S]*?to: "#marketplace-rosca"/,
+  "ROSCA must remain available from the expanded More tools intent list and open the ROSCA section anchor."
 );
 
 assertContains(

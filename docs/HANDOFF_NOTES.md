@@ -1,3 +1,67 @@
+### Marketplace grouped front-door checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner shared a phone reference and asked Marketplace to be very
+    close to it before moving deeper into the remaining Marketplace work;
+  - phone checking is intentionally deferred until the full Marketplace package
+    is ready because the current priority is reducing button jumpiness first.
+- Source facts changed/preserved:
+  - `/app/marketplace` still owns the selected community operating desk;
+  - no backend, auth, permission, global shell, Dashboard, Community Home, or
+    Action Inbox behavior was changed;
+  - lane internals from the previous Money Pool, ROSCA, Support Requests, and
+    Trusted Trade repair passes remain in place;
+  - Trust remains a compact local trust pill at the front instead of competing
+    as a full lane.
+- Fix:
+  - replaced the old dense Marketplace front tile grid plus duplicate
+    operating-lane rows with grouped lane cards:
+    `Finance & Pool`, `ROSCA`, `Trade & Shops`, `Support & Loans`,
+    `Members & Records`, and `More / Community Tools`;
+  - changed the Marketplace identity block to a white compact GSN Marketplace
+    card with shield mark and a small Trusted/local trust pill, matching the
+    uploaded reference structure more closely;
+  - briefly moved ROSCA into `More / Community Tools`, then corrected it after
+    product-owner pushback because ROSCA must remain a distinct major
+    Marketplace lane;
+  - kept the real major lanes openable from the outside:
+    `marketplace.tile.money` -> `#marketplace-money-routes`,
+    `marketplace.tile.rosca` -> `#marketplace-rosca`,
+    `marketplace.tile.members` -> `#marketplace-members-shops`,
+    `marketplace.tile.support` -> `#marketplace-loans-support`, and
+    `marketplace.row.records-links` -> `#marketplace-owned-links`;
+  - added clamped pill tags inside grouped cards so labels like
+    `Banking Rails`, `Support Requests`, `Public Shops`, and `TrustSlip` do not
+    stretch button boxes;
+  - updated Marketplace button/auditor contracts for the new grouped front:
+    stable Marketplace source actions intentionally drop from 61 to 55,
+    front actions from 17 to 11, body actions stay 44, and whole-route mobile
+    controls are 102.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-actions.mjs tools/audit-button-stability.mjs tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-button-lines.mjs tools/audit-marketplace-money-pool-lane.mjs tools/audit-marketplace-rosca-lane.mjs tools/audit-marketplace-support-lane.mjs tools/audit-marketplace-trusted-trade-lane.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Unabated truth:
+  - this is structurally close to the uploaded reference, not a confirmed
+    pixel-perfect phone match yet;
+  - the front is now one row heavier than the uploaded reference because ROSCA
+    is restored as a real major lane; that is a deliberate product choice, not
+    an accidental layout drift;
+  - final phone polish may still uncover spacing/icon adjustments, especially
+    once Marketplace Trust and any remaining inner rows get their own pass.
+
 ### Marketplace Trusted Trade lane guided repair checkpoint (2026-06-08)
 
 - Trigger:

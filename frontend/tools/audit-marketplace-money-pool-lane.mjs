@@ -44,18 +44,13 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Money Pool[\s\S]*?Start here: dues and money routes/,
-  "Money Pool top tile must stay the first guided money launcher and open only the money section."
+  /debugId="marketplace\.tile\.money"[\s\S]*?aria-label="Open Money In, Money Out, dues and contributions"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?<MarketplaceGlyph name="pool"[\s\S]*?Finance & Pool[\s\S]*?Pool, money in\/out, and banking[\s\S]*?Money In[\s\S]*?Money Out[\s\S]*?Banking Rails/,
+  "Finance & Pool grouped card must stay the guided money launcher and open only the money section."
 );
 
 assertContains(
-  /Start with Money Pool[\s\S]*?Check this community's pool first,[\s\S]*?Money[\s\S]*?Out, or Finance from that lane/,
-  "Marketplace front door must keep a non-action guide telling users to start with Money Pool."
-);
-
-assertContains(
-  /debugId="marketplace\.row\.money"[\s\S]*?aria-label="Open Money In and Money Out for this marketplace"[\s\S]*?openMarketplaceSection\(event, "money", "marketplace-money-routes"\)[\s\S]*?Money In \/ Money Out/,
-  "Money Pool operating row must open the same money section and not route to Finance, Trust, or another lane."
+  /Focus your work[\s\S]*?Open one lane at a time\. Everything else steps back\./,
+  "Marketplace front door must keep the non-action focus guide after the grouped lane cards."
 );
 
 assertContains(
