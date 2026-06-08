@@ -1,3 +1,51 @@
+### Shop Control overview/product exposure pass (2026-06-08)
+
+- Trigger:
+  - continued Marketplace-linked stabilization after Demand Box;
+  - Marketplace Owner Controls opens `/app/shop-control`, whose previous
+    button baseline did not stop the overview from exposing the embedded shop
+    gallery workspace.
+- Scope:
+  - route remains `/app/shop-control`;
+  - changed only `ShopControlPage`, the Shop Control button inventory audit,
+    and this handoff note;
+  - no backend, API contract, auth, Marketplace launcher, Dashboard,
+    Community Home, Action Inbox, shared tap guard, or global shell behavior
+    changed.
+- Fix:
+  - the Shop Control overview no longer renders the embedded `ShopAssetsPage`
+    product/gallery workspace by default;
+  - `#shop-control-gallery-tools` now appears only when the owner opens the
+    `products` owner layer;
+  - existing Shop Control action ids, route targets, and audited button counts
+    are unchanged.
+- Audit cage updated:
+  - `frontend/tools/audit-shop-control-button-inventory.mjs` now rejects the
+    old `overview || products` render condition and requires the gallery tools
+    to stay behind `activeOwnerLayer === "products"`.
+- Verification:
+  - passed `npm --prefix frontend run audit:shop-control-button-inventory`;
+  - passed `npm --prefix frontend run audit:community-shop-actions`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/ShopControlPage.tsx tools/audit-shop-control-button-inventory.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is an exposure/density fix, not a full visual restyle of every Shop
+    Control layer;
+  - deeper product management, paid tools, vault, public shop, and owner-control
+    subpages may still need their own guided-work passes;
+  - the fix intentionally avoids shared navigation or Marketplace launcher
+    changes so the protected button freeze stays stable.
+
 ### Demand Box compact record-list pass (2026-06-08)
 
 - Trigger:

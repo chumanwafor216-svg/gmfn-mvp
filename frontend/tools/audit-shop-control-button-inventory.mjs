@@ -320,6 +320,25 @@ assertShopContains(
 );
 
 assertShopContains(
+  /activeOwnerLayer === "products" \? \(\s*<section\s*id="shop-control-gallery-tools"/,
+  "Shop Control overview must not expose the embedded product/gallery workspace before the owner opens Shop gallery."
+);
+
+if (
+  /activeOwnerLayer === "overview"\s*\|\|\s*activeOwnerLayer === "products"\s*\?\s*\(\s*<section\s*id="shop-control-gallery-tools"/.test(
+    shopControlSource
+  )
+) {
+  findings.push({
+    file: shopControlFile,
+    line: 1,
+    message:
+      "Shop Control must not render Shop gallery tools on the plain overview.",
+    text: "Render #shop-control-gallery-tools only when activeOwnerLayer is products.",
+  });
+}
+
+assertShopContains(
   /debugId="shop-control\.package\.rosca-cycle"[\s\S]*?debugId="shop-control\.rosca\.start-cycle"[\s\S]*?debugId="shop-control\.rosca\.record-payout"/,
   "Shop Control must keep the ROSCA paid package action connected to the ROSCA cycle and payout controls."
 );

@@ -3121,8 +3121,7 @@ export default function ShopControlPage() {
       </section>
       ) : null}
 
-      {activeOwnerLayer === "overview" ||
-      activeOwnerLayer === "products" ? (
+      {activeOwnerLayer === "products" ? (
         <section
           id="shop-control-gallery-tools"
           style={pageCard("linear-gradient(180deg, #FFFFFF 0%, #F8FBFF 56%, #EAF4FF 100%)")}
