@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink } from "../components/StableButton";
+import { TrustPaperIcon, type TrustPaperIconName } from "../components/TrustPaperMarks";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
 import {
@@ -26,6 +26,7 @@ type PayoutForm = {
   account_name: string;
   account_number: string;
   bank_name: string;
+  sort_code: string;
   country: string;
   currency: string;
 };
@@ -134,11 +135,75 @@ function inputStyle(): React.CSSProperties {
 function sectionLabel(): React.CSSProperties {
   return {
     fontSize: 12,
-    color: "#9CB4CF",
+    color: "#B9CBE0",
     fontWeight: 1000,
     letterSpacing: 0.45,
     textTransform: "uppercase",
   };
+}
+
+function lightSectionLabel(): React.CSSProperties {
+  return {
+    ...sectionLabel(),
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    color: "#41556E",
+  };
+}
+
+function iconTile(
+  tone: "navy" | "gold" | "green" | "soft" = "navy"
+): React.CSSProperties {
+  const palette = {
+    navy: {
+      background: "linear-gradient(180deg, #0B3B68 0%, #061827 100%)",
+      color: "#FFFFFF",
+      border: "1px solid rgba(255,255,255,0.18)",
+    },
+    gold: {
+      background: "linear-gradient(180deg, #FFF1B8 0%, #D6AA45 100%)",
+      color: "#10253B",
+      border: "1px solid rgba(214,170,69,0.48)",
+    },
+    green: {
+      background: "linear-gradient(180deg, #E6F9EF 0%, #C8F0DA 100%)",
+      color: "#087044",
+      border: "1px solid rgba(46,155,98,0.26)",
+    },
+    soft: {
+      background: "linear-gradient(180deg, #FFFFFF 0%, #EAF3FF 100%)",
+      color: "#0B3B68",
+      border: "1px solid rgba(123,161,204,0.24)",
+    },
+  }[tone];
+
+  return {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    display: "inline-grid",
+    placeItems: "center",
+    flex: "0 0 auto",
+    boxShadow: "0 12px 22px rgba(2,6,23,0.12)",
+    ...palette,
+  };
+}
+
+function IconBadge({
+  name,
+  tone = "navy",
+  size = 22,
+}: {
+  name: TrustPaperIconName;
+  tone?: "navy" | "gold" | "green" | "soft";
+  size?: number;
+}) {
+  return (
+    <span style={iconTile(tone)}>
+      <TrustPaperIcon name={name} size={size} strokeWidth={2.35} />
+    </span>
+  );
 }
 
 function badge(primary = false): React.CSSProperties {
@@ -174,6 +239,49 @@ function safeStr(x: any): string {
   return String(x ?? "").trim();
 }
 
+function normalizeSortCode(value: string): string {
+  const raw = safeStr(value);
+  if (!raw) return "";
+
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 6) {
+    return `${digits.slice(0, 2)}-${digits.slice(2, 4)}-${digits.slice(4, 6)}`;
+  }
+
+  return raw;
+}
+
+function extractSortCodeFromNote(note: any): string {
+  const raw = safeStr(note);
+  const match = raw.match(/(?:UK\s*)?Sort code:\s*([^|;\n]+)/i);
+  return normalizeSortCode(match?.[1] || "");
+}
+
+function isUkPayout(form: PayoutForm): boolean {
+  const country = safeStr(form.country).toUpperCase();
+  const currency = safeStr(form.currency).toUpperCase();
+  return (
+    currency === "GBP" ||
+    country === "GB" ||
+    country === "UK" ||
+    country === "UNITED KINGDOM" ||
+    country === "ENGLAND" ||
+    country === "SCOTLAND" ||
+    country === "WALES" ||
+    country === "NORTHERN IRELAND"
+  );
+}
+
+function buildPayoutNote(form: PayoutForm): string {
+  return [
+    safeStr(form.country) ? `Country: ${safeStr(form.country)}` : "",
+    safeStr(form.currency) ? `Currency: ${safeStr(form.currency)}` : "",
+    safeStr(form.sort_code) ? `UK Sort code: ${normalizeSortCode(form.sort_code)}` : "",
+  ]
+    .filter(Boolean)
+    .join(" | ");
+}
+
 function detectCurrency(me: any): string {
   const preferred = safeStr(me?.preferred_currency).toUpperCase();
   if (preferred) return preferred;
@@ -199,6 +307,9 @@ function readLocalPayout(): Partial<PayoutForm> | null {
       account_name: safeStr((parsed as any).account_name || ""),
       account_number: safeStr((parsed as any).account_number || ""),
       bank_name: safeStr((parsed as any).bank_name || ""),
+      sort_code: normalizeSortCode(
+        safeStr((parsed as any).sort_code || (parsed as any).bank_sort_code || "")
+      ),
       country: safeStr((parsed as any).country || ""),
       currency: safeStr((parsed as any).currency || ""),
     };
@@ -223,6 +334,7 @@ function buildPayoutSummary(form: PayoutForm): string {
     `Account Name: ${safeStr(form.account_name || "-")}`,
     `Account Number / Wallet: ${safeStr(form.account_number || "-")}`,
     `Bank / Wallet Provider: ${safeStr(form.bank_name || "-")}`,
+    `UK Sort Code: ${safeStr(normalizeSortCode(form.sort_code) || "-")}`,
     `Country: ${safeStr(form.country || "-")}`,
     `Currency: ${safeStr(form.currency || "-")}`,
   ].join("\n");
@@ -273,6 +385,7 @@ export default function PayoutDetailsPage() {
     account_name: "",
     account_number: "",
     bank_name: "",
+    sort_code: "",
     country: "",
     currency: "NGN",
   });
@@ -326,6 +439,15 @@ export default function PayoutDetailsPage() {
         bank_name: safeStr(
           server?.bank_name || server?.bank || local?.bank_name || meRes?.bank_name || ""
         ),
+        sort_code: normalizeSortCode(
+          safeStr(
+            server?.sort_code ||
+              server?.bank_sort_code ||
+              local?.sort_code ||
+              extractSortCodeFromNote(server?.note) ||
+              ""
+          )
+        ),
         country: safeStr(server?.country || local?.country || meRes?.country || ""),
         currency:
           safeStr(
@@ -341,6 +463,7 @@ export default function PayoutDetailsPage() {
     const timer = window.setTimeout(() => {
       setMsg("");
       setErr("");
+      setProofFeedback(null);
     }, 2600);
 
     return () => window.clearTimeout(timer);
@@ -358,12 +481,15 @@ export default function PayoutDetailsPage() {
     if (safeStr(form.account_name)) count += 1;
     if (safeStr(form.account_number)) count += 1;
     if (safeStr(form.bank_name)) count += 1;
+    if (!isUkPayout(form) || safeStr(form.sort_code)) count += 1;
     if (safeStr(form.country)) count += 1;
     if (safeStr(form.currency)) count += 1;
     return count;
   }, [form]);
 
-  const isReady = completionCount >= 5;
+  const needsUkSortCode = isUkPayout(form);
+  const requiredFieldCount = needsUkSortCode ? 6 : 5;
+  const isReady = completionCount >= requiredFieldCount;
 
   const nextStep = useMemo<NextStepState>(() => {
     if (!selectedClanId) {
@@ -382,7 +508,9 @@ export default function PayoutDetailsPage() {
         title: "Complete the payout destination first",
         detail:
           "Approved withdrawals should wait until your payout destination is complete enough for the route to be understood.",
-        today: "Complete the payout fields and save them for the withdrawal path.",
+        today: needsUkSortCode
+          ? "Complete account name, bank, account number, UK sort code, country, and currency."
+          : "Complete the payout fields and save them for the withdrawal path.",
         tomorrow:
           "A clear payout destination reduces mistakes and delay when withdrawal begins.",
       };
@@ -396,10 +524,16 @@ export default function PayoutDetailsPage() {
       tomorrow:
         "A stable payout destination keeps the money path calmer and more traceable.",
     };
-  }, [selectedClanId, isReady]);
+  }, [selectedClanId, isReady, needsUkSortCode]);
 
   function update<K extends keyof PayoutForm>(key: K, value: PayoutForm[K]) {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setMsg("");
+    setErr("");
+    setProofFeedback(null);
+    setForm((prev) => ({
+      ...prev,
+      [key]: key === "sort_code" ? normalizeSortCode(String(value)) : value,
+    }));
   }
 
   async function savePayout() {
@@ -413,12 +547,7 @@ export default function PayoutDetailsPage() {
         phone_number: safeStr(me?.phone_e164 || "") || undefined,
         country: safeStr(form.country) || undefined,
         currency: safeStr(form.currency).toUpperCase() || undefined,
-        note: [
-          safeStr(form.country) ? `Country: ${safeStr(form.country)}` : "",
-          safeStr(form.currency) ? `Currency: ${safeStr(form.currency)}` : "",
-        ]
-          .filter(Boolean)
-          .join(" | "),
+        note: buildPayoutNote(form),
       };
 
       const saved = loadedFromServer
@@ -455,6 +584,7 @@ export default function PayoutDetailsPage() {
         account_name: safeStr(me?.account_name || ""),
         account_number: safeStr(me?.account_number || ""),
         bank_name: safeStr(me?.bank_name || ""),
+        sort_code: "",
         country: safeStr(me?.country || ""),
         currency: detectCurrency(me),
       });
@@ -469,6 +599,7 @@ export default function PayoutDetailsPage() {
 
   function copySummary() {
     safeCopy(buildPayoutSummary(form));
+    setProofFeedback(null);
     setErr("");
     setMsg("Payout summary copied.");
   }
@@ -478,66 +609,12 @@ export default function PayoutDetailsPage() {
       <PageTopNav
         sectionLabel="Bank / Wallet Details"
         title="Bank / Wallet Details"
-        subtitle="Choose where approved withdrawals should go after they leave the community settlement account."
+        subtitle="Save the destination for approved withdrawals."
         homeTo={routes.dashboard}
         homeLabel="Dashboard"
         backTo={routes.moneyOut}
         backLabel="Withdrawal Instructions"
       />
-
-      <ExplainToggle
-        label="What this screen does"
-        what="This screen records the bank or wallet destination that should receive your approved withdrawals after they leave the community settlement account."
-        why="It reduces payout confusion by making the destination clear before money moves and before you continue deeper into Money Out."
-        next="Confirm the destination fields first, review today's handoff, and then return to Withdrawal Instructions or Loans and Support if more action is needed."
-        tone="light"
-        style={{ marginTop: 18 }}
-      />
-
-      {err ? <div style={{ ...feedbackCard(false), marginTop: 18 }}>{err}</div> : null}
-      {msg ? <div style={{ ...feedbackCard(true), marginTop: 18 }}>{msg}</div> : null}
-      {proofFeedback ? (
-        <div
-          style={{
-            ...pageCard("#ECFDF5"),
-            marginTop: 18,
-            border: "1px solid #A7F3D0",
-            color: "#065F46",
-          }}
-        >
-          <div style={{ ...sectionLabel(), color: "#047857" }}>
-            Trust event response
-          </div>
-          <div style={{ marginTop: 8, fontWeight: 1000, lineHeight: 1.55 }}>
-            {safeStr(proofFeedback.confirmation_message) ||
-              "Your payout destination has been recorded."}
-          </div>
-          <div
-            style={{
-              marginTop: 10,
-              display: "flex",
-              gap: 8,
-              flexWrap: "wrap",
-            }}
-          >
-            {safeStr(proofFeedback.verification_status) ? (
-              <span style={badge(false)}>
-                Status: {safeStr(proofFeedback.verification_status).replace(/_/g, " ")}
-              </span>
-            ) : null}
-            {safeStr(proofFeedback.trust_event_response?.event_type) ? (
-              <span style={badge(true)}>
-                Event: {safeStr(proofFeedback.trust_event_response?.event_type)}
-              </span>
-            ) : null}
-          </div>
-          <div style={{ marginTop: 10, lineHeight: 1.7, fontWeight: 800 }}>
-            {safeStr(proofFeedback.trust_event_response?.message) ||
-              safeStr(proofFeedback.verification_note) ||
-              "This proof is ready for the trust record when the matching flow writes the permanent event."}
-          </div>
-        </div>
-      ) : null}
 
       <section
         style={{
@@ -548,13 +625,12 @@ export default function PayoutDetailsPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: isCompact
-              ? "1fr"
-              : "minmax(0, 1.08fr) minmax(320px, 0.92fr)",
+            gridTemplateColumns: isCompact ? "1fr" : "auto minmax(0, 1fr) minmax(260px, 0.74fr)",
             gap: 16,
             alignItems: "start",
           }}
         >
+          <IconBadge name="wallet" tone="gold" size={24} />
           <div>
             <div style={sectionLabel()}>Payout destination</div>
 
@@ -571,10 +647,7 @@ export default function PayoutDetailsPage() {
             </div>
 
             <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.8 }}>
-              GSN does not hold funds as a custodian. When a withdrawal is processed,
-              money should move from the community settlement account into your own
-              registered payout account or wallet. Confirm here where your approved
-              funds should go.
+              Record the bank or wallet account that should receive approved withdrawals.
             </div>
 
             <div
@@ -587,7 +660,7 @@ export default function PayoutDetailsPage() {
             >
               <span style={badge(true)}>Context: {selectedCommunityLabel}</span>
               <span style={badge(false)}>
-                Readiness: {completionCount}/5 fields complete
+                Readiness: {completionCount}/{requiredFieldCount} fields complete
               </span>
               <span style={badge(false)}>
                 Source: {loadedFromServer ? "System record" : loadedFromLocal ? "Local fallback" : "Profile defaults"}
@@ -602,9 +675,7 @@ export default function PayoutDetailsPage() {
                 fontWeight: 800,
               }}
             >
-              Keep the route reading here. When you are ready to move, use the
-              single <span style={{ fontWeight: 1000 }}>What happens next</span>
-              section below so payout routing stays in one clear place.
+              GSN records the destination. It does not move money from this page.
             </div>
           </div>
 
@@ -642,32 +713,29 @@ export default function PayoutDetailsPage() {
         </div>
       </section>
 
-      <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
-          Why this matters
+      <section
+        style={{
+          ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+          marginTop: 18,
+          color: "#07172C",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "auto minmax(0, 1fr)",
+            gap: 12,
+            alignItems: "center",
+          }}
+        >
+          <IconBadge name="bank" tone="navy" size={24} />
+          <div>
+            <div style={lightSectionLabel()}>Destination fields</div>
+            <div style={{ marginTop: 4, fontSize: 22, fontWeight: 1000 }}>
+              Bank or wallet account
+            </div>
+          </div>
         </div>
-
-        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
-          GSN does not hold funds as a custodian. When a withdrawal is processed,
-          money should move from the community settlement account into your own
-          registered payout account. This confirms where your approved
-          funds should go.
-        </div>
-      </section>
-
-      <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
-          Payout Account Details
-        </div>
-
-        <ExplainToggle
-          label="What this does"
-          what="This form records the bank or wallet destination that should receive your approved payout after funds leave the community settlement account."
-          why="It keeps the destination clear before you rely on the withdrawal path."
-          next="Enter the payout account carefully, save the details, and use the summary here to confirm that the destination is correct."
-          tone="light"
-          style={{ marginTop: 14 }}
-        />
 
         <div
           style={{
@@ -677,58 +745,120 @@ export default function PayoutDetailsPage() {
             gap: 12,
           }}
         >
-          <input
-            value={form.account_name}
-            onChange={(e) => update("account_name", e.target.value)}
-            placeholder="Account name"
-            style={inputStyle()}
-          />
+          <label style={{ display: "grid", gap: 7 }}>
+            <span style={lightSectionLabel()}>
+              <TrustPaperIcon name="user" size={15} /> Account name
+            </span>
+            <input
+              value={form.account_name}
+              onChange={(e) => update("account_name", e.target.value)}
+              placeholder="Account name"
+              style={inputStyle()}
+            />
+          </label>
 
-          <input
-            value={form.account_number}
-            onChange={(e) => update("account_number", e.target.value)}
-            placeholder="Account number / wallet number"
-            style={inputStyle()}
-          />
+          <label style={{ display: "grid", gap: 7 }}>
+            <span style={lightSectionLabel()}>
+              <TrustPaperIcon name="hash" size={15} /> Account / wallet number
+            </span>
+            <input
+              value={form.account_number}
+              onChange={(e) => update("account_number", e.target.value)}
+              placeholder="Account number / wallet number"
+              style={inputStyle()}
+            />
+          </label>
 
-          <input
-            value={form.bank_name}
-            onChange={(e) => update("bank_name", e.target.value)}
-            placeholder="Bank / wallet provider"
-            style={inputStyle()}
-          />
+          <label style={{ display: "grid", gap: 7 }}>
+            <span style={lightSectionLabel()}>
+              <TrustPaperIcon name="bank" size={15} /> Bank / wallet provider
+            </span>
+            <input
+              value={form.bank_name}
+              onChange={(e) => update("bank_name", e.target.value)}
+              placeholder="Bank / wallet provider"
+              style={inputStyle()}
+            />
+          </label>
 
-          <input
-            value={form.country}
-            onChange={(e) => update("country", e.target.value)}
-            placeholder="Country"
-            style={inputStyle()}
-          />
+          <label style={{ display: "grid", gap: 7 }}>
+            <span style={lightSectionLabel()}>
+              <TrustPaperIcon name="hash" size={15} /> UK sort code
+            </span>
+            <input
+              value={form.sort_code}
+              onChange={(e) => update("sort_code", e.target.value)}
+              placeholder="12-34-56"
+              inputMode="numeric"
+              style={inputStyle()}
+            />
+          </label>
 
-          <select
-            value={form.currency}
-            onChange={(e) => update("currency", e.target.value)}
-            style={inputStyle()}
-          >
-            <option value="GBP">GBP</option>
-            <option value="NGN">NGN</option>
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-            <option value="KES">KES</option>
-            <option value="GHS">GHS</option>
-          </select>
+          <label style={{ display: "grid", gap: 7 }}>
+            <span style={lightSectionLabel()}>
+              <TrustPaperIcon name="globe" size={15} /> Country
+            </span>
+            <input
+              value={form.country}
+              onChange={(e) => update("country", e.target.value)}
+              placeholder="Country"
+              style={inputStyle()}
+            />
+          </label>
+
+          <label style={{ display: "grid", gap: 7 }}>
+            <span style={lightSectionLabel()}>
+              <TrustPaperIcon name="wallet" size={15} /> Currency
+            </span>
+            <select
+              value={form.currency}
+              onChange={(e) => update("currency", e.target.value)}
+              style={inputStyle()}
+            >
+              <option value="GBP">GBP</option>
+              <option value="NGN">NGN</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+              <option value="KES">KES</option>
+              <option value="GHS">GHS</option>
+            </select>
+          </label>
         </div>
 
         <div
           style={{
             marginTop: 16,
-            color: "#64748b",
-            lineHeight: 1.8,
+            display: "flex",
+            gap: 8,
+            flexWrap: "wrap",
           }}
         >
-          These details are now stored on the system and can also stay locally on
-          this device for continuity. External bank-account verification is still a
-          separate connection, but this destination is now part of the real payout record.
+          <span
+            style={{
+              ...badge(false),
+              background: "#EEF6FF",
+              color: "#0B3B68",
+              border: "1px solid rgba(123,161,204,0.28)",
+            }}
+          >
+            <TrustPaperIcon name="shield" size={15} /> Recorded destination
+          </span>
+          <span
+            style={{
+              ...badge(false),
+              background: needsUkSortCode && !safeStr(form.sort_code) ? "#FFF7D6" : "#ECFDF5",
+              color: needsUkSortCode && !safeStr(form.sort_code) ? "#7A4A00" : "#065F46",
+              border:
+                needsUkSortCode && !safeStr(form.sort_code)
+                  ? "1px solid rgba(214,170,69,0.38)"
+                  : "1px solid rgba(46,155,98,0.24)",
+            }}
+          >
+            <TrustPaperIcon name={needsUkSortCode && !safeStr(form.sort_code) ? "alert" : "check"} size={15} />
+            {needsUkSortCode && !safeStr(form.sort_code)
+              ? "UK sort code needed"
+              : "Region fields ready"}
+          </span>
         </div>
 
         <div
@@ -765,6 +895,35 @@ export default function PayoutDetailsPage() {
             Clear Local Details
           </SecondaryButton>
         </div>
+
+        {err ? <div style={{ ...feedbackCard(false), marginTop: 14 }}>{err}</div> : null}
+        {msg ? <div style={{ ...feedbackCard(true), marginTop: 14 }}>{msg}</div> : null}
+        {proofFeedback ? (
+          <div
+            style={{
+              marginTop: 12,
+              borderRadius: 18,
+              border: "1px solid rgba(46,155,98,0.22)",
+              background: "#F0FDF4",
+              color: "#065F46",
+              padding: 14,
+              display: "grid",
+              gap: 8,
+              fontWeight: 850,
+            }}
+          >
+            <div style={{ display: "flex", gap: 8, alignItems: "center", fontWeight: 1000 }}>
+              <TrustPaperIcon name="check" size={18} />
+              {safeStr(proofFeedback.confirmation_message) ||
+                "Your payout destination has been recorded."}
+            </div>
+            <div style={{ lineHeight: 1.5 }}>
+              {safeStr(proofFeedback.trust_event_response?.message) ||
+                safeStr(proofFeedback.verification_note) ||
+                "External bank ownership verification is still a separate connection."}
+            </div>
+          </div>
+        ) : null}
       </section>
 
       <section
@@ -775,12 +934,17 @@ export default function PayoutDetailsPage() {
           gap: 18,
         }}
       >
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Current payout readiness</div>
+        <div
+          style={{
+            ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+            color: "#07172C",
+          }}
+        >
+          <div style={lightSectionLabel()}>Current payout readiness</div>
           <div
             style={{
               marginTop: 10,
-              color: "#F8FBFF",
+              color: "#07172C",
               fontSize: 24,
               fontWeight: 1000,
             }}
@@ -791,7 +955,7 @@ export default function PayoutDetailsPage() {
           <div
             style={{
               marginTop: 10,
-              color: "#475569",
+              color: "#4A5F78",
               lineHeight: 1.8,
             }}
           >
@@ -801,12 +965,17 @@ export default function PayoutDetailsPage() {
           </div>
         </div>
 
-        <div style={softCard("#FFFFFF")}>
-          <div style={sectionLabel()}>Stored summary</div>
+        <div
+          style={{
+            ...pageCard("linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%)"),
+            color: "#07172C",
+          }}
+        >
+          <div style={lightSectionLabel()}>Stored summary</div>
           <div
             style={{
               marginTop: 10,
-              color: "#475569",
+              color: "#4A5F78",
               lineHeight: 1.8,
               whiteSpace: "pre-wrap",
             }}
@@ -816,15 +985,22 @@ export default function PayoutDetailsPage() {
         </div>
       </section>
 
-      <section style={{ ...pageCard(), marginTop: 18 }}>
-        <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
-          What happens next
+      <section
+        style={{
+          ...pageCard("linear-gradient(180deg, #08111F 0%, #0B1F33 100%)"),
+          marginTop: 18,
+        }}
+      >
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <IconBadge name="document" tone="soft" size={22} />
+          <div style={{ fontSize: 18, fontWeight: 1000, color: "#F8FBFF" }}>
+            What happens next
+          </div>
         </div>
 
-        <div style={{ marginTop: 10, color: "#475569", lineHeight: 1.8 }}>
+        <div style={{ marginTop: 10, color: "#D7E3F1", lineHeight: 1.7 }}>
           Once your payout destination is complete, return to Withdrawal Instructions
-          when the support route is approved. That page will tell you how approved
-          value should move into this destination.
+          when a support route is approved. That page handles the next payout step.
         </div>
 
         <div

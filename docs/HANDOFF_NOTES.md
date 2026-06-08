@@ -1,3 +1,59 @@
+### Payout Details sort-code/action-response protocol pass (2026-06-08)
+
+- Trigger:
+  - product owner tested Bank / Wallet Details and found the page too wordy,
+    faint, repetitive, and missing a visible UK sort-code field;
+  - save feedback appeared away from the Save action and the custody/no-funds
+    explanation was repeated like a textbook block.
+- Scope:
+  - route remains `/app/payout-details`;
+  - changed only `PayoutDetailsPage`, shared `TrustPaperMarks`, a new
+    page-local payout protocol audit, `frontend/package.json`, and this
+    handoff note;
+  - no database schema, payout execution, auth, permission, settlement,
+    withdrawal, ledger, Dashboard, Community Home, Marketplace, Action Inbox,
+    or shared tap-guard behavior changed.
+- Fix:
+  - removed the top `ExplainToggle`, the separate `Why this matters` section,
+    and the duplicated long “GSN does not hold funds” paragraph;
+  - added app-native SVG bank pictogram support to `TrustPaperIcon`;
+  - rebuilt the payout form as a lighter, icon-led card with stronger contrast;
+  - added a visible `UK sort code` field, normalizing six digits to
+    `12-34-56`;
+  - payout readiness now requires sort code when the destination looks UK/GBP;
+  - copied summary now includes `UK Sort Code`;
+  - save payload now carries sort code inside the existing `note` field as
+    `UK Sort code: ...`, and page load reads it back from future server fields,
+    local storage, or that note fallback;
+  - success/error/trust-event feedback now renders directly below the
+    Save/Copy/Clear action row and auto-clears with the existing short timer.
+- Audit cage added:
+  - `frontend/tools/audit-payout-details-protocol.mjs` protects the local
+    response placement, SVG-icon requirement, concise custody statement, and
+    sort-code state/note/summary fallback;
+  - `frontend/package.json` now exposes
+    `npm --prefix frontend run audit:payout-details-protocol`.
+- Verification:
+  - passed `npm --prefix frontend run audit:payout-details-protocol`;
+  - passed `npm --prefix frontend run audit:finance-actions`;
+  - passed `npm --prefix frontend run audit:action-response-protocol`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/PayoutDetailsPage.tsx src/components/TrustPaperMarks.tsx tools/audit-payout-details-protocol.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - `user_payout_destinations` does not currently have a dedicated
+    `sort_code` column and the withdrawal-destination API type does not
+    expose one. This pass avoids a frozen/high-risk schema migration and stores
+    sort code through the existing note/local fallback. A real backend
+    `sort_code` field plus migration is still the clean long-term fix.
+
 ### Shop Assets SVG icon protocol pass (2026-06-08)
 
 - Trigger:

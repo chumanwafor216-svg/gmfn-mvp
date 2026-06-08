@@ -2,6 +2,7 @@ import React from "react";
 
 export type TrustPaperIconName =
   | "alert"
+  | "bank"
   | "briefcase"
   | "calendar"
   | "chart"
@@ -63,6 +64,13 @@ export function TrustPaperIcon({
           <path {...common} d="M12 3 2.9 20h18.2L12 3Z" />
           <path {...common} d="M12 8.5v5" />
           <path {...common} d="M12 17.4h.01" />
+        </>
+      ) : name === "bank" ? (
+        <>
+          <path {...common} d="M4 9.5 12 4l8 5.5" />
+          <path {...common} d="M6 10h12" />
+          <path {...common} d="M7 10v7M11 10v7M15 10v7M19 19H5" />
+          <path {...common} d="M4 21h16" />
         </>
       ) : name === "briefcase" ? (
         <>
