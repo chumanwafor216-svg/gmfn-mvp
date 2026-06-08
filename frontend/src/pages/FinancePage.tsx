@@ -2012,8 +2012,8 @@ export default function FinancePage() {
             {
               id: "reports",
               icon: "chart" as FinanceGlyphName,
-              label: "View Reports",
-              detail: "See balances, support, and payment checks.",
+              label: "Money Summary",
+              detail: "See your full money position.",
               action: () => {
                 setCollapsed((prev) => ({ ...prev, overview: false }));
                 revealFinanceSection("finance-summary");
@@ -2023,15 +2023,15 @@ export default function FinancePage() {
             {
               id: "bank-accounts",
               icon: "bank" as FinanceGlyphName,
-              label: "Payment Rails",
-              detail: "See bank and transfer details.",
+              label: "Banking Rails",
+              detail: "See payment and bank details.",
               action: () => openFinanceRoute(routes.paymentRails),
               color: "#D6AA45",
             },
             {
               id: "export-data",
               icon: "ledger" as FinanceGlyphName,
-              label: "View Ledger",
+              label: "Records / Events",
               detail: "See your money history.",
               action: () => {
                 setCollapsed((prev) => ({ ...prev, events: false }));
@@ -2100,7 +2100,7 @@ export default function FinancePage() {
           }}
         >
           <FinanceSectionLabel icon="signal" color="#0B4EA2">
-            More finance tools
+            Other finance lanes
           </FinanceSectionLabel>
           <div
             style={{
@@ -2125,8 +2125,8 @@ export default function FinancePage() {
               },
               {
                 icon: "check" as FinanceGlyphName,
-                label: "Loan Readiness",
-                detail: "Check if you can request support",
+                label: "Signals / Readiness",
+                detail: "Check support readiness",
                 action: () => openFinanceRoute(routes.loanReadiness),
               },
               {

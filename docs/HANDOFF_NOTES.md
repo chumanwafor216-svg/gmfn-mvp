@@ -1,3 +1,53 @@
+### Finance lane map naming cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the Finance front package first cage, product owner asked to
+    continue;
+  - next weak line selected: Finance lane naming, because the screen spec names
+    Money Summary, Money In, Money Out, Banking Rails, Records / Events, and
+    Signals / Readiness, while the live page still exposed vaguer labels such
+    as `View Reports`, `View Ledger`, and `Loan Readiness`.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox, or
+    global shell behavior was changed;
+  - no Finance routes, action handlers, debug-id namespace, action count, or
+    button geometry were changed;
+  - Money Out and Signals / Readiness remain grouped below the four front
+    Finance lane cards rather than being added as new first-screen buttons.
+- Fix:
+  - renamed the Finance front lanes to the spec language:
+    `Money Summary`, `Banking Rails`, and `Records / Events`;
+  - renamed the grouped secondary section to `Other finance lanes`;
+  - renamed the support-readiness lane from `Loan Readiness` to
+    `Signals / Readiness`, while preserving the existing `loanReadiness` route;
+  - added `frontend/tools/audit-finance-lane-map.mjs`;
+  - added `npm --prefix frontend run audit:finance-lane-map`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Finance front-package work
+    requires both the front package audit and lane-map audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:finance-lane-map`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm --prefix frontend run audit:finance-button-inventory`;
+  - `npm --prefix frontend run audit:finance-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-front-package.mjs tools/audit-finance-lane-map.mjs tools/audit-finance-actions.mjs tools/audit-finance-button-inventory.mjs`
+    from `frontend`.
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild;
+  - line-auditor subagent Mill found no concrete issues in the scoped diff and
+    confirmed the lane labels still map to their existing actions/routes.
+- Publish status:
+  - final commit, push, and GitHub deploy verification are reported in the
+    session close-out rather than self-referenced inside this same commit.
+- Unabated truth:
+  - this is a naming and source-map cage, not a full Finance lane remodel;
+  - the next real UX pass should open one lane at a time and polish its inside,
+    likely starting with Money Summary or Money In/Out route clarity.
+
 ### Finance front package first cage checkpoint (2026-06-08)
 
 - Trigger:

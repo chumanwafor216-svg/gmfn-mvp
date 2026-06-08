@@ -218,6 +218,7 @@ For Finance front package work, also run:
 
 ```bash
 npm --prefix frontend run audit:finance-front-package
+npm --prefix frontend run audit:finance-lane-map
 ```
 
 ## Current Truth

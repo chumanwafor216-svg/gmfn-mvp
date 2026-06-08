@@ -66,9 +66,9 @@ assertContains(
 
 [
   ["money-in", "card", "Money In", "Create a payment instruction."],
-  ["reports", "chart", "View Reports", "See balances, support, and payment checks."],
-  ["bank-accounts", "bank", "Payment Rails", "See bank and transfer details."],
-  ["export-data", "ledger", "View Ledger", "See your money history."],
+  ["reports", "chart", "Money Summary", "See your full money position."],
+  ["bank-accounts", "bank", "Banking Rails", "See payment and bank details."],
+  ["export-data", "ledger", "Records / Events", "See your money history."],
 ].forEach(([id, icon, label, detail]) => {
   [
     `id: "${id}"`,
@@ -95,8 +95,8 @@ assertContains(
 assertContains(
   financeFile,
   financeSource,
-  /More finance tools[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Loan Readiness[\s\S]*?Trust Passport/,
-  "Finance secondary tools must remain grouped below the four main lane choices."
+  /Other finance lanes[\s\S]*?Money Out[\s\S]*?Payout Details[\s\S]*?Signals \/ Readiness[\s\S]*?Trust Passport/,
+  "Finance secondary lanes must remain grouped below the four main lane choices."
 );
 
 ["wallet", "bank", "ledger", "shield"].forEach((glyphName) => {
