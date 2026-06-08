@@ -61,6 +61,21 @@ assertContains(
 );
 
 assertContains(
+  /IDENTITY_TASK_KEYS[\s\S]*?requestedIdentityTask[\s\S]*?completionMode[\s\S]*?identityTaskTarget\(task: IdentityTaskKey\)[\s\S]*?mode=complete/,
+  "Identity Integrity pending proof tasks must support focused completion deep links instead of dead actions."
+);
+
+assertContains(
+  /data-identity-integrity-completion-target="true"[\s\S]*?Completion path[\s\S]*?activeTask\.completionSteps/,
+  "Identity Integrity active task must show the compact completion path for the selected proof."
+);
+
+assertContains(
+  /Not wired yet[\s\S]*?signed-in phone-code page[\s\S]*?Signed-in phone completion is still pending[\s\S]*?signed-in ID capture and review route[\s\S]*?Signed-in ID capture is still pending/,
+  "Identity Integrity must be honest that phone and official ID completion still need signed-in backend routes."
+);
+
+assertContains(
   /payoutDetails: routeTarget\([\s\S]*?"payoutDetails"[\s\S]*?communityConfirmations: routeTarget\([\s\S]*?"communityConfirmationInbox"[\s\S]*?to: routes\.communityConfirmations[\s\S]*?to: routes\.payoutDetails/,
   "Identity Integrity must route real bank/wallet and community tasks to real completion surfaces."
 );

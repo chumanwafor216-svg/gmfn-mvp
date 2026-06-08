@@ -96,6 +96,14 @@ type CollapseState = {
 
 type IdentityTaskKey = "phone" | "community" | "bank" | "official_id" | "recovery";
 
+const IDENTITY_TASK_KEYS: IdentityTaskKey[] = [
+  "phone",
+  "community",
+  "bank",
+  "official_id",
+  "recovery",
+];
+
 type IdentityExplainers = {
   helps: string[];
   weakens: string[];
@@ -891,6 +899,7 @@ export default function IdentityIntegrityPage() {
   const routes = useMemo(
     () => ({
       dashboard: routeTarget("dashboard", selectedClanId, "identity-integrity.route.dashboard"),
+      identity: routeTarget("cci", selectedClanId, "identity-integrity.route.identity"),
       trust: routeTarget("trust", selectedClanId, "identity-integrity.route.trust"),
       trustSlip: routeTarget("trustSlip", selectedClanId, "identity-integrity.route.trust-slip"),
       payoutDetails: routeTarget(
@@ -912,6 +921,19 @@ export default function IdentityIntegrityPage() {
     [selectedClanId]
   );
 
+  const requestedIdentityTask = useMemo<IdentityTaskKey | null>(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get("task") || "";
+    return IDENTITY_TASK_KEYS.includes(raw as IdentityTaskKey)
+      ? (raw as IdentityTaskKey)
+      : null;
+  }, [location.search]);
+
+  const completionMode = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("mode") === "complete";
+  }, [location.search]);
+
   const [isCompact, setIsCompact] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.innerWidth <= 980;
@@ -929,7 +951,7 @@ export default function IdentityIntegrityPage() {
     text: string;
   } | null>(null);
   const [activeIdentityTask, setActiveIdentityTask] =
-    useState<IdentityTaskKey>("recovery");
+    useState<IdentityTaskKey>("phone");
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -973,6 +995,10 @@ export default function IdentityIntegrityPage() {
   useEffect(() => {
     setAvatarSrc(readStoredImage(DASHBOARD_AVATAR_STORAGE_KEY));
   }, []);
+
+  useEffect(() => {
+    if (requestedIdentityTask) setActiveIdentityTask(requestedIdentityTask);
+  }, [requestedIdentityTask]);
 
   useEffect(() => {
     if (!notice) return;
@@ -1240,6 +1266,11 @@ export default function IdentityIntegrityPage() {
         ? "Needs attention"
         : "Incomplete";
 
+  function identityTaskTarget(task: IdentityTaskKey): string {
+    const separator = routes.identity.includes("?") ? "&" : "?";
+    return `${routes.identity}${separator}task=${encodeURIComponent(task)}&mode=complete`;
+  }
+
   const identityTaskRows: Array<{
     key: IdentityTaskKey;
     icon: TrustPaperIconName;
@@ -1248,19 +1279,27 @@ export default function IdentityIntegrityPage() {
     tone: "ready" | "pending" | "watch" | "neutral";
     detail: string;
     actionLabel: string;
+    completionSteps: string[];
     to?: string;
   }> = [
     {
       key: "phone",
       icon: "phone",
       title: "Phone",
-      status: identitySignals.phoneReady ? "Ready" : "Route pending",
+      status: identitySignals.phoneReady ? "Ready" : "Not wired yet",
       tone: identitySignals.phoneReady ? "ready" : "pending",
       detail: identitySignals.phoneReady
         ? "Phone proof is already visible to the identity layer."
-        : "Phone verification exists in entry flow, but signed-in phone capture is not wired yet.",
-      actionLabel: identitySignals.phoneReady ? "Open TrustSlip" : "Needs identity-completion route",
-      to: identitySignals.phoneReady ? routes.trustSlip : undefined,
+        : "This proof still needs a signed-in phone-code page. GSN should not mark it complete from explanation copy.",
+      actionLabel: identitySignals.phoneReady ? "Open TrustSlip" : "Open phone requirement",
+      completionSteps: identitySignals.phoneReady
+        ? ["Phone is already verified.", "Use TrustSlip when someone needs portable proof."]
+        : [
+            "Enter phone number.",
+            "Receive and confirm a code.",
+            "Signed-in phone completion is still pending.",
+          ],
+      to: identitySignals.phoneReady ? routes.trustSlip : identityTaskTarget("phone"),
     },
     {
       key: "community",
@@ -1272,6 +1311,11 @@ export default function IdentityIntegrityPage() {
         ? "This identity is currently tied to a selected community."
         : "Use the confirmation inbox to review community identity confirmation work.",
       actionLabel: "Open confirmations",
+      completionSteps: [
+        "Open the confirmation inbox.",
+        "Review or request community confirmation.",
+        "Return here after the community proof updates.",
+      ],
       to: routes.communityConfirmations,
     },
     {
@@ -1284,21 +1328,33 @@ export default function IdentityIntegrityPage() {
         ? "Bank or wallet evidence is already connected."
         : "Add payout details so identity can connect to real-world financial records.",
       actionLabel: "Open payout details",
+      completionSteps: [
+        "Open payout details.",
+        "Record the bank or wallet destination.",
+        "Return here after GSN sees the destination.",
+      ],
       to: routes.payoutDetails,
     },
     {
       key: "official_id",
       icon: "document",
       title: "Passport / ID",
-      status: identitySignals.officialIdReady ? "Recorded" : "Route pending",
+      status: identitySignals.officialIdReady ? "Recorded" : "Not wired yet",
       tone: identitySignals.officialIdReady ? "ready" : "pending",
       detail: identitySignals.officialIdReady
         ? "Official ID evidence is already visible to the identity layer."
-        : "Official ID capture exists in entry flow, but signed-in capture is not wired yet.",
+        : "This proof still needs a signed-in ID capture and review route. GSN should not send users to a why-page and call it complete.",
       actionLabel: identitySignals.officialIdReady
         ? "Open TrustSlip"
-        : "Needs identity-completion route",
-      to: identitySignals.officialIdReady ? routes.trustSlip : undefined,
+        : "Open ID requirement",
+      completionSteps: identitySignals.officialIdReady
+        ? ["Official ID evidence is already recorded.", "Use TrustSlip when someone needs portable proof."]
+        : [
+            "Choose passport, national ID, licence, or local official ID.",
+            "Record reference or private evidence for review.",
+            "Signed-in ID capture is still pending.",
+          ],
+      to: identitySignals.officialIdReady ? routes.trustSlip : identityTaskTarget("official_id"),
     },
     {
       key: "recovery",
@@ -1310,6 +1366,11 @@ export default function IdentityIntegrityPage() {
         ? "Private recovery prompts are ready for serious continuity shifts."
         : "Set private recovery prompts so identity continuity has a clean owner check.",
       actionLabel: recovery.configured ? "Review recovery" : "Set recovery",
+      completionSteps: [
+        "Answer private recovery prompts.",
+        "Save them on this identity.",
+        "Use them only for serious continuity checks.",
+      ],
     },
   ];
 
@@ -1923,6 +1984,63 @@ export default function IdentityIntegrityPage() {
           >
             {activeTask.actionLabel}
           </SecondaryButton>
+
+          <div
+            data-identity-integrity-completion-target="true"
+            style={{
+              gridColumn: "1 / -1",
+              borderRadius: 16,
+              border: completionMode
+                ? "1px solid rgba(11,99,209,0.18)"
+                : "1px solid rgba(37,78,119,0.10)",
+              background: completionMode
+                ? "linear-gradient(180deg, #F2F8FF 0%, #FFFFFF 100%)"
+                : "#FFFFFF",
+              padding: isCompact ? 10 : 12,
+              display: "grid",
+              gap: 8,
+            }}
+          >
+            <div
+              style={{
+                color: "#07172C",
+                fontWeight: 1000,
+                fontSize: 13,
+                textTransform: "uppercase",
+              }}
+            >
+              Completion path
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : `repeat(${Math.min(activeTask.completionSteps.length, 3)}, minmax(0, 1fr))`,
+                gap: 8,
+              }}
+            >
+              {activeTask.completionSteps.map((step, index) => (
+                <div
+                  key={`${activeTask.key}-${index}`}
+                  style={{
+                    minHeight: 42,
+                    borderRadius: 13,
+                    border: "1px solid rgba(37,78,119,0.10)",
+                    background: "#FFFFFF",
+                    padding: "8px 10px",
+                    color: "#334155",
+                    fontSize: 12.5,
+                    lineHeight: 1.25,
+                    fontWeight: 850,
+                  }}
+                >
+                  {index + 1}. {step}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div

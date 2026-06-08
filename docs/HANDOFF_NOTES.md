@@ -39727,3 +39727,42 @@ GSN-branded invite composer and invite-entry continuity.
     after deploy is still required for visual acceptance, especially text
     wrapping in the active task card and whether the front package feels compact
     enough on the owner's exact device.
+
+### Identity Integrity focused proof targets (2026-06-08)
+
+- Trigger:
+  - product owner continued after the compact Identity Integrity pass and
+    emphasized that completion actions should not merely explain why identity
+    checks matter; they should take the user toward the actual proof work.
+- Unabated truth:
+  - The signed-in backend still does not expose a production phone-code
+    completion endpoint or a signed-in passport / official-ID capture endpoint.
+    The onboarding entry flow has those concepts through entry verification
+    sessions, but reusing that flow for an already signed-in user would be a
+    data-model lie.
+- Fix:
+  - `frontend/src/pages/IdentityIntegrityPage.tsx` now defaults the active
+    proof task to Phone and supports focused links such as
+    `/app/identity?task=phone&mode=complete` and
+    `/app/identity?task=official_id&mode=complete`.
+  - Pending phone and Passport / ID actions now open their focused completion
+    requirement on the Identity Integrity page instead of behaving like dead
+    actions.
+  - The active task includes a compact `Completion path` block so the user sees
+    the expected steps. Bank / wallet and Community still route to real
+    completion surfaces. Phone and Passport / ID plainly state that signed-in
+    completion is still pending.
+  - `frontend/tools/audit-identity-integrity-front-package.mjs` now cages the
+    deep-link completion target, compact completion path, and phone / ID
+    pending-route honesty.
+- Verification so far:
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm exec --prefix frontend -- tsc -b --pretty false` from the
+    `frontend` directory.
+  - Passed `npm exec --prefix frontend -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`
+    from the `frontend` directory.
+- Remaining risk:
+  - This improves navigation and user honesty, but it still does not create the
+    missing backend completion endpoints. A future backend task must add
+    signed-in phone verification and signed-in official-ID / passport evidence
+    capture before these two checks can genuinely complete inside the app.
