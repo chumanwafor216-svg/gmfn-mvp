@@ -280,8 +280,8 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?Members & Records[\s\S]*?People, shops, and community records[\s\S]*?Member Ledger[\s\S]*?Records & Links/,
-  "Marketplace Members & Records grouped card must open marketplace-owned links and records."
+  /debugId="marketplace\.row\.records-links"[\s\S]*?aria-label="Open Records and Links for this marketplace"[\s\S]*?openMarketplaceSection\(event, "tools", "marketplace-owned-links"\)[\s\S]*?<MarketplaceGlyph name="links"[\s\S]*?Records & Links[\s\S]*?Join, verify, shop face, and paid repost links[\s\S]*?Join Link[\s\S]*?Verify[\s\S]*?Shop Face[\s\S]*?Paid Repost/,
+  "Marketplace Records & Links grouped card must open marketplace-owned links and avoid member/trade wording."
 );
 
 assertContains(

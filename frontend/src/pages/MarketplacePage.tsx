@@ -5493,29 +5493,39 @@ export default function MarketplacePage() {
               <span
                 aria-hidden="true"
                 style={marketplaceFrontLaneIconStyle(
-                  "linear-gradient(180deg, #4B36C8 0%, #17124F 100%)",
+                  "linear-gradient(180deg, #158BA0 0%, #075064 100%)",
                   isCompact
                 )}
               >
-                <MarketplaceGlyph name="members" size={isCompact ? 30 : 34} />
+                <MarketplaceGlyph name="links" size={isCompact ? 30 : 34} />
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Members & Records
+                  Records & Links
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  People, shops, and community records.
+                  Join, verify, shop face, and paid repost links.
                 </span>
                 <span style={marketplaceFrontTagRowStyle()}>
                   <span
-                    style={marketplaceFrontTagStyle("#4338CA", "#ECEAFE")}
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
                   >
-                    Member Ledger
+                    Join Link
                   </span>
                   <span
-                    style={marketplaceFrontTagStyle("#4338CA", "#ECEAFE")}
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
                   >
-                    Records & Links
+                    Verify
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                  >
+                    Shop Face
+                  </span>
+                  <span
+                    style={marketplaceFrontTagStyle("#075064", "#E3F5F8")}
+                  >
+                    Paid Repost
                   </span>
                 </span>
               </span>
@@ -6349,7 +6359,7 @@ export default function MarketplacePage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}>Marketplace and entry links</div>
+            <div style={sectionLabel()}>Records & Links</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               Keep join, marketplace, shop, and controlled outward
               links separated so participants know exactly which door they are
@@ -6380,6 +6390,49 @@ export default function MarketplacePage() {
 
         {sectionsOpen.tools ? (
           <div style={{ marginTop: 16, display: "grid", gap: 14 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: isCompact
+                  ? "1fr"
+                  : "repeat(3, minmax(0, 1fr))",
+                gap: 10,
+              }}
+            >
+              {[
+                [
+                  "Choose the door",
+                  "Join is for entry. Verify is for proof.",
+                ],
+                [
+                  "Share the right face",
+                  "Shop face is the one storefront tied to the member.",
+                ],
+                [
+                  "Place with care",
+                  "Paid repost only moves a selected public block.",
+                ],
+              ].map(([title, detail], index) => (
+                <div key={title} style={innerCard("#FFFFFF")}>
+                  <div style={sectionLabel()}>Step {index + 1}</div>
+                  <div
+                    style={{
+                      marginTop: 6,
+                      color: "#08233A",
+                      fontWeight: 950,
+                      fontSize: 15,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {title}
+                  </div>
+                  <div style={{ marginTop: 6, ...helperText(), fontSize: 13 }}>
+                    {detail}
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <div
               style={{
                 ...softCard("#FCFEFF"),

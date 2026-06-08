@@ -1,3 +1,59 @@
+### Marketplace Records & Links lane guided repair checkpoint (2026-06-08)
+
+- Trigger:
+  - after the grouped Marketplace front door was restored with ROSCA as a major
+    lane, product owner asked to continue the full Marketplace package;
+  - next safe cleanup selected: the front `Members & Records` card, because it
+    opened `marketplace-owned-links` while sounding like the member/trade lane.
+- Source facts changed/preserved:
+  - front launcher remains `debugId="marketplace.row.records-links"`;
+  - front launcher still opens
+    `openMarketplaceSection(event, "tools", "marketplace-owned-links")`;
+  - section anchor remains `id="marketplace-owned-links"`;
+  - stable Marketplace action count remains 55 total, with 11 front actions and
+    44 body actions;
+  - no backend, auth, Dashboard, Community Home, Action Inbox, or global shell
+    behavior was changed.
+- Fix:
+  - renamed the front card from `Members & Records` to `Records & Links`;
+  - changed the card icon from the members glyph to the links glyph;
+  - changed card helper text from `People, shops, and community records.` to
+    `Join, verify, shop face, and paid repost links.`;
+  - replaced tags `Member Ledger` / `Records & Links` with `Join Link`,
+    `Verify`, `Shop Face`, and `Paid Repost`;
+  - changed the opened section label from `Marketplace and entry links` to
+    `Records & Links`;
+  - added a compact three-step guide inside the lane:
+    choose the door, share the right face, place with care;
+  - added `frontend/tools/audit-marketplace-records-links-lane.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - updated `audit-marketplace-button-inventory` and
+    `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so this lane is caged.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-records-links-lane.mjs tools/audit-marketplace-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Unabated truth:
+  - Records & Links is not one of the first four core Marketplace repair lanes,
+    but it is a real Marketplace-owned link/record responsibility;
+  - this pass reduces user confusion by keeping member/trade wording inside
+    `Trade & Shops` and link/record wording inside `Records & Links`;
+  - commit, push, and GitHub deploy verification still need to happen for this
+    checkpoint.
+
 ### Marketplace grouped front-door checkpoint (2026-06-08)
 
 - Trigger:

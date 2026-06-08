@@ -21,6 +21,7 @@
     "audit:marketplace-rosca-lane": "node tools/audit-marketplace-rosca-lane.mjs",
     "audit:marketplace-support-lane": "node tools/audit-marketplace-support-lane.mjs",
     "audit:marketplace-trusted-trade-lane": "node tools/audit-marketplace-trusted-trade-lane.mjs",
+    "audit:marketplace-records-links-lane": "node tools/audit-marketplace-records-links-lane.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",
