@@ -1,3 +1,60 @@
+### Demand Box compact first-action pass (2026-06-08)
+
+- Trigger:
+  - continued the Marketplace stabilization sequence after the compact Trusted
+    Trade / Demand Box launcher;
+  - product owner wanted linked pages to follow the same guided-work and
+    phone-density protocol instead of opening into tall, wordy, jumpy pages.
+- Scope:
+  - route remains `/app/demand-box`;
+  - changed only `DemandBoxPage` and added a Demand Box page-local audit cage;
+  - no backend, API contract, auth, Marketplace launcher, Dashboard,
+    Community Home, Action Inbox, shared tap guard, or global shell behavior
+    changed.
+- Fix:
+  - shortened the Demand Box hero to a community-specific request prompt;
+  - replaced the old “how demand works” explainer/stat shape with a compact
+    current-state card showing mine, community, next step, and optional GSN ID;
+  - made the create action span the first phone row while Return and Dashboard
+    sit as stable secondary escapes;
+  - moved community switching behind a `Change community` stable disclosure so
+    the form does not start by exposing a community list;
+  - replaced long form context guidance with chips for community, proof, and
+    payment terms;
+  - reduced the explanation textarea height and kept missing-title feedback
+    inside the page by allowing the Post action to be clicked while the title
+    is empty.
+- Audit cage added:
+  - `frontend/tools/audit-demand-box-front-package.mjs` protects the compact
+    hero/current-state/form shape, the collapsed community chooser, stable
+    Demand Box debug ids, and the in-place Post validation behavior;
+  - `frontend/package.json` now exposes
+    `npm --prefix frontend run audit:demand-box-front-package`.
+- Verification:
+  - passed `npm --prefix frontend run audit:demand-box-front-package`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm --prefix frontend run audit:marketplace-demand-box-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-front-package`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm --prefix frontend run audit:marketplace-actions`;
+  - passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/DemandBoxPage.tsx tools/audit-demand-box-front-package.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this pass improves the Demand Box first action and validation surface only.
+    It does not change demand creation rules, request visibility, responder
+    flows, payment behavior, notifications, or backend enforcement.
+  - The request lists below the form are still conventional record lists. They
+    may need their own later pass if the product owner wants every Demand Box
+    sub-section to become a separate one-screen package.
+
 ### Marketplace Trusted Trade compact member/shop pass (2026-06-08)
 
 - Trigger:

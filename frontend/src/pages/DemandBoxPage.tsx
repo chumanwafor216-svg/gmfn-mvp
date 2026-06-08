@@ -12,7 +12,6 @@ import {
   institutionalInnerCard,
   institutionalPageCard,
   institutionalSoftCard,
-  institutionalStatTile,
 } from "../lib/institutionalSurface";
 import {
   createMarketplaceRequest,
@@ -126,13 +125,6 @@ function detailsSummary(): React.CSSProperties {
   };
 }
 
-function statTile(): React.CSSProperties {
-  return {
-    ...institutionalStatTile(),
-    border: "1px solid rgba(20,52,83,0.16)",
-  };
-}
-
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
@@ -153,7 +145,7 @@ function inputStyle(): React.CSSProperties {
 function textAreaStyle(): React.CSSProperties {
   return {
     ...inputStyle(),
-    minHeight: 100,
+    minHeight: 82,
     resize: "vertical" as const,
     lineHeight: 1.6,
   };
@@ -280,6 +272,28 @@ function demandActionStyle(height = 54): React.CSSProperties {
     flexShrink: 0,
     overflowAnchor: "none",
     transition: "none",
+  };
+}
+
+function demandHeroActionRowStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    marginTop: isCompact ? 14 : 18,
+    display: "grid",
+    gridTemplateColumns: isCompact
+      ? "minmax(0, 1fr) minmax(0, 1fr)"
+      : "repeat(3, minmax(0, 1fr))",
+    gridAutoRows: isCompact ? "52px" : "54px",
+    gap: 10,
+    alignItems: "stretch",
+    overflowAnchor: "none",
+    transition: "none",
+  };
+}
+
+function demandHeroPrimaryActionStyle(isCompact: boolean): React.CSSProperties {
+  return {
+    ...demandActionStyle(isCompact ? 52 : 54),
+    gridColumn: isCompact ? "1 / -1" : undefined,
   };
 }
 
@@ -1036,7 +1050,12 @@ export default function DemandBoxPage() {
       {notice ? <div style={noticeCard(notice.tone)}>{notice.text}</div> : null}
 
       {!isCreateMode ? (
-      <section style={demandBrandShell()}>
+      <section
+        style={{
+          ...demandBrandShell(),
+          padding: isCompact ? 16 : 20,
+        }}
+      >
         <div
           style={{
             display: "grid",
@@ -1057,70 +1076,67 @@ export default function DemandBoxPage() {
                 marginTop: 10,
                 color: "#F8FBFF",
                 fontWeight: 900,
-                fontSize: isCompact ? 28 : 34,
+                fontSize: isCompact ? 24 : 34,
                 lineHeight: 1.12,
               }}
             >
-              Ask clearly. Let your trust speak before people answer.
+              Ask clearly from {currentCommunityName}.
+            </div>
+
+            <div
+              style={{
+                marginTop: 10,
+                ...helperText(),
+                color: "#D7E3F1",
+                maxWidth: 840,
+                lineHeight: isCompact ? 1.45 : 1.75,
+              }}
+            >
+              Post one real need, keep the community context attached, and close
+              it when it is answered.
             </div>
 
             <div
               style={{
                 marginTop: 12,
-                ...helperText(),
-                color: "#D7E3F1",
-                maxWidth: 840,
-              }}
-            >
-              Demand Box is for a real personal need: a service, goods,
-              support, or help. Choose the right community first so people know
-              the community your request is coming from.
-            </div>
-
-            <div
-              style={{
-                marginTop: 14,
                 display: "flex",
                 gap: 8,
                 flexWrap: "wrap",
               }}
             >
-              <span style={badge(true)}>Member: {memberName}</span>
-              {safeStr(me?.gmfn_id) ? (
-                <span style={badge(false)}>GSN ID: {safeStr(me?.gmfn_id)}</span>
-              ) : null}
-              {memberCciLabel ? (
-                <span style={badge(false)}>Wider consistency: {memberCciLabel}</span>
-              ) : null}
-              <span style={badge(false)}>Context: {currentCommunityName}</span>
+              <span style={badge(true)}>From: {memberName}</span>
+              <span style={badge(false)}>{currentCommunityName}</span>
               <span style={badge(false)}>My open needs: {myOpenRows.length}</span>
               <span style={badge(false)}>Visible needs: {visibleRows.length}</span>
+              {memberCciLabel ? (
+                <span style={badge(false)}>Trust: {memberCciLabel}</span>
+              ) : null}
             </div>
 
-            <div style={demandActionRowStyle(isCompact, 54, 156, 18)}>
+            <div style={demandHeroActionRowStyle(isCompact)}>
               <SecondaryButton
                 onClick={() => {
                   revealDemandCreate();
                 }}
                 debugId="demand-box.create"
-                stableHeight={54}
-                style={demandActionStyle(54)}
+                stableHeight={isCompact ? 52 : 54}
+                style={demandHeroPrimaryActionStyle(isCompact)}
               >
                 Create demand
               </SecondaryButton>
               <StableCtaLink
                 to={demandReturnTo}
                 debugId="demand-box.return"
-                stableHeight={54}
-                style={demandActionStyle(54)}
+                stableHeight={isCompact ? 52 : 54}
+                style={demandActionStyle(isCompact ? 52 : 54)}
               >
                 {demandReturnLabel}
               </StableCtaLink>
               <StableCtaLink
                 to={routes.dashboard}
                 debugId="demand-box.hero-dashboard"
-                stableHeight={54}
-                style={demandActionStyle(54)}
+                stableHeight={isCompact ? 52 : 54}
+                style={demandActionStyle(isCompact ? 52 : 54)}
               >
                 Dashboard
               </StableCtaLink>
@@ -1134,82 +1150,53 @@ export default function DemandBoxPage() {
               boxShadow: "0 18px 38px rgba(2,12,27,0.16)",
             }}
           >
-            <div style={sectionLabel()}>How demand works</div>
+            <div style={sectionLabel()}>Current state</div>
 
             <div
               style={{
-                marginTop: 10,
+                marginTop: 8,
                 color: "#123055",
                 fontWeight: 900,
-                lineHeight: 1.45,
+                lineHeight: 1.28,
+                fontSize: isCompact ? 18 : 20,
               }}
             >
-              One clear request, one community context, one clean record.
+              {myOpenRows.length > 0
+                ? "You already have live demand."
+                : "No personal demand is open."}
             </div>
 
             <div
               style={{
-                marginTop: 12,
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: 10,
+                marginTop: 10,
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
               }}
             >
-              <div style={statTile()}>
-                <div style={sectionLabel()}>1</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  Pick community
-                </div>
-              </div>
+              <span style={badge(myOpenRows.length > 0)}>
+                Mine: {myOpenRows.length}
+              </span>
+              <span style={badge(visibleRows.length > 0)}>
+                Community: {visibleRows.length}
+              </span>
+              <span style={badge(true)}>Next: post or review</span>
+              {safeStr(me?.gmfn_id) ? (
+                <span style={badge(false)}>GSN ID: {safeStr(me?.gmfn_id)}</span>
+              ) : null}
+            </div>
 
-              <div style={statTile()}>
-                <div style={sectionLabel()}>2</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  Say the need
-                </div>
-              </div>
-
-              <div style={statTile()}>
-                <div style={sectionLabel()}>3</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  Agree proof
-                </div>
-              </div>
-
-              <div style={statTile()}>
-                <div style={sectionLabel()}>4</div>
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#0B1F33",
-                    fontWeight: 900,
-                    lineHeight: 1.35,
-                  }}
-                >
-                  Close when settled
-                </div>
-              </div>
+            <div
+              style={{
+                marginTop: 10,
+                color: "#31506D",
+                fontSize: 13,
+                fontWeight: 800,
+                lineHeight: 1.45,
+              }}
+            >
+              Create only one clear request at a time. Mark it fulfilled or
+              cancel it when the need is settled.
             </div>
           </div>
         </div>
@@ -1283,27 +1270,31 @@ export default function DemandBoxPage() {
         ) : null}
 
         {!isCreateMode ? (
-        <div
+        <details
           style={{
             marginTop: 14,
             ...innerCard("#F8FBFF"),
-            display: "grid",
-            gap: 12,
+            padding: 0,
+            overflow: "hidden",
           }}
         >
-          <div style={sectionLabel()}>Step 1: choose community</div>
-          <div
+          <StableDisclosureSummary
             style={{
-              ...helperText(),
-              maxWidth: 820,
+              ...detailsSummary(),
+              padding: "0 14px",
             }}
+            stableHeight={50}
+            debugId="demand-box.change-community.summary"
           >
-            Your need is personal, but the community gives it trusted context.
-            Choose where people should see and answer it.
-          </div>
+            <span>Change community</span>
+            <span style={{ color: "#64748B", fontSize: 13 }}>
+              {currentCommunityName}
+            </span>
+          </StableDisclosureSummary>
 
           <div
             style={{
+              padding: "0 14px 14px",
               display: "grid",
               gridTemplateColumns: isCompact
                 ? "1fr"
@@ -1348,12 +1339,12 @@ export default function DemandBoxPage() {
               </div>
             )}
           </div>
-        </div>
+        </details>
         ) : null}
 
         <div
           style={{
-            marginTop: 14,
+            marginTop: 12,
             ...innerCard("#FCFEFF"),
             display: "flex",
             gap: 8,
@@ -1361,9 +1352,9 @@ export default function DemandBoxPage() {
             alignItems: "center",
           }}
         >
-          <span style={badge(false)}>Your GSN trust signal travels with it</span>
-          <span style={badge(false)}>Community gives context</span>
-          <span style={badge(false)}>Proof and payment stay visible</span>
+          <span style={badge(true)}>Community: {currentCommunityName}</span>
+          <span style={badge(false)}>Proof optional</span>
+          <span style={badge(false)}>Payment terms optional</span>
         </div>
 
         <div
@@ -1501,7 +1492,7 @@ export default function DemandBoxPage() {
             <div style={demandActionRowStyle(isCompact, 54, 180, 14)}>
               <PrimaryButton
                 onClick={() => handleCreateDemand()}
-                disabled={creating || !safeStr(title)}
+                disabled={creating}
                 busy={creating}
                 busyLabel="Posting..."
                 fullWidth
