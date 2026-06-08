@@ -464,6 +464,9 @@ if (!supportSection) {
   const requiredSupportIds = [
     "marketplace.support.toggle",
     "marketplace.support.start-request",
+    "marketplace.support.refresh-fit",
+    "marketplace.support.cancel-draft",
+    "marketplace.support.deeper-pages.summary",
     "marketplace.support.loan-readiness",
     "marketplace.support.loan-suggestions",
     "marketplace.support.loan-workbench",
@@ -490,7 +493,11 @@ if (!supportSection) {
     /Start request[\s\S]*?Enter amount, days, and reason here/,
     /Check fit[\s\S]*?Review guarantor need and suggested supporters/,
     /Continue flow[\s\S]*?Open readiness or workbench only when needed/,
-    /fit suggestions appear below inside this same lane/,
+    /Start one request, then let GSN show the next fit or guarantor[\s\S]*?Deeper loan pages stay behind details/,
+    /No draft yet/,
+    /Guarantors: \{requiredGuarantorCount \|\| "not checked"\}/,
+    /Fit: \{suggestedSupporters\.length\}/,
+    /debugId="marketplace\.support\.deeper-pages\.summary"[\s\S]*?Deeper support pages/,
   ].forEach((pattern) => {
     if (!pattern.test(supportSection)) {
       findings.push({

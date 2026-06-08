@@ -1,3 +1,63 @@
+### Marketplace Support Requests compact first-action pass (2026-06-08)
+
+- Trigger:
+  - continued the Marketplace stabilization sequence after Money Pool and
+    member-scoped ROSCA;
+  - next protocol lane is Support Request / Support & Loans before Trusted
+    Trade.
+- Scope:
+  - route remains `/app/marketplace`;
+  - changed only Marketplace page-local Support Requests presentation and
+    support/button audits;
+  - no backend, auth, API contract, loan model, Dashboard, Community Home,
+    Action Inbox, shared tap guard, or global shell behavior changed.
+- Fix:
+  - compact support step cards now stay in a short three-column phone guide
+    instead of three tall stacked cards;
+  - removed the extra exposed request-form explainer from the first support
+    view and replaced it with short practical guidance;
+  - added compact draft/guarantor/fit chips above the form so the user sees the
+    current support state before deeper options;
+  - amount and duration now sit side-by-side on phone, with purpose kept as the
+    full-width field;
+  - purpose field is shorter on phone to reduce first-screen overflow;
+  - deeper route buttons (`Loan Readiness`, `Loan Suggestions`,
+    `Loan Workbench`, `Finance`, `Full Loans View`) now sit behind a guarded
+    `Deeper support pages` disclosure instead of competing with the primary
+    start/refresh/cancel actions.
+- Audit cage updated:
+  - `frontend/tools/audit-marketplace-support-lane.mjs` now protects the
+    compact first-action support shape and `Deeper support pages` disclosure;
+  - `frontend/tools/audit-marketplace-button-inventory.mjs` now requires
+    support refresh/cancel actions plus the deeper support disclosure.
+- Verification:
+  - passed `npm --prefix frontend run audit:marketplace-support-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - passed `npm --prefix frontend run audit:marketplace-button-lines`;
+  - passed `npm --prefix frontend run audit:marketplace-actions`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm --prefix frontend run audit:marketplace-front-package`;
+  - passed `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-trusted-trade-lane`;
+  - passed `npm --prefix frontend run audit:marketplace-records-links-lane`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-support-lane.mjs tools/audit-marketplace-button-inventory.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this pass improves Support Requests first-screen density and action
+    hierarchy only. It does not change loan creation, guarantor suggestion
+    scoring, guarantor request delivery, approval logic, repayment, or Finance
+    behavior.
+  - The deeper Support / Loans pages themselves may still need a separate
+    guided-work-surface pass.
+
 ### Marketplace ROSCA member-scoped start-cycle pass (2026-06-08)
 
 - Trigger:

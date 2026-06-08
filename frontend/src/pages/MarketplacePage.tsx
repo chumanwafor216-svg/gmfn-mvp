@@ -8466,8 +8466,10 @@ export default function MarketplacePage() {
             style={{
               marginTop: 12,
               display: "grid",
-              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
-              gap: 10,
+              gridTemplateColumns: isCompact
+                ? "repeat(3, minmax(0, 1fr))"
+                : "repeat(3, minmax(0, 1fr))",
+              gap: isCompact ? 7 : 10,
             }}
           >
             {[
@@ -8790,21 +8792,27 @@ export default function MarketplacePage() {
                   border: "1px solid rgba(37,166,90,0.18)",
                   background:
                     "linear-gradient(180deg, rgba(243,251,246,0.98) 0%, rgba(230,244,236,0.94) 100%)",
-                  padding: isCompact ? 12 : 14,
+                  padding: isCompact ? 8 : 14,
                   overflow: "hidden",
                   overflowAnchor: "none",
                 }}
               >
-                <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
+                <div
+                  style={{
+                    ...sectionLabel(),
+                    color: "#0B6B3B",
+                    fontSize: isCompact ? 10 : 12,
+                  }}
+                >
                   Step {step}
                 </div>
                 <div
                   style={{
-                    marginTop: 6,
+                    marginTop: isCompact ? 4 : 6,
                     color: "#08233A",
-                    fontSize: isCompact ? 15 : 16,
+                    fontSize: isCompact ? 12 : 16,
                     fontWeight: 950,
-                    lineHeight: 1.2,
+                    lineHeight: isCompact ? 1.1 : 1.2,
                     overflowWrap: "break-word",
                   }}
                 >
@@ -8818,6 +8826,7 @@ export default function MarketplacePage() {
                     fontWeight: 800,
                     lineHeight: 1.35,
                     overflowWrap: "break-word",
+                    display: isCompact ? "none" : undefined,
                   }}
                 >
                   {detail}
@@ -8842,28 +8851,37 @@ export default function MarketplacePage() {
             <div style={innerCard("#FCFEFF")}>
               <div style={sectionLabel()}>Start a support request</div>
 
-              <ExplainToggle
-                label="What this request form does"
-                what="This form starts a borrowing request inside the current community by collecting the amount, timing, and purpose before the guided support flow opens further."
-                why="It gives people one clear starting point instead of making readiness, suggestions, and workbench feel like separate disconnected pages."
-                next="Enter the request details first, start the draft, then use the guided pages below only after the draft and fit signals tell you what to do next."
-                tone="light"
-                style={{ marginTop: 12 }}
-              />
+              <div style={{ marginTop: 8, ...helperText(), maxWidth: 760 }}>
+                Start one request, then let GSN show the next fit or guarantor
+                step. Deeper loan pages stay behind details until the draft
+                needs them.
+              </div>
 
-              <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
-                Enter amount and duration first. If the draft needs guarantors,
-                fit suggestions appear below inside this same lane. Once support
-                becomes active, continue through readiness, suggestions, and
-                workbench in order.
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "flex",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span style={badge(Boolean(loanDraftId))}>
+                  {loanDraftId ? `Draft #${loanDraftId}` : "No draft yet"}
+                </span>
+                <span style={badge(requiredGuarantorCount > 0)}>
+                  Guarantors: {requiredGuarantorCount || "not checked"}
+                </span>
+                <span style={badge(suggestedSupporters.length > 0)}>
+                  Fit: {suggestedSupporters.length}
+                </span>
               </div>
 
               <div
                 style={{
                   marginTop: 16,
                   display: "grid",
-                  gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-                  gap: 12,
+                  gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "1fr 1fr",
+                  gap: isCompact ? 9 : 12,
                 }}
               >
                 <div>
@@ -8892,7 +8910,7 @@ export default function MarketplacePage() {
                   />
                 </div>
 
-                <div style={{ gridColumn: isCompact ? "auto" : "1 / span 2" }}>
+                <div style={{ gridColumn: "1 / span 2" }}>
                   <div style={sectionLabel()}>Purpose / note</div>
                   <textarea
                     {...marketplaceFieldTouchProps("marketplace.support.purpose")}
@@ -8900,7 +8918,11 @@ export default function MarketplacePage() {
                     onChange={(e) => setLoanPurpose(e.target.value)}
                     disabled={supportProcessBusy}
                     placeholder="State what the support is for..."
-                    style={{ ...textAreaStyle(), marginTop: 8 }}
+                    style={{
+                      ...textAreaStyle(),
+                      marginTop: 8,
+                      minHeight: isCompact ? 72 : 96,
+                    }}
                   />
                 </div>
               </div>
@@ -8976,69 +8998,86 @@ export default function MarketplacePage() {
                 ) : null}
               </div>
 
-              <div
-                style={{
-                  ...marketplaceInlineActionsStyle(isCompact),
-                  marginTop: 12,
-                }}
-              >
-                <StableButton
-                  debugId="marketplace.support.loan-readiness"
-                  type="button"
-                  onClick={(event) =>
-                    openMarketplaceCta(event, "loanReadiness")
-                  }
-                  disabled={supportProcessBusy}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+              <details style={{ marginTop: 12 }}>
+                <StableDisclosureSummary
+                  debugId="marketplace.support.deeper-pages.summary"
+                  stableHeight={isCompact ? 48 : 52}
+                  style={{
+                    ...marketplaceActionStyle("soft"),
+                    width: "100%",
+                    justifyContent: "space-between",
+                    padding: isCompact ? "0 12px" : "0 14px",
+                    fontSize: isCompact ? 13 : 14,
+                  }}
                 >
-                  Loan Readiness
-                </StableButton>
-                <StableButton
-                  debugId="marketplace.support.loan-suggestions"
-                  type="button"
-                  onClick={(event) =>
-                    openMarketplaceCta(event, "loanSuggestions")
-                  }
-                  disabled={supportProcessBusy}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                  Deeper support pages
+                  <span aria-hidden="true">+</span>
+                </StableDisclosureSummary>
+
+                <div
+                  style={{
+                    ...marketplaceInlineActionsStyle(isCompact),
+                    marginTop: 10,
+                  }}
                 >
-                  Loan Suggestions
-                </StableButton>
-                <StableButton
-                  debugId="marketplace.support.loan-workbench"
-                  type="button"
-                  onClick={(event) =>
-                    openMarketplaceCta(event, "loanWorkbench")
-                  }
-                  disabled={supportProcessBusy}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
-                >
-                  Loan Workbench
-                </StableButton>
-                <StableButton
-                  debugId="marketplace.support.finance"
-                  type="button"
-                  onClick={(event) => openMarketplaceCta(event, "finance")}
-                  disabled={supportProcessBusy}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
-                >
-                  Finance
-                </StableButton>
-                <StableButton
-                  debugId="marketplace.support.full-loans"
-                  type="button"
-                  onClick={(event) => openMarketplaceCta(event, "loans")}
-                  disabled={supportProcessBusy}
-                  stableHeight={58}
-                  style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
-                >
-                  Full Loans View
-                </StableButton>
-              </div>
+                  <StableButton
+                    debugId="marketplace.support.loan-readiness"
+                    type="button"
+                    onClick={(event) =>
+                      openMarketplaceCta(event, "loanReadiness")
+                    }
+                    disabled={supportProcessBusy}
+                    stableHeight={58}
+                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                  >
+                    Loan Readiness
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.support.loan-suggestions"
+                    type="button"
+                    onClick={(event) =>
+                      openMarketplaceCta(event, "loanSuggestions")
+                    }
+                    disabled={supportProcessBusy}
+                    stableHeight={58}
+                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                  >
+                    Loan Suggestions
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.support.loan-workbench"
+                    type="button"
+                    onClick={(event) =>
+                      openMarketplaceCta(event, "loanWorkbench")
+                    }
+                    disabled={supportProcessBusy}
+                    stableHeight={58}
+                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                  >
+                    Loan Workbench
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.support.finance"
+                    type="button"
+                    onClick={(event) => openMarketplaceCta(event, "finance")}
+                    disabled={supportProcessBusy}
+                    stableHeight={58}
+                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                  >
+                    Finance
+                  </StableButton>
+                  <StableButton
+                    debugId="marketplace.support.full-loans"
+                    type="button"
+                    onClick={(event) => openMarketplaceCta(event, "loans")}
+                    disabled={supportProcessBusy}
+                    stableHeight={58}
+                    style={marketplaceInlineActionStyle("soft", supportProcessBusy, isCompact)}
+                  >
+                    Full Loans View
+                  </StableButton>
+                </div>
+              </details>
 
               {loanDraftId ? (
                 <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
