@@ -1332,11 +1332,20 @@ export default function NotificationsPage() {
         </div>
 
         {isPhone ? (
-          <div style={{ marginTop: 10 }}>
+          <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-start" }}>
             <StableCtaLink
               to={routes.dashboard}
-              stableHeight={52}
+              kind="secondary"
+              stableHeight={46}
               debugId="notifications.hero.dashboard"
+              style={{
+                width: "fit-content",
+                minWidth: 164,
+                padding: "8px 16px",
+                borderRadius: 14,
+                fontSize: 13,
+                fontWeight: 900,
+              }}
             >
               Go to Dashboard
             </StableCtaLink>

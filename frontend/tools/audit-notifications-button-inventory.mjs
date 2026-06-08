@@ -252,6 +252,11 @@ assertContains(
 );
 
 assertContains(
+  /isPhone \? \([\s\S]*?<StableCtaLink[\s\S]*?to=\{routes\.dashboard\}[\s\S]*?kind="secondary"[\s\S]*?stableHeight=\{46\}[\s\S]*?debugId="notifications\.hero\.dashboard"[\s\S]*?width: "fit-content"[\s\S]*?minWidth: 164/,
+  "Notifications phone Dashboard escape must stay a compact secondary action under the urgent primary button."
+);
+
+assertContains(
   /BUCKET_ORDER\.map\(\(bucket, index\) =>[\s\S]*?<StableButton[\s\S]*?stableHeight=\{bucketRowHeight\}[\s\S]*?debugId=\{`notifications\.bucket\.\$\{bucket\}`\}[\s\S]*?height: bucketRowHeight[\s\S]*?maxHeight: bucketRowHeight/,
   "Notifications bucket rows must keep fixed row geometry through StableButton."
 );
