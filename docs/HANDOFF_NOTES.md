@@ -1,3 +1,54 @@
+### Identity Integrity secondary-section density pass (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue the Identity Integrity / identity-targeting
+    cleanup after the bank/wallet detour;
+  - the front package was already compact and audit-caged, but lower identity
+    sections still exposed too much explanatory material by default.
+- Scope:
+  - route remains `/app/identity-integrity`;
+  - changed only `IdentityIntegrityPage`, the Identity Integrity front-package
+    audit, and this handoff note;
+  - no backend, API contract, identity-risk logic, recovery API, TrustSlip,
+    Trust Passport, Dashboard, Community Home, Marketplace, Action Inbox, or
+    shared tap-guard behavior changed.
+- Fix:
+  - secondary sections now use strong app-native SVG-led headers via a local
+    `sectionIconHeader` helper;
+  - Identity readings, continuity, recovery, reasons, timeline, and next-step
+    panels now default collapsed instead of opening as a long reading page;
+  - Identity continuity now has its own `identity-integrity.toggle-continuity`
+    drawer and keeps its score/device/risk/cluster details hidden until opened;
+  - Private recovery now has its own `identity-integrity.toggle-recovery`
+    drawer and stays closed unless the recovery task is active or verification
+    is required;
+  - bumped the page section-state storage key to
+    `gmfn.identityPage.sections.v2` so old open-drawer local state does not
+    preserve the previous tall layout on pilot phones;
+  - lower section copy was shortened where it was still reading like a manual.
+- Audit cage updated:
+  - `frontend/tools/audit-identity-integrity-front-package.mjs` now protects
+    the SVG-led secondary section headers, default-collapsed secondary panels,
+    and the continuity/recovery drawer behavior.
+- Verification:
+  - passed `npm --prefix frontend run audit:identity-integrity-front-package`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`;
+  - passed `npm exec --prefix frontend -- eslint src/pages/IdentityIntegrityPage.tsx tools/audit-identity-integrity-front-package.mjs`
+    from `frontend`;
+  - passed `npm exec --prefix frontend -- tsc -b --pretty false` from
+    `frontend`;
+  - passed `git diff --check` with Windows line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` hit known Windows
+    `esbuild spawn EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is a density, icon-header, and default-exposure pass. It does not
+    create missing signed-in phone or official-ID completion routes; the page
+    remains honest that those completion paths still need real route/backend
+    work before they can be marked complete.
+
 ### Payout Details sort-code/action-response protocol pass (2026-06-08)
 
 - Trigger:

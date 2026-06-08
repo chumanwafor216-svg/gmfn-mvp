@@ -89,6 +89,8 @@ type NoticeTone = "success" | "error";
 
 type CollapseState = {
   summary: boolean;
+  continuity: boolean;
+  recovery: boolean;
   reasons: boolean;
   timeline: boolean;
   next: boolean;
@@ -131,7 +133,7 @@ type IdentityRecoverySummary = {
   locked?: boolean;
 };
 
-const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v1";
+const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn.identityPage.sections.v2";
 const DASHBOARD_AVATAR_STORAGE_KEY = "gmfn.member.avatar";
 
 function safeStr(x: any): string {
@@ -390,6 +392,37 @@ function compactFactCard(): React.CSSProperties {
   };
 }
 
+function sectionIconHeader(
+  icon: TrustPaperIconName,
+  title: string,
+  detail: string,
+  right?: React.ReactNode
+) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: right
+          ? "auto minmax(0, 1fr) auto"
+          : "auto minmax(0, 1fr)",
+        gap: 12,
+        alignItems: "center",
+      }}
+    >
+      <span style={iconTile()}>
+        <TrustPaperIcon name={icon} size={23} strokeWidth={2.85} />
+      </span>
+      <span style={{ minWidth: 0 }}>
+        <span style={sectionLabel()}>{title}</span>
+        <span style={{ display: "block", marginTop: 5, ...compactHelperText() }}>
+          {detail}
+        </span>
+      </span>
+      {right ? <span>{right}</span> : null}
+    </div>
+  );
+}
+
 function noticeCard(tone: NoticeTone): React.CSSProperties {
   return {
     ...softCard(tone === "success" ? "#F3FBF5" : "#FEF2F2"),
@@ -433,10 +466,12 @@ function readStoredImage(key: string): string {
 
 function defaultCollapseState(): CollapseState {
   return {
-    summary: false,
-    reasons: false,
+    summary: true,
+    continuity: true,
+    recovery: true,
+    reasons: true,
     timeline: true,
-    next: false,
+    next: true,
   };
 }
 
@@ -449,6 +484,8 @@ function normalizeCollapseState(raw: any): CollapseState {
 
   return {
     summary: Boolean(raw?.summary ?? base.summary),
+    continuity: Boolean(raw?.continuity ?? base.continuity),
+    recovery: Boolean(raw?.recovery ?? base.recovery),
     reasons: Boolean(raw?.reasons ?? base.reasons),
     timeline: Boolean(raw?.timeline ?? base.timeline),
     next: Boolean(raw?.next ?? base.next),
@@ -2124,22 +2161,10 @@ export default function IdentityIntegrityPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Identity readings</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Your identity, local community trust, and wider consistency stay together here.
-            </div>
-          </div>
-
+        {sectionIconHeader(
+          "chart",
+          "Identity readings",
+          "Local trust, wider consistency, and TrustSlip status.",
           <SubtleButton
             onClick={() => toggleSection("summary")}
             style={collapseToggle()}
@@ -2147,7 +2172,7 @@ export default function IdentityIntegrityPage() {
           >
             {collapsed.summary ? "Open" : "Collapse"}
           </SubtleButton>
-        </div>
+        )}
 
         {!collapsed.summary ? (
           <>
@@ -2254,119 +2279,116 @@ export default function IdentityIntegrityPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Identity continuity</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This protects the owner by watching for major changes in device-use patterns.
-            </div>
-          </div>
-
-          <span
-            style={{
-              ...badge(true),
-              background: continuity.tone.bg,
-              color: continuity.tone.text,
-            }}
-          >
-            {continuity.label}
-          </span>
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "repeat(4, minmax(0, 1fr))",
-            gap: 12,
-          }}
-        >
-          <div style={statTile(continuity.tone.bg, continuity.tone.border)}>
-            <div style={sectionLabel()}>Continuity score</div>
-            <div
+        {sectionIconHeader(
+          "shield",
+          "Identity continuity",
+          "Device and owner-continuity signals stay behind one compact reading.",
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <span
               style={{
-                marginTop: 8,
+                ...badge(true),
+                background: continuity.tone.bg,
                 color: continuity.tone.text,
-                fontWeight: 900,
-                fontSize: 26,
               }}
             >
-              {continuity.scoreText}
+              {continuity.label}
+            </span>
+            <SubtleButton
+              onClick={() => toggleSection("continuity")}
+              style={collapseToggle()}
+              debugId="identity-integrity.toggle-continuity"
+            >
+              {collapsed.continuity ? "Open" : "Collapse"}
+            </SubtleButton>
+          </div>
+        )}
+
+        {!collapsed.continuity ? (
+          <>
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))",
+                gap: 12,
+              }}
+            >
+              <div style={statTile(continuity.tone.bg, continuity.tone.border)}>
+                <div style={sectionLabel()}>Continuity score</div>
+                <div
+                  style={{
+                    marginTop: 8,
+                    color: continuity.tone.text,
+                    fontWeight: 900,
+                    fontSize: 26,
+                  }}
+                >
+                  {continuity.scoreText}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Devices seen</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
+                  {continuity.deviceCount}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Risk signals</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
+                  {continuity.signalCount}
+                </div>
+              </div>
+
+              <div style={statTile()}>
+                <div style={sectionLabel()}>Linked clusters</div>
+                <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
+                  {continuity.clusterCount}
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Devices seen</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
-              {continuity.deviceCount}
+            <div
+              style={{
+                marginTop: 14,
+                display: "grid",
+                gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+                gap: 12,
+              }}
+            >
+              <div style={innerCard("#F8FBFF")}>
+                <div style={sectionLabel()}>Why this reading</div>
+                <div style={{ marginTop: 8, ...helperText() }}>{continuity.reason}</div>
+              </div>
+
+              <div style={innerCard("#FCFEFF")}>
+                <div style={sectionLabel()}>Next protection</div>
+                <div style={{ marginTop: 8, ...helperText() }}>{continuity.action}</div>
+              </div>
             </div>
-          </div>
-
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Risk signals</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
-              {continuity.signalCount}
-            </div>
-          </div>
-
-          <div style={statTile()}>
-            <div style={sectionLabel()}>Linked clusters</div>
-            <div style={{ marginTop: 8, color: "#0B1F33", fontWeight: 900, fontSize: 26 }}>
-              {continuity.clusterCount}
-            </div>
-          </div>
-        </div>
-
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Why the app is reading it this way</div>
-            <div style={{ marginTop: 8, ...helperText() }}>{continuity.reason}</div>
-          </div>
-
-          <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>What the app will do next</div>
-            <div style={{ marginTop: 8, ...helperText() }}>{continuity.action}</div>
-          </div>
-        </div>
+          </>
+        ) : null}
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Private recovery challenge</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              This is the owner-protection layer for extreme continuity events. The
-              app stores only protected answer hashes, not the raw answers.
-            </div>
+        {sectionIconHeader(
+          "lock",
+          "Private recovery challenge",
+          "Owner-protection prompts stay closed until setup or verification is needed.",
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <span style={badge(Boolean(recovery.configured))}>
+              {recovery.configured ? "Configured" : "Not configured"}
+            </span>
+            <SubtleButton
+              onClick={() => toggleSection("recovery")}
+              style={collapseToggle()}
+              debugId="identity-integrity.toggle-recovery"
+            >
+              {collapsed.recovery && activeIdentityTask !== "recovery" ? "Open" : "Collapse"}
+            </SubtleButton>
           </div>
-
-          <span style={badge(Boolean(recovery.configured))}>
-            {recovery.configured ? "Configured" : "Not configured"}
-          </span>
-        </div>
+        )}
 
         {recoveryError ? (
           <div style={{ ...noticeCard("error"), marginTop: 14 }}>{recoveryError}</div>
@@ -2378,47 +2400,48 @@ export default function IdentityIntegrityPage() {
           </div>
         ) : null}
 
-        <div
-          style={{
-            marginTop: 14,
-            display: "grid",
-            gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
-            gap: 12,
-          }}
-        >
-          <div style={innerCard("#F8FBFF")}>
-            <div style={sectionLabel()}>Recovery state</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              {recovery.configured
-                ? "Private recovery prompts are ready for serious continuity shifts."
-                : "Set three private prompts now so the app can protect you if your device pattern changes too far."}
+        {(!collapsed.recovery || activeIdentityTask === "recovery" || recovery.shouldVerify) ? (
+          <div
+            style={{
+              marginTop: 14,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div style={innerCard("#F8FBFF")}>
+              <div style={sectionLabel()}>Recovery state</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                {recovery.configured
+                  ? "Private recovery prompts are ready for serious continuity shifts."
+                  : "Set three private prompts so GSN can protect the owner during serious continuity changes."}
+              </div>
+              <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
+                <div style={helperText()}>
+                  Failed attempts: <b>{recovery.failedAttempts}</b>
+                </div>
+                <div style={helperText()}>
+                  Last verified:{" "}
+                  <b>{recovery.lastVerifiedAt ? safeDateTime(recovery.lastVerifiedAt) : "Not yet"}</b>
+                </div>
+                <div style={helperText()}>
+                  Locked until:{" "}
+                  <b>{recovery.lockedUntil ? safeDateTime(recovery.lockedUntil) : "Not locked"}</b>
+                </div>
+              </div>
             </div>
-            <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
-              <div style={helperText()}>
-                Failed attempts: <b>{recovery.failedAttempts}</b>
-              </div>
-              <div style={helperText()}>
-                Last verified:{" "}
-                <b>{recovery.lastVerifiedAt ? safeDateTime(recovery.lastVerifiedAt) : "Not yet"}</b>
-              </div>
-              <div style={helperText()}>
-                Locked until:{" "}
-                <b>{recovery.lockedUntil ? safeDateTime(recovery.lockedUntil) : "Not locked"}</b>
+
+            <div style={innerCard("#FCFEFF")}>
+              <div style={sectionLabel()}>When used</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Use it only when device or owner-continuity signals need a stronger check.
               </div>
             </div>
           </div>
+        ) : null}
 
-          <div style={innerCard("#FCFEFF")}>
-            <div style={sectionLabel()}>When it will be used</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              OTP is only one layer. If a stolen phone or unstable device pattern puts
-              the owner at risk, this private challenge can help prove it is still the
-              same person using the account.
-            </div>
-          </div>
-        </div>
-
-        {!recovery.configured ? (
+        {!recovery.configured &&
+        (!collapsed.recovery || activeIdentityTask === "recovery" || recovery.shouldVerify) ? (
           <form onSubmit={handleRecoverySetup} style={{ marginTop: 14, display: "grid", gap: 12 }}>
             {recoveryPrompts.map((item, index) => (
               <div key={`recovery-setup-${index}`} style={innerCard("#FFFFFF")}>
@@ -2477,7 +2500,8 @@ export default function IdentityIntegrityPage() {
           </form>
         ) : null}
 
-        {recovery.shouldVerify ? (
+        {recovery.shouldVerify &&
+        (!collapsed.recovery || activeIdentityTask === "recovery" || recovery.shouldVerify) ? (
           <form onSubmit={handleRecoveryVerify} style={{ marginTop: 14, display: "grid", gap: 12 }}>
             <div style={softCard("#FFF7ED")}>
               <div style={sectionLabel()}>Recovery check needed now</div>
@@ -2528,22 +2552,10 @@ export default function IdentityIntegrityPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Why identity and trust changed</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              What helped, what weakened, and what repairs or improves next.
-            </div>
-          </div>
-
+        {sectionIconHeader(
+          "search",
+          "Why identity and trust changed",
+          "What helped, what weakened, and the next repair line.",
           <SubtleButton
             onClick={() => toggleSection("reasons")}
             style={collapseToggle()}
@@ -2551,7 +2563,7 @@ export default function IdentityIntegrityPage() {
           >
             {collapsed.reasons ? "Open" : "Collapse"}
           </SubtleButton>
-        </div>
+        )}
 
         {!collapsed.reasons ? (
           <div
@@ -2649,22 +2661,10 @@ export default function IdentityIntegrityPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Identity and trust timeline</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              The visible movement behind your current identity and trust position.
-            </div>
-          </div>
-
+        {sectionIconHeader(
+          "calendar",
+          "Identity and trust timeline",
+          "Recent visible movement behind this identity position.",
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <span style={badge(false)}>
               {timelineRows.length} recent event{timelineRows.length === 1 ? "" : "s"}
@@ -2677,7 +2677,7 @@ export default function IdentityIntegrityPage() {
               {collapsed.timeline ? "Open" : "Collapse"}
             </SubtleButton>
           </div>
-        </div>
+        )}
 
         {!collapsed.timeline ? (
           <div style={{ marginTop: 14, display: "grid", gap: 10 }}>
@@ -2749,22 +2749,10 @@ export default function IdentityIntegrityPage() {
       </section>
 
       <section style={pageCard("#FFFFFF")}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div>
-            <div style={sectionLabel()}>Next clean step</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Identity should lead somewhere useful, not remain an isolated reading.
-            </div>
-          </div>
-
+        {sectionIconHeader(
+          "spark",
+          "Next clean step",
+          "The next useful move after the identity reading.",
           <SubtleButton
             onClick={() => toggleSection("next")}
             style={collapseToggle()}
@@ -2772,7 +2760,7 @@ export default function IdentityIntegrityPage() {
           >
             {collapsed.next ? "Open" : "Collapse"}
           </SubtleButton>
-        </div>
+        )}
 
         {!collapsed.next ? (
           <div

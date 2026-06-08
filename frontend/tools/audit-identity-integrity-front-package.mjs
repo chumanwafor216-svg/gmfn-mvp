@@ -56,6 +56,21 @@ assertContains(
 );
 
 assertContains(
+  /function sectionIconHeader\([\s\S]*?icon: TrustPaperIconName[\s\S]*?TrustPaperIcon name=\{icon\} size=\{23\} strokeWidth=\{2\.85\}/,
+  "Identity Integrity secondary sections must keep strong SVG-led headers instead of text-only explanation blocks."
+);
+
+assertContains(
+  /function defaultCollapseState\(\): CollapseState \{[\s\S]*?summary: true,[\s\S]*?continuity: true,[\s\S]*?recovery: true,[\s\S]*?reasons: true,[\s\S]*?timeline: true,[\s\S]*?next: true/,
+  "Identity Integrity secondary readings, continuity, recovery, reasons, timeline, and next-step panels must stay collapsed by default."
+);
+
+assertContains(
+  /const IDENTITY_PAGE_UI_STORAGE_KEY = "gmfn\.identityPage\.sections\.v2";/,
+  "Identity Integrity must bump the section-state storage key when default exposure changes so old open layouts do not persist on pilot phones."
+);
+
+assertContains(
   /linear-gradient\(180deg, #0B3E78 0%, #061827 100%\)[\s\S]*?linear-gradient\(180deg, #F8D56B 0%, #D6AA45 100%\)/,
   "Identity Integrity icon tiles must use strong navy and gold contrast surfaces."
 );
@@ -73,6 +88,11 @@ assertContains(
 assertContains(
   /data-identity-integrity-active-task="true"[\s\S]*?openIdentityTask\(activeTask\)[\s\S]*?debugId="identity-integrity\.active-task-action"/,
   "Identity Integrity front package must show one active task action with an explicit response."
+);
+
+assertContains(
+  /debugId="identity-integrity\.toggle-continuity"[\s\S]*?debugId="identity-integrity\.toggle-recovery"[\s\S]*?activeIdentityTask === "recovery"[\s\S]*?recovery\.shouldVerify/,
+  "Identity Integrity continuity and recovery panels must stay collapsible, while recovery opens for the active or required recovery task."
 );
 
 assertContains(
