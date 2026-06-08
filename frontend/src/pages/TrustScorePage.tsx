@@ -1748,6 +1748,45 @@ export default function TrustScorePage() {
     ["shield", "Role", passportVm.identity.holderRole],
   ];
 
+  const communityConfirmationCards: Array<[
+    string,
+    string,
+    string,
+    TrustPaperIconName,
+    "Ready" | "Limited"
+  ]> = [
+    [
+      "Community",
+      passportVm.identity.communityName,
+      "The active community tied to this trust reading.",
+      "community",
+      passportVm.identity.communityName === "Not stated" ? "Limited" : "Ready",
+    ],
+    [
+      "Community ID",
+      passportVm.identity.communityId,
+      "The stable code that lets the public record point to the right community.",
+      "hash",
+      passportVm.identity.communityId === "Not stated" ? "Limited" : "Ready",
+    ],
+    [
+      "Community confirmation",
+      passportVm.identity.communityIdentityLabel,
+      "Whether this identity has been confirmed by the community layer.",
+      "check",
+      passportVm.identity.communityIdentityConfirmed ? "Ready" : "Limited",
+    ],
+    [
+      "Public record",
+      communityVerifyPath ? "Ready to open" : "Needs community code",
+      communityVerifyPath
+        ? "The public community record can open from this Trust Passport."
+        : "The public record cannot open until a community code is visible.",
+      "document",
+      communityVerifyPath ? "Ready" : "Limited",
+    ],
+  ];
+
   const trustQuestionIcons: Record<string, TrustPaperIconName> = {
     "Identity verified": "shield",
     "Support trust": "community",
@@ -2700,6 +2739,123 @@ export default function TrustScorePage() {
               marginTop: 14,
             }}
           >
+            <div
+              style={{
+                ...innerCard("#F8FBFF"),
+                border: "1px solid rgba(11,99,209,0.14)",
+                position: "relative",
+                overflow: "hidden",
+                marginBottom: 14,
+              }}
+            >
+              <TrustPaperWatermark
+                name="community"
+                color="#0B63D1"
+                size={isCompact ? 160 : 216}
+                opacity={0.045}
+                style={{ right: isCompact ? -74 : -38, top: -48, bottom: "auto" }}
+              />
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 9,
+                  color: "#0B63D1",
+                  fontSize: 14,
+                  fontWeight: 1000,
+                  letterSpacing: 1.6,
+                  textTransform: "uppercase",
+                }}
+              >
+                <TrustPaperIcon name="community" size={20} />
+                Community Confirmation
+              </div>
+              <div
+                style={{
+                  color: "#07172C",
+                  fontSize: isCompact ? 22 : 28,
+                  lineHeight: 1.08,
+                  fontWeight: 1000,
+                  marginTop: 8,
+                }}
+              >
+                Can this trust story be tied to a real community?
+              </div>
+              <p
+                style={{
+                  ...helperText(),
+                  maxWidth: 720,
+                  margin: "8px 0 0",
+                }}
+              >
+                This lane checks the community identity behind the member's
+                trust story before showing local and cross-community readings.
+              </p>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact
+                    ? "1fr"
+                    : "repeat(4, minmax(0, 1fr))",
+                  gap: 10,
+                  marginTop: 14,
+                }}
+              >
+                {communityConfirmationCards.map(([label, value, detail, icon, status]) => (
+                  <div
+                    key={label}
+                    style={{
+                      ...innerCard("#FFFFFF"),
+                      border:
+                        status === "Ready"
+                          ? "1px solid rgba(46,155,98,0.16)"
+                          : "1px solid rgba(200,58,58,0.14)",
+                      minHeight: isCompact ? 0 : 144,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 8,
+                          color: status === "Ready" ? "#166534" : "#991B1B",
+                          fontWeight: 1000,
+                        }}
+                      >
+                        <TrustPaperIcon name={icon} size={18} />
+                        {label}
+                      </span>
+                      <span style={statusPillStyle(status)}>{status}</span>
+                    </div>
+                    <div
+                      style={{
+                        color: "#07172C",
+                        fontSize: isCompact ? 18 : 20,
+                        lineHeight: 1.1,
+                        fontWeight: 1000,
+                        marginTop: 8,
+                        overflowWrap: "break-word",
+                      }}
+                    >
+                      {value}
+                    </div>
+                    <p style={{ ...helperText(), margin: "8px 0 0", lineHeight: 1.45 }}>
+                      {detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 20 }}>
               5. Trust surfaces
             </div>

@@ -1,3 +1,54 @@
+### Trust Passport Community Confirmation lane checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue before giving corrections;
+  - next selected lane: Community Confirmation, because it still lacked a
+    dedicated lane audit and did not clearly explain public community record
+    readiness inside the active lane.
+- Source facts changed/preserved:
+  - route remains `/app/trust` through `frontend/src/pages/TrustScorePage.tsx`;
+  - `/app/trust-passport` redirect behavior was not changed;
+  - backend, auth, Marketplace, Finance, Dashboard, Community Home, Action
+    Inbox, global shell, shared route targets, and Trust Passport button
+    inventory were not changed;
+  - the single stable public community record action
+    `trust-score.open-public-community-record` remains preserved.
+- Fix:
+  - added a typed `communityConfirmationCards` model sourced from existing
+    identity and `communityVerifyPath` data;
+  - added a gated Community Confirmation lead card that appears only when
+    `activeTrustPassportLane === "community"`;
+  - the lane now explains active community, community ID, community identity
+    confirmation, and public-record readiness before local/cross-community
+    trust surfaces;
+  - added `frontend/tools/audit-trust-passport-community-confirmation-lane.mjs`;
+  - registered
+    `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Community Confirmation
+    lane work requires the community-confirmation audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - `npm --prefix frontend run audit:trust-passport-finance-discipline-lane`;
+  - `npm --prefix frontend run audit:trust-passport-repair-lane`;
+  - `npm --prefix frontend run audit:trust-passport-evidence-story-lane`;
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm exec -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-community-confirmation-lane.mjs`
+    from `frontend`;
+  - `npm run build` from `frontend` passed elevated because Vite/esbuild
+    spawning is blocked by the normal sandbox on this Windows setup.
+- Unabated truth:
+  - Community Confirmation is now caged, but the public record CTA still lives
+    in the identity context card above the lane rather than being duplicated
+    inside the lane;
+  - Documents / TrustSlip is now the only remaining Trust Passport lane without
+    its own dedicated audit.
+
 ### Trust Passport Finance Discipline lane checkpoint (2026-06-08)
 
 - Trigger:

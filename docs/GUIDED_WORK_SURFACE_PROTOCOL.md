@@ -283,6 +283,12 @@ For Trust Passport Finance Discipline lane work, also run:
 npm --prefix frontend run audit:trust-passport-finance-discipline-lane
 ```
 
+For Trust Passport Community Confirmation lane work, also run:
+
+```bash
+npm --prefix frontend run audit:trust-passport-community-confirmation-lane
+```
+
 For Finance front package work, also run:
 
 ```bash
