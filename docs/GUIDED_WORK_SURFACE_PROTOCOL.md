@@ -168,6 +168,12 @@ For ROSCA lane work, also run:
 npm --prefix frontend run audit:marketplace-rosca-lane
 ```
 
+For Support Requests lane work, also run:
+
+```bash
+npm --prefix frontend run audit:marketplace-support-lane
+```
+
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 

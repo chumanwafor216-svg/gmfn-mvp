@@ -665,7 +665,7 @@ const marketplaceActionSystemChecks = [
     label:
       "Marketplace section buttons must focus one open body so old sections cannot keep the page loose",
     pattern:
-      /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState[\s\S]*?key === "support"[\s\S]*?members: true,[\s\S]*?support: true[\s\S]*?function normalizeMarketplaceSectionState[\s\S]*?state\.support[\s\S]*?focusedMarketplaceSectionState\("support"\)[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\(key\)\)[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId\)/,
+      /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true[\s\S]*?function normalizeMarketplaceSectionState[\s\S]*?state\.support[\s\S]*?focusedMarketplaceSectionState\("support"\)[\s\S]*?function openMarketplaceSection[\s\S]*?setSectionsTouched\(\(prev\) => touchedMarketplaceSectionState\(prev, key\)\)[\s\S]*?setSectionsOpen\(focusedMarketplaceSectionState\(key\)\)[\s\S]*?scheduleMarketplaceSectionScroll\(sectionId\)/,
   },
   {
     label:

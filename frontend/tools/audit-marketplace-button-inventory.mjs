@@ -260,7 +260,7 @@ assertContains(
 );
 
 assertContains(
-  /debugId="marketplace\.tile\.support"[\s\S]{0,300}aria-label="Open Support Requests, guarantors and loans"[\s\S]{0,320}openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)/,
+  /debugId="marketplace\.tile\.support"[\s\S]{0,300}aria-label="Open Support Requests, guarantors and loans"[\s\S]{0,320}openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]{0,520}<MarketplaceGlyph name="support"[\s\S]{0,260}Support Requests[\s\S]{0,260}Guided help request/,
   "Marketplace Support Requests tile must open the support section only."
 );
 
@@ -277,6 +277,16 @@ assertContains(
 assertContains(
   /debugId="marketplace\.row\.rosca"[\s\S]*?aria-label="Open ROSCA contribution cycles for this marketplace"[\s\S]*?openMarketplaceSection\(event, "rosca", "marketplace-rosca"\)[\s\S]*?Start a guided member savings circle in this community/,
   "Marketplace ROSCA operating row must open the ROSCA section only."
+);
+
+assertContains(
+  /debugId="marketplace\.row\.loan-process"[\s\S]*?aria-label="Open Loan Process and support workbench"[\s\S]*?openMarketplaceSection\(\s*event,\s*"support",\s*"marketplace-loans-support"\s*\)[\s\S]*?Support Request[\s\S]*?Start the request, check fit, then continue the borrowing flow/,
+  "Marketplace Support Request operating row must open the support section only and explain the guided flow."
+);
+
+assertContains(
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"[\s\S]*?function touchedMarketplaceSectionState[\s\S]*?\[key\]: true/,
+  "Marketplace Support Requests must no longer open Members visually; each major lane must focus one open body."
 );
 
 assertContains(
@@ -381,6 +391,61 @@ if (!roscaSection) {
         file: marketplaceFile,
         line: lineAt(source.indexOf(roscaSection)),
         message: "Marketplace ROSCA lane must keep the guided three-step savings-circle structure.",
+        text: pattern.toString(),
+      });
+    }
+  });
+}
+
+const supportSection = sectionBetween(
+  /id="marketplace-loans-support"/,
+  /<\/MarketplaceShell>/
+);
+
+if (!supportSection) {
+  findings.push({
+    file: marketplaceFile,
+    line: 1,
+    message: "Marketplace Support Requests section was not found for scoped button auditing.",
+    text: "Expected id=\"marketplace-loans-support\" before the Marketplace shell closes.",
+  });
+} else {
+  const requiredSupportIds = [
+    "marketplace.support.toggle",
+    "marketplace.support.start-request",
+    "marketplace.support.loan-readiness",
+    "marketplace.support.loan-suggestions",
+    "marketplace.support.loan-workbench",
+    "marketplace.support.finance",
+    "marketplace.support.full-loans",
+    "marketplace.support.send-guarantor-requests",
+  ];
+
+  for (const debugId of requiredSupportIds) {
+    if (!supportSection.includes(`debugId="${debugId}"`)) {
+      findings.push({
+        file: marketplaceFile,
+        line: lineAt(source.indexOf(supportSection)),
+        message: "Marketplace Support Requests section is missing an expected support action.",
+        text: debugId,
+      });
+    }
+  }
+
+  [
+    /Support Requests[\s\S]*?Start one guided support request inside this selected/,
+    /What this support area does[\s\S]*?one guided community request/,
+    /Step \{step\}/,
+    /Start request[\s\S]*?Enter amount, days, and reason here/,
+    /Check fit[\s\S]*?Review guarantor need and suggested supporters/,
+    /Continue flow[\s\S]*?Open readiness or workbench only when needed/,
+    /fit suggestions appear below inside this same lane/,
+  ].forEach((pattern) => {
+    if (!pattern.test(supportSection)) {
+      findings.push({
+        file: marketplaceFile,
+        line: lineAt(source.indexOf(supportSection)),
+        message: "Marketplace Support Requests lane must keep the guided three-step support structure.",
         text: pattern.toString(),
       });
     }

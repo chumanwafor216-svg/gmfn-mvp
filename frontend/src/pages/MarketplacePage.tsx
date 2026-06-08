@@ -358,22 +358,12 @@ const MARKETPLACE_SECTION_ANCHORS: Record<keyof SectionState, string> = {
 };
 
 function focusedMarketplaceSectionState(key: keyof SectionState): SectionState {
-  if (key === "support") {
-    return {
-      money: false,
-      rosca: false,
-      tools: false,
-      members: true,
-      support: true,
-    };
-  }
-
   return {
     money: key === "money",
     rosca: key === "rosca",
     tools: key === "tools",
     members: key === "members",
-    support: false,
+    support: key === "support",
   };
 }
 
@@ -381,14 +371,6 @@ function touchedMarketplaceSectionState(
   prev: SectionState,
   key: keyof SectionState
 ): SectionState {
-  if (key === "support") {
-    return {
-      ...prev,
-      members: true,
-      support: true,
-    };
-  }
-
   return {
     ...prev,
     [key]: true,
@@ -2746,10 +2728,10 @@ function MarketplaceGlyph({
     case "support":
       glyph = (
         <>
-          <circle cx="8.2" cy="8.8" r="2.4" />
-          <circle cx="15.8" cy="8.8" r="2.4" />
-          <path d="M4.5 18c.6-2.5 1.8-3.8 3.7-3.8s3.1 1.3 3.7 3.8" />
-          <path d="M12.1 18c.6-2.5 1.8-3.8 3.7-3.8s3.1 1.3 3.7 3.8" />
+          <path d="M5.5 13.5h3.3l2.3 2.2a2.2 2.2 0 0 0 2.9.1l4.5-3.4a1.7 1.7 0 0 0-2-2.7l-3 2.1" />
+          <path d="M8.8 13.5l2.5-2.7a2.8 2.8 0 0 1 3.9-.2l.6.5" />
+          <path d="M4 11.8v5.7h3.2" />
+          <path d="M8.2 6.9c0-1.4 1-2.4 2.3-2.4.8 0 1.6.4 2 1.1.5-.7 1.2-1.1 2-1.1 1.3 0 2.3 1 2.3 2.4 0 2.5-4.3 4.8-4.3 4.8S8.2 9.4 8.2 6.9z" />
         </>
       );
       break;
@@ -5451,7 +5433,7 @@ export default function MarketplacePage() {
                 {marketplaceSupportLabel}
               </span>
               <span style={marketplaceOsTileHelperStyle(isCompact)}>
-                Help, loans, guarantors
+                Guided help request
               </span>
             </StableButton>
 
@@ -5752,10 +5734,10 @@ export default function MarketplacePage() {
               </span>
               <span style={marketplaceOsRowTextStackStyle()}>
                 <span style={marketplaceOsRowTitleStyle(isCompact)}>
-                  Loan Process
+                  Support Request
                 </span>
                 <span style={marketplaceOsRowDetailStyle(isCompact)}>
-                  Start support, check readiness, and continue the workbench.
+                  Start the request, check fit, then continue the borrowing flow.
                 </span>
               </span>
               <span aria-hidden="true" style={marketplaceOsArrowStyle()}>
@@ -7942,10 +7924,29 @@ export default function MarketplacePage() {
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <div style={sectionLabel()}>Borrow / Lend / Support</div>
-            <div style={{ marginTop: 8, ...helperText() }}>
-              Start or continue support work inside this selected marketplace.
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              minWidth: 0,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={marketplaceOsIconStyle(
+                "linear-gradient(180deg, #25A65A 0%, #0B5A34 100%)",
+                true
+              )}
+            >
+              <MarketplaceGlyph name="support" size={26} />
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <div style={sectionLabel()}>Support Requests</div>
+              <div style={{ marginTop: 8, ...helperText() }}>
+                Start one guided support request inside this selected
+                marketplace.
+              </div>
             </div>
           </div>
 
@@ -7965,12 +7966,70 @@ export default function MarketplacePage() {
         {sectionsOpen.support ? (
           <ExplainToggle
             label="What this support area does"
-            what="This is where marketplace users begin a support request, read whether guarantors are needed, and continue into the borrowing flow when the draft becomes active."
-            why="Support should feel connected to the current community and visible member context, not like a separate disconnected system."
-            next="Start the request here, check the draft and fit signals below, then move into readiness, suggestions, or workbench only when the guided flow tells you to continue."
+            what="This is where a member asks the current community for support, checks whether guarantors are needed, and follows the borrowing path only after the draft is clear."
+            why="Support should feel like one guided community request, not a pile of loan pages and member lists."
+            next="Start the request here, check the fit signals, then continue only to the next borrowing page the draft needs."
             tone="light"
             style={{ marginTop: 12 }}
           />
+        ) : null}
+
+        {sectionsOpen.support ? (
+          <div
+            style={{
+              marginTop: 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "1fr" : "repeat(3, minmax(0, 1fr))",
+              gap: 10,
+            }}
+          >
+            {[
+              ["1", "Start request", "Enter amount, days, and reason here."],
+              ["2", "Check fit", "Review guarantor need and suggested supporters."],
+              ["3", "Continue flow", "Open readiness or workbench only when needed."],
+            ].map(([step, title, detail]) => (
+              <div
+                key={step}
+                style={{
+                  borderRadius: 18,
+                  border: "1px solid rgba(37,166,90,0.18)",
+                  background:
+                    "linear-gradient(180deg, rgba(243,251,246,0.98) 0%, rgba(230,244,236,0.94) 100%)",
+                  padding: isCompact ? 12 : 14,
+                  overflow: "hidden",
+                  overflowAnchor: "none",
+                }}
+              >
+                <div style={{ ...sectionLabel(), color: "#0B6B3B" }}>
+                  Step {step}
+                </div>
+                <div
+                  style={{
+                    marginTop: 6,
+                    color: "#08233A",
+                    fontSize: isCompact ? 15 : 16,
+                    fontWeight: 950,
+                    lineHeight: 1.2,
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {title}
+                </div>
+                <div
+                  style={{
+                    marginTop: 5,
+                    color: "#5E6F82",
+                    fontSize: isCompact ? 12 : 13,
+                    fontWeight: 800,
+                    lineHeight: 1.35,
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  {detail}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : null}
 
         {sectionsOpen.support ? (
@@ -7999,9 +8058,9 @@ export default function MarketplacePage() {
 
               <div style={{ marginTop: 10, ...helperText(), maxWidth: 760 }}>
                 Enter amount and duration first. If the draft needs guarantors,
-                fit suggestions appear below. Once support becomes active, the
-                guided continuation pages should carry the person through
-                readiness, suggestions, and workbench in order.
+                fit suggestions appear below inside this same lane. Once support
+                becomes active, continue through readiness, suggestions, and
+                workbench in order.
               </div>
 
               <div

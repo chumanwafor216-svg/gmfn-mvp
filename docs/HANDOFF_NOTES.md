@@ -1,3 +1,64 @@
+### Marketplace Support Requests lane guided repair checkpoint (2026-06-08)
+
+- Trigger:
+  - after Money Pool and ROSCA were repaired and caged, product owner asked to
+    continue the full Marketplace package before doing phone checks;
+  - next major lane selected: Support Requests.
+- Source facts changed/preserved:
+  - Support Requests top tile remains `debugId="marketplace.tile.support"` and
+    opens `openMarketplaceSection(event, "support", "marketplace-loans-support")`;
+  - operating row remains `debugId="marketplace.row.loan-process"` and opens
+    the same support anchor;
+  - section anchor remains `id="marketplace-loans-support"`;
+  - support detail actions remain:
+    `marketplace.support.toggle`, `marketplace.support.start-request`,
+    conditional draft actions, continuation buttons, dynamic suggestion buttons,
+    selected-guarantor remove buttons, and
+    `marketplace.support.send-guarantor-requests`.
+- Fix:
+  - changed Support Requests from a visual multi-lane open to a one-lane open:
+    `focusedMarketplaceSectionState("support")` now opens only `support`, not
+    `members`;
+  - kept member/supporter data inside the Support lane through existing fit
+    suggestions and selected-guarantor controls;
+  - changed the support pictogram from a generic two-person mark to a
+    guided-help hand/heart mark;
+  - changed the Support tile helper to `Guided help request`;
+  - changed the operating row visible title from `Loan Process` to
+    `Support Request`;
+  - changed the row detail to
+    `Start the request, check fit, then continue the borrowing flow.`;
+  - changed the opened section header to `Support Requests` with a clearer
+    one-request description;
+  - added a compact three-step guide inside the lane:
+    start request, check fit, continue flow;
+  - clarified that fit suggestions appear below inside the same lane;
+  - added `frontend/tools/audit-marketplace-support-lane.mjs`;
+  - added `npm --prefix frontend run audit:marketplace-support-lane`;
+  - updated `audit-marketplace-button-inventory`,
+    `audit-mobile-tap-stability`, and
+    `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` for the Support lane cage.
+- Verification passed:
+  - `npm --prefix frontend run audit:marketplace-support-lane`;
+  - `npm --prefix frontend run audit:marketplace-rosca-lane`;
+  - `npm --prefix frontend run audit:marketplace-money-pool-lane`;
+  - `npm --prefix frontend run audit:marketplace-button-inventory`;
+  - `npm --prefix frontend run audit:marketplace-button-lines`;
+  - `npm --prefix frontend run audit:marketplace-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `cd frontend && npm exec -- eslint src/pages/MarketplacePage.tsx tools/audit-marketplace-button-inventory.mjs tools/audit-marketplace-money-pool-lane.mjs tools/audit-marketplace-rosca-lane.mjs tools/audit-marketplace-support-lane.mjs tools/audit-mobile-tap-stability.mjs`;
+  - `git diff --check`;
+  - `npm run build` passed after rerunning elevated because the normal sandbox
+    run hit the known Windows/Vite `spawn EPERM` while loading esbuild.
+- Unabated truth:
+  - this should reduce one source of Marketplace jumpiness because Support no
+    longer opens the Members section visually;
+  - the lane is still large because the real support workflow is large:
+    request form, draft status, fit suggestions, selected guarantors, send
+    requests, and visible support items;
+  - physical phone testing remains deferred until the full Marketplace package
+    is repaired, per product owner instruction.
+
 ### Marketplace ROSCA lane guided repair checkpoint (2026-06-08)
 
 - Trigger:

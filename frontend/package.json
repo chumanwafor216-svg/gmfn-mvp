@@ -19,6 +19,7 @@
     "audit:marketplace-button-lines": "node tools/audit-marketplace-button-lines.mjs",
     "audit:marketplace-money-pool-lane": "node tools/audit-marketplace-money-pool-lane.mjs",
     "audit:marketplace-rosca-lane": "node tools/audit-marketplace-rosca-lane.mjs",
+    "audit:marketplace-support-lane": "node tools/audit-marketplace-support-lane.mjs",
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",

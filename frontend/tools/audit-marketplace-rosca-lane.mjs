@@ -59,7 +59,7 @@ assertContains(
 );
 
 assertContains(
-  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?members: key === "members"[\s\S]*?support: false/,
+  /function focusedMarketplaceSectionState\(key: keyof SectionState\): SectionState \{[\s\S]*?money: key === "money"[\s\S]*?rosca: key === "rosca"[\s\S]*?tools: key === "tools"[\s\S]*?members: key === "members"[\s\S]*?support: key === "support"/,
   "Opening ROSCA must use the focused one-lane state, leaving unrelated lanes stepped back."
 );
 
