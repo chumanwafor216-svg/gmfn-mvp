@@ -1,3 +1,42 @@
+### Trust Passport snapshot icon and clear-photo pass (2026-06-08)
+
+- Trigger:
+  - product owner asked to continue the page-by-page icon and resizing pass and
+    specifically wanted better, stronger app-native icons while protecting the
+    screenshot / snapshot protocol.
+- Scope:
+  - route remains `/app/trust`;
+  - changed only Trust Passport page-local Identity Overview presentation and
+    the Trust Passport button-inventory audit cage;
+  - no backend, auth, API, data model, Dashboard, Community Home, Marketplace,
+    Finance, global shell, or shared tap-guard logic changed.
+- Fix:
+  - the Identity Overview shield/seal no longer overlays the member photo;
+  - the photo frame now keeps the evidence image clear and uses a separate
+    `Photo clear` header chip for the trust mark;
+  - fact icons were strengthened from small 30px/38px marks to 36px/46px
+    contrast tiles with larger SVG pictograms;
+  - status chips now use the task-specific SVG pictogram (phone, community,
+    wallet, document, etc.) instead of repeating generic warning/check marks;
+  - the completion chooser keeps the same real-route/pending-route behavior but
+    uses stronger icon tiles for each proof row.
+- Audit cage updated:
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` now protects the
+    clear-photo snapshot, stronger fact icons, task-specific status icons, and
+    prevents the old edge-overlay seal from returning.
+- Verification so far:
+  - passed `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - passed `npm --prefix frontend run audit:trust-passport-front-package`;
+  - passed `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - passed `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - passed `npm --prefix frontend run audit:trust-actions`;
+  - passed `npm --prefix frontend run audit:protected-button-freeze`;
+  - passed `npm --prefix frontend run audit:tap-stability`.
+- Unabated truth:
+  - this improves icon quality and evidence-photo clarity only. It still does
+    not create the missing authenticated phone-verification or official-ID
+    completion routes.
+
 ### Trust Passport identity completion routing checkpoint (2026-06-08)
 
 - Trigger:

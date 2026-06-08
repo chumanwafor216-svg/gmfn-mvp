@@ -156,12 +156,17 @@ assertContains(
 );
 
 assertContains(
-  /padding: isCompact \? 12 : 24[\s\S]*?minHeight: isCompact \? "min\(720px, calc\(100svh - 132px\)\)" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "88px minmax\(0, 1fr\)" : "132px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 88 : 132[\s\S]*?height: isCompact \? 88 : 132[\s\S]*?overflow: "visible"[\s\S]*?right: isCompact \? -8 : -7[\s\S]*?Snapshot 1[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?overviewIconBox\(isCompact\)/,
-  "Trust Passport identity overview must keep the portable snapshot package boundary, unobstructed photo seal, and two-column fact grid."
+  /padding: isCompact \? 12 : 24[\s\S]*?minHeight: isCompact \? "min\(720px, calc\(100svh - 132px\)\)" : undefined[\s\S]*?gridTemplateColumns: isCompact \? "88px minmax\(0, 1fr\)" : "132px minmax\(0, 1fr\)"[\s\S]*?width: isCompact \? 88 : 132[\s\S]*?height: isCompact \? 88 : 132[\s\S]*?overflow: "hidden"[\s\S]*?Snapshot 1[\s\S]*?Photo clear[\s\S]*?Identity Overview[\s\S]*?Community-backed identity snapshot[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?: "repeat\(2, minmax\(0, 1fr\)\)"[\s\S]*?gridTemplateColumns: isCompact[\s\S]*?\? "36px minmax\(0, 1fr\)"[\s\S]*?: "46px minmax\(0, 1fr\)"[\s\S]*?overviewIconBox\(isCompact\)/,
+  "Trust Passport identity overview must keep the portable snapshot package boundary, clear photo, and two-column fact grid."
 );
 
 assertContains(
-  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 34[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "20px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok\)[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
+  /function overviewIconBox\(isCompact = false\)[\s\S]*?width: isCompact \? 36 : 46[\s\S]*?height: isCompact \? 36 : 46[\s\S]*?TrustPaperIcon[\s\S]*?size=\{isCompact \? 21 : 26\}[\s\S]*?strokeWidth=\{2\.85\}/,
+  "Trust Passport identity fact icons must stay as strong SVG tiles, not weak inline marks."
+);
+
+assertContains(
+  /function overviewStatusBox\(ok: boolean, muted = false\)[\s\S]*?minHeight: 36[\s\S]*?display: "inline-grid"[\s\S]*?gridTemplateColumns: "24px minmax\(0, 1fr\)"[\s\S]*?whiteSpace: "nowrap"[\s\S]*?verificationBadges\.map\(\(item\) =>[\s\S]*?overviewStatusBox\(item\.ok\)[\s\S]*?<TrustPaperIcon name=\{item\.icon\} size=\{15\} strokeWidth=\{2\.65\}[\s\S]*?Active in \{passportVm\.technicalDetail\.activeClans\}/,
   "Trust Passport verification badges must stay as compact one-line snapshot status chips."
 );
 
@@ -186,7 +191,7 @@ assertContains(
 );
 
 assertNotContains(
-  /minHeight: 62|gridTemplateColumns: "44px minmax\(0, 1fr\)"|width: isCompact \? 104 : 190|height: isCompact \? 104 : 190/g,
+  /minHeight: 62|gridTemplateColumns: "44px minmax\(0, 1fr\)"|width: isCompact \? 104 : 190|height: isCompact \? 104 : 190|right: isCompact \? -8 : -7|bottom: isCompact \? -8 : -7/g,
   "Trust Passport identity snapshot must not regress to the old tall screenshot-style geometry."
 );
 
