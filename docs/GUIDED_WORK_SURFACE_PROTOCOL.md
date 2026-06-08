@@ -259,6 +259,12 @@ npm --prefix frontend run audit:trust-passport-front-package
 npm --prefix frontend run audit:trust-passport-button-inventory
 ```
 
+For Trust Passport lane map work, also run:
+
+```bash
+npm --prefix frontend run audit:trust-passport-lane-map
+```
+
 For Finance front package work, also run:
 
 ```bash

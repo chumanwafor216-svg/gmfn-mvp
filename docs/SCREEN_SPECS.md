@@ -405,6 +405,23 @@ Rules:
 - Marketplace-local trust may be summarized when the user arrived from one
   marketplace, but the full carried trust story belongs here.
 
+Current pre-redesign Trust Passport section mapping:
+- Current Trust Standing: Identity Overview, Current trust verdict, and What
+  this reading says.
+- Evidence Story: Why this reading looks like this, Why did my trust change?,
+  and Evidence & institutional context.
+- Community Confirmation: public community record and confirmation readiness.
+- Finance Discipline: finance-discipline question, trust limit, guarantee
+  capacity, locked guarantees, overexposure ratio, and risk context.
+- Documents / TrustSlip: TrustSlip status, open TrustSlip, verify, copy,
+  export, and document readiness controls.
+- Repair or Next Step: next-step guidance, Action Inbox route, and pressure-note
+  review.
+
+This mapping is a source-cage before visual redesign. It does not permit Trust
+Passport to remain a long stacked document once the lane replacement work
+begins.
+
 ## OwnerShopControlPage
 
 Purpose:

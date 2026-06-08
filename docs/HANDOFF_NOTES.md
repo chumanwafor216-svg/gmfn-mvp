@@ -1,3 +1,49 @@
+### Trust Passport lane map cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the Trust Passport front package was caged, product owner asked to
+    continue;
+  - next risk selected: mapping the current long numbered Trust Passport
+    sections to the approved Trust Passport lanes before any visual one-lane
+    replacement work.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox,
+    Finance, global shell, TrustScorePage runtime, or route-target behavior was
+    changed;
+  - Trust Passport still lives at `/app/trust` through `TrustScorePage.tsx`;
+  - `/app/trust-passport` still redirects to `/app/trust`;
+  - the current long section stack is now explicitly treated as a pre-redesign
+    source map, not the final desired behavior.
+- Fix:
+  - added `frontend/tools/audit-trust-passport-lane-map.mjs`;
+  - added `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Trust Passport lane map
+    work requires the lane-map audit;
+  - updated `docs/SCREEN_SPECS.md` with the current pre-redesign section
+    mapping:
+    Current Trust Standing, Evidence Story, Community Confirmation, Finance
+    Discipline, Documents / TrustSlip, and Repair or Next Step.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm exec -- eslint tools/audit-trust-passport-lane-map.mjs tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-actions.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Pending before publish:
+  - final commit, push, and GitHub deploy verification.
+- Unabated truth:
+  - this is still a source-cage checkpoint, not the visual lane replacement;
+  - the next Trust Passport implementation pass can now choose one approved
+    lane and collapse/hide the unrelated section stack without losing page
+    responsibilities.
+
 ### Trust Passport front package cage checkpoint (2026-06-08)
 
 - Trigger:
