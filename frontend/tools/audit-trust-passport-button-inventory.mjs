@@ -59,8 +59,8 @@ while ((match = actionPattern.exec(source))) {
   });
 }
 
-const expectedSourceActions = 11;
-const expectedRenderedActions = 17;
+const expectedSourceActions = 12;
+const expectedRenderedActions = 21;
 
 if (actions.length !== expectedSourceActions) {
   findings.push({
@@ -104,6 +104,7 @@ const expectedOrder = [
   "trust-score.lane.${lane.key}",
   "trust-score.complete-identification",
   "trust-score.open-public-community-record",
+  "debugId={item.debugId}",
   "trust-score.repair-next-step",
   "debugId={item.debugId}",
   "trust-score.refresh",
@@ -167,6 +168,16 @@ assertContains(
 assertContains(
   /debugId="trust-score\.complete-identification"[\s\S]*?TrustPaperIcon name="id"[\s\S]*?Complete ID checks[\s\S]*?debugId="trust-score\.open-public-community-record"[\s\S]*?OpenRecordGlyph/,
   "Trust Passport identity snapshot must include a fixed completion action before the public community record action."
+);
+
+assertContains(
+  /const \[showIdentityCompletionPaths, setShowIdentityCompletionPaths\][\s\S]*?identityCompletionRows[\s\S]*?trust-score\.completion\.phone[\s\S]*?trust-score\.completion\.community[\s\S]*?trust-score\.completion\.bank[\s\S]*?trust-score\.completion\.passport[\s\S]*?setShowIdentityCompletionPaths\(\(open\) => !open\)[\s\S]*?Only real completion routes open[\s\S]*?debugId=\{item\.debugId\}/,
+  "Trust Passport Complete ID checks must open a compact completion-path chooser instead of routing directly to the explanatory Identity / CCI page."
+);
+
+assertContains(
+  /payoutDetails: routeTarget\([\s\S]*?"payoutDetails"[\s\S]*?communityConfirmations: routeTarget\([\s\S]*?"communityConfirmationInbox"[\s\S]*?communityVerifyPath \|\| routes\.communityConfirmations[\s\S]*?target: routes\.payoutDetails/,
+  "Trust Passport identity completion paths must include real bank/wallet and community completion routes."
 );
 
 assertContains(

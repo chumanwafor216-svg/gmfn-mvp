@@ -425,6 +425,10 @@ Rules:
 - Identity Overview must keep the member photo unobstructed, dock any trust
   seal away from the face/proof image, and include a direct `Complete ID
   checks` path when the snapshot is showing unfinished identity requirements.
+- `Complete ID checks` must open real completion paths or a compact chooser
+  that says which missing proof can be completed now. It must not route to a
+  general identity-explanation page while implying phone, community, bank, or
+  official-ID checks can be finished there.
 - Identity Overview should behave as a portable official package: screenshot,
   print, or PDF framing must not require visible pieces of the previous or next
   Trust Passport section to make sense.

@@ -172,6 +172,9 @@ snapshots:
   complete
 - if a status says something is incomplete, include a clear route or action to
   continue that completion work from the snapshot package
+- a completion route must lead to the task that can actually complete or start
+  the missing proof; do not route a `complete` button to an explanation-only
+  page unless the button clearly says it is opening guidance
 - if the record cannot fit as one package, split it into explicit `Page 1`,
   `Page 2` packages instead of letting one card bleed into the next section
 - deeper explanation belongs below the snapshot or behind a lane/action

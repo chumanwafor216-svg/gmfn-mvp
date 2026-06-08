@@ -1090,6 +1090,16 @@ export default function TrustScorePage() {
       openTrust: routeTarget("openTrust", selectedClanId, "trust-score.route.open-trust"),
       cciReading: routeTarget("cciReading", selectedClanId, "trust-score.route.cci-reading"),
       trustSlip: routeTarget("trustSlip", selectedClanId, "trust-score.route.trust-slip"),
+      payoutDetails: routeTarget(
+        "payoutDetails",
+        selectedClanId,
+        "trust-score.route.payout-details"
+      ),
+      communityConfirmations: routeTarget(
+        "communityConfirmationInbox",
+        selectedClanId,
+        "trust-score.route.community-confirmations"
+      ),
     }),
     [selectedClanId]
   );
@@ -1106,6 +1116,8 @@ export default function TrustScorePage() {
   } | null>(null);
   const [activeTrustPassportLane, setActiveTrustPassportLane] =
     useState<TrustPassportLaneKey>("standing");
+  const [showIdentityCompletionPaths, setShowIdentityCompletionPaths] =
+    useState(false);
 
   const [me, setMe] = useState<any>(null);
   const [currentClan, setCurrentClan] = useState<any>(null);
@@ -1751,6 +1763,70 @@ export default function TrustScorePage() {
     ["shield", "Role", passportVm.identity.holderRole],
   ];
 
+  const identityCompletionRows: Array<{
+    icon: TrustPaperIconName;
+    label: string;
+    state: string;
+    detail: string;
+    actionLabel: string;
+    target?: string;
+    debugId: string;
+    ok: boolean;
+  }> = [
+    {
+      icon: "phone",
+      label: "Phone check",
+      state: passportVm.identity.phoneVerified ? "Verified" : "Route pending",
+      detail: passportVm.identity.phoneVerified
+        ? "Verified phone evidence is already attached to this Trust Passport."
+        : "The repo has entry-time phone proof, but no authenticated phone-check page is wired yet.",
+      actionLabel: passportVm.identity.phoneVerified ? "View proof" : "Route pending",
+      target: passportVm.identity.phoneVerified ? routes.trustSlip : undefined,
+      debugId: "trust-score.completion.phone",
+      ok: Boolean(passportVm.identity.phoneVerified),
+    },
+    {
+      icon: "community",
+      label: "Community check",
+      state: passportVm.identity.communityIdentityConfirmed
+        ? "Confirmed"
+        : communityVerifyPath
+          ? "Open check"
+          : "Open inbox",
+      detail: communityVerifyPath
+        ? "Open the public community record tied to this Trust Passport."
+        : "Use the confirmation inbox when there is no public community key on this record.",
+      actionLabel: communityVerifyPath ? "Open record" : "Open inbox",
+      target: communityVerifyPath || routes.communityConfirmations,
+      debugId: "trust-score.completion.community",
+      ok: Boolean(passportVm.identity.communityIdentityConfirmed),
+    },
+    {
+      icon: "wallet",
+      label: "Bank / wallet",
+      state: passportVm.identity.bankVerified ? "Connected" : "Add details",
+      detail: passportVm.identity.bankVerified
+        ? "Bank or wallet evidence is already recorded."
+        : "Open payout details to add the bank or wallet record GSN can attach to this identity.",
+      actionLabel: passportVm.identity.bankVerified ? "Open details" : "Add bank/wallet",
+      target: routes.payoutDetails,
+      debugId: "trust-score.completion.bank",
+      ok: passportVm.identity.bankVerified === true,
+    },
+    {
+      icon: "document",
+      label: "Passport / ID",
+      state: passportVm.identity.passportVerified ? "Recorded" : "Route pending",
+      detail: passportVm.identity.passportVerified
+        ? "Official ID evidence is already visible in the trust proof layer."
+        : "Official ID evidence exists in entry flow, but a signed-in capture page is not wired yet.",
+      actionLabel: passportVm.identity.passportVerified ? "View proof" : "Route pending",
+      target: passportVm.identity.passportVerified ? routes.trustSlip : undefined,
+      debugId: "trust-score.completion.passport",
+      ok: Boolean(passportVm.identity.passportVerified),
+    },
+  ];
+
   const communityConfirmationCards: Array<[
     string,
     string,
@@ -2313,9 +2389,10 @@ export default function TrustScorePage() {
             }}
           >
             <PrimaryButton
-              onClick={() => openTrustRoute(routes.identity)}
+              onClick={() => setShowIdentityCompletionPaths((open) => !open)}
               stableHeight={isCompact ? 50 : 58}
               fullWidth
+              aria-expanded={showIdentityCompletionPaths}
               style={{
                 borderRadius: isCompact ? 12 : 14,
                 fontSize: isCompact ? 13 : 16,
@@ -2356,6 +2433,133 @@ export default function TrustScorePage() {
               Open public community record
             </SecondaryButton>
           </div>
+
+          {showIdentityCompletionPaths ? (
+            <div
+              style={{
+                marginTop: isCompact ? 10 : 12,
+                padding: isCompact ? 10 : 12,
+                borderRadius: isCompact ? 14 : 16,
+                border: "1px solid rgba(11,99,209,0.18)",
+                background:
+                  "linear-gradient(180deg, rgba(248,251,255,0.98) 0%, rgba(238,246,255,0.94) 100%)",
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.84)",
+                display: "grid",
+                gap: isCompact ? 8 : 10,
+                position: "relative",
+                zIndex: 1,
+              }}
+            >
+              <div
+                style={{
+                  color: "#334155",
+                  fontSize: isCompact ? 11.5 : 13,
+                  lineHeight: 1.35,
+                  fontWeight: 850,
+                }}
+              >
+                Choose the missing proof. Only real completion routes open; pending routes are
+                marked plainly so this button does not send people to another explanation page.
+              </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isCompact ? "1fr" : "repeat(2, minmax(0, 1fr))",
+                  gap: isCompact ? 7 : 9,
+                }}
+              >
+                {identityCompletionRows.map((item) => (
+                  <SecondaryButton
+                    key={item.debugId}
+                    onClick={() => {
+                      if (item.target) {
+                        openTrustRoute(item.target);
+                        return;
+                      }
+
+                      setNotice({
+                        tone: "error",
+                        text: `${item.label} needs a dedicated signed-in completion page before GSN can finish it from Trust Passport.`,
+                      });
+                    }}
+                    stableHeight={isCompact ? 56 : 62}
+                    fullWidth
+                    debugId={item.debugId}
+                    style={{
+                      justifyContent: "flex-start",
+                      gap: isCompact ? 8 : 10,
+                      borderRadius: isCompact ? 12 : 14,
+                      border: item.ok
+                        ? "1px solid rgba(46,155,98,0.20)"
+                        : "1px solid rgba(214,170,69,0.22)",
+                      background: item.ok
+                        ? "linear-gradient(180deg, #F7FCF8 0%, #EEF8F0 100%)"
+                        : "linear-gradient(180deg, #FFFFFF 0%, #FFF9EA 100%)",
+                      color: "#07172C",
+                      boxShadow: "none",
+                      paddingInline: isCompact ? 8 : 10,
+                    }}
+                  >
+                    <span style={overviewBadge(item.ok)}>
+                      <TrustPaperIcon name={item.icon} size={14} strokeWidth={2.4} />
+                    </span>
+                    <span
+                      style={{
+                        minWidth: 0,
+                        display: "grid",
+                        gap: 2,
+                        textAlign: "left",
+                        lineHeight: 1.08,
+                      }}
+                    >
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          minWidth: 0,
+                        }}
+                      >
+                        <span
+                          style={{
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            fontWeight: 1000,
+                          }}
+                        >
+                          {item.label}
+                        </span>
+                        <span
+                          style={{
+                            flex: "0 0 auto",
+                            color: item.ok ? "#16733C" : "#92400E",
+                            fontSize: 10,
+                            fontWeight: 1000,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {item.state}
+                        </span>
+                      </span>
+                      <span
+                        style={{
+                          color: "#617085",
+                          fontSize: isCompact ? 10.5 : 11.5,
+                          fontWeight: 850,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.actionLabel} - {item.detail}
+                      </span>
+                    </span>
+                  </SecondaryButton>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section

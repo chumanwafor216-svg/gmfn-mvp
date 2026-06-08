@@ -1,3 +1,60 @@
+### Trust Passport identity completion routing checkpoint (2026-06-08)
+
+- Trigger:
+  - product owner tested the Trust Passport `Complete ID checks` action and
+    found it opened identity/CCI explanation instead of routes that can actually
+    complete phone, community, bank/wallet, or passport/official-ID obligations.
+- Scope:
+  - route remains `/app/trust`;
+  - changed only Trust Passport page-local UI, the Trust Passport button audit,
+    and UX protocol docs;
+  - no backend, auth, API, data model, global shell, Dashboard, Community Home,
+    Marketplace, Finance, shared tap guard, or new screen route changed.
+- Fix:
+  - `Complete ID checks` now toggles a compact identity-completion chooser
+    inside the Identity Overview snapshot instead of routing directly to
+    `/app/identity`;
+  - the chooser exposes four checks: phone, community, bank/wallet, and
+    passport/official ID;
+  - community routes to the public community record when a community key exists,
+    otherwise to the community confirmation inbox;
+  - bank/wallet routes to the existing `Payout Details` form;
+  - phone and passport/official ID now show an explicit route-pending response
+    when incomplete, because the repo currently has entry-time capture logic
+    but no signed-in completion page for those two checks;
+  - verified phone or passport states can open the TrustSlip proof layer.
+- Protocol updated:
+  - `docs/DESIGN_SYSTEM.md`, `docs/SCREEN_SPECS.md`, and
+    `docs/UX_ACCEPTANCE_CHECKLIST.md` now say a completion action must open a
+    real task route/form/chooser or an explicit pending-route response, not an
+    explanation-only page that implies completion.
+- Audit cage updated:
+  - `frontend/tools/audit-trust-passport-button-inventory.mjs` now expects 12
+    Trust Passport stable source actions / 21 rendered action roots and
+    protects the completion chooser plus real bank/wallet and community route
+    targets.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-passport-lane-map`;
+  - `npm --prefix frontend run audit:trust-passport-community-confirmation-lane`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:tap-stability`;
+  - `npm exec --prefix frontend -- eslint src/pages/TrustScorePage.tsx tools/audit-trust-passport-button-inventory.mjs`
+    from `frontend`;
+  - `npm exec --prefix frontend -- tsc -b --pretty false` from `frontend`;
+  - `git diff --check` with line-ending warnings only;
+  - sandboxed `npm --prefix frontend run build` still hit the known Windows
+    `esbuild` spawn `EPERM`;
+  - elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this does not create the missing authenticated phone-verification or
+    passport/official-ID capture page;
+  - the next correct product step is a named authenticated Identity Completion
+    screen or lane that safely reuses/extends the entry verification model
+    without sending signed-in users back through the public entry flow.
+
 ### GSN Mobile UI Protocol v1 checkpoint (2026-06-08)
 
 - Trigger:

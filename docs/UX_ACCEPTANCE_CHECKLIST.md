@@ -65,6 +65,9 @@ the intended information unit.
   ID, or proof item being shown must remain visible.
 - The snapshot must include the next completion or verification action when it
   shows an incomplete status.
+- Completion actions must open a real task route, form, chooser, or explicit
+  pending-route response. They must not send a user to explanation-only copy
+  while implying the check can be completed there.
 - A screenshot/PDF/export should start and end on the snapshot package, not
   depend on neighboring page sections for context.
 - Do not use tall decorative cards, large repeated dividers, or explanatory
