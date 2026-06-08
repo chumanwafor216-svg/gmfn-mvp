@@ -2013,7 +2013,7 @@ export default function FinancePage() {
               id: "money-in",
               icon: "card" as FinanceGlyphName,
               label: "Money In",
-              detail: "Create a payment instruction.",
+              detail: "Open guided pay-in.",
               action: () => openFinanceRoute(routes.moneyIn),
               color: "#135FD1",
             },
@@ -2120,7 +2120,7 @@ export default function FinancePage() {
               {
                 icon: "out" as FinanceGlyphName,
                 label: "Money Out",
-                detail: "Send or release money",
+                detail: "Open guided payout",
                 action: () => openFinanceRoute(routes.moneyOut),
               },
               {

@@ -65,7 +65,7 @@ assertContains(
 );
 
 [
-  ["money-in", "card", "Money In", "Create a payment instruction."],
+  ["money-in", "card", "Money In", "Open guided pay-in."],
   ["reports", "chart", "Money Summary", "See your full money position."],
   ["bank-accounts", "bank", "Banking Rails", "See payment and bank details."],
   ["export-data", "ledger", "Records / Events", "See your money history."],

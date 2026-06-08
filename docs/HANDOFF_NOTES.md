@@ -1,3 +1,57 @@
+### Finance Money In / Money Out launcher cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after the Money Summary lane was caged, product owner asked to continue;
+  - next lane pair selected: Money In / Money Out, because these are major
+    Finance lanes that route into focused guided pages and should not look like
+    inline money movement buttons on the Finance overview.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox, or
+    global shell behavior was changed;
+  - no Finance route targets, stable action counts, debug-id namespace, or
+    button geometry were changed;
+  - Money In still resolves through the shared `moneyIn` CTA intent to the
+    existing pay-in route;
+  - Money Out still resolves through the shared `moneyOut` CTA intent to the
+    existing guided withdrawal route;
+  - the Money In and Money Out route pages themselves were not edited.
+- Fix:
+  - changed Finance `Money In` detail copy from `Create a payment instruction.`
+    to `Open guided pay-in.`;
+  - changed Finance `Money Out` detail copy from `Send or release money` to
+    `Open guided payout`;
+  - added `frontend/tools/audit-finance-money-movement-lanes.mjs`;
+  - added `npm --prefix frontend run audit:finance-money-movement-lanes`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Finance Money In / Money
+    Out lane work has its own required audit;
+  - updated the Finance front-package audit to expect the new Money In copy.
+- Verification passed:
+  - `npm --prefix frontend run audit:finance-money-movement-lanes`;
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm --prefix frontend run audit:finance-lane-map`;
+  - `npm --prefix frontend run audit:finance-button-inventory`;
+  - `npm --prefix frontend run audit:finance-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-front-package.mjs tools/audit-finance-lane-map.mjs tools/audit-finance-money-movement-lanes.mjs tools/audit-finance-money-summary-lane.mjs tools/audit-finance-actions.mjs tools/audit-finance-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild;
+  - line-auditor subagent Sagan found no concrete issues in the scoped diff and
+    confirmed both launchers still route through `openFinanceRoute`.
+- Publish status:
+  - final commit, push, and GitHub deploy verification are reported in the
+    session close-out rather than self-referenced inside this same commit.
+- Unabated truth:
+  - this cages Finance launcher clarity for Money In / Money Out; it does not
+    remodel the inner Money In or Money Out pages;
+  - the next Finance pass should likely be Banking Rails or Signals /
+    Readiness, unless phone testing shows Money In / Money Out still feels
+    unclear.
+
 ### Finance Money Summary lane cage checkpoint (2026-06-08)
 
 - Trigger:

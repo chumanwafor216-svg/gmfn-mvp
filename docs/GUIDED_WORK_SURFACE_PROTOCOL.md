@@ -227,6 +227,12 @@ For Finance Money Summary lane work, also run:
 npm --prefix frontend run audit:finance-money-summary-lane
 ```
 
+For Finance Money In / Money Out lane work, also run:
+
+```bash
+npm --prefix frontend run audit:finance-money-movement-lanes
+```
+
 ## Current Truth
 
 This protocol is a product safety rule. It does not claim current Marketplace,
