@@ -252,6 +252,13 @@ npm --prefix frontend run audit:marketplace-front-package
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 
+For Trust Passport front package work, also run:
+
+```bash
+npm --prefix frontend run audit:trust-passport-front-package
+npm --prefix frontend run audit:trust-passport-button-inventory
+```
+
 For Finance front package work, also run:
 
 ```bash

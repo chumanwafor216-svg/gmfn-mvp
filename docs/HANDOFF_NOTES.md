@@ -1,3 +1,45 @@
+### Trust Passport front package cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after Finance front and secondary route tools were caged and the
+    Marketplace task-focus/ROSCA correction was recorded, product owner asked
+    to continue;
+  - next work surface selected: Trust Passport, because it was previously named
+    as another page that must follow the same guided one-lane protocol.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox,
+    Finance, global shell, or route-target behavior was changed;
+  - `/app/trust` still renders `TrustScorePage.tsx`;
+  - `/app/trust-passport` still redirects to `/app/trust`;
+  - Trust Passport route intents still resolve through shared CTA targets for
+    Dashboard, Notifications, CCI, Open Trust, CCI Reading, and TrustSlip;
+  - the existing Trust Passport button inventory stayed unchanged.
+- Fix:
+  - added `frontend/tools/audit-trust-passport-front-package.mjs`;
+  - added `npm --prefix frontend run audit:trust-passport-front-package`;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Trust Passport front
+    package work requires both the front-package and button-inventory audits.
+- Verification passed:
+  - `npm --prefix frontend run audit:trust-passport-front-package`;
+  - `npm --prefix frontend run audit:trust-passport-button-inventory`;
+  - `npm --prefix frontend run audit:trust-actions`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm exec -- eslint tools/audit-trust-passport-front-package.mjs tools/audit-trust-passport-button-inventory.mjs tools/audit-trust-actions.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Pending before publish:
+  - final commit, push, and GitHub deploy verification.
+- Unabated truth:
+  - this is a Trust Passport source-cage checkpoint, not a Trust Passport visual
+    redesign;
+  - the current page still exposes many numbered sections, so the next
+    meaningful Trust Passport pass should choose one lane and make active-task
+    replacement real rather than allowing a long stacked page.
+
 ### Marketplace task-focus and ROSCA correction note (2026-06-08)
 
 - Trigger:

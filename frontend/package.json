@@ -29,6 +29,7 @@
     "audit:loans-actions": "node tools/audit-loans-actions.mjs",
     "audit:trust-actions": "node tools/audit-trust-actions.mjs",
     "audit:trust-passport-button-inventory": "node tools/audit-trust-passport-button-inventory.mjs",
+    "audit:trust-passport-front-package": "node tools/audit-trust-passport-front-package.mjs",
     "audit:community-shop-actions": "node tools/audit-community-shop-actions.mjs",
     "audit:shop-control-button-inventory": "node tools/audit-shop-control-button-inventory.mjs",
     "audit:vault-control-button-inventory": "node tools/audit-vault-control-button-inventory.mjs",
