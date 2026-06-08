@@ -349,6 +349,12 @@ Rules:
 - Money Pool, ROSCA, Support Request, and Trusted Trade must be stabilized
   lane-by-lane, with outside launcher, target section/hash/open state, inner
   buttons, fields, copy, and pictograms audited before moving to the next lane.
+- ROSCA cycles must be named and member-scoped. Do not assume every community
+  member belongs to every ROSCA cycle. A marketplace may contain multiple ROSCA
+  cycles with different contribution amounts, currencies, and frequencies.
+- ROSCA cycle membership must be selected from the current community membership
+  list. Cycle alerts and reminders should target selected cycle members, not the
+  whole community by default.
 - Cumulative Finance belongs to Finance. Full Trust Passport evidence belongs
   to Trust Passport. Shop editing belongs to Shop Control. Marketplace may link
   or summarize those areas but should not expose their full internal workload.

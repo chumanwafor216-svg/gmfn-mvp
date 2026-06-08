@@ -132,6 +132,8 @@ When a user starts an action, the screen must reduce to that action.
 - Make the current primary action obvious.
 - Open the action controls only after the user taps the action.
 - Hide or collapse unrelated sections while the action is active.
+- When the user switches tasks, the new task replaces the old active task
+  surface. Do not keep old task surfaces stacked above or below the new one.
 - After the user chooses an option or receives the action result, close the
   temporary action surface and reveal the next relevant section.
 - Do not expose every possible block at once just because it belongs to the
@@ -148,3 +150,5 @@ Every meaningful user action must answer.
 - The response should appear in the same visible action area whenever possible.
 - Do not write an error or success message into a hidden panel.
 - Do not let a button quietly do nothing.
+- Do not call an action complete until the user can see the result, the blocker,
+  or the next safe step.

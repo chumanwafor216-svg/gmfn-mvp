@@ -235,6 +235,32 @@ This block should:
 - show local draft/readiness state when relevant
 - remain connected to visible members and guarantor logic in that marketplace
 
+## ROSCA lane rule
+
+ROSCA is a marketplace-local operating lane, but ROSCA membership is not the
+same thing as community membership.
+
+A single marketplace/community may run more than one ROSCA cycle at the same
+time. For example, one cycle may collect a smaller weekly contribution while
+another collects a larger monthly contribution. The same person may belong to
+one cycle, more than one cycle, or no ROSCA cycle inside the same community.
+
+Each ROSCA cycle should carry:
+
+- cycle name;
+- contribution amount;
+- currency;
+- duration/frequency such as daily, weekly, monthly, yearly, or custom days;
+- selected members drawn from the current community membership;
+- a saved/copyable cycle record.
+
+The cycle membership selector should open from a clear `Members` or
+`Membership` control. It should let the operator choose only the people involved
+in that cycle from the community membership list.
+
+ROSCA reminders, alerts, payment notices, and cycle actions should address the
+selected cycle members, not every member of the community by default.
+
 ## What does NOT own the page
 
 ### Spotlight

@@ -1,3 +1,39 @@
+### Marketplace task-focus and ROSCA correction note (2026-06-08)
+
+- Trigger:
+  - product owner clarified that guided work surfaces must not keep old task
+    surfaces stacked above or below the newly opened task;
+  - product owner also clarified that ROSCA membership is cycle-specific, not
+    automatically the whole community.
+- Behavior rule recorded:
+  - when a user starts or switches to a task, the new task must replace the old
+    active task surface;
+  - old task surfaces should close, hide, or return to a compact chooser state
+    instead of creating a continuous long page of opened work;
+  - the active task surface must tell the user whether the action succeeded or
+    failed, why it matters, what to do next, and what not to do next when a step
+    is unsafe or incomplete.
+- ROSCA rule recorded:
+  - a community/marketplace may have multiple ROSCA cycles at the same time;
+  - each ROSCA cycle needs a cycle name, contribution amount, currency,
+    duration/frequency, selected members, and a saved/copyable record;
+  - one member may belong to multiple ROSCA cycles in the same community;
+  - ROSCA alerts/reminders/actions should target selected cycle members, not
+    the whole community by default;
+  - cycle membership should be selected from the current community membership
+    list through a clear Members/Membership control.
+- Docs updated:
+  - `docs/GUIDED_WORK_SURFACE_PROTOCOL.md`;
+  - `docs/DESIGN_SYSTEM.md`;
+  - `docs/UX_ACCEPTANCE_CHECKLIST.md`;
+  - `docs/MARKETPLACE_PAGE_BLUEPRINT_2026-04-20.md`;
+  - `docs/SCREEN_SPECS.md`.
+- Unabated truth:
+  - this is a product-rule/documentation checkpoint only; no Marketplace or
+    ROSCA runtime behavior has been changed yet;
+  - when ROSCA implementation begins, inspect frontend and backend data models
+    before changing schema, permissions, alerts, or payment/ledger behavior.
+
 ### Finance secondary route tools cage checkpoint (2026-06-08)
 
 - Trigger:

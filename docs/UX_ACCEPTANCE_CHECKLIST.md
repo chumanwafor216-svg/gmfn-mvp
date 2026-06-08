@@ -6,6 +6,8 @@ A screen is acceptable only if:
 - It does not expose too many sections at once.
 - It follows the Focused Action Protocol: when one action is active, unrelated
   sections step back until the choice or result is complete.
+- Switching tasks replaces the old active task surface; old task surfaces do
+  not remain stacked into a long page above or below the new task.
 - It follows the Action Response Protocol: every meaningful action succeeds
   visibly, routes visibly, or explains why it cannot continue.
 - It uses the approved color system.
@@ -31,7 +33,8 @@ large operational pages must pass the guided-work-surface test:
 
 - The first screen shows context and no more than three to five major lanes.
 - One lane becomes the main visible work area after the user opens it.
-- Unrelated lanes step back while the active lane is being handled.
+- Unrelated lanes leave the active work area while the active lane is being
+  handled.
 - Deep records, manuals, route tools, and secondary choices are not all exposed
   at once.
 - Every lane button routes, reveals, or explains in place.

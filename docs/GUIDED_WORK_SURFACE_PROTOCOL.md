@@ -54,11 +54,34 @@ after a clear lane choice.
 When a user opens one lane:
 
 - the opened lane becomes the main visible work area;
-- unrelated lanes step back;
+- unrelated lanes step back by leaving the active work area, not by stacking
+  above or below the newly opened lane;
 - buttons inside that lane must route, reveal, or explain in place;
 - the page must not keep competing deep sections visually fighting the active
   lane;
 - the user must always have a clear way to return to the lane chooser.
+
+## Active Task Replacement Rule
+
+When a user starts or switches to a task, the new task should replace the old
+active task surface.
+
+The page must not grow into a continuous long list of previously opened tasks.
+Old task surfaces should close, hide, or return to a compact lane chooser state
+until the user intentionally reopens them.
+
+The active task area must carry the conversation with the user:
+
+- what is happening now;
+- whether the last action succeeded or failed;
+- why it matters;
+- what to do next;
+- what not to do next when a step would be unsafe, incomplete, or premature.
+
+A task is not complete just because a button was tapped. It is complete only
+when the system has either routed the user to the promised next place, saved the
+work, shown a clear success state, or explained the blocker and the first safe
+next step.
 
 ## Responsibility Rule
 
@@ -85,6 +108,21 @@ Its first repair sequence should protect these major lanes first:
 2. ROSCA
 3. Support Request
 4. Trusted Trade
+
+ROSCA must not assume every community member belongs to every ROSCA cycle. A
+single community may have multiple ROSCA cycles at the same time. Each cycle
+must be identifiable and member-scoped:
+
+- cycle name;
+- contribution amount;
+- currency;
+- duration/frequency such as daily, weekly, monthly, yearly, or custom days;
+- selected cycle members from the current community membership;
+- saved/copyable cycle record.
+
+A member may belong to more than one ROSCA cycle inside the same community. Any
+cycle alert, reminder, or action should target the selected members of that
+cycle, not the whole community by default.
 
 Trust can remain visible as a compact status signal, but it should not compete
 with the four main work lanes unless the user explicitly opens the trust detail.
