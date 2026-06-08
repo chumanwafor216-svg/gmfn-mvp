@@ -1,3 +1,47 @@
+### Finance front package first cage checkpoint (2026-06-08)
+
+- Trigger:
+  - after Marketplace front package readiness was caged, product owner said to
+    continue;
+  - next safe target selected: Finance, because project docs name it as another
+    large work surface that must guide one money lane at a time.
+- Source facts changed/preserved:
+  - no backend, auth, Marketplace, Dashboard, Community Home, Action Inbox, or
+    global shell behavior was changed;
+  - no Finance route targets or action counts were changed;
+  - existing Finance deep sections still default to collapsed.
+- Fix:
+  - added plain guidance under `Choose what you need now`:
+    `Open one finance lane at a time...`;
+  - added `frontend/tools/audit-finance-front-package.mjs`;
+  - added `npm --prefix frontend run audit:finance-front-package`;
+  - the audit locks the Finance hero context, four main front choices, grouped
+    secondary tools, default collapsed deep sections, deterministic glyphs,
+    fixed phone-safe button geometry, and no emoji-style marks;
+  - updated `docs/GUIDED_WORK_SURFACE_PROTOCOL.md` so Finance front package work
+    has a required audit.
+- Verification passed:
+  - `npm --prefix frontend run audit:finance-front-package`;
+  - `npm --prefix frontend run audit:finance-actions`;
+  - `npm --prefix frontend run audit:finance-button-inventory`;
+  - `npm --prefix frontend run audit:protected-button-freeze`;
+  - `npm --prefix frontend run audit:marketplace-front-package`;
+  - `npm run audit:button-stability` from `frontend`;
+  - `npm exec -- eslint src/pages/FinancePage.tsx tools/audit-finance-front-package.mjs tools/audit-finance-actions.mjs tools/audit-finance-button-inventory.mjs`
+    from `frontend`;
+  - `git diff --check`;
+  - `npm run build` from `frontend` passed after rerunning elevated because the
+    normal sandbox run hit the known Windows/Vite `spawn EPERM` while loading
+    esbuild.
+- Publish status:
+  - final commit, push, and GitHub deploy verification are reported in the
+    session close-out rather than self-referenced inside this same commit.
+- Unabated truth:
+  - this is the first Finance cage, not a Finance redesign;
+  - Finance still needs lane-by-lane repair after this baseline, especially
+    Money Summary, Money In/Out routing clarity, Records / Events, and Signals /
+    Readiness.
+
 ### Marketplace front package readiness cage checkpoint (2026-06-08)
 
 - Trigger:

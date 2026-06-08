@@ -1986,6 +1986,10 @@ export default function FinancePage() {
 
       <section style={pageCard("#FFFFFF")}>
         <div style={sectionLabel()}>Choose what you need now</div>
+        <div style={{ marginTop: 8, ...helperText() }}>
+          Open one finance lane at a time. Marketplace money stays local there;
+          this page brings your money story together across communities.
+        </div>
         <div
           style={{
             marginTop: 16,

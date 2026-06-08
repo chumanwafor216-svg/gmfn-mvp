@@ -41,6 +41,7 @@
     "audit:protected-button-freeze": "node tools/audit-protected-button-freeze.mjs",
     "audit:finance-actions": "node tools/audit-finance-actions.mjs",
     "audit:finance-button-inventory": "node tools/audit-finance-button-inventory.mjs",
+    "audit:finance-front-package": "node tools/audit-finance-front-package.mjs",
     "audit:admin-ops-actions": "node tools/audit-admin-ops-actions.mjs",
     "audit:member-entry-actions": "node tools/audit-member-entry-actions.mjs",
     "audit:action-response-protocol": "node tools/audit-action-response-protocol.mjs",

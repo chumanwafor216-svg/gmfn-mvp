@@ -214,6 +214,12 @@ npm --prefix frontend run audit:marketplace-front-package
 For Finance and Trust Passport work, add or tighten equivalent lane-level audits
 before doing broad visual or interaction changes.
 
+For Finance front package work, also run:
+
+```bash
+npm --prefix frontend run audit:finance-front-package
+```
+
 ## Current Truth
 
 This protocol is a product safety rule. It does not claim current Marketplace,
