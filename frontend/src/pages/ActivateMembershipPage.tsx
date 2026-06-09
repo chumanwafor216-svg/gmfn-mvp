@@ -14,6 +14,89 @@ function routeTarget(intent: CtaIntent, communityId: number, debugId: string): s
   return resolveCtaTarget(intent, { communityId, debugId }).to as string;
 }
 
+type LegacyActivationIconName = "check" | "clear" | "id" | "lock" | "shield";
+
+function LegacyActivationIcon({
+  name,
+  size = 18,
+}: {
+  name: LegacyActivationIconName;
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "check":
+      return (
+        <svg {...common}>
+          <path d="m5 12.5 4.2 4.1L19 7" />
+        </svg>
+      );
+    case "clear":
+      return (
+        <svg {...common}>
+          <path d="M6 6l12 12" />
+          <path d="M18 6 6 18" />
+        </svg>
+      );
+    case "id":
+      return (
+        <svg {...common}>
+          <rect x="4" y="6" width="16" height="12" rx="2.4" />
+          <circle cx="9" cy="11" r="1.7" />
+          <path d="M7 15c.5-1.4 1.2-2.1 2-2.1s1.5.7 2 2.1" />
+          <path d="M13.5 10h3.5" />
+          <path d="M13.5 14h3" />
+        </svg>
+      );
+    case "lock":
+      return (
+        <svg {...common}>
+          <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+          <path d="M6.5 11h11v9h-11z" />
+          <path d="M12 15v2" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 3.5 19 6v5.7c0 4.1-2.6 7-7 8.8-4.4-1.8-7-4.7-7-8.8V6z" />
+          <path d="m8.6 12.2 2.2 2.2 4.8-5" />
+        </svg>
+      );
+  }
+}
+
+function iconText(icon: LegacyActivationIconName, label: string) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 9,
+        minWidth: 0,
+        width: "100%",
+      }}
+    >
+      <LegacyActivationIcon name={icon} size={18} />
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+        {label}
+      </span>
+    </span>
+  );
+}
+
 function pageShell(): React.CSSProperties {
   return {
     minHeight: "100vh",
@@ -158,6 +241,16 @@ function helperText(): React.CSSProperties {
     color: "#5F768D",
     lineHeight: 1.75,
     fontSize: 14,
+  };
+}
+
+function fixedActionRow(): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: "1fr",
+    gap: 10,
+    alignItems: "stretch",
+    marginTop: 18,
   };
 }
 
@@ -350,12 +443,12 @@ export default function ActivateMembershipPage() {
                     <div style={{ marginBottom: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {initialGmfnId ? (
                         <div style={badgeStyle()}>
-                          GSN ID detected
+                          {iconText("id", "GSN ID detected")}
                         </div>
                       ) : null}
                       {requestId ? (
                         <div style={badgeStyle()}>
-                          Request ID: {requestId}
+                          {iconText("shield", `Request ID: ${requestId}`)}
                         </div>
                       ) : null}
                     </div>
@@ -399,26 +492,26 @@ export default function ActivateMembershipPage() {
                     </div>
                   </div>
 
-                  <CardActionRow style={{ marginTop: 18, justifyContent: "center" }}>
+                  <CardActionRow style={fixedActionRow()}>
                     <PrimaryButton
                       type="submit"
                       disabled={!canSubmit}
                       busy={busy}
                       busyLabel="Activating..."
-                      style={{ width: "min(100%, 60%)", padding: "14px 18px" }}
+                      stableHeight={56}
+                      fullWidth
                       debugId="activate-membership.activate"
                     >
-                      Activate membership
+                      {iconText("check", "Activate membership")}
                     </PrimaryButton>
-                  </CardActionRow>
-
-                  <CardActionRow style={{ marginTop: 14, justifyContent: "center" }}>
                     <SecondaryButton
                       type="button"
                       onClick={clearForm}
+                      stableHeight={52}
+                      fullWidth
                       debugId="activate-membership.clear-password"
                     >
-                      Clear password fields
+                      {iconText("clear", "Clear password fields")}
                     </SecondaryButton>
                   </CardActionRow>
                 </div>

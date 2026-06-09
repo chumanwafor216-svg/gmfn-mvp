@@ -472,8 +472,8 @@ assertContains(
 
 assertContains(
   "src/pages/ActivateMembershipPage.tsx",
-  /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="activate-membership\.activate"[\s\S]*?debugId="activate-membership\.clear-password"/,
-  "Legacy activation page must use shared stable button primitives and shared CTA resolution if it is reintroduced."
+  /import \{ CardActionRow, PrimaryButton, SecondaryButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\(intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?function LegacyActivationIcon[\s\S]*?function fixedActionRow[\s\S]*?gridTemplateColumns: "1fr"[\s\S]*?stableHeight=\{56\}[\s\S]*?fullWidth[\s\S]*?debugId="activate-membership\.activate"[\s\S]*?stableHeight=\{52\}[\s\S]*?fullWidth[\s\S]*?debugId="activate-membership\.clear-password"/,
+  "Legacy activation page must use shared stable button primitives, shared CTA resolution, SVG action marks, and fixed full-width activation actions if it is reintroduced."
 );
 
 assertNotContains(

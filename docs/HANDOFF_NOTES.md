@@ -1,3 +1,40 @@
+### Legacy activation action tightening pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue inner-page button tightening and polish,
+    especially around trust/entry/activation surfaces while the live backend
+    identity evidence deploy remains blocked.
+- Scope:
+  - frontend legacy activation route
+    `frontend/src/pages/ActivateMembershipPage.tsx`;
+  - frontend button-stability audit only;
+  - no activation API call, auth token handling, success route, membership
+    logic, payment, backend, identity evidence, or schema changed.
+- Changed:
+  - added route-local SVG marks through `LegacyActivationIcon`;
+  - added icon-led labels for detected GSN/request chips and activation actions;
+  - replaced the narrow percentage-width primary action with fixed-height,
+    full-width stable actions in one grid row:
+    `Activate membership` and `Clear password fields`;
+  - kept existing debug ids:
+    `activate-membership.activate` and
+    `activate-membership.clear-password`.
+- Audit cage updated:
+  - `audit-button-stability` now protects the legacy activation SVG marks and
+    fixed full-width action geometry.
+- Verification before push:
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm exec -- eslint src/pages/ActivateMembershipPage.tsx tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend`.
+- Unabated truth:
+  - this tightens a legacy/frontend activation surface only. It does not alter
+    the newer Member Activation page behavior and does not fix the live
+    Identity Overview backend evidence reflection issue.
+
 ### Member activation icon/button polish pass (2026-06-09)
 
 - Trigger:
