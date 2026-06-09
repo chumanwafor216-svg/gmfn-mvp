@@ -29,6 +29,7 @@ import { resolveSharedProfileImage } from "../lib/profileImage";
 import { buildTrustPassportSnapshot } from "../lib/trustDocumentSnapshots";
 import { TRUST_BAND_SHORT_LABELS } from "../lib/trustBandLanguage";
 import { buildTrustPassportViewModel } from "../lib/trustPassportViewModel";
+import { buildIdentityEvidenceCompletion } from "../lib/identityEvidenceCompletion";
 
 type NoticeTone = "success" | "error";
 
@@ -107,15 +108,22 @@ type MerchantSummary = {
   band?: string | null;
   expires_at?: string | null;
   expiry_policy?: string | null;
+  phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
+  bank_details_recorded?: boolean | null;
   bank_verified?: boolean | null;
+  bank_evidence_status?: string | null;
   bank_verification_label?: string | null;
+  passport_recorded?: boolean | null;
   passport_verified?: boolean | null;
   passport_verification_label?: string | null;
   official_id_recorded?: boolean | null;
+  official_id_verified?: boolean | null;
   official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
+  identity_evidence_summary?: Record<string, any> | null;
+  community_role_counts?: Record<string, number> | null;
 };
 
 type CapacityContext = {
@@ -135,12 +143,17 @@ type TrustSlipSummary = {
   display_name?: string | null;
   profile_image_url?: string | null;
   community?: string | null;
+  phone_recorded?: boolean | null;
   phone_verified?: boolean | null;
+  bank_details_recorded?: boolean | null;
   bank_verified?: boolean | null;
+  bank_evidence_status?: string | null;
   bank_verification_label?: string | null;
+  passport_recorded?: boolean | null;
   passport_verified?: boolean | null;
   passport_verification_label?: string | null;
   official_id_recorded?: boolean | null;
+  official_id_verified?: boolean | null;
   official_id_label?: string | null;
   community_identity_confirmed?: boolean | null;
   community_identity_label?: string | null;
@@ -149,6 +162,8 @@ type TrustSlipSummary = {
   identity_context?: Record<string, any> | null;
   community_context?: Record<string, any> | null;
   community_footprint?: Array<Record<string, any>> | null;
+  community_role_counts?: Record<string, number> | null;
+  identity_evidence_summary?: Record<string, any> | null;
   community_global_id?: string | null;
   community_code?: string | null;
   holder_role?: string | null;
@@ -483,13 +498,28 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
     display_name: firstTruthy(src?.display_name),
     profile_image_url: firstTruthy(src?.profile_image_url),
     community: firstTruthy(src?.community),
-    phone_verified: src?.phone_verified ?? null,
-    bank_verified: src?.bank_verified ?? null,
-    bank_verification_label: firstTruthy(src?.bank_verification_label),
-    passport_verified: src?.passport_verified ?? null,
+    phone_recorded: src?.phone_recorded ?? src?.merchant_summary?.phone_recorded ?? null,
+    phone_verified: src?.phone_verified ?? src?.merchant_summary?.phone_verified ?? null,
+    bank_details_recorded:
+      src?.bank_details_recorded ?? src?.merchant_summary?.bank_details_recorded ?? null,
+    bank_verified: src?.bank_verified ?? src?.merchant_summary?.bank_verified ?? null,
+    bank_evidence_status: firstTruthy(
+      src?.bank_evidence_status,
+      src?.merchant_summary?.bank_evidence_status
+    ),
+    bank_verification_label: firstTruthy(
+      src?.bank_verification_label,
+      src?.merchant_summary?.bank_verification_label
+    ),
+    passport_recorded:
+      src?.passport_recorded ?? src?.merchant_summary?.passport_recorded ?? null,
+    passport_verified: src?.passport_verified ?? src?.merchant_summary?.passport_verified ?? null,
     passport_verification_label: firstTruthy(src?.passport_verification_label),
-    official_id_recorded: src?.official_id_recorded ?? null,
-    official_id_label: firstTruthy(src?.official_id_label),
+    official_id_recorded:
+      src?.official_id_recorded ?? src?.merchant_summary?.official_id_recorded ?? null,
+    official_id_verified:
+      src?.official_id_verified ?? src?.merchant_summary?.official_id_verified ?? null,
+    official_id_label: firstTruthy(src?.official_id_label, src?.merchant_summary?.official_id_label),
     identity_verified: src?.identity_verified ?? null,
     identity_status_label: firstTruthy(src?.identity_status_label),
     identity_context: src?.identity_context || null,
@@ -499,6 +529,13 @@ function normalizeTrustSlipSummary(raw: any): TrustSlipSummary | null {
       : Array.isArray(src?.merchant_summary?.community_footprint)
         ? src.merchant_summary.community_footprint
         : [],
+    community_role_counts:
+      src?.community_role_counts || src?.merchant_summary?.community_role_counts || null,
+    identity_evidence_summary:
+      src?.identity_evidence_summary ||
+      src?.identity_context?.identity_evidence_summary ||
+      src?.merchant_summary?.identity_evidence_summary ||
+      null,
     community_global_id: firstTruthy(src?.community_global_id),
     community_code: firstTruthy(src?.community_code),
     holder_role: firstTruthy(src?.holder_role),
@@ -646,6 +683,13 @@ function titleCaseWords(value: string): string {
     .join(" ");
 }
 
+function roleLabel(value: string): string {
+  const role = safeStr(value).toLowerCase();
+  if (role === "user" || role === "member") return "Member";
+  if (role === "admin" || role === "owner") return "Admin";
+  return titleCaseWords(role || "member");
+}
+
 function overviewIconBox(isCompact = false): React.CSSProperties {
   return {
     width: isCompact ? 36 : 46,
@@ -715,6 +759,39 @@ function overviewBadge(ok: boolean, muted = false): React.CSSProperties {
     boxShadow:
       "0 8px 16px rgba(7,23,44,0.10), inset 0 1px 0 rgba(255,255,255,0.18)",
     flex: "0 0 auto",
+  };
+}
+
+function evidenceDialStyle(degrees: number, isCompact = false): React.CSSProperties {
+  const clamped = Math.max(0, Math.min(360, Number(degrees) || 0));
+  const size = isCompact ? 58 : 68;
+  return {
+    width: size,
+    height: size,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: `conic-gradient(#F2C766 0deg ${clamped}deg, rgba(216,227,238,0.78) ${clamped}deg 360deg)`,
+    border: "1px solid rgba(216,170,69,0.34)",
+    boxShadow: "0 14px 28px rgba(3,30,66,0.10), inset 0 1px 0 rgba(255,255,255,0.75)",
+    position: "relative",
+    flex: "0 0 auto",
+  };
+}
+
+function evidenceDialInnerStyle(isCompact = false): React.CSSProperties {
+  return {
+    width: isCompact ? 42 : 50,
+    height: isCompact ? 42 : 50,
+    borderRadius: 999,
+    display: "grid",
+    placeItems: "center",
+    background: "#FFFFFF",
+    color: "#07172C",
+    fontSize: isCompact ? 14 : 16,
+    fontWeight: 1000,
+    lineHeight: 1,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.92)",
   };
 }
 
@@ -1464,6 +1541,36 @@ export default function TrustScorePage() {
     trustSlipSummary?.holder_role,
     trustSlipSummary?.community_footprint,
   ]);
+  const communityRoleCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    const rawCounts =
+      trustSlipSummary?.community_role_counts ||
+      trustSlipSummary?.merchant_summary?.community_role_counts ||
+      null;
+
+    if (rawCounts && typeof rawCounts === "object") {
+      Object.entries(rawCounts).forEach(([key, value]) => {
+        const label = roleLabel(key);
+        counts.set(label, (counts.get(label) || 0) + Number(value || 0));
+      });
+    }
+
+    if (counts.size <= 0) {
+      communityFootprint.forEach((item) => {
+        const label = roleLabel(item.role);
+        counts.set(label, (counts.get(label) || 0) + 1);
+      });
+    }
+
+    return Array.from(counts.entries())
+      .filter(([, count]) => count > 0)
+      .map(([label, count]) => `${label} ${count}`)
+      .join(" · ");
+  }, [
+    communityFootprint,
+    trustSlipSummary?.community_role_counts,
+    trustSlipSummary?.merchant_summary?.community_role_counts,
+  ]);
 
   const currentBand = useMemo(() => {
     return firstTruthy(
@@ -1601,6 +1708,92 @@ export default function TrustScorePage() {
     trustSlipSummary?.unique_counterparties ?? "0"
   );
   const riskLevel = firstTruthy(capacityContext?.risk_level, "Unknown");
+  const phoneRecorded = Boolean(
+    trustSlipSummary?.phone_recorded ||
+      identityContext?.phone_recorded ||
+      trustSlipSummary?.phone_verified ||
+      identityContext?.phone_verified ||
+      me?.phone_e164 ||
+      me?.phone
+  );
+  const phoneVerified = Boolean(
+    trustSlipSummary?.phone_verified ||
+      identityContext?.phone_verified ||
+      me?.phone_verified ||
+      me?.phone_verified_at ||
+      me?.phone_e164_verified ||
+      me?.verified_phone_at
+  );
+  const bankRecorded = Boolean(
+    trustSlipSummary?.bank_details_recorded ||
+      identityContext?.bank_details_recorded ||
+      trustSlipSummary?.bank_verified ||
+      identityContext?.bank_verified ||
+      me?.bank_verified ||
+      me?.bank_verified_at ||
+      me?.bank_details_recorded ||
+      me?.payout_destination_id ||
+      me?.withdrawal_destination_id
+  );
+  const bankVerified = Boolean(
+    trustSlipSummary?.bank_verified ||
+      identityContext?.bank_verified ||
+      me?.bank_verified ||
+      me?.bank_verified_at
+  );
+  const officialIdRecorded = Boolean(
+    trustSlipSummary?.official_id_recorded ||
+      identityContext?.official_id_recorded ||
+      trustSlipSummary?.passport_recorded ||
+      identityContext?.passport_recorded ||
+      me?.official_id_recorded ||
+      me?.identity_document_recorded ||
+      me?.passport_verified ||
+      me?.passport_verified_at
+  );
+  const officialIdVerified = Boolean(
+    trustSlipSummary?.official_id_verified ||
+      identityContext?.official_id_verified ||
+      trustSlipSummary?.passport_verified ||
+      identityContext?.passport_verified ||
+      me?.passport_verified ||
+      me?.passport_verified_at ||
+      me?.official_id_verified_at
+  );
+  const identityEvidence = useMemo(() => {
+    const backendSummary =
+      trustSlipSummary?.identity_evidence_summary ||
+      identityContext?.identity_evidence_summary ||
+      trustSlipSummary?.merchant_summary?.identity_evidence_summary ||
+      null;
+    const local = buildIdentityEvidenceCompletion({
+      detailsDone: Boolean(memberName || gmfnId),
+      phoneDone: phoneRecorded,
+      photoRecorded: Boolean(profileImageUrl),
+      bankRecorded,
+      officialIdRecorded,
+      countReadyAsProgress: false,
+    });
+    if (!backendSummary || typeof backendSummary !== "object") return local;
+    return {
+      ...local,
+      score: Number(backendSummary.score ?? local.score),
+      degrees: Number(backendSummary.degrees ?? local.degrees),
+      label: safeStr(backendSummary.label || local.label),
+      status: safeStr(backendSummary.status || local.status) as typeof local.status,
+      next: safeStr(backendSummary.institutional_note || local.next),
+    };
+  }, [
+    bankRecorded,
+    gmfnId,
+    identityContext?.identity_evidence_summary,
+    memberName,
+    officialIdRecorded,
+    phoneRecorded,
+    profileImageUrl,
+    trustSlipSummary?.identity_evidence_summary,
+    trustSlipSummary?.merchant_summary?.identity_evidence_summary,
+  ]);
   const readingBreakdownSource: Array<[string, string]> = [
     ["Borrower repayment delta", safeStr(ruleset?.borrower_repayment_delta || "-")],
     ["Guarantor repayment delta", safeStr(ruleset?.guarantor_repayment_delta || "-")],
@@ -1655,35 +1848,18 @@ export default function TrustScorePage() {
       trustSlipSummary?.community_member_count,
       communityContext?.active_member_count
     ),
-    phoneVerified: Boolean(
-      trustSlipSummary?.phone_verified ||
-        identityContext?.phone_verified ||
-        me?.phone_verified ||
-        me?.phone_verified_at ||
-        me?.phone_e164_verified ||
-        me?.verified_phone_at
-    ),
-    bankVerified: Boolean(
-      trustSlipSummary?.bank_verified ||
-        identityContext?.bank_verified ||
-        identityContext?.bank_details_recorded ||
-        me?.bank_verified ||
-        me?.bank_verified_at ||
-        me?.bank_details_recorded ||
-        me?.payout_destination_id ||
-        me?.withdrawal_destination_id
-    ),
+    phoneRecorded,
+    phoneVerified,
+    bankRecorded,
+    bankVerified,
     bankVerificationLabel: firstTruthy(
       trustSlipSummary?.bank_verification_label,
       trustSlipSummary?.merchant_summary?.bank_verification_label,
       identityContext?.bank_verification_label
     ),
-    passportVerified: Boolean(
-      trustSlipSummary?.passport_verified ||
-        identityContext?.passport_verified ||
-        trustSlipSummary?.official_id_recorded ||
-        identityContext?.official_id_recorded
-    ),
+    passportRecorded: officialIdRecorded,
+    officialIdRecorded,
+    passportVerified: officialIdVerified,
     passportVerificationLabel: firstTruthy(
       trustSlipSummary?.passport_verification_label,
       trustSlipSummary?.merchant_summary?.passport_verification_label,
@@ -1709,6 +1885,8 @@ export default function TrustScorePage() {
       trustSlipSummary?.identity_status_label,
       identityContext?.identity_status_label
     ),
+    identityEvidenceScore: identityEvidence.score,
+    identityEvidenceLabel: identityEvidence.label,
     hasSelectedCommunity,
     band: currentBand,
     score: currentScore,
@@ -1834,8 +2012,11 @@ export default function TrustScorePage() {
       icon: "phone" as TrustPaperIconName,
       label: passportVm.identity.phoneVerified
         ? "Phone verified"
-        : "Phone not verified",
+        : passportVm.identity.phoneRecorded
+          ? "Phone recorded"
+          : "Phone not recorded",
       ok: passportVm.identity.phoneVerified,
+      muted: passportVm.identity.phoneRecorded && !passportVm.identity.phoneVerified,
     },
     {
       icon: "community" as TrustPaperIconName,
@@ -1850,23 +2031,32 @@ export default function TrustScorePage() {
       label:
         passportVm.identity.identityContinuity === "clean"
           ? "Continuity confirmed"
-          : "Continuity review",
+          : identityEvidence.score >= 35
+            ? "Evidence building"
+            : "Continuity review",
       ok: passportVm.identity.identityContinuity === "clean",
+      muted: passportVm.identity.identityContinuity !== "clean" && identityEvidence.score >= 35,
     },
     {
       icon: "wallet" as TrustPaperIconName,
       label:
         passportVm.identity.bankVerified === true
-          ? firstTruthy(passportVm.identity.bankVerificationLabel, "Bank connected")
-          : "Bank not connected",
+          ? firstTruthy(passportVm.identity.bankVerificationLabel, "Bank verified")
+          : passportVm.identity.bankRecorded
+            ? "Bank recorded"
+            : "Bank not recorded",
       ok: passportVm.identity.bankVerified === true,
+      muted: passportVm.identity.bankRecorded && passportVm.identity.bankVerified !== true,
     },
     {
       icon: "document" as TrustPaperIconName,
       label: passportVm.identity.passportVerified
-        ? firstTruthy(passportVm.identity.passportVerificationLabel, "Passport verified")
-        : "Passport not connected",
+        ? firstTruthy(passportVm.identity.passportVerificationLabel, "ID verified")
+        : passportVm.identity.officialIdRecorded
+          ? "ID recorded for review"
+          : "ID not recorded",
       ok: passportVm.identity.passportVerified,
+      muted: passportVm.identity.officialIdRecorded && !passportVm.identity.passportVerified,
     },
   ];
 
@@ -1880,7 +2070,7 @@ export default function TrustScorePage() {
     ["id", "GSN ID", passportVm.identity.gmfnId],
     ["community", "Community", passportVm.identity.communityName],
     ["hash", "Community ID", passportVm.identity.communityId],
-    ["shield", "Role", passportVm.identity.holderRole],
+    ["shield", "Roles", communityRoleCounts || roleLabel(passportVm.identity.holderRole)],
   ];
 
   const identityCompletionRows: Array<{
@@ -1896,10 +2086,16 @@ export default function TrustScorePage() {
     {
       icon: "phone",
       label: "Phone",
-      state: passportVm.identity.phoneVerified ? "Verified" : "Open check",
+      state: passportVm.identity.phoneVerified
+        ? "Verified"
+        : passportVm.identity.phoneRecorded
+          ? "Recorded"
+          : "Open check",
       detail: passportVm.identity.phoneVerified
         ? "Verified phone evidence is already attached to this Trust Passport."
-        : "Open the focused phone task. GSN still needs the signed-in code-confirmation route before this can be fully completed here.",
+        : passportVm.identity.phoneRecorded
+          ? "A phone number is recorded against this identity. Confirm the code when OTP delivery is available."
+          : "Open the focused phone task to record and confirm a phone number for this identity.",
       actionLabel: passportVm.identity.phoneVerified ? "View proof" : "Open phone task",
       target: passportVm.identity.phoneVerified ? routes.trustSlip : identityTaskTarget("phone"),
       debugId: "trust-score.completion.phone",
@@ -1924,10 +2120,16 @@ export default function TrustScorePage() {
     {
       icon: "wallet",
       label: "Bank / wallet",
-      state: passportVm.identity.bankVerified ? "Connected" : "Add details",
+      state: passportVm.identity.bankVerified
+        ? "Verified"
+        : passportVm.identity.bankRecorded
+          ? "Recorded"
+          : "Add details",
       detail: passportVm.identity.bankVerified
-        ? "Bank or wallet evidence is already recorded."
-        : "Open payout details to add the bank or wallet record GSN can attach to this identity.",
+        ? "Bank or wallet evidence is verified."
+        : passportVm.identity.bankRecorded
+          ? "Bank or wallet details are recorded against this name, but provider verification is still pending."
+          : "Open payout details to add the bank or wallet record GSN can attach to this identity.",
       actionLabel: passportVm.identity.bankVerified ? "Open details" : "Add bank/wallet",
       target: routes.payoutDetails,
       debugId: "trust-score.completion.bank",
@@ -1936,10 +2138,16 @@ export default function TrustScorePage() {
     {
       icon: "document",
       label: "Passport / ID",
-      state: passportVm.identity.passportVerified ? "Recorded" : "Open task",
+      state: passportVm.identity.passportVerified
+        ? "Verified"
+        : passportVm.identity.officialIdRecorded
+          ? "Recorded"
+          : "Open task",
       detail: passportVm.identity.passportVerified
-        ? "Official ID evidence is already visible in the trust proof layer."
-        : "Open the focused ID task. GSN still needs the signed-in passport, national ID, or licence capture route before this can be fully completed here.",
+        ? "Official ID evidence is verified in the trust proof layer."
+        : passportVm.identity.officialIdRecorded
+          ? "Official ID evidence is recorded for review. Provider verification is still pending."
+          : "Open the focused ID task to record passport, national ID, or licence evidence.",
       actionLabel: passportVm.identity.passportVerified ? "View proof" : "Open ID task",
       target: passportVm.identity.passportVerified
         ? routes.trustSlip
@@ -2327,7 +2535,7 @@ export default function TrustScorePage() {
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {titleCaseWords(item.role)}
+                      {roleLabel(item.role)}
                     </span>
                   </div>
                 ))}
@@ -2516,6 +2724,86 @@ export default function TrustScorePage() {
           </section>
 
           <div
+            data-trust-passport-identity-evidence-meter="true"
+            style={{
+              marginTop: isCompact ? 10 : 14,
+              borderRadius: isCompact ? 16 : 18,
+              border: "1px solid rgba(216,227,238,0.78)",
+              background:
+                "linear-gradient(180deg, rgba(255,255,255,0.94) 0%, rgba(248,251,255,0.92) 100%)",
+              padding: isCompact ? 9 : 12,
+              display: "grid",
+              gridTemplateColumns: isCompact ? "58px minmax(0, 1fr)" : "68px minmax(0, 1fr)",
+              gap: isCompact ? 9 : 12,
+              alignItems: "center",
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <div style={evidenceDialStyle(identityEvidence.degrees, isCompact)}>
+              <div style={evidenceDialInnerStyle(isCompact)}>{identityEvidence.score}%</div>
+            </div>
+            <div style={{ minWidth: 0, display: "grid", gap: 6 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  flexWrap: "wrap",
+                }}
+              >
+                <span
+                  style={{
+                    color: "#07172C",
+                    fontWeight: 1000,
+                    fontSize: isCompact ? 14 : 16,
+                    lineHeight: 1.1,
+                  }}
+                >
+                  Identity evidence
+                </span>
+                <span style={statusPillStyle(identityEvidence.label)}>
+                  {identityEvidence.label}
+                </span>
+              </div>
+              <div
+                style={{
+                  color: "#617085",
+                  fontSize: isCompact ? 11.5 : 13,
+                  lineHeight: 1.3,
+                  fontWeight: 850,
+                }}
+              >
+                Recorded evidence raises readiness. Verified evidence raises confidence.
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {identityEvidence.items.slice(0, 5).map((item) => (
+                  <span
+                    key={item.key}
+                    style={{
+                      borderRadius: 999,
+                      border: item.done
+                        ? "1px solid rgba(46,155,98,0.18)"
+                        : "1px solid rgba(214,170,69,0.20)",
+                      background: item.done ? "#F0FBF4" : "#FFFBF2",
+                      color: item.done ? "#166534" : "#92400E",
+                      padding: "4px 7px",
+                      fontSize: isCompact ? 10.5 : 11.5,
+                      fontWeight: 1000,
+                      lineHeight: 1,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {item.done ? "Recorded: " : "Add: "}
+                    {item.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div
             style={{
               display: "grid",
               gridTemplateColumns: isCompact
@@ -2598,8 +2886,8 @@ export default function TrustScorePage() {
             }}
           >
             {verificationBadges.map((item) => (
-              <span key={item.label} style={overviewStatusBox(item.ok)}>
-                <span style={overviewBadge(item.ok)}>
+              <span key={item.label} style={overviewStatusBox(item.ok, item.muted)}>
+                <span style={overviewBadge(item.ok, item.muted)}>
                   <TrustPaperIcon name={item.icon} size={15} strokeWidth={2.65} />
                 </span>
                 <span

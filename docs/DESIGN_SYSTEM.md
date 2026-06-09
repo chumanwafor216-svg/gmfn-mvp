@@ -194,6 +194,32 @@ snapshots:
   `Page 2` packages instead of letting one card bleed into the next section
 - deeper explanation belongs below the snapshot or behind a lane/action
 
+## Institutional Identity Evidence Protocol
+
+Identity, Trust Passport, TrustSlip, create, and join surfaces must distinguish
+between evidence that is `recorded`, `under review`, and `verified`.
+
+- `Recorded` means the user or system has captured a phone, bank/wallet,
+  passport, driving licence, photo, or official-ID detail against the person's
+  GSN identity.
+- `Under review` means evidence exists, but the system still needs human,
+  provider, community, or institutional confirmation.
+- `Verified` means a phone code, active community membership, provider result,
+  admin review, or other accepted verification route has confirmed the
+  evidence.
+- Recorded evidence may increase an identity-readiness meter immediately, but
+  it must not be described as provider-verified proof.
+- Verdict, Trust Passport, TrustSlip, and CCI copy must update when evidence is
+  recorded, but must keep the confidence distinction clear for institutional
+  readers.
+- A user's identity is one GSN identity across many communities. Identity
+  snapshots should show active community footprint, community IDs, and role
+  counts where space allows.
+- Role copy should be reader-friendly: show `Member`, `Admin`, or equivalent
+  counts rather than forcing a reader to decode raw internal role values.
+- For IMF/World-Bank/institution-grade usage, never hide the difference between
+  captured data and confirmed proof just to make the record look stronger.
+
 ## Focused Action Protocol
 
 When a user starts an action, the screen must reduce to that action.

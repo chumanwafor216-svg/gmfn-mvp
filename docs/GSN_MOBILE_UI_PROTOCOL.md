@@ -126,6 +126,23 @@ If a process cannot fit in one screenshot:
 Raw URLs, logs, policy text, and internal system language must not appear on the
 main screenshot surface unless the user explicitly opens advanced details.
 
+## Identity Evidence Meter Rule
+
+Where a page asks a user to improve identity, trust, create, or join evidence,
+use the shared identity evidence meter pattern instead of a silent static
+verdict.
+
+- The meter may rise when evidence is recorded.
+- The page must still label whether each item is recorded, under review, or
+  verified.
+- Recorded phone, bank/wallet, passport, driving licence, or photo evidence is
+  useful progress, but it is not the same as network/provider/admin
+  verification.
+- A result or verdict should update near the action that changed it, so the
+  user sees that their effort strengthened the record.
+- For multi-community identity snapshots, show community role counts such as
+  `Member 1` and `Admin 1` when the user belongs to more than one community.
+
 ## Information Priority
 
 Show first:

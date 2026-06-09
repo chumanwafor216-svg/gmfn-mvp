@@ -34,9 +34,13 @@ export type TrustPassportViewModel = {
     communityId: string;
     holderRole: string;
     activeMemberCount: string;
+    phoneRecorded: boolean;
     phoneVerified: boolean;
+    bankRecorded: boolean;
     bankVerified: boolean | null;
     bankVerificationLabel: string;
+    passportRecorded: boolean;
+    officialIdRecorded: boolean;
     passportVerified: boolean;
     passportVerificationLabel: string;
     communityIdentityConfirmed: boolean;
@@ -90,11 +94,17 @@ export type TrustPassportViewModelInput = {
   communityId: string;
   holderRole?: string | null;
   activeMemberCount?: string | number | null;
+  phoneRecorded?: boolean | null;
   phoneVerified?: boolean | null;
+  bankRecorded?: boolean | null;
   bankVerified?: boolean | null;
   bankVerificationLabel?: string | null;
+  passportRecorded?: boolean | null;
+  officialIdRecorded?: boolean | null;
   passportVerified?: boolean | null;
   passportVerificationLabel?: string | null;
+  identityEvidenceScore?: string | number | null;
+  identityEvidenceLabel?: string | null;
   communityIdentityConfirmed?: boolean | null;
   communityIdentityLabel?: string | null;
   identityVerified?: boolean | null;
@@ -163,12 +173,14 @@ export function buildTrustPassportViewModel(
   const counterparties = numberValue(input.counterparties);
   const riskLevel = clean(input.riskLevel, "Unknown");
   const weakBand = ["D", "E", "F"].includes(normalizeTrustBand(band));
+  const identityEvidenceScore = numberValue(input.identityEvidenceScore);
   const lowData =
     scoreNumber <= 0 &&
     eventCountNumber <= 0 &&
     recentEventCount <= 0 &&
     !hasText(input.lastFullRepaymentAt) &&
-    !hasText(input.lastReleaseAt);
+    !hasText(input.lastReleaseAt) &&
+    identityEvidenceScore < 35;
   const evidenceStatus: "strong" | "mixed" | "limited" =
     lowData || weakBand
       ? "limited"
@@ -185,16 +197,24 @@ export function buildTrustPassportViewModel(
     : bandLanguage.plainMeaning;
 
   const phoneVerified = input.phoneVerified === true;
+  const phoneRecorded = input.phoneRecorded === true || phoneVerified;
   const bankVerified =
     typeof input.bankVerified === "boolean" ? input.bankVerified : null;
+  const bankRecorded = input.bankRecorded === true || bankVerified === true;
   const passportVerified = input.passportVerified === true;
+  const passportRecorded = input.passportRecorded === true || passportVerified;
+  const officialIdRecorded = input.officialIdRecorded === true || passportRecorded;
   const communityIdentityConfirmed = input.communityIdentityConfirmed === true;
   const identityVerified =
     typeof input.identityVerified === "boolean" ? input.identityVerified : null;
   const membershipStatus =
     input.hasSelectedCommunity === false ? "pending" : "active";
   const identityContinuity =
-    phoneVerified && activeClans > 1 ? "clean" : phoneVerified ? "unclear" : "mixed";
+    phoneVerified && activeClans > 1
+      ? "clean"
+      : phoneRecorded || bankRecorded || officialIdRecorded
+        ? "unclear"
+        : "mixed";
 
   const hasRepayment = hasText(input.lastFullRepaymentAt);
   const hasRelease = hasText(input.lastReleaseAt);
@@ -227,10 +247,16 @@ export function buildTrustPassportViewModel(
   const trustQuestions: TrustQuestionLine[] = [
     {
       title: "Identity verified",
-      status: phoneVerified ? "Strong" : "Needs caution",
+      status: phoneVerified && (bankVerified || passportVerified || communityIdentityConfirmed)
+        ? "Strong"
+        : phoneRecorded || bankRecorded || officialIdRecorded
+          ? "Mixed"
+          : "Needs caution",
       meaning: phoneVerified
-        ? "The phone is verified. Formal bank or document verification should still be checked if the decision needs it."
-        : "Identity is only partly visible. Ask for stronger identity proof before relying on this person.",
+        ? "The phone is verified. Recorded bank or ID evidence can strengthen this identity, but provider verification still matters for serious decisions."
+        : phoneRecorded || bankRecorded || officialIdRecorded
+          ? "Identity evidence is recorded, but some proof is not verified yet. Treat this as progress, not final confirmation."
+          : "Identity is only partly visible. Ask for stronger identity proof before relying on this person.",
     },
     {
       title: "Support trust",
@@ -290,9 +316,12 @@ export function buildTrustPassportViewModel(
 
   const helpsTrust = unique([
     phoneVerified ? "phone identity is verified" : "",
-    bankVerified ? "bank details are recorded" : "",
+    !phoneVerified && phoneRecorded ? "phone number is recorded against this identity" : "",
+    bankVerified ? "bank destination is verified" : "",
+    !bankVerified && bankRecorded ? "bank or wallet details are recorded" : "",
     communityIdentityConfirmed ? "community membership confirms this person is known in the community" : "",
-    passportVerified ? "passport verification is visible" : "",
+    passportVerified ? "official ID verification is visible" : "",
+    !passportVerified && officialIdRecorded ? "official ID evidence is recorded for review" : "",
     hasRepayment ? "completed repayment evidence is visible" : "",
     hasVerifyCode ? "TrustSlip verification code is available" : "",
     activeClans > 0 ? "active community membership is visible" : "",
@@ -305,6 +334,9 @@ export function buildTrustPassportViewModel(
     weakBand ? "current grade needs attention" : "",
     recentEventCount <= 0 ? "no recent Trust Events are visible" : "",
     eventCountNumber <= 0 ? "no event-depth is visible" : "",
+    phoneRecorded && !phoneVerified ? "phone is recorded but not network-verified yet" : "",
+    bankRecorded && !bankVerified ? "bank details are recorded but not provider-verified yet" : "",
+    officialIdRecorded && !passportVerified ? "official ID evidence is recorded but not provider-verified yet" : "",
     !hasRepayment ? "repayment follow-through is not shown" : "",
     sponsorCount <= 0 ? "sponsor quality is not shown" : "",
     highRisk ? `capacity risk is ${riskLevel.toLowerCase()}` : "",
@@ -321,12 +353,16 @@ export function buildTrustPassportViewModel(
       communityId: clean(input.communityId, "Awaiting issue"),
       holderRole: clean(input.holderRole, "member"),
       activeMemberCount: clean(input.activeMemberCount, "Not shown"),
+      phoneRecorded,
       phoneVerified,
+      bankRecorded,
       bankVerified,
       bankVerificationLabel: clean(
         input.bankVerificationLabel,
         bankVerified ? "Bank details recorded" : "Bank check not connected yet"
       ),
+      passportRecorded,
+      officialIdRecorded,
       passportVerified,
       passportVerificationLabel: clean(
         input.passportVerificationLabel,

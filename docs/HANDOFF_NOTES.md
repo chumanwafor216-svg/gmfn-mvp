@@ -40778,3 +40778,71 @@ GSN-branded invite composer and invite-entry continuity.
   - CCI can now see the community footprint in the Trust Passport payload, but
     a deeper CCI scoring pass should later decide how role, tenure, and
     multi-community activity affect the score.
+
+### Trust Passport identity evidence meter and recorded-vs-verified protocol (2026-06-09)
+
+- Trigger:
+  - product owner clarified that the identity page must behave like the founder
+    evidence meter: as a user records phone, bank/wallet, passport/ID, or other
+    identity evidence, the page should show visible progress instead of leaving
+    a static verdict.
+  - product owner also clarified that phone, bank, passport, and driving-licence
+    information may be recorded before it is fully verified, and the system must
+    acknowledge that progress without pretending provider verification happened.
+- Unabated truth:
+  - `Recorded` is not the same as `verified`. For institutional-grade use
+    (IMF/World-Bank/government/partner review), GSN must never inflate captured
+    data into provider-verified proof.
+  - The Trust Passport / TrustSlip backend can now report identity readiness,
+    but CCI scoring still needs a later scoring-policy pass if recorded vs
+    verified evidence should change numerical CCI differently.
+- Fix:
+  - `docs/DESIGN_SYSTEM.md` now includes an `Institutional Identity Evidence
+    Protocol`: recorded, under review, and verified must be separate states.
+  - `docs/GSN_MOBILE_UI_PROTOCOL.md` now includes an `Identity Evidence Meter
+    Rule` for create, join, Trust Passport, and TrustSlip-style pages.
+  - `gmfn_backend/app/services/trust_slips_services.py` now emits:
+    `phone_recorded`, `bank_evidence_status`, `passport_recorded`,
+    `official_id_verified`, `identity_evidence_summary`, and
+    `community_role_counts`.
+  - Backend identity evidence summary separates `score` from `verified_score`,
+    so recorded evidence raises readiness while verified evidence raises
+    confidence.
+  - Backend no longer treats recorded payout/bank details as provider-verified
+    bank proof. It reports them as `bank_details_recorded: true`,
+    `bank_verified: false`, and `bank_evidence_status: recorded` unless a real
+    provider/admin verification is present.
+  - `frontend/src/lib/trustPassportViewModel.ts` now understands phone
+    recorded vs verified, bank recorded vs verified, and ID recorded vs
+    verified, and updates the `Identity verified` reading line accordingly.
+  - `frontend/src/pages/TrustScorePage.tsx` now uses the shared
+    `buildIdentityEvidenceCompletion` engine to show a compact identity
+    evidence meter inside `Identity Overview`.
+  - Trust Passport status chips now say `Phone recorded`, `Bank recorded`, or
+    `ID recorded for review` when evidence exists but verification is still
+    pending.
+  - The Identity Overview roles fact now shows role counts such as `Member 1`
+    and `Admin 1`, derived from the active community footprint.
+  - `frontend/tools/audit-trust-passport-front-package.mjs` now cages the
+    identity evidence meter and recorded-vs-verified language.
+- Verification:
+  - Passed `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py -q`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `npm --prefix frontend run audit:identity-integrity-front-package`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- eslint src/pages/TrustScorePage.tsx src/lib/trustPassportViewModel.ts tools/audit-trust-passport-front-package.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm --prefix frontend run build` hit the known Windows
+    `esbuild` spawn `EPERM`; approved elevated `npm run build` from
+    `frontend` passed.
+- Remaining risk:
+  - Join entry still has its own page-local progress patterns. The shared
+    protocol is documented and the shared meter is used in Trust Passport, but
+    Join should get a separate route-local pass if the product owner wants the
+    same meter visible there.
+  - CCI / trust score policy still needs a later explicit decision on how much
+    recorded-only evidence should affect numerical trust readings versus
+    verified evidence.

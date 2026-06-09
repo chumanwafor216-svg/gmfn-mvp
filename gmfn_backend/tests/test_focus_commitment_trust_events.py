@@ -106,9 +106,12 @@ def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
     identity_context = payload["identity_context"]
     assert identity_context["phone_verified"] is True
     assert identity_context["bank_details_recorded"] is True
-    assert identity_context["bank_verified"] is True
+    assert identity_context["bank_verified"] is False
+    assert identity_context["bank_evidence_status"] == "recorded"
     assert identity_context["bank_verification_label"] == "Bank destination recorded in payout details"
     assert identity_context["community_identity_confirmed"] is True
+    assert payload["identity_evidence_summary"]["score"] >= 60
+    assert "bank" in payload["identity_evidence_summary"]["pending_verification"]
     assert payload["active_clan_count"] >= 1
     assert payload["active_community_count"] == 2
     footprint = payload["community_footprint"]
@@ -118,6 +121,7 @@ def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
         "GMFN-C-000002",
     }
     assert {item["role"] for item in footprint} == {"user", "admin"}
+    assert payload["community_role_counts"] == {"member": 1, "admin": 1}
 
 
 def test_signed_in_identity_completion_records_phone_and_official_id(

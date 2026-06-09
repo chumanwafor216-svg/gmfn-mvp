@@ -618,12 +618,115 @@ def _community_footprint(db: Session, *, user_id: int) -> list[dict[str, Any]]:
     return footprint
 
 
+def _community_role_counts(footprint: list[dict[str, Any]]) -> Dict[str, int]:
+    counts: Dict[str, int] = {}
+    for item in footprint:
+        raw = _safe_str(item.get("role"), "member").lower()
+        role = "member" if raw in {"user", "member"} else raw or "member"
+        counts[role] = counts.get(role, 0) + 1
+    return counts
+
+
 def _safe_positive_int(value: Any) -> int:
     try:
         parsed = int(value or 0)
     except Exception:
         return 0
     return parsed if parsed > 0 else 0
+
+
+def _identity_evidence_summary(
+    *,
+    details_recorded: bool,
+    phone_recorded: bool,
+    phone_verified: bool,
+    photo_recorded: bool,
+    bank_recorded: bool,
+    bank_verified: bool,
+    official_id_recorded: bool,
+    official_id_verified: bool,
+) -> Dict[str, Any]:
+    items = [
+        {
+            "key": "details",
+            "label": "Name and GSN number",
+            "recorded": bool(details_recorded),
+            "verified": bool(details_recorded),
+            "weight": 15,
+        },
+        {
+            "key": "phone",
+            "label": "Phone",
+            "recorded": bool(phone_recorded or phone_verified),
+            "verified": bool(phone_verified),
+            "weight": 20,
+        },
+        {
+            "key": "photo",
+            "label": "Photo",
+            "recorded": bool(photo_recorded),
+            "verified": False,
+            "weight": 20,
+        },
+        {
+            "key": "bank",
+            "label": "Bank or wallet",
+            "recorded": bool(bank_recorded or bank_verified),
+            "verified": bool(bank_verified),
+            "weight": 25,
+        },
+        {
+            "key": "official_id",
+            "label": "Passport / ID",
+            "recorded": bool(official_id_recorded or official_id_verified),
+            "verified": bool(official_id_verified),
+            "weight": 20,
+        },
+    ]
+    score = min(
+        100,
+        sum(int(item["weight"]) for item in items if item["recorded"]),
+    )
+    verified_score = min(
+        100,
+        sum(int(item["weight"]) for item in items if item["verified"]),
+    )
+    status = (
+        "high"
+        if score >= 80
+        else "strong"
+        if score >= 55
+        else "medium"
+        if score >= 35
+        else "light"
+        if score >= 15
+        else "not_started"
+    )
+    label = {
+        "high": "High evidence",
+        "strong": "Strong evidence",
+        "medium": "Medium evidence",
+        "light": "Light evidence",
+        "not_started": "Not started",
+    }[status]
+    missing = [item["key"] for item in items if not item["recorded"]]
+    pending_verification = [
+        item["key"] for item in items if item["recorded"] and not item["verified"]
+    ]
+    return {
+        "score": score,
+        "verified_score": verified_score,
+        "degrees": round(score * 3.6),
+        "label": label,
+        "status": status,
+        "items": items,
+        "missing": missing,
+        "pending_verification": pending_verification,
+        "institutional_note": (
+            "Recorded evidence improves identity readiness. Verified evidence improves confidence. "
+            "Do not treat recorded-only evidence as provider verification."
+        ),
+    }
 
 
 def _payout_destination_is_recorded(row: Optional[UserPayoutDestination]) -> bool:
@@ -644,8 +747,12 @@ def _payout_destination_is_recorded(row: Optional[UserPayoutDestination]) -> boo
 def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[str, Any]:
     if user is None:
         return {
+            "phone_recorded": False,
+            "phone_recorded_at": None,
+            "phone_status_label": "Phone not recorded",
             "bank_details_recorded": False,
             "bank_verified": False,
+            "bank_evidence_status": "missing",
             "bank_verification_label": "Bank check not connected yet",
             "bank_verified_at": None,
             "driver_licence_recorded": False,
@@ -676,6 +783,8 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             .first()
         )
 
+    phone_recorded = bool(phone or getattr(row, "phone_e164", None))
+    phone_recorded_at = getattr(row, "created_at", None) if row else None
     payout = (
         db.query(UserPayoutDestination)
         .filter(UserPayoutDestination.user_id == int(user.id))
@@ -686,6 +795,14 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
     entry_bank_recorded = bool(getattr(row, "bank_details_recorded_at", None)) if row else False
     payout_bank_recorded = _payout_destination_is_recorded(payout)
     bank_recorded = entry_bank_recorded or payout_bank_recorded
+    bank_provider_verified = bool(
+        (payout and getattr(payout, "verified_at", None))
+        or (
+            payout
+            and _safe_str(getattr(payout, "verification_status", None)).lower()
+            in {"verified", "matched", "provider_verified"}
+        )
+    )
     driver_recorded = bool(getattr(row, "driver_licence_recorded_at", None)) if row else False
     official_id_check = (
         db.query(IdentityVerificationCheck)
@@ -706,6 +823,14 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
         .first()
     )
     official_id_recorded = official_id_check is not None
+    official_id_verified = bool(
+        official_id_check
+        and (
+            getattr(official_id_check, "verified_at", None)
+            or _safe_str(getattr(official_id_check, "status", None)).lower()
+            in {"verified", "matched", "provider_verified"}
+        )
+    )
     driver_recorded = driver_recorded or driver_check is not None
     bank_recorded_at = None
     if entry_bank_recorded and row:
@@ -716,10 +841,30 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
         )
 
     return {
+        "phone_recorded": phone_recorded,
+        "phone_recorded_at": (
+            phone_recorded_at.isoformat()
+            if phone_recorded_at
+            else None
+        ),
+        "phone_status_label": (
+            "Phone number recorded; network verification pending"
+            if phone_recorded
+            else "Phone not recorded"
+        ),
         "bank_details_recorded": bank_recorded,
-        "bank_verified": bank_recorded,
+        "bank_verified": bank_provider_verified,
+        "bank_evidence_status": (
+            "verified"
+            if bank_provider_verified
+            else "recorded"
+            if bank_recorded
+            else "missing"
+        ),
         "bank_verification_label": (
-            "Bank details recorded during entry verification"
+            "Bank destination provider-verified"
+            if bank_provider_verified
+            else "Bank details recorded during entry verification; provider verification pending"
             if entry_bank_recorded
             else "Bank destination recorded in payout details"
             if payout_bank_recorded
@@ -743,7 +888,9 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
         ),
         "official_id_recorded": official_id_recorded,
         "official_id_label": (
-            "Official ID evidence recorded for review"
+            "Official ID provider-verified"
+            if official_id_verified
+            else "Official ID evidence recorded for review"
             if official_id_recorded
             else "Official ID not connected yet"
         ),
@@ -752,9 +899,13 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             if official_id_check and getattr(official_id_check, "created_at", None)
             else None
         ),
-        "passport_verified": official_id_recorded,
+        "official_id_verified": official_id_verified,
+        "passport_recorded": official_id_recorded,
+        "passport_verified": official_id_verified,
         "passport_verification_label": (
-            "Official ID evidence recorded for review"
+            "Official ID provider-verified"
+            if official_id_verified
+            else "Official ID evidence recorded for review"
             if official_id_recorded
             else "Passport check not connected yet"
         ),
@@ -1085,21 +1236,56 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         community_context.get("current_user_is_active_member")
     )
     community_footprint = _community_footprint(db, user_id=uid)
+    community_role_counts = _community_role_counts(community_footprint)
+    phone_recorded = bool(
+        (
+            getattr(user, "phone_e164", None)
+            or entry_verification_context["phone_recorded"]
+            or phone_verified
+        )
+        if user
+        else False
+    )
+    details_recorded = bool(display_name or gmfn_id)
+    photo_recorded = bool(getattr(user, "profile_image_url", None)) if user else False
+    identity_evidence_summary = _identity_evidence_summary(
+        details_recorded=details_recorded,
+        phone_recorded=phone_recorded,
+        phone_verified=phone_verified,
+        photo_recorded=photo_recorded,
+        bank_recorded=entry_verification_context["bank_details_recorded"],
+        bank_verified=entry_verification_context["bank_verified"],
+        official_id_recorded=(
+            entry_verification_context["official_id_recorded"]
+            or entry_verification_context["driver_licence_recorded"]
+        ),
+        official_id_verified=entry_verification_context["official_id_verified"],
+    )
     identity_context = {
         "profile_image_url": getattr(user, "profile_image_url", None) if user else None,
         "gmfn_id": gmfn_id,
         "display_name": display_name,
+        "phone_recorded": phone_recorded,
+        "phone_recorded_at": entry_verification_context["phone_recorded_at"],
+        "phone_status_label": (
+            "Phone verified"
+            if phone_verified
+            else entry_verification_context["phone_status_label"]
+        ),
         "phone_verified": phone_verified,
         "bank_details_recorded": entry_verification_context["bank_details_recorded"],
         "bank_verified": entry_verification_context["bank_verified"],
+        "bank_evidence_status": entry_verification_context["bank_evidence_status"],
         "bank_verification_label": entry_verification_context["bank_verification_label"],
         "bank_verified_at": entry_verification_context["bank_verified_at"],
         "driver_licence_recorded": entry_verification_context["driver_licence_recorded"],
         "driver_licence_label": entry_verification_context["driver_licence_label"],
         "driver_licence_recorded_at": entry_verification_context["driver_licence_recorded_at"],
         "official_id_recorded": entry_verification_context["official_id_recorded"],
+        "official_id_verified": entry_verification_context["official_id_verified"],
         "official_id_label": entry_verification_context["official_id_label"],
         "official_id_recorded_at": entry_verification_context["official_id_recorded_at"],
+        "passport_recorded": entry_verification_context["passport_recorded"],
         "passport_verified": entry_verification_context["passport_verified"],
         "passport_verification_label": entry_verification_context["passport_verification_label"],
         "community_identity_confirmed": community_identity_confirmed,
@@ -1108,19 +1294,22 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             if community_identity_confirmed
             else "Community identity confirmation not shown"
         ),
-        "identity_verified": phone_verified or entry_verification_context["bank_verified"] or community_identity_confirmed,
+        "identity_evidence_summary": identity_evidence_summary,
+        "identity_verified": phone_verified or community_identity_confirmed,
         "identity_status_label": (
-            "Phone and community membership are verified; bank details are recorded"
-            if phone_verified and community_identity_confirmed and entry_verification_context["bank_verified"]
+            "Phone and community membership are verified; recorded evidence is building"
+            if phone_verified and community_identity_confirmed and identity_evidence_summary["score"] >= 55
             else "Phone and community membership are verified"
             if phone_verified and community_identity_confirmed
+            else "Identity evidence recorded; verification still pending"
+            if identity_evidence_summary["score"] >= 35
             else "Phone verified; stronger identity checks are still developing"
             if phone_verified
-            else "Phone not verified; stronger identity checks are still developing"
+            else "Identity evidence is still light; stronger checks are needed"
         ),
         "plain_language": (
             "Use the photo, name, GSN ID, phone status, bank-record status, and community membership as identity signals. "
-            "Passport verification is not connected yet, so do not treat this as a government-document check."
+            "Recorded evidence helps readiness, but only verified evidence should be treated as confirmed proof."
         ),
     }
     owner = {
@@ -1220,19 +1409,25 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "identity_context": identity_context,
         "community_context": community_context,
         "community_footprint": community_footprint,
+        "community_role_counts": community_role_counts,
+        "identity_evidence_summary": identity_evidence_summary,
         "cci_explainer": cci_explainer,
         "owner": owner,
         "phone_e164": getattr(user, "phone_e164", None) if user else None,
+        "phone_recorded": phone_recorded,
         "phone_verified": phone_verified,
         "identity_verified": identity_context["identity_verified"],
         "identity_status_label": identity_context["identity_status_label"],
         "bank_details_recorded": entry_verification_context["bank_details_recorded"],
         "bank_verified": entry_verification_context["bank_verified"],
+        "bank_evidence_status": entry_verification_context["bank_evidence_status"],
         "bank_verification_label": entry_verification_context["bank_verification_label"],
         "driver_licence_recorded": entry_verification_context["driver_licence_recorded"],
         "driver_licence_label": entry_verification_context["driver_licence_label"],
         "official_id_recorded": entry_verification_context["official_id_recorded"],
+        "official_id_verified": entry_verification_context["official_id_verified"],
         "official_id_label": entry_verification_context["official_id_label"],
+        "passport_recorded": entry_verification_context["passport_recorded"],
         "passport_verified": entry_verification_context["passport_verified"],
         "passport_verification_label": entry_verification_context["passport_verification_label"],
         "community_identity_confirmed": community_identity_confirmed,
@@ -1291,15 +1486,21 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "active_clan_count": active_community_count,
             "active_community_count": active_community_count,
             "community_footprint": community_footprint,
+            "community_role_counts": community_role_counts,
+            "identity_evidence_summary": identity_evidence_summary,
             "expiry_policy": "weekly",
             "expires_at": effective_expiry,
+            "phone_recorded": phone_recorded,
             "phone_verified": phone_verified,
             "identity_status_label": identity_context["identity_status_label"],
             "bank_details_recorded": entry_verification_context["bank_details_recorded"],
             "bank_verified": entry_verification_context["bank_verified"],
+            "bank_evidence_status": entry_verification_context["bank_evidence_status"],
             "bank_verification_label": entry_verification_context["bank_verification_label"],
+            "passport_recorded": entry_verification_context["passport_recorded"],
             "passport_verified": entry_verification_context["passport_verified"],
             "passport_verification_label": entry_verification_context["passport_verification_label"],
+            "official_id_verified": entry_verification_context["official_id_verified"],
             "official_id_recorded": entry_verification_context["official_id_recorded"],
             "official_id_label": entry_verification_context["official_id_label"],
             "community_identity_confirmed": community_identity_confirmed,
