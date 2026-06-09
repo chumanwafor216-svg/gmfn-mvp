@@ -26,3 +26,16 @@ change can trigger a Render API redeploy without changing runtime behavior.
   - `GET https://gmfn-api.onrender.com/openapi.json`
   - `GET https://gmfn-frontend.onrender.com`
   - `GET https://gmfn-frontend.onrender.com/app/community`
+
+## 2026-06-09
+
+- Trigger reason: force an API redeploy after adding the live identity contract
+  guard and the Render API deploy path for signed-in identity evidence.
+- Expected live check after deploy:
+  - `GET https://gmfn-api.onrender.com/openapi.json`
+  - signed-in identity evidence routes are present:
+    `/entry/signed-in/phone/start`,
+    `/entry/signed-in/phone/confirm`,
+    `/entry/signed-in/official-id/record`,
+    `/entry/signed-in/identity-photo/record`
+  - `WithdrawalDestinationIn` exposes `sort_code` and `bank_sort_code`

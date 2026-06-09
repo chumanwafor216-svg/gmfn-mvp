@@ -1,3 +1,62 @@
+### Render API deploy hardening for Identity Overview backend (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue and sort out the backend Identity Overview
+    issue after live phone testing showed bank, phone, selfie/photo, and
+    passport evidence still did not update Trust Passport / Identity Overview.
+- Confirmed facts:
+  - local backend code and focused identity evidence tests include the signed-in
+    evidence routes;
+  - live `https://gmfn-api.onrender.com/openapi.json` was still missing:
+    `/entry/signed-in/phone/start`,
+    `/entry/signed-in/phone/confirm`,
+    `/entry/signed-in/official-id/record`, and
+    `/entry/signed-in/identity-photo/record`;
+  - live `WithdrawalDestinationIn` was still missing `sort_code` and
+    `bank_sort_code`;
+  - commit `a7d9549` was pushed to `main`;
+  - push-triggered `Trigger Render Deploy` run `27198871554` completed
+    successfully but only needed the frontend deploy path because that commit
+    did not touch backend files;
+  - `Backend Tests` run `27198871840` completed successfully;
+  - forced `Trigger Render Deploy` run `27198887411` accepted frontend deploy
+    `dep-d8jub1l7vvec73e56bpg` and API deploy
+    `dep-d8jub1s8aovs73dfrq50`, then failed the new live API identity-contract
+    check after repeated polling.
+- Unabated truth:
+  - a Render deploy hook acceptance is not proof that the live API is running
+    the current backend commit. The accepted API deploy still served an older
+    OpenAPI contract.
+  - The likely causes are: the hook points at the wrong service, the service is
+    connected to the wrong branch/repo/root, Render accepted the deploy but the
+    build/start failed internally, or Render did not promote the new backend
+    instance.
+  - Do not ask the phone pilot to retest Identity Overview completion until
+    `npm --prefix frontend run audit:live-api-identity-routes` passes against
+    the live API.
+- Changed in this pass:
+  - `.github/workflows/render-deploy.yml` now resolves `gmfn-api` through the
+    Render API when `RENDER_API_KEY` is available, optionally using
+    `RENDER_API_SERVICE_ID`, and deploys the exact GitHub SHA through
+    `commitId`;
+  - the old `RENDER_API_DEPLOY_HOOK_URL` path remains as a fallback only when
+    the Render API service path is unavailable;
+  - `gmfn_backend/docs/render_deploy_marker.md` was updated to force a backend
+    deploy on the next push;
+  - `docs/DEPLOYMENT_RENDER.md` now documents that the Render API path is the
+    preferred proof path for backend deploys because it targets the exact
+    commit.
+- Next verification:
+  - push this hardening commit to `main`;
+  - verify `Trigger Render Deploy` runs the backend path because
+    `gmfn_backend/docs/render_deploy_marker.md` changed;
+  - if `RENDER_API_KEY` is present, confirm the workflow uses Render API deploy
+    for `gmfn-api`; if not, it will fall back to the hook and the same live
+    audit will expose whether the hook is still stale;
+  - if the live audit still fails, open the Render `gmfn-api` service dashboard
+    and inspect deploy logs for the exact deploy, branch, root directory, build
+    command, start command, and promoted commit.
+
 ### Live API identity contract guard (2026-06-09)
 
 - Trigger:

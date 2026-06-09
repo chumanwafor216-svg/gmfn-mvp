@@ -30,6 +30,7 @@ jobs:
       RENDER_FRONTEND_DEPLOY_HOOK_URL: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK_URL }}
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
       RENDER_FRONTEND_SERVICE_ID: srv-d7h4oe9f9bms739lhh9g
+      RENDER_API_SERVICE_ID: ${{ secrets.RENDER_API_SERVICE_ID }}
       RENDER_API_DEPLOY_HOOK_URL: ${{ secrets.RENDER_API_DEPLOY_HOOK_URL }}
       DEPLOY_API_INPUT: ${{ github.event.inputs.deploy_api || 'false' }}
     steps:
@@ -82,8 +83,57 @@ jobs:
           echo "should_deploy_api=${should_deploy_api}" >> "$GITHUB_OUTPUT"
           echo "Backend deploy needed: ${should_deploy_api}"
 
+      - name: Resolve API Render service
+        id: api_service
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_KEY != '' }}
+        run: |
+          set -euo pipefail
+          api_service_id="$(printf '%s' "$RENDER_API_SERVICE_ID" | tr -d '[:space:]')"
+          if [ -z "$api_service_id" ]; then
+            echo "RENDER_API_SERVICE_ID is not configured. Looking up gmfn-api through Render API."
+            if ! services_json="$(curl -fsS \
+              -H "accept: application/json" \
+              -H "authorization: Bearer ${RENDER_API_KEY}" \
+              "https://api.render.com/v1/services?name=gmfn-api&limit=20")"; then
+              echo "::warning::Render API service lookup failed. Falling back to deploy hook if available."
+              services_json="[]"
+            fi
+            api_service_id="$(printf '%s' "$services_json" | node -e '
+              let input = "";
+              process.stdin.on("data", (chunk) => { input += chunk; });
+              process.stdin.on("end", () => {
+                try {
+                  const rows = JSON.parse(input);
+                  const match = rows.find((row) => row?.service?.name === "gmfn-api");
+                  process.stdout.write(match?.service?.id || "");
+                } catch {
+                  process.stdout.write("");
+                }
+              });
+            ')"
+          fi
+          if [ -z "$api_service_id" ]; then
+            echo "::warning::Could not resolve gmfn-api Render service id from RENDER_API_SERVICE_ID or Render API lookup."
+          else
+            echo "api_service_id=${api_service_id}" >> "$GITHUB_OUTPUT"
+            echo "Resolved gmfn-api Render service id."
+          fi
+
+      - name: Trigger API deploy through Render API
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_KEY != '' && steps.api_service.outputs.api_service_id != '' }}
+        run: |
+          echo "Triggering Render API deploy for gmfn-api service ${API_SERVICE_ID} at ${GITHUB_SHA}."
+          curl -fsS -X POST "https://api.render.com/v1/services/${API_SERVICE_ID}/deploys" \
+            -H "accept: application/json" \
+            -H "authorization: Bearer ${RENDER_API_KEY}" \
+            -H "content-type: application/json" \
+            --data "{\"commitId\":\"${GITHUB_SHA}\"}"
+          echo "gmfn-api Render API deploy accepted the request."
+        env:
+          API_SERVICE_ID: ${{ steps.api_service.outputs.api_service_id }}
+
       - name: Trigger API deploy hook
-        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_DEPLOY_HOOK_URL != '' }}
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && steps.api_service.outputs.api_service_id == '' && env.RENDER_API_DEPLOY_HOOK_URL != '' }}
         run: |
           echo "Triggering Render deploy for gmfn-api at ${GITHUB_SHA}."
           api_deploy_hook_url="$(printf '%s' "$RENDER_API_DEPLOY_HOOK_URL" | tr -d '[:space:]')"
@@ -95,9 +145,9 @@ jobs:
           echo "gmfn-api deploy hook accepted the request."
 
       - name: Note missing API deploy hook
-        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_DEPLOY_HOOK_URL == '' }}
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' && steps.api_service.outputs.api_service_id == '' && env.RENDER_API_DEPLOY_HOOK_URL == '' }}
         run: |
-          echo "::warning::RENDER_API_DEPLOY_HOOK_URL is not configured. Backend-impacting changes still require Render auto-deploy or manual deploy."
+          echo "::warning::No Render API deploy path is available for gmfn-api. Configure RENDER_API_KEY, optional RENDER_API_SERVICE_ID, or RENDER_API_DEPLOY_HOOK_URL. Backend-impacting changes still require Render auto-deploy or manual deploy."
 
       - name: Verify live API identity contracts
         if: ${{ steps.backend.outputs.should_deploy_api == 'true' }}

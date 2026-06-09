@@ -88,12 +88,20 @@ GitHub repository secrets:
 - `RENDER_API_KEY`
   - Render API key for the workspace
   - used as a fallback if the frontend deploy hook secret is missing
+  - used for backend deploys when available so the workflow can deploy the
+    exact GitHub commit SHA for `gmfn-api`, instead of relying only on a deploy
+    hook tied to whatever branch/service Render has configured
   - the workflow triggers `gmfn-frontend` through Render service
     `srv-d7h4oe9f9bms739lhh9g`
+- `RENDER_API_SERVICE_ID`
+  - optional Render service ID for `gmfn-api`
+  - if omitted and `RENDER_API_KEY` is configured, the workflow attempts to
+    discover the `gmfn-api` service by name before falling back to the deploy
+    hook
 - `RENDER_API_DEPLOY_HOOK_URL`
   - Render deploy hook URL for `gmfn-api`
-  - optional for frontend-only changes, required when backend or `render.yaml`
-    changes should trigger the API directly
+  - optional for frontend-only changes
+  - used as a fallback when the Render API key/service path is unavailable
 
 The active `gmfn-frontend` Render service should track `main`. A temporary
 workflow mirror to `feature/vault-shops` was used during pilot recovery when
@@ -127,6 +135,10 @@ If the deploy hook is accepted but this check fails, the API service is still
 serving an older backend build or the wrong Render service/branch. Do not ask
 the pilot phone to retest identity completion until the live contract check
 passes.
+
+If this happens, prefer the Render API path for the next deploy because it sends
+`commitId` with the exact GitHub SHA. A hook-accepted message is only a request
+receipt; it does not prove that the live API is running the new backend code.
 
 ## 4.2 Active pilot deploy protocol
 
