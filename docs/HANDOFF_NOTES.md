@@ -29,6 +29,14 @@
   - `npm exec -- tsc -b --pretty false` passed from `frontend`;
   - `git diff --check` passed with only expected Windows line-ending warnings;
   - `npm run build` passed from `frontend`.
+- Post-push verification:
+  - commit `a74504f` (`Tighten join pending helper buttons`) was pushed to
+    `main`;
+  - `Trigger Render Deploy` run `27202041397` completed successfully and the
+    frontend deploy hook returned `dep-d8jv8f8jo6nc73a0c3a0`;
+  - `Backend Tests` run `27202041328` completed successfully;
+  - GitHub Actions repeated the Node 20 deprecation warning for
+    `actions/checkout@v4`, but it did not fail the workflow.
 - Unabated truth:
   - this is frontend polish and button/icon tightening only. It does not fix the
     stale live backend identity evidence routes or the payment-related testing
