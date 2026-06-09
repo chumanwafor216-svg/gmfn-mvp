@@ -800,6 +800,18 @@ assertContains(
   "Money In instructions must use shared stable CTA primitives and shared CTA resolution for generation, copy/confirm, reset, collapse, and next-route actions."
 );
 
+assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /import \{ TrustPaperIcon \} from "\.\.\/components\/TrustPaperMarks";[\s\S]*?function moneyInActionButtonStyle\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function moneyInCollapseButtonStyle\(\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?<TrustPaperIcon name="document"[\s\S]*?debugId="money-in\.generate-instruction"[\s\S]*?minWidth=\{isCompact \? undefined : 186\}[\s\S]*?stableHeight=\{62\}[\s\S]*?Generate instruction[\s\S]*?<TrustPaperIcon name="shield"[\s\S]*?<TrustPaperIcon name="alert"[\s\S]*?debugId="money-in\.copy-reference"[\s\S]*?minWidth=\{isCompact \? undefined : 152\}[\s\S]*?stableHeight=\{52\}[\s\S]*?Copy reference[\s\S]*?debugId="money-in\.copy-instruction"[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?stableHeight=\{52\}[\s\S]*?Copy instruction[\s\S]*?debugId="money-in\.confirm-paid"[\s\S]*?minWidth=\{isCompact \? undefined : 170\}[\s\S]*?stableHeight=\{52\}[\s\S]*?Confirm paid/,
+  "Money In instructions must keep SVG pictograms, no-wrap action geometry, and compact labels for phone stability."
+);
+
+assertNotContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /(📋|🛡|ℹ|ð|â„|ï¸|Ÿ|Generate Instruction|Copy Reference|Copy Full Instruction|I Have Paid Using This Reference|Payment Declared)/,
+  "Money In instructions must not keep emoji/mojibake glyphs or long jumpy action labels."
+);
+
 assertNotContains(
   "src/pages/PaymentInstructionsPage.tsx",
   /(import OriginLink|function stableTapStyle\(|buttonGuardProps\(|guardButtonPress\(|actionBtn\(|collapseToggle\(|stableTapStyle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|communityTo\(|withCommunityQuery|APP_TARGETS)/,
@@ -1326,6 +1338,12 @@ assertContains(
   "src/pages/RepaymentPage.tsx",
   /import \{ PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton \} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="repayment\.toggle-overview"[\s\S]*?debugId="repayment\.toggle-instruction"[\s\S]*?debugId="repayment\.generate-instruction"[\s\S]*?debugId="repayment\.copy-reference"[\s\S]*?debugId="repayment\.copy-full-instruction"[\s\S]*?debugId="repayment\.toggle-result"[\s\S]*?debugId="repayment\.confirm-paid"[\s\S]*?debugId="repayment\.toggle-routes"[\s\S]*?debugId="repayment\.route\.loan-summary"[\s\S]*?debugId="repayment\.route\.finance"[\s\S]*?debugId="repayment\.route\.loans"/,
   "Repayment page must use shared stable primitives and shared CTA resolution for collapse, instruction, confirmation, copy, and route actions."
+);
+
+assertContains(
+  "src/pages/RepaymentPage.tsx",
+  /function collapseToggle\(\)[\s\S]*?minWidth: 124[\s\S]*?whiteSpace: "nowrap"[\s\S]*?overflowWrap: "normal"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?minWidth=\{isCompact \? undefined : 186\}[\s\S]*?stableHeight=\{54\}[\s\S]*?debugId="repayment\.generate-instruction"[\s\S]*?Generate instruction[\s\S]*?minWidth=\{isCompact \? undefined : 150\}[\s\S]*?debugId="repayment\.copy-reference"[\s\S]*?Copy reference[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="repayment\.copy-full-instruction"[\s\S]*?Copy instruction[\s\S]*?minWidth=\{isCompact \? undefined : 170\}[\s\S]*?debugId="repayment\.confirm-paid"[\s\S]*?Confirm paid[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loan-summary"[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.finance"[\s\S]*?fullWidth[\s\S]*?debugId="repayment\.route\.loans"/,
+  "Repayment controls must keep compact labels, fixed no-wrap collapse geometry, and full-width route links."
 );
 
 assertNotContains(

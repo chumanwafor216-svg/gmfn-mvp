@@ -202,7 +202,7 @@ function collapseToggle(): React.CSSProperties {
     alignItems: "center",
     justifyContent: "center",
     minHeight: 46,
-    minWidth: 120,
+    minWidth: 124,
     padding: "9px 13px",
     borderRadius: 12,
     border: "1px solid rgba(121,149,190,0.20)",
@@ -213,8 +213,10 @@ function collapseToggle(): React.CSSProperties {
     fontSize: 13,
     textAlign: "center",
     cursor: "pointer",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
+    whiteSpace: "nowrap",
+    overflowWrap: "normal",
+    flex: "0 0 auto",
+    transition: "none",
     boxShadow: "0 12px 24px rgba(2,6,23,0.16), inset 0 1px 0 rgba(255,255,255,0.06)",
   };
 }
@@ -927,30 +929,33 @@ export default function RepaymentPage() {
                   disabled={generatingInstruction || !canRepay}
                   busy={generatingInstruction}
                   busyLabel="Generating..."
+                  minWidth={isCompact ? undefined : 186}
                   stableHeight={54}
                   debugId="repayment.generate-instruction"
                 >
-                  Generate Repayment Instruction
+                  Generate instruction
                 </PrimaryButton>
 
-                  <SecondaryButton
-                    type="button"
-                    onClick={handleCopyReference}
-                    disabled={generatingInstruction || !instruction}
-                    stableHeight={54}
-                    debugId="repayment.copy-reference"
-                  >
-                    Copy Reference
-                  </SecondaryButton>
+                <SecondaryButton
+                  type="button"
+                  onClick={handleCopyReference}
+                  disabled={generatingInstruction || !instruction}
+                  minWidth={isCompact ? undefined : 150}
+                  stableHeight={54}
+                  debugId="repayment.copy-reference"
+                >
+                  Copy reference
+                </SecondaryButton>
 
-                  <SecondaryButton
-                    type="button"
-                    onClick={handleCopyInstruction}
-                    disabled={generatingInstruction || !instruction}
-                    stableHeight={54}
-                    debugId="repayment.copy-full-instruction"
-                  >
-                    Copy Full Instruction
+                <SecondaryButton
+                  type="button"
+                  onClick={handleCopyInstruction}
+                  disabled={generatingInstruction || !instruction}
+                  minWidth={isCompact ? undefined : 166}
+                  stableHeight={54}
+                  debugId="repayment.copy-full-instruction"
+                >
+                  Copy instruction
                 </SecondaryButton>
               </div>
             </div>
@@ -1049,12 +1054,12 @@ export default function RepaymentPage() {
                   </div>
                 ) : instruction ? (
                   <div style={innerCard("#F8FBFF")}>
-                  <div style={sectionLabel()}>Expected payment visibility</div>
-                  <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
+                    <div style={sectionLabel()}>Expected payment visibility</div>
+                    <div style={{ marginTop: 8, ...helperText(), color: "#F8FBFF" }}>
                       Finance has not yet shown a matching repayment expectation for this
                       generated reference.
+                    </div>
                   </div>
-                </div>
                 ) : null}
               </div>
             </div>
@@ -1068,10 +1073,11 @@ export default function RepaymentPage() {
                   type="button"
                   onClick={handleConfirmPaymentMade}
                   disabled={!instruction || Boolean(paymentConfirmedAt)}
+                  minWidth={isCompact ? undefined : 170}
                   stableHeight={54}
                   debugId="repayment.confirm-paid"
                 >
-                  {paymentConfirmedAt ? "Payment Declared" : "I Have Paid Using This Reference"}
+                  {paymentConfirmedAt ? "Payment declared" : "Confirm paid"}
                 </PrimaryButton>
 
                 {repaymentTaskActive ? (
@@ -1147,6 +1153,7 @@ export default function RepaymentPage() {
                 to={routes.loanSummary}
                 kind="primary"
                 stableHeight={54}
+                fullWidth
                 debugId="repayment.route.loan-summary"
               >
                 Loan Summary
@@ -1155,6 +1162,7 @@ export default function RepaymentPage() {
                 to={routes.finance}
                 kind="secondary"
                 stableHeight={54}
+                fullWidth
                 debugId="repayment.route.finance"
               >
                 Finance
@@ -1163,6 +1171,7 @@ export default function RepaymentPage() {
                 to={routes.loans}
                 kind="secondary"
                 stableHeight={54}
+                fullWidth
                 debugId="repayment.route.loans"
               >
                 Loans & Support

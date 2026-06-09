@@ -41220,3 +41220,47 @@ GSN-branded invite composer and invite-entry continuity.
   - this is still source/audit/compiler verified. The physical-phone tactile
     check should happen after deploy, especially on Loan Summary and Loan
     Workbench where busy/disabled states are most visible.
+
+### Repayment and Money In page-body/button polish (2026-06-09)
+
+- Trigger:
+  - continuing the backward inner-page tightening pass while the product owner
+    investigates the live payment/deploy issue;
+  - Money In still had emoji/mojibake-style pictograms and long action labels
+    that could stretch or jump on phone.
+- Changed:
+  - `frontend/src/pages/RepaymentPage.tsx`
+    - repayment instruction, copy, and confirmation labels are now compact;
+    - collapse controls now keep no-wrap fixed-flex geometry;
+    - Loan Summary, Finance, and Loans route links now use full-width stable
+      route geometry;
+    - corrected a small nested-card indentation problem in the expected
+      payment visibility block.
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - Money In fact tiles, instruction header, and notice strips now use
+      `TrustPaperIcon` SVG pictograms instead of emoji;
+    - Money In action and collapse button styles now use no-wrap/no-transition
+      geometry;
+    - Generate, Copy reference, Copy instruction, and Confirm paid actions now
+      use compact labels plus explicit stable height/min-width values.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the Repayment compact/no-wrap route geometry;
+    - now cages Money In SVG pictograms, no-wrap action geometry, compact
+      labels, and absence of emoji/mojibake/long jumpy labels.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm exec -- eslint src/pages/RepaymentPage.tsx src/pages/PaymentInstructionsPage.tsx tools/audit-button-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this does not fix the live payment/backend evidence reflection problem.
+    It tightens the visible Repayment and Money In page bodies/buttons while
+    the deployment/payment issue is being sorted out.
+- Remaining risk:
+  - physical-phone check is still needed after deploy to confirm the Money In
+    SVG icons and shortened action labels feel right in the real browser.

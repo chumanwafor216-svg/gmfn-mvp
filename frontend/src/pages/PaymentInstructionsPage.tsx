@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import ExplainToggle from "../components/ExplainToggle";
 import PageTopNav from "../components/PageTopNav";
 import { PrimaryButton, SecondaryButton, StableCtaLink, SubtleButton } from "../components/StableButton";
+import { TrustPaperIcon } from "../components/TrustPaperMarks";
 import * as api from "../lib/api";
 import { communityIdFromSearch } from "../lib/communityRouteContext";
 import { resolveCtaTarget, type CtaIntent } from "../lib/ctaTargets";
@@ -160,6 +161,8 @@ function moneyInActionButtonStyle(
       fontSize: 14,
       cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.86 : 1,
+      whiteSpace: "nowrap",
+      transition: "none",
     };
   }
 
@@ -177,6 +180,8 @@ function moneyInActionButtonStyle(
       fontSize: 13,
       cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.86 : 1,
+      whiteSpace: "nowrap",
+      transition: "none",
     };
   }
 
@@ -193,6 +198,8 @@ function moneyInActionButtonStyle(
     fontSize: 14,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.86 : 1,
+    whiteSpace: "nowrap",
+    transition: "none",
   };
 }
 
@@ -208,6 +215,9 @@ function moneyInCollapseButtonStyle(): React.CSSProperties {
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
+    whiteSpace: "nowrap",
+    flex: "0 0 auto",
+    transition: "none",
   };
 }
 
@@ -1318,7 +1328,7 @@ export default function PaymentInstructionsPage() {
         >
           {[
             {
-              icon: "💵",
+              iconName: "wallet" as const,
               label: "Amount",
               value: formattedInputAmount
                 ? `${formattedInputAmount} ${poolCurrency}`
@@ -1326,13 +1336,13 @@ export default function PaymentInstructionsPage() {
               color: "#0B63D1",
             },
             {
-              icon: "🔖",
+              iconName: "tag" as const,
               label: "Reference",
               value: firstTruthy(instruction?.reference, "Awaiting reference"),
               color: "#0B63D1",
             },
             {
-              icon: "🏦",
+              iconName: "bank" as const,
               label: "Route",
               value: communityRailReady
                 ? "Ready"
@@ -1340,7 +1350,7 @@ export default function PaymentInstructionsPage() {
               color: "#0B63D1",
             },
             {
-              icon: "🛡️",
+              iconName: "shield" as const,
               label: "Status",
               value: matchedEvent
                 ? "Matched"
@@ -1352,7 +1362,7 @@ export default function PaymentInstructionsPage() {
           ].map((tile) => (
             <div key={tile.label} style={moneyInFactTile(isCompact)}>
               <span style={moneyInIconCircle(tile.color)} aria-hidden="true">
-                {tile.icon}
+                <TrustPaperIcon name={tile.iconName} size={19} color="#FFFFFF" />
               </span>
               <span
                 style={{
@@ -1451,7 +1461,7 @@ export default function PaymentInstructionsPage() {
               fontSize: 24,
             }}
           >
-            📋
+            <TrustPaperIcon name="document" size={22} color="#F8FBFF" />
           </span>
           <h2
             style={{
@@ -1542,17 +1552,19 @@ export default function PaymentInstructionsPage() {
               onClick={() => void handleGenerateInstruction()}
               disabled={generatingInstruction}
               debugId="money-in.generate-instruction"
+              minWidth={isCompact ? undefined : 186}
               stableHeight={62}
               fullWidth
               style={moneyInActionButtonStyle("primary", generatingInstruction)}
             >
-              {generatingInstruction ? "Generating..." : "Generate Instruction"}
+              {generatingInstruction ? "Generating..." : "Generate instruction"}
             </PrimaryButton>
 
             <SecondaryButton
               onClick={() => void handleRefreshRoute()}
               disabled={generatingInstruction || refreshingRoute}
               debugId="money-in.refresh-route"
+              minWidth={isCompact ? undefined : 132}
               stableHeight={62}
               fullWidth
               style={moneyInActionButtonStyle(
@@ -1586,7 +1598,20 @@ export default function PaymentInstructionsPage() {
 
       <section style={{ display: "grid", gap: 12 }}>
         <div style={moneyInNoticeStrip("#D6AA45")}>
-          <span style={{ color: "#F2C766", fontSize: 28, textAlign: "center" }}>🛡️</span>
+          <span
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 999,
+              background: "rgba(242,199,102,0.12)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#F2C766",
+            }}
+          >
+            <TrustPaperIcon name="shield" size={19} color="#F2C766" />
+          </span>
           <span
             style={{
               color: "#F8FBFF",
@@ -1600,7 +1625,20 @@ export default function PaymentInstructionsPage() {
         </div>
 
         <div style={moneyInNoticeStrip("#2D7CFF")}>
-          <span style={{ color: "#6BA7FF", fontSize: 30, textAlign: "center" }}>ℹ️</span>
+          <span
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 999,
+              background: "rgba(107,167,255,0.12)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#6BA7FF",
+            }}
+          >
+            <TrustPaperIcon name="alert" size={19} color="#6BA7FF" />
+          </span>
           <span
             style={{
               color: "#D8E7FA",
@@ -1732,29 +1770,35 @@ export default function PaymentInstructionsPage() {
                 <div style={sectionLabel()}>Instruction actions</div>
 
                 <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                    <PrimaryButton
-                      onClick={handleCopyReference}
-                      debugId="money-in.copy-reference"
-                      style={moneyInActionButtonStyle("primary")}
-                    >
-                      Copy Reference
-                    </PrimaryButton>
+                  <PrimaryButton
+                    onClick={handleCopyReference}
+                    debugId="money-in.copy-reference"
+                    minWidth={isCompact ? undefined : 152}
+                    stableHeight={52}
+                    style={moneyInActionButtonStyle("primary")}
+                  >
+                    Copy reference
+                  </PrimaryButton>
 
-                    <SecondaryButton
-                      onClick={handleCopyInstruction}
-                      debugId="money-in.copy-instruction"
-                      style={moneyInActionButtonStyle("secondary")}
-                    >
-                    Copy Full Instruction
+                  <SecondaryButton
+                    onClick={handleCopyInstruction}
+                    debugId="money-in.copy-instruction"
+                    minWidth={isCompact ? undefined : 166}
+                    stableHeight={52}
+                    style={moneyInActionButtonStyle("secondary")}
+                  >
+                    Copy instruction
                   </SecondaryButton>
 
                   <SecondaryButton
                     onClick={handleConfirmPaymentMade}
                     disabled={paymentConfirmed}
                     debugId="money-in.confirm-paid"
+                    minWidth={isCompact ? undefined : 170}
+                    stableHeight={52}
                     style={moneyInActionButtonStyle("secondary", paymentConfirmed)}
                   >
-                    {paymentConfirmed ? "Payment Declared" : "I Have Paid Using This Reference"}
+                    {paymentConfirmed ? "Payment declared" : "Confirm paid"}
                   </SecondaryButton>
                 </div>
               </div>
