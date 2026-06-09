@@ -231,6 +231,35 @@ def test_trustslip_me_exposes_bank_context_before_phone_verification(
     assert body["identity_context"]["bank_evidence_status"] == "recorded"
 
 
+def test_trustslip_me_exposes_official_id_context_before_phone_verification(
+    client: TestClient,
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    official_res = client.post(
+        "/entry/signed-in/official-id/record",
+        json={
+            "document_type": "International Passport",
+            "document_reference": "P1234567",
+            "country": "GB",
+            "note": "Pilot passport record",
+        },
+    )
+    assert official_res.status_code == 201, official_res.text
+
+    res = client.get("/trust-slips/me")
+    assert res.status_code == 200, res.text
+    body = res.json()
+    assert body["active"] is False
+    assert body["reason"] == "phone_unverified"
+    assert body["identity_context"]["official_id_recorded"] is True
+    assert body["identity_context"]["official_id_verified"] is False
+    assert body["identity_context"]["passport_recorded"] is True
+    assert body["identity_context"]["passport_verification_label"] == (
+        "Official ID evidence recorded for review"
+    )
+
+
 def test_signed_in_phone_start_records_system_generated_phone_evidence(
     client: TestClient,
     monkeypatch,

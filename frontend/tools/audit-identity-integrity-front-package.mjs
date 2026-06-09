@@ -141,6 +141,11 @@ assertContains(
 );
 
 assertContains(
+  /officialIdTaskMessage[\s\S]*?setOfficialIdTaskMessage\([\s\S]*?data-identity-integrity-official-id-response="true"[\s\S]*?\{officialIdTaskMessage\}/,
+  "Identity Integrity must keep the official-ID recording result inside the Passport/ID task instead of relying on a disappearing top notice."
+);
+
+assertContains(
   /recordSignedInIdentityPhoto[\s\S]*?data-identity-integrity-photo-completion="true"[\s\S]*?debugId="identity-integrity\.identity-photo\.selfie"[\s\S]*?debugId="identity-integrity\.identity-photo\.id-photo"[\s\S]*?debugId="identity-integrity\.identity-photo\.record"/,
   "Identity Integrity must provide signed-in selfie and ID-photo evidence capture instead of an explanation-only ID route."
 );

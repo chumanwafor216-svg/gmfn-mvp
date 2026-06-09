@@ -1,3 +1,35 @@
+### Official ID / passport evidence response pass (2026-06-09)
+
+- Trigger:
+  - product owner recorded international passport details in Identity
+    Integrity but did not get a clear success/failure response;
+  - product owner suspected the passport/official-ID evidence was not reflected
+    in Identity Overview / Trust Passport.
+- Scope:
+  - frontend route `/app/identity-integrity?task=official_id&mode=complete`;
+  - backend owner TrustSlip route `/trust-slips/me` behavior already returns
+    identity context; this pass adds explicit regression coverage for official
+    ID visibility before phone portability is active;
+  - no schema, auth core, live passport provider, payment, ledger, Dashboard,
+    Marketplace, Community Home, or tap guard behavior changed.
+- Fix:
+  - Identity Integrity now keeps a durable in-task Passport / Official ID
+    response message after manual ID details, selfie, or ID-photo evidence is
+    recorded;
+  - the response stays in the task area instead of relying only on the short
+    top notice;
+  - after ID details are recorded, the task can become "Recorded" while still
+    clearly saying provider verification is pending;
+  - added backend test coverage that `/trust-slips/me` exposes
+    `official_id_recorded`, `passport_recorded`, and the review-pending label
+    even when phone verification has not activated TrustSlip portability yet.
+- Audit cage updated:
+  - Identity Integrity front-package audit now protects the local
+    `officialIdTaskMessage` response block.
+- Unabated truth:
+  - this records passport/official-ID evidence for review. It does not connect
+    a live passport, document, liveness, or government verification provider.
+
 ### Bank / wallet evidence visibility and upsert pass (2026-06-09)
 
 - Trigger:

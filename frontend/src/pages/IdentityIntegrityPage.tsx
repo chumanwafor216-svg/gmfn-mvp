@@ -1094,6 +1094,7 @@ export default function IdentityIntegrityPage() {
   const [officialIdType, setOfficialIdType] = useState("Passport");
   const [officialIdReference, setOfficialIdReference] = useState("");
   const [officialIdCountry, setOfficialIdCountry] = useState("");
+  const [officialIdTaskMessage, setOfficialIdTaskMessage] = useState("");
   const [officialIdBusy, setOfficialIdBusy] = useState(false);
   const [identityPhotoFile, setIdentityPhotoFile] = useState<File | null>(null);
   const [identityPhotoPreview, setIdentityPhotoPreview] = useState("");
@@ -1881,6 +1882,7 @@ export default function IdentityIntegrityPage() {
     if (officialIdBusy) return;
 
     setOfficialIdBusy(true);
+    setOfficialIdTaskMessage("");
     try {
       const out = await recordSignedInOfficialId({
         document_type: officialIdType,
@@ -1894,11 +1896,17 @@ export default function IdentityIntegrityPage() {
         official_id_verified_at: out?.verified_at || undefined,
       }));
       setOfficialIdReference("");
+      setOfficialIdTaskMessage(
+        `${officialIdType} evidence recorded for review. Provider verification is still pending.`
+      );
       showNotice(
         "success",
         "Official ID evidence is recorded for review. It is not provider-verified yet."
       );
     } catch (err: any) {
+      setOfficialIdTaskMessage(
+        err?.message || "Official ID evidence could not be recorded."
+      );
       showNotice("error", err?.message || "Official ID evidence could not be recorded.");
     } finally {
       setOfficialIdBusy(false);
@@ -1934,6 +1942,7 @@ export default function IdentityIntegrityPage() {
     if (identityPhotoBusy || !identityPhotoFile) return;
 
     setIdentityPhotoBusy(true);
+    setOfficialIdTaskMessage("");
     try {
       const documentType =
         identityPhotoKind === "selfie"
@@ -1971,6 +1980,11 @@ export default function IdentityIntegrityPage() {
       }
       setIdentityPhotoFile(null);
       setIdentityPhotoPreview("");
+      setOfficialIdTaskMessage(
+        identityPhotoKind === "selfie"
+          ? "Selfie evidence recorded for review. Provider face-match is still pending."
+          : "ID photo evidence recorded for review. Provider document verification is still pending."
+      );
       showNotice(
         "success",
         identityPhotoKind === "selfie"
@@ -1978,6 +1992,9 @@ export default function IdentityIntegrityPage() {
           : "ID photo evidence is recorded for review. It is not provider-verified yet."
       );
     } catch (err: any) {
+      setOfficialIdTaskMessage(
+        err?.message || "Photo evidence could not be recorded."
+      );
       showNotice("error", err?.message || "Photo evidence could not be recorded.");
     } finally {
       setIdentityPhotoBusy(false);
@@ -2740,6 +2757,23 @@ export default function IdentityIntegrityPage() {
                   {officialIdBusy ? "Recording..." : "Record ID evidence"}
                 </PrimaryButton>
               </form>
+            ) : null}
+            {activeTask.key === "official_id" && officialIdTaskMessage ? (
+              <div
+                data-identity-integrity-official-id-response="true"
+                style={{
+                  borderRadius: 13,
+                  border: "1px solid rgba(46,155,98,0.18)",
+                  background: "#F3FBF5",
+                  color: "#166534",
+                  fontSize: 12,
+                  fontWeight: 950,
+                  lineHeight: 1.35,
+                  padding: "8px 10px",
+                }}
+              >
+                {officialIdTaskMessage}
+              </div>
             ) : null}
           </div>
         </div>
