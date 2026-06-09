@@ -461,41 +461,6 @@ function inlineButtonContent(icon: IconName, label: string) {
   );
 }
 
-function emojiButtonContent(emoji: string, label: string) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 10,
-        minWidth: 0,
-        width: "100%",
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          flex: "0 0 auto",
-          fontSize: 22,
-          lineHeight: 1,
-        }}
-      >
-        {emoji}
-      </span>
-      <span
-        style={{
-          minWidth: 0,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        {label}
-      </span>
-    </span>
-  );
-}
-
 function progressPercent(approvals: number, requiredApprovals: number): number {
   if (!requiredApprovals || requiredApprovals <= 0) return approvals > 0 ? 100 : 0;
   return Math.max(0, Math.min(100, Math.round((approvals / requiredApprovals) * 100)));
@@ -1230,7 +1195,7 @@ export default function JoinRequestPendingPage() {
               stableHeight={isCompact ? 56 : 50}
               style={helpfulLinkStyle(isCompact)}
             >
-              {emojiButtonContent("📖", "Full GSN guide")}
+              {inlineButtonContent("book", "Full GSN guide")}
             </StableCtaLink>
             <StableCtaLink
               to={ctaPath(guideCta)}
@@ -1239,7 +1204,7 @@ export default function JoinRequestPendingPage() {
               stableHeight={isCompact ? 56 : 50}
               style={helpfulLinkStyle(isCompact)}
             >
-              {emojiButtonContent("🎯", "Focus Commitments")}
+              {inlineButtonContent("focus", "Focus Commitments")}
             </StableCtaLink>
             <StableCtaLink
               to={ctaPath(welcomeCta)}
@@ -1248,7 +1213,7 @@ export default function JoinRequestPendingPage() {
               stableHeight={isCompact ? 56 : 50}
               style={helpfulLinkStyle(isCompact)}
             >
-              {emojiButtonContent("👋", "Welcome")}
+              {inlineButtonContent("welcome", "Welcome")}
             </StableCtaLink>
           </CardActionRow>
         </section>
@@ -1266,9 +1231,7 @@ export default function JoinRequestPendingPage() {
           }}
         >
           <span style={iconBubble(38)}>
-            <span aria-hidden="true" style={{ fontSize: 18, lineHeight: 1 }}>
-              🔒
-            </span>
+            <IconGlyph name="lock" size={18} />
           </span>
           Entry is reviewed, not automatic.
         </section>

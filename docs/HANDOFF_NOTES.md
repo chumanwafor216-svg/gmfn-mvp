@@ -1,3 +1,39 @@
+### Join pending helper-button SVG tightening pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue inner-page tightening and polish from the
+    trust/community backend-adjacent pages outward while payment / live backend
+    identity deployment remains blocked.
+- Scope:
+  - frontend applicant-side join pending page
+    `frontend/src/pages/JoinRequestPendingPage.tsx`;
+  - frontend button-stability audit only;
+  - no join request status logic, vote threshold, membership approval,
+    backend, auth, payment, identity evidence, or route contract changed.
+- Changed:
+  - removed the remaining `emojiButtonContent` helper from Join Pending;
+  - changed the helpful links (`Full GSN guide`, `Focus Commitments`,
+    `Welcome`) to use the page-native `IconGlyph` SVG pictograms through
+    `inlineButtonContent`;
+  - changed the reviewed-entry lock notice from an emoji mark to the existing
+    SVG lock pictogram.
+- Audit cage updated:
+  - `audit-button-stability` now rejects reintroducing the Join Pending emoji
+    helper and protects the SVG pictograms for the guide, focus, welcome, and
+    reviewed-entry marks.
+- Verification before push:
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm exec -- eslint src/pages/JoinRequestPendingPage.tsx tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings;
+  - `npm run build` passed from `frontend`.
+- Unabated truth:
+  - this is frontend polish and button/icon tightening only. It does not fix the
+    stale live backend identity evidence routes or the payment-related testing
+    blockage.
+
 ### Inner voting/category tightening pass (2026-06-09)
 
 - Trigger:

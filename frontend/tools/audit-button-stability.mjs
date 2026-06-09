@@ -350,6 +350,18 @@ assertNotContains(
   "Join pending must not keep a local action button helper after migration."
 );
 
+assertNotContains(
+  "src/pages/JoinRequestPendingPage.tsx",
+  /emojiButtonContent\(|function emojiButtonContent/,
+  "Join pending helpful actions must use app-native SVG pictograms, not emoji button helpers."
+);
+
+assertContains(
+  "src/pages/JoinRequestPendingPage.tsx",
+  /inlineButtonContent\("book", "Full GSN guide"\)[\s\S]*?inlineButtonContent\("focus", "Focus Commitments"\)[\s\S]*?inlineButtonContent\("welcome", "Welcome"\)[\s\S]*?<IconGlyph name="lock" size=\{18\} \/>/,
+  "Join pending helpful links and review notice must keep SVG pictograms for guide, focus, welcome, and reviewed-entry marks."
+);
+
 assertContains(
   "src/pages/JoinApprovalPage.tsx",
   /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?resolveCtaTarget[\s\S]*?navigateToCta/,
