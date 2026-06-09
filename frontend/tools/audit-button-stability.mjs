@@ -866,10 +866,22 @@ assertContains(
   "Money In instructions must keep SVG pictograms, no-wrap action geometry, and compact labels for phone stability."
 );
 
+assertContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /debugId="money-in\.header\.menu"[\s\S]*?<TrustPaperIcon name="home"[\s\S]*?debugId="money-in\.header\.tools"[\s\S]*?<TrustPaperIcon name="briefcase"[\s\S]*?<TrustPaperIcon name="shop"[\s\S]*?name=\{generatingInstruction \|\| refreshingRoute \? "refresh" : "check"\}/,
+  "Money In header, community badge, and state badge must use SVG pictograms instead of emoji or mojibake glyphs."
+);
+
 assertNotContains(
   "src/pages/PaymentInstructionsPage.tsx",
   /(📋|🛡|ℹ|ð|â„|ï¸|Ÿ|Generate Instruction|Copy Reference|Copy Full Instruction|I Have Paid Using This Reference|Payment Declared)/,
   "Money In instructions must not keep emoji/mojibake glyphs or long jumpy action labels."
+);
+
+assertNotContains(
+  "src/pages/PaymentInstructionsPage.tsx",
+  /(☰|🛠|🏪|🕘)/,
+  "Money In header and status badges must not use literal emoji symbols where SVG icons are available."
 );
 
 assertNotContains(

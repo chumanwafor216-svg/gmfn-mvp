@@ -1121,7 +1121,19 @@ export default function PaymentInstructionsPage() {
           fullWidth
           style={moneyInNavButton()}
         >
-          ☰ {isCompact ? "" : "Menu"}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: isCompact ? 0 : 8,
+              minWidth: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <TrustPaperIcon name="home" size={20} color="currentColor" />
+            {isCompact ? null : <span>Menu</span>}
+          </span>
         </StableCtaLink>
 
         <div style={{ minWidth: 0 }}>
@@ -1157,7 +1169,19 @@ export default function PaymentInstructionsPage() {
           fullWidth
           style={moneyInNavButton()}
         >
-          🛠️ {isCompact ? "Tools" : "Tools"}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              minWidth: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            <TrustPaperIcon name="briefcase" size={20} color="currentColor" />
+            <span>Tools</span>
+          </span>
         </StableCtaLink>
       </section>
 
@@ -1188,7 +1212,7 @@ export default function PaymentInstructionsPage() {
               flex: "0 0 auto",
             }}
           >
-            🏪
+            <TrustPaperIcon name="shop" size={28} color="currentColor" />
           </div>
           <div
             style={{
@@ -1282,7 +1306,12 @@ export default function PaymentInstructionsPage() {
               fontSize: 34,
             }}
           >
-            🕘
+            <TrustPaperIcon
+              name={generatingInstruction || refreshingRoute ? "refresh" : "check"}
+              size={34}
+              color="currentColor"
+              strokeWidth={1.9}
+            />
           </div>
           <div>
             <div

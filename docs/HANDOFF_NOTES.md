@@ -41654,3 +41654,44 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining risk:
   - physical-phone testing is still needed after deploy to confirm the compact
     route tiles feel stable in the real mobile browser.
+
+### Money In header/status icon cleanup (2026-06-09)
+
+- Trigger:
+  - continuing the backwards inner-page button/body polish after Payment Rails;
+  - Money In still had literal emoji/mojibake glyphs in the page header,
+    community badge, and current-state badge.
+- Changed:
+  - `frontend/src/pages/PaymentInstructionsPage.tsx`
+    - replaced the header Menu glyph with an app-native `TrustPaperIcon`
+      pictogram;
+    - replaced the header Tools glyph with an app-native `TrustPaperIcon`
+      pictogram;
+    - replaced the community/store badge glyph with `TrustPaperIcon name="shop"`;
+    - replaced the working/status badge glyph with a deterministic SVG state
+      icon (`refresh` while work is active, otherwise `check`).
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages Money In header, community, and state badges as SVG-only;
+    - now rejects the literal Money In header/status emoji symbols in addition
+      to the older mojibake and long-label patterns.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:finance-money-movement-lanes`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:finance-actions`.
+  - Passed `npm --prefix frontend run audit:finance-front-package`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- eslint src/pages/PaymentInstructionsPage.tsx tools/audit-button-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warning.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is a route-local UI and button/icon stability fix. It does not touch
+    payment execution, bank/wallet persistence, live backend identity evidence,
+    or deployment/payment account issues.
+- Remaining risk:
+  - physical-phone testing is still needed after deployment to confirm the
+    Money In header and state badge feel sharper in the real browser.
