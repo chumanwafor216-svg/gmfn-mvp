@@ -550,6 +550,8 @@ export default function TrustSlipVerifyPage() {
           );
         }}
         stableHeight={isCompact ? 52 : 58}
+        fullWidth={isCompact}
+        minWidth={isCompact ? undefined : 176}
         debugId="trust-slip-verify.public.print"
         style={{
           borderRadius: 12,
@@ -565,6 +567,8 @@ export default function TrustSlipVerifyPage() {
           type="button"
           onClick={() => navigateWithOrigin(navigate, routes.trust, location)}
           stableHeight={isCompact ? 52 : 58}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 132}
           debugId="trust-slip-verify.public.open-passport"
           style={{ borderRadius: 12, fontWeight: 1000 }}
         >
@@ -575,6 +579,8 @@ export default function TrustSlipVerifyPage() {
           type="button"
           onClick={() => navigateWithOrigin(navigate, "/guide", location)}
           stableHeight={isCompact ? 52 : 58}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 132}
           debugId="trust-slip-verify.public.open-guide"
           style={{ borderRadius: 12, fontWeight: 1000 }}
         >
@@ -586,6 +592,8 @@ export default function TrustSlipVerifyPage() {
           to={communityVerifyPath}
           kind="primary"
           stableHeight={isCompact ? 52 : 58}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 190}
           debugId="trust-slip-verify.public.open-community-record"
           style={{
             borderRadius: 12,
@@ -606,6 +614,8 @@ export default function TrustSlipVerifyPage() {
             );
           }}
           stableHeight={isCompact ? 52 : 58}
+          fullWidth={isCompact}
+          minWidth={isCompact ? undefined : 190}
           debugId="trust-slip-verify.public.open-community-record"
           style={{
             borderRadius: 12,
@@ -768,6 +778,7 @@ export default function TrustSlipVerifyPage() {
               to="/welcome"
               kind="secondary"
               stableHeight={48}
+              minWidth={isCompact ? undefined : 116}
               debugId="trust-slip-verify.hero.welcome"
             >
               Welcome
@@ -776,6 +787,7 @@ export default function TrustSlipVerifyPage() {
               to="/guide"
               kind="secondary"
               stableHeight={48}
+              minWidth={isCompact ? undefined : 132}
               debugId="trust-slip-verify.hero.guide"
             >
               My GSN and I
@@ -1027,6 +1039,7 @@ export default function TrustSlipVerifyPage() {
               void copyCode();
             }}
             stableHeight={44}
+            minWidth={isCompact ? undefined : 166}
             debugId="trust-slip-verify.copy-code"
           >
             Copy TrustSlip Code
@@ -1038,6 +1051,7 @@ export default function TrustSlipVerifyPage() {
               void copyVerifyLink();
             }}
             stableHeight={44}
+            minWidth={isCompact ? undefined : 148}
             debugId="trust-slip-verify.copy-link"
           >
             Copy Verify Link
@@ -1049,6 +1063,7 @@ export default function TrustSlipVerifyPage() {
               void copyGmfnId();
             }}
             stableHeight={44}
+            minWidth={isCompact ? undefined : 124}
             debugId="trust-slip-verify.copy-gmfn-id"
           >
             Copy GSN ID
@@ -1067,6 +1082,7 @@ export default function TrustSlipVerifyPage() {
               );
             }}
             stableHeight={44}
+            minWidth={isCompact ? undefined : 92}
             debugId="trust-slip-verify.print"
           >
             Print
@@ -1078,6 +1094,7 @@ export default function TrustSlipVerifyPage() {
               void copyVerificationSnapshot();
             }}
             stableHeight={44}
+            minWidth={isCompact ? undefined : 132}
             debugId="trust-slip-verify.copy-snapshot"
           >
             Copy snapshot
@@ -1088,6 +1105,7 @@ export default function TrustSlipVerifyPage() {
               to={routes.trust}
               kind="soft"
               stableHeight={44}
+              minWidth={isCompact ? undefined : 140}
               debugId="trust-slip-verify.route.trust"
             >
               Trust Passport
@@ -1097,6 +1115,7 @@ export default function TrustSlipVerifyPage() {
               to="/guide"
               kind="soft"
               stableHeight={44}
+              minWidth={isCompact ? undefined : 132}
               debugId="trust-slip-verify.route.trust"
             >
               My GSN and I

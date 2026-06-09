@@ -704,6 +704,12 @@ assertContains(
   "Finance page must use shared stable CTA primitives and shared CTA resolution for tool cards, collapse controls, and support route actions."
 );
 
+assertContains(
+  "src/pages/FinancePage.tsx",
+  /minWidth=\{80\}[\s\S]*?stableHeight=\{36\}[\s\S]*?debugId="finance\.events\.view-all"[\s\S]*?debugId="finance\.view-signals"[\s\S]*?fullWidth[\s\S]*?stableHeight=\{50\}[\s\S]*?debugId="finance\.open-loans"[\s\S]*?fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 210\}[\s\S]*?stableHeight=\{isCompact \? 48 : 52\}/,
+  "Finance inner actions must keep explicit stable geometry for view-all, signals, and Loans & Support route actions."
+);
+
 assertNotContains(
   "src/pages/FinancePage.tsx",
   /(import OriginLink|function (tapSafeButtonBase|actionBtn|collapseToggle)\(|stopFinanceTap|tapSafeButtonBase\(|actionBtn\(|collapseToggle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|openFinanceRoute\("\/app)/,
@@ -1314,6 +1320,12 @@ assertContains(
   "src/pages/TrustSlipVerifyPage.tsx",
   /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?StableDisclosureSummary[\s\S]*?SubtleButton[\s\S]*?\} from "\.\.\/components\/StableButton";[\s\S]*?import \{ resolveCtaTarget, type CtaIntent \} from "\.\.\/lib\/ctaTargets";[\s\S]*?function routeTarget\([\s\S]*?intent: CtaIntent[\s\S]*?resolveCtaTarget\(intent,[\s\S]*?debugId="trust-slip-verify\.hero\.welcome"[\s\S]*?debugId="trust-slip-verify\.hero\.guide"[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?debugId="trust-slip-verify\.copy-link"[\s\S]*?debugId="trust-slip-verify\.copy-gmfn-id"[\s\S]*?debugId="trust-slip-verify\.print"[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
   "TrustSlip Verify page must use shared stable primitives, stable disclosure summaries, and shared CTA resolution for public navigation, copy, print, and trust routes."
+);
+
+assertContains(
+  "src/pages/TrustSlipVerifyPage.tsx",
+  /fullWidth=\{isCompact\}[\s\S]*?minWidth=\{isCompact \? undefined : 176\}[\s\S]*?debugId="trust-slip-verify\.public\.print"[\s\S]*?minWidth=\{isCompact \? undefined : 190\}[\s\S]*?debugId="trust-slip-verify\.public\.open-community-record"[\s\S]*?minWidth=\{isCompact \? undefined : 166\}[\s\S]*?debugId="trust-slip-verify\.copy-code"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?debugId="trust-slip-verify\.copy-snapshot"[\s\S]*?minWidth=\{isCompact \? undefined : 140\}[\s\S]*?debugId="trust-slip-verify\.route\.trust"/,
+  "TrustSlip Verify public and internal proof actions must keep fixed desktop width and full-width phone behavior."
 );
 
 assertNotContains(

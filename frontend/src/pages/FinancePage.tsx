@@ -2306,6 +2306,8 @@ export default function FinancePage() {
                 onClick={() => {
                   openFinanceDetailLane("events", "finance-events");
                 }}
+                minWidth={80}
+                stableHeight={36}
                 debugId="finance.events.view-all"
                 style={{
                   border: "none",
@@ -2315,7 +2317,6 @@ export default function FinancePage() {
                   fontWeight: 950,
                   boxShadow: "none",
                   padding: "6px 0",
-                  minWidth: 64,
                 }}
               >
                 View all
@@ -2473,9 +2474,9 @@ export default function FinancePage() {
                 revealFinanceSection("finance-summary");
               }}
               debugId="finance.view-signals"
-              minWidth="100%"
+              fullWidth
+              stableHeight={50}
               style={{
-                minHeight: 50,
                 background:
                   "linear-gradient(180deg, #FFE28A 0%, #D6AA45 70%, #B78321 100%)",
                 color: "#07172C",
@@ -2946,6 +2947,9 @@ export default function FinancePage() {
               <StableCtaLink
                 to={routes.loans}
                 debugId="finance.open-loans"
+                fullWidth={isCompact}
+                minWidth={isCompact ? undefined : 210}
+                stableHeight={isCompact ? 48 : 52}
                 style={financeDarkButtonStyle()}
               >
                 Open Loans & Support

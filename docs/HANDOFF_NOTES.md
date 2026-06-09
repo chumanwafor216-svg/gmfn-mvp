@@ -41132,3 +41132,52 @@ GSN-branded invite composer and invite-entry continuity.
     the physical phone after deploy.
   - This does not fix the live signed-in identity evidence route mismatch; that
     still needs Render/backend deployment investigation.
+
+### TrustSlip Verify and Finance inner-button stabilization (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue the backward inner-page button tightening
+    pass from Trust through Finance while the payment/deploy issue is being
+    investigated.
+- Unabated truth:
+  - forced GitHub `Trigger Render Deploy` run `27192955264` accepted both
+    deploy hooks, including API deploy `dep-d8jslt3bc2fs73a1ev2g`, but the live
+    API OpenAPI document still reported 273 routes and still did not expose
+    `/entry/signed-in/phone/start`,
+    `/entry/signed-in/phone/confirm`,
+    `/entry/signed-in/official-id/record`, or
+    `/entry/signed-in/identity-photo/record` after delayed rechecks.
+  - Local backend code exposes those four routes. The live identity/bank
+    evidence reflection failure is therefore still a Render/API deployment or
+    service configuration problem until Render logs prove a different cause.
+- Changed:
+  - `frontend/src/pages/TrustSlipVerifyPage.tsx`
+    - public print, Trust Passport, guide, and community-record actions now
+      use compact full-width phone behavior and fixed desktop minimum widths;
+    - hero links and internal proof actions now keep explicit stable heights
+      plus desktop minimum widths for copy, print, snapshot, and route actions.
+  - `frontend/src/pages/FinancePage.tsx`
+    - `finance.events.view-all`, `finance.view-signals`, and
+      `finance.open-loans` now use explicit stable geometry instead of loose
+      inline sizing.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the TrustSlip Verify and Finance inner action geometry so later
+      page work cannot quietly loosen these controls.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm --prefix frontend run audit:finance-button-inventory`.
+  - Passed `npm --prefix frontend run audit:finance-front-package`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm exec -- eslint src/pages/TrustSlipVerifyPage.tsx src/pages/FinancePage.tsx tools/audit-button-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` from `frontend` passed.
+- Remaining risk:
+  - this is a source/audit/build-verified geometry pass, not a physical-phone
+    tactile test. The product owner should check TrustSlip Verify and Finance
+    after deploy.
+  - The live identity evidence and bank/wallet reflection issue remains blocked
+    on the API service serving stale or incomplete backend code.
