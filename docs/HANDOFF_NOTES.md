@@ -40656,3 +40656,54 @@ GSN-branded invite composer and invite-entry continuity.
     lane; the next page-by-page Marketplace work should still inspect Money
     Pool, ROSCA, Support Request, and Trusted Trade one lane at a time on
     phone.
+
+### Trust Passport live identity-status wiring pass (2026-06-09)
+
+- Trigger:
+  - product owner noticed that Trust Passport / Identity Overview still showed
+    stale or dormant identity facts: phone not verified, community not
+    confirmed, bank not connected, and active in 0 communities even after real
+    signed-in activity.
+- Unabated truth:
+  - Marketplace geometry repair is not guaranteed to be the last button
+    jumpiness issue. It repaired the last known failing button-stability audit,
+    but phone QA can still expose lane-local Marketplace jumps.
+  - Trust Passport had a real wiring gap: signed-in payout destinations were
+    saved in `UserPayoutDestination`, but the Trust Passport identity context
+    only checked the old entry-verification bank fields.
+  - `active_clan_count` was graph/evidence based and could show `0` even when
+    the user had an active community membership.
+  - Signed-in phone-code completion and signed-in passport / official-ID
+    capture are still not production-complete routes. Do not mark those checks
+    as completed from explanation copy.
+- Fix:
+  - `gmfn_backend/app/services/trust_slips_services.py` now includes
+    `UserPayoutDestination` when building the identity context, so saved payout
+    details can make Trust Passport show bank / wallet evidence as recorded.
+  - Trust Passport active-community count now uses actual active memberships as
+    a floor over graph-derived active community count.
+  - Community identity confirmation now means the resolved community has an
+    active membership row for the user, not merely that a clan id exists.
+  - `frontend/src/pages/TrustScorePage.tsx` now has conservative fallbacks from
+    `me`, current clan, and clan list for phone, bank, community, and active
+    community count.
+  - Trust Passport completion rows for Phone and Passport / ID now open the
+    focused Identity Integrity tasks instead of dead `Route pending` actions,
+    while still saying the real signed-in completion route is pending.
+- Verification:
+  - Passed `python -m pytest gmfn_backend/tests/test_focus_commitment_trust_events.py -q`.
+  - Passed `npm exec -- eslint src/pages/TrustScorePage.tsx` from the
+    `frontend` directory.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm --prefix frontend run audit:trust-passport-front-package`.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warning.
+  - Sandboxed `npm --prefix frontend run build` hit Windows `esbuild` spawn
+    `EPERM`; approved elevated `npm run build` from `frontend` passed.
+- Remaining risk:
+  - This is a live-status bridge and button-routing repair. It does not build
+    the missing signed-in phone OTP flow or the signed-in official-ID evidence
+    capture/review route. Those must be implemented as a separate backend +
+    frontend identity-completion task before Passport / ID and phone
+    re-verification can be truly completed inside the app.

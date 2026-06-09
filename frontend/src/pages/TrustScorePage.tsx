@@ -1515,7 +1515,12 @@ export default function TrustScorePage() {
   );
   const expiresText = safeDateTime(trustSlipSummary?.expires_at) || "Not stated";
   const eventCount = safeStr(recompute?.event_count ?? "0");
-  const activeClanCount = safeStr(trustSlipSummary?.active_clan_count ?? "0");
+  const visibleActiveClanCount =
+    Number(trustSlipSummary?.active_clan_count || 0) ||
+    Number(communityContext?.active_community_count || 0) ||
+    clansList.length ||
+    (selectedClanId ? 1 : 0);
+  const activeClanCount = safeStr(visibleActiveClanCount || "0");
   const counterpartiesCount = safeStr(
     trustSlipSummary?.unique_counterparties ?? "0"
   );
@@ -1574,8 +1579,24 @@ export default function TrustScorePage() {
       trustSlipSummary?.community_member_count,
       communityContext?.active_member_count
     ),
-    phoneVerified: trustSlipSummary?.phone_verified ?? identityContext?.phone_verified,
-    bankVerified: trustSlipSummary?.bank_verified ?? identityContext?.bank_verified,
+    phoneVerified: Boolean(
+      trustSlipSummary?.phone_verified ||
+        identityContext?.phone_verified ||
+        me?.phone_verified ||
+        me?.phone_verified_at ||
+        me?.phone_e164_verified ||
+        me?.verified_phone_at
+    ),
+    bankVerified: Boolean(
+      trustSlipSummary?.bank_verified ||
+        identityContext?.bank_verified ||
+        identityContext?.bank_details_recorded ||
+        me?.bank_verified ||
+        me?.bank_verified_at ||
+        me?.bank_details_recorded ||
+        me?.payout_destination_id ||
+        me?.withdrawal_destination_id
+    ),
     bankVerificationLabel: firstTruthy(
       trustSlipSummary?.bank_verification_label,
       trustSlipSummary?.merchant_summary?.bank_verification_label,
@@ -1589,8 +1610,12 @@ export default function TrustScorePage() {
       identityContext?.passport_verification_label
     ),
     communityIdentityConfirmed:
-      trustSlipSummary?.community_identity_confirmed ??
-      identityContext?.community_identity_confirmed,
+      Boolean(
+        trustSlipSummary?.community_identity_confirmed ||
+          identityContext?.community_identity_confirmed ||
+          communityContext?.current_user_is_active_member ||
+          (selectedClanId && (currentClan || matchedClan || clansList.length > 0))
+      ),
     communityIdentityLabel: firstTruthy(
       trustSlipSummary?.community_identity_label,
       trustSlipSummary?.merchant_summary?.community_identity_label,
@@ -1643,6 +1668,11 @@ export default function TrustScorePage() {
     : `${passportVm.verdict.band} means ${passportVm.verdict.bandLanguage.title.toLowerCase()}. ${passportVm.verdict.bandLanguage.implication}`;
   function openTrustRoute(to: string) {
     navigateWithOrigin(navigate, to, location);
+  }
+
+  function identityTaskTarget(task: "phone" | "official_id"): string {
+    const separator = routes.identity.includes("?") ? "&" : "?";
+    return `${routes.identity}${separator}task=${encodeURIComponent(task)}&mode=complete`;
   }
 
   function scrollToPressureNotes() {
@@ -1783,13 +1813,13 @@ export default function TrustScorePage() {
   }> = [
     {
       icon: "phone",
-      label: "Phone check",
-      state: passportVm.identity.phoneVerified ? "Verified" : "Route pending",
+      label: "Phone",
+      state: passportVm.identity.phoneVerified ? "Verified" : "Open check",
       detail: passportVm.identity.phoneVerified
         ? "Verified phone evidence is already attached to this Trust Passport."
-        : "The repo has entry-time phone proof, but no authenticated phone-check page is wired yet.",
-      actionLabel: passportVm.identity.phoneVerified ? "View proof" : "Route pending",
-      target: passportVm.identity.phoneVerified ? routes.trustSlip : undefined,
+        : "Open the focused phone task. GSN still needs the signed-in code-confirmation route before this can be fully completed here.",
+      actionLabel: passportVm.identity.phoneVerified ? "View proof" : "Open phone task",
+      target: passportVm.identity.phoneVerified ? routes.trustSlip : identityTaskTarget("phone"),
       debugId: "trust-score.completion.phone",
       ok: Boolean(passportVm.identity.phoneVerified),
     },
@@ -1824,12 +1854,14 @@ export default function TrustScorePage() {
     {
       icon: "document",
       label: "Passport / ID",
-      state: passportVm.identity.passportVerified ? "Recorded" : "Route pending",
+      state: passportVm.identity.passportVerified ? "Recorded" : "Open task",
       detail: passportVm.identity.passportVerified
         ? "Official ID evidence is already visible in the trust proof layer."
-        : "Official ID evidence exists in entry flow, but a signed-in capture page is not wired yet.",
-      actionLabel: passportVm.identity.passportVerified ? "View proof" : "Route pending",
-      target: passportVm.identity.passportVerified ? routes.trustSlip : undefined,
+        : "Open the focused ID task. GSN still needs the signed-in passport, national ID, or licence capture route before this can be fully completed here.",
+      actionLabel: passportVm.identity.passportVerified ? "View proof" : "Open ID task",
+      target: passportVm.identity.passportVerified
+        ? routes.trustSlip
+        : identityTaskTarget("official_id"),
       debugId: "trust-score.completion.passport",
       ok: Boolean(passportVm.identity.passportVerified),
     },

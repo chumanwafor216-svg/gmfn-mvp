@@ -11,7 +11,15 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.db.bank_models import ExpectedPayment
-from app.db.models import Clan, ClanMembership, EntryPhoneVerification, TrustEvent, TrustSlip, User
+from app.db.models import (
+    Clan,
+    ClanMembership,
+    EntryPhoneVerification,
+    TrustEvent,
+    TrustSlip,
+    User,
+    UserPayoutDestination,
+)
 from app.services.liquidity_engine_service import build_user_liquidity_profile
 from app.services.loan_readiness_service import build_loan_readiness_plan
 from app.services.trust_score_service import compute_trust_breakdown
@@ -545,6 +553,7 @@ def _community_context(
         "community_global_id": community_code,
         "community_code": community_code,
         "holder_role": role,
+        "current_user_is_active_member": bool(membership),
         "active_member_count": active_member_count,
         "total_member_count": total_member_count,
         "active_community_count": active_clan_count,
@@ -556,6 +565,40 @@ def _community_context(
             "what role they hold there, and how much visible community context exists around them."
         ),
     }
+
+
+def _active_membership_count(db: Session, *, user_id: int) -> int:
+    return (
+        db.query(ClanMembership)
+        .filter(
+            ClanMembership.user_id == int(user_id),
+            ClanMembership.left_at.is_(None),
+        )
+        .count()
+    )
+
+
+def _safe_positive_int(value: Any) -> int:
+    try:
+        parsed = int(value or 0)
+    except Exception:
+        return 0
+    return parsed if parsed > 0 else 0
+
+
+def _payout_destination_is_recorded(row: Optional[UserPayoutDestination]) -> bool:
+    if row is None:
+        return False
+    bank_name = _safe_str(getattr(row, "bank_name", None)).lower()
+    account_number = _safe_str(getattr(row, "account_number", None))
+    destination_name = _safe_str(getattr(row, "destination_name", None)).lower()
+    if bank_name in {"", "pending bank"}:
+        return False
+    if destination_name in {"", "pending destination"}:
+        return False
+    if account_number in {"", "000000"}:
+        return False
+    return True
 
 
 def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[str, Any]:
@@ -587,20 +630,38 @@ def _entry_verification_context(db: Session, *, user: Optional[User]) -> Dict[st
             .first()
         )
 
-    bank_recorded = bool(getattr(row, "bank_details_recorded_at", None)) if row else False
+    payout = (
+        db.query(UserPayoutDestination)
+        .filter(UserPayoutDestination.user_id == int(user.id))
+        .order_by(UserPayoutDestination.updated_at.desc(), UserPayoutDestination.id.desc())
+        .first()
+    )
+
+    entry_bank_recorded = bool(getattr(row, "bank_details_recorded_at", None)) if row else False
+    payout_bank_recorded = _payout_destination_is_recorded(payout)
+    bank_recorded = entry_bank_recorded or payout_bank_recorded
     driver_recorded = bool(getattr(row, "driver_licence_recorded_at", None)) if row else False
+    bank_recorded_at = None
+    if entry_bank_recorded and row:
+        bank_recorded_at = getattr(row, "bank_details_recorded_at", None)
+    elif payout_bank_recorded and payout:
+        bank_recorded_at = getattr(payout, "updated_at", None) or getattr(
+            payout, "created_at", None
+        )
 
     return {
         "bank_details_recorded": bank_recorded,
         "bank_verified": bank_recorded,
         "bank_verification_label": (
             "Bank details recorded during entry verification"
-            if bank_recorded
+            if entry_bank_recorded
+            else "Bank destination recorded in payout details"
+            if payout_bank_recorded
             else "Bank check not connected yet"
         ),
         "bank_verified_at": (
-            getattr(row, "bank_details_recorded_at", None).isoformat()
-            if row and getattr(row, "bank_details_recorded_at", None)
+            bank_recorded_at.isoformat()
+            if bank_recorded_at
             else None
         ),
         "driver_licence_recorded": driver_recorded,
@@ -922,18 +983,26 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         getattr(user, "phone_verified_at", None) and getattr(user, "phone_e164", None)
     ) if user else False
     cci_explainer = _cci_explainer(cci.get("cci_score"), cci.get("cci_band"))
+    active_membership_count = _active_membership_count(db, user_id=uid)
+    graph_active_clan_count = graph_summary.get("active_clan_count")
+    active_community_count = max(
+        _safe_positive_int(graph_active_clan_count),
+        active_membership_count,
+    )
     community_context = _community_context(
         db,
         user_id=uid,
         clan_id=int(clan_id or 0),
         clan=clan,
         community_name=community,
-        active_clan_count=graph_summary.get("active_clan_count"),
+        active_clan_count=active_community_count,
         sponsor_count=graph_summary.get("sponsor_count"),
         unique_counterparties=graph_summary.get("unique_counterparties"),
     )
     entry_verification_context = _entry_verification_context(db, user=user)
-    community_identity_confirmed = bool(clan_id and user)
+    community_identity_confirmed = bool(
+        community_context.get("current_user_is_active_member")
+    )
     identity_context = {
         "profile_image_url": getattr(user, "profile_image_url", None) if user else None,
         "gmfn_id": gmfn_id,
@@ -1107,7 +1176,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
         "cci_score": cci.get("cci_score"),
         "cci_band": cci.get("cci_band"),
         "graph_score": graph_summary.get("graph_score"),
-        "active_clan_count": graph_summary.get("active_clan_count"),
+        "active_clan_count": active_community_count,
         "sponsor_count": graph_summary.get("sponsor_count"),
         "unique_counterparties": graph_summary.get("unique_counterparties"),
         "risk_flags": cci.get("risk_flags", []),
@@ -1130,6 +1199,7 @@ def get_trust_slip_payload(db: Session, *, user_id: int) -> Dict[str, Any]:
             "cci_band": cci.get("cci_band"),
             "cci_explainer": cci_explainer,
             "sponsor_count": graph_summary.get("sponsor_count"),
+            "active_clan_count": active_community_count,
             "expiry_policy": "weekly",
             "expires_at": effective_expiry,
             "phone_verified": phone_verified,

@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import text
 
 from app.db.database import SessionLocal, engine
-from app.db.models import TrustEvent, TrustSlip, User
+from app.db.models import TrustEvent, TrustSlip, User, UserPayoutDestination
 from app.api.routes.trust_slips import _public_visibility_level
 from app.services.trust_slips_services import get_trust_slip_payload, issue_trust_slip_for_user
 
@@ -58,6 +58,41 @@ def test_focus_commitment_route_logs_deduped_trust_event(
         assert meta["local_event_id"] == "focus-event-local-1"
         assert meta["trust_delta"] == "0.00"
         assert "personal commitment event" in meta["reader_note"]
+
+
+def test_trust_passport_identity_context_uses_signed_in_payout_and_membership(
+    override_current_user_user,
+    seed_clan_member_membership,
+):
+    with SessionLocal() as db:
+        user = db.get(User, 1)
+        assert user is not None
+        user.phone_e164 = "+447700900123"
+        user.phone_verified_at = datetime.now(timezone.utc)
+        db.add(
+            UserPayoutDestination(
+                user_id=1,
+                destination_name="Ada Member",
+                bank_name="Pilot Bank",
+                account_number="12345678",
+                phone_number="+447700900123",
+                country="GB",
+                currency="GBP",
+                verification_status="phone_verified_bank_recorded",
+                verification_note="Recorded in signed-in payout details.",
+            )
+        )
+        db.commit()
+
+        payload = get_trust_slip_payload(db, user_id=1)
+
+    identity_context = payload["identity_context"]
+    assert identity_context["phone_verified"] is True
+    assert identity_context["bank_details_recorded"] is True
+    assert identity_context["bank_verified"] is True
+    assert identity_context["bank_verification_label"] == "Bank destination recorded in payout details"
+    assert identity_context["community_identity_confirmed"] is True
+    assert payload["active_clan_count"] >= 1
 
 
 def test_trustslip_payload_includes_personal_commitment_discipline(
