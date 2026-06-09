@@ -1,3 +1,41 @@
+### Live API identity contract guard (2026-06-09)
+
+- Trigger:
+  - product owner continued testing Identity Overview / Identity Integrity and
+    bank, phone, selfie, and passport evidence still did not reflect live;
+  - direct live OpenAPI check showed `https://gmfn-api.onrender.com` was still
+    serving an older backend contract.
+- Confirmed live failure before this pass:
+  - live OpenAPI was missing:
+    - `/entry/signed-in/phone/start`;
+    - `/entry/signed-in/phone/confirm`;
+    - `/entry/signed-in/official-id/record`;
+    - `/entry/signed-in/identity-photo/record`;
+  - live `WithdrawalDestinationIn` also lacked `sort_code` and
+    `bank_sort_code`, so GB payout/bank details could not use the current
+    backend contract.
+- Changed:
+  - added `frontend/tools/audit-live-api-identity-routes.mjs`;
+  - added `npm --prefix frontend run audit:live-api-identity-routes`;
+  - updated `.github/workflows/render-deploy.yml` so backend-impacting deploys
+    poll the live API contract after triggering the API deploy hook;
+  - updated `docs/DEPLOYMENT_RENDER.md` to make the live identity-contract
+    check part of the Render deployment proof.
+- Verification:
+  - local backend identity/trust tests still passed:
+    `python -m pytest gmfn_backend\tests\test_focus_commitment_trust_events.py -q`;
+  - the new live audit correctly failed against the current live API with the
+    missing signed-in identity routes and missing sort-code fields.
+- Unabated truth:
+  - this pass does not by itself make Render serve the newer backend. It makes
+    the deploy workflow fail if Render accepts a hook but continues serving the
+    old API. The next proof must be a forced API deploy where this live contract
+    check passes.
+- Next step:
+  - push this guard to `main`, run `Trigger Render Deploy` with
+    `deploy_api=true`, and only ask for phone retesting after the live API audit
+    reports the identity routes/schema are present.
+
 ### Official ID / passport evidence response pass (2026-06-09)
 
 - Trigger:

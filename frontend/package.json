@@ -49,6 +49,7 @@
     "audit:protected-button-freeze": "node tools/audit-protected-button-freeze.mjs",
     "audit:finance-actions": "node tools/audit-finance-actions.mjs",
     "audit:payout-details-protocol": "node tools/audit-payout-details-protocol.mjs",
+    "audit:live-api-identity-routes": "node tools/audit-live-api-identity-routes.mjs",
     "audit:finance-banking-rails-lane": "node tools/audit-finance-banking-rails-lane.mjs",
     "audit:finance-button-inventory": "node tools/audit-finance-button-inventory.mjs",
     "audit:finance-front-package": "node tools/audit-finance-front-package.mjs",

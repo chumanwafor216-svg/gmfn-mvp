@@ -110,6 +110,24 @@ a direct Render deploy was triggered unless the workflow shows the deploy hook
 or Render API deploy request was accepted, or Render auto-deploy is confirmed in
 the Render dashboard.
 
+Backend-impacting deploys also run a live API identity-contract check against
+`https://gmfn-api.onrender.com/openapi.json`. The check must find the signed-in
+identity routes used by Trust Passport / Identity Integrity and the GB sort-code
+fields used by payout details:
+
+- `/entry/signed-in/phone/start`
+- `/entry/signed-in/phone/confirm`
+- `/entry/signed-in/official-id/record`
+- `/entry/signed-in/identity-photo/record`
+- `/withdrawal-destinations/me`
+- `WithdrawalDestinationIn.sort_code`
+- `WithdrawalDestinationIn.bank_sort_code`
+
+If the deploy hook is accepted but this check fails, the API service is still
+serving an older backend build or the wrong Render service/branch. Do not ask
+the pilot phone to retest identity completion until the live contract check
+passes.
+
 ## 4.2 Active pilot deploy protocol
 
 For the active pilot, every completed verified fix follows this protocol unless

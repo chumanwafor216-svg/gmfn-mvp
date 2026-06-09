@@ -98,3 +98,8 @@ jobs:
         if: ${{ steps.backend.outputs.should_deploy_api == 'true' && env.RENDER_API_DEPLOY_HOOK_URL == '' }}
         run: |
           echo "::warning::RENDER_API_DEPLOY_HOOK_URL is not configured. Backend-impacting changes still require Render auto-deploy or manual deploy."
+
+      - name: Verify live API identity contracts
+        if: ${{ steps.backend.outputs.should_deploy_api == 'true' }}
+        run: |
+          node frontend/tools/audit-live-api-identity-routes.mjs --attempts 18 --delay-ms 20000
