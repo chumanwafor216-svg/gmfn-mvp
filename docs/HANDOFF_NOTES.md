@@ -30,6 +30,15 @@
   - `npm exec -- tsc -b --pretty false` passed from `frontend`;
   - `git diff --check` passed with only expected Windows line-ending warnings;
   - `npm run build` passed from `frontend`.
+- Post-push verification:
+  - commit `072a105` (`Replace activation emojis with SVG marks`) was pushed
+    to `main`;
+  - `Trigger Render Deploy` run `27202624763` completed successfully and the
+    frontend deploy hook returned `dep-d8jvdpq8qa3s73bcea6g`;
+  - `Backend Tests` run `27202625065` completed successfully;
+  - backend deploy was correctly skipped because no backend files changed;
+  - GitHub Actions repeated the Node 20 deprecation warning for
+    `actions/checkout@v4`, but it did not fail the workflow.
 - Unabated truth:
   - this pass improves activation page visual seriousness and icon stability
     only. It does not change whether the live backend can record or reflect
