@@ -375,6 +375,18 @@ assertNotContains(
 );
 
 assertContains(
+  "src/pages/CommunityConfirmationInboxPage.tsx",
+  /function responseCategoryLabel[\s\S]*?function responseActionLabel[\s\S]*?RESPONSE_OPTIONS\.map[\s\S]*?responseCategoryLabel\(option\.tone\)[\s\S]*?responseActionLabel\(option\)/,
+  "Community confirmation inbox response choices must keep compact category labels and answer-specific stable action labels."
+);
+
+assertContains(
+  "src/pages/CommunityConfirmationInboxPage.tsx",
+  /import \{[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableDisclosureSummary[\s\S]*?\} from "\.\.\/components\/StableButton"/,
+  "Community confirmation inbox must use shared stable primitives for response and disclosure actions."
+);
+
+assertContains(
   "src/components/CommunityMarketplaceSpotlight.tsx",
   /import \{[\s\S]*?CardActionRow[\s\S]*?PrimaryButton[\s\S]*?SecondaryButton[\s\S]*?StableCtaLink[\s\S]*?\} from "\.\/StableButton";[\s\S]*?resolveCtaTarget[\s\S]*?primaryCta/,
   "Community Marketplace Spotlight must bind dynamic live items to shared CTA primitives and shared CTA target resolution."

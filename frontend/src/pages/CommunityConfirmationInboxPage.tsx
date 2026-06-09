@@ -510,6 +510,18 @@ function pillStyle(tone: ResponseOption["tone"] | "neutral"): React.CSSPropertie
   };
 }
 
+function responseCategoryLabel(tone: ResponseOption["tone"]): string {
+  if (tone === "positive") return "Can confirm";
+  if (tone === "caution") return "Need caution";
+  return "Cannot support";
+}
+
+function responseActionLabel(option: ResponseOption): string {
+  if (option.tone === "positive") return `Record: ${option.label}`;
+  if (option.tone === "caution") return "Record caution";
+  return "Record objection";
+}
+
 function reasonLabel(value?: string | null): string {
   const text = safeStr(value).replace(/_/g, " ");
   return text ? text[0].toUpperCase() + text.slice(1) : "Reason not stated";
@@ -2539,9 +2551,31 @@ function CommunityConfirmationInboxPage() {
                     const key = `${row.id}-${option.type}`;
                     const positive = option.tone === "positive";
                     return (
-                      <div key={option.type} style={innerCard(positive ? "#F4FBF7" : option.tone === "caution" ? "#FFFBEB" : "#FEF2F2")}>
-                        <div style={{ color: "#07172C", fontWeight: 1000 }}>{option.label}</div>
-                        <p style={{ margin: "6px 0 10px", ...helperText(), fontSize: 13 }}>
+                      <div
+                        key={option.type}
+                        style={{
+                          ...innerCard(
+                            positive
+                              ? "#F4FBF7"
+                              : option.tone === "caution"
+                                ? "#FFFBEB"
+                                : "#FEF2F2"
+                          ),
+                          display: "grid",
+                          gap: 8,
+                          alignContent: "space-between",
+                          minHeight: isCompact ? 0 : 174,
+                        }}
+                      >
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span style={pillStyle(option.tone)}>
+                            {responseCategoryLabel(option.tone)}
+                          </span>
+                        </div>
+                        <div style={{ color: "#07172C", fontWeight: 1000, fontSize: 16 }}>
+                          {option.label}
+                        </div>
+                        <p style={{ margin: 0, ...helperText(), fontSize: 13 }}>
                           {option.meaning}
                         </p>
                         {positive ? (
@@ -2555,7 +2589,7 @@ function CommunityConfirmationInboxPage() {
                             stableHeight={46}
                             debugId={`community-confirmation-inbox.${row.id}.${option.type}`}
                           >
-                            Choose this answer
+                            {responseActionLabel(option)}
                           </PrimaryButton>
                         ) : (
                           <SecondaryButton
@@ -2568,7 +2602,7 @@ function CommunityConfirmationInboxPage() {
                             stableHeight={46}
                             debugId={`community-confirmation-inbox.${row.id}.${option.type}`}
                           >
-                            Choose this answer
+                            {responseActionLabel(option)}
                           </SecondaryButton>
                         )}
                       </div>

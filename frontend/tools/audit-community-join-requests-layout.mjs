@@ -80,6 +80,16 @@ assertContains(
   "Join Requests top route buttons must explicitly fill their grid cells."
 );
 
+assertContains(
+  /type JoinRequestIconName[\s\S]*?function JoinRequestIcon[\s\S]*?function StatusMark/,
+  "Join Requests must use app-native SVG pictograms instead of emoji/status text symbols."
+);
+
+assertContains(
+  /const shouldCollapse = isCompact && activeRequestId !== null && !isActive[\s\S]*?setActiveRequestId\(item\.id\)[\s\S]*?debugId="community-join-requests\.review-request"/,
+  "Join Requests mobile review flow must collapse inactive request cards behind one stable Review action."
+);
+
 assertNotContains(
   /isCompact\s*\?\s*"repeat\(2, minmax\(0, 1fr\)\)"\s*:\s*"repeat\(3, minmax\(0, 1fr\)\)"/g,
   "Join Requests request fact grid must not return to a two-column phone layout."

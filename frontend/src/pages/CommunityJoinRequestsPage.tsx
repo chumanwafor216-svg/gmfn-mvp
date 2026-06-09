@@ -180,8 +180,8 @@ function requestFactTile(): React.CSSProperties {
     minWidth: 0,
     border: "1px solid rgba(11,31,51,0.08)",
     borderRadius: 0,
-    padding: "10px 12px",
-    minHeight: 72,
+    padding: "9px 11px",
+    minHeight: 62,
     background: "#FBFCFE",
     boxSizing: "border-box",
   };
@@ -291,6 +291,214 @@ function statusPill(status: string): React.CSSProperties {
   };
 }
 
+type JoinRequestIconName =
+  | "approve"
+  | "clock"
+  | "copy"
+  | "home"
+  | "id"
+  | "invite"
+  | "market"
+  | "person"
+  | "refresh"
+  | "reject"
+  | "review"
+  | "shield";
+
+function JoinRequestIcon({
+  name,
+  size = 20,
+}: {
+  name: JoinRequestIconName;
+  size?: number;
+}) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2.25,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "approve":
+      return (
+        <svg {...common}>
+          <path d="m5 12 4.2 4.2L19 6.8" />
+        </svg>
+      );
+    case "clock":
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="12" r="8.2" />
+          <path d="M12 7.5v5l3.2 2" />
+        </svg>
+      );
+    case "copy":
+      return (
+        <svg {...common}>
+          <rect x="8" y="8" width="10" height="12" rx="2" />
+          <path d="M6 16H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+        </svg>
+      );
+    case "home":
+      return (
+        <svg {...common}>
+          <path d="M4 11.5 12 5l8 6.5V20H4z" />
+          <path d="M9.5 20v-5h5v5" />
+        </svg>
+      );
+    case "id":
+      return (
+        <svg {...common}>
+          <rect x="4" y="5" width="16" height="14" rx="2.5" />
+          <circle cx="9" cy="11" r="2" />
+          <path d="M7 16c.5-1.4 1.2-2 2-2s1.5.6 2 2" />
+          <path d="M14 10h3" />
+          <path d="M14 14h3" />
+        </svg>
+      );
+    case "invite":
+      return (
+        <svg {...common}>
+          <path d="M4 7.5 12 13l8-5.5" />
+          <rect x="4" y="6" width="16" height="12" rx="2.5" />
+        </svg>
+      );
+    case "market":
+      return (
+        <svg {...common}>
+          <path d="M5 10h14l-1-4H6z" />
+          <path d="M7 10v9h10v-9" />
+          <path d="M9 19v-5h6v5" />
+        </svg>
+      );
+    case "person":
+      return (
+        <svg {...common}>
+          <circle cx="10" cy="8" r="3" />
+          <path d="M4.5 19c.8-3.5 2.6-5 5.5-5s4.7 1.5 5.5 5" />
+          <path d="M18 8v5" />
+          <path d="M15.5 10.5h5" />
+        </svg>
+      );
+    case "refresh":
+      return (
+        <svg {...common}>
+          <path d="M20 7v5h-5" />
+          <path d="M4 17v-5h5" />
+          <path d="M6.2 9A7 7 0 0 1 18.7 7.7L20 12" />
+          <path d="M17.8 15A7 7 0 0 1 5.3 16.3L4 12" />
+        </svg>
+      );
+    case "reject":
+      return (
+        <svg {...common}>
+          <path d="m7 7 10 10" />
+          <path d="m17 7-10 10" />
+        </svg>
+      );
+    case "review":
+      return (
+        <svg {...common}>
+          <path d="M12 3.8 19 6v5.5c0 4.2-2.6 7-7 8.7-4.4-1.7-7-4.5-7-8.7V6z" />
+          <path d="M9 12h6" />
+          <path d="M9 15h4" />
+        </svg>
+      );
+    case "shield":
+      return (
+        <svg {...common}>
+          <path d="M12 3.8 19 6v5.5c0 4.2-2.6 7-7 8.7-4.4-1.7-7-4.5-7-8.7V6z" />
+          <path d="m8.8 12.3 2 2 4.4-4.7" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function iconText(name: JoinRequestIconName, label: React.ReactNode) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        minWidth: 0,
+      }}
+    >
+      <JoinRequestIcon name={name} size={18} />
+      <span style={{ minWidth: 0 }}>{label}</span>
+    </span>
+  );
+}
+
+function iconTile(name: JoinRequestIconName, tone: "navy" | "gold" | "green" | "red" = "navy"): React.CSSProperties {
+  const palette =
+    tone === "gold"
+      ? {
+          color: "#7C5A06",
+          background: "linear-gradient(180deg, #FFF6D8 0%, #F7D97B 100%)",
+          border: "1px solid rgba(201,161,54,0.28)",
+        }
+      : tone === "green"
+        ? {
+            color: "#FFFFFF",
+            background: "linear-gradient(180deg, #28A96B 0%, #137B4C 100%)",
+            border: "1px solid rgba(46,155,98,0.32)",
+          }
+        : tone === "red"
+          ? {
+              color: "#991B1B",
+              background: "linear-gradient(180deg, #FFF7F7 0%, #FEE2E2 100%)",
+              border: "1px solid rgba(239,68,68,0.24)",
+            }
+          : {
+              color: "#FFFFFF",
+              background: "linear-gradient(180deg, #0B2D4A 0%, #061827 100%)",
+              border: "1px solid rgba(123,161,204,0.28)",
+            };
+
+  void name;
+  return {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    flex: "0 0 44px",
+    boxShadow: "0 12px 24px rgba(2,8,23,0.16)",
+    ...palette,
+  };
+}
+
+function StatusMark({ status }: { status: string }) {
+  const approved = status === "approved";
+  const rejected = status === "rejected";
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flex: "0 0 20px",
+      }}
+    >
+      <JoinRequestIcon
+        name={approved ? "approve" : rejected ? "reject" : "clock"}
+        size={18}
+      />
+    </span>
+  );
+}
+
 function safeStr(x: any, fallback = ""): string {
   const s = String(x ?? "").trim();
   return s || fallback;
@@ -341,6 +549,7 @@ export default function CommunityJoinRequestsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [activationPack, setActivationPack] = useState<ApprovalResult | null>(null);
+  const [activeRequestId, setActiveRequestId] = useState<number | null>(null);
   const [reviewerRole, setReviewerRole] = useState<string>("user");
   const [reviewerCanPilotApprove, setReviewerCanPilotApprove] = useState(false);
 
@@ -421,6 +630,19 @@ export default function CommunityJoinRequestsPage() {
       rejected,
     };
   }, [items]);
+
+  useEffect(() => {
+    if (!items.length) {
+      setActiveRequestId(null);
+      return;
+    }
+
+    const stillVisible = items.some((item) => item.id === activeRequestId);
+    if (stillVisible) return;
+
+    const firstPending = items.find((item) => friendlyStatus(item.status) === "pending");
+    setActiveRequestId(firstPending?.id || items[0]?.id || null);
+  }, [activeRequestId, items]);
 
   const communityHomeCta = useMemo(
     () =>
@@ -528,7 +750,7 @@ export default function CommunityJoinRequestsPage() {
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <div style={sectionLabel()}>✉️ Community join requests</div>
+            <div style={sectionLabel()}>Community join requests</div>
             <h1
               style={{
                 margin: "12px 0 0",
@@ -558,13 +780,11 @@ export default function CommunityJoinRequestsPage() {
               display: isCompact ? "none" : "grid",
               placeItems: "center",
               minHeight: isCompact ? 118 : 172,
-              color: "#D6AA45",
-              fontSize: isCompact ? 78 : 118,
-              opacity: 0.92,
-              filter: "drop-shadow(0 20px 28px rgba(214,170,69,0.18))",
             }}
           >
-            🛡️
+            <span style={iconTile("shield", "gold")}>
+              <JoinRequestIcon name="shield" size={28} />
+            </span>
           </div>
         </section>
 
@@ -584,7 +804,7 @@ export default function CommunityJoinRequestsPage() {
             }}
           >
             <div style={{ minWidth: 0 }}>
-              <div style={sectionLabel()}>🏘️ Selected community</div>
+              <div style={sectionLabel()}>Selected community</div>
               <div
                 style={{
                   marginTop: 10,
@@ -607,9 +827,11 @@ export default function CommunityJoinRequestsPage() {
                 Community review is active.
               </div>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
-                <span style={reviewerBadge(false)}>🧭 Step: Review</span>
+                <span style={reviewerBadge(false)}>
+                  {iconText("review", "Step: Review")}
+                </span>
                 <span style={reviewerBadge(reviewerCanPilotApprove)}>
-                  👤 Role: {safeStr(reviewerRole || "user")}
+                  {iconText("person", <>Role: {safeStr(reviewerRole || "user")}</>)}
                 </span>
               </div>
             </div>
@@ -618,12 +840,11 @@ export default function CommunityJoinRequestsPage() {
               style={{
                 display: isCompact ? "none" : "grid",
                 placeItems: "center",
-                color: "#F2C766",
-                fontSize: isCompact ? 74 : 112,
-                filter: "drop-shadow(0 18px 22px rgba(214,170,69,0.16))",
               }}
             >
-              🏘️
+              <span style={iconTile("home", "gold")}>
+                <JoinRequestIcon name="home" size={28} />
+              </span>
             </div>
           </div>
 
@@ -645,7 +866,7 @@ export default function CommunityJoinRequestsPage() {
               debugId={communityHomeCta.debugId}
               style={navActionStyle("light")}
             >
-              🏠 Home
+              {iconText("home", "Home")}
             </SecondaryButton>
 
             <StableCtaLink
@@ -656,7 +877,7 @@ export default function CommunityJoinRequestsPage() {
               debugId={marketplaceCta.debugId}
               style={navActionStyle("light")}
             >
-              🛍️ Market
+              {iconText("market", "Market")}
             </StableCtaLink>
 
             <PrimaryButton
@@ -670,7 +891,7 @@ export default function CommunityJoinRequestsPage() {
               debugId="community-join-requests.refresh"
               style={navActionStyle("blue")}
             >
-              🔄 Refresh
+              {iconText("refresh", "Refresh")}
             </PrimaryButton>
           </CardActionRow>
         </section>
@@ -684,7 +905,7 @@ export default function CommunityJoinRequestsPage() {
               fontWeight: 900,
             }}
           >
-            ⚠️ {error}
+            {iconText("reject", error)}
           </div>
         ) : null}
 
@@ -697,7 +918,7 @@ export default function CommunityJoinRequestsPage() {
               fontWeight: 900,
             }}
           >
-            ✅ {success}
+            {iconText("approve", success)}
           </div>
         ) : null}
 
@@ -713,14 +934,23 @@ export default function CommunityJoinRequestsPage() {
           }}
         >
           {[
-            ["✉️", "Total", summary.total, "#0B1F33"],
-            ["⏳", "Pending", summary.pending, "#9A6A10"],
-            ["✅", "Approved", summary.approved, "#2E9B62"],
-            ["❌", "Rejected", summary.rejected, "#DC2626"],
-          ].map(([emoji, label, value, color]) => (
+            ["review", "Total", summary.total, "#0B1F33"],
+            ["clock", "Pending", summary.pending, "#9A6A10"],
+            ["approve", "Approved", summary.approved, "#2E9B62"],
+            ["reject", "Rejected", summary.rejected, "#DC2626"],
+          ].map(([icon, label, value, color]) => (
             <div key={String(label)} style={statTile(String(color))}>
-              <div style={{ fontWeight: 1000, fontSize: isCompact ? 13 : 15 }}>
-                {emoji} {label}
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 7,
+                  fontWeight: 1000,
+                  fontSize: isCompact ? 13 : 15,
+                }}
+              >
+                <JoinRequestIcon name={icon as JoinRequestIconName} size={17} />
+                {label}
               </div>
               <div style={{ fontSize: isCompact ? 30 : 36, fontWeight: 1000 }}>
                 {value}
@@ -738,7 +968,7 @@ export default function CommunityJoinRequestsPage() {
           }}
         >
           <div style={{ color: "#0B1F33", fontWeight: 1000, fontSize: 17 }}>
-            🧠 Approval rule
+            {iconText("shield", "Approval rule")}
           </div>
           <div
             style={{
@@ -751,7 +981,7 @@ export default function CommunityJoinRequestsPage() {
               overflowWrap: "break-word",
             }}
           >
-            Some communities need more than one approval. Check 👥 Active members and ✅ Required approvals on each request.
+            Some communities need more than one approval. Check Active members and Required approvals on each request.
           </div>
         </section>
 
@@ -762,7 +992,7 @@ export default function CommunityJoinRequestsPage() {
           }}
         >
           <div style={{ fontWeight: 1000, fontSize: 18, color: "#0B1F33" }}>
-            ✅ Approval to activation package
+            {iconText("approve", "Approval to activation package")}
           </div>
 
           <div
@@ -853,7 +1083,7 @@ export default function CommunityJoinRequestsPage() {
               debugId="community-join-requests.copy-activation-message"
               fullWidth
             >
-              📋 Copy Activation Message
+              {iconText("copy", "Copy Activation Message")}
             </PrimaryButton>
 
             <SecondaryButton
@@ -863,7 +1093,7 @@ export default function CommunityJoinRequestsPage() {
               debugId="community-join-requests.copy-activation-link"
               fullWidth
             >
-              🔗 Copy Activation Link
+              {iconText("copy", "Copy Activation Link")}
             </SecondaryButton>
 
             {safeStr(activationPack.activation_link || "") ? (
@@ -875,7 +1105,7 @@ export default function CommunityJoinRequestsPage() {
                 debugId="community-join-requests.open-activation"
                 fullWidth
               >
-                🚀 Open Activation Page
+                {iconText("review", "Open Activation Page")}
               </StableCtaLink>
             ) : null}
           </CardActionRow>
@@ -884,13 +1114,13 @@ export default function CommunityJoinRequestsPage() {
 
       {loading ? (
         <div style={whitePanel(18)}>
-          <strong>⏳ Loading join requests...</strong>
+          <strong>{iconText("clock", "Loading join requests...")}</strong>
         </div>
       ) : null}
 
       {!loading && !error && !items.length ? (
         <div style={whitePanel(18)}>
-          <strong>📭 No join requests are currently shown.</strong>
+          <strong>{iconText("review", "No join requests are currently shown.")}</strong>
         </div>
       ) : null}
 
@@ -905,9 +1135,79 @@ export default function CommunityJoinRequestsPage() {
               item.applicant_email ||
               "Applicant"
           );
+          const isActive = activeRequestId === item.id;
+          const shouldCollapse = isCompact && activeRequestId !== null && !isActive;
+
+          if (shouldCollapse) {
+            return (
+              <article
+                key={item.id}
+                style={{
+                  ...whitePanel(12),
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) 112px",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      color: "#0B1F33",
+                      fontWeight: 1000,
+                      fontSize: 15,
+                    }}
+                  >
+                    <StatusMark status={status} />
+                    <span style={{ minWidth: 0, overflowWrap: "break-word" }}>
+                      Request #{item.id}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 3,
+                      color: "#475569",
+                      fontSize: 13,
+                      fontWeight: 750,
+                      lineHeight: 1.35,
+                      overflowWrap: "break-word",
+                    }}
+                  >
+                    {applicantLabel}
+                  </div>
+                </div>
+                <SecondaryButton
+                  type="button"
+                  onClick={() => setActiveRequestId(item.id)}
+                  stableHeight={48}
+                  fullWidth
+                  debugId="community-join-requests.review-request"
+                  style={{
+                    minWidth: 0,
+                    fontSize: 13,
+                    borderRadius: 12,
+                    padding: "0 10px",
+                  }}
+                >
+                  {iconText("review", "Review")}
+                </SecondaryButton>
+              </article>
+            );
+          }
 
           return (
-            <article key={item.id} style={whitePanel(isCompact ? 16 : 20)}>
+            <article
+              key={item.id}
+              style={{
+                ...whitePanel(isCompact ? 16 : 20),
+                border: isActive
+                  ? "1px solid rgba(34,120,242,0.36)"
+                  : "1px solid rgba(11,31,51,0.08)",
+              }}
+            >
               <div
                 style={{
                   display: "grid",
@@ -945,7 +1245,7 @@ export default function CommunityJoinRequestsPage() {
                   </div>
                 </div>
                 <span style={statusPill(status)}>
-                  {status === "approved" ? "✅" : status === "rejected" ? "❌" : "⏳"}{" "}
+                  <StatusMark status={status} />
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </span>
               </div>
@@ -966,21 +1266,21 @@ export default function CommunityJoinRequestsPage() {
                 >
                   {[
                     [
-                      "🏘️ Community",
+                      "Community",
                       safeStr(
                         item.marketplace_name ||
                           item.clan_name ||
                           "Not available yet"
                       ),
                     ],
-                    ["🆔 Community ID", safeStr(item.community_code || "Awaiting issue")],
-                    ["🔑 Invite", safeStr(item.invite_code || "Not available yet")],
-                    ["📅 Submitted", safeDateTime(item.created_at)],
-                    ["✅ Required", String(Number(item.required_approvals || 0))],
-                    ["💎 Approvals", String(Number(item.approvals || 0))],
-                    ["❌ Rejects", String(Number(item.rejects || 0))],
-                    ["👥 Active", String(Number(item.active_member_count || 0))],
-                    ["🪪 Applicant", safeStr(item.applicant_gmfn_id || "Not issued yet")],
+                    ["Community ID", safeStr(item.community_code || "Awaiting issue")],
+                    ["Invite", safeStr(item.invite_code || "Not available yet")],
+                    ["Submitted", safeDateTime(item.created_at)],
+                    ["Required", String(Number(item.required_approvals || 0))],
+                    ["Approvals", String(Number(item.approvals || 0))],
+                    ["Rejects", String(Number(item.rejects || 0))],
+                    ["Active", String(Number(item.active_member_count || 0))],
+                    ["Applicant", safeStr(item.applicant_gmfn_id || "Not issued yet")],
                   ].map(([label, value]) => (
                     <div key={`${item.id}-${label}`} style={requestFactTile()}>
                       <div style={requestFactLabel()}>{label}</div>
@@ -1004,7 +1304,7 @@ export default function CommunityJoinRequestsPage() {
                     fontWeight: 800,
                   }}
                 >
-                  {status === "approved" ? "✅" : "❌"} This request has already been {status}.
+                  {iconText(status === "approved" ? "approve" : "reject", <>This request has already been {status}.</>)}
                 </div>
               ) : (
                 <>
@@ -1019,7 +1319,7 @@ export default function CommunityJoinRequestsPage() {
                       fontWeight: 800,
                     }}
                   >
-                    ℹ️ Waiting until approvals reach the community threshold.
+                    {iconText("clock", "Waiting until approvals reach the community threshold.")}
                   </div>
 
                   {reviewerCanPilotApprove ? (
@@ -1032,7 +1332,7 @@ export default function CommunityJoinRequestsPage() {
                         border: "1px solid rgba(201,161,54,0.24)",
                       }}
                     >
-                      <div style={sectionLabel("#8A5A08")}>⚡ Admin review option</div>
+                      <div style={sectionLabel("#8A5A08")}>Admin review option</div>
                       <div
                         style={{
                           marginTop: 8,
@@ -1070,7 +1370,7 @@ export default function CommunityJoinRequestsPage() {
                       style={decisionButtonStyle("approve")}
                       fullWidth
                     >
-                      ✅ Approve
+                      {iconText("approve", "Approve")}
                     </PrimaryButton>
 
                     <SecondaryButton
@@ -1084,7 +1384,7 @@ export default function CommunityJoinRequestsPage() {
                       style={decisionButtonStyle("reject")}
                       fullWidth
                     >
-                      ❌ Reject
+                      {iconText("reject", "Reject")}
                     </SecondaryButton>
 
                     {reviewerCanPilotApprove ? (
@@ -1099,7 +1399,7 @@ export default function CommunityJoinRequestsPage() {
                         style={decisionButtonStyle("reject")}
                         fullWidth
                       >
-                        ⚡ Approve now
+                        {iconText("shield", "Approve now")}
                       </SecondaryButton>
                     ) : null}
                   </CardActionRow>

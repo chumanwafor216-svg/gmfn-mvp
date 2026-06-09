@@ -1,3 +1,61 @@
+### Inner voting/category tightening pass (2026-06-09)
+
+- Trigger:
+  - product owner asked to continue inner-page button tightening while payment /
+    Render backend identity deployment remains blocked;
+  - requested special attention to inner voting, category clarity, page polish,
+    button jumpiness, and line/audit protection.
+- Scope:
+  - frontend `/app/community/:clanId/join-requests` via
+    `CommunityJoinRequestsPage.tsx`;
+  - frontend `/app/community-confirmation/inbox` response-choice area via
+    `CommunityConfirmationInboxPage.tsx`;
+  - frontend audits only;
+  - no backend voting threshold, membership approval, community confirmation,
+    payment, ledger, identity evidence, auth, or Render deploy logic changed.
+- Changed:
+  - Community Join Requests page:
+    - removed old mojibake/emoji symbols from the page source and replaced
+      important marks with route-local SVG pictograms;
+    - added `JoinRequestIcon` / `StatusMark` helpers for approve, reject,
+      clock, shield, review, home, market, copy, ID, invite, and person marks;
+    - added a focused mobile review mode: the active request stays expanded,
+      while inactive requests collapse into compact rows with one stable
+      `Review` action;
+    - tightened request fact tiles, status pills, top route actions, activation
+      actions, and approve/reject/admin approval labels so button words stay
+      intact;
+    - kept all existing route/debug ids for the core vote actions:
+      `community-join-requests.approve`,
+      `community-join-requests.reject`, and
+      `community-join-requests.pilot-approve`.
+  - Community Confirmation Inbox:
+    - added compact response categories for confirmation choices:
+      `Can confirm`, `Need caution`, and `Cannot support`;
+    - changed repeated `Choose this answer` labels into answer-specific stable
+      labels such as `Record: Known here`, `Record caution`, and
+      `Record objection`;
+    - kept backend response option values and confirmation API behavior
+      unchanged.
+- Audit cage updated:
+  - `audit-community-join-requests-layout` now protects SVG pictograms and the
+    collapsed mobile request-review flow;
+  - `audit-button-stability` now protects confirmation inbox compact response
+    category labels and answer-specific stable action labels.
+- Verification:
+  - `npm --prefix frontend run audit:community-join-requests-layout` passed;
+  - `npm --prefix frontend run audit:button-stability` passed;
+  - `npm --prefix frontend run audit:protected-button-freeze` passed;
+  - `npm --prefix frontend run audit:tap-stability` passed;
+  - `npm exec -- eslint src/pages/CommunityJoinRequestsPage.tsx src/pages/CommunityConfirmationInboxPage.tsx tools/audit-community-join-requests-layout.mjs tools/audit-button-stability.mjs` passed from `frontend`;
+  - `npm exec -- tsc -b --pretty false` passed from `frontend`;
+  - `git diff --check` passed with only expected Windows line-ending warnings.
+- Unabated truth:
+  - this pass improves frontend voting/category clarity and button stability
+    only. It does not fix the live Identity Overview backend because that is
+    still blocked by the live Render API service serving an older backend
+    contract.
+
 ### Render API deploy hardening for Identity Overview backend (2026-06-09)
 
 - Trigger:
