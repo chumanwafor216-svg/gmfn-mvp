@@ -41069,3 +41069,16 @@ GSN-branded invite composer and invite-entry continuity.
   - If the routes are still absent after a successful API deploy, the Render API
     service is not serving the latest backend commit and deployment must be
     fixed before more UI polishing can solve the issue.
+- Post-push verification:
+  - Commit `083dbd1` was pushed to `main`.
+  - GitHub `Trigger Render Deploy` run `27190356331` accepted both hooks:
+    frontend deploy `dep-d8jrsiojs32c73e1lde0` and API deploy
+    `dep-d8jrsis2m8qs739f9qag`.
+  - GitHub backend tests run `27190356351` completed successfully.
+  - After waiting, live OpenAPI still did not expose the signed-in identity
+    routes, and direct unauthenticated probes to
+    `/entry/signed-in/phone/start` and `/entry/signed-in/official-id/record`
+    returned `404` instead of the expected auth error.
+  - This means the live `gmfn-api` service is still not serving the backend code
+    that exists locally on `main`. The next step needs Render deploy/service
+    investigation, not more Identity Integrity UI changes.
