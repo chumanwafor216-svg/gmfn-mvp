@@ -302,6 +302,8 @@ function moneyOutActionButtonStyle(
       fontSize: 14,
       cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.86 : 1,
+      whiteSpace: "nowrap",
+      transition: "none",
     };
   }
 
@@ -319,6 +321,8 @@ function moneyOutActionButtonStyle(
       fontSize: 13,
       cursor: disabled ? "not-allowed" : "pointer",
       opacity: disabled ? 0.86 : 1,
+      whiteSpace: "nowrap",
+      transition: "none",
     };
   }
 
@@ -335,6 +339,8 @@ function moneyOutActionButtonStyle(
     fontSize: 14,
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.86 : 1,
+    whiteSpace: "nowrap",
+    transition: "none",
   };
 }
 
@@ -350,6 +356,9 @@ function moneyOutCollapseButtonStyle(): React.CSSProperties {
     fontWeight: 900,
     fontSize: 13,
     cursor: "pointer",
+    whiteSpace: "nowrap",
+    flex: "0 0 auto",
+    transition: "none",
   };
 }
 
@@ -1818,13 +1827,15 @@ export default function WithdrawalInstructionsPage() {
             </div>
 
             <div style={softCard("#FFFFFF")}>
-                <div style={sectionLabel()}>Actions</div>
+              <div style={sectionLabel()}>Actions</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
                 {!effectiveAvailableKnown ? (
                   <PrimaryButton
                     disabled
                     debugId="money-out.awaiting-pool"
+                    minWidth={isCompact ? undefined : 132}
+                    stableHeight={52}
                     style={moneyOutActionButtonStyle("primary", true)}
                   >
                     Awaiting
@@ -1835,10 +1846,12 @@ export default function WithdrawalInstructionsPage() {
                     disabled={
                       submittingWithdrawal ||
                       requestedAmount <= 0 ||
-                        !communityRailReady ||
-                        !payoutReady
+                      !communityRailReady ||
+                      !payoutReady
                     }
                     debugId="money-out.continue-direct"
+                    minWidth={isCompact ? undefined : 144}
+                    stableHeight={52}
                     style={moneyOutActionButtonStyle(
                       "primary",
                       submittingWithdrawal ||
@@ -1856,21 +1869,25 @@ export default function WithdrawalInstructionsPage() {
                     onClick={handleContinueToSupportPath}
                     disabled={requestedAmount <= 0 || !communityRailReady || !payoutReady}
                     debugId="money-out.open-support"
+                    minWidth={isCompact ? undefined : 144}
+                    stableHeight={52}
                     style={moneyOutActionButtonStyle(
                       "primary",
                       requestedAmount <= 0 || !communityRailReady || !payoutReady
                     )}
                   >
-                    Open Support
+                    Open support
                   </PrimaryButton>
                 )}
 
                 <SecondaryButton
                   onClick={handleCopyWithdrawalSummary}
                   debugId="money-out.copy-summary"
+                  minWidth={isCompact ? undefined : 150}
+                  stableHeight={52}
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Copy Summary
+                  Copy summary
                 </SecondaryButton>
 
                 <SubtleButton
@@ -2048,17 +2065,21 @@ export default function WithdrawalInstructionsPage() {
                     onClick={() => void handleSaveDestination()}
                     disabled={savingDestination}
                     debugId="money-out.save-destination"
+                    minWidth={isCompact ? undefined : 150}
+                    stableHeight={52}
                     style={moneyOutActionButtonStyle("primary", savingDestination)}
                   >
-                    {savingDestination ? "Saving..." : "Save Payout Account"}
+                    {savingDestination ? "Saving..." : "Save payout"}
                   </PrimaryButton>
 
                   <SecondaryButton
-                      onClick={handleCopyPayoutAccount}
-                      debugId="money-out.copy-payout-account"
-                      style={moneyOutActionButtonStyle("secondary")}
-                    >
-                    Copy Payout Account
+                    onClick={handleCopyPayoutAccount}
+                    debugId="money-out.copy-payout-account"
+                    minWidth={isCompact ? undefined : 150}
+                    stableHeight={52}
+                    style={moneyOutActionButtonStyle("secondary")}
+                  >
+                    Copy payout
                   </SecondaryButton>
                 </div>
 
@@ -2205,9 +2226,11 @@ export default function WithdrawalInstructionsPage() {
             onClick={() => void handleLoadWithdrawalRoute()}
             disabled={loadingRoute}
             debugId="money-out.refresh-community-rail"
+            minWidth={isCompact ? undefined : 136}
+            stableHeight={46}
             style={moneyOutActionButtonStyle("secondary", loadingRoute)}
           >
-            {loadingRoute ? "Loading..." : "Refresh Rail"}
+            {loadingRoute ? "Loading..." : "Refresh rail"}
           </SecondaryButton>
         </div>
 
@@ -2253,13 +2276,15 @@ export default function WithdrawalInstructionsPage() {
               <div style={sectionLabel()}>Rail actions</div>
 
               <div style={{ marginTop: 10, display: "grid", gap: 10 }}>
-                  <PrimaryButton
-                    onClick={handleCopyCommunityRail}
-                    disabled={!communityRailReady}
-                    debugId="money-out.copy-community-rail"
-                    style={moneyOutActionButtonStyle("primary", !communityRailReady)}
-                  >
-                  Copy Rail
+                <PrimaryButton
+                  onClick={handleCopyCommunityRail}
+                  disabled={!communityRailReady}
+                  debugId="money-out.copy-community-rail"
+                  minWidth={isCompact ? undefined : 132}
+                  stableHeight={52}
+                  style={moneyOutActionButtonStyle("primary", !communityRailReady)}
+                >
+                  Copy rail
                 </PrimaryButton>
 
                 <StableCtaLink
@@ -2292,7 +2317,7 @@ export default function WithdrawalInstructionsPage() {
             debugId="money-out.toggle-rail"
             style={moneyOutCollapseButtonStyle()}
           >
-            {collapsed.rail ? "Show Rail" : "Hide Rail"}
+            {collapsed.rail ? "Show rail" : "Hide rail"}
           </SubtleButton>
         </div>
       </section>
@@ -2308,7 +2333,7 @@ export default function WithdrawalInstructionsPage() {
           }}
         >
           <div>
-            <div style={sectionLabel()}> Execution & Result</div>
+            <div style={sectionLabel()}>Execution & Result</div>
             <div style={{ marginTop: 8, ...helperText() }}>
               {latestResultText}
             </div>
@@ -2329,6 +2354,8 @@ export default function WithdrawalInstructionsPage() {
               onClick={() => void handleRefresh()}
               disabled={refreshing}
               debugId="money-out.refresh-status"
+              minWidth={isCompact ? undefined : 120}
+              stableHeight={46}
               style={moneyOutActionButtonStyle("secondary", refreshing)}
             >
               {refreshing ? "Refreshing..." : "Refresh"}
@@ -2455,7 +2482,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={48}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
-                        Loan Readiness
+                        Readiness
                       </StableCtaLink>
 
                       <StableCtaLink
@@ -2464,7 +2491,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={48}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
-                        Loan Suggestions
+                        Suggestions
                       </StableCtaLink>
 
                       <StableCtaLink
@@ -2473,7 +2500,7 @@ export default function WithdrawalInstructionsPage() {
                         stableHeight={48}
                         style={moneyOutActionButtonStyle("secondary")}
                       >
-                        Loan Workbench
+                        Workbench
                       </StableCtaLink>
                   </>
                 ) : withdrawalCanWidenRoutes ? (
@@ -2556,7 +2583,7 @@ export default function WithdrawalInstructionsPage() {
                   fullWidth
                   style={moneyOutActionButtonStyle("primary")}
                 >
-                  Open Finance
+                  Finance
                 </StableCtaLink>
 
                 <StableCtaLink
@@ -2566,7 +2593,7 @@ export default function WithdrawalInstructionsPage() {
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Open Payout Details
+                  Payout details
                 </StableCtaLink>
 
                 <StableCtaLink
@@ -2576,7 +2603,7 @@ export default function WithdrawalInstructionsPage() {
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Open Payment Rails
+                  Payment rails
                 </StableCtaLink>
 
                 <StableCtaLink
@@ -2586,7 +2613,7 @@ export default function WithdrawalInstructionsPage() {
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Open Loan Readiness
+                  Loan readiness
                 </StableCtaLink>
 
                 <StableCtaLink
@@ -2596,7 +2623,7 @@ export default function WithdrawalInstructionsPage() {
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Open Loan Workbench
+                  Loan workbench
                 </StableCtaLink>
 
                 <StableCtaLink
@@ -2606,7 +2633,7 @@ export default function WithdrawalInstructionsPage() {
                   fullWidth
                   style={moneyOutActionButtonStyle("secondary")}
                 >
-                  Open Loans & Support
+                  Loans & support
                 </StableCtaLink>
 
               <StableCtaLink

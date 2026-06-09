@@ -41264,3 +41264,41 @@ GSN-branded invite composer and invite-entry continuity.
 - Remaining risk:
   - physical-phone check is still needed after deploy to confirm the Money In
     SVG icons and shortened action labels feel right in the real browser.
+
+### Money Out page-body/button polish (2026-06-09)
+
+- Trigger:
+  - continuing the backwards inner-page tightening pass after Repayment and
+    Money In;
+  - Money Out had several long action labels and loose button styles that
+    could still wrap or jump on phone.
+- Changed:
+  - `frontend/src/pages/WithdrawalInstructionsPage.tsx`
+    - Money Out action and collapse button styles now use no-wrap/no-transition
+      geometry;
+    - direct/support, copy summary, payout save/copy, rail refresh/copy, rail
+      toggle, and result refresh actions now have explicit stable
+      height/min-width values;
+    - long labels were shortened, including `Save payout`, `Copy payout`,
+      `Refresh rail`, `Copy rail`, `Show rail`, `Hide rail`, and compact
+      post-result route labels;
+    - cleaned small indentation/label scars in the action and result sections.
+  - `frontend/tools/audit-button-stability.mjs`
+    - now cages the Money Out compact labels and no-wrap geometry;
+    - now rejects the old long Money Out labels and mojibake glyphs.
+- Verification:
+  - Passed `npm --prefix frontend run audit:button-stability`.
+  - Passed `npm exec -- eslint src/pages/WithdrawalInstructionsPage.tsx tools/audit-button-stability.mjs`
+    from the `frontend` directory.
+  - Passed `npm --prefix frontend run audit:protected-button-freeze`.
+  - Passed `npm --prefix frontend run audit:tap-stability`.
+  - Passed `npm exec -- tsc -b --pretty false` from the `frontend` directory.
+  - Passed `git diff --check` with only the usual Windows LF-to-CRLF warnings.
+  - Sandboxed `npm run build` from `frontend` hit Windows/esbuild `spawn EPERM`;
+    elevated `npm run build` from `frontend` passed.
+- Unabated truth:
+  - this is UI/body/button stability only. It does not alter withdrawal,
+    banking, payment, ledger, or backend evidence logic.
+- Remaining risk:
+  - physical-phone testing should still confirm the tightened Money Out
+    controls feel stable under real tap/scroll behavior.

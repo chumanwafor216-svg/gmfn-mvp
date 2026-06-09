@@ -824,6 +824,18 @@ assertContains(
   "Money Out instructions must use shared stable CTA primitives and shared CTA resolution for direct/support actions, destination saving, rail actions, refresh, collapse, and next-route actions."
 );
 
+assertContains(
+  "src/pages/WithdrawalInstructionsPage.tsx",
+  /function moneyOutActionButtonStyle\([\s\S]*?whiteSpace: "nowrap"[\s\S]*?transition: "none"[\s\S]*?function moneyOutCollapseButtonStyle\(\)[\s\S]*?whiteSpace: "nowrap"[\s\S]*?flex: "0 0 auto"[\s\S]*?transition: "none"[\s\S]*?debugId="money-out\.awaiting-pool"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="money-out\.continue-direct"[\s\S]*?minWidth=\{isCompact \? undefined : 144\}[\s\S]*?stableHeight=\{52\}[\s\S]*?debugId="money-out\.open-support"[\s\S]*?Open support[\s\S]*?debugId="money-out\.copy-summary"[\s\S]*?minWidth=\{isCompact \? undefined : 150\}[\s\S]*?Copy summary[\s\S]*?debugId="money-out\.save-destination"[\s\S]*?minWidth=\{isCompact \? undefined : 150\}[\s\S]*?Save payout[\s\S]*?debugId="money-out\.copy-payout-account"[\s\S]*?Copy payout[\s\S]*?debugId="money-out\.refresh-community-rail"[\s\S]*?minWidth=\{isCompact \? undefined : 136\}[\s\S]*?Refresh rail[\s\S]*?debugId="money-out\.copy-community-rail"[\s\S]*?minWidth=\{isCompact \? undefined : 132\}[\s\S]*?Copy rail[\s\S]*?Show rail[\s\S]*?Hide rail[\s\S]*?debugId="money-out\.refresh-status"[\s\S]*?minWidth=\{isCompact \? undefined : 120\}/,
+  "Money Out instructions must keep compact labels and fixed no-wrap action geometry."
+);
+
+assertNotContains(
+  "src/pages/WithdrawalInstructionsPage.tsx",
+  /(Save Payout Account|Copy Payout Account|Refresh Rail|Copy Rail|Show Rail|Hide Rail|Open Support|Copy Summary|Open Finance|Open Payout Details|Open Payment Rails|Open Loan Readiness|Open Loan Workbench|Open Loans & Support|ð|â„|ï¸|Ÿ)/,
+  "Money Out instructions must not keep long jumpy labels or mojibake glyphs."
+);
+
 assertNotContains(
   "src/pages/WithdrawalInstructionsPage.tsx",
   /(import OriginLink|function stableTapStyle\(|buttonGuardProps\(|guardButtonPress\(|actionBtn\(|collapseToggle\(|stableTapStyle\(|<button|<a\s|to="\/app|homeTo="\/app|backTo="\/app|communityTo\("\/app)/,
